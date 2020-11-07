@@ -1,0 +1,5 @@
+#!/bin/sh
+
+cd "$RUN_DIR/server"
+
+npm install
