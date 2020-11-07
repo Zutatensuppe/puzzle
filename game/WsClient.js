@@ -56,7 +56,6 @@ export default class WsClient extends WsWrapper {
       return
     }
 
-    console.log(`ws dispatch ${type} ${tag}`)
     for (const callback of callbacks) {
       callback(...args)
     }

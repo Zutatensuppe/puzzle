@@ -252,25 +252,19 @@ function getSurroundingTilesByIdx(puzzle, idx) {
     ]
 }
 
-function determinePuzzleTileShapes (tiles, info) {
-    var tabs = [-1, 1]
-    for (let IDX in tiles) {
-        var _X = info.coords[IDX].x
-        var _Y = info.coords[IDX].y
+function determinePuzzleTileShapes (info) {
+    const tabs = [-1, 1]
 
-        var topTab = _Y === 0 ? 0 : tiles[IDX - info.tiles_x].tabs.bottom * -1;
-        var rightTab = _X === info.tiles_x -1 ? 0 : choice(tabs)
-        var leftTab = _X === 0 ? 0 : tiles[IDX - 1].tabs.right * -1
-        var bottomTab = _Y === info.tiles_y -1 ? 0 : choice(tabs)
-
-        tiles[IDX].tabs = {
-            top: topTab,
-            right: rightTab,
-            left: leftTab,
-            bottom: bottomTab,
+    const shapes = new Array(info.tiles)
+    for (let i = 0; i < info.tiles; i++) {
+        shapes[i] = {
+            top: info.coords[i].y === 0 ? 0 : shapes[i - info.tiles_x].bottom * -1,
+            right: info.coords[i].x === info.tiles_x -1 ? 0 : choice(tabs),
+            left: info.coords[i].x === 0 ? 0 : shapes[i - 1].right * -1,
+            bottom: info.coords[i].y === info.tiles_y -1 ? 0 : choice(tabs),
         }
     }
-    return tiles
+    return shapes
 }
 
 async function createPuzzleTileBitmaps (bitmap, tiles, info) {
@@ -296,10 +290,10 @@ async function createPuzzleTileBitmaps (bitmap, tiles, info) {
         let ctx = c.getContext('2d')
         ctx.clearRect(0, 0,tileDrawSize, tileDrawSize)
 
-        var topTab = tile.tabs.top
-        var rightTab = tile.tabs.right
-        var leftTab = tile.tabs.left
-        var bottomTab = tile.tabs.bottom
+        var topTab = info.shapes[tile.idx].top
+        var rightTab = info.shapes[tile.idx].right
+        var leftTab = info.shapes[tile.idx].left
+        var bottomTab = info.shapes[tile.idx].bottom
 
         var topLeftEdge = new Point(tileMarginWidth, tileMarginWidth);
         ctx.save();
@@ -436,7 +430,7 @@ const unfinishedTileByPos = (puzzle, pos) => {
     let tileIdx = -1
     for (let idx = 0; idx < puzzle.tiles.length; idx++) {
         let tile = puzzle.tiles[idx]
-        if (tile.finished) {
+        if (tile.owner === -1) {
             continue
         }
 
@@ -470,7 +464,7 @@ async function loadPuzzleBitmaps(puzzle) {
   return bitmaps
 }
 
-async function loadPuzzle(targetTiles, imageUrl) {
+async function createPuzzle(targetTiles, imageUrl) {
   // load bitmap, to determine the original size of the image
   let bitmpTmp = await loadImageToBitmap(imageUrl)
 
@@ -483,7 +477,7 @@ async function loadPuzzle(targetTiles, imageUrl) {
       idx: i,
     }
   }
-  tiles = await determinePuzzleTileShapes(tiles, info)
+  const shapes = determinePuzzleTileShapes(info)
 
   // Complete puzzle object
   const p = {
@@ -493,8 +487,10 @@ async function loadPuzzle(targetTiles, imageUrl) {
         idx: tile.idx, // index of tile in the array
         group: 0, // if grouped with other tiles
         z: 0, // z index of the tile
-        finished: false, // if the tile is in its final position
-        tabs: tile.tabs, // tabs :)
+        owner: 0, // who owns the tile
+                  // 0 = free for taking
+                  // -1 = finished
+                  // other values: id of player who has the tile
         // physical current position of the tile (x/y in pixels)
         // this position is the initial position only and is the
         // value that changes when moving a tile
@@ -505,7 +501,14 @@ async function loadPuzzle(targetTiles, imageUrl) {
         },
       }
     }),
-    // extra puzzle information
+    // game data for puzzle, data changes during the game
+    data: {
+      // TODO: maybe calculate this each time?
+      maxZ: 0,     // max z of all pieces
+      maxGroup: 0, // max group of all pieces
+    },
+    // static puzzle information. stays same for complete duration of
+    // the game
     info: {
       // information that was used to create the puzzle
       targetTiles: targetTiles,
@@ -530,6 +533,7 @@ async function loadPuzzle(targetTiles, imageUrl) {
                            // the tile_coordinate
                            // this can be used to determine where the
                            // final destination of a tile is
+      shapes: shapes, // tile shapes
     },
   }
   return p
@@ -561,13 +565,13 @@ async function main () {
   // todo: maybe put in protocols, same as `me()`
   let gameId = 'asdfbla' // uniqId()
   let me = initme()
+  const player = {x: 0, y: 0, down: false}
 
   let conn = setupNetwork(me + '|' + gameId)
-  conn.send(JSON.stringify({type: 'init'}))
+  conn.send(JSON.stringify({type: 'init', player}))
   conn.onSocket('message', async ({data}) => {
     const d = JSON.parse(data)
     let puzzle
-    console.log(d)
     if (d.type === 'init') {
       if (d.puzzle) {
         puzzle = d.puzzle
@@ -576,26 +580,25 @@ async function main () {
         // The game doesnt exist yet on the server, so load puzzle
         // and then give the server some info about the puzzle
         // Load puzzle and determine information about it
-        console.log(puzzle)
-        puzzle = await loadPuzzle(TARGET_TILES, IMAGE_URL)
+        // TODO: move puzzle creation to server
+        puzzle = await createPuzzle(TARGET_TILES, IMAGE_URL)
         conn.send(JSON.stringify({
           type: 'init_puzzle',
           puzzle: puzzle,
         }))
         console.log('loaded from local config')
       }
-      console.log(puzzle)
+
+      console.log('the puzzle ', puzzle)
       let bitmaps = await loadPuzzleBitmaps(puzzle)
       startGame(puzzle, bitmaps, conn)
     } else {
-      console.log(d)
+      // console.log(d)
     }
   })
 
   const _STATE = {
-    m_x: 0,
-    m_y: 0,
-    m_d: false,
+    changes: [],
   }
   let _STATE_CHANGED = false
 
@@ -623,20 +626,46 @@ async function main () {
 
     conn.onSocket('message', ({data}) => {
       const d = JSON.parse(data)
-      if (d.type === 'tile_changed' && d.origin !== me) {
-        updateDrawMinMax(puzzle.tiles[d.idx].pos, puzzle.info.tileDrawSize)
+      if (d.type === 'state_changed' && d.origin !== me) {
+        for (let change of d.changes) {
+          switch (change.type) {
+            case 'change_tile': {
+              updateDrawMinMax(puzzle.tiles[change.tile.idx].pos, puzzle.info.tileDrawSize)
 
-        puzzle.tiles[d.idx].pos = {x: d.pos.x, y: d.pos.y}
-        puzzle.tiles[d.idx].z = d.z
-        puzzle.tiles[d.idx].group = d.group
-        puzzle.tiles[d.idx].finished = d.finished
+              puzzle.tiles[change.tile.idx] = change.tile
 
-        updateDrawMinMax(puzzle.tiles[d.idx].pos, puzzle.info.tileDrawSize)
+              updateDrawMinMax(puzzle.tiles[change.tile.idx].pos, puzzle.info.tileDrawSize)
+            } break;
+            case 'change_data': {
+              puzzle.data = change.data
+            } break;
+          }
+        }
       }
     })
 
-    console.log(puzzle)
+    const changePlayer = (change) => {
+      for (let k of Object.keys(change)) {
+        player[k] = change[k]
+      }
+      _STATE.changes.push({type: 'change_player', player: player})
+      _STATE_CHANGED = true
+    }
+    const changeData = (change) => {
+      for (let k of Object.keys(change)) {
+        puzzle.data[k] = change[k]
+      }
+      _STATE.changes.push({type: 'change_data', data: puzzle.data})
+      _STATE_CHANGED = true
+    }
 
+    const changeTile = (t, change) => {
+      for (let k of Object.keys(change)) {
+        t[k] = change[k]
+      }
+      _STATE.changes.push({type: 'change_tile', tile: t})
+      _STATE_CHANGED = true
+    }
 
     // Create a dom and attach adapters to it so we can work with it
     const canvas = addCanvasToDom(createCanvas())
@@ -649,37 +678,34 @@ async function main () {
 
     // Information about the mouse
     const EV_DATA = {
-        mouse_down_x: null,
-        mouse_down_y: null,
+      mouse_down_x: null,
+      mouse_down_y: null,
     }
 
     // Information about what tile is the player currently grabbing
     let grabbingTileIdx = -1
-
-    let maxZ = 0
-    let maxGroup = 0
 
     // The actual place for the puzzle. The tiles may
     // not be moved around infinitely, just on the (invisible)
     // puzzle table. however, the camera may move away from the table
     const puzzleTableColor = [200, 0, 0, 255]
     const puzzleTable = new Bitmap(
-        puzzle.info.width * 2,
-        puzzle.info.height * 2,
-        puzzleTableColor
+      puzzle.info.width * 2,
+      puzzle.info.height * 2,
+      puzzleTableColor
     )
 
     // In the middle of the table, there is a board. this is to
     // tell the player where to place the final puzzle
     const boardColor = [0, 150, 0, 255]
     const board = new Bitmap(
-        puzzle.info.width,
-        puzzle.info.height,
-        boardColor
+      puzzle.info.width,
+      puzzle.info.height,
+      boardColor
     )
     const boardPos = {
-        x: (puzzleTable.width - board.width) / 2,
-        y: (puzzleTable.height - board.height) / 2
+      x: (puzzleTable.width - board.width) / 2,
+      y: (puzzleTable.height - board.height) / 2
     } // relative to table.
 
 
@@ -687,128 +713,114 @@ async function main () {
     // ---------------------------------------------------------------
 
     // get all grouped tiles for a tile
-    function getGroupedTiles (tile) {
-        let grouped = []
-        if (tile.group) {
-            for (let other of puzzle.tiles) {
-                if (other.group === tile.group) {
-                    grouped.push(other)
-                }
-            }
-        } else {
-            grouped.push(tile)
+    function getGroupedTiles(tile) {
+      let grouped = []
+      if (tile.group) {
+        for (let other of puzzle.tiles) {
+          if (other.group === tile.group) {
+            grouped.push(other)
+          }
         }
-        return grouped
+      } else {
+        grouped.push(tile)
+      }
+      return grouped
     }
 
     // put both tiles (and their grouped tiles) in the same group
     const groupTiles = (tile, other) => {
-        let targetGroup
-        let searchGroups = []
-        if (tile.group) {
-            searchGroups.push(tile.group)
-        }
-        if (other.group) {
-            searchGroups.push(other.group)
-        }
-        if (tile.group) {
-            targetGroup = tile.group
-        } else if (other.group) {
-            targetGroup = other.group
-        } else {
-            maxGroup++
-            targetGroup = maxGroup
-        }
-        tile.group = targetGroup
-        other.group = targetGroup
+      let targetGroup
+      let searchGroups = []
+      if (tile.group) {
+        searchGroups.push(tile.group)
+      }
+      if (other.group) {
+        searchGroups.push(other.group)
+      }
+      if (tile.group) {
+        targetGroup = tile.group
+      } else if (other.group) {
+        targetGroup = other.group
+      } else {
+        changeData({ maxGroup: puzzle.data.maxGroup + 1 })
+        targetGroup = puzzle.data.maxGroup
+      }
 
-        if (searchGroups.length > 0) {
-            for (let tmp of puzzle.tiles) {
-                if (searchGroups.includes(tmp.group)) {
-                    tmp.group = targetGroup
-                }
-            }
+      changeTile(tile, { group: targetGroup })
+      changeTile(other, { group: targetGroup })
+
+      if (searchGroups.length > 0) {
+        for (let tmp of puzzle.tiles) {
+          if (searchGroups.includes(tmp.group)) {
+            changeTile(tmp, { group: targetGroup })
+          }
         }
+      }
     }
 
     // determine if two tiles are grouped together
     const areGrouped = (t1, t2) => {
-        return t1.group && t1.group === t2.group
+      return t1.group && t1.group === t2.group
     }
 
     // get the center position of a tile
     const tileCenterPos = (tile) => {
-        return tileRectByTile(tile).center()
+      return tileRectByTile(tile).center()
     }
 
     // get the would-be visible bounding rect if a tile was
     // in given position
     const tileRectByPos = (pos) => {
-        return new BoundingRectangle(
-            pos.x,
-            pos.x + puzzle.info.tileSize,
-            pos.y,
-            pos.y + puzzle.info.tileSize
-        )
+      return new BoundingRectangle(
+        pos.x,
+        pos.x + puzzle.info.tileSize,
+        pos.y,
+        pos.y + puzzle.info.tileSize
+      )
     }
 
     // get the current visible bounding rect for a tile
     const tileRectByTile = (tile) => {
-        return tileRectByPos(tile.pos)
+      return tileRectByPos(tile.pos)
     }
 
     const tilesSortedByZIndex = () => {
-        const sorted = puzzle.tiles.slice()
-        return sorted.sort((t1, t2) => t1.z - t2.z)
+      const sorted = puzzle.tiles.slice()
+      return sorted.sort((t1, t2) => t1.z - t2.z)
     }
 
     const setGroupedZIndex = (tile, zIndex) => {
-        for(let t of getGroupedTiles(tile)) {
-            t.z = zIndex
+      for (let t of getGroupedTiles(tile)) {
+        changeTile(t, { z: zIndex })
+      }
+    }
 
-            conn.send(JSON.stringify({
-              type: 'change_tile',
-              idx: t.idx,
-              pos: t.pos,
-              z: t.z,
-              group: t.group,
-              finished: t.finished,
-            }))
+    const setGroupedOwner = (tile, owner) => {
+      for (let t of getGroupedTiles(tile)) {
+        // may only change own tiles or untaken tiles
+        if (t.owner === me || t.owner === 0) {
+          changeTile(t, { owner: owner })
         }
+      }
     }
 
     const moveGroupedTilesDiff = (tile, diffX, diffY) => {
       for (let t of getGroupedTiles(tile)) {
-        t.pos = pointAdd(t.pos, {x: diffX, y: diffY})
+        changeTile(t, { pos: pointAdd(t.pos, { x: diffX, y: diffY }) })
 
-        conn.send(JSON.stringify({
-          type: 'change_tile',
-          idx: t.idx,
-          pos: t.pos,
-          z: t.z,
-          finished: t.finished,
-        }))
         // TODO: instead there could be a function to
         //       get min/max x/y of a group
         updateDrawMinMax(tileCenterPos(t), puzzle.info.tileDrawSize)
       }
     }
     const moveGroupedTiles = (tile, dst) => {
-        let diff = pointSub(tile.pos, dst)
-        moveGroupedTilesDiff(tile, -diff.x, -diff.y)
+      let diff = pointSub(tile.pos, dst)
+      moveGroupedTilesDiff(tile, -diff.x, -diff.y)
     }
     const finishGroupedTiles = (tile) => {
-        for (let t of getGroupedTiles(tile)) {
-            t.finished = true
-            t.z = 1
-            conn.send(JSON.stringify({
-              type: 'change_tile',
-              idx: t.idx,
-              pos: t.pos,
-              z: t.z,
-              finished: t.finished,
-            }))
-        }
+      for (let t of getGroupedTiles(tile)) {
+        changeTile(t, {owner: -1, z: 1})
+      }
     }
     // ---------------------------------------------------------------
 
@@ -831,16 +843,12 @@ async function main () {
         for (let mouse of evts.consumeAll()) {
           if (mouse.type === 'move') {
             const tp = cam.translateMouse(mouse)
-            _STATE.m_x = tp.x
-            _STATE.m_y = tp.y
-            _STATE_CHANGED = true
+            changePlayer({x: tp.x, y: tp.y})
           }
           if (mouse.type === 'down') {
-            _STATE.m_d = true
-            _STATE_CHANGED = true
+            changePlayer({down: true})
           } else if (mouse.type === 'up') {
-            _STATE.m_d = false
-            _STATE_CHANGED = true
+            changePlayer({down: false})
           }
             if (mouse.type === 'wheel') {
                 if (mouse.y < 0) {
@@ -864,8 +872,9 @@ async function main () {
                 grabbingTileIdx = unfinishedTileByPos(puzzle, tp)
                 console.log(grabbingTileIdx)
                 if (grabbingTileIdx >= 0) {
-                    maxZ++
-                    setGroupedZIndex(puzzle.tiles[grabbingTileIdx], maxZ)
+                  changeData({maxZ: puzzle.data.maxZ + 1})
+                  setGroupedZIndex(puzzle.tiles[grabbingTileIdx], puzzle.data.maxZ)
+                  setGroupedOwner(puzzle.tiles[grabbingTileIdx], me)
                 }
                 console.log('down', tp)
 
@@ -880,6 +889,7 @@ async function main () {
                     // location
 
                     let tile = puzzle.tiles[grabbingTileIdx]
+                    setGroupedOwner(tile, 0)
                     let pt = pointSub(tile.pos, boardPos)
                     let dst = tileRectByPos(pt)
                     let srcRect = srcRectByIdx(puzzle.info, grabbingTileIdx)
@@ -907,7 +917,7 @@ async function main () {
                         ]
 
                         const check = (t, off, other) => {
-                            if (snapped || !other || other.finished || areGrouped(t, other)) {
+                            if (snapped || !other || (other.owner === -1) || areGrouped(t, other)) {
                                 return
                             }
                             let trec_ = tileRectByTile(t)
@@ -1003,6 +1013,7 @@ async function main () {
             type: 'state',
             state: _STATE,
           }))
+          _STATE.changes = []
           _STATE_CHANGED = false
         }
     }
