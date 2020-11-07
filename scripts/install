@@ -3,3 +3,7 @@
 cd "$RUN_DIR/server"
 
 npm install
+
+if [ ! -e "$RUN_DIR/server/config.js" ]; then
+  cp "$RUN_DIR/server/config.example.js" "$RUN_DIR/server/config.js"
+fi

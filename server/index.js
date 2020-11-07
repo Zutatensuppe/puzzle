@@ -2,15 +2,29 @@ import WebSocketServer from './WebSocketServer.js'
 
 import express from 'express'
 
-const httpConfig = {
-  hostname: 'localhost',
-  port: 1337,
-}
-const port = httpConfig.port
-const hostname = httpConfig.hostname
+import config from './config.js'
+
+const port = config.http.port
+const hostname = config.http.hostname
 const app = express()
-app.use('/', express.static('./../game/'))
-app.listen(port, hostname, () => console.log(`server running on ${hostname}:${port}`))
+const statics = express.static('./../game/')
+app.use('/', (req, res, next) => {
+  if (req.path === '/') {
+    res.send(`
+      <html><head><style>
+      html,body {margin: 0; overflow: hidden;}
+      html, body, #main { background: #222 }
+      </style></head><body>
+      <script>window.WS_ADDRESS = '${config.ws.connectstring}'</script>
+      <script src="index.js" type="module"></script>
+      </body>
+      </html>
+    `)
+  } else {
+    statics(req, res, next)
+  }
+})
+app.listen(port, hostname, () => console.log(`server running on http://${hostname}:${port}`))
 
 
 const players = {
@@ -18,13 +32,7 @@ const players = {
 }
 const games = {}
 
-
-const wssConfig = {
-  hostname: 'localhost',
-  port: 1338,
-  connectstring: `ws://localhost:1338/ws`,
-}
-const wss = new WebSocketServer(wssConfig);
+const wss = new WebSocketServer(config.ws);
 
 
 const notify = (data) => {

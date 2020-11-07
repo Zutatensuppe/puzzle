@@ -7,8 +7,9 @@ import Camera from './Camera.js'
 import Point from './Point.js'
 import EventAdapter from './EventAdapter.js'
 import { choice } from './util.js'
-
 import WsClient from './WsClient.js'
+
+if (!WS_ADDRESS) throw '[ WS_ADDRESS not set ]'
 
 const TILE_SIZE = 64 // cut size of each puzzle tile in the
                      // final resized version of the puzzle image
@@ -48,11 +49,11 @@ function fillBitmapCapped(bitmap, rgba, rect_cap) {
   if (!rect_cap) {
     return fillBitmap(bitmap, rgba)
   }
-  let startX = Math.floor(Math.max(rect_cap.x0))
-  let startY = Math.floor(Math.max(rect_cap.y0))
+  let startX = Math.floor(rect_cap.x0)
+  let startY = Math.floor(rect_cap.y0)
 
-  let endX = Math.ceil(Math.min(rect_cap.x1))
-  let endY = Math.ceil(Math.min(rect_cap.y1))
+  let endX = Math.ceil(rect_cap.x1)
+  let endY = Math.ceil(rect_cap.y1)
 
   for (let x = startX; x < endX; x++) {
     for (let y = startY; y < endY; y++) {
@@ -550,7 +551,7 @@ function initme() {
 }
 
 function setupNetwork(me) {
-  const wsc = new WsClient('ws://localhost:1338/ws', me)
+  const wsc = new WsClient(WS_ADDRESS, me)
   wsc.connect()
   return wsc
 }
@@ -566,6 +567,7 @@ async function main () {
   conn.onSocket('message', async ({data}) => {
     const d = JSON.parse(data)
     let puzzle
+    console.log(d)
     if (d.type === 'init') {
       if (d.puzzle) {
         puzzle = d.puzzle
@@ -574,6 +576,7 @@ async function main () {
         // The game doesnt exist yet on the server, so load puzzle
         // and then give the server some info about the puzzle
         // Load puzzle and determine information about it
+        console.log(puzzle)
         puzzle = await loadPuzzle(TARGET_TILES, IMAGE_URL)
         conn.send(JSON.stringify({
           type: 'init_puzzle',
