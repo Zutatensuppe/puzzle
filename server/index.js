@@ -27,9 +27,7 @@ app.use('/', (req, res, next) => {
 app.listen(port, hostname, () => console.log(`server running on http://${hostname}:${port}`))
 
 
-const players = {
-
-}
+const players = {}
 const games = {}
 
 const wss = new WebSocketServer(config.ws);
