@@ -34,7 +34,6 @@ const games = {}
 
 const wss = new WebSocketServer(config.ws);
 
-
 const notify = (data) => {
   // TODO: throttle
   wss.notifyAll(data)
