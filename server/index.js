@@ -14,6 +14,7 @@ app.use('/', (req, res, next) => {
       <html><head><style>
       html,body {margin: 0; overflow: hidden;}
       html, body, #main { background: #222 }
+      canvas {cursor: none;}
       </style></head><body>
       <script>window.WS_ADDRESS = '${config.ws.connectstring}'</script>
       <script src="index.js" type="module"></script>

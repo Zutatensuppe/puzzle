@@ -113,6 +113,34 @@ function mapBitmapToBitmapCapped (bitmap_src, rect_src, bitmap_dst, rect_dst, re
     }
 }
 
+function mapBitmapToAdapterCapped (src, rect_src, dst, rect_dst, rect_cap) {
+    if (!rect_cap) {
+        return mapBitmapToAdapter(src, rect_src, dst, rect_dst)
+    }
+    const tmp = new Uint8ClampedArray(4)
+    const w_f = (rect_src.width) / (rect_dst.width)
+    const h_f = (rect_src.height) / (rect_dst.height)
+
+    let startX = Math.floor(Math.max(rect_cap.x0, rect_dst.x0, (-rect_src.x0 / w_f) + rect_dst.x0))
+    let startY = Math.floor(Math.max(rect_cap.y0, rect_dst.y0, (-rect_src.y0 / h_f) + rect_dst.y0))
+
+    let endX = Math.ceil(Math.min(rect_cap.x1, rect_dst.x1, ((src._w - rect_src.x0) / w_f) + rect_dst.x0))
+    let endY = Math.ceil(Math.min(rect_cap.y1, rect_dst.y1, ((src._h - rect_src.y0) / h_f) + rect_dst.y0))
+
+    for (let x = startX; x < endX; x++) {
+        for (let y = startY; y < endY; y++) {
+            const src_x = rect_src.x0 + Math.floor((x - rect_dst.x0) * w_f)
+            const src_y = rect_src.y0 + Math.floor((y - rect_dst.y0) * h_f)
+            if (src.getPix(src_x, src_y, tmp)) {
+                if (tmp[3] === 255) {
+                    dst.putPix(x, y, tmp)
+                }
+            }
+        }
+    }
+    adapter_dst.apply()
+}
+
 function mapBitmapToAdapter (bitmap_src, rect_src, adapter_dst, rect_dst) {
     const tmp = new Uint8ClampedArray(4)
     const w_f = (rect_src.x1 - rect_src.x0) / (rect_dst.x1 - rect_dst.x0)
@@ -567,6 +595,9 @@ async function main () {
   let me = initme()
   const player = {x: 0, y: 0, down: false}
 
+  let cursorGrab = await loadImageToBitmap('./grab.png')
+  let cursorHand = await loadImageToBitmap('./hand.png')
+
   let conn = setupNetwork(me + '|' + gameId)
   conn.send(JSON.stringify({type: 'init', player}))
   conn.onSocket('message', async ({data}) => {
@@ -608,6 +639,7 @@ async function main () {
     // information for next render cycle
     let rerenderTable = true
     let rerenderTableRect = null
+    let rerenderPlayer = true
     let rerender = true
     let redrawMinX = null
     let redrawMaxX = null
@@ -844,20 +876,36 @@ async function main () {
           if (mouse.type === 'move') {
             const tp = cam.translateMouse(mouse)
             changePlayer({x: tp.x, y: tp.y})
+            updateDrawMinMax(tp, cursorGrab.width)
+            rerenderPlayer = true
           }
           if (mouse.type === 'down') {
+            const tp = cam.translateMouse(mouse)
             changePlayer({down: true})
+            updateDrawMinMax(tp, cursorGrab.width)
+            rerenderPlayer = true
           } else if (mouse.type === 'up') {
+            const tp = cam.translateMouse(mouse)
             changePlayer({down: false})
+            updateDrawMinMax(tp, cursorGrab.width)
+            rerenderPlayer = true
           }
             if (mouse.type === 'wheel') {
-                if (mouse.y < 0) {
+                if (mouse.deltaY < 0) {
                     if (cam.zoomIn()) {
                         rerender = true
+                        const tp = cam.translateMouse(mouse)
+                        changePlayer({x: tp.x, y: tp.y})
+                        updateDrawMinMax(tp, cursorGrab.width)
+                        rerenderPlayer = true
                     }
                 } else {
                     if (cam.zoomOut()) {
                         rerender = true
+                        const tp = cam.translateMouse(mouse)
+                        changePlayer({x: tp.x, y: tp.y})
+                        updateDrawMinMax(tp, cursorGrab.width)
+                        rerenderPlayer = true
                     }
                 }
             } else if (mouse.type === 'down') {
@@ -1019,9 +1067,9 @@ async function main () {
     }
 
     const onRender = () => {
-        if (!rerenderTable && !rerender) {
-            return
-        }
+      if (!rerenderTable && !rerender) {
+        return
+      }
 
         console.log('rendering')
 
@@ -1067,6 +1115,21 @@ async function main () {
             - cam.y,
             - cam.y + (cam.height / cam.zoom),
         ), adapter, adapter.getBoundingRect())
+
+
+        let cursor = player.down ? cursorGrab : cursorHand
+        let back = cam.translateMouseBack(player)
+        mapBitmapToAdapter(
+          cursor,
+          cursor.getBoundingRect(),
+          adapter,
+          new BoundingRectangle(
+            back.x - (cursor.width/2),
+            back.x - (cursor.width/2) + cursor.width - 1,
+            back.y - (cursor.width/2),
+            back.y - (cursor.width/2) + cursor.height - 1,
+          )
+        )
 
         rerenderTable = false
         rerenderTableRect = null

@@ -6,7 +6,7 @@ export default class EventAdapter {
         canvas.addEventListener('mousemove', this._mouseMove.bind(this))
         canvas.addEventListener('wheel', this._wheel.bind(this))
     }
-    
+
     consumeAll() {
         if (this._mouseEvts.length === 0) {
             return []
@@ -33,6 +33,6 @@ export default class EventAdapter {
     }
 
     _wheel(e) {
-        this._mouseEvts.push({type: 'wheel', y: e.deltaY})
+        this._mouseEvts.push({type: 'wheel', deltaY: e.deltaY, x: e.offsetX, y: e.offsetY})
     }
 }

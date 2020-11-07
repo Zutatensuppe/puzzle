@@ -4,8 +4,8 @@ export default class Camera {
     constructor(canvas) {
         this.x = 0
         this.y = 0
-        
-        // TODO: when canvas resizes, this should 
+
+        // TODO: when canvas resizes, this should
         //       syncronize with the cam
         this.width = canvas.width
         this.height = canvas.height
@@ -36,7 +36,7 @@ export default class Camera {
             this.y + (this.height + h_final) / 2
         )
     }
-    
+
     move(x, y) {
         this.x += x / this.zoom
         this.y += y / this.zoom
@@ -72,6 +72,13 @@ export default class Camera {
         return {
             x: (mouse.x / this.zoom) - this.x,
             y: (mouse.y / this.zoom) - this.y,
+        }
+    }
+
+    translateMouseBack(mouse) {
+        return {
+            x: (mouse.x + this.x) * this.zoom,
+            y: (mouse.y + this.y) * this.zoom,
         }
     }
 }
