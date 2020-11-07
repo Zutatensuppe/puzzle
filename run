@@ -1,0 +1,18 @@
+#!/bin/sh
+
+RUN_BIN="$(realpath "$0")"
+RUN_DIR=$(dirname "$RUN_BIN")
+
+export RUN_BIN
+export RUN_DIR
+
+TASK="$1"
+[ $# -gt 0 ] && shift
+
+# Map task to scripts here
+if [ -f "$RUN_DIR/scripts/$TASK" ]; then
+  exec "$RUN_DIR/scripts/$TASK" "$@"
+else
+  echo "Task not found: $TASK" >&2
+  exit 2
+fi
