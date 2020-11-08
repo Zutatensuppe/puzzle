@@ -367,7 +367,6 @@ async function createPuzzleTileBitmaps(bitmap, tiles, info) {
       const p3 = pointAdd(topRightEdge, { x: -shape.right * curvyCoords[i * 6 + 5] * tileRatio, y: curvyCoords[i * 6 + 4] * tileRatio })
       path.bezierCurveTo(p1.x, p1.y, p2.x, p2.y, p3.x, p3.y);
     }
-    //Bottom
     const bottomRightEdge = pointAdd(topRightEdge, { x: 0, y: tileSize })
     for (let i = 0; i < curvyCoords.length / 6; i++) {
       let p1 = pointSub(bottomRightEdge, { x: curvyCoords[i * 6 + 0] * tileRatio, y: shape.bottom * curvyCoords[i * 6 + 1] * tileRatio })
@@ -375,7 +374,6 @@ async function createPuzzleTileBitmaps(bitmap, tiles, info) {
       let p3 = pointSub(bottomRightEdge, { x: curvyCoords[i * 6 + 4] * tileRatio, y: shape.bottom * curvyCoords[i * 6 + 5] * tileRatio })
       path.bezierCurveTo(p1.x, p1.y, p2.x, p2.y, p3.x, p3.y);
     }
-    //Left
     const bottomLeftEdge = pointSub(bottomRightEdge, { x: tileSize, y: 0 })
     for (let i = 0; i < curvyCoords.length / 6; i++) {
       let p1 = pointSub(bottomLeftEdge, { x: -shape.left * curvyCoords[i * 6 + 1] * tileRatio, y: curvyCoords[i * 6 + 0] * tileRatio })
