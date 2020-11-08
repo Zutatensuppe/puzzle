@@ -20,6 +20,14 @@ export default class CanvasAdapter {
     this._data = this._imageData.data
     this.apply()
   }
+  clearRect(rect) {
+    for (let x = rect.x0; x< rect.x1; x++) {
+      for (let y = rect.y0; y< rect.y1; y++) {
+        this.putPix(x, y, [0,0,0,0])
+      }
+    }
+    this.apply()
+  }
 
   getPix(x, y, out) {
     if (x < 0 || y < 0 || x >= this._w || y >= this._h) {

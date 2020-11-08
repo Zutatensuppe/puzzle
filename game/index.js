@@ -14,11 +14,12 @@ if (!WS_ADDRESS) throw '[ WS_ADDRESS not set ]'
 const TILE_SIZE = 64 // cut size of each puzzle tile in the
                      // final resized version of the puzzle image
 const TARGET_TILES = 1000 // desired number of tiles
-                         // actual calculated number can be higher
+                          // actual calculated number can be higher
 const IMAGES = [
-    './example-images/ima_86ec3fa.jpeg',
-    './example-images/saechsische_schweiz.jpg',
-    './example-images/132-2048x1365.jpg',
+  './example-images/ima_86ec3fa.jpeg',
+  './example-images/bleu.png',
+  './example-images/saechsische_schweiz.jpg',
+  './example-images/132-2048x1365.jpg',
 ]
 const IMAGE_URL = IMAGES[0]
 
@@ -138,7 +139,7 @@ function mapBitmapToAdapterCapped (src, rect_src, dst, rect_dst, rect_cap) {
             }
         }
     }
-    adapter_dst.apply()
+    dst.apply()
 }
 
 function mapBitmapToAdapter (bitmap_src, rect_src, adapter_dst, rect_dst) {
@@ -573,7 +574,7 @@ function uniqId() {
 }
 
 function initme() {
-  return uniqId()
+  // return uniqId()
   let ID = localStorage.getItem("ID")
   if (!ID) {
     ID = uniqId()
@@ -593,36 +594,35 @@ async function main () {
   // todo: maybe put in protocols, same as `me()`
   let gameId = 'asdfbla' // uniqId()
   let me = initme()
-  const player = {x: 0, y: 0, down: false}
 
   let cursorGrab = await loadImageToBitmap('./grab.png')
   let cursorHand = await loadImageToBitmap('./hand.png')
 
   let conn = setupNetwork(me + '|' + gameId)
-  conn.send(JSON.stringify({type: 'init', player}))
+  conn.send(JSON.stringify({ type: 'init' }))
   conn.onSocket('message', async ({data}) => {
     const d = JSON.parse(data)
-    let puzzle
+    let game
     if (d.type === 'init') {
-      if (d.puzzle) {
-        puzzle = d.puzzle
+      game = d.game
+      if (game.puzzle) {
         console.log('loaded from server')
       } else {
         // The game doesnt exist yet on the server, so load puzzle
         // and then give the server some info about the puzzle
         // Load puzzle and determine information about it
         // TODO: move puzzle creation to server
-        puzzle = await createPuzzle(TARGET_TILES, IMAGE_URL)
+        game.puzzle = await createPuzzle(TARGET_TILES, IMAGE_URL)
         conn.send(JSON.stringify({
           type: 'init_puzzle',
-          puzzle: puzzle,
+          puzzle: game.puzzle,
         }))
         console.log('loaded from local config')
       }
 
-      console.log('the puzzle ', puzzle)
-      let bitmaps = await loadPuzzleBitmaps(puzzle)
-      startGame(puzzle, bitmaps, conn)
+      console.log('the game ', game)
+      let bitmaps = await loadPuzzleBitmaps(game.puzzle)
+      startGame(game, bitmaps, conn)
     } else {
       // console.log(d)
     }
@@ -635,52 +635,46 @@ async function main () {
 
   // this must be fetched from server
 
-  const startGame = (puzzle, bitmaps, conn) => {
-    // information for next render cycle
-    let rerenderTable = true
-    let rerenderTableRect = null
-    let rerenderPlayer = true
-    let rerender = true
-    let redrawMinX = null
-    let redrawMaxX = null
-    let redrawMinY = null
-    let redrawMaxY = null
-    const updateDrawMinMax = (pos, offset) => {
-        let x0 = pos.x - offset
-        let x1 = pos.x + offset
-        let y0 = pos.y - offset
-        let y1 = pos.y + offset
-        redrawMinX = redrawMinX === null ? x0 : Math.min(redrawMinX, x0)
-        redrawMaxX = redrawMaxX === null ? x1 : Math.max(redrawMaxX, x1)
-        redrawMinY = redrawMinY === null ? y0 : Math.min(redrawMinY, y0)
-        redrawMaxY = redrawMaxY === null ? y1 : Math.max(redrawMaxY, y1)
+  class renderRect {
+    constructor() {
+      this.reset()
     }
+    get () {
+      return this.x0 === null ? null : this
+    }
+    add (pos, offset) {
+      let x0 = pos.x - offset
+      let x1 = pos.x + offset
+      let y0 = pos.y - offset
+      let y1 = pos.y + offset
+      this.x0 = this.x0 === null ? x0 : Math.min(this.x0, x0)
+      this.x1 = this.x1 === null ? x1 : Math.max(this.x1, x1)
+      this.y0 = this.y0 === null ? y0 : Math.min(this.y0, y0)
+      this.y1 = this.y1 === null ? y1 : Math.max(this.y1, y1)
+    }
+    reset () {
+      this.x0 = null
+      this.x1 = null
+      this.y0 = null
+      this.y1 = null
+    }
+  }
 
-    conn.onSocket('message', ({data}) => {
-      const d = JSON.parse(data)
-      if (d.type === 'state_changed' && d.origin !== me) {
-        for (let change of d.changes) {
-          switch (change.type) {
-            case 'change_tile': {
-              updateDrawMinMax(puzzle.tiles[change.tile.idx].pos, puzzle.info.tileDrawSize)
-
-              puzzle.tiles[change.tile.idx] = change.tile
-
-              updateDrawMinMax(puzzle.tiles[change.tile.idx].pos, puzzle.info.tileDrawSize)
-            } break;
-            case 'change_data': {
-              puzzle.data = change.data
-            } break;
-          }
-        }
-      }
-    })
+  const startGame = (game, bitmaps, conn) => {
+    let puzzle = game.puzzle
+    let players = game.players
+    // information for next render cycle
+    let rectPlayer = new renderRect()
+    let rerenderPlayer = true
+    let rectTable = new renderRect()
+    let rerenderTable = true
+    let rerender = true
 
     const changePlayer = (change) => {
       for (let k of Object.keys(change)) {
-        player[k] = change[k]
+        players[me][k] = change[k]
       }
-      _STATE.changes.push({type: 'change_player', player: player})
+      _STATE.changes.push({type: 'change_player', player: players[me]})
       _STATE_CHANGED = true
     }
     const changeData = (change) => {
@@ -708,11 +702,35 @@ async function main () {
     // this global data will change according to input events
     const cam = new Camera(canvas)
 
-    // Information about the mouse
-    const EV_DATA = {
-      mouse_down_x: null,
-      mouse_down_y: null,
-    }
+    conn.onSocket('message', ({data}) => {
+      const d = JSON.parse(data)
+      if (d.type === 'state_changed' && d.origin !== me) {
+        for (let change of d.changes) {
+          switch (change.type) {
+            case 'change_player': {
+              if (players[change.player.id]) {
+                rectPlayer.add(cam.translateMouseBack(players[change.player.id]), cursorGrab.width)
+              }
+
+              players[change.player.id] = change.player
+
+              rectPlayer.add(cam.translateMouseBack(players[change.player.id]), cursorGrab.width)
+            } break;
+
+            case 'change_tile': {
+              rectTable.add(puzzle.tiles[change.tile.idx].pos, puzzle.info.tileDrawSize)
+
+              puzzle.tiles[change.tile.idx] = change.tile
+
+              rectTable.add(puzzle.tiles[change.tile.idx].pos, puzzle.info.tileDrawSize)
+            } break;
+            case 'change_data': {
+              puzzle.data = change.data
+            } break;
+          }
+        }
+      }
+    })
 
     // Information about what tile is the player currently grabbing
     let grabbingTileIdx = -1
@@ -842,7 +860,7 @@ async function main () {
 
         // TODO: instead there could be a function to
         //       get min/max x/y of a group
-        updateDrawMinMax(tileCenterPos(t), puzzle.info.tileDrawSize)
+        rectTable.add(tileCenterPos(t), puzzle.info.tileDrawSize)
       }
     }
     const moveGroupedTiles = (tile, dst) => {
@@ -851,7 +869,7 @@ async function main () {
     }
     const finishGroupedTiles = (tile) => {
       for (let t of getGroupedTiles(tile)) {
-        changeTile(t, {owner: -1, z: 1})
+        changeTile(t, { owner: -1, z: 1 })
       }
     }
     // ---------------------------------------------------------------
@@ -862,287 +880,302 @@ async function main () {
 
 
 
+    let _last_mouse = null
+    let _last_mouse_down = null
     const onUpdate = () => {
-        let last_x = null
-        let last_y = null
-        // console.log(tp)
-        if (EV_DATA.mouse_down_x !== null) {
-            last_x = EV_DATA.mouse_down_x
-        }
-        if (EV_DATA.mouse_down_y !== null) {
-            last_y = EV_DATA.mouse_down_y
-        }
-        for (let mouse of evts.consumeAll()) {
-          if (mouse.type === 'move') {
-            const tp = cam.translateMouse(mouse)
-            changePlayer({x: tp.x, y: tp.y})
-            updateDrawMinMax(tp, cursorGrab.width)
-            rerenderPlayer = true
+      let last_x = null
+      let last_y = null
+
+      if (_last_mouse_down !== null) {
+        last_x = _last_mouse_down.x
+        last_y = _last_mouse_down.y
+      }
+      for (let mouse of evts.consumeAll()) {
+
+        if (mouse.type === 'move') {
+          const tp = cam.translateMouse(mouse)
+          changePlayer({ x: tp.x, y: tp.y })
+          if (_last_mouse) {
+            rectPlayer.add(_last_mouse, cursorGrab.width)
           }
-          if (mouse.type === 'down') {
-            const tp = cam.translateMouse(mouse)
-            changePlayer({down: true})
-            updateDrawMinMax(tp, cursorGrab.width)
-            rerenderPlayer = true
-          } else if (mouse.type === 'up') {
-            const tp = cam.translateMouse(mouse)
-            changePlayer({down: false})
-            updateDrawMinMax(tp, cursorGrab.width)
-            rerenderPlayer = true
+          rectPlayer.add(mouse, cursorGrab.width)
+        }
+
+        if (mouse.type === 'down') {
+          changePlayer({ down: true })
+          rectPlayer.add(mouse, cursorGrab.width)
+        } else if (mouse.type === 'up') {
+          changePlayer({ down: false })
+          if (_last_mouse) {
+            rectPlayer.add(_last_mouse, cursorGrab.width)
           }
-            if (mouse.type === 'wheel') {
-                if (mouse.deltaY < 0) {
-                    if (cam.zoomIn()) {
-                        rerender = true
-                        const tp = cam.translateMouse(mouse)
-                        changePlayer({x: tp.x, y: tp.y})
-                        updateDrawMinMax(tp, cursorGrab.width)
-                        rerenderPlayer = true
-                    }
-                } else {
-                    if (cam.zoomOut()) {
-                        rerender = true
-                        const tp = cam.translateMouse(mouse)
-                        changePlayer({x: tp.x, y: tp.y})
-                        updateDrawMinMax(tp, cursorGrab.width)
-                        rerenderPlayer = true
-                    }
-                }
-            } else if (mouse.type === 'down') {
-                EV_DATA.mouse_down_x = mouse.x
-                EV_DATA.mouse_down_y = mouse.y
-                if (last_x === null || last_y === null) {
-                    last_x = mouse.x
-                    last_y = mouse.y
-                }
+          rectPlayer.add(mouse, cursorGrab.width)
+        }
 
-                let tp = cam.translateMouse(mouse)
-                grabbingTileIdx = unfinishedTileByPos(puzzle, tp)
-                console.log(grabbingTileIdx)
-                if (grabbingTileIdx >= 0) {
-                  changeData({maxZ: puzzle.data.maxZ + 1})
-                  setGroupedZIndex(puzzle.tiles[grabbingTileIdx], puzzle.data.maxZ)
-                  setGroupedOwner(puzzle.tiles[grabbingTileIdx], me)
-                }
-                console.log('down', tp)
-
-            } else if (mouse.type === 'up') {
-                EV_DATA.mouse_down_x = null
-                EV_DATA.mouse_down_y = null
-                last_x = null
-                last_y === null
-
-                if (grabbingTileIdx >= 0) {
-                    // Check if the tile was dropped at the correct
-                    // location
-
-                    let tile = puzzle.tiles[grabbingTileIdx]
-                    setGroupedOwner(tile, 0)
-                    let pt = pointSub(tile.pos, boardPos)
-                    let dst = tileRectByPos(pt)
-                    let srcRect = srcRectByIdx(puzzle.info, grabbingTileIdx)
-                    if (srcRect.centerDistance(dst) < puzzle.info.snapDistance) {
-                        // Snap the tile to the final destination
-                        console.log('ok! !!!')
-                        moveGroupedTiles(tile, new Point(
-                            srcRect.x0 + boardPos.x,
-                            srcRect.y0 + boardPos.y
-                        ))
-                        finishGroupedTiles(tile)
-
-                        let tp = cam.translateMouse(mouse)
-                        updateDrawMinMax(tp, puzzle.info.tileDrawSize)
-                    } else {
-                        // Snap to other tiles
-                        let other
-                        let snapped = false
-                        let off
-                        let offs = [
-                            [0, 1],
-                            [-1, 0],
-                            [0, -1],
-                            [1, 0],
-                        ]
-
-                        const check = (t, off, other) => {
-                            if (snapped || !other || (other.owner === -1) || areGrouped(t, other)) {
-                                return
-                            }
-                            let trec_ = tileRectByTile(t)
-                            let otrec = tileRectByTile(other).moved(
-                                off[0] * puzzle.info.tileSize,
-                                off[1] * puzzle.info.tileSize
-                            )
-                            if (trec_.centerDistance(otrec) < puzzle.info.snapDistance) {
-                                console.log('yea top!')
-                                moveGroupedTiles(t, {x: otrec.x0, y: otrec.y0})
-                                groupTiles(t, other)
-                                setGroupedZIndex(t, t.z)
-                                snapped = true
-
-                                updateDrawMinMax(tileCenterPos(t), puzzle.info.tileDrawSize)
-                            }
-                        }
-
-                        for (let t of getGroupedTiles(tile)) {
-                            let others = getSurroundingTilesByIdx(puzzle, t.idx)
-
-                            // top
-                            off = offs[0]
-                            other = others[0]
-                            check(t, off, other)
-
-                            // right
-                            off = offs[1]
-                            other = others[1]
-                            check(t, off, other)
-
-                            // bottom
-                            off = offs[2]
-                            other = others[2]
-                            check(t, off, other)
-
-                            // left
-                            off = offs[3]
-                            other = others[3]
-                            check(t, off, other)
-
-                            if (snapped) {
-                                break
-                            }
-                        }
-                    }
-                }
-                grabbingTileIdx = -1
-                console.log('up', cam.translateMouse(mouse))
-            } else if ((EV_DATA.mouse_down_x !== null) && mouse.type === 'move') {
-                EV_DATA.mouse_down_x = mouse.x
-                EV_DATA.mouse_down_y = mouse.y
-
-                if (last_x === null || last_y === null) {
-                    last_x = mouse.x
-                    last_y = mouse.y
-                }
-
-                if (grabbingTileIdx >= 0) {
-                    let tp = cam.translateMouse(mouse)
-                    let tp_last = cam.translateMouse({x: last_x, y: last_y})
-                    const diffX = tp.x - tp_last.x
-                    const diffY = tp.y - tp_last.y
-
-                    let t = puzzle.tiles[grabbingTileIdx]
-                    moveGroupedTilesDiff(t, diffX, diffY)
-
-                    // todo: dont +- tileDrawSize, we can work with less
-                    updateDrawMinMax(tp, puzzle.info.tileDrawSize)
-                    updateDrawMinMax(tp_last, puzzle.info.tileDrawSize)
-                } else {
-                    const diffX = Math.round(mouse.x - last_x)
-                    const diffY = Math.round(mouse.y - last_y)
-                    // move the cam
-                    cam.move(diffX, diffY)
-                    rerender = true
-                }
+        if (mouse.type === 'wheel') {
+          if (mouse.deltaY < 0) {
+            if (cam.zoomIn()) {
+              rerender = true
+              const tp = cam.translateMouse(mouse)
+              changePlayer({ x: tp.x, y: tp.y })
+              if (_last_mouse) {
+                rectPlayer.add(_last_mouse, cursorGrab.width)
+              }
+              rectPlayer.add(mouse, cursorGrab.width)
             }
-            // console.log(mouse)
-        }
-        if (redrawMinX) {
-            rerenderTableRect = new BoundingRectangle(
-                redrawMinX,
-                redrawMaxX,
-                redrawMinY,
-                redrawMaxY
-            )
-            rerenderTable = true
-        }
+          } else {
+            if (cam.zoomOut()) {
+              rerender = true
+              const tp = cam.translateMouse(mouse)
+              changePlayer({ x: tp.x, y: tp.y })
+              if (_last_mouse) {
+                rectPlayer.add(_last_mouse, cursorGrab.width)
+              }
+              rectPlayer.add(mouse, cursorGrab.width)
+            }
+          }
+        } else if (mouse.type === 'down') {
+          _last_mouse_down = mouse
+          if (last_x === null || last_y === null) {
+            last_x = mouse.x
+            last_y = mouse.y
+          }
 
-        if (_STATE_CHANGED) {
-          conn.send(JSON.stringify({
-            type: 'state',
-            state: _STATE,
-          }))
-          _STATE.changes = []
-          _STATE_CHANGED = false
+          let tp = cam.translateMouse(mouse)
+          grabbingTileIdx = unfinishedTileByPos(puzzle, tp)
+          console.log(grabbingTileIdx)
+          if (grabbingTileIdx >= 0) {
+            changeData({ maxZ: puzzle.data.maxZ + 1 })
+            setGroupedZIndex(puzzle.tiles[grabbingTileIdx], puzzle.data.maxZ)
+            setGroupedOwner(puzzle.tiles[grabbingTileIdx], me)
+          }
+          console.log('down', tp)
+
+        } else if (mouse.type === 'up') {
+          _last_mouse_down = null
+          last_x = null
+          last_y === null
+
+          if (grabbingTileIdx >= 0) {
+            // Check if the tile was dropped at the correct
+            // location
+
+            let tile = puzzle.tiles[grabbingTileIdx]
+            setGroupedOwner(tile, 0)
+            let pt = pointSub(tile.pos, boardPos)
+            let dst = tileRectByPos(pt)
+            let srcRect = srcRectByIdx(puzzle.info, grabbingTileIdx)
+            if (srcRect.centerDistance(dst) < puzzle.info.snapDistance) {
+              // Snap the tile to the final destination
+              console.log('ok! !!!')
+              moveGroupedTiles(tile, new Point(
+                srcRect.x0 + boardPos.x,
+                srcRect.y0 + boardPos.y
+              ))
+              finishGroupedTiles(tile)
+
+              let tp = cam.translateMouse(mouse)
+              rectTable.add(tp, puzzle.info.tileDrawSize)
+            } else {
+              // Snap to other tiles
+              let other
+              let snapped = false
+              let off
+              let offs = [
+                [0, 1],
+                [-1, 0],
+                [0, -1],
+                [1, 0],
+              ]
+
+              const check = (t, off, other) => {
+                if (snapped || !other || (other.owner === -1) || areGrouped(t, other)) {
+                  return
+                }
+                let trec_ = tileRectByTile(t)
+                let otrec = tileRectByTile(other).moved(
+                  off[0] * puzzle.info.tileSize,
+                  off[1] * puzzle.info.tileSize
+                )
+                if (trec_.centerDistance(otrec) < puzzle.info.snapDistance) {
+                  console.log('yea top!')
+                  moveGroupedTiles(t, { x: otrec.x0, y: otrec.y0 })
+                  groupTiles(t, other)
+                  setGroupedZIndex(t, t.z)
+                  snapped = true
+
+                  rectTable.add(tileCenterPos(t), puzzle.info.tileDrawSize)
+                }
+              }
+
+              for (let t of getGroupedTiles(tile)) {
+                let others = getSurroundingTilesByIdx(puzzle, t.idx)
+
+                // top
+                off = offs[0]
+                other = others[0]
+                check(t, off, other)
+
+                // right
+                off = offs[1]
+                other = others[1]
+                check(t, off, other)
+
+                // bottom
+                off = offs[2]
+                other = others[2]
+                check(t, off, other)
+
+                // left
+                off = offs[3]
+                other = others[3]
+                check(t, off, other)
+
+                if (snapped) {
+                  break
+                }
+              }
+            }
+          }
+          grabbingTileIdx = -1
+          console.log('up', cam.translateMouse(mouse))
+        } else if (_last_mouse_down !== null && mouse.type === 'move') {
+          _last_mouse_down = mouse
+
+          if (last_x === null || last_y === null) {
+            last_x = mouse.x
+            last_y = mouse.y
+          }
+
+          if (grabbingTileIdx >= 0) {
+            let tp = cam.translateMouse(mouse)
+            let tp_last = cam.translateMouse({ x: last_x, y: last_y })
+            const diffX = tp.x - tp_last.x
+            const diffY = tp.y - tp_last.y
+
+            let t = puzzle.tiles[grabbingTileIdx]
+            moveGroupedTilesDiff(t, diffX, diffY)
+
+            // todo: dont +- tileDrawSize, we can work with less
+            rectTable.add(tp, puzzle.info.tileDrawSize)
+            rectTable.add(tp_last, puzzle.info.tileDrawSize)
+          } else {
+            const diffX = Math.round(mouse.x - last_x)
+            const diffY = Math.round(mouse.y - last_y)
+            // move the cam
+            cam.move(diffX, diffY)
+            rerender = true
+          }
         }
+        // console.log(mouse)
+        _last_mouse = mouse
+      }
+      if (rectTable.get()) {
+        rerenderTable = true
+      }
+      if (rectPlayer.get()) {
+        rerenderPlayer = true
+      }
+
+      if (_STATE_CHANGED) {
+        conn.send(JSON.stringify({
+          type: 'state',
+          state: _STATE,
+        }))
+        _STATE.changes = []
+        _STATE_CHANGED = false
+      }
     }
 
     const onRender = () => {
-      if (!rerenderTable && !rerender) {
+      if (!rerenderTable && !rerenderPlayer && !rerender) {
         return
       }
 
-        console.log('rendering')
+      console.log('rendering')
 
-        // draw the puzzle table
-        if (rerenderTable) {
-            fillBitmapCapped(puzzleTable, puzzleTableColor, rerenderTableRect)
+      // draw the puzzle table
+      if (rerenderTable) {
+        fillBitmapCapped(puzzleTable, puzzleTableColor, rectTable.get())
 
-            // draw the puzzle board on the table
-            mapBitmapToBitmapCapped(board, board.getBoundingRect(), puzzleTable, new BoundingRectangle(
-                boardPos.x,
-                boardPos.x + board.width - 1,
-                boardPos.y,
-                boardPos.y + board.height - 1,
-            ), rerenderTableRect)
+        // draw the puzzle board on the table
+        mapBitmapToBitmapCapped(board, board.getBoundingRect(), puzzleTable, new BoundingRectangle(
+          boardPos.x,
+          boardPos.x + board.width - 1,
+          boardPos.y,
+          boardPos.y + board.height - 1,
+        ), rectTable.get())
 
-            // draw all the tiles on the table
+        // draw all the tiles on the table
 
-            for (let tile of tilesSortedByZIndex()) {
-                let rect = new BoundingRectangle(
-                    puzzle.info.tileDrawOffset + tile.pos.x,
-                    puzzle.info.tileDrawOffset + tile.pos.x + puzzle.info.tileDrawSize,
-                    puzzle.info.tileDrawOffset + tile.pos.y,
-                    puzzle.info.tileDrawOffset + tile.pos.y + puzzle.info.tileDrawSize,
-                )
-                let bmp = bitmaps[tile.idx]
-                mapBitmapToBitmapCapped(
-                  bmp,
-                  bmp.getBoundingRect(),
-                  puzzleTable,
-                  rect,
-                  rerenderTableRect
-                )
-            }
+        for (let tile of tilesSortedByZIndex()) {
+          let rect = new BoundingRectangle(
+            puzzle.info.tileDrawOffset + tile.pos.x,
+            puzzle.info.tileDrawOffset + tile.pos.x + puzzle.info.tileDrawSize,
+            puzzle.info.tileDrawOffset + tile.pos.y,
+            puzzle.info.tileDrawOffset + tile.pos.y + puzzle.info.tileDrawSize,
+          )
+          let bmp = bitmaps[tile.idx]
+          mapBitmapToBitmapCapped(
+            bmp,
+            bmp.getBoundingRect(),
+            puzzleTable,
+            rect,
+            rectTable.get()
+          )
         }
+      }
 
+      if (rerenderTable || rerender) {
         // finally draw the finished table onto the canvas
         // only part of the table may be visible, depending on the
         // camera
         adapter.clear()
         mapBitmapToAdapter(puzzleTable, new BoundingRectangle(
-            - cam.x,
-            - cam.x + (cam.width / cam.zoom),
-            - cam.y,
-            - cam.y + (cam.height / cam.zoom),
+          - cam.x,
+          - cam.x + (cam.width / cam.zoom),
+          - cam.y,
+          - cam.y + (cam.height / cam.zoom),
         ), adapter, adapter.getBoundingRect())
+      } else if (rerenderPlayer) {
+        adapter.clearRect(rectPlayer.get())
+        mapBitmapToAdapterCapped(puzzleTable, new BoundingRectangle(
+          - cam.x,
+          - cam.x + (cam.width / cam.zoom),
+          - cam.y,
+          - cam.y + (cam.height / cam.zoom),
+        ), adapter, adapter.getBoundingRect(), rectPlayer.get())
+      }
 
-
-        let cursor = player.down ? cursorGrab : cursorHand
-        let back = cam.translateMouseBack(player)
-        mapBitmapToAdapter(
-          cursor,
-          cursor.getBoundingRect(),
-          adapter,
-          new BoundingRectangle(
-            back.x - (cursor.width/2),
-            back.x - (cursor.width/2) + cursor.width - 1,
-            back.y - (cursor.width/2),
-            back.y - (cursor.width/2) + cursor.height - 1,
+      if (rerenderPlayer) {
+        for (let id of Object.keys(players)) {
+          let p = players[id]
+          let cursor = p.down ? cursorGrab : cursorHand
+          let back = cam.translateMouseBack(p)
+          mapBitmapToAdapter(
+            cursor,
+            cursor.getBoundingRect(),
+            adapter,
+            new BoundingRectangle(
+              back.x - (cursor.width / 2),
+              back.x - (cursor.width / 2) + cursor.width - 1,
+              back.y - (cursor.width / 2),
+              back.y - (cursor.width / 2) + cursor.height - 1,
+            )
           )
-        )
+        }
+      }
 
-        rerenderTable = false
-        rerenderTableRect = null
-        rerender = false
-        redrawMinX = null
-        redrawMaxX = null
-        redrawMinY = null
-        redrawMaxY = null
+      rerenderTable = false
+      rerenderPlayer = false
+      rerender = false
+      rectTable.reset()
+      rectPlayer.reset()
     }
 
     run({
-        update: onUpdate,
-        render: onRender,
+      update: onUpdate,
+      render: onRender,
     })
   }
 }

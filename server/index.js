@@ -48,12 +48,14 @@ wss.on('message', ({socket, data}) => {
         // a new player (or previous player) joined
         games[gid] = games[gid] || {puzzle: null, players: {}}
 
-        games[gid].players[uid] = parsed.player
+        games[gid].players[uid] = {id: uid, x: 0, y: 0, down: false}
 
         wss.notifyOne({
           type: 'init',
-          puzzle: games[gid].puzzle,
-          players: games[gid].players,
+          game: {
+            puzzle: games[gid].puzzle,
+            players: games[gid].players,
+          },
         }, socket)
       } break;
 
