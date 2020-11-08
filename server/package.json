@@ -2,6 +2,7 @@
   "type": "module",
   "dependencies": {
     "express": "^4.17.1",
+    "image-size": "^0.9.3",
     "ws": "^7.3.1"
   }
 }

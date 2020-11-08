@@ -17,24 +17,12 @@ export default class Camera {
     }
 
     rect() {
-        // when no zoom is relevant:
-        return new BoundingRectangle(
-            this.x,
-            this.x + this.width - 1,
-            this.y,
-            this.y + this.height - 1
-        )
-
-        // when zoom is relevant:
-        // TODO: check if still true
-        const w_final = this.width * this.zoom
-        const h_final = this.height * this.zoom
-        return new BoundingRectangle(
-            this.x + (this.width - w_final) / 2,
-            this.x + (this.width + w_final) / 2,
-            this.y + (this.height - h_final) / 2,
-            this.y + (this.height + h_final) / 2
-        )
+      return new BoundingRectangle(
+        - this.x,
+        - this.x + (this.width / this.zoom),
+        - this.y,
+        - this.y + (this.height / this.zoom),
+      )
     }
 
     move(x, y) {

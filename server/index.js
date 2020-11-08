@@ -1,8 +1,22 @@
 import WebSocketServer from './WebSocketServer.js'
 
 import express from 'express'
-
+import { createPuzzle } from './puzzle.js'
 import config from './config.js'
+
+// desired number of tiles
+// actual calculated number can be higher
+const TARGET_TILES = 1000
+
+const IMAGES = [
+  '/example-images/ima_86ec3fa.jpeg',
+  '/example-images/bleu.png',
+  '/example-images/saechsische_schweiz.jpg',
+  '/example-images/132-2048x1365.jpg',
+]
+const IMAGE_URL = IMAGES[0]
+
+const games = {}
 
 const port = config.http.port
 const hostname = config.http.hostname
@@ -27,8 +41,6 @@ app.use('/', (req, res, next) => {
 })
 app.listen(port, hostname, () => console.log(`server running on http://${hostname}:${port}`))
 
-const games = {}
-
 const wss = new WebSocketServer(config.ws);
 
 const notify = (data) => {
@@ -37,7 +49,7 @@ const notify = (data) => {
   console.log('notify', data)
 }
 
-wss.on('message', ({socket, data}) => {
+wss.on('message', async ({socket, data}) => {
   try {
     const proto = socket.protocol.split('|')
     const uid = proto[0]
@@ -46,7 +58,7 @@ wss.on('message', ({socket, data}) => {
     switch (parsed.type) {
       case 'init': {
         // a new player (or previous player) joined
-        games[gid] = games[gid] || {puzzle: null, players: {}}
+        games[gid] = games[gid] || {puzzle: await createPuzzle(TARGET_TILES, IMAGE_URL), players: {}}
 
         games[gid].players[uid] = {id: uid, x: 0, y: 0, down: false}
 
@@ -57,11 +69,6 @@ wss.on('message', ({socket, data}) => {
             players: games[gid].players,
           },
         }, socket)
-      } break;
-
-      // new puzzle was created and sent to us
-      case 'init_puzzle': {
-        games[gid].puzzle = parsed.puzzle
       } break;
 
       // somebody has changed the state
