@@ -6,215 +6,14 @@ import {run} from './gameloop.js'
 import Camera from './Camera.js'
 import EventAdapter from './EventAdapter.js'
 import WsClient from './WsClient.js'
+import Graphics from './Graphics.js'
 
 if (!GAME_ID) throw '[ GAME_ID not set ]'
 if (!WS_ADDRESS) throw '[ WS_ADDRESS not set ]'
 
-function createCanvas(width = 0, height = 0) {
-    const canvas = document.createElement('canvas')
-    canvas.width = width === 0 ? window.innerWidth : width
-    canvas.height = height === 0 ? window.innerHeight : height
-    return canvas
-}
-
 function addCanvasToDom(canvas) {
     document.body.append(canvas)
     return canvas
-}
-
-function fillBitmap (bitmap, rgba) {
-    const len = bitmap.width * bitmap.height * 4
-    bitmap._data = new Uint8ClampedArray(len)
-    for (let i = 0; i < len; i+=4) {
-        bitmap._data[i] = rgba[0]
-        bitmap._data[i + 1] = rgba[1]
-        bitmap._data[i + 2] = rgba[2]
-        bitmap._data[i + 3] = rgba[3]
-    }
-}
-
-function fillBitmapCapped(bitmap, rgba, rects_cap) {
-  if (!rects_cap) {
-    return fillBitmap(bitmap, rgba)
-  }
-  for (let rect_cap of rects_cap) {
-    let startX = Math.floor(rect_cap.x0)
-    let startY = Math.floor(rect_cap.y0)
-
-    let endX = Math.ceil(rect_cap.x1)
-    let endY = Math.ceil(rect_cap.y1)
-
-    for (let x = startX; x < endX; x++) {
-      for (let y = startY; y < endY; y++) {
-        bitmap.putPix(x, y, rgba)
-      }
-    }
-  }
-}
-
-function mapBitmapToBitmap(
-  /** @type {Bitmap} */src,
-  /** @type {BoundingRectangle} */ rect_src,
-  /** @type {Bitmap} */ dst,
-  /** @type {BoundingRectangle} */ rect_dst
-) {
-  const tmp = new Uint8ClampedArray(4)
-  const w_f = rect_src.width / rect_dst.width
-  const h_f = rect_src.height / rect_dst.height
-
-  let startX = Math.max(rect_dst.x0, Math.floor((-rect_src.x0 / w_f) + rect_dst.x0))
-  let startY = Math.max(rect_dst.y0, Math.floor((-rect_src.y0 / h_f) + rect_dst.y0))
-
-  let endX = Math.min(rect_dst.x1, Math.ceil(((src.width - rect_src.x0) / w_f) + rect_dst.x0))
-  let endY = Math.min(rect_dst.y1, Math.ceil(((src.height - rect_src.y0) / h_f) + rect_dst.y0))
-
-  for (let x = startX; x < endX; x++) {
-    for (let y = startY; y < endY; y++) {
-      const src_x = rect_src.x0 + Math.floor((x - rect_dst.x0) * w_f)
-      const src_y = rect_src.y0 + Math.floor((y - rect_dst.y0) * h_f)
-      if (src.getPix(src_x, src_y, tmp)) {
-        if (tmp[3] === 255) {
-          dst.putPix(x, y, tmp)
-        }
-      }
-    }
-  }
-}
-
-function mapBitmapToBitmapCapped(
-  /** @type {Bitmap} */ src,
-  /** @type {BoundingRectangle} */ rect_src,
-  /** @type {Bitmap} */ dst,
-  /** @type {BoundingRectangle} */ rect_dst,
-  rects_cap
-) {
-  if (!rects_cap) {
-    return mapBitmapToBitmap(src, rect_src, dst, rect_dst)
-  }
-  const tmp = new Uint8ClampedArray(4)
-  const w_f = rect_src.width / rect_dst.width
-  const h_f = rect_src.height / rect_dst.height
-
-  for (let rect_cap of rects_cap) {
-    let startX = Math.floor(Math.max(rect_cap.x0, rect_dst.x0, (-rect_src.x0 / w_f) + rect_dst.x0))
-    let startY = Math.floor(Math.max(rect_cap.y0, rect_dst.y0, (-rect_src.y0 / h_f) + rect_dst.y0))
-
-    let endX = Math.ceil(Math.min(rect_cap.x1, rect_dst.x1, ((src.width - rect_src.x0) / w_f) + rect_dst.x0))
-    let endY = Math.ceil(Math.min(rect_cap.y1, rect_dst.y1, ((src.height - rect_src.y0) / h_f) + rect_dst.y0))
-
-    for (let x = startX; x < endX; x++) {
-      for (let y = startY; y < endY; y++) {
-        const src_x = rect_src.x0 + Math.floor((x - rect_dst.x0) * w_f)
-        const src_y = rect_src.y0 + Math.floor((y - rect_dst.y0) * h_f)
-        if (src.getPix(src_x, src_y, tmp)) {
-          if (tmp[3] === 255) {
-            dst.putPix(x, y, tmp)
-          }
-        }
-      }
-    }
-  }
-}
-
-function mapBitmapToAdapterCapped (
-  /** @type {Bitmap} */ src,
-  /** @type {BoundingRectangle} */ rect_src,
-  /** @type {CanvasAdapter} */ dst,
-  /** @type {BoundingRectangle} */ rect_dst,
-  rects_cap
-) {
-  if (!rects_cap) {
-    return mapBitmapToAdapter(src, rect_src, dst, rect_dst)
-  }
-  const tmp = new Uint8ClampedArray(4)
-  const w_f = rect_src.width / rect_dst.width
-  const h_f = rect_src.height / rect_dst.height
-
-  for (let rect_cap of rects_cap) {
-    let startX = Math.floor(Math.max(rect_cap.x0, rect_dst.x0, (-rect_src.x0 / w_f) + rect_dst.x0))
-    let startY = Math.floor(Math.max(rect_cap.y0, rect_dst.y0, (-rect_src.y0 / h_f) + rect_dst.y0))
-
-    let endX = Math.ceil(Math.min(rect_cap.x1, rect_dst.x1, ((src.width - rect_src.x0) / w_f) + rect_dst.x0))
-    let endY = Math.ceil(Math.min(rect_cap.y1, rect_dst.y1, ((src.height - rect_src.y0) / h_f) + rect_dst.y0))
-
-    for (let x = startX; x < endX; x++) {
-      for (let y = startY; y < endY; y++) {
-        const src_x = rect_src.x0 + Math.floor((x - rect_dst.x0) * w_f)
-        const src_y = rect_src.y0 + Math.floor((y - rect_dst.y0) * h_f)
-        if (src.getPix(src_x, src_y, tmp)) {
-          if (tmp[3] === 255) {
-            dst.putPix(x, y, tmp)
-          }
-        }
-      }
-    }
-  }
-}
-
-function mapBitmapToAdapter(
-  /** @type {Bitmap} */ src,
-  /** @type {BoundingRectangle} */ rect_src,
-  /** @type {CanvasAdapter} */ dst,
-  /** @type {BoundingRectangle} */ rect_dst
-) {
-  const tmp = new Uint8ClampedArray(4)
-  const w_f = rect_src.width / rect_dst.width
-  const h_f = rect_src.height / rect_dst.height
-
-  let startX = Math.max(rect_dst.x0, Math.floor((-rect_src.x0 / w_f) + rect_dst.x0))
-  let startY = Math.max(rect_dst.y0, Math.floor((-rect_src.y0 / h_f) + rect_dst.y0))
-
-  let endX = Math.min(rect_dst.x1, Math.ceil(((src.width - rect_src.x0) / w_f) + rect_dst.x0))
-  let endY = Math.min(rect_dst.y1, Math.ceil(((src.height - rect_src.y0) / h_f) + rect_dst.y0))
-
-  for (let x = startX; x < endX; x++) {
-    for (let y = startY; y < endY; y++) {
-      const src_x = rect_src.x0 + Math.floor((x - rect_dst.x0) * w_f)
-      const src_y = rect_src.y0 + Math.floor((y - rect_dst.y0) * h_f)
-      if (src.getPix(src_x, src_y, tmp)) {
-        if (tmp[3] === 255) {
-          dst.putPix(x, y, tmp)
-        }
-      }
-    }
-  }
-}
-
-function copy(src) {
-  var arr = new Uint8ClampedArray(src.length)
-  arr.set(new Uint8ClampedArray(src));
-  return arr
-}
-
-function dataToBitmap(w, h, data) {
-  const bitmap = new Bitmap(w, h)
-  bitmap._data = copy(data)
-  return bitmap
-}
-
-function canvasToBitmap(
-  /** @type {HTMLCanvasElement} */ c,
-  /** @type {CanvasRenderingContext2D} */ ctx
-) {
-  const data = ctx.getImageData(0, 0, c.width, c.height).data
-  return dataToBitmap(c.width, c.height, data)
-}
-
-function imageToBitmap(img) {
-  const c = createCanvas(img.width, img.height)
-  const ctx = c.getContext('2d')
-  ctx.drawImage(img, 0, 0)
-  return canvasToBitmap(c, ctx)
-}
-
-async function loadImageToBitmap(imagePath) {
-  console.log(imagePath)
-  const img = new Image()
-  await new Promise((resolve) => {
-    img.onload = resolve
-    img.src = imagePath
-  });
-  return imageToBitmap(img)
 }
 
 function pointInBounds(pt, rect) {
@@ -222,17 +21,6 @@ function pointInBounds(pt, rect) {
     && pt.x <= rect.x1
     && pt.y >= rect.y0
     && pt.y <= rect.y1
-}
-
-const resizeBitmap = (bitmap, width, height) => {
-  const tmp = new Bitmap(width, height)
-  mapBitmapToBitmap(
-    bitmap,
-    bitmap.getBoundingRect(),
-    tmp,
-    tmp.getBoundingRect()
-  )
-  return tmp
 }
 
 function getSurroundingTilesByIdx(puzzle, idx) {
@@ -314,7 +102,8 @@ async function createPuzzleTileBitmaps(bitmap, tiles, info) {
     const srcRect = srcRectByIdx(info, tile.idx)
     const path = pathForShape(info.shapes[tile.idx])
 
-    const c = createCanvas(tileDrawSize, tileDrawSize)
+
+    const c = Graphics.createCanvas(tileDrawSize, tileDrawSize)
     const ctx = c.getContext('2d')
     // -----------------------------------------------------------
     // -----------------------------------------------------------
@@ -338,7 +127,7 @@ async function createPuzzleTileBitmaps(bitmap, tiles, info) {
     ctx.stroke(path)
     ctx.restore();
 
-    const bitmap = canvasToBitmap(c, ctx)
+    const bitmap = Graphics.canvasToBitmap(c, ctx)
 
     bitmaps[tile.idx] = bitmap
   }
@@ -391,12 +180,12 @@ const unfinishedTileByPos = (puzzle, pos) => {
 
 async function loadPuzzleBitmaps(puzzle) {
   // load bitmap, to determine the original size of the image
-  const bmp = await loadImageToBitmap(puzzle.info.imageUrl)
+  const bmp = await Graphics.loadImageToBitmap(puzzle.info.imageUrl)
 
   // creation of tile bitmaps
   // then create the final puzzle bitmap
   // NOTE: this can decrease OR increase in size!
-  const bmpResized = resizeBitmap(bmp, puzzle.info.width, puzzle.info.height)
+  const bmpResized = Graphics.resizeBitmap(bmp, puzzle.info.width, puzzle.info.height)
   return await createPuzzleTileBitmaps(bmpResized, puzzle.tiles, puzzle.info)
 }
 
@@ -421,13 +210,11 @@ function setupNetwork(me) {
 }
 
 async function main () {
-
-  // todo: maybe put in protocols, same as `me()`
-  let gameId = GAME_ID // uniqId()
+  let gameId = GAME_ID
   let me = initme()
 
-  let cursorGrab = await loadImageToBitmap('/grab.png')
-  let cursorHand = await loadImageToBitmap('/hand.png')
+  let cursorGrab = await Graphics.loadImageToBitmap('/grab.png')
+  let cursorHand = await Graphics.loadImageToBitmap('/hand.png')
 
   let conn = setupNetwork(me + '|' + gameId)
   conn.send(JSON.stringify({ type: 'init' }))
@@ -508,7 +295,7 @@ async function main () {
     }
 
     // Create a dom and attach adapters to it so we can work with it
-    const canvas = addCanvasToDom(createCanvas())
+    const canvas = addCanvasToDom(Graphics.createCanvas())
     const adapter = new CanvasAdapter(canvas)
     const evts = new EventAdapter(canvas)
 
@@ -894,11 +681,11 @@ async function main () {
       // draw the puzzle table
       if (rerenderTable) {
 
-        fillBitmapCapped(puzzleTable, puzzleTableColor, rectTable.get())
+        Graphics.fillBitmapCapped(puzzleTable, puzzleTableColor, rectTable.get())
         checkpoint('after fill')
 
         // draw the puzzle board on the table
-        mapBitmapToBitmapCapped(board, board.getBoundingRect(), puzzleTable, new BoundingRectangle(
+        Graphics.mapBitmapToBitmapCapped(board, board.getBoundingRect(), puzzleTable, new BoundingRectangle(
           boardPos.x,
           boardPos.x + board.width - 1,
           boardPos.y,
@@ -916,7 +703,7 @@ async function main () {
             puzzle.info.tileDrawOffset + tile.pos.y + puzzle.info.tileDrawSize,
           )
           let bmp = bitmaps[tile.idx]
-          mapBitmapToBitmapCapped(
+          Graphics.mapBitmapToBitmapCapped(
             bmp,
             bmp.getBoundingRect(),
             puzzleTable,
@@ -937,7 +724,7 @@ async function main () {
 
         // TODO: improve the rendering
         // atm it is pretty slow (~40-50ms)
-        mapBitmapToAdapter(
+        Graphics.mapBitmapToAdapter(
           puzzleTable,
           viewport.rect(),
           adapter,
@@ -947,7 +734,7 @@ async function main () {
       } else if (rerenderPlayer) {
         adapter.clearRect(rectPlayer.get())
         checkpoint('afterclear_2')
-        mapBitmapToAdapterCapped(
+        Graphics.mapBitmapToAdapterCapped(
           puzzleTable,
           viewport.rect(),
           adapter,
@@ -962,7 +749,7 @@ async function main () {
           let p = players[id]
           let cursor = p.down ? cursorGrab : cursorHand
           let back = viewport.worldToViewport(p)
-          mapBitmapToAdapter(
+          Graphics.mapBitmapToAdapter(
             cursor,
             cursor.getBoundingRect(),
             adapter,
