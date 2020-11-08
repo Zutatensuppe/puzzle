@@ -710,7 +710,6 @@ async function main () {
         last_y = _last_mouse_down.y
       }
       for (let mouse of evts.consumeAll()) {
-
         if (mouse.type === 'move') {
           const tp = cam.translateMouse(mouse)
           changePlayer({ x: tp.x, y: tp.y })
@@ -718,42 +717,39 @@ async function main () {
             rectPlayer.add(_last_mouse, cursorGrab.width)
           }
           rectPlayer.add(mouse, cursorGrab.width)
-        }
 
-        if (mouse.type === 'down') {
-          changePlayer({ down: true })
-          rectPlayer.add(mouse, cursorGrab.width)
-        } else if (mouse.type === 'up') {
-          changePlayer({ down: false })
-          if (_last_mouse) {
-            rectPlayer.add(_last_mouse, cursorGrab.width)
-          }
-          rectPlayer.add(mouse, cursorGrab.width)
-        }
+          if (_last_mouse_down !== null) {
+            _last_mouse_down = mouse
 
-        if (mouse.type === 'wheel') {
-          if (mouse.deltaY < 0) {
-            if (cam.zoomIn()) {
-              rerender = true
-              const tp = cam.translateMouse(mouse)
-              changePlayer({ x: tp.x, y: tp.y })
-              if (_last_mouse) {
-                rectPlayer.add(_last_mouse, cursorGrab.width)
-              }
-              rectPlayer.add(mouse, cursorGrab.width)
+            if (last_x === null || last_y === null) {
+              last_x = mouse.x
+              last_y = mouse.y
             }
-          } else {
-            if (cam.zoomOut()) {
+
+            if (grabbingTileIdx >= 0) {
+              let tp = cam.translateMouse(mouse)
+              let tp_last = cam.translateMouse({ x: last_x, y: last_y })
+              const diffX = tp.x - tp_last.x
+              const diffY = tp.y - tp_last.y
+
+              let t = puzzle.tiles[grabbingTileIdx]
+              moveGroupedTilesDiff(t, diffX, diffY)
+
+              // todo: dont +- tileDrawSize, we can work with less?
+              rectTable.add(tp, puzzle.info.tileDrawSize)
+              rectTable.add(tp_last, puzzle.info.tileDrawSize)
+            } else {
+              // move the cam
+              const diffX = Math.round(mouse.x - last_x)
+              const diffY = Math.round(mouse.y - last_y)
+              cam.move(diffX, diffY)
               rerender = true
-              const tp = cam.translateMouse(mouse)
-              changePlayer({ x: tp.x, y: tp.y })
-              if (_last_mouse) {
-                rectPlayer.add(_last_mouse, cursorGrab.width)
-              }
-              rectPlayer.add(mouse, cursorGrab.width)
             }
           }
         } else if (mouse.type === 'down') {
+          changePlayer({ down: true })
+          rectPlayer.add(mouse, cursorGrab.width)
+
           _last_mouse_down = mouse
           if (last_x === null || last_y === null) {
             last_x = mouse.x
@@ -771,6 +767,12 @@ async function main () {
           console.log('down', tp)
 
         } else if (mouse.type === 'up') {
+          changePlayer({ down: false })
+          if (_last_mouse) {
+            rectPlayer.add(_last_mouse, cursorGrab.width)
+          }
+          rectPlayer.add(mouse, cursorGrab.width)
+
           _last_mouse_down = null
           last_x = null
           last_y === null
@@ -797,19 +799,9 @@ async function main () {
               rectTable.add(tp, puzzle.info.tileDrawSize)
             } else {
               // Snap to other tiles
-              let other
-              let snapped = false
-              let off
-              let offs = [
-                [0, 1],
-                [-1, 0],
-                [0, -1],
-                [1, 0],
-              ]
-
               const check = (t, off, other) => {
-                if (snapped || !other || (other.owner === -1) || areGrouped(t, other)) {
-                  return
+                if (!other || (other.owner === -1) || areGrouped(t, other)) {
+                  return false
                 }
                 let trec_ = tileRectByTile(t)
                 let otrec = tileRectByTile(other).moved(
@@ -817,40 +809,23 @@ async function main () {
                   off[1] * puzzle.info.tileSize
                 )
                 if (trec_.centerDistance(otrec) < puzzle.info.snapDistance) {
-                  console.log('yea top!')
                   moveGroupedTiles(t, { x: otrec.x0, y: otrec.y0 })
                   groupTiles(t, other)
                   setGroupedZIndex(t, t.z)
-                  snapped = true
-
                   rectTable.add(tileCenterPos(t), puzzle.info.tileDrawSize)
+                  return true
                 }
+                return false
               }
 
               for (let t of getGroupedTiles(tile)) {
                 let others = getSurroundingTilesByIdx(puzzle, t.idx)
-
-                // top
-                off = offs[0]
-                other = others[0]
-                check(t, off, other)
-
-                // right
-                off = offs[1]
-                other = others[1]
-                check(t, off, other)
-
-                // bottom
-                off = offs[2]
-                other = others[2]
-                check(t, off, other)
-
-                // left
-                off = offs[3]
-                other = others[3]
-                check(t, off, other)
-
-                if (snapped) {
+                if (
+                  check(t, [0, 1], others[0]) // top
+                  || check(t, [-1, 0], others[1]) // right
+                  || check(t, [0, -1], others[2]) // bottom
+                  || check(t, [1, 0], others[3]) // left
+                ) {
                   break
                 }
               }
@@ -858,32 +833,18 @@ async function main () {
           }
           grabbingTileIdx = -1
           console.log('up', cam.translateMouse(mouse))
-        } else if (_last_mouse_down !== null && mouse.type === 'move') {
-          _last_mouse_down = mouse
-
-          if (last_x === null || last_y === null) {
-            last_x = mouse.x
-            last_y = mouse.y
-          }
-
-          if (grabbingTileIdx >= 0) {
-            let tp = cam.translateMouse(mouse)
-            let tp_last = cam.translateMouse({ x: last_x, y: last_y })
-            const diffX = tp.x - tp_last.x
-            const diffY = tp.y - tp_last.y
-
-            let t = puzzle.tiles[grabbingTileIdx]
-            moveGroupedTilesDiff(t, diffX, diffY)
-
-            // todo: dont +- tileDrawSize, we can work with less?
-            rectTable.add(tp, puzzle.info.tileDrawSize)
-            rectTable.add(tp_last, puzzle.info.tileDrawSize)
-          } else {
-            const diffX = Math.round(mouse.x - last_x)
-            const diffY = Math.round(mouse.y - last_y)
-            // move the cam
-            cam.move(diffX, diffY)
+        } else if (mouse.type === 'wheel') {
+          if (
+            mouse.deltaY < 0 && cam.zoomIn()
+            || mouse.deltaY > 0 && cam.zoomOut()
+          ) {
             rerender = true
+            const tp = cam.translateMouse(mouse)
+            changePlayer({ x: tp.x, y: tp.y })
+            if (_last_mouse) {
+              rectPlayer.add(_last_mouse, cursorGrab.width)
+            }
+            rectPlayer.add(mouse, cursorGrab.width)
           }
         }
         // console.log(mouse)
