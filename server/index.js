@@ -58,9 +58,11 @@ app.use('/', (req, res, next) => {
 
 const wss = new WebSocketServer(config.ws);
 
-const notify = (data) => {
+const notify = (data, sockets) => {
   // TODO: throttle
-  wss.notifyAll(data)
+  for (let socket of sockets) {
+    wss.notifyOne(data, socket)
+  }
   console.log('notify', data)
 }
 
@@ -73,8 +75,14 @@ wss.on('message', async ({socket, data}) => {
     switch (parsed.type) {
       case 'init': {
         // a new player (or previous player) joined
-        games[gid] = games[gid] || {puzzle: await createPuzzle(TARGET_TILES, choice(IMAGES)), players: {}}
-
+        games[gid] = games[gid] || {
+          puzzle: await createPuzzle(TARGET_TILES, choice(IMAGES)),
+          players: {},
+          sockets: []
+        }
+        if (!games[gid].sockets.includes(socket)) {
+          games[gid].sockets.push(socket)
+        }
         games[gid].players[uid] = {id: uid, x: 0, y: 0, down: false}
 
         wss.notifyOne({
@@ -101,7 +109,11 @@ wss.on('message', async ({socket, data}) => {
             } break;
           }
         }
-        notify({type:'state_changed', origin: uid, changes: parsed.state.changes})
+        notify({
+          type:'state_changed',
+          origin: uid,
+          changes: parsed.state.changes,
+        }, games[gid].sockets)
       } break;
     }
   } catch (e) {
