@@ -56,17 +56,27 @@ export default class Camera {
         return false
     }
 
-    translateMouse(mouse) {
+    /**
+     * Translate a coordinate in the viewport to a
+     * coordinate in the world
+     * @param {x, y} coord
+     */
+    viewportToWorld(coord) {
         return {
-            x: (mouse.x / this.zoom) - this.x,
-            y: (mouse.y / this.zoom) - this.y,
+            x: (coord.x / this.zoom) - this.x,
+            y: (coord.y / this.zoom) - this.y,
         }
     }
 
-    translateMouseBack(mouse) {
+    /**
+     * Translate a coordinate in the world to a
+     * coordinate in the viewport
+     * @param {x, y} coord
+     */
+    worldToViewport(coord) {
         return {
-            x: (mouse.x + this.x) * this.zoom,
-            y: (mouse.y + this.y) * this.zoom,
+            x: (coord.x + this.x) * this.zoom,
+            y: (coord.y + this.y) * this.zoom,
         }
     }
 }

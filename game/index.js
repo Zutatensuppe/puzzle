@@ -519,7 +519,7 @@ async function main () {
 
     // initialize some view data
     // this global data will change according to input events
-    const cam = new Camera(canvas)
+    const viewport = new Camera(canvas)
 
     conn.onSocket('message', ({data}) => {
       const d = JSON.parse(data)
@@ -528,12 +528,12 @@ async function main () {
           switch (change.type) {
             case 'change_player': {
               if (players[change.player.id]) {
-                rectPlayer.add(cam.translateMouseBack(players[change.player.id]), cursorGrab.width)
+                rectPlayer.add(viewport.worldToViewport(players[change.player.id]), cursorGrab.width)
               }
 
               players[change.player.id] = change.player
 
-              rectPlayer.add(cam.translateMouseBack(players[change.player.id]), cursorGrab.width)
+              rectPlayer.add(viewport.worldToViewport(players[change.player.id]), cursorGrab.width)
             } break;
 
             case 'change_tile': {
@@ -710,8 +710,8 @@ async function main () {
         last_y = _last_mouse_down.y
       }
       for (let mouse of evts.consumeAll()) {
+        const tp = viewport.viewportToWorld(mouse)
         if (mouse.type === 'move') {
-          const tp = cam.translateMouse(mouse)
           changePlayer({ x: tp.x, y: tp.y })
           if (_last_mouse) {
             rectPlayer.add(_last_mouse, cursorGrab.width)
@@ -727,8 +727,7 @@ async function main () {
             }
 
             if (grabbingTileIdx >= 0) {
-              let tp = cam.translateMouse(mouse)
-              let tp_last = cam.translateMouse({ x: last_x, y: last_y })
+              let tp_last = viewport.viewportToWorld({ x: last_x, y: last_y })
               const diffX = tp.x - tp_last.x
               const diffY = tp.y - tp_last.y
 
@@ -742,7 +741,7 @@ async function main () {
               // move the cam
               const diffX = Math.round(mouse.x - last_x)
               const diffY = Math.round(mouse.y - last_y)
-              cam.move(diffX, diffY)
+              viewport.move(diffX, diffY)
               rerender = true
             }
           }
@@ -756,7 +755,6 @@ async function main () {
             last_y = mouse.y
           }
 
-          let tp = cam.translateMouse(mouse)
           grabbingTileIdx = unfinishedTileByPos(puzzle, tp)
           console.log(grabbingTileIdx)
           if (grabbingTileIdx >= 0) {
@@ -794,8 +792,6 @@ async function main () {
                 y: srcRect.y0 + boardPos.y,
               })
               finishGroupedTiles(tile)
-
-              let tp = cam.translateMouse(mouse)
               rectTable.add(tp, puzzle.info.tileDrawSize)
             } else {
               // Snap to other tiles
@@ -832,14 +828,13 @@ async function main () {
             }
           }
           grabbingTileIdx = -1
-          console.log('up', cam.translateMouse(mouse))
+          console.log('up', tp)
         } else if (mouse.type === 'wheel') {
           if (
-            mouse.deltaY < 0 && cam.zoomIn()
-            || mouse.deltaY > 0 && cam.zoomOut()
+            mouse.deltaY < 0 && viewport.zoomIn()
+            || mouse.deltaY > 0 && viewport.zoomOut()
           ) {
             rerender = true
-            const tp = cam.translateMouse(mouse)
             changePlayer({ x: tp.x, y: tp.y })
             if (_last_mouse) {
               rectPlayer.add(_last_mouse, cursorGrab.width)
@@ -949,7 +944,7 @@ async function main () {
         // atm it is pretty slow (~40-50ms)
         mapBitmapToAdapter(
           puzzleTable,
-          cam.rect(),
+          viewport.rect(),
           adapter,
           adapter.getBoundingRect()
         )
@@ -959,7 +954,7 @@ async function main () {
         checkpoint('afterclear_2')
         mapBitmapToAdapterCapped(
           puzzleTable,
-          cam.rect(),
+          viewport.rect(),
           adapter,
           adapter.getBoundingRect(),
           rectPlayer.get()
@@ -971,7 +966,7 @@ async function main () {
         for (let id of Object.keys(players)) {
           let p = players[id]
           let cursor = p.down ? cursorGrab : cursorHand
-          let back = cam.translateMouseBack(p)
+          let back = viewport.worldToViewport(p)
           mapBitmapToAdapter(
             cursor,
             cursor.getBoundingRect(),
