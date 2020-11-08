@@ -64,68 +64,68 @@ function fillBitmapCapped(bitmap, rgba, rects_cap) {
   }
 }
 
-function mapBitmapToBitmap (
+function mapBitmapToBitmap(
   /** @type {Bitmap} */src,
   /** @type {BoundingRectangle} */ rect_src,
   /** @type {Bitmap} */ dst,
   /** @type {BoundingRectangle} */ rect_dst
 ) {
-    const tmp = new Uint8ClampedArray(4)
-    const w_f = rect_src.width / rect_dst.width
-    const h_f = rect_src.height / rect_dst.height
+  const tmp = new Uint8ClampedArray(4)
+  const w_f = rect_src.width / rect_dst.width
+  const h_f = rect_src.height / rect_dst.height
 
-    let startX = Math.max(rect_dst.x0, Math.floor((-rect_src.x0 / w_f) + rect_dst.x0))
-    let startY = Math.max(rect_dst.y0, Math.floor((-rect_src.y0 / h_f) + rect_dst.y0))
+  let startX = Math.max(rect_dst.x0, Math.floor((-rect_src.x0 / w_f) + rect_dst.x0))
+  let startY = Math.max(rect_dst.y0, Math.floor((-rect_src.y0 / h_f) + rect_dst.y0))
 
-    let endX = Math.min(rect_dst.x1, Math.ceil(((src.width - rect_src.x0) / w_f) + rect_dst.x0))
-    let endY = Math.min(rect_dst.y1, Math.ceil(((src.height - rect_src.y0) / h_f) + rect_dst.y0))
+  let endX = Math.min(rect_dst.x1, Math.ceil(((src.width - rect_src.x0) / w_f) + rect_dst.x0))
+  let endY = Math.min(rect_dst.y1, Math.ceil(((src.height - rect_src.y0) / h_f) + rect_dst.y0))
 
-    for (let x = startX; x < endX; x++) {
-        for (let y = startY; y < endY; y++) {
-            const src_x = rect_src.x0 + Math.floor((x - rect_dst.x0) * w_f)
-            const src_y = rect_src.y0 + Math.floor((y - rect_dst.y0) * h_f)
-            if (src.getPix(src_x, src_y, tmp)) {
-                if (tmp[3] === 255) {
-                    dst.putPix(x, y, tmp)
-                }
-            }
+  for (let x = startX; x < endX; x++) {
+    for (let y = startY; y < endY; y++) {
+      const src_x = rect_src.x0 + Math.floor((x - rect_dst.x0) * w_f)
+      const src_y = rect_src.y0 + Math.floor((y - rect_dst.y0) * h_f)
+      if (src.getPix(src_x, src_y, tmp)) {
+        if (tmp[3] === 255) {
+          dst.putPix(x, y, tmp)
         }
+      }
     }
+  }
 }
 
-function mapBitmapToBitmapCapped (
+function mapBitmapToBitmapCapped(
   /** @type {Bitmap} */ src,
   /** @type {BoundingRectangle} */ rect_src,
   /** @type {Bitmap} */ dst,
   /** @type {BoundingRectangle} */ rect_dst,
   rects_cap
 ) {
-    if (!rects_cap) {
-        return mapBitmapToBitmap(src, rect_src, dst, rect_dst)
-    }
-    const tmp = new Uint8ClampedArray(4)
-    const w_f = rect_src.width / rect_dst.width
-    const h_f = rect_src.height / rect_dst.height
+  if (!rects_cap) {
+    return mapBitmapToBitmap(src, rect_src, dst, rect_dst)
+  }
+  const tmp = new Uint8ClampedArray(4)
+  const w_f = rect_src.width / rect_dst.width
+  const h_f = rect_src.height / rect_dst.height
 
-    for (let rect_cap of rects_cap) {
-      let startX = Math.floor(Math.max(rect_cap.x0, rect_dst.x0, (-rect_src.x0 / w_f) + rect_dst.x0))
-      let startY = Math.floor(Math.max(rect_cap.y0, rect_dst.y0, (-rect_src.y0 / h_f) + rect_dst.y0))
+  for (let rect_cap of rects_cap) {
+    let startX = Math.floor(Math.max(rect_cap.x0, rect_dst.x0, (-rect_src.x0 / w_f) + rect_dst.x0))
+    let startY = Math.floor(Math.max(rect_cap.y0, rect_dst.y0, (-rect_src.y0 / h_f) + rect_dst.y0))
 
-      let endX = Math.ceil(Math.min(rect_cap.x1, rect_dst.x1, ((src.width - rect_src.x0) / w_f) + rect_dst.x0))
-      let endY = Math.ceil(Math.min(rect_cap.y1, rect_dst.y1, ((src.height - rect_src.y0) / h_f) + rect_dst.y0))
+    let endX = Math.ceil(Math.min(rect_cap.x1, rect_dst.x1, ((src.width - rect_src.x0) / w_f) + rect_dst.x0))
+    let endY = Math.ceil(Math.min(rect_cap.y1, rect_dst.y1, ((src.height - rect_src.y0) / h_f) + rect_dst.y0))
 
-      for (let x = startX; x < endX; x++) {
-          for (let y = startY; y < endY; y++) {
-              const src_x = rect_src.x0 + Math.floor((x - rect_dst.x0) * w_f)
-              const src_y = rect_src.y0 + Math.floor((y - rect_dst.y0) * h_f)
-              if (src.getPix(src_x, src_y, tmp)) {
-                  if (tmp[3] === 255) {
-                      dst.putPix(x, y, tmp)
-                  }
-              }
+    for (let x = startX; x < endX; x++) {
+      for (let y = startY; y < endY; y++) {
+        const src_x = rect_src.x0 + Math.floor((x - rect_dst.x0) * w_f)
+        const src_y = rect_src.y0 + Math.floor((y - rect_dst.y0) * h_f)
+        if (src.getPix(src_x, src_y, tmp)) {
+          if (tmp[3] === 255) {
+            dst.putPix(x, y, tmp)
           }
+        }
       }
     }
+  }
 }
 
 function mapBitmapToAdapterCapped (
@@ -135,73 +135,73 @@ function mapBitmapToAdapterCapped (
   /** @type {BoundingRectangle} */ rect_dst,
   rects_cap
 ) {
-    if (!rects_cap) {
-        return mapBitmapToAdapter(src, rect_src, dst, rect_dst)
-    }
-    const tmp = new Uint8ClampedArray(4)
-    const w_f = rect_src.width / rect_dst.width
-    const h_f = rect_src.height / rect_dst.height
+  if (!rects_cap) {
+    return mapBitmapToAdapter(src, rect_src, dst, rect_dst)
+  }
+  const tmp = new Uint8ClampedArray(4)
+  const w_f = rect_src.width / rect_dst.width
+  const h_f = rect_src.height / rect_dst.height
 
-    for (let rect_cap of rects_cap) {
-      let startX = Math.floor(Math.max(rect_cap.x0, rect_dst.x0, (-rect_src.x0 / w_f) + rect_dst.x0))
-      let startY = Math.floor(Math.max(rect_cap.y0, rect_dst.y0, (-rect_src.y0 / h_f) + rect_dst.y0))
+  for (let rect_cap of rects_cap) {
+    let startX = Math.floor(Math.max(rect_cap.x0, rect_dst.x0, (-rect_src.x0 / w_f) + rect_dst.x0))
+    let startY = Math.floor(Math.max(rect_cap.y0, rect_dst.y0, (-rect_src.y0 / h_f) + rect_dst.y0))
 
-      let endX = Math.ceil(Math.min(rect_cap.x1, rect_dst.x1, ((src.width - rect_src.x0) / w_f) + rect_dst.x0))
-      let endY = Math.ceil(Math.min(rect_cap.y1, rect_dst.y1, ((src.height - rect_src.y0) / h_f) + rect_dst.y0))
+    let endX = Math.ceil(Math.min(rect_cap.x1, rect_dst.x1, ((src.width - rect_src.x0) / w_f) + rect_dst.x0))
+    let endY = Math.ceil(Math.min(rect_cap.y1, rect_dst.y1, ((src.height - rect_src.y0) / h_f) + rect_dst.y0))
 
-      for (let x = startX; x < endX; x++) {
-          for (let y = startY; y < endY; y++) {
-              const src_x = rect_src.x0 + Math.floor((x - rect_dst.x0) * w_f)
-              const src_y = rect_src.y0 + Math.floor((y - rect_dst.y0) * h_f)
-              if (src.getPix(src_x, src_y, tmp)) {
-                  if (tmp[3] === 255) {
-                      dst.putPix(x, y, tmp)
-                  }
-              }
+    for (let x = startX; x < endX; x++) {
+      for (let y = startY; y < endY; y++) {
+        const src_x = rect_src.x0 + Math.floor((x - rect_dst.x0) * w_f)
+        const src_y = rect_src.y0 + Math.floor((y - rect_dst.y0) * h_f)
+        if (src.getPix(src_x, src_y, tmp)) {
+          if (tmp[3] === 255) {
+            dst.putPix(x, y, tmp)
           }
+        }
       }
     }
+  }
 }
 
-function mapBitmapToAdapter (
+function mapBitmapToAdapter(
   /** @type {Bitmap} */ src,
   /** @type {BoundingRectangle} */ rect_src,
   /** @type {CanvasAdapter} */ dst,
   /** @type {BoundingRectangle} */ rect_dst
 ) {
-    const tmp = new Uint8ClampedArray(4)
-    const w_f = rect_src.width / rect_dst.width
-    const h_f = rect_src.height / rect_dst.height
+  const tmp = new Uint8ClampedArray(4)
+  const w_f = rect_src.width / rect_dst.width
+  const h_f = rect_src.height / rect_dst.height
 
-    let startX = Math.max(rect_dst.x0, Math.floor((-rect_src.x0 / w_f) + rect_dst.x0))
-    let startY = Math.max(rect_dst.y0, Math.floor((-rect_src.y0 / h_f) + rect_dst.y0))
+  let startX = Math.max(rect_dst.x0, Math.floor((-rect_src.x0 / w_f) + rect_dst.x0))
+  let startY = Math.max(rect_dst.y0, Math.floor((-rect_src.y0 / h_f) + rect_dst.y0))
 
-    let endX = Math.min(rect_dst.x1, Math.ceil(((src.width - rect_src.x0) / w_f) + rect_dst.x0))
-    let endY = Math.min(rect_dst.y1, Math.ceil(((src.height - rect_src.y0) / h_f) + rect_dst.y0))
+  let endX = Math.min(rect_dst.x1, Math.ceil(((src.width - rect_src.x0) / w_f) + rect_dst.x0))
+  let endY = Math.min(rect_dst.y1, Math.ceil(((src.height - rect_src.y0) / h_f) + rect_dst.y0))
 
-    for (let x = startX; x < endX; x++) {
-        for (let y = startY; y < endY; y++) {
-            const src_x = rect_src.x0 + Math.floor((x - rect_dst.x0) * w_f)
-            const src_y = rect_src.y0 + Math.floor((y - rect_dst.y0) * h_f)
-            if (src.getPix(src_x, src_y, tmp)) {
-                if (tmp[3] === 255) {
-                    dst.putPix(x, y, tmp)
-                }
-            }
+  for (let x = startX; x < endX; x++) {
+    for (let y = startY; y < endY; y++) {
+      const src_x = rect_src.x0 + Math.floor((x - rect_dst.x0) * w_f)
+      const src_y = rect_src.y0 + Math.floor((y - rect_dst.y0) * h_f)
+      if (src.getPix(src_x, src_y, tmp)) {
+        if (tmp[3] === 255) {
+          dst.putPix(x, y, tmp)
         }
+      }
     }
+  }
 }
 
 function copy(src) {
-    var arr = new Uint8ClampedArray(src.length)
-    arr.set(new Uint8ClampedArray(src));
-    return arr
+  var arr = new Uint8ClampedArray(src.length)
+  arr.set(new Uint8ClampedArray(src));
+  return arr
 }
 
 function dataToBitmap(w, h, data) {
-    const bitmap = new Bitmap(w, h)
-    bitmap._data = copy(data)
-    return bitmap
+  const bitmap = new Bitmap(w, h)
+  bitmap._data = copy(data)
+  return bitmap
 }
 
 function canvasToBitmap(
@@ -229,46 +229,46 @@ async function loadImageToBitmap(imagePath) {
 }
 
 function pointInBounds(pt, rect) {
-    return pt.x >= rect.x0
-      && pt.x <= rect.x1
-      && pt.y >= rect.y0
-      && pt.y <= rect.y1
+  return pt.x >= rect.x0
+    && pt.x <= rect.x1
+    && pt.y >= rect.y0
+    && pt.y <= rect.y1
 }
 
 const determinePuzzleInfo = (w, h, targetTiles) => {
-    let tileSize = 0
-    let tiles = 0
-    do {
-        tileSize++
-        tiles = tilesFit(w, h, tileSize)
-    } while (tiles >= targetTiles)
-    tileSize--
-
+  let tileSize = 0
+  let tiles = 0
+  do {
+    tileSize++
     tiles = tilesFit(w, h, tileSize)
-    const tiles_x = Math.round(w / tileSize)
-    const tiles_y = Math.round(h / tileSize)
-    tiles = tiles_x * tiles_y
+  } while (tiles >= targetTiles)
+  tileSize--
 
-    // then resize to final TILE_SIZE (which is always the same)
-    tileSize = TILE_SIZE
-    const width = tiles_x * tileSize
-    const height = tiles_y * tileSize
-    const coords = coordsByNum({width, height, tileSize, tiles})
+  tiles = tilesFit(w, h, tileSize)
+  const tiles_x = Math.round(w / tileSize)
+  const tiles_y = Math.round(h / tileSize)
+  tiles = tiles_x * tiles_y
 
-    const tileMarginWidth = tileSize * .5;
-    const tileDrawSize = Math.round(tileSize + tileMarginWidth*2)
+  // then resize to final TILE_SIZE (which is always the same)
+  tileSize = TILE_SIZE
+  const width = tiles_x * tileSize
+  const height = tiles_y * tileSize
+  const coords = coordsByNum({ width, height, tileSize, tiles })
 
-    return {
-      width,
-      height,
-      tileSize,
-      tileMarginWidth,
-      tileDrawSize,
-      tiles,
-      tiles_x,
-      tiles_y,
-      coords,
-    }
+  const tileMarginWidth = tileSize * .5;
+  const tileDrawSize = Math.round(tileSize + tileMarginWidth * 2)
+
+  return {
+    width,
+    height,
+    tileSize,
+    tileMarginWidth,
+    tileDrawSize,
+    tiles,
+    tiles_x,
+    tiles_y,
+    coords,
+  }
 }
 
 const tilesFit = (w, h, size) => Math.floor(w / size) * Math.floor(h / size)
@@ -285,157 +285,157 @@ const coordsByNum = (puzzleInfo) => {
 }
 
 const resizeBitmap = (bitmap, width, height) => {
-    const tmp = new Bitmap(width, height)
-    mapBitmapToBitmap(
-        bitmap,
-        bitmap.getBoundingRect(),
-        tmp,
-        tmp.getBoundingRect()
-    )
-    return tmp
+  const tmp = new Bitmap(width, height)
+  mapBitmapToBitmap(
+    bitmap,
+    bitmap.getBoundingRect(),
+    tmp,
+    tmp.getBoundingRect()
+  )
+  return tmp
 }
 
 function getSurroundingTilesByIdx(puzzle, idx) {
-    var _X = puzzle.info.coords[idx].x
-    var _Y = puzzle.info.coords[idx].y
+  var _X = puzzle.info.coords[idx].x
+  var _Y = puzzle.info.coords[idx].y
 
-    return [
-        // top
-        _Y === 0 ? null : puzzle.tiles[idx - puzzle.info.tiles_x],
-        // right
-        (_X === puzzle.info.tiles_x - 1) ? null : puzzle.tiles[idx + 1],
-        // bottom
-        (_Y === puzzle.info.tiles_y - 1) ? null : puzzle.tiles[idx + puzzle.info.tiles_x],
-        // left
-        _X === 0 ? null : puzzle.tiles[idx - 1]
-    ]
+  return [
+    // top
+    _Y === 0 ? null : puzzle.tiles[idx - puzzle.info.tiles_x],
+    // right
+    (_X === puzzle.info.tiles_x - 1) ? null : puzzle.tiles[idx + 1],
+    // bottom
+    (_Y === puzzle.info.tiles_y - 1) ? null : puzzle.tiles[idx + puzzle.info.tiles_x],
+    // left
+    _X === 0 ? null : puzzle.tiles[idx - 1]
+  ]
 }
 
-function determinePuzzleTileShapes (info) {
-    const tabs = [-1, 1]
+function determinePuzzleTileShapes(info) {
+  const tabs = [-1, 1]
 
-    const shapes = new Array(info.tiles)
-    for (let i = 0; i < info.tiles; i++) {
-        shapes[i] = {
-            top: info.coords[i].y === 0 ? 0 : shapes[i - info.tiles_x].bottom * -1,
-            right: info.coords[i].x === info.tiles_x -1 ? 0 : choice(tabs),
-            left: info.coords[i].x === 0 ? 0 : shapes[i - 1].right * -1,
-            bottom: info.coords[i].y === info.tiles_y -1 ? 0 : choice(tabs),
-        }
+  const shapes = new Array(info.tiles)
+  for (let i = 0; i < info.tiles; i++) {
+    shapes[i] = {
+      top: info.coords[i].y === 0 ? 0 : shapes[i - info.tiles_x].bottom * -1,
+      right: info.coords[i].x === info.tiles_x - 1 ? 0 : choice(tabs),
+      left: info.coords[i].x === 0 ? 0 : shapes[i - 1].right * -1,
+      bottom: info.coords[i].y === info.tiles_y - 1 ? 0 : choice(tabs),
     }
-    return shapes
+  }
+  return shapes
 }
 
-async function createPuzzleTileBitmaps (bitmap, tiles, info) {
-    let img = await bitmap.toImage()
-    var tileSize = info.tileSize
-    var tileMarginWidth = info.tileMarginWidth
-    var tileDrawSize = info.tileDrawSize
-    var tileRatio = tileSize / 100.0
+async function createPuzzleTileBitmaps(bitmap, tiles, info) {
+  let img = await bitmap.toImage()
+  var tileSize = info.tileSize
+  var tileMarginWidth = info.tileMarginWidth
+  var tileDrawSize = info.tileDrawSize
+  var tileRatio = tileSize / 100.0
 
-    var curvyCoords = [
-        0, 0, 40, 15, 37, 5,
-        37, 5, 40, 0, 38, -5,
-        38, -5, 20, -20, 50, -20,
-        50, -20, 80, -20, 62, -5,
-        62, -5, 60, 0, 63, 5,
-        63, 5, 65, 15, 100, 0
-    ];
+  var curvyCoords = [
+    0, 0, 40, 15, 37, 5,
+    37, 5, 40, 0, 38, -5,
+    38, -5, 20, -20, 50, -20,
+    50, -20, 80, -20, 62, -5,
+    62, -5, 60, 0, 63, 5,
+    63, 5, 65, 15, 100, 0
+  ];
 
-    const bitmaps = new Array(tiles.length)
+  const bitmaps = new Array(tiles.length)
 
-    const paths = {}
-    function pathForShape(shape) {
-      const key = `${shape.top}${shape.right}${shape.left}${shape.bottom}`
-      if (paths[key]) {
-        return paths[key]
-      }
-
-      const path = new Path2D()
-      const topLeftEdge = { x: tileMarginWidth, y: tileMarginWidth }
-      path.moveTo(topLeftEdge.x, topLeftEdge.y)
-      for (let i = 0; i < curvyCoords.length / 6; i++) {
-        const p1 = pointAdd(topLeftEdge, { x: curvyCoords[i * 6 + 0] * tileRatio, y: shape.top * curvyCoords[i * 6 + 1] * tileRatio })
-        const p2 = pointAdd(topLeftEdge, { x: curvyCoords[i * 6 + 2] * tileRatio, y: shape.top * curvyCoords[i * 6 + 3] * tileRatio })
-        const p3 = pointAdd(topLeftEdge, { x: curvyCoords[i * 6 + 4] * tileRatio, y: shape.top * curvyCoords[i * 6 + 5] * tileRatio })
-        path.bezierCurveTo(p1.x, p1.y, p2.x, p2.y, p3.x, p3.y);
-      }
-      const topRightEdge = pointAdd(topLeftEdge, { x: tileSize, y: 0 })
-      for (let i = 0; i < curvyCoords.length / 6; i++) {
-        const p1 = pointAdd(topRightEdge, { x: -shape.right * curvyCoords[i * 6 + 1] * tileRatio, y: curvyCoords[i * 6 + 0] * tileRatio })
-        const p2 = pointAdd(topRightEdge, { x: -shape.right * curvyCoords[i * 6 + 3] * tileRatio, y: curvyCoords[i * 6 + 2] * tileRatio })
-        const p3 = pointAdd(topRightEdge, { x: -shape.right * curvyCoords[i * 6 + 5] * tileRatio, y: curvyCoords[i * 6 + 4] * tileRatio })
-        path.bezierCurveTo(p1.x, p1.y, p2.x, p2.y, p3.x, p3.y);
-      }
-      //Bottom
-      const bottomRightEdge = pointAdd(topRightEdge, { x: 0, y: tileSize })
-      for (let i = 0; i < curvyCoords.length / 6; i++) {
-        let p1 = pointSub(bottomRightEdge, { x: curvyCoords[i * 6 + 0] * tileRatio, y: shape.bottom * curvyCoords[i * 6 + 1] * tileRatio })
-        let p2 = pointSub(bottomRightEdge, { x: curvyCoords[i * 6 + 2] * tileRatio, y: shape.bottom * curvyCoords[i * 6 + 3] * tileRatio })
-        let p3 = pointSub(bottomRightEdge, { x: curvyCoords[i * 6 + 4] * tileRatio, y: shape.bottom * curvyCoords[i * 6 + 5] * tileRatio })
-        path.bezierCurveTo(p1.x, p1.y, p2.x, p2.y, p3.x, p3.y);
-      }
-      //Left
-      const bottomLeftEdge = pointSub(bottomRightEdge, { x: tileSize, y: 0 })
-      for (let i = 0; i < curvyCoords.length / 6; i++) {
-        let p1 = pointSub(bottomLeftEdge, { x: -shape.left * curvyCoords[i * 6 + 1] * tileRatio, y: curvyCoords[i * 6 + 0] * tileRatio })
-        let p2 = pointSub(bottomLeftEdge, { x: -shape.left * curvyCoords[i * 6 + 3] * tileRatio, y: curvyCoords[i * 6 + 2] * tileRatio })
-        let p3 = pointSub(bottomLeftEdge, { x: -shape.left * curvyCoords[i * 6 + 5] * tileRatio, y: curvyCoords[i * 6 + 4] * tileRatio })
-        path.bezierCurveTo(p1.x, p1.y, p2.x, p2.y, p3.x, p3.y);
-      }
-      paths[key] = path
-      return path
+  const paths = {}
+  function pathForShape(shape) {
+    const key = `${shape.top}${shape.right}${shape.left}${shape.bottom}`
+    if (paths[key]) {
+      return paths[key]
     }
 
-    for (let tile of tiles) {
-      const srcRect = srcRectByIdx(info, tile.idx)
-      const path = pathForShape(info.shapes[tile.idx])
-
-      const c = createCanvas(tileDrawSize, tileDrawSize)
-      const ctx = c.getContext('2d')
-      // -----------------------------------------------------------
-      // -----------------------------------------------------------
-      ctx.lineWidth = 2
-      ctx.stroke(path)
-      // -----------------------------------------------------------
-      // -----------------------------------------------------------
-      ctx.save();
-      ctx.clip(path)
-      ctx.drawImage(
-          img,
-          srcRect.x0 - tileMarginWidth,
-          srcRect.y0 - tileMarginWidth,
-          tileDrawSize,
-          tileDrawSize,
-          0,
-          0,
-          tileDrawSize,
-          tileDrawSize,
-      )
-      ctx.stroke(path)
-      ctx.restore();
-
-      const bitmap = canvasToBitmap(c, ctx)
-
-      bitmaps[tile.idx] = bitmap
+    const path = new Path2D()
+    const topLeftEdge = { x: tileMarginWidth, y: tileMarginWidth }
+    path.moveTo(topLeftEdge.x, topLeftEdge.y)
+    for (let i = 0; i < curvyCoords.length / 6; i++) {
+      const p1 = pointAdd(topLeftEdge, { x: curvyCoords[i * 6 + 0] * tileRatio, y: shape.top * curvyCoords[i * 6 + 1] * tileRatio })
+      const p2 = pointAdd(topLeftEdge, { x: curvyCoords[i * 6 + 2] * tileRatio, y: shape.top * curvyCoords[i * 6 + 3] * tileRatio })
+      const p3 = pointAdd(topLeftEdge, { x: curvyCoords[i * 6 + 4] * tileRatio, y: shape.top * curvyCoords[i * 6 + 5] * tileRatio })
+      path.bezierCurveTo(p1.x, p1.y, p2.x, p2.y, p3.x, p3.y);
     }
+    const topRightEdge = pointAdd(topLeftEdge, { x: tileSize, y: 0 })
+    for (let i = 0; i < curvyCoords.length / 6; i++) {
+      const p1 = pointAdd(topRightEdge, { x: -shape.right * curvyCoords[i * 6 + 1] * tileRatio, y: curvyCoords[i * 6 + 0] * tileRatio })
+      const p2 = pointAdd(topRightEdge, { x: -shape.right * curvyCoords[i * 6 + 3] * tileRatio, y: curvyCoords[i * 6 + 2] * tileRatio })
+      const p3 = pointAdd(topRightEdge, { x: -shape.right * curvyCoords[i * 6 + 5] * tileRatio, y: curvyCoords[i * 6 + 4] * tileRatio })
+      path.bezierCurveTo(p1.x, p1.y, p2.x, p2.y, p3.x, p3.y);
+    }
+    //Bottom
+    const bottomRightEdge = pointAdd(topRightEdge, { x: 0, y: tileSize })
+    for (let i = 0; i < curvyCoords.length / 6; i++) {
+      let p1 = pointSub(bottomRightEdge, { x: curvyCoords[i * 6 + 0] * tileRatio, y: shape.bottom * curvyCoords[i * 6 + 1] * tileRatio })
+      let p2 = pointSub(bottomRightEdge, { x: curvyCoords[i * 6 + 2] * tileRatio, y: shape.bottom * curvyCoords[i * 6 + 3] * tileRatio })
+      let p3 = pointSub(bottomRightEdge, { x: curvyCoords[i * 6 + 4] * tileRatio, y: shape.bottom * curvyCoords[i * 6 + 5] * tileRatio })
+      path.bezierCurveTo(p1.x, p1.y, p2.x, p2.y, p3.x, p3.y);
+    }
+    //Left
+    const bottomLeftEdge = pointSub(bottomRightEdge, { x: tileSize, y: 0 })
+    for (let i = 0; i < curvyCoords.length / 6; i++) {
+      let p1 = pointSub(bottomLeftEdge, { x: -shape.left * curvyCoords[i * 6 + 1] * tileRatio, y: curvyCoords[i * 6 + 0] * tileRatio })
+      let p2 = pointSub(bottomLeftEdge, { x: -shape.left * curvyCoords[i * 6 + 3] * tileRatio, y: curvyCoords[i * 6 + 2] * tileRatio })
+      let p3 = pointSub(bottomLeftEdge, { x: -shape.left * curvyCoords[i * 6 + 5] * tileRatio, y: curvyCoords[i * 6 + 4] * tileRatio })
+      path.bezierCurveTo(p1.x, p1.y, p2.x, p2.y, p3.x, p3.y);
+    }
+    paths[key] = path
+    return path
+  }
 
-    return bitmaps
-}
+  for (let tile of tiles) {
+    const srcRect = srcRectByIdx(info, tile.idx)
+    const path = pathForShape(info.shapes[tile.idx])
 
-function srcRectByIdx (puzzleInfo, idx) {
-    let c = puzzleInfo.coords[idx]
-    let cx = c.x * puzzleInfo.tileSize
-    let cy = c.y * puzzleInfo.tileSize
-    return new BoundingRectangle(
-        cx,
-        cx + puzzleInfo.tileSize,
-        cy,
-        cy + puzzleInfo.tileSize
+    const c = createCanvas(tileDrawSize, tileDrawSize)
+    const ctx = c.getContext('2d')
+    // -----------------------------------------------------------
+    // -----------------------------------------------------------
+    ctx.lineWidth = 2
+    ctx.stroke(path)
+    // -----------------------------------------------------------
+    // -----------------------------------------------------------
+    ctx.save();
+    ctx.clip(path)
+    ctx.drawImage(
+      img,
+      srcRect.x0 - tileMarginWidth,
+      srcRect.y0 - tileMarginWidth,
+      tileDrawSize,
+      tileDrawSize,
+      0,
+      0,
+      tileDrawSize,
+      tileDrawSize,
     )
+    ctx.stroke(path)
+    ctx.restore();
+
+    const bitmap = canvasToBitmap(c, ctx)
+
+    bitmaps[tile.idx] = bitmap
+  }
+
+  return bitmaps
 }
 
-const pointSub = (a, b) => ({x: a.x - b.x, y: a.y - b.y})
+function srcRectByIdx(puzzleInfo, idx) {
+  let c = puzzleInfo.coords[idx]
+  let cx = c.x * puzzleInfo.tileSize
+  let cy = c.y * puzzleInfo.tileSize
+  return new BoundingRectangle(
+    cx,
+    cx + puzzleInfo.tileSize,
+    cy,
+    cy + puzzleInfo.tileSize
+  )
+}
+
+const pointSub = (a, b) => ({ x: a.x - b.x, y: a.y - b.y })
 
 const pointAdd = (a, b) => ({x: a.x + b.x, y: a.y + b.y})
 
