@@ -1,5 +1,5 @@
 import sizeOf from 'image-size'
-import { choice } from './util.js'
+import { choice, shuffle } from './util.js'
 
 // cut size of each puzzle tile in the
 // final resized version of the puzzle image
@@ -23,28 +23,77 @@ async function createPuzzle(targetTiles, image) {
   }
   const shapes = determinePuzzleTileShapes(info)
 
+  let positions = new Array(info.tiles)
+  for (let tile of tiles) {
+    positions[tile.idx] ={
+      // instead of info.tileSize, we use info.tileDrawSize
+      // to spread the tiles a bit
+      x: (info.coords[tile.idx].x) * (info.tileSize * 1.5),
+      y: (info.coords[tile.idx].y) * (info.tileSize * 1.5),
+    }
+  }
+
+  let tableWidth = info.width * 3
+  let tableHeight = info.height * 3
+
+  let off = (info.tileSize * 1.5)
+  let last = {x: info.width - (1 * off), y: info.height - (2 * off) }
+  let count_x = Math.ceil(info.width / off) + 2
+  let count_y = Math.ceil(info.height / off) + 2
+
+  let diff_x = off
+  let diff_y = 0
+  let index = 0
+  for (let pos of positions) {
+    pos.x = last.x
+    pos.y = last.y
+    last.x+=diff_x
+    last.y+=diff_y
+    index++
+    // did we move horizontally?
+    if (diff_x !== 0) {
+      if (index === count_x) {
+        diff_y = diff_x
+        count_y ++
+        diff_x = 0
+        index = 0
+      }
+    } else {
+      if (index === count_y) {
+        diff_x = -diff_y
+        count_x ++
+        diff_y = 0
+        index = 0
+      }
+    }
+  }
+
+  // then shuffle the positions
+  positions = shuffle(positions)
+
+  tiles = tiles.map(tile => {
+    return {
+      idx: tile.idx, // index of tile in the array
+      group: 0, // if grouped with other tiles
+      z: 0, // z index of the tile
+
+      // who owns the tile
+      // 0 = free for taking
+      // -1 = finished
+      // other values: id of player who has the tile
+      owner: 0,
+
+      // physical current position of the tile (x/y in pixels)
+      // this position is the initial position only and is the
+      // value that changes when moving a tile
+      pos: positions[tile.idx],
+    }
+  })
+
   // Complete puzzle object
   const p = {
     // tiles array
-    tiles: tiles.map(tile => {
-      return {
-        idx: tile.idx, // index of tile in the array
-        group: 0, // if grouped with other tiles
-        z: 0, // z index of the tile
-        owner: 0, // who owns the tile
-        // 0 = free for taking
-        // -1 = finished
-        // other values: id of player who has the tile
-        // physical current position of the tile (x/y in pixels)
-        // this position is the initial position only and is the
-        // value that changes when moving a tile
-        // TODO: scatter the tiles on the table at the beginning
-        pos: {
-          x: info.coords[tile.idx].x * info.tileSize,
-          y: info.coords[tile.idx].y * info.tileSize,
-        },
-      }
-    }),
+    tiles,
     // game data for puzzle, data changes during the game
     data: {
       // TODO: maybe calculate this each time?
@@ -54,6 +103,10 @@ async function createPuzzle(targetTiles, image) {
     // static puzzle information. stays same for complete duration of
     // the game
     info: {
+      table: {
+        width: tableWidth,
+        height: tableHeight,
+      },
       // information that was used to create the puzzle
       targetTiles: targetTiles,
       imageUrl: imgUrl,

@@ -557,16 +557,16 @@ async function main () {
     // The actual place for the puzzle. The tiles may
     // not be moved around infinitely, just on the (invisible)
     // puzzle table. however, the camera may move away from the table
-    const puzzleTableColor = [200, 0, 0, 255]
+    const puzzleTableColor = [40, 40, 40, 0]
     const puzzleTable = new Bitmap(
-      puzzle.info.width * 2,
-      puzzle.info.height * 2,
+      puzzle.info.table.width,
+      puzzle.info.table.height,
       puzzleTableColor
     )
 
     // In the middle of the table, there is a board. this is to
     // tell the player where to place the final puzzle
-    const boardColor = [0, 150, 0, 255]
+    const boardColor = [80, 80, 80, 255]
     const board = new Bitmap(
       puzzle.info.width,
       puzzle.info.height,

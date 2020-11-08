@@ -7,7 +7,7 @@ import { uniqId, choice } from './util.js'
 
 // desired number of tiles
 // actual calculated number can be higher
-const TARGET_TILES = 1000
+const TARGET_TILES = 500
 
 const IMAGES = [
   '/example-images/ima_86ec3fa.jpeg',
@@ -55,7 +55,6 @@ app.use('/', (req, res, next) => {
     statics(req, res, next)
   }
 })
-app.listen(port, hostname, () => console.log(`server running on http://${hostname}:${port}`))
 
 const wss = new WebSocketServer(config.ws);
 
@@ -109,4 +108,6 @@ wss.on('message', async ({socket, data}) => {
     console.error(e)
   }
 })
+
+app.listen(port, hostname, () => console.log(`server running on http://${hostname}:${port}`))
 wss.listen()
