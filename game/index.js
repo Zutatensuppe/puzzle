@@ -447,8 +447,6 @@ async function main () {
   }
   let _STATE_CHANGED = false
 
-  // this must be fetched from server
-
   class renderRect {
     constructor() {
       this.reset()
@@ -457,7 +455,6 @@ async function main () {
       return this.x0 === null ? null : [
         {x0: this.x0, x1: this.x1, y0: this.y0, y1: this.y1}
       ]
-      // return this._rects.length === 0 ? null : this._rects
     }
     add (pos, offset) {
       const x0 = pos.x - offset
@@ -468,10 +465,8 @@ async function main () {
       this.x1 = this.x1 === null ? x1 : Math.max(this.x1, x1)
       this.y0 = this.y0 === null ? y0 : Math.min(this.y0, y0)
       this.y1 = this.y1 === null ? y1 : Math.max(this.y1, y1)
-      // this._rects.push({ x0, x1, y0, y1 })
     }
     reset () {
-      // this._rects = []
       this.x0 = null
       this.x1 = null
       this.y0 = null
