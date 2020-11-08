@@ -7,6 +7,7 @@ import Camera from './Camera.js'
 import EventAdapter from './EventAdapter.js'
 import WsClient from './WsClient.js'
 
+if (!GAME_ID) throw '[ GAME_ID not set ]'
 if (!WS_ADDRESS) throw '[ WS_ADDRESS not set ]'
 
 function createCanvas(width = 0, height = 0) {
@@ -207,6 +208,7 @@ function imageToBitmap(img) {
 }
 
 async function loadImageToBitmap(imagePath) {
+  console.log(imagePath)
   const img = new Image()
   await new Promise((resolve) => {
     img.onload = resolve
@@ -421,11 +423,11 @@ function setupNetwork(me) {
 async function main () {
 
   // todo: maybe put in protocols, same as `me()`
-  let gameId = 'asdfbla' // uniqId()
+  let gameId = GAME_ID // uniqId()
   let me = initme()
 
-  let cursorGrab = await loadImageToBitmap('./grab.png')
-  let cursorHand = await loadImageToBitmap('./hand.png')
+  let cursorGrab = await loadImageToBitmap('/grab.png')
+  let cursorHand = await loadImageToBitmap('/hand.png')
 
   let conn = setupNetwork(me + '|' + gameId)
   conn.send(JSON.stringify({ type: 'init' }))
@@ -926,7 +928,8 @@ async function main () {
     // if it improves performance:
     //   1. background
     //   2. tiles
-    //   3. players
+    //   3. (moving tiles)
+    //   4. (players)
     // (currently, if a player moves, everthing needs to be
     //  rerendered at that position manually, maybe it is faster
     //  when using layers)

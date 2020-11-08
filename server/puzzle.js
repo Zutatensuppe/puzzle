@@ -6,10 +6,11 @@ import { choice } from './util.js'
 const TILE_SIZE = 64
 
 async function createPuzzle(targetTiles, image) {
-  const imgFile = './../game' + image
-  const imgUrl = './' + image
+  const imgPath = './../game' + image
+  const imgUrl = image
+
   // load bitmap, to determine the original size of the image
-  let dim = sizeOf(imgFile)
+  let dim = sizeOf(imgPath)
 
   // determine puzzle information from the bitmap
   let info = determinePuzzleInfo(dim.width, dim.height, targetTiles)

@@ -1,4 +1,7 @@
 
+// get a unique id
+export const uniqId = () => Date.now().toString(36) + Math.random().toString(36).substring(2)
+
 // get a random int between min and max (inclusive)
 export const randomInt = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min
 
@@ -19,7 +22,8 @@ export const shuffle = (array) => {
 }
 
 export default {
-    randomInt,
-    choice,
-    shuffle,
+  uniqId,
+  randomInt,
+  choice,
+  shuffle,
 }

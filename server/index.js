@@ -3,6 +3,7 @@ import WebSocketServer from './WebSocketServer.js'
 import express from 'express'
 import { createPuzzle } from './puzzle.js'
 import config from './config.js'
+import { uniqId, choice } from './util.js'
 
 // desired number of tiles
 // actual calculated number can be higher
@@ -14,7 +15,6 @@ const IMAGES = [
   '/example-images/saechsische_schweiz.jpg',
   '/example-images/132-2048x1365.jpg',
 ]
-const IMAGE_URL = IMAGES[0]
 
 const games = {}
 
@@ -22,16 +22,32 @@ const port = config.http.port
 const hostname = config.http.hostname
 const app = express()
 const statics = express.static('./../game/')
+app.use('/g/:gid', (req, res, next) => {
+  res.send(`
+    <html><head><style>
+    html,body {margin: 0; overflow: hidden;}
+    html, body, #main { background: #222 }
+    canvas {cursor: none;}
+    </style></head><body>
+    <script>window.GAME_ID = '${req.params.gid}'</script>
+    <script>window.WS_ADDRESS = '${config.ws.connectstring}'</script>
+    <script src="/index.js" type="module"></script>
+    </body>
+    </html>
+  `)
+})
+
 app.use('/', (req, res, next) => {
   if (req.path === '/') {
     res.send(`
       <html><head><style>
       html,body {margin: 0; overflow: hidden;}
       html, body, #main { background: #222 }
-      canvas {cursor: none;}
       </style></head><body>
-      <script>window.WS_ADDRESS = '${config.ws.connectstring}'</script>
-      <script src="index.js" type="module"></script>
+      <a href="/g/${uniqId()}">New game :P</a>
+      ${Object.keys(games).map(k => {
+        return `<a href="/g/${k}">Game ${k}</a>`
+      })}
       </body>
       </html>
     `)
@@ -58,7 +74,7 @@ wss.on('message', async ({socket, data}) => {
     switch (parsed.type) {
       case 'init': {
         // a new player (or previous player) joined
-        games[gid] = games[gid] || {puzzle: await createPuzzle(TARGET_TILES, IMAGE_URL), players: {}}
+        games[gid] = games[gid] || {puzzle: await createPuzzle(TARGET_TILES, choice(IMAGES)), players: {}}
 
         games[gid].players[uid] = {id: uid, x: 0, y: 0, down: false}
 
