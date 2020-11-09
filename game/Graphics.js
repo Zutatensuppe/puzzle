@@ -212,6 +212,16 @@ function mapBitmapToAdapter(
   }
 }
 
+function drawBitmap(adapter, bitmap, pos) {
+  const rect = bitmap.getBoundingRect()
+  mapBitmapToAdapter(
+    bitmap,
+    rect,
+    adapter,
+    rect.moved(pos.x, pos.y)
+  )
+}
+
 export default {
   createCanvas,
   dataToBitmap,
@@ -225,4 +235,5 @@ export default {
   fillBitmapCapped,
   mapBitmapToAdapter,
   mapBitmapToAdapterCapped,
+  drawBitmap,
 }

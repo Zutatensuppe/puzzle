@@ -5,7 +5,6 @@ import Bitmap from './Bitmap.js'
 import {run} from './gameloop.js'
 import Camera from './Camera.js'
 import EventAdapter from './EventAdapter.js'
-import WsClient from './WsClient.js'
 import Graphics from './Graphics.js'
 import Debug from './Debug.js'
 import Communication from './Communication.js'
@@ -635,12 +634,18 @@ async function main () {
       if (DEBUG) Debug.checkpoint('after fill')
 
       // draw the puzzle board on the table
-      Graphics.mapBitmapToBitmapCapped(board, board.getBoundingRect(), puzzleTable, new BoundingRectangle(
-        boardPos.x,
-        boardPos.x + board.width - 1,
-        boardPos.y,
-        boardPos.y + board.height - 1,
-      ), rectTable.get())
+      Graphics.mapBitmapToBitmapCapped(
+        board,
+        board.getBoundingRect(),
+        puzzleTable,
+        new BoundingRectangle(
+          boardPos.x,
+          boardPos.x + board.width - 1,
+          boardPos.y,
+          boardPos.y + board.height - 1,
+        ),
+        rectTable.get()
+      )
 
       if (DEBUG) Debug.checkpoint('imgtoimg')
 
@@ -704,20 +709,10 @@ async function main () {
 
     if (rerenderPlayer) {
       for (let id of Object.keys(players)) {
-        let p = players[id]
-        let cursor = p.down ? cursorGrab : cursorHand
-        let back = viewport.worldToViewport(p)
-        Graphics.mapBitmapToAdapter(
-          cursor,
-          cursor.getBoundingRect(),
-          adapter,
-          new BoundingRectangle(
-            back.x - (cursor.width / 2),
-            back.x - (cursor.width / 2) + cursor.width - 1,
-            back.y - (cursor.width / 2),
-            back.y - (cursor.width / 2) + cursor.height - 1,
-          )
-        )
+        const p = players[id]
+        const cursor = p.down ? cursorGrab : cursorHand
+        const pos = viewport.worldToViewport(p)
+        Graphics.drawBitmap(adapter, cursor, pos)
       }
 
       if (DEBUG) Debug.checkpoint('after_players')
