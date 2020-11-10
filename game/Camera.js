@@ -1,5 +1,3 @@
-import BoundingRectangle from "./BoundingRectangle.js"
-
 export default class Camera {
     constructor(canvas) {
         this.x = 0
@@ -17,12 +15,12 @@ export default class Camera {
     }
 
     rect() {
-      return new BoundingRectangle(
-        - this.x,
-        - this.x + (this.width / this.zoom),
-        - this.y,
-        - this.y + (this.height / this.zoom),
-      )
+      return {
+        x: -this.x,
+        y: -this.y,
+        w: this.width / this.zoom,
+        h: this.height / this.zoom,
+      }
     }
 
     move(x, y) {
@@ -77,6 +75,13 @@ export default class Camera {
         return {
             x: (coord.x + this.x) * this.zoom,
             y: (coord.y + this.y) * this.zoom,
+        }
+    }
+
+    worldDimToViewport(dim) {
+        return {
+            w: dim.w * this.zoom,
+            h: dim.h * this.zoom,
         }
     }
 }

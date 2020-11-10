@@ -19,9 +19,4 @@ export default class Point {
             this.y - other.y
         )
     }
-    distance(other) {
-        const diffX = this.x - other.x
-        const diffY = this.y - other.y
-        return Math.sqrt(diffX * diffX + diffY * diffY)
-    }
 }

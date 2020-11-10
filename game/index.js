@@ -1,7 +1,4 @@
 "use strict"
-import CanvasAdapter from './CanvasAdapter.js'
-import BoundingRectangle from './BoundingRectangle.js'
-import Bitmap from './Bitmap.js'
 import {run} from './gameloop.js'
 import Camera from './Camera.js'
 import EventAdapter from './EventAdapter.js'
@@ -12,18 +9,44 @@ import Communication from './Communication.js'
 if (typeof GAME_ID === 'undefined') throw '[ GAME_ID not set ]'
 if (typeof WS_ADDRESS === 'undefined') throw '[ WS_ADDRESS not set ]'
 
-if (typeof DEBUG === 'undefined') window.DEBUG = false
+if (typeof DEBUG === 'undefined') window.DEBUG = true
 
 function addCanvasToDom(canvas) {
     document.body.append(canvas)
     return canvas
 }
 
+function pointDistance(a, b) {
+  const diffX = a.x - b.x
+  const diffY = a.y - b.y
+  return Math.sqrt(diffX * diffX + diffY * diffY)
+}
+
+function rectMoved(rect, x, y) {
+  return {
+    x: rect.x + x,
+    y: rect.y + y,
+    w: rect.w,
+    h: rect.h,
+  }
+}
+
+const rectCenter = (rect) => {
+  return {
+    x: rect.x + (rect.w / 2),
+    y: rect.y + (rect.h / 2),
+  }
+}
+
+function rectCenterDistance(a, b) {
+  return pointDistance(rectCenter(a), rectCenter(b))
+}
+
 function pointInBounds(pt, rect) {
-  return pt.x >= rect.x0
-    && pt.x <= rect.x1
-    && pt.y >= rect.y0
-    && pt.y <= rect.y1
+  return pt.x >= rect.x
+    && pt.x <= rect.x + rect.w
+    && pt.y >= rect.y
+    && pt.y <= rect.y + rect.h
 }
 
 function getSurroundingTilesByIdx(puzzle, idx) {
@@ -42,8 +65,7 @@ function getSurroundingTilesByIdx(puzzle, idx) {
   ]
 }
 
-async function createPuzzleTileBitmaps(bitmap, tiles, info) {
-  let img = await bitmap.toImage()
+async function createPuzzleTileBitmaps(img, tiles, info) {
   var tileSize = info.tileSize
   var tileMarginWidth = info.tileMarginWidth
   var tileDrawSize = info.tileDrawSize
@@ -105,7 +127,6 @@ async function createPuzzleTileBitmaps(bitmap, tiles, info) {
     const srcRect = srcRectByIdx(info, tile.idx)
     const path = pathForShape(info.shapes[tile.idx])
 
-
     const c = Graphics.createCanvas(tileDrawSize, tileDrawSize)
     const ctx = c.getContext('2d')
     // -----------------------------------------------------------
@@ -118,8 +139,8 @@ async function createPuzzleTileBitmaps(bitmap, tiles, info) {
     ctx.clip(path)
     ctx.drawImage(
       img,
-      srcRect.x0 - tileMarginWidth,
-      srcRect.y0 - tileMarginWidth,
+      srcRect.x - tileMarginWidth,
+      srcRect.y - tileMarginWidth,
       tileDrawSize,
       tileDrawSize,
       0,
@@ -130,9 +151,7 @@ async function createPuzzleTileBitmaps(bitmap, tiles, info) {
     ctx.stroke(path)
     ctx.restore();
 
-    const bitmap = Graphics.canvasToBitmap(c, ctx)
-
-    bitmaps[tile.idx] = bitmap
+    bitmaps[tile.idx] = await createImageBitmap(c)
   }
 
   return bitmaps
@@ -142,12 +161,12 @@ function srcRectByIdx(puzzleInfo, idx) {
   let c = puzzleInfo.coords[idx]
   let cx = c.x * puzzleInfo.tileSize
   let cy = c.y * puzzleInfo.tileSize
-  return new BoundingRectangle(
-    cx,
-    cx + puzzleInfo.tileSize,
-    cy,
-    cy + puzzleInfo.tileSize
-  )
+  return {
+    x: cx,
+    y: cy,
+    w: puzzleInfo.tileSize,
+    h: puzzleInfo.tileSize,
+  }
 }
 
 const pointSub = (a, b) => ({ x: a.x - b.x, y: a.y - b.y })
@@ -165,12 +184,12 @@ const unfinishedTileByPos = (puzzle, pos) => {
       continue
     }
 
-    const collisionRect = new BoundingRectangle(
-      tile.pos.x,
-      tile.pos.x + puzzle.info.tileSize - 1,
-      tile.pos.y,
-      tile.pos.y + puzzle.info.tileSize - 1,
-    )
+    const collisionRect = {
+      x: tile.pos.x,
+      y: tile.pos.y,
+      w: puzzle.info.tileSize,
+      h: puzzle.info.tileSize,
+    }
     if (pointInBounds(pos, collisionRect)) {
       if (maxZ === -1 || tile.z > maxZ) {
         maxZ = tile.z
@@ -215,7 +234,7 @@ async function loadPuzzleBitmaps(puzzle) {
   // creation of tile bitmaps
   // then create the final puzzle bitmap
   // NOTE: this can decrease OR increase in size!
-  const bmpResized = Graphics.resizeBitmap(bmp, puzzle.info.width, puzzle.info.height)
+  const bmpResized = await Graphics.resizeBitmap(bmp, puzzle.info.width, puzzle.info.height)
   return await createPuzzleTileBitmaps(bmpResized, puzzle.tiles, puzzle.info)
 }
 
@@ -274,7 +293,7 @@ async function main () {
 
   // Create a dom and attach adapters to it so we can work with it
   const canvas = addCanvasToDom(Graphics.createCanvas())
-  const adapter = new CanvasAdapter(canvas)
+  const ctx = canvas.getContext('2d')
   const evts = new EventAdapter(canvas)
 
   // initialize some view data
@@ -314,8 +333,8 @@ async function main () {
   // The actual place for the puzzle. The tiles may
   // not be moved around infinitely, just on the (invisible)
   // puzzle table. however, the camera may move away from the table
-  const puzzleTableColor = [40, 40, 40, 0]
-  const puzzleTable = new Bitmap(
+  const puzzleTableColor = '#222'
+  const puzzleTable = await Graphics.createBitmap(
     puzzle.info.table.width,
     puzzle.info.table.height,
     puzzleTableColor
@@ -323,8 +342,8 @@ async function main () {
 
   // In the middle of the table, there is a board. this is to
   // tell the player where to place the final puzzle
-  const boardColor = [80, 80, 80, 255]
-  const board = new Bitmap(
+  const boardColor = '#505050'
+  const board = await Graphics.createBitmap(
     puzzle.info.width,
     puzzle.info.height,
     boardColor
@@ -391,18 +410,19 @@ async function main () {
 
   // get the center position of a tile
   const tileCenterPos = (tile) => {
-    return tileRectByTile(tile).center()
+
+    return rectCenter(tileRectByTile(tile))
   }
 
   // get the would-be visible bounding rect if a tile was
   // in given position
   const tileRectByPos = (pos) => {
-    return new BoundingRectangle(
-      pos.x,
-      pos.x + puzzle.info.tileSize,
-      pos.y,
-      pos.y + puzzle.info.tileSize
-    )
+    return {
+      x: pos.x,
+      y: pos.y,
+      w: puzzle.info.tileSize,
+      h: puzzle.info.tileSize,
+    }
   }
 
   // get the current visible bounding rect for a tile
@@ -540,11 +560,11 @@ async function main () {
           let pt = pointSub(tile.pos, boardPos)
           let dst = tileRectByPos(pt)
           let srcRect = srcRectByIdx(puzzle.info, grabbingTileIdx)
-          if (srcRect.centerDistance(dst) < puzzle.info.snapDistance) {
+          if (rectCenterDistance(srcRect, dst) < puzzle.info.snapDistance) {
             // Snap the tile to the final destination
             moveGroupedTiles(tile, {
-              x: srcRect.x0 + boardPos.x,
-              y: srcRect.y0 + boardPos.y,
+              x: srcRect.x + boardPos.x,
+              y: srcRect.y + boardPos.y,
             })
             finishGroupedTiles(tile)
             rectTable.add(tp, puzzle.info.tileDrawSize)
@@ -554,13 +574,14 @@ async function main () {
               if (!other || (other.owner === -1) || areGrouped(t, other)) {
                 return false
               }
-              let trec_ = tileRectByTile(t)
-              let otrec = tileRectByTile(other).moved(
+              const trec_ = tileRectByTile(t)
+              const otrec = rectMoved(
+                tileRectByTile(other),
                 off[0] * puzzle.info.tileSize,
                 off[1] * puzzle.info.tileSize
               )
-              if (trec_.centerDistance(otrec) < puzzle.info.snapDistance) {
-                moveGroupedTiles(t, { x: otrec.x0, y: otrec.y0 })
+              if (rectCenterDistance(trec_, otrec) < puzzle.info.snapDistance) {
+                moveGroupedTiles(t, { x: otrec.x, y: otrec.y })
                 groupTiles(t, other)
                 setGroupedZIndex(t, t.z)
                 rectTable.add(tileCenterPos(t), puzzle.info.tileDrawSize)
@@ -614,7 +635,7 @@ async function main () {
   // if it improves performance:
   //   1. background
   //   2. tiles
-  //   3. (moving tiles)
+  //   3. (moving tiles
   //   4. (players)
   // (currently, if a player moves, everthing needs to be
   //  rerendered at that position manually, maybe it is faster
@@ -624,103 +645,57 @@ async function main () {
       return
     }
 
-    if (DEBUG) Debug.checkpoint_start(20)
+    let pos
+    let dim
 
-    // draw the puzzle table
-    if (rerenderTable) {
+    if (DEBUG) Debug.checkpoint_start(0)
 
-      Graphics.fillBitmapCapped(puzzleTable, puzzleTableColor, rectTable.get())
+    ctx.fillStyle = puzzleTableColor
+    ctx.fillRect(0, 0, canvas.width, canvas.height)
+    if (DEBUG) Debug.checkpoint('clear done')
 
-      if (DEBUG) Debug.checkpoint('after fill')
+    // DRAW BOARD
+    // ---------------------------------------------------------------
+    pos = viewport.worldToViewport(boardPos)
+    dim = viewport.worldDimToViewport({w: board.width, h: board.height})
+    ctx.drawImage(board,
+      0, 0, board.width, board.height,
+      pos.x, pos.y, dim.w, dim.h
+    )
+    if (DEBUG) Debug.checkpoint('board done')
 
-      // draw the puzzle board on the table
-      Graphics.mapBitmapToBitmapCapped(
-        board,
-        board.getBoundingRect(),
-        puzzleTable,
-        new BoundingRectangle(
-          boardPos.x,
-          boardPos.x + board.width - 1,
-          boardPos.y,
-          boardPos.y + board.height - 1,
-        ),
-        rectTable.get()
+    // DRAW TILES
+    // ---------------------------------------------------------------
+    for (let tile of tilesSortedByZIndex()) {
+      let bmp = bitmaps[tile.idx]
+      pos = viewport.worldToViewport({
+        x: puzzle.info.tileDrawOffset + tile.pos.x,
+        y: puzzle.info.tileDrawOffset + tile.pos.y,
+      })
+      dim = viewport.worldDimToViewport({
+        w: puzzle.info.tileDrawSize,
+        h: puzzle.info.tileDrawSize,
+      })
+      ctx.drawImage(bmp,
+        0, 0, bmp.width, bmp.height,
+        pos.x, pos.y, dim.w, dim.h
       )
-
-      if (DEBUG) Debug.checkpoint('imgtoimg')
-
-      // draw all the tiles on the table
-
-      for (let tile of tilesSortedByZIndex()) {
-        let rect = new BoundingRectangle(
-          puzzle.info.tileDrawOffset + tile.pos.x,
-          puzzle.info.tileDrawOffset + tile.pos.x + puzzle.info.tileDrawSize,
-          puzzle.info.tileDrawOffset + tile.pos.y,
-          puzzle.info.tileDrawOffset + tile.pos.y + puzzle.info.tileDrawSize,
-        )
-        let bmp = bitmaps[tile.idx]
-        Graphics.mapBitmapToBitmapCapped(
-          bmp,
-          bmp.getBoundingRect(),
-          puzzleTable,
-          rect,
-          rectTable.get()
-        )
-      }
-
-      if (DEBUG) Debug.checkpoint('tiles')
     }
+    if (DEBUG) Debug.checkpoint('tiles done')
 
-    if (rerenderTable || rerender) {
-      // finally draw the finished table onto the canvas
-      // only part of the table may be visible, depending on the
-      // camera
-      adapter.clear()
-      adapter.apply()
-
-      if (DEBUG) Debug.checkpoint('afterclear_1')
-
-      // TODO: improve the rendering
-      // atm it is pretty slow (~40-50ms)
-      Graphics.mapBitmapToAdapter(
-        puzzleTable,
-        viewport.rect(),
-        adapter,
-        adapter.getBoundingRect()
-      )
-
-      if (DEBUG) Debug.checkpoint('to_adapter_1')
-
-    } else if (rerenderPlayer) {
-      adapter.clearRect(rectPlayer.get())
-
-      if (DEBUG) Debug.checkpoint('afterclear_2')
-
-      Graphics.mapBitmapToAdapterCapped(
-        puzzleTable,
-        viewport.rect(),
-        adapter,
-        adapter.getBoundingRect(),
-        rectPlayer.get()
-      )
-
-      if (DEBUG) Debug.checkpoint('to_adapter_2')
+    // DRAW PLAYERS
+    // ---------------------------------------------------------------
+    for (let id of Object.keys(players)) {
+      const p = players[id]
+      const cursor = p.down ? cursorGrab : cursorHand
+      const pos = viewport.worldToViewport(p)
+      ctx.drawImage(cursor, pos.x, pos.y)
     }
+    //
+    if (DEBUG) Debug.checkpoint('players done')
 
-    if (rerenderPlayer) {
-      for (let id of Object.keys(players)) {
-        const p = players[id]
-        const cursor = p.down ? cursorGrab : cursorHand
-        const pos = viewport.worldToViewport(p)
-        Graphics.drawBitmap(adapter, cursor, pos)
-      }
 
-      if (DEBUG) Debug.checkpoint('after_players')
-    }
-
-    adapter.apply()
-
-    if (DEBUG) Debug.checkpoint('finals')
+    if (DEBUG) Debug.checkpoint('all done')
 
     rerenderTable = false
     rerenderPlayer = false
