@@ -9,7 +9,7 @@ import Communication from './Communication.js'
 if (typeof GAME_ID === 'undefined') throw '[ GAME_ID not set ]'
 if (typeof WS_ADDRESS === 'undefined') throw '[ WS_ADDRESS not set ]'
 
-if (typeof DEBUG === 'undefined') window.DEBUG = true
+if (typeof DEBUG === 'undefined') window.DEBUG = false
 
 function addCanvasToDom(canvas) {
     document.body.append(canvas)
@@ -630,16 +630,6 @@ async function main () {
     Communication.sendChanges()
   }
 
-  // TODO:
-  // try out layered rendering and see
-  // if it improves performance:
-  //   1. background
-  //   2. tiles
-  //   3. (moving tiles
-  //   4. (players)
-  // (currently, if a player moves, everthing needs to be
-  //  rerendered at that position manually, maybe it is faster
-  //  when using layers)
   const onRender = () => {
     if (!rerenderTable && !rerenderPlayer && !rerender) {
       return
