@@ -6,6 +6,7 @@ import Graphics from './Graphics.js'
 import Debug from './Debug.js'
 import Communication from './Communication.js'
 import Geometry from './../common/Geometry.js'
+import Util from './../common/Util.js'
 
 if (typeof GAME_ID === 'undefined') throw '[ GAME_ID not set ]'
 if (typeof WS_ADDRESS === 'undefined') throw '[ WS_ADDRESS not set ]'
@@ -132,15 +133,11 @@ async function loadPuzzleBitmaps(puzzle) {
   return await createPuzzleTileBitmaps(bmpResized, puzzle.tiles, puzzle.info)
 }
 
-function uniqId() {
-  return Date.now().toString(36) + Math.random().toString(36).substring(2)
-}
-
 function initme() {
   // return uniqId()
   let ID = localStorage.getItem("ID")
   if (!ID) {
-    ID = uniqId()
+    ID = Util.uniqId()
     localStorage.setItem("ID", ID)
   }
   return ID

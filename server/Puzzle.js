@@ -1,5 +1,5 @@
 import sizeOf from 'image-size'
-import { choice, shuffle } from './util.js'
+import Util from './../common/Util.js'
 
 // cut size of each puzzle tile in the
 // final resized version of the puzzle image
@@ -69,7 +69,7 @@ async function createPuzzle(targetTiles, image) {
   }
 
   // then shuffle the positions
-  positions = shuffle(positions)
+  positions = Util.shuffle(positions)
 
   tiles = tiles.map(tile => {
     return {
@@ -143,9 +143,9 @@ function determinePuzzleTileShapes(info) {
   for (let i = 0; i < info.tiles; i++) {
     shapes[i] = {
       top: info.coords[i].y === 0 ? 0 : shapes[i - info.tiles_x].bottom * -1,
-      right: info.coords[i].x === info.tiles_x - 1 ? 0 : choice(tabs),
+      right: info.coords[i].x === info.tiles_x - 1 ? 0 : Util.choice(tabs),
       left: info.coords[i].x === 0 ? 0 : shapes[i - 1].right * -1,
-      bottom: info.coords[i].y === info.tiles_y - 1 ? 0 : choice(tabs),
+      bottom: info.coords[i].y === info.tiles_y - 1 ? 0 : Util.choice(tabs),
     }
   }
   return shapes

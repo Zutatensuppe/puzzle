@@ -2,7 +2,7 @@ import WebSocketServer from './WebSocketServer.js'
 
 import express from 'express'
 import config from './config.js'
-import { uniqId, choice } from './util.js'
+import Util from './../common/Util.js'
 import Game from './Game.js'
 
 const EV_SERVER_STATE_CHANGED = 1
@@ -50,7 +50,7 @@ app.use('/', (req, res, next) => {
       html,body {margin: 0; overflow: hidden;}
       html, body, #main { background: #222 }
       </style></head><body>
-      <a href="/g/${uniqId()}">New game :P</a>
+      <a href="/g/${Util.uniqId()}">New game :P</a>
       ${Object.keys(games).map(k => {
         return `<a href="/g/${k}">Game ${k}</a>`
       })}
@@ -81,7 +81,7 @@ wss.on('message', async ({socket, data}) => {
     switch (type) {
       case EV_CLIENT_INIT: {
         if (!Game.exists(gameId)) {
-          await Game.createGame(gameId, TARGET_TILES, choice(IMAGES))
+          await Game.createGame(gameId, TARGET_TILES, Util.choice(IMAGES))
         }
         Game.addPlayer(gameId, playerId)
         Game.addSocket(gameId, socket)
