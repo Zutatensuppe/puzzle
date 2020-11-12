@@ -179,13 +179,6 @@ const setTilesOwner = (gameId, tileIdxs, owner) => {
   }
 }
 
-function pointInBounds(pt, rect) {
-  return pt.x >= rect.x
-    && pt.x <= rect.x + rect.w
-    && pt.y >= rect.y
-    && pt.y <= rect.y + rect.h
-}
-
 // get all grouped tiles for a tile
 function getGroupedTileIdxs(gameId, tileIdx) {
   const tiles = GAMES[gameId].puzzle.tiles
@@ -224,7 +217,7 @@ const freeTileIdxByPos = (gameId, pos) => {
       w: info.tileSize,
       h: info.tileSize,
     }
-    if (pointInBounds(pos, collisionRect)) {
+    if (Geometry.pointInBounds(pos, collisionRect)) {
       if (maxZ === -1 || tile.z > maxZ) {
         maxZ = tile.z
         tileIdx = idx
