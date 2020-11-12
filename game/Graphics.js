@@ -1,5 +1,3 @@
-// import Bitmap from './Bitmap.js'
-
 function createCanvas(width = 0, height = 0) {
     const c = document.createElement('canvas')
     c.width = width === 0 ? window.innerWidth : width

@@ -1,5 +1,10 @@
 import WsClient from './WsClient.js'
 
+const EV_SERVER_STATE_CHANGED = 1
+const EV_SERVER_INIT = 4
+const EV_CLIENT_MOUSE = 2
+const EV_CLIENT_INIT = 3
+
 let conn
 let changesCallback = () => {}
 
@@ -11,39 +16,26 @@ function connect(gameId, playerId) {
   conn = new WsClient(WS_ADDRESS, playerId + '|' + gameId)
   return new Promise(r => {
     conn.connect()
-    conn.send(JSON.stringify({ type: 'init' }))
+    conn.send(JSON.stringify([EV_CLIENT_INIT]))
     conn.onSocket('message', async ({ data }) => {
-      const d = JSON.parse(data)
-      if (d.type === 'init') {
-        r(d.game)
-      } else if (d.type === 'state_changed' && d.origin !== playerId) {
-        changesCallback(d.changes)
+      const [type, typeData] = JSON.parse(data)
+      if (type === EV_SERVER_INIT) {
+        const game = typeData
+        r(game)
+      } else if (type === EV_SERVER_STATE_CHANGED) {
+        const changes = typeData
+        changesCallback(changes)
       }
     })
   })
 }
 
-const _STATE = {
-  changed: false,
-  changes: [],
-}
-
-function addChange(change) {
-  _STATE.changes.push(change)
-  _STATE.changed = true
-}
-
-function sendChanges() {
-  if (_STATE.changed) {
-    conn.send(JSON.stringify({ type: 'state', state: _STATE }))
-    _STATE.changes = []
-    _STATE.changed = false
-  }
+function addMouse(mouse) {
+    conn.send(JSON.stringify([EV_CLIENT_MOUSE, mouse]))
 }
 
 export default {
   connect,
   onChanges,
-  addChange,
-  sendChanges,
+  addMouse,
 }

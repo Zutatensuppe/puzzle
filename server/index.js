@@ -1,13 +1,18 @@
 import WebSocketServer from './WebSocketServer.js'
 
 import express from 'express'
-import { createPuzzle } from './puzzle.js'
 import config from './config.js'
 import { uniqId, choice } from './util.js'
+import Game from './Game.js'
+
+const EV_SERVER_STATE_CHANGED = 1
+const EV_SERVER_INIT = 4
+const EV_CLIENT_MOUSE = 2
+const EV_CLIENT_INIT = 3
 
 // desired number of tiles
 // actual calculated number can be higher
-const TARGET_TILES = 500
+const TARGET_TILES = 1000
 
 const IMAGES = [
   '/example-images/ima_86ec3fa.jpeg',
@@ -37,6 +42,7 @@ app.use('/g/:gid', (req, res, next) => {
   `)
 })
 
+app.use('/common/', express.static('./../common/'))
 app.use('/', (req, res, next) => {
   if (req.path === '/') {
     res.send(`
@@ -63,57 +69,31 @@ const notify = (data, sockets) => {
   for (let socket of sockets) {
     wss.notifyOne(data, socket)
   }
-  console.log('notify', data)
+  // console.log('notify', data)
 }
 
 wss.on('message', async ({socket, data}) => {
   try {
     const proto = socket.protocol.split('|')
-    const uid = proto[0]
-    const gid = proto[1]
-    const parsed = JSON.parse(data)
-    switch (parsed.type) {
-      case 'init': {
-        // a new player (or previous player) joined
-        games[gid] = games[gid] || {
-          puzzle: await createPuzzle(TARGET_TILES, choice(IMAGES)),
-          players: {},
-          sockets: []
+    const playerId = proto[0]
+    const gameId = proto[1]
+    const [type, typeData] = JSON.parse(data)
+    switch (type) {
+      case EV_CLIENT_INIT: {
+        if (!Game.exists(gameId)) {
+          await Game.createGame(gameId, TARGET_TILES, choice(IMAGES))
         }
-        if (!games[gid].sockets.includes(socket)) {
-          games[gid].sockets.push(socket)
-        }
-        games[gid].players[uid] = {id: uid, x: 0, y: 0, down: false}
+        Game.addPlayer(gameId, playerId)
+        Game.addSocket(gameId, socket)
 
-        wss.notifyOne({
-          type: 'init',
-          game: {
-            puzzle: games[gid].puzzle,
-            players: games[gid].players,
-          },
-        }, socket)
+        wss.notifyOne([EV_SERVER_INIT, Game.get(gameId)], socket)
       } break;
 
-      // somebody has changed the state
-      case 'state': {
-        for (let change of parsed.state.changes) {
-          switch (change.type) {
-            case 'change_player': {
-              games[gid].players[uid] = change.player
-            } break;
-            case 'change_tile': {
-              games[gid].puzzle.tiles[change.tile.idx] = change.tile
-            } break;
-            case 'change_data': {
-              games[gid].puzzle.data = change.data
-            } break;
-          }
+      case EV_CLIENT_MOUSE: {
+        const changes = Game.handleInput(gameId, playerId, typeData)
+        if (changes.length > 0) {
+          notify([EV_SERVER_STATE_CHANGED, changes], Game.getSockets(gameId))
         }
-        notify({
-          type:'state_changed',
-          origin: uid,
-          changes: parsed.state.changes,
-        }, games[gid].sockets)
       } break;
     }
   } catch (e) {

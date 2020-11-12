@@ -201,5 +201,5 @@ const coordsByNum = (puzzleInfo) => {
 }
 
 export {
-  createPuzzle
+  createPuzzle,
 }
