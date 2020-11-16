@@ -6,20 +6,18 @@ import Util from './../common/Util.js'
 const TILE_SIZE = 64
 
 async function createPuzzle(targetTiles, image) {
-  const imgPath = './../game' + image
-  const imgUrl = image
+  const imagePath = './../game' + image
+  const imageUrl = image
 
   // load bitmap, to determine the original size of the image
-  let dim = sizeOf(imgPath)
+  const dim = sizeOf(imagePath)
 
   // determine puzzle information from the bitmap
-  let info = determinePuzzleInfo(dim.width, dim.height, targetTiles)
+  const info = determinePuzzleInfo(dim.width, dim.height, targetTiles)
 
   let tiles = new Array(info.tiles)
   for (let i = 0; i < tiles.length; i++) {
-    tiles[i] = {
-      idx: i,
-    }
+    tiles[i] = { idx: i }
   }
   const shapes = determinePuzzleTileShapes(info)
 
@@ -33,36 +31,39 @@ async function createPuzzle(targetTiles, image) {
     }
   }
 
-  let tableWidth = info.width * 3
-  let tableHeight = info.height * 3
+  const tableWidth = info.width * 3
+  const tableHeight = info.height * 3
 
-  let off = (info.tileSize * 1.5)
-  let last = {x: info.width - (1 * off), y: info.height - (2 * off) }
-  let count_x = Math.ceil(info.width / off) + 2
-  let count_y = Math.ceil(info.height / off) + 2
+  const off = info.tileSize * 1.5
+  let last = {
+    x: info.width - (1 * off),
+    y: info.height - (2 * off),
+  }
+  let countX = Math.ceil(info.width / off) + 2
+  let countY = Math.ceil(info.height / off) + 2
 
-  let diff_x = off
-  let diff_y = 0
+  let diffX = off
+  let diffY = 0
   let index = 0
   for (let pos of positions) {
     pos.x = last.x
     pos.y = last.y
-    last.x+=diff_x
-    last.y+=diff_y
+    last.x+=diffX
+    last.y+=diffY
     index++
     // did we move horizontally?
-    if (diff_x !== 0) {
-      if (index === count_x) {
-        diff_y = diff_x
-        count_y ++
-        diff_x = 0
+    if (diffX !== 0) {
+      if (index === countX) {
+        diffY = diffX
+        countY++
+        diffX = 0
         index = 0
       }
     } else {
-      if (index === count_y) {
-        diff_x = -diff_y
-        count_x ++
-        diff_y = 0
+      if (index === countY) {
+        diffX = -diffY
+        countX++
+        diffY = 0
         index = 0
       }
     }
@@ -91,7 +92,7 @@ async function createPuzzle(targetTiles, image) {
   })
 
   // Complete puzzle object
-  const p = {
+  return {
     // tiles array
     tiles,
     // game data for puzzle, data changes during the game
@@ -109,7 +110,7 @@ async function createPuzzle(targetTiles, image) {
       },
       // information that was used to create the puzzle
       targetTiles: targetTiles,
-      imageUrl: imgUrl,
+      imageUrl,
 
       width: info.width, // actual puzzle width (same as bitmap.width)
       height: info.height, // actual puzzle height (same as bitmap.height)
@@ -122,8 +123,8 @@ async function createPuzzle(targetTiles, image) {
       // makes the tile snap to destination
       snapDistance: info.tileSize / 2,
       tiles: info.tiles, // the final number of tiles in the puzzle
-      tiles_x: info.tiles_x, // number of tiles each row
-      tiles_y: info.tiles_y, // number of tiles each col
+      tilesX: info.tilesX, // number of tiles each row
+      tilesY: info.tilesY, // number of tiles each col
       coords: info.coords, // map of tile index to its coordinates
       // ( index => {x, y} )
       // this is not the physical coordinate, but
@@ -133,7 +134,6 @@ async function createPuzzle(targetTiles, image) {
       shapes: shapes, // tile shapes
     },
   }
-  return p
 }
 
 function determinePuzzleTileShapes(info) {
@@ -142,34 +142,38 @@ function determinePuzzleTileShapes(info) {
   const shapes = new Array(info.tiles)
   for (let i = 0; i < info.tiles; i++) {
     shapes[i] = {
-      top: info.coords[i].y === 0 ? 0 : shapes[i - info.tiles_x].bottom * -1,
-      right: info.coords[i].x === info.tiles_x - 1 ? 0 : Util.choice(tabs),
+      top: info.coords[i].y === 0 ? 0 : shapes[i - info.tilesX].bottom * -1,
+      right: info.coords[i].x === info.tilesX - 1 ? 0 : Util.choice(tabs),
       left: info.coords[i].x === 0 ? 0 : shapes[i - 1].right * -1,
-      bottom: info.coords[i].y === info.tiles_y - 1 ? 0 : Util.choice(tabs),
+      bottom: info.coords[i].y === info.tilesY - 1 ? 0 : Util.choice(tabs),
     }
   }
   return shapes
 }
 
-const determinePuzzleInfo = (w, h, targetTiles) => {
-  let tileSize = 0
+const determineTilesXY = (w, h, targetTiles) => {
+  const w_ = w < h ? (w * h) : (w * w)
+  const h_ = w < h ? (h * h) : (w * h)
+  let size = 0
   let tiles = 0
   do {
-    tileSize++
-    tiles = tilesFit(w, h, tileSize)
+    size++
+    tiles = Math.floor(w_ / size) * Math.floor(h_ / size)
   } while (tiles >= targetTiles)
-  tileSize--
+  size--
+  return {
+    tilesX: Math.round(w_ / size),
+    tilesY: Math.round(h_ / size),
+  }
+}
 
-  tiles = tilesFit(w, h, tileSize)
-  const tiles_x = Math.round(w / tileSize)
-  const tiles_y = Math.round(h / tileSize)
-  tiles = tiles_x * tiles_y
-
-  // then resize to final TILE_SIZE (which is always the same)
-  tileSize = TILE_SIZE
-  const width = tiles_x * tileSize
-  const height = tiles_y * tileSize
-  const coords = coordsByNum({ width, height, tileSize, tiles })
+const determinePuzzleInfo = (w, h, targetTiles) => {
+  const {tilesX, tilesY} = determineTilesXY(w, h, targetTiles)
+  const tiles = tilesX * tilesY
+  const tileSize = TILE_SIZE
+  const width = tilesX * tileSize
+  const height = tilesY * tileSize
+  const coords = buildCoords({ width, height, tileSize, tiles })
 
   const tileMarginWidth = tileSize * .5;
   const tileDrawSize = Math.round(tileSize + tileMarginWidth * 2)
@@ -181,20 +185,18 @@ const determinePuzzleInfo = (w, h, targetTiles) => {
     tileMarginWidth,
     tileDrawSize,
     tiles,
-    tiles_x,
-    tiles_y,
+    tilesX,
+    tilesY,
     coords,
   }
 }
 
-const tilesFit = (w, h, size) => Math.floor(w / size) * Math.floor(h / size)
-
-const coordsByNum = (puzzleInfo) => {
-  const w_tiles = puzzleInfo.width / puzzleInfo.tileSize
+const buildCoords = (puzzleInfo) => {
+  const wTiles = puzzleInfo.width / puzzleInfo.tileSize
   const coords = new Array(puzzleInfo.tiles)
   for (let i = 0; i < puzzleInfo.tiles; i++) {
-    const y = Math.floor(i / w_tiles)
-    const x = i % w_tiles
+    const y = Math.floor(i / wTiles)
+    const x = i % wTiles
     coords[i] = { x, y }
   }
   return coords

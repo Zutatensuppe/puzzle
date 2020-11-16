@@ -139,13 +139,13 @@ function getSurroundingTilesByIdx(gameId, tileIdx) {
 
   return [
     // top
-    (_Y > 0) ?                (tileIdx - info.tiles_x) : -1,
+    (_Y > 0) ?               (tileIdx - info.tilesX) : -1,
     // right
-    (_X < info.tiles_x - 1) ? (tileIdx + 1)            : -1,
+    (_X < info.tilesX - 1) ? (tileIdx + 1)           : -1,
     // bottom
-    (_Y < info.tiles_y - 1) ? (tileIdx + info.tiles_x) : -1,
+    (_Y < info.tilesY - 1) ? (tileIdx + info.tilesX) : -1,
     // left
-    (_X > 0) ?                (tileIdx - 1)            : -1,
+    (_X > 0) ?               (tileIdx - 1)           : -1,
   ]
 }
 
