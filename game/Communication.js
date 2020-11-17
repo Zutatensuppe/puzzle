@@ -1,49 +1,55 @@
 import WsClient from './WsClient.js'
+import Protocol from './../common/Protocol.js'
 
+/** @type WsClient */
 let conn
 let changesCallback = () => {}
 
-function onChanges(callback) {
+function onServerChange(callback) {
   changesCallback = callback
 }
 
-function connect(gameId, playerId) {
-  conn = new WsClient(WS_ADDRESS, playerId + '|' + gameId)
+function send(message) {
+  conn.send(JSON.stringify(message))
+}
+
+let clientSeq
+let events
+function connect(gameId, clientId) {
+  clientSeq = 0
+  events = {}
+  conn = new WsClient(WS_ADDRESS, clientId + '|' + gameId)
   return new Promise(r => {
     conn.connect()
-    conn.send(JSON.stringify({ type: 'init' }))
+    send([Protocol.EV_CLIENT_INIT])
     conn.onSocket('message', async ({ data }) => {
-      const d = JSON.parse(data)
-      if (d.type === 'init') {
-        r(d.game)
-      } else if (d.type === 'state_changed' && d.origin !== playerId) {
-        changesCallback(d.changes)
+      const msg = JSON.parse(data)
+      const msgType = msg[0]
+      if (msgType === Protocol.EV_SERVER_INIT) {
+        const game = msg[1]
+        r(game)
+      } else if (msgType === Protocol.EV_SERVER_EVENT) {
+        const msgClientId = msg[1]
+        const msgClientSeq = msg[2]
+        if (msgClientId === clientId && events[msgClientSeq]) {
+          delete events[msgClientSeq]
+        }
+        changesCallback(msg)
       }
     })
   })
 }
 
-const _STATE = {
-  changed: false,
-  changes: [],
-}
-
-function addChange(change) {
-  _STATE.changes.push(change)
-  _STATE.changed = true
-}
-
-function sendChanges() {
-  if (_STATE.changed) {
-    conn.send(JSON.stringify({ type: 'state', state: _STATE }))
-    _STATE.changes = []
-    _STATE.changed = false
-  }
+function sendClientEvent(mouse) {
+  // when sending event, increase number of sent events
+  // and add the event locally
+  clientSeq++;
+  events[clientSeq] = mouse
+  send([Protocol.EV_CLIENT_EVENT, clientSeq, events[clientSeq]])
 }
 
 export default {
   connect,
-  onChanges,
-  addChange,
-  sendChanges,
+  onServerChange,
+  sendClientEvent,
 }

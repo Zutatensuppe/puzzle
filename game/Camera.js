@@ -28,30 +28,27 @@ export default class Camera {
         this.y += y / this.zoom
     }
 
-    zoomOut() {
-        const newzoom = Math.max(this.zoom - this.zoomStep, this.minZoom)
-        if (newzoom !== this.zoom) {
-            // centered zoom
-            this.x -= ((this.width / this.zoom) - (this.width / newzoom)) / 2
-            this.y -= ((this.height / this.zoom) - (this.height / newzoom)) / 2
-
-            this.zoom = newzoom
-            return true
-        }
+    setZoom(newzoom) {
+      const zoom = Math.min(Math.max(newzoom, this.minZoom), this.maxZoom)
+      if (zoom == this.zoom) {
         return false
+      }
+
+      // centered zoom
+      // TODO: mouse-centered-zoom
+      this.x -= Math.round(((this.width / this.zoom) - (this.width / zoom)) / 2)
+      this.y -= Math.round(((this.height / this.zoom) - (this.height / zoom)) / 2)
+
+      this.zoom = zoom
+      return true
+    }
+
+    zoomOut() {
+        return this.setZoom(this.zoom - this.zoomStep)
     }
 
     zoomIn() {
-        const newzoom = Math.min(this.zoom + this.zoomStep, this.maxZoom)
-        if (newzoom !== this.zoom) {
-            // centered zoom
-            this.x -= ((this.width / this.zoom) - (this.width / newzoom)) / 2
-            this.y -= ((this.height / this.zoom) - (this.height / newzoom)) / 2
-
-            this.zoom = newzoom
-            return true
-        }
-        return false
+        return this.setZoom(this.zoom + this.zoomStep)
     }
 
     /**
@@ -61,8 +58,8 @@ export default class Camera {
      */
     viewportToWorld(coord) {
         return {
-            x: (coord.x / this.zoom) - this.x,
-            y: (coord.y / this.zoom) - this.y,
+            x: Math.round((coord.x / this.zoom) - this.x),
+            y: Math.round((coord.y / this.zoom) - this.y),
         }
     }
 
@@ -73,15 +70,15 @@ export default class Camera {
      */
     worldToViewport(coord) {
         return {
-            x: (coord.x + this.x) * this.zoom,
-            y: (coord.y + this.y) * this.zoom,
+            x: Math.round((coord.x + this.x) * this.zoom),
+            y: Math.round((coord.y + this.y) * this.zoom),
         }
     }
 
     worldDimToViewport(dim) {
         return {
-            w: dim.w * this.zoom,
-            h: dim.h * this.zoom,
+            w: Math.round(dim.w * this.zoom),
+            h: Math.round(dim.h * this.zoom),
         }
     }
 }

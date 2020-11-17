@@ -1,13 +1,14 @@
 import WebSocketServer from './WebSocketServer.js'
 
 import express from 'express'
-import { createPuzzle } from './puzzle.js'
 import config from './config.js'
-import { uniqId, choice } from './util.js'
+import Protocol from './../common/Protocol.js'
+import Util from './../common/Util.js'
+import Game from './Game.js'
 
 // desired number of tiles
 // actual calculated number can be higher
-const TARGET_TILES = 500
+const TARGET_TILES = 1000
 
 const IMAGES = [
   '/example-images/ima_86ec3fa.jpeg',
@@ -37,6 +38,7 @@ app.use('/g/:gid', (req, res, next) => {
   `)
 })
 
+app.use('/common/', express.static('./../common/'))
 app.use('/', (req, res, next) => {
   if (req.path === '/') {
     res.send(`
@@ -44,7 +46,7 @@ app.use('/', (req, res, next) => {
       html,body {margin: 0; overflow: hidden;}
       html, body, #main { background: #222 }
       </style></head><body>
-      <a href="/g/${uniqId()}">New game :P</a>
+      <a href="/g/${Util.uniqId()}">New game :P</a>
       ${Object.keys(games).map(k => {
         return `<a href="/g/${k}">Game ${k}</a>`
       })}
@@ -59,61 +61,41 @@ app.use('/', (req, res, next) => {
 const wss = new WebSocketServer(config.ws);
 
 const notify = (data, sockets) => {
-  // TODO: throttle
+  // TODO: throttle?
   for (let socket of sockets) {
     wss.notifyOne(data, socket)
   }
-  console.log('notify', data)
 }
 
 wss.on('message', async ({socket, data}) => {
   try {
     const proto = socket.protocol.split('|')
-    const uid = proto[0]
-    const gid = proto[1]
-    const parsed = JSON.parse(data)
-    switch (parsed.type) {
-      case 'init': {
-        // a new player (or previous player) joined
-        games[gid] = games[gid] || {
-          puzzle: await createPuzzle(TARGET_TILES, choice(IMAGES)),
-          players: {},
-          sockets: []
+    const clientId = proto[0]
+    const gameId = proto[1]
+    const msg = JSON.parse(data)
+    const msgType = msg[0]
+    switch (msgType) {
+      case Protocol.EV_CLIENT_INIT: {
+        if (!Game.exists(gameId)) {
+          await Game.createGame(gameId, TARGET_TILES, Util.choice(IMAGES))
         }
-        if (!games[gid].sockets.includes(socket)) {
-          games[gid].sockets.push(socket)
-        }
-        games[gid].players[uid] = {id: uid, x: 0, y: 0, down: false}
+        Game.addPlayer(gameId, clientId)
+        Game.addSocket(gameId, socket)
 
-        wss.notifyOne({
-          type: 'init',
-          game: {
-            puzzle: games[gid].puzzle,
-            players: games[gid].players,
-          },
-        }, socket)
+        notify(
+          [Protocol.EV_SERVER_INIT, Game.get(gameId)],
+          [socket]
+        )
       } break;
 
-      // somebody has changed the state
-      case 'state': {
-        for (let change of parsed.state.changes) {
-          switch (change.type) {
-            case 'change_player': {
-              games[gid].players[uid] = change.player
-            } break;
-            case 'change_tile': {
-              games[gid].puzzle.tiles[change.tile.idx] = change.tile
-            } break;
-            case 'change_data': {
-              games[gid].puzzle.data = change.data
-            } break;
-          }
-        }
-        notify({
-          type:'state_changed',
-          origin: uid,
-          changes: parsed.state.changes,
-        }, games[gid].sockets)
+      case Protocol.EV_CLIENT_EVENT: {
+        const clientSeq = msg[1]
+        const clientEvtData = msg[2]
+        const changes = Game.handleInput(gameId, clientId, clientEvtData)
+        notify(
+          [Protocol.EV_SERVER_EVENT, clientId, clientSeq, changes],
+          Game.getSockets(gameId)
+        )
       } break;
     }
   } catch (e) {
