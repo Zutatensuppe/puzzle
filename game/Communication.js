@@ -33,6 +33,8 @@ function connect(gameId, clientId) {
         const msgClientSeq = msg[2]
         if (msgClientId === clientId && events[msgClientSeq]) {
           delete events[msgClientSeq]
+          // we have already calculated that change locally. probably
+          return
         }
         changesCallback(msg)
       }
