@@ -35,6 +35,7 @@ export default class Camera {
       }
 
       // centered zoom
+      // TODO: mouse-centered-zoom
       this.x -= Math.round(((this.width / this.zoom) - (this.width / zoom)) / 2)
       this.y -= Math.round(((this.height / this.zoom) - (this.height / zoom)) / 2)
 

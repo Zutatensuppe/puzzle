@@ -1,41 +1,50 @@
 import WsClient from './WsClient.js'
+import Protocol from './../common/Protocol.js'
 
-const EV_SERVER_STATE_CHANGED = 1
-const EV_SERVER_INIT = 4
-const EV_CLIENT_MOUSE = 2
-const EV_CLIENT_INIT = 3
-
+/** @type WsClient */
 let conn
 let changesCallback = () => {}
 
-function onChanges(callback) {
+function onServerChange(callback) {
   changesCallback = callback
 }
 
+function send(message) {
+  conn.send(JSON.stringify(message))
+}
+
+let clientSeq
+let events
 function connect(gameId, playerId) {
+  clientSeq = 0
+  events = {}
   conn = new WsClient(WS_ADDRESS, playerId + '|' + gameId)
   return new Promise(r => {
     conn.connect()
-    conn.send(JSON.stringify([EV_CLIENT_INIT]))
+    send([Protocol.EV_CLIENT_INIT])
     conn.onSocket('message', async ({ data }) => {
-      const [type, typeData] = JSON.parse(data)
-      if (type === EV_SERVER_INIT) {
-        const game = typeData
+      const msg = JSON.parse(data)
+      const msgType = msg[0]
+      if (msgType === Protocol.EV_SERVER_INIT) {
+        const game = msg[1]
         r(game)
-      } else if (type === EV_SERVER_STATE_CHANGED) {
-        const changes = typeData
-        changesCallback(changes)
+      } else if (msgType === Protocol.EV_SERVER_EVENT) {
+        changesCallback(msg)
       }
     })
   })
 }
 
-function addMouse(mouse) {
-    conn.send(JSON.stringify([EV_CLIENT_MOUSE, mouse]))
+function sendClientEvent(mouse) {
+  // when sending event, increase number of sent events
+  // and add the event locally
+  clientSeq++;
+  events[clientSeq] = mouse
+  send([Protocol.EV_CLIENT_EVENT, clientSeq, events[clientSeq]])
 }
 
 export default {
   connect,
-  onChanges,
-  addMouse,
+  onServerChange,
+  sendClientEvent,
 }

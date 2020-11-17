@@ -1,12 +1,11 @@
 "use strict"
 import {run} from './gameloop.js'
 import Camera from './Camera.js'
-import EventAdapter from './EventAdapter.js'
 import Graphics from './Graphics.js'
 import Debug from './Debug.js'
 import Communication from './Communication.js'
-import Geometry from './../common/Geometry.js'
 import Util from './../common/Util.js'
+import PuzzleGraphics from './PuzzleGraphics.js'
 
 if (typeof GAME_ID === 'undefined') throw '[ GAME_ID not set ]'
 if (typeof WS_ADDRESS === 'undefined') throw '[ WS_ADDRESS not set ]'
@@ -16,121 +15,6 @@ if (typeof DEBUG === 'undefined') window.DEBUG = false
 function addCanvasToDom(canvas) {
     document.body.append(canvas)
     return canvas
-}
-
-async function createPuzzleTileBitmaps(img, tiles, info) {
-  var tileSize = info.tileSize
-  var tileMarginWidth = info.tileMarginWidth
-  var tileDrawSize = info.tileDrawSize
-  var tileRatio = tileSize / 100.0
-
-  var curvyCoords = [
-    0, 0, 40, 15, 37, 5,
-    37, 5, 40, 0, 38, -5,
-    38, -5, 20, -20, 50, -20,
-    50, -20, 80, -20, 62, -5,
-    62, -5, 60, 0, 63, 5,
-    63, 5, 65, 15, 100, 0
-  ];
-
-  const bitmaps = new Array(tiles.length)
-
-  const paths = {}
-  function pathForShape(shape) {
-    const key = `${shape.top}${shape.right}${shape.left}${shape.bottom}`
-    if (paths[key]) {
-      return paths[key]
-    }
-
-    const path = new Path2D()
-    const topLeftEdge = { x: tileMarginWidth, y: tileMarginWidth }
-    path.moveTo(topLeftEdge.x, topLeftEdge.y)
-    for (let i = 0; i < curvyCoords.length / 6; i++) {
-      const p1 = Geometry.pointAdd(topLeftEdge, { x: curvyCoords[i * 6 + 0] * tileRatio, y: shape.top * curvyCoords[i * 6 + 1] * tileRatio })
-      const p2 = Geometry.pointAdd(topLeftEdge, { x: curvyCoords[i * 6 + 2] * tileRatio, y: shape.top * curvyCoords[i * 6 + 3] * tileRatio })
-      const p3 = Geometry.pointAdd(topLeftEdge, { x: curvyCoords[i * 6 + 4] * tileRatio, y: shape.top * curvyCoords[i * 6 + 5] * tileRatio })
-      path.bezierCurveTo(p1.x, p1.y, p2.x, p2.y, p3.x, p3.y);
-    }
-    const topRightEdge = Geometry.pointAdd(topLeftEdge, { x: tileSize, y: 0 })
-    for (let i = 0; i < curvyCoords.length / 6; i++) {
-      const p1 = Geometry.pointAdd(topRightEdge, { x: -shape.right * curvyCoords[i * 6 + 1] * tileRatio, y: curvyCoords[i * 6 + 0] * tileRatio })
-      const p2 = Geometry.pointAdd(topRightEdge, { x: -shape.right * curvyCoords[i * 6 + 3] * tileRatio, y: curvyCoords[i * 6 + 2] * tileRatio })
-      const p3 = Geometry.pointAdd(topRightEdge, { x: -shape.right * curvyCoords[i * 6 + 5] * tileRatio, y: curvyCoords[i * 6 + 4] * tileRatio })
-      path.bezierCurveTo(p1.x, p1.y, p2.x, p2.y, p3.x, p3.y);
-    }
-    const bottomRightEdge = Geometry.pointAdd(topRightEdge, { x: 0, y: tileSize })
-    for (let i = 0; i < curvyCoords.length / 6; i++) {
-      let p1 = Geometry.pointSub(bottomRightEdge, { x: curvyCoords[i * 6 + 0] * tileRatio, y: shape.bottom * curvyCoords[i * 6 + 1] * tileRatio })
-      let p2 = Geometry.pointSub(bottomRightEdge, { x: curvyCoords[i * 6 + 2] * tileRatio, y: shape.bottom * curvyCoords[i * 6 + 3] * tileRatio })
-      let p3 = Geometry.pointSub(bottomRightEdge, { x: curvyCoords[i * 6 + 4] * tileRatio, y: shape.bottom * curvyCoords[i * 6 + 5] * tileRatio })
-      path.bezierCurveTo(p1.x, p1.y, p2.x, p2.y, p3.x, p3.y);
-    }
-    const bottomLeftEdge = Geometry.pointSub(bottomRightEdge, { x: tileSize, y: 0 })
-    for (let i = 0; i < curvyCoords.length / 6; i++) {
-      let p1 = Geometry.pointSub(bottomLeftEdge, { x: -shape.left * curvyCoords[i * 6 + 1] * tileRatio, y: curvyCoords[i * 6 + 0] * tileRatio })
-      let p2 = Geometry.pointSub(bottomLeftEdge, { x: -shape.left * curvyCoords[i * 6 + 3] * tileRatio, y: curvyCoords[i * 6 + 2] * tileRatio })
-      let p3 = Geometry.pointSub(bottomLeftEdge, { x: -shape.left * curvyCoords[i * 6 + 5] * tileRatio, y: curvyCoords[i * 6 + 4] * tileRatio })
-      path.bezierCurveTo(p1.x, p1.y, p2.x, p2.y, p3.x, p3.y);
-    }
-    paths[key] = path
-    return path
-  }
-
-  for (let tile of tiles) {
-    const srcRect = srcRectByIdx(info, tile.idx)
-    const path = pathForShape(info.shapes[tile.idx])
-
-    const c = Graphics.createCanvas(tileDrawSize, tileDrawSize)
-    const ctx = c.getContext('2d')
-    // -----------------------------------------------------------
-    // -----------------------------------------------------------
-    ctx.lineWidth = 2
-    ctx.stroke(path)
-    // -----------------------------------------------------------
-    // -----------------------------------------------------------
-    ctx.save();
-    ctx.clip(path)
-    ctx.drawImage(
-      img,
-      srcRect.x - tileMarginWidth,
-      srcRect.y - tileMarginWidth,
-      tileDrawSize,
-      tileDrawSize,
-      0,
-      0,
-      tileDrawSize,
-      tileDrawSize,
-    )
-    ctx.stroke(path)
-    ctx.restore();
-
-    bitmaps[tile.idx] = await createImageBitmap(c)
-  }
-
-  return bitmaps
-}
-
-function srcRectByIdx(puzzleInfo, idx) {
-  let c = puzzleInfo.coords[idx]
-  let cx = c.x * puzzleInfo.tileSize
-  let cy = c.y * puzzleInfo.tileSize
-  return {
-    x: cx,
-    y: cy,
-    w: puzzleInfo.tileSize,
-    h: puzzleInfo.tileSize,
-  }
-}
-
-async function loadPuzzleBitmaps(puzzle) {
-  // load bitmap, to determine the original size of the image
-  const bmp = await Graphics.loadImageToBitmap(puzzle.info.imageUrl)
-
-  // creation of tile bitmaps
-  // then create the final puzzle bitmap
-  // NOTE: this can decrease OR increase in size!
-  const bmpResized = await Graphics.resizeBitmap(bmp, puzzle.info.width, puzzle.info.height)
-  return await createPuzzleTileBitmaps(bmpResized, puzzle.tiles, puzzle.info)
 }
 
 function initme() {
@@ -152,7 +36,64 @@ const getFirstOwnedTile = (puzzle, userId) => {
   return null
 }
 
-async function main () {
+export default class EventAdapter {
+  constructor(canvas, viewport) {
+    this._mouseEvts = []
+    this._viewport = viewport
+    canvas.addEventListener('mousedown', this._mouseDown.bind(this))
+    canvas.addEventListener('mouseup', this._mouseUp.bind(this))
+    canvas.addEventListener('mousemove', this._mouseMove.bind(this))
+    canvas.addEventListener('wheel', this._wheel.bind(this))
+  }
+
+  consumeAll() {
+    if (this._mouseEvts.length === 0) {
+      return []
+    }
+    const all = this._mouseEvts.slice()
+    this._mouseEvts = []
+    return all
+  }
+
+  _mouseDown(e) {
+    if (e.button === 0) {
+      const pos = this._viewport.viewportToWorld({
+        x: e.offsetX,
+        y: e.offsetY,
+      })
+      this._mouseEvts.push(['down', pos.x, pos.y])
+    }
+  }
+
+  _mouseUp(e) {
+    if (e.button === 0) {
+      const pos = this._viewport.viewportToWorld({
+        x: e.offsetX,
+        y: e.offsetY,
+      })
+      this._mouseEvts.push(['up', pos.x, pos.y])
+    }
+  }
+
+  _mouseMove(e) {
+    const pos = this._viewport.viewportToWorld({
+      x: e.offsetX,
+      y: e.offsetY,
+    })
+    this._mouseEvts.push(['move', pos.x, pos.y])
+  }
+
+  _wheel(e) {
+    const pos = this._viewport.viewportToWorld({
+      x: e.offsetX,
+      y: e.offsetY,
+    })
+    const evt = e.deltaY < 0 ? 'zoomin' : 'zoomout'
+    this._mouseEvts.push([evt, pos.x, pos.y])
+  }
+}
+
+async function main() {
   let gameId = GAME_ID
   let me = initme()
 
@@ -161,7 +102,7 @@ async function main () {
 
   const game = await Communication.connect(gameId, me)
 
-  const bitmaps = await loadPuzzleBitmaps(game.puzzle)
+  const bitmaps = await PuzzleGraphics.loadPuzzleBitmaps(game.puzzle)
   const puzzle = game.puzzle
   const players = game.players
 
@@ -176,7 +117,6 @@ async function main () {
   // Create a dom and attach adapters to it so we can work with it
   const canvas = addCanvasToDom(Graphics.createCanvas())
   const ctx = canvas.getContext('2d')
-  const evts = new EventAdapter(canvas)
 
   // initialize some view data
   // this global data will change according to input events
@@ -187,21 +127,27 @@ async function main () {
     -(puzzle.info.table.height - viewport.height) /2
   )
 
-  Communication.onChanges((changes) => {
-    for (let [type, typeData] of changes) {
-      switch (type) {
+  const evts = new EventAdapter(canvas, viewport)
+
+  Communication.onServerChange((msg) => {
+    const msgType = msg[0]
+    const evClientId = msg[1]
+    const evClientSeq = msg[2]
+    const evChanges = msg[3]
+    for(let [changeType, changeData] of evChanges) {
+      switch (changeType) {
         case 'player': {
-          if (typeData.id !== me) {
-            players[typeData.id] = typeData
+          if (changeData.id !== me) {
+            players[changeData.id] = changeData
             rerender = true
           }
         } break;
         case 'tile': {
-          puzzle.tiles[typeData.idx] = typeData
+          puzzle.tiles[changeData.idx] = changeData
           rerender = true
         } break;
         case 'data': {
-          puzzle.data = typeData
+          puzzle.data = changeData
           rerender = true
         } break;
       }
@@ -217,40 +163,41 @@ async function main () {
     return sorted.sort((t1, t2) => t1.z - t2.z)
   }
 
-
   let _last_mouse_down = null
   const onUpdate = () => {
-    for (let mouse of evts.consumeAll()) {
-      const tp = viewport.viewportToWorld(mouse)
+    for (let evt of evts.consumeAll()) {
+      const type = evt[0]
+      const pos = {x: evt[1], y: evt[2]}
 
-      if (mouse.type === 'move') {
-        Communication.addMouse(['move', tp.x, tp.y])
+      if (type === 'move') {
         rerender = true
-        changePlayer({ x: tp.x, y: tp.y })
+        changePlayer(pos)
 
         if (_last_mouse_down && !getFirstOwnedTile(puzzle, me)) {
             // move the cam
+            const mouse = viewport.worldToViewport(pos)
             const diffX = Math.round(mouse.x - _last_mouse_down.x)
             const diffY = Math.round(mouse.y - _last_mouse_down.y)
             viewport.move(diffX, diffY)
 
             _last_mouse_down = mouse
         }
-      } else if (mouse.type === 'down') {
-        Communication.addMouse(['down', tp.x, tp.y])
-        _last_mouse_down = mouse
-      } else if (mouse.type === 'up') {
-        Communication.addMouse(['up', tp.x, tp.y])
+      } else if (type === 'down') {
+        _last_mouse_down = viewport.worldToViewport(pos)
+      } else if (type === 'up') {
         _last_mouse_down = null
-      } else if (mouse.type === 'wheel') {
-        if (
-          mouse.deltaY < 0 && viewport.zoomIn()
-          || mouse.deltaY > 0 && viewport.zoomOut()
-        ) {
+      } else if (type === 'zoomin') {
+        if (viewport.zoomIn()) {
           rerender = true
-          changePlayer({ x: tp.x, y: tp.y })
+          changePlayer(pos)
+        }
+      } else if (type === 'zoomout') {
+        if (viewport.zoomOut()) {
+          rerender = true
+          changePlayer(pos)
         }
       }
+      Communication.sendClientEvent(evt)
     }
   }
 

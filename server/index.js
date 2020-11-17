@@ -2,13 +2,9 @@ import WebSocketServer from './WebSocketServer.js'
 
 import express from 'express'
 import config from './config.js'
+import Protocol from './../common/Protocol.js'
 import Util from './../common/Util.js'
 import Game from './Game.js'
-
-const EV_SERVER_STATE_CHANGED = 1
-const EV_SERVER_INIT = 4
-const EV_CLIENT_MOUSE = 2
-const EV_CLIENT_INIT = 3
 
 // desired number of tiles
 // actual calculated number can be higher
@@ -65,35 +61,41 @@ app.use('/', (req, res, next) => {
 const wss = new WebSocketServer(config.ws);
 
 const notify = (data, sockets) => {
-  // TODO: throttle
+  // TODO: throttle?
   for (let socket of sockets) {
     wss.notifyOne(data, socket)
   }
-  // console.log('notify', data)
 }
 
 wss.on('message', async ({socket, data}) => {
   try {
     const proto = socket.protocol.split('|')
-    const playerId = proto[0]
+    const clientId = proto[0]
     const gameId = proto[1]
-    const [type, typeData] = JSON.parse(data)
-    switch (type) {
-      case EV_CLIENT_INIT: {
+    const msg = JSON.parse(data)
+    const msgType = msg[0]
+    switch (msgType) {
+      case Protocol.EV_CLIENT_INIT: {
         if (!Game.exists(gameId)) {
           await Game.createGame(gameId, TARGET_TILES, Util.choice(IMAGES))
         }
-        Game.addPlayer(gameId, playerId)
+        Game.addPlayer(gameId, clientId)
         Game.addSocket(gameId, socket)
 
-        wss.notifyOne([EV_SERVER_INIT, Game.get(gameId)], socket)
+        notify(
+          [Protocol.EV_SERVER_INIT, Game.get(gameId)],
+          [socket]
+        )
       } break;
 
-      case EV_CLIENT_MOUSE: {
-        const changes = Game.handleInput(gameId, playerId, typeData)
-        if (changes.length > 0) {
-          notify([EV_SERVER_STATE_CHANGED, changes], Game.getSockets(gameId))
-        }
+      case Protocol.EV_CLIENT_EVENT: {
+        const clientSeq = msg[1]
+        const clientEvtData = msg[2]
+        const changes = Game.handleInput(gameId, clientId, clientEvtData)
+        notify(
+          [Protocol.EV_SERVER_EVENT, clientId, clientSeq, changes],
+          Game.getSockets(gameId)
+        )
       } break;
     }
   } catch (e) {
