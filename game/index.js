@@ -6,6 +6,7 @@ import Debug from './Debug.js'
 import Communication from './Communication.js'
 import Util from './../common/Util.js'
 import PuzzleGraphics from './PuzzleGraphics.js'
+import Game from './Game.js'
 
 if (typeof GAME_ID === 'undefined') throw '[ GAME_ID not set ]'
 if (typeof WS_ADDRESS === 'undefined') throw '[ WS_ADDRESS not set ]'
@@ -95,12 +96,13 @@ export default class EventAdapter {
 
 async function main() {
   let gameId = GAME_ID
-  let me = initme()
+  let CLIENT_ID = initme()
 
   let cursorGrab = await Graphics.loadImageToBitmap('/grab.png')
   let cursorHand = await Graphics.loadImageToBitmap('/hand.png')
 
-  const game = await Communication.connect(gameId, me)
+  const game = await Communication.connect(gameId, CLIENT_ID)
+  Game.createGame(GAME_ID, game);
 
   const bitmaps = await PuzzleGraphics.loadPuzzleBitmaps(game.puzzle)
   const puzzle = game.puzzle
@@ -110,7 +112,7 @@ async function main() {
 
   const changePlayer = (change) => {
     for (let k of Object.keys(change)) {
-      players[me][k] = change[k]
+      players[CLIENT_ID][k] = change[k]
     }
   }
 
@@ -137,7 +139,7 @@ async function main() {
     for(let [changeType, changeData] of evChanges) {
       switch (changeType) {
         case 'player': {
-          if (changeData.id !== me) {
+          if (changeData.id !== CLIENT_ID) {
             players[changeData.id] = changeData
             rerender = true
           }
@@ -166,14 +168,16 @@ async function main() {
   let _last_mouse_down = null
   const onUpdate = () => {
     for (let evt of evts.consumeAll()) {
+
+      // LOCAL ONLY CHANGES
+      // -------------------------------------------------------------
       const type = evt[0]
       const pos = {x: evt[1], y: evt[2]}
-
       if (type === 'move') {
         rerender = true
         changePlayer(pos)
 
-        if (_last_mouse_down && !getFirstOwnedTile(puzzle, me)) {
+        if (_last_mouse_down && !getFirstOwnedTile(puzzle, CLIENT_ID)) {
             // move the cam
             const mouse = viewport.worldToViewport(pos)
             const diffX = Math.round(mouse.x - _last_mouse_down.x)
@@ -197,6 +201,10 @@ async function main() {
           changePlayer(pos)
         }
       }
+
+      // LOCAL + SERVER CHANGES
+      // -------------------------------------------------------------
+      Game.handleInput(GAME_ID, CLIENT_ID, evt)
       Communication.sendClientEvent(evt)
     }
   }

@@ -15,10 +15,10 @@ function send(message) {
 
 let clientSeq
 let events
-function connect(gameId, playerId) {
+function connect(gameId, clientId) {
   clientSeq = 0
   events = {}
-  conn = new WsClient(WS_ADDRESS, playerId + '|' + gameId)
+  conn = new WsClient(WS_ADDRESS, clientId + '|' + gameId)
   return new Promise(r => {
     conn.connect()
     send([Protocol.EV_CLIENT_INIT])
@@ -29,6 +29,11 @@ function connect(gameId, playerId) {
         const game = msg[1]
         r(game)
       } else if (msgType === Protocol.EV_SERVER_EVENT) {
+        const msgClientId = msg[1]
+        const msgClientSeq = msg[2]
+        if (msgClientId === clientId && events[msgClientSeq]) {
+          delete events[msgClientSeq]
+        }
         changesCallback(msg)
       }
     })
