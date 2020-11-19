@@ -76,10 +76,11 @@ wss.on('message', async ({socket, data}) => {
     const msgType = msg[0]
     switch (msgType) {
       case Protocol.EV_CLIENT_INIT: {
+        const name = msg[1]
         if (!Game.exists(gameId)) {
           await Game.createGame(gameId, TARGET_TILES, Util.choice(IMAGES))
         }
-        Game.addPlayer(gameId, clientId)
+        Game.addPlayer(gameId, clientId, name)
         Game.addSocket(gameId, socket)
 
         notify(

@@ -20,12 +20,17 @@ function addCanvasToDom(canvas) {
 
 function initme() {
   // return uniqId()
-  let ID = localStorage.getItem("ID")
+  let ID = localStorage.getItem('ID')
   if (!ID) {
     ID = Util.uniqId()
-    localStorage.setItem("ID", ID)
+    localStorage.setItem('ID', ID)
   }
-  return ID
+  let name = localStorage.getItem('NAME')
+  if (!name) {
+    name = prompt('What\'s your name?');
+    localStorage.setItem('NAME', name)
+  }
+  return [ID, name]
 }
 
 const getFirstOwnedTile = (puzzle, userId) => {
@@ -96,12 +101,12 @@ export default class EventAdapter {
 
 async function main() {
   let gameId = GAME_ID
-  let CLIENT_ID = initme()
+  let [CLIENT_ID, name] = initme()
 
   let cursorGrab = await Graphics.loadImageToBitmap('/grab.png')
   let cursorHand = await Graphics.loadImageToBitmap('/hand.png')
 
-  const game = await Communication.connect(gameId, CLIENT_ID)
+  const game = await Communication.connect(gameId, CLIENT_ID, name)
   Game.createGame(GAME_ID, game);
 
   const bitmaps = await PuzzleGraphics.loadPuzzleBitmaps(game.puzzle)
@@ -204,7 +209,10 @@ async function main() {
 
       // LOCAL + SERVER CHANGES
       // -------------------------------------------------------------
-      Game.handleInput(GAME_ID, CLIENT_ID, evt)
+      const changes = Game.handleInput(GAME_ID, CLIENT_ID, evt)
+      if (changes.length > 0) {
+        rerender = true
+      }
       Communication.sendClientEvent(evt)
     }
   }
@@ -273,6 +281,15 @@ async function main() {
         Math.round(pos.x - cursor.width/2),
         Math.round(pos.y - cursor.height/2)
       )
+      if (id !== CLIENT_ID) {
+        ctx.fillStyle = 'white'
+        ctx.font = '10px sans-serif'
+        ctx.textAlign = 'center'
+        ctx.fillText(p.name,
+          Math.round(pos.x),
+          Math.round(pos.y) + cursor.height
+        )
+      }
     }
     if (DEBUG) Debug.checkpoint('players done')
     // ---------------------------------------------------------------

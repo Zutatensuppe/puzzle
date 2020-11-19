@@ -15,13 +15,13 @@ function send(message) {
 
 let clientSeq
 let events
-function connect(gameId, clientId) {
+function connect(gameId, clientId, name) {
   clientSeq = 0
   events = {}
   conn = new WsClient(WS_ADDRESS, clientId + '|' + gameId)
   return new Promise(r => {
     conn.connect()
-    send([Protocol.EV_CLIENT_INIT])
+    send([Protocol.EV_CLIENT_INIT, name])
     conn.onSocket('message', async ({ data }) => {
       const msg = JSON.parse(data)
       const msgType = msg[0]

@@ -10,12 +10,13 @@ function setGame(gameId, game) {
   GAMES[gameId] = game
 }
 
-function addPlayer(gameId, playerId) {
+function addPlayer(gameId, playerId, name) {
   GAMES[gameId].players[playerId] = {
     id: playerId,
     x: 0,
     y: 0,
-    down: false
+    down: false,
+    name: name,
   }
   GAMES[gameId].evtInfos[playerId] = {
     _last_mouse: null,
@@ -302,7 +303,6 @@ function handleInput(gameId, playerId, input) {
 
     const tileIdxAtPos = freeTileIdxByPos(gameId, pos)
     if (tileIdxAtPos >= 0) {
-      console.log('tile: ', tileIdxAtPos)
       let maxZ = getMaxZIndex(gameId) + 1
       changeData(gameId, { maxZ })
       _dataChange()
@@ -372,7 +372,6 @@ function handleInput(gameId, playerId, input) {
             groupTiles(gameId, tileIdx, otherTileIdx)
             tileIdxs = getGroupedTileIdxs(gameId, tileIdx)
             const zIndex = getMaxZIndexByTileIdxs(gameId, tileIdxs)
-            console.log('z:' , zIndex, tileIdxs)
             setTilesZIndex(gameId, tileIdxs, zIndex)
             _tileChanges(tileIdxs)
             return true
@@ -394,7 +393,6 @@ function handleInput(gameId, playerId, input) {
       }
     }
   }
-  // console.log(mouse)
   evtInfo._last_mouse = pos
 
   return changes
