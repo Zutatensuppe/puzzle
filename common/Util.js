@@ -20,9 +20,23 @@ export const shuffle = (array) => {
   return arr
 }
 
+export const timestamp = () => {
+  const d = new Date();
+  return Date.UTC(
+    d.getUTCFullYear(),
+    d.getUTCMonth(),
+    d.getUTCDate(),
+    d.getUTCHours(),
+    d.getUTCMinutes(),
+    d.getUTCSeconds(),
+    d.getUTCMilliseconds(),
+  )
+}
+
 export default {
   uniqId,
   randomInt,
   choice,
   shuffle,
+  timestamp,
 }

@@ -9,7 +9,7 @@ export default class Camera {
         this.height = canvas.height
 
         this.zoom = 1
-        this.minZoom = .2
+        this.minZoom = .1
         this.maxZoom = 6
         this.zoomStep = .05
     }
@@ -44,11 +44,11 @@ export default class Camera {
     }
 
     zoomOut() {
-        return this.setZoom(this.zoom - this.zoomStep)
+        return this.setZoom(this.zoom - this.zoomStep * this.zoom)
     }
 
     zoomIn() {
-        return this.setZoom(this.zoom + this.zoomStep)
+        return this.setZoom(this.zoom + this.zoomStep * this.zoom)
     }
 
     /**

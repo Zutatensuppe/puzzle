@@ -1,4 +1,5 @@
 import Geometry from './Geometry.js'
+import Util from './Util.js'
 
 const GAMES = {}
 
@@ -10,13 +11,21 @@ function setGame(gameId, game) {
   GAMES[gameId] = game
 }
 
-function addPlayer(gameId, playerId, name) {
-  GAMES[gameId].players[playerId] = {
-    id: playerId,
-    x: 0,
-    y: 0,
-    down: false,
-    name: name,
+function addPlayer(gameId, playerId) {
+  const ts = Util.timestamp()
+  if (!GAMES[gameId].players[playerId]) {
+    GAMES[gameId].players[playerId] = {
+      id: playerId,
+      x: 0,
+      y: 0,
+      d: 0, // mouse down
+      name: 'anon',
+      color: '#ffffff',
+      points: 0,
+      ts,
+    }
+  } else {
+    changePlayer(gameId, playerId, { ts })
   }
   GAMES[gameId].evtInfos[playerId] = {
     _last_mouse: null,
@@ -30,6 +39,14 @@ function addSocket(gameId, socket) {
   if (!sockets.includes(socket)) {
     sockets.push(socket)
   }
+}
+
+function removeSocket(gameId, socket) {
+  GAMES[gameId].sockets = GAMES[gameId].sockets.filter(s => s !== socket)
+}
+
+function getAllGames() {
+  return GAMES
 }
 
 function get(gameId) {
@@ -294,10 +311,23 @@ function handleInput(gameId, playerId, input) {
     }
   }
 
-  let [type, x, y] = input
-  let pos = {x, y}
-  if (type === 'down') {
-    changePlayer(gameId, playerId, { down: true })
+  const ts = Util.timestamp()
+
+  const type = input[0]
+  if (type === 'player_color') {
+    const color = input[1]
+    changePlayer(gameId, playerId, { color, ts })
+    _playerChange()
+  } else if (type === 'player_name') {
+    const name = `${input[1]}`.substr(0, 16)
+    changePlayer(gameId, playerId, { name, ts })
+    _playerChange()
+  } else if (type === 'down') {
+    const x = input[1]
+    const y = input[2]
+    const pos = {x, y}
+
+    changePlayer(gameId, playerId, { d: 1, ts })
     _playerChange()
     evtInfo._last_mouse_down = pos
 
@@ -311,9 +341,14 @@ function handleInput(gameId, playerId, input) {
       setTilesOwner(gameId, tileIdxs, playerId)
       _tileChanges(tileIdxs)
     }
+    evtInfo._last_mouse = pos
 
   } else if (type === 'move') {
-    changePlayer(gameId, playerId, pos)
+    const x = input[1]
+    const y = input[2]
+    const pos = {x, y}
+
+    changePlayer(gameId, playerId, {x, y, ts})
     _playerChange()
 
     if (evtInfo._last_mouse_down !== null) {
@@ -329,8 +364,14 @@ function handleInput(gameId, playerId, input) {
 
       evtInfo._last_mouse_down = pos
     }
+    evtInfo._last_mouse = pos
+
   } else if (type === 'up') {
-    changePlayer(gameId, playerId, { down: false })
+    const x = input[1]
+    const y = input[2]
+    const pos = {x, y}
+
+    changePlayer(gameId, playerId, { d: 0, ts })
     _playerChange()
     evtInfo._last_mouse_down = null
 
@@ -349,6 +390,7 @@ function handleInput(gameId, playerId, input) {
         // Snap the tile to the final destination
         moveTilesDiff(gameId, tileIdxs, diff)
         finishTiles(gameId, tileIdxs)
+        changePlayer(gameId, playerId, { points: players[playerId].points + tileIdxs.length })
         _tileChanges(tileIdxs)
       } else {
         // Snap to other tiles
@@ -392,8 +434,11 @@ function handleInput(gameId, playerId, input) {
         }
       }
     }
+    evtInfo._last_mouse = pos
+  } else {
+    changePlayer(gameId, playerId, { ts })
+    _playerChange()
   }
-  evtInfo._last_mouse = pos
 
   return changes
 }
@@ -404,7 +449,9 @@ export default {
   exists,
   addPlayer,
   addSocket,
+  removeSocket,
   get,
+  getAllGames,
   getSockets,
   handleInput,
 }

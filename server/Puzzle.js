@@ -6,8 +6,8 @@ import Util from './../common/Util.js'
 const TILE_SIZE = 64
 
 async function createPuzzle(targetTiles, image) {
-  const imagePath = './../game' + image
-  const imageUrl = image
+  const imagePath = image.file
+  const imageUrl = image.url
 
   // load bitmap, to determine the original size of the image
   const dim = sizeOf(imagePath)

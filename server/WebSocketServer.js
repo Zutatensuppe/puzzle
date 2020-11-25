@@ -67,6 +67,7 @@ class WebSocketServer {
           return socket.terminate()
         }
         socket.isAlive = false
+        this.evt.dispatch('close', {socket})
         socket.ping(() => { })
       })
     }, 30000)
