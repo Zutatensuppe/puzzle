@@ -46,6 +46,11 @@ export default class WsWrapper {
     ws.onmessage = (e) => {
       this.onmessage(e)
     }
+    ws.onerror = (e) => {
+      this.handle = null
+      this.reconnectTimeout = setTimeout(() => { this.connect() }, 1000)
+      this.onclose(e)
+    }
     ws.onclose = (e) => {
       this.handle = null
       this.reconnectTimeout = setTimeout(() => { this.connect() }, 1000)

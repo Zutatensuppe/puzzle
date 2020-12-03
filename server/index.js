@@ -109,6 +109,30 @@ wss.on('close', async ({socket}) => {
   }
 })
 
+const ensurePlayerGame = (gameId, clientId, socket) => {
+  Game.addPlayer(gameId, clientId)
+  Game.addSocket(gameId, socket)
+  Game.store(gameId)
+  const game = Game.get(gameId)
+  notify(
+    [Protocol.EV_SERVER_INIT, {
+      puzzle: game.puzzle,
+      players: game.players,
+      evtInfos: game.evtInfos,
+    }],
+    [socket]
+  )
+}
+
+const handlePlayerInput = (gameId, clientId, clientSeq, clientEvtData) => {
+  const changes = Game.handleInput(gameId, clientId, clientEvtData)
+  Game.store(gameId)
+  notify(
+    [Protocol.EV_SERVER_EVENT, clientId, clientSeq, changes],
+    Game.getSockets(gameId)
+  )
+}
+
 wss.on('message', async ({socket, data}) => {
   try {
     const proto = socket.protocol.split('|')
@@ -121,24 +145,14 @@ wss.on('message', async ({socket, data}) => {
         if (!Game.exists(gameId)) {
           throw `[game ${gameId} does not exist... ]`
         }
-        Game.addPlayer(gameId, clientId)
-        Game.addSocket(gameId, socket)
-        Game.store(gameId)
-        notify(
-          [Protocol.EV_SERVER_INIT, Game.get(gameId)],
-          [socket]
-        )
+        ensurePlayerGame(gameId, clientId, socket)
       } break;
 
       case Protocol.EV_CLIENT_EVENT: {
         const clientSeq = msg[1]
         const clientEvtData = msg[2]
-        const changes = Game.handleInput(gameId, clientId, clientEvtData)
-        Game.store(gameId)
-        notify(
-          [Protocol.EV_SERVER_EVENT, clientId, clientSeq, changes],
-          Game.getSockets(gameId)
-        )
+        ensurePlayerGame(gameId, clientId, socket)
+        handlePlayerInput(gameId, clientId, clientSeq, clientEvtData)
       } break;
     }
   } catch (e) {

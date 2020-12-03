@@ -50,27 +50,11 @@ class WebSocketServer {
         return
       }
 
-      socket.isAlive = true
-      socket.on('pong', function () {
-        this.isAlive = true;
-      })
-
       socket.on('message', (data) => {
-        console.log(`ws| `, data)
+        console.log(`ws`, socket.protocol, data)
         this.evt.dispatch('message', {socket, data})
       })
     })
-
-    this._interval = setInterval(() => {
-      this._websocketserver.clients.forEach((socket) => {
-        if (socket.isAlive === false) {
-          return socket.terminate()
-        }
-        socket.isAlive = false
-        this.evt.dispatch('close', {socket})
-        socket.ping(() => { })
-      })
-    }, 30000)
 
     this._websocketserver.on('close', () => {
       clearInterval(this._interval)
@@ -78,15 +62,7 @@ class WebSocketServer {
   }
 
   notifyOne(data, socket) {
-    if (socket.isAlive) {
-      socket.send(JSON.stringify(data))
-    }
-  }
-
-  notifyAll(data) {
-    this._websocketserver.clients.forEach((socket) => {
-      this.notifyOne(data, socket)
-    })
+    socket.send(JSON.stringify(data))
   }
 }
 

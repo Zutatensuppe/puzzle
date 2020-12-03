@@ -11,6 +11,10 @@ function setGame(gameId, game) {
   GAMES[gameId] = game
 }
 
+function playerExists(gameId, playerId) {
+  return !!GAMES[gameId].players[playerId]
+}
+
 function addPlayer(gameId, playerId) {
   const ts = Util.timestamp()
   if (!GAMES[gameId].players[playerId]) {
@@ -27,17 +31,22 @@ function addPlayer(gameId, playerId) {
   } else {
     changePlayer(gameId, playerId, { ts })
   }
-  GAMES[gameId].evtInfos[playerId] = {
-    _last_mouse: null,
-    _last_mouse_down: null,
+  if (!GAMES[gameId].evtInfos[playerId]) {
+    GAMES[gameId].evtInfos[playerId] = {
+      _last_mouse: null,
+      _last_mouse_down: null,
+    }
   }
 }
 
-function addSocket(gameId, socket) {
-  const sockets = GAMES[gameId].sockets
+function socketExists(gameId, socket) {
+  return GAMES[gameId].sockets.includes(socket)
+}
 
-  if (!sockets.includes(socket)) {
-    sockets.push(socket)
+function addSocket(gameId, socket) {
+  if (!GAMES[gameId].sockets.includes(socket)) {
+    console.log('adding socket: ', gameId, socket.protocol)
+    GAMES[gameId].sockets.push(socket)
   }
 }
 
@@ -447,7 +456,9 @@ function handleInput(gameId, playerId, input) {
 export default {
   setGame,
   exists,
+  playerExists,
   addPlayer,
+  socketExists,
   addSocket,
   removeSocket,
   get,
