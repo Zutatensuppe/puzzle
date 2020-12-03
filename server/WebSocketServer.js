@@ -61,6 +61,10 @@ class WebSocketServer {
     })
   }
 
+  close() {
+    this._websocketserver.close()
+  }
+
   notifyOne(data, socket) {
     socket.send(JSON.stringify(data))
   }

@@ -7,6 +7,19 @@ export const randomInt = (min, max) => Math.floor(Math.random() * (max - min + 1
 // get one random item from the given array
 export const choice = (array) => array[randomInt(0, array.length - 1)]
 
+export const throttle = (fn, delay) => {
+  let canCall = true
+  return (...args) => {
+    if (canCall) {
+      fn.apply(null, args)
+      canCall = false
+      setTimeout(() => {
+        canCall = true
+      }, delay)
+    }
+  }
+}
+
 // return a shuffled (shallow) copy of the given array
 export const shuffle = (array) => {
   let arr = array.slice()
@@ -37,6 +50,7 @@ export default {
   uniqId,
   randomInt,
   choice,
+  throttle,
   shuffle,
   timestamp,
 }

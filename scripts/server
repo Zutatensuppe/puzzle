@@ -2,4 +2,4 @@
 
 cd "$RUN_DIR/server"
 
-nodemon -d 2 index.js
+nodemon index.js

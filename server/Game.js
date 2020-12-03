@@ -30,18 +30,21 @@ function loadAllGames() {
   }
 }
 
-function store(gameId) {
-  const game = GameCommon.get(gameId)
-  fs.writeFileSync('./../data/' + gameId + '.json', JSON.stringify({
-    puzzle: game.puzzle,
-    players: game.players,
-  }))
+function persistAll() {
+  const games = GameCommon.getAllGames()
+  for (const gameId of Object.keys(games)) {
+    const game = games[gameId]
+    fs.writeFileSync('./../data/' + gameId + '.json', JSON.stringify({
+      puzzle: game.puzzle,
+      players: game.players,
+    }))
+  }
 }
 
 export default {
   loadAllGames,
   getAllGames: GameCommon.getAllGames,
-  store,
+  persistAll,
   createGame,
   exists: GameCommon.exists,
   addPlayer: GameCommon.addPlayer,

@@ -109,30 +109,6 @@ wss.on('close', async ({socket}) => {
   }
 })
 
-const ensurePlayerGame = (gameId, clientId, socket) => {
-  Game.addPlayer(gameId, clientId)
-  Game.addSocket(gameId, socket)
-  Game.store(gameId)
-  const game = Game.get(gameId)
-  notify(
-    [Protocol.EV_SERVER_INIT, {
-      puzzle: game.puzzle,
-      players: game.players,
-      evtInfos: game.evtInfos,
-    }],
-    [socket]
-  )
-}
-
-const handlePlayerInput = (gameId, clientId, clientSeq, clientEvtData) => {
-  const changes = Game.handleInput(gameId, clientId, clientEvtData)
-  Game.store(gameId)
-  notify(
-    [Protocol.EV_SERVER_EVENT, clientId, clientSeq, changes],
-    Game.getSockets(gameId)
-  )
-}
-
 wss.on('message', async ({socket, data}) => {
   try {
     const proto = socket.protocol.split('|')
@@ -145,14 +121,39 @@ wss.on('message', async ({socket, data}) => {
         if (!Game.exists(gameId)) {
           throw `[game ${gameId} does not exist... ]`
         }
-        ensurePlayerGame(gameId, clientId, socket)
+        Game.addPlayer(gameId, clientId)
+        Game.addSocket(gameId, socket)
+        const game = Game.get(gameId)
+        notify(
+          [Protocol.EV_SERVER_INIT, {
+            puzzle: game.puzzle,
+            players: game.players,
+            evtInfos: game.evtInfos,
+          }],
+          [socket]
+        )
       } break;
 
       case Protocol.EV_CLIENT_EVENT: {
         const clientSeq = msg[1]
         const clientEvtData = msg[2]
-        ensurePlayerGame(gameId, clientId, socket)
-        handlePlayerInput(gameId, clientId, clientSeq, clientEvtData)
+        Game.addPlayer(gameId, clientId)
+        Game.addSocket(gameId, socket)
+
+        const game = Game.get(gameId)
+        notify(
+          [Protocol.EV_SERVER_INIT, {
+            puzzle: game.puzzle,
+            players: game.players,
+            evtInfos: game.evtInfos,
+          }],
+          [socket]
+        )
+        const changes = Game.handleInput(gameId, clientId, clientEvtData)
+        notify(
+          [Protocol.EV_SERVER_EVENT, clientId, clientSeq, changes],
+          Game.getSockets(gameId)
+        )
       } break;
     }
   } catch (e) {
@@ -161,5 +162,35 @@ wss.on('message', async ({socket, data}) => {
 })
 
 Game.loadAllGames()
-app.listen(port, hostname, () => console.log(`server running on http://${hostname}:${port}`))
+const server = app.listen(
+  port,
+  hostname,
+  () => console.log(`server running on http://${hostname}:${port}`)
+)
 wss.listen()
+
+// persist games in fixed interval
+setInterval(() => {
+  console.log('Persisting games...');
+  Game.persistAll()
+}, config.persistence.interval)
+
+const gracefulShutdown = (signal) => {
+  console.log(`${signal} received...`)
+  Game.persistAll()
+  server.close()
+  wss.close()
+}
+
+// used by nodemon
+process.once('SIGUSR2', function () {
+  gracefulShutdown('SIGUSR2')
+});
+
+process.once('SIGINT', function (code) {
+  gracefulShutdown('SIGINT')
+});
+
+process.once('SIGTERM', function (code) {
+  gracefulShutdown('SIGTERM')
+});
