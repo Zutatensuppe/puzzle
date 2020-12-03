@@ -285,8 +285,6 @@ async function main() {
   const puzzle = game.puzzle
   const players = game.players
 
-  let bgColor = '#222222'
-
   const changePlayer = (change) => {
     for (let k of Object.keys(change)) {
       players[CLIENT_ID][k] = change[k]
@@ -311,7 +309,7 @@ async function main() {
 
   const evts = new EventAdapter(canvas, viewport)
 
-  bgColorPickerEl.value = bgColor
+  bgColorPickerEl.value = players[CLIENT_ID].bgcolor
   bgColorPickerEl.addEventListener('change', () => {
     evts.addEvent(['bg_color', bgColorPickerEl.value])
   })
@@ -361,11 +359,7 @@ async function main() {
       // LOCAL ONLY CHANGES
       // -------------------------------------------------------------
       const type = evt[0]
-      if (type === 'bg_color') {
-        const color = evt[1]
-        bgColor = color
-        RERENDER = true
-      } else if (type === 'move') {
+      if (type === 'move') {
         const pos = { x: evt[1], y: evt[2] }
         RERENDER = true
         changePlayer(pos)
@@ -420,7 +414,7 @@ async function main() {
 
     // CLEAR CTX
     // ---------------------------------------------------------------
-    ctx.fillStyle = bgColor
+    ctx.fillStyle = players[CLIENT_ID].bgcolor || '#222222'
     ctx.fillRect(0, 0, canvas.width, canvas.height)
     if (DEBUG) Debug.checkpoint('clear done')
     // ---------------------------------------------------------------

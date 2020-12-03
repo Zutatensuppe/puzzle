@@ -25,6 +25,7 @@ function addPlayer(gameId, playerId) {
       d: 0, // mouse down
       name: 'anon',
       color: '#ffffff',
+      bgcolor: '#222222',
       points: 0,
       ts,
     }
@@ -323,7 +324,11 @@ function handleInput(gameId, playerId, input) {
   const ts = Util.timestamp()
 
   const type = input[0]
-  if (type === 'player_color') {
+  if (type === 'bg_color') {
+    const bgcolor = input[1]
+    changePlayer(gameId, playerId, { bgcolor, ts })
+    _playerChange()
+  } else if (type === 'player_color') {
     const color = input[1]
     changePlayer(gameId, playerId, { color, ts })
     _playerChange()
