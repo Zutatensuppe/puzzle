@@ -180,6 +180,7 @@ const gracefulShutdown = (signal) => {
   Game.persistAll()
   server.close()
   wss.close()
+  process.exit()
 }
 
 // used by nodemon
