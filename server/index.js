@@ -170,16 +170,27 @@ const server = app.listen(
 wss.listen()
 
 // persist games in fixed interval
-setInterval(() => {
+const persistInterval = setInterval(() => {
   console.log('Persisting games...');
   Game.persistAll()
 }, config.persistence.interval)
 
 const gracefulShutdown = (signal) => {
   console.log(`${signal} received...`)
+
+  console.log('clearing persist interval...')
+  clearInterval(persistInterval)
+
+  console.log('persisting games...')
   Game.persistAll()
+
+  console.log('shutting down webserver...')
   server.close()
+
+  console.log('shutting down websocketserver...')
   wss.close()
+
+  console.log('shutting down...')
   process.exit()
 }
 
