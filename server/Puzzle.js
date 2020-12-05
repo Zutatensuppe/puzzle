@@ -142,14 +142,14 @@ function determinePuzzleTileShapes(info) {
   const shapes = new Array(info.tiles)
   for (let i = 0; i < info.tiles; i++) {
     let coord = Util.coordByTileIdx(info, i)
-    shapes[i] = Util.encodeShape({
+    shapes[i] = {
       top: coord.y === 0 ? 0 : shapes[i - info.tilesX].bottom * -1,
       right: coord.x === info.tilesX - 1 ? 0 : Util.choice(tabs),
       left: coord.x === 0 ? 0 : shapes[i - 1].right * -1,
       bottom: coord.y === info.tilesY - 1 ? 0 : Util.choice(tabs),
-    })
+    }
   }
-  return shapes
+  return shapes.map(Util.encodeShape)
 }
 
 const determineTilesXY = (w, h, targetTiles) => {
