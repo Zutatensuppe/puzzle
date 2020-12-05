@@ -76,9 +76,12 @@ app.use('/uploads/', express.static('./../data/uploads/'))
 app.use('/', async (req, res, next) => {
   if (req.path === '/') {
     const games = [
-      ...Object.keys(Game.getAllGames()).map(id => ({
-        id: id,
-        title: id,
+      ...Game.getAllGames().map(game => ({
+        id: game.id,
+        tilesFinished: Game.getFinishedTileCount(game.id),
+        tilesTotal: Game.getTileCount(game.id),
+        players: Game.getActivePlayers(game.id).length,
+        imageUrl: Game.getImageUrl(game.id),
       })),
     ]
 
@@ -126,8 +129,10 @@ wss.on('message', async ({socket, data}) => {
         const game = Game.get(gameId)
         notify(
           [Protocol.EV_SERVER_INIT, {
+            id: game.id,
             puzzle: game.puzzle,
             players: game.players,
+            sockets: [],
             evtInfos: game.evtInfos,
           }],
           [socket]
@@ -143,8 +148,10 @@ wss.on('message', async ({socket, data}) => {
         const game = Game.get(gameId)
         notify(
           [Protocol.EV_SERVER_INIT, {
+            id: game.id,
             puzzle: game.puzzle,
             players: game.players,
+            sockets: [],
             evtInfos: game.evtInfos,
           }],
           [socket]

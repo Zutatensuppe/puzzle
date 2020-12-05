@@ -38,12 +38,16 @@ export default {
 <div id="app">
   <h1>Running games</h1>
   <div v-for="g in games">
-    <a :href="'/g/' + g.id">{{g.title}}</a>
+    <a :href="'/g/' + g.id">
+      <img :src="g.imageUrl" style="width: 150px; display: inline-block; margin: 5px;" />
+      <br />
+      {{g.tilesFinished}}/{{g.tilesTotal}} pieces, {{g.players}} players
+    </a>
   </div>
 
   <h1>New game</h1>
   <div>
-    <label>Tiles: </label>
+    <label>Pieces: </label>
     <input type="text" v-model="tiles" />
   </div>
   <div>

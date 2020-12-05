@@ -1,5 +1,6 @@
 import Geometry from '../common/Geometry.js'
 import Graphics from './Graphics.js'
+import Util from './../common/Util.js'
 
 async function createPuzzleTileBitmaps(img, tiles, info) {
   var tileSize = info.tileSize
@@ -76,9 +77,10 @@ async function createPuzzleTileBitmaps(img, tiles, info) {
     return path
   }
 
-  for (let tile of tiles) {
+  for (let t of tiles) {
+    const tile = Util.decodeTile(t)
     const srcRect = srcRectByIdx(info, tile.idx)
-    const path = pathForShape(info.shapes[tile.idx])
+    const path = pathForShape(Util.decodeShape(info.shapes[tile.idx]))
 
     const c = Graphics.createCanvas(tileDrawSize, tileDrawSize)
     const ctx = c.getContext('2d')
@@ -192,7 +194,7 @@ async function createPuzzleTileBitmaps(img, tiles, info) {
 }
 
 function srcRectByIdx(puzzleInfo, idx) {
-  const c = puzzleInfo.coords[idx]
+  const c = Util.coordByTileIdx(puzzleInfo, idx)
   return {
     x: c.x * puzzleInfo.tileSize,
     y: c.y * puzzleInfo.tileSize,

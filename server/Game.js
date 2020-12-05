@@ -3,13 +3,13 @@ import { createPuzzle } from './Puzzle.js'
 import GameCommon from './../common/GameCommon.js'
 
 async function createGame(gameId, targetTiles, image) {
-  const game = {
+  GameCommon.newGame({
+    id: gameId,
     puzzle: await createPuzzle(targetTiles, image),
     players: {},
     sockets: [],
     evtInfos: {},
-  }
-  GameCommon.setGame(gameId, game)
+  })
 }
 
 function loadAllGames() {
@@ -21,20 +21,20 @@ function loadAllGames() {
     const gameId = f.replace(/\.json$/, '')
     const contents = fs.readFileSync(`./../data/${f}`, 'utf-8')
     const game = JSON.parse(contents)
-    GameCommon.setGame(gameId, {
+    GameCommon.newGame({
+      id: gameId,
       puzzle: game.puzzle,
       players: game.players,
       sockets: [],
-      evtInfos: {},
+      evtInfos: {}
     })
   }
 }
 
 function persistAll() {
-  const games = GameCommon.getAllGames()
-  for (const gameId of Object.keys(games)) {
-    const game = games[gameId]
-    fs.writeFileSync('./../data/' + gameId + '.json', JSON.stringify({
+  for (const game of GameCommon.getAllGames()) {
+    fs.writeFileSync('./../data/' + game.id + '.json', JSON.stringify({
+      id: game.id,
       puzzle: game.puzzle,
       players: game.players,
     }))
@@ -43,9 +43,13 @@ function persistAll() {
 
 export default {
   loadAllGames,
-  getAllGames: GameCommon.getAllGames,
   persistAll,
   createGame,
+  getAllGames: GameCommon.getAllGames,
+  getActivePlayers: GameCommon.getActivePlayers,
+  getFinishedTileCount: GameCommon.getFinishedTileCount,
+  getImageUrl: GameCommon.getImageUrl,
+  getTileCount: GameCommon.getTileCount,
   exists: GameCommon.exists,
   addPlayer: GameCommon.addPlayer,
   playerExists: GameCommon.playerExists,

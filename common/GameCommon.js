@@ -7,28 +7,70 @@ function exists(gameId) {
   return (!!GAMES[gameId]) || false
 }
 
+function createGame(id, puzzle, players, sockets, evtInfos) {
+  return {
+    id: id,
+    puzzle: puzzle,
+    players: players,
+    sockets: sockets,
+    evtInfos: evtInfos,
+  }
+}
+
+function createPlayer(id, ts) {
+  return {
+    id: id,
+    x: 0,
+    y: 0,
+    d: 0, // mouse down
+    name: 'anon',
+    color: '#ffffff',
+    bgcolor: '#222222',
+    points: 0,
+    ts: ts,
+  }
+}
+
+function newGame({id, puzzle, players, sockets, evtInfos}) {
+  const game = createGame(id, puzzle, players, sockets, evtInfos)
+  setGame(id, game)
+  return game
+}
+
 function setGame(gameId, game) {
   GAMES[gameId] = game
+}
+
+function getPlayer(gameId, playerId) {
+  return Util.decodePlayer(GAMES[gameId].players[playerId])
+}
+
+function setPlayer(gameId, playerId, player) {
+  GAMES[gameId].players[playerId] = Util.encodePlayer(player)
+}
+
+function setTile(gameId, tileIdx, tile) {
+  GAMES[gameId].puzzle.tiles[tileIdx] = Util.encodeTile(tile)
+}
+
+function setPuzzleData(gameId, data) {
+  GAMES[gameId].puzzle.data = data
 }
 
 function playerExists(gameId, playerId) {
   return !!GAMES[gameId].players[playerId]
 }
 
+function getActivePlayers(gameId) {
+  const ts = Util.timestamp()
+  const minTs = ts - 30000
+  return getAllPlayers(gameId).filter(player => player.ts >= minTs)
+}
+
 function addPlayer(gameId, playerId) {
   const ts = Util.timestamp()
   if (!GAMES[gameId].players[playerId]) {
-    GAMES[gameId].players[playerId] = {
-      id: playerId,
-      x: 0,
-      y: 0,
-      d: 0, // mouse down
-      name: 'anon',
-      color: '#ffffff',
-      bgcolor: '#222222',
-      points: 0,
-      ts,
-    }
+    setPlayer(gameId, playerId, createPlayer(playerId, ts))
   } else {
     changePlayer(gameId, playerId, { ts })
   }
@@ -56,11 +98,40 @@ function removeSocket(gameId, socket) {
 }
 
 function getAllGames() {
-  return GAMES
+  return Object.values(GAMES)
+}
+
+function getAllPlayers(gameId) {
+  return GAMES[gameId]
+    ? Object.values(GAMES[gameId].players).map(Util.decodePlayer)
+    : []
 }
 
 function get(gameId) {
   return GAMES[gameId]
+}
+
+function getTileCount(gameId) {
+  return GAMES[gameId].puzzle.tiles.length
+}
+
+function getImageUrl(gameId) {
+  return GAMES[gameId].puzzle.info.imageUrl
+}
+
+function getFinishedTileCount(gameId) {
+  let count = 0
+  for (let t of GAMES[gameId].puzzle.tiles) {
+    if (Util.decodeTile(t).owner === -1) {
+      count++
+    }
+  }
+  return count
+}
+
+function getTilesSortedByZIndex(gameId) {
+  const tiles = GAMES[gameId].puzzle.tiles.map(Util.decodeTile)
+  return tiles.sort((t1, t2) => t1.z - t2.z)
 }
 
 function getSockets(gameId) {
@@ -68,9 +139,11 @@ function getSockets(gameId) {
 }
 
 function changePlayer(gameId, playerId, change) {
+  const player = getPlayer(gameId, playerId)
   for (let k of Object.keys(change)) {
-    GAMES[gameId].players[playerId][k] = change[k]
+    player[k] = change[k]
   }
+  setPlayer(gameId, playerId, player)
 }
 
 function changeData(gameId, change) {
@@ -81,12 +154,14 @@ function changeData(gameId, change) {
 
 function changeTile(gameId, tileIdx, change) {
   for (let k of Object.keys(change)) {
-    GAMES[gameId].puzzle.tiles[tileIdx][k] = change[k]
+    const tile = Util.decodeTile(GAMES[gameId].puzzle.tiles[tileIdx])
+    tile[k] = change[k]
+    GAMES[gameId].puzzle.tiles[tileIdx] = Util.encodeTile(tile)
   }
 }
 
 const getTile = (gameId, tileIdx) => {
-  return GAMES[gameId].puzzle.tiles[tileIdx]
+  return Util.decodeTile(GAMES[gameId].puzzle.tiles[tileIdx])
 }
 
 const getTileGroup = (gameId, tileIdx) => {
@@ -116,11 +191,25 @@ const getTileZIndex = (gameId, tileIdx) => {
 
 const getFirstOwnedTileIdx = (gameId, userId) => {
   for (let t of GAMES[gameId].puzzle.tiles) {
-    if (t.owner === userId) {
-      return t.idx
+    const tile = Util.decodeTile(t)
+    if (tile.owner === userId) {
+      return tile.idx
     }
   }
   return -1
+}
+
+const getFirstOwnedTile = (gameId, userId) => {
+  const idx = getFirstOwnedTileIdx(gameId, userId)
+  return idx < 0 ? null : GAMES[gameId].puzzle.tiles[idx]
+}
+
+const getTileDrawOffset = (gameId) => {
+  return GAMES[gameId].puzzle.info.tileDrawOffset
+}
+
+const getTileDrawSize = (gameId) => {
+  return GAMES[gameId].puzzle.info.tileDrawSize
 }
 
 const getMaxGroup = (gameId) => {
@@ -145,7 +234,7 @@ const getMaxZIndexByTileIdxs = (gameId, tileIdxs) => {
 function srcPosByTileIdx(gameId, tileIdx) {
   const info = GAMES[gameId].puzzle.info
 
-  const c = info.coords[tileIdx]
+  const c = Util.coordByTileIdx(info, tileIdx)
   const cx = c.x * info.tileSize
   const cy = c.y * info.tileSize
 
@@ -155,18 +244,17 @@ function srcPosByTileIdx(gameId, tileIdx) {
 function getSurroundingTilesByIdx(gameId, tileIdx) {
   const info = GAMES[gameId].puzzle.info
 
-  const _X = info.coords[tileIdx].x
-  const _Y = info.coords[tileIdx].y
+  const c = Util.coordByTileIdx(info, tileIdx)
 
   return [
     // top
-    (_Y > 0) ?               (tileIdx - info.tilesX) : -1,
+    (c.y > 0) ?               (tileIdx - info.tilesX) : -1,
     // right
-    (_X < info.tilesX - 1) ? (tileIdx + 1)           : -1,
+    (c.x < info.tilesX - 1) ? (tileIdx + 1)           : -1,
     // bottom
-    (_Y < info.tilesY - 1) ? (tileIdx + info.tilesX) : -1,
+    (c.y < info.tilesY - 1) ? (tileIdx + info.tilesX) : -1,
     // left
-    (_X > 0) ?               (tileIdx - 1)           : -1,
+    (c.x > 0) ?               (tileIdx - 1)           : -1,
   ]
 }
 
@@ -203,13 +291,14 @@ const setTilesOwner = (gameId, tileIdxs, owner) => {
 // get all grouped tiles for a tile
 function getGroupedTileIdxs(gameId, tileIdx) {
   const tiles = GAMES[gameId].puzzle.tiles
-  const tile = tiles[tileIdx]
+  const tile = Util.decodeTile(tiles[tileIdx])
 
   const grouped = []
   if (tile.group) {
     for (let other of tiles) {
-      if (other.group === tile.group) {
-        grouped.push(other.idx)
+      const otherTile = Util.decodeTile(other)
+      if (otherTile.group === tile.group) {
+        grouped.push(otherTile.idx)
       }
     }
   } else {
@@ -227,7 +316,7 @@ const freeTileIdxByPos = (gameId, pos) => {
   let maxZ = -1
   let tileIdx = -1
   for (let idx = 0; idx < tiles.length; idx++) {
-    const tile = tiles[idx]
+    const tile = Util.decodeTile(tiles[idx])
     if (tile.owner !== 0) {
       continue
     }
@@ -248,6 +337,22 @@ const freeTileIdxByPos = (gameId, pos) => {
   return tileIdx
 }
 
+const getPlayerBgColor = (gameId, playerId) => {
+  return getPlayer(gameId, playerId).bgcolor
+}
+
+const getPlayerColor = (gameId, playerId) => {
+  return getPlayer(gameId, playerId).color
+}
+
+const getPlayerName = (gameId, playerId) => {
+  return getPlayer(gameId, playerId).name
+}
+
+const getPlayerPoints = (gameId, playerId) => {
+  return getPlayer(gameId, playerId).points
+}
+
 // determine if two tiles are grouped together
 const areGrouped = (gameId, tileIdx1, tileIdx2) => {
   const g1 = getTileGroup(gameId, tileIdx1)
@@ -255,9 +360,24 @@ const areGrouped = (gameId, tileIdx1, tileIdx2) => {
   return g1 && g1 === g2
 }
 
+const getTableWidth = (gameId) => {
+  return GAMES[gameId].puzzle.info.table.width
+}
+
+const getTableHeight = (gameId) => {
+  return GAMES[gameId].puzzle.info.table.height
+}
+
+const getPuzzleWidth = (gameId) => {
+  return GAMES[gameId].puzzle.info.width
+}
+
+const getPuzzleHeight = (gameId) => {
+  return GAMES[gameId].puzzle.info.height
+}
+
 function handleInput(gameId, playerId, input) {
-  let puzzle = GAMES[gameId].puzzle
-  let players = GAMES[gameId].players
+  const puzzle = GAMES[gameId].puzzle
   let evtInfo = GAMES[gameId].evtInfos[playerId]
 
   let changes = []
@@ -277,7 +397,7 @@ function handleInput(gameId, playerId, input) {
   }
 
   const _playerChange = () => {
-    changes.push(['player', players[playerId]])
+    changes.push(['player', GAMES[gameId].players[playerId]])
   }
 
   // put both tiles (and their grouped tiles) in the same group
@@ -312,7 +432,8 @@ function handleInput(gameId, playerId, input) {
 
     // TODO: strange
     if (searchGroups.length > 0) {
-      for (let tile of tiles) {
+      for (let t of tiles) {
+        const tile = Util.decodeTile(t)
         if (searchGroups.includes(tile.group)) {
           changeTile(gameId, tile.idx, { group })
           _tileChange(tile.idx)
@@ -404,7 +525,7 @@ function handleInput(gameId, playerId, input) {
         // Snap the tile to the final destination
         moveTilesDiff(gameId, tileIdxs, diff)
         finishTiles(gameId, tileIdxs)
-        changePlayer(gameId, playerId, { points: players[playerId].points + tileIdxs.length })
+        changePlayer(gameId, playerId, { points: getPlayerPoints(gameId, playerId) + tileIdxs.length })
         _tileChanges(tileIdxs)
       } else {
         // Snap to other tiles
@@ -457,17 +578,35 @@ function handleInput(gameId, playerId, input) {
   return changes
 }
 
-
 export default {
-  setGame,
+  newGame,
   exists,
   playerExists,
+  getActivePlayers,
   addPlayer,
   socketExists,
   addSocket,
   removeSocket,
+  getFinishedTileCount,
+  getTileCount,
+  getImageUrl,
   get,
   getAllGames,
   getSockets,
+  getPlayerBgColor,
+  getPlayerColor,
+  getPlayerName,
+  changePlayer,
+  setPlayer,
+  setTile,
+  setPuzzleData,
+  getTableWidth,
+  getTableHeight,
+  getPuzzleWidth,
+  getPuzzleHeight,
+  getTilesSortedByZIndex,
+  getFirstOwnedTile,
+  getTileDrawOffset,
+  getTileDrawSize,
   handleInput,
 }

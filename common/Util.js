@@ -46,6 +46,100 @@ export const timestamp = () => {
   )
 }
 
+function encodeShape(data) {
+  if (typeof data === 'number') {
+      return data
+  }
+  /* encoded in 1 byte:
+    00000000
+          ^^ top
+        ^^   right
+      ^^     bottom
+    ^^       left
+  */
+  return ((data.top    + 1) << 0)
+       | ((data.right  + 1) << 2)
+       | ((data.bottom + 1) << 4)
+       | ((data.left   + 1) << 6)
+}
+
+function decodeShape(data) {
+  if (typeof data !== 'number') {
+      return data
+  }
+  return {
+    top:    (data >> 0 & 0b11) - 1,
+    right:  (data >> 2 & 0b11) - 1,
+    bottom: (data >> 4 & 0b11) - 1,
+    left:   (data >> 6 & 0b11) - 1,
+  }
+}
+
+function encodeTile(data) {
+  if (Array.isArray(data)) {
+    return data
+  }
+  return [data.idx, data.pos.x, data.pos.y, data.z, data.owner, data.group]
+}
+
+function decodeTile(data) {
+  if (!Array.isArray(data)) {
+    return data
+  }
+  return {
+    idx: data[0],
+    pos: {
+      x: data[1],
+      y: data[2],
+    },
+    z: data[3],
+    owner: data[4],
+    group: data[5],
+  }
+}
+
+function encodePlayer(data) {
+  if (Array.isArray(data)) {
+    return data
+  }
+  return [
+    data.id,
+    data.x,
+    data.y,
+    data.d,
+    data.name,
+    data.color,
+    data.bgcolor,
+    data.points,
+    data.ts,
+  ]
+}
+
+function decodePlayer(data) {
+  if (!Array.isArray(data)) {
+    return data
+  }
+  return {
+    id: data[0],
+    x: data[1],
+    y: data[2],
+    d: data[3], // mouse down
+    name: data[4],
+    color: data[5],
+    bgcolor: data[6],
+    points: data[7],
+    ts: data[8],
+  }
+}
+
+function coordByTileIdx(info, tileIdx) {
+  const wTiles = info.width / info.tileSize
+  return {
+    x: tileIdx % wTiles,
+    y: Math.floor(tileIdx / wTiles),
+  }
+}
+
 export default {
   uniqId,
   randomInt,
@@ -53,4 +147,15 @@ export default {
   throttle,
   shuffle,
   timestamp,
+
+  encodeShape,
+  decodeShape,
+
+  encodeTile,
+  decodeTile,
+
+  encodePlayer,
+  decodePlayer,
+
+  coordByTileIdx,
 }

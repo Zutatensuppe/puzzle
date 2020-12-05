@@ -27,18 +27,6 @@ function addCanvasToDom(canvas) {
   return canvas
 }
 
-function getActivePlayers(players) {
-  const ts = Util.timestamp()
-  const activePlayers = []
-  for (let id of Object.keys(players)) {
-    const player = players[id]
-    if (player.ts >= ts - 30000) {
-      activePlayers.push(player)
-    }
-  }
-  return activePlayers
-}
-
 function addMenuToDom(previewImageUrl) {
   function row (...elements) {
     const row = document.createElement('tr')
@@ -141,8 +129,8 @@ function addMenuToDom(previewImageUrl) {
   scoresTitleEl.appendChild(document.createTextNode('Scores'))
 
   const scoresListEl = document.createElement('table')
-  const updateScores = (players) => {
-    const activePlayers = getActivePlayers(players)
+  const updateScores = (gameId) => {
+    const activePlayers = Game.getActivePlayers(gameId)
     const scores = activePlayers.map(p => ({
       name: p.name,
       points: p.points,
@@ -186,15 +174,6 @@ function initme() {
     localStorage.setItem('ID', ID)
   }
   return ID
-}
-
-const getFirstOwnedTile = (puzzle, userId) => {
-  for (let t of puzzle.tiles) {
-    if (t.owner === userId) {
-      return t
-    }
-  }
-  return null
 }
 
 export default class EventAdapter {
@@ -279,20 +258,12 @@ async function main() {
   }
 
   const game = await Communication.connect(gameId, CLIENT_ID)
-  Game.createGame(GAME_ID, game);
+  Game.newGame(game)
 
   const bitmaps = await PuzzleGraphics.loadPuzzleBitmaps(game.puzzle)
-  const puzzle = game.puzzle
-  const players = game.players
 
-  const changePlayer = (change) => {
-    for (let k of Object.keys(change)) {
-      players[CLIENT_ID][k] = change[k]
-    }
-  }
-
-  const {bgColorPickerEl, playerColorPickerEl, nameChangeEl, updateScores} = addMenuToDom(game.puzzle.info.imageUrl)
-  updateScores(players)
+  const {bgColorPickerEl, playerColorPickerEl, nameChangeEl, updateScores} = addMenuToDom(Game.getImageUrl(gameId))
+  updateScores(gameId)
 
   // Create a dom and attach adapters to it so we can work with it
   const canvas = addCanvasToDom(Graphics.createCanvas())
@@ -303,21 +274,21 @@ async function main() {
   const viewport = new Camera(canvas)
   // center viewport
   viewport.move(
-    -(puzzle.info.table.width - viewport.width) /2,
-    -(puzzle.info.table.height - viewport.height) /2
+    -(Game.getTableWidth(gameId) - viewport.width) /2,
+    -(Game.getTableHeight(gameId) - viewport.height) /2
   )
 
   const evts = new EventAdapter(canvas, viewport)
 
-  bgColorPickerEl.value = players[CLIENT_ID].bgcolor
+  bgColorPickerEl.value = Game.getPlayerBgColor(gameId, CLIENT_ID)
   bgColorPickerEl.addEventListener('change', () => {
     evts.addEvent(['bg_color', bgColorPickerEl.value])
   })
-  playerColorPickerEl.value = players[CLIENT_ID].color
+  playerColorPickerEl.value = Game.getPlayerBgColor(gameId, CLIENT_ID)
   playerColorPickerEl.addEventListener('change', () => {
     evts.addEvent(['player_color', playerColorPickerEl.value])
   })
-  nameChangeEl.value = players[CLIENT_ID].name
+  nameChangeEl.value = Game.getPlayerName(gameId, CLIENT_ID)
   nameChangeEl.addEventListener('change', () => {
     evts.addEvent(['player_name', nameChangeEl.value])
   })
@@ -330,27 +301,24 @@ async function main() {
     for(let [changeType, changeData] of evChanges) {
       switch (changeType) {
         case 'player': {
-          if (changeData.id !== CLIENT_ID) {
-            players[changeData.id] = changeData
+          const p = Util.decodePlayer(changeData)
+          if (p.id !== CLIENT_ID) {
+            Game.setPlayer(gameId, p.id, p)
             RERENDER = true
           }
         } break;
         case 'tile': {
-          puzzle.tiles[changeData.idx] = changeData
+          const t = Util.decodeTile(changeData)
+          Game.setTile(gameId, t.idx, t)
           RERENDER = true
         } break;
         case 'data': {
-          puzzle.data = changeData
+          Game.setPuzzleData(gameId, changeData)
           RERENDER = true
         } break;
       }
     }
   })
-
-  const tilesSortedByZIndex = () => {
-    const sorted = puzzle.tiles.slice()
-    return sorted.sort((t1, t2) => t1.z - t2.z)
-  }
 
   let _last_mouse_down = null
   const onUpdate = () => {
@@ -360,12 +328,9 @@ async function main() {
       // -------------------------------------------------------------
       const type = evt[0]
       if (type === 'move') {
-        const pos = { x: evt[1], y: evt[2] }
-        RERENDER = true
-        changePlayer(pos)
-
-        if (_last_mouse_down && !getFirstOwnedTile(puzzle, CLIENT_ID)) {
+        if (_last_mouse_down && !Game.getFirstOwnedTile(gameId, CLIENT_ID)) {
           // move the cam
+          const pos = { x: evt[1], y: evt[2] }
           const mouse = viewport.worldToViewport(pos)
           const diffX = Math.round(mouse.x - _last_mouse_down.x)
           const diffY = Math.round(mouse.y - _last_mouse_down.y)
@@ -382,13 +347,13 @@ async function main() {
         if (viewport.zoomIn()) {
           const pos = { x: evt[1], y: evt[2] }
           RERENDER = true
-          changePlayer(pos)
+          Game.changePlayer(gameId, CLIENT_ID, pos)
         }
       } else if (type === 'zoomout') {
         if (viewport.zoomOut()) {
           const pos = { x: evt[1], y: evt[2] }
           RERENDER = true
-          changePlayer(pos)
+          Game.changePlayer(gameId, CLIENT_ID, pos)
         }
       }
 
@@ -414,7 +379,7 @@ async function main() {
 
     // CLEAR CTX
     // ---------------------------------------------------------------
-    ctx.fillStyle = players[CLIENT_ID].bgcolor || '#222222'
+    ctx.fillStyle = Game.getPlayerBgColor(gameId, CLIENT_ID) || '#222222'
     ctx.fillRect(0, 0, canvas.width, canvas.height)
     if (DEBUG) Debug.checkpoint('clear done')
     // ---------------------------------------------------------------
@@ -423,12 +388,12 @@ async function main() {
     // DRAW BOARD
     // ---------------------------------------------------------------
     pos = viewport.worldToViewport({
-      x: (puzzle.info.table.width - puzzle.info.width) / 2,
-      y: (puzzle.info.table.height - puzzle.info.height) / 2
+      x: (Game.getTableWidth(gameId) - Game.getPuzzleWidth(gameId)) / 2,
+      y: (Game.getTableHeight(gameId) - Game.getPuzzleHeight(gameId)) / 2
     })
     dim = viewport.worldDimToViewport({
-      w: puzzle.info.width,
-      h: puzzle.info.height,
+      w: Game.getPuzzleWidth(gameId),
+      h: Game.getPuzzleHeight(gameId),
     })
     ctx.fillStyle = 'rgba(255, 255, 255, .5)'
     ctx.fillRect(pos.x, pos.y, dim.w, dim.h)
@@ -438,15 +403,15 @@ async function main() {
 
     // DRAW TILES
     // ---------------------------------------------------------------
-    for (let tile of tilesSortedByZIndex()) {
+    for (let tile of Game.getTilesSortedByZIndex(gameId)) {
       const bmp = bitmaps[tile.idx]
       pos = viewport.worldToViewport({
-        x: puzzle.info.tileDrawOffset + tile.pos.x,
-        y: puzzle.info.tileDrawOffset + tile.pos.y,
+        x: Game.getTileDrawOffset(gameId) + tile.pos.x,
+        y: Game.getTileDrawOffset(gameId) + tile.pos.y,
       })
       dim = viewport.worldDimToViewport({
-        w: puzzle.info.tileDrawSize,
-        h: puzzle.info.tileDrawSize,
+        w: Game.getTileDrawSize(gameId),
+        h: Game.getTileDrawSize(gameId),
       })
       ctx.drawImage(bmp,
         0, 0, bmp.width, bmp.height,
@@ -459,18 +424,18 @@ async function main() {
 
     // DRAW PLAYERS
     // ---------------------------------------------------------------
-    for (let p of getActivePlayers(players)) {
-      const cursor = await getPlayerCursor(p)
-      const pos = viewport.worldToViewport(p)
+    for (let player of Game.getActivePlayers(gameId)) {
+      const cursor = await getPlayerCursor(player)
+      const pos = viewport.worldToViewport(player)
       ctx.drawImage(cursor,
         Math.round(pos.x - cursor.width/2),
         Math.round(pos.y - cursor.height/2)
       )
-      if (p.id !== CLIENT_ID) {
+      if (player.id !== CLIENT_ID) {
         ctx.fillStyle = 'white'
         ctx.font = '10px sans-serif'
         ctx.textAlign = 'center'
-        ctx.fillText(p.name + ' (' + p.points + ')',
+        ctx.fillText(player.name + ' (' + player.points + ')',
           Math.round(pos.x),
           Math.round(pos.y) + cursor.height
         )
@@ -480,7 +445,7 @@ async function main() {
 
     // DRAW PLAYERS
     // ---------------------------------------------------------------
-    updateScores(players)
+    updateScores(gameId)
     if (DEBUG) Debug.checkpoint('scores done')
     // ---------------------------------------------------------------
 
