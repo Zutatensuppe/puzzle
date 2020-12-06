@@ -98,7 +98,14 @@ function removeSocket(gameId, socket) {
 }
 
 function getAllGames() {
-  return Object.values(GAMES)
+  return Object.values(GAMES).sort((a, b) => {
+    // when both have same finished state, sort by started
+    if (isFinished(a.id) === isFinished(b.id)) {
+      return b.puzzle.data.started - a.puzzle.data.started
+    }
+    // otherwise, sort: unfinished, finished
+    return isFinished(a.id) ? 1 : -1
+  })
 }
 
 function getAllPlayers(gameId) {
@@ -117,6 +124,10 @@ function getTileCount(gameId) {
 
 function getImageUrl(gameId) {
   return GAMES[gameId].puzzle.info.imageUrl
+}
+
+function isFinished(gameId) {
+  return getFinishedTileCount(gameId) === getTileCount(gameId)
 }
 
 function getFinishedTileCount(gameId) {
@@ -527,6 +538,11 @@ function handleInput(gameId, playerId, input) {
         finishTiles(gameId, tileIdxs)
         changePlayer(gameId, playerId, { points: getPlayerPoints(gameId, playerId) + tileIdxs.length })
         _tileChanges(tileIdxs)
+        // check if the puzzle is finished
+        if (getFinishedTileCount(gameId) === getTileCount(gameId)) {
+          changeData(gameId, { finished: Util.timestamp() })
+          _dataChange()
+        }
       } else {
         // Snap to other tiles
         const check = (gameId, tileIdx, otherTileIdx, off) => {

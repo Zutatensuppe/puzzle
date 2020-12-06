@@ -101,6 +101,8 @@ async function createPuzzle(targetTiles, image) {
       // TODO: maybe calculate this each time?
       maxZ: 0,     // max z of all pieces
       maxGroup: 0, // max group of all pieces
+      started: Util.timestamp(), // start timestamp
+      finished: 0, // finish timestamp
     },
     // static puzzle information. stays same for complete duration of
     // the game

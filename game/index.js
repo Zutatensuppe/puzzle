@@ -26,6 +26,20 @@ const Upload = {
   }
 }
 
+
+export const timestamp = () => {
+  const d = new Date();
+  return Date.UTC(
+    d.getUTCFullYear(),
+    d.getUTCMonth(),
+    d.getUTCDate(),
+    d.getUTCHours(),
+    d.getUTCMinutes(),
+    d.getUTCSeconds(),
+    d.getUTCMilliseconds(),
+  )
+}
+
 export default {
   components: {
     Upload,
@@ -37,12 +51,16 @@ export default {
   template: `
 <div id="app">
   <h1>Running games</h1>
-  <div v-for="g in games">
-    <a :href="'/g/' + g.id">
-      <img :src="g.imageUrl" style="width: 150px; display: inline-block; margin: 5px;" />
-      <br />
-      {{g.tilesFinished}}/{{g.tilesTotal}} pieces, {{g.players}} players
-    </a>
+  <div class="game-teaser-wrap" v-for="g in games">
+    <div class="game-teaser" :style="'background-image: url('+g.imageUrl+')'">
+      <a class="game-info" :href="'/g/' + g.id">
+        <span class="game-info-text">
+          🧩 {{g.tilesFinished}}/{{g.tilesTotal}}<br />
+          👥 {{g.players}}<br />
+          {{time(g.started, g.finished)}}<br />
+        </span>
+      </a>
+    </div>
   </div>
 
   <h1>New game</h1>
@@ -81,6 +99,32 @@ export default {
     }
   },
   methods: {
+    time(start, end) {
+      const icon = end ? '🏁' : '⏳'
+
+      const from = start;
+      const to = end || timestamp()
+
+      const MS = 1
+      const SEC = MS * 1000
+      const MIN = SEC * 60
+      const HOUR = MIN * 60
+      const DAY = HOUR * 24
+
+      let diff = to - from
+      const d = Math.floor(diff / DAY)
+      diff = diff % DAY
+
+      const h = Math.floor(diff / HOUR)
+      diff = diff % HOUR
+
+      const m = Math.floor(diff / MIN)
+      diff = diff % MIN
+
+      const s = Math.floor(diff / SEC)
+
+      return `${icon} ${d}d ${h}h ${m}m ${s}s`
+    },
     mediaImgUploaded(j) {
       this.image = j.image
     },

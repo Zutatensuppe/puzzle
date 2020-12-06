@@ -76,10 +76,20 @@ function addMenuToDom(previewImageUrl) {
   )
 
   const settingsEl = document.createElement('table')
-  settingsEl.classList.add('layer', 'settings', 'closed')
+  settingsEl.classList.add('settings')
   settingsEl.appendChild(bgColorPickerRow)
   settingsEl.appendChild(playerColorPickerRow)
   settingsEl.appendChild(nameChangeRow)
+  settingsEl.addEventListener('click', (e) => {
+    e.stopPropagation()
+  })
+
+  const settingsOverlay = document.createElement('div')
+  settingsOverlay.classList.add('overlay', 'transparent', 'closed')
+  settingsOverlay.appendChild(settingsEl)
+  settingsOverlay.addEventListener('click', () => {
+    settingsOverlay.classList.toggle('closed')
+  })
 
   const previewEl = document.createElement('div')
   previewEl.classList.add('preview')
@@ -100,7 +110,7 @@ function addMenuToDom(previewImageUrl) {
   settingsOpenerEl.classList.add('opener')
   settingsOpenerEl.appendChild(document.createTextNode('🛠️ Settings'))
   settingsOpenerEl.addEventListener('click', () => {
-    settingsEl.classList.toggle('closed')
+    settingsOverlay.classList.toggle('closed')
   })
 
   const homeEl = document.createElement('a')
@@ -153,7 +163,7 @@ function addMenuToDom(previewImageUrl) {
   scoresEl.appendChild(scoresTitleEl)
   scoresEl.appendChild(scoresListEl)
 
-  document.body.appendChild(settingsEl)
+  document.body.appendChild(settingsOverlay)
   document.body.appendChild(previewOverlay)
   document.body.appendChild(menuEl)
   document.body.appendChild(scoresEl)
@@ -284,7 +294,7 @@ async function main() {
   bgColorPickerEl.addEventListener('change', () => {
     evts.addEvent(['bg_color', bgColorPickerEl.value])
   })
-  playerColorPickerEl.value = Game.getPlayerBgColor(gameId, CLIENT_ID)
+  playerColorPickerEl.value = Game.getPlayerColor(gameId, CLIENT_ID)
   playerColorPickerEl.addEventListener('change', () => {
     evts.addEvent(['player_color', playerColorPickerEl.value])
   })

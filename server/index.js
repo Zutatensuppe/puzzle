@@ -78,6 +78,8 @@ app.use('/', async (req, res, next) => {
     const games = [
       ...Game.getAllGames().map(game => ({
         id: game.id,
+        started: game.puzzle.data.started,
+        finished: game.puzzle.data.finished,
         tilesFinished: Game.getFinishedTileCount(game.id),
         tilesTotal: Game.getTileCount(game.id),
         players: Game.getActivePlayers(game.id).length,

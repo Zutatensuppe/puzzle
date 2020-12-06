@@ -12,17 +12,19 @@ async function createGame(gameId, targetTiles, image) {
   })
 }
 
+const DATA_DIR = './../data'
+
 function loadAllGames() {
-  const files = fs.readdirSync('./../data/')
+  const files = fs.readdirSync(DATA_DIR)
   for (const f of files) {
     if (!f.match(/\.json$/)) {
       continue
     }
-    const gameId = f.replace(/\.json$/, '')
-    const contents = fs.readFileSync(`./../data/${f}`, 'utf-8')
+    const file = `${DATA_DIR}/${f}`
+    const contents = fs.readFileSync(file, 'utf-8')
     const game = JSON.parse(contents)
     GameCommon.newGame({
-      id: gameId,
+      id: game.id,
       puzzle: game.puzzle,
       players: game.players,
       sockets: [],
@@ -33,7 +35,7 @@ function loadAllGames() {
 
 function persistAll() {
   for (const game of GameCommon.getAllGames()) {
-    fs.writeFileSync('./../data/' + game.id + '.json', JSON.stringify({
+    fs.writeFileSync(`${DATA_DIR}/${game.id}.json`, JSON.stringify({
       id: game.id,
       puzzle: game.puzzle,
       players: game.players,
