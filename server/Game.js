@@ -69,4 +69,6 @@ export default {
   get: GameCommon.get,
   getSockets: GameCommon.getSockets,
   handleInput: GameCommon.handleInput,
+  getStartTs: GameCommon.getStartTs,
+  getFinishTs: GameCommon.getFinishTs,
 }

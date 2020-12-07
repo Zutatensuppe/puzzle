@@ -27,7 +27,8 @@ function addCanvasToDom(canvas) {
   return canvas
 }
 
-function addMenuToDom(previewImageUrl) {
+function addMenuToDom(gameId) {
+  const previewImageUrl = Game.getImageUrl(gameId)
   function row (...elements) {
     const row = document.createElement('tr')
     for (let el of elements) {
@@ -139,7 +140,7 @@ function addMenuToDom(previewImageUrl) {
   scoresTitleEl.appendChild(document.createTextNode('Scores'))
 
   const scoresListEl = document.createElement('table')
-  const updateScores = (gameId) => {
+  const updateScores = () => {
     const activePlayers = Game.getActivePlayers(gameId)
     const scores = activePlayers.map(p => ({
       name: p.name,
@@ -158,6 +159,46 @@ function addMenuToDom(previewImageUrl) {
     }
   }
 
+  const timerStr = () => {
+    const started = Game.getStartTs(gameId)
+    const ended = Game.getFinishTs(gameId)
+
+    const icon = ended ? '🏁' : '⏳'
+
+    const from = started;
+    const to = ended || Util.timestamp()
+
+    const MS = 1
+    const SEC = MS * 1000
+    const MIN = SEC * 60
+    const HOUR = MIN * 60
+    const DAY = HOUR * 24
+
+    let diff = to - from
+    const d = Math.floor(diff / DAY)
+    diff = diff % DAY
+
+    const h = Math.floor(diff / HOUR)
+    diff = diff % HOUR
+
+    const m = Math.floor(diff / MIN)
+    diff = diff % MIN
+
+    const s = Math.floor(diff / SEC)
+
+    return `${icon} ${d}d ${h}h ${m}m ${s}s`
+  }
+
+  const timerCountdownEl = document.createElement('div')
+  timerCountdownEl.innerText = timerStr()
+  setInterval(() => {
+    timerCountdownEl.innerText = timerStr()
+  }, 1000)
+
+  const timerEl = document.createElement('div')
+  timerEl.classList.add('timer')
+  timerEl.appendChild(timerCountdownEl)
+
   const scoresEl = document.createElement('div')
   scoresEl.classList.add('scores')
   scoresEl.appendChild(scoresTitleEl)
@@ -165,6 +206,7 @@ function addMenuToDom(previewImageUrl) {
 
   document.body.appendChild(settingsOverlay)
   document.body.appendChild(previewOverlay)
+  document.body.appendChild(timerEl)
   document.body.appendChild(menuEl)
   document.body.appendChild(scoresEl)
 
@@ -272,8 +314,8 @@ async function main() {
 
   const bitmaps = await PuzzleGraphics.loadPuzzleBitmaps(game.puzzle)
 
-  const {bgColorPickerEl, playerColorPickerEl, nameChangeEl, updateScores} = addMenuToDom(Game.getImageUrl(gameId))
-  updateScores(gameId)
+  const {bgColorPickerEl, playerColorPickerEl, nameChangeEl, updateScores} = addMenuToDom(gameId)
+  updateScores()
 
   // Create a dom and attach adapters to it so we can work with it
   const canvas = addCanvasToDom(Graphics.createCanvas())
@@ -455,7 +497,7 @@ async function main() {
 
     // DRAW PLAYERS
     // ---------------------------------------------------------------
-    updateScores(gameId)
+    updateScores()
     if (DEBUG) Debug.checkpoint('scores done')
     // ---------------------------------------------------------------
 

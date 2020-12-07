@@ -20,4 +20,6 @@ export default {
   getFirstOwnedTile: GameCommon.getFirstOwnedTile,
   getTileDrawOffset: GameCommon.getTileDrawOffset,
   getTileDrawSize: GameCommon.getTileDrawSize,
+  getStartTs: GameCommon.getStartTs,
+  getFinishTs: GameCommon.getFinishTs,
 }

@@ -223,6 +223,14 @@ const getTileDrawSize = (gameId) => {
   return GAMES[gameId].puzzle.info.tileDrawSize
 }
 
+const getStartTs = (gameId) => {
+  return GAMES[gameId].puzzle.data.started
+}
+
+const getFinishTs = (gameId) => {
+  return GAMES[gameId].puzzle.data.finished
+}
+
 const getMaxGroup = (gameId) => {
   return GAMES[gameId].puzzle.data.maxGroup
 }
@@ -624,5 +632,7 @@ export default {
   getFirstOwnedTile,
   getTileDrawOffset,
   getTileDrawSize,
+  getStartTs,
+  getFinishTs,
   handleInput,
 }

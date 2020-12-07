@@ -29,6 +29,16 @@ a:hover { color: var(--link-hover-color); }
   box-shadow: 0 0 10px 0 rgba(0,0,0,.7);
 }
 
+.timer {
+  position: absolute;
+  left: 0;
+
+  background: var(--bg-color);
+  padding: 5px;
+  border: solid 1px black;
+  box-shadow: 0 0 10px 0 rgba(0,0,0,.7);
+}
+
 .menu {
   position: absolute;
   left: 50%;
