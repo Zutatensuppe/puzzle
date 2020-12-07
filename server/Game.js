@@ -1,6 +1,7 @@
 import fs from 'fs'
 import { createPuzzle } from './Puzzle.js'
 import GameCommon from './../common/GameCommon.js'
+import Util from './../common/Util.js'
 
 async function createGame(gameId, targetTiles, image) {
   GameCommon.newGame({
@@ -23,6 +24,13 @@ function loadAllGames() {
     const file = `${DATA_DIR}/${f}`
     const contents = fs.readFileSync(file, 'utf-8')
     const game = JSON.parse(contents)
+    if (typeof game.puzzle.data.started === 'undefined') {
+      game.puzzle.data.started = Math.round(fs.statSync(file).atimeMs)
+    }
+    if (typeof game.puzzle.data.finished === 'undefined') {
+      let unfinished = game.puzzle.tiles.map(Util.decodeTile).find(t => t.owner !== -1)
+      game.puzzle.data.finished = unfinished ? 0 : Util.timestamp()
+    }
     GameCommon.newGame({
       id: game.id,
       puzzle: game.puzzle,
