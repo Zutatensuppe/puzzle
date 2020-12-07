@@ -25,7 +25,7 @@ function loadAllGames() {
     const contents = fs.readFileSync(file, 'utf-8')
     const game = JSON.parse(contents)
     if (typeof game.puzzle.data.started === 'undefined') {
-      game.puzzle.data.started = Math.round(fs.statSync(file).atimeMs)
+      game.puzzle.data.started = Math.round(fs.statSync(file).ctimeMs)
     }
     if (typeof game.puzzle.data.finished === 'undefined') {
       let unfinished = game.puzzle.tiles.map(Util.decodeTile).find(t => t.owner !== -1)

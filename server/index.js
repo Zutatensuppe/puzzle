@@ -11,13 +11,13 @@ import twing from 'twing'
 import bodyParser from 'body-parser'
 
 const allImages = () => [
-  ...fs.readdirSync('./../game/example-images/').map(f => ({
-    file: `./../game/example-images/${f}`,
-    url: `/example-images/${f}`,
-  })),
   ...fs.readdirSync('./../data/uploads/').map(f => ({
     file: `./../data/uploads/${f}`,
     url: `/uploads/${f}`,
+  })),
+  ...fs.readdirSync('./../game/example-images/').map(f => ({
+    file: `./../game/example-images/${f}`,
+    url: `/example-images/${f}`,
   })),
 ]
 
