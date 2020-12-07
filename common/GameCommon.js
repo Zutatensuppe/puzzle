@@ -23,9 +23,9 @@ function createPlayer(id, ts) {
     x: 0,
     y: 0,
     d: 0, // mouse down
-    name: 'anon',
-    color: '#ffffff',
-    bgcolor: '#222222',
+    name: null, // 'anon'
+    color: null, // '#ffffff'
+    bgcolor: null, // '#222222'
     points: 0,
     ts: ts,
   }

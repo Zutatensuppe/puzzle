@@ -330,18 +330,39 @@ async function main() {
     -(Game.getTableHeight(gameId) - viewport.height) /2
   )
 
-  const evts = new EventAdapter(canvas, viewport)
+  const playerBgColor = () => {
+    return (Game.getPlayerBgColor(gameId, CLIENT_ID)
+        || localStorage.getItem('bg_color')
+        || '#222222')
+  }
+  const playerColor = () => {
+    return (Game.getPlayerColor(gameId, CLIENT_ID)
+        || localStorage.getItem('player_color')
+        || '#ffffff')
+  }
+  const playerName = () => {
+    return (Game.getPlayerName(gameId, CLIENT_ID)
+        || localStorage.getItem('player_name')
+        || 'anon')
+  }
 
-  bgColorPickerEl.value = Game.getPlayerBgColor(gameId, CLIENT_ID)
+  const evts = new EventAdapter(canvas, viewport)
+  bgColorPickerEl.value = playerBgColor()
+  evts.addEvent(['bg_color', bgColorPickerEl.value])
   bgColorPickerEl.addEventListener('change', () => {
+    localStorage.setItem('bg_color', bgColorPickerEl.value)
     evts.addEvent(['bg_color', bgColorPickerEl.value])
   })
-  playerColorPickerEl.value = Game.getPlayerColor(gameId, CLIENT_ID)
+  playerColorPickerEl.value = playerColor()
+  evts.addEvent(['player_color', playerColorPickerEl.value])
   playerColorPickerEl.addEventListener('change', () => {
+    localStorage.setItem('player_color', playerColorPickerEl.value)
     evts.addEvent(['player_color', playerColorPickerEl.value])
   })
-  nameChangeEl.value = Game.getPlayerName(gameId, CLIENT_ID)
+  nameChangeEl.value = playerName()
+  evts.addEvent(['player_name', nameChangeEl.value])
   nameChangeEl.addEventListener('change', () => {
+    localStorage.setItem('player_name', nameChangeEl.value)
     evts.addEvent(['player_name', nameChangeEl.value])
   })
 
@@ -431,7 +452,7 @@ async function main() {
 
     // CLEAR CTX
     // ---------------------------------------------------------------
-    ctx.fillStyle = Game.getPlayerBgColor(gameId, CLIENT_ID) || '#222222'
+    ctx.fillStyle = playerBgColor()
     ctx.fillRect(0, 0, canvas.width, canvas.height)
     if (DEBUG) Debug.checkpoint('clear done')
     // ---------------------------------------------------------------
