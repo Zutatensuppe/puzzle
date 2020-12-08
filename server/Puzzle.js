@@ -1,16 +1,45 @@
 import sizeOf from 'image-size'
 import Util from './../common/Util.js'
+import exif from 'exif'
 
 // cut size of each puzzle tile in the
 // final resized version of the puzzle image
 const TILE_SIZE = 64
+
+async function getDimensions(imagePath) {
+  let dimensions = sizeOf(imagePath)
+  try {
+    const orientation = await getExifOrientation(imagePath)
+    // when image is rotated to the left or right, switch width/height
+    // https://jdhao.github.io/2019/07/31/image_rotation_exif_info/
+    if (orientation === 6 || orientation === 8) {
+      return {
+        width: dimensions.height,
+        height: dimensions.width,
+      }
+    }
+  } catch {}
+  return dimensions
+}
+
+async function getExifOrientation(imagePath) {
+  return new Promise((resolve, reject) => {
+    new exif.ExifImage({ image: imagePath }, function (error, exifData) {
+      if (error) {
+        reject(error)
+      } else {
+        resolve(exifData.image.Orientation)
+      }
+    })
+  })
+}
 
 async function createPuzzle(targetTiles, image) {
   const imagePath = image.file
   const imageUrl = image.url
 
   // load bitmap, to determine the original size of the image
-  const dim = sizeOf(imagePath)
+  const dim = await getDimensions(imagePath)
 
   // determine puzzle information from the bitmap
   const info = determinePuzzleInfo(dim.width, dim.height, targetTiles)
