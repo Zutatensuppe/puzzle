@@ -23,7 +23,12 @@ function loadAllGames() {
     }
     const file = `${DATA_DIR}/${f}`
     const contents = fs.readFileSync(file, 'utf-8')
-    const game = JSON.parse(contents)
+    let game
+    try {
+      game = JSON.parse(contents)
+    } catch {
+      console.log(`[ERR] unable to load game from file ${f}`);
+    }
     if (typeof game.puzzle.data.started === 'undefined') {
       game.puzzle.data.started = Math.round(fs.statSync(file).ctimeMs)
     }

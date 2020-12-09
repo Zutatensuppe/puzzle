@@ -7,6 +7,7 @@ import Communication from './Communication.js'
 import Util from './../common/Util.js'
 import PuzzleGraphics from './PuzzleGraphics.js'
 import Game from './Game.js'
+import fireworksController from './Fireworks.js'
 
 if (typeof GAME_ID === 'undefined') throw '[ GAME_ID not set ]'
 if (typeof WS_ADDRESS === 'undefined') throw '[ WS_ADDRESS not set ]'
@@ -319,6 +320,14 @@ async function main() {
 
   // Create a dom and attach adapters to it so we can work with it
   const canvas = addCanvasToDom(Graphics.createCanvas())
+
+  const longFinished = Game.getFinishTs(gameId)
+  let finished = longFinished ? true : false
+  const justFinished = () => !!(finished && !longFinished)
+
+  const fireworks = new fireworksController(canvas)
+  fireworks.init(canvas)
+
   const ctx = canvas.getContext('2d')
 
   // initialize some view data
@@ -391,6 +400,7 @@ async function main() {
         } break;
       }
     }
+    finished = Game.getFinishTs(gameId)
   })
 
   let _last_mouse_down = null
@@ -437,6 +447,12 @@ async function main() {
         RERENDER = true
       }
       Communication.sendClientEvent(evt)
+    }
+
+    finished = Game.getFinishTs(gameId)
+    if (justFinished()) {
+      fireworks.update()
+      RERENDER = true
     }
   }
 
@@ -522,6 +538,9 @@ async function main() {
     if (DEBUG) Debug.checkpoint('scores done')
     // ---------------------------------------------------------------
 
+    if (justFinished()) {
+      fireworks.render()
+    }
 
     RERENDER = false
   }
