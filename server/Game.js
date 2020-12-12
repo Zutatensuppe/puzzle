@@ -3,16 +3,6 @@ import { createPuzzle } from './Puzzle.js'
 import GameCommon from './../common/GameCommon.js'
 import Util from './../common/Util.js'
 
-async function createGame(gameId, targetTiles, image) {
-  GameCommon.newGame({
-    id: gameId,
-    puzzle: await createPuzzle(targetTiles, image),
-    players: {},
-    sockets: [],
-    evtInfos: {},
-  })
-}
-
 const DATA_DIR = './../data'
 
 function loadAllGames() {
@@ -46,34 +36,64 @@ function loadAllGames() {
   }
 }
 
-function persistAll() {
+const changedGames = {}
+async function createGame(gameId, targetTiles, image) {
+  GameCommon.newGame({
+    id: gameId,
+    puzzle: await createPuzzle(targetTiles, image),
+    players: {},
+    sockets: [],
+    evtInfos: {},
+  })
+  changedGames[gameId] = true
+}
+
+function addPlayer(gameId, playerId) {
+  GameCommon.addPlayer(gameId, playerId)
+  changedGames[gameId] = true
+}
+
+function addSocket(gameId, socket) {
+  GameCommon.addSocket(gameId, socket)
+  changedGames[gameId] = true
+}
+
+function handleInput(gameId, playerId, input) {
+  const ret = GameCommon.handleInput(gameId, playerId, input)
+  changedGames[gameId] = true
+  return ret
+}
+
+function persistChangedGames() {
   for (const game of GameCommon.getAllGames()) {
-    fs.writeFileSync(`${DATA_DIR}/${game.id}.json`, JSON.stringify({
-      id: game.id,
-      puzzle: game.puzzle,
-      players: game.players,
-    }))
+    if (game.id in changedGames) {
+      fs.writeFileSync(`${DATA_DIR}/${game.id}.json`, JSON.stringify({
+        id: game.id,
+        puzzle: game.puzzle,
+        players: game.players,
+      }))
+    }
   }
 }
 
 export default {
   loadAllGames,
-  persistAll,
+  persistChangedGames,
   createGame,
+  addPlayer,
+  addSocket,
+  handleInput,
   getAllGames: GameCommon.getAllGames,
   getActivePlayers: GameCommon.getActivePlayers,
   getFinishedTileCount: GameCommon.getFinishedTileCount,
   getImageUrl: GameCommon.getImageUrl,
   getTileCount: GameCommon.getTileCount,
   exists: GameCommon.exists,
-  addPlayer: GameCommon.addPlayer,
   playerExists: GameCommon.playerExists,
-  addSocket: GameCommon.addSocket,
   socketExists: GameCommon.socketExists,
   removeSocket: GameCommon.removeSocket,
   get: GameCommon.get,
   getSockets: GameCommon.getSockets,
-  handleInput: GameCommon.handleInput,
   getStartTs: GameCommon.getStartTs,
   getFinishTs: GameCommon.getFinishTs,
 }
