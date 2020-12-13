@@ -178,10 +178,20 @@ const server = app.listen(
 )
 wss.listen()
 
+
+const memoryUsageHuman = () => {
+  const used = process.memoryUsage().heapUsed / 1024 / 1024
+  return `${Math.round(used * 100) / 100}M`
+}
+
+console.log(`Mem: ${memoryUsageHuman()}`)
+
 // persist games in fixed interval
 const persistInterval = setInterval(() => {
   console.log('Persisting games...');
   Game.persistChangedGames()
+
+  console.log(`Mem: ${memoryUsageHuman()}`)
 }, config.persistence.interval)
 
 const gracefulShutdown = (signal) => {

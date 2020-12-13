@@ -73,6 +73,7 @@ function persistChangedGames() {
         puzzle: game.puzzle,
         players: game.players,
       }))
+      console.info(`[INFO] persisted game ${game.id}`)
     }
   }
 }
