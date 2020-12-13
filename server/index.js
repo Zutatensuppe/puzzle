@@ -9,6 +9,7 @@ import Util from './../common/Util.js'
 import Game from './Game.js'
 import twing from 'twing'
 import bodyParser from 'body-parser'
+import v8 from 'v8'
 
 const allImages = () => [
   ...fs.readdirSync('./../data/uploads/').map(f => ({
@@ -180,18 +181,22 @@ wss.listen()
 
 
 const memoryUsageHuman = () => {
+  const totalHeapSize = v8.getHeapStatistics().total_available_size
+  let totalHeapSizeInGB = (totalHeapSize / 1024 / 1024 / 1024).toFixed(2)
+
+  console.log(`Total heap size (bytes) ${totalHeapSize}, (GB ~${totalHeapSizeInGB})`)
   const used = process.memoryUsage().heapUsed / 1024 / 1024
-  return `${Math.round(used * 100) / 100}M`
+  console.log(`Mem: ${Math.round(used * 100) / 100}M`)
 }
 
-console.log(`Mem: ${memoryUsageHuman()}`)
+memoryUsageHuman()
 
 // persist games in fixed interval
 const persistInterval = setInterval(() => {
   console.log('Persisting games...');
   Game.persistChangedGames()
 
-  console.log(`Mem: ${memoryUsageHuman()}`)
+  memoryUsageHuman()
 }, config.persistence.interval)
 
 const gracefulShutdown = (signal) => {
