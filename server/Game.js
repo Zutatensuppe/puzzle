@@ -67,6 +67,7 @@ function handleInput(gameId, playerId, input) {
 function persistChangedGames() {
   for (const game of GameCommon.getAllGames()) {
     if (game.id in changedGames) {
+      delete changedGames[game.id]
       fs.writeFileSync(`${DATA_DIR}/${game.id}.json`, JSON.stringify({
         id: game.id,
         puzzle: game.puzzle,
