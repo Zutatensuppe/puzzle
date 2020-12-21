@@ -1,6 +1,7 @@
 import sizeOf from 'image-size'
 import Util from './../common/Util.js'
 import exif from 'exif'
+import { Rng } from '../common/Rng.js'
 
 // cut size of each puzzle tile in the
 // final resized version of the puzzle image
@@ -34,7 +35,11 @@ async function getExifOrientation(imagePath) {
   })
 }
 
-async function createPuzzle(targetTiles, image) {
+async function createPuzzle(
+  /** @type Rng */ rng,
+  targetTiles,
+  image
+) {
   const imagePath = image.file
   const imageUrl = image.url
 
@@ -48,7 +53,7 @@ async function createPuzzle(targetTiles, image) {
   for (let i = 0; i < tiles.length; i++) {
     tiles[i] = { idx: i }
   }
-  const shapes = determinePuzzleTileShapes(info)
+  const shapes = determinePuzzleTileShapes(rng, info)
 
   let positions = new Array(info.tiles)
   for (let tile of tiles) {
@@ -100,7 +105,7 @@ async function createPuzzle(targetTiles, image) {
   }
 
   // then shuffle the positions
-  positions = Util.shuffle(positions)
+  positions = Util.shuffle(rng, positions)
 
   tiles = tiles.map(tile => {
     return Util.encodeTile({
@@ -167,7 +172,10 @@ async function createPuzzle(targetTiles, image) {
   }
 }
 
-function determinePuzzleTileShapes(info) {
+function determinePuzzleTileShapes(
+  /** @type Rng */ rng,
+  info
+) {
   const tabs = [-1, 1]
 
   const shapes = new Array(info.tiles)
@@ -175,9 +183,9 @@ function determinePuzzleTileShapes(info) {
     let coord = Util.coordByTileIdx(info, i)
     shapes[i] = {
       top: coord.y === 0 ? 0 : shapes[i - info.tilesX].bottom * -1,
-      right: coord.x === info.tilesX - 1 ? 0 : Util.choice(tabs),
+      right: coord.x === info.tilesX - 1 ? 0 : Util.choice(rng, tabs),
       left: coord.x === 0 ? 0 : shapes[i - 1].right * -1,
-      bottom: coord.y === info.tilesY - 1 ? 0 : Util.choice(tabs),
+      bottom: coord.y === info.tilesY - 1 ? 0 : Util.choice(rng, tabs),
     }
   }
   return shapes.map(Util.encodeShape)

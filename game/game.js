@@ -8,6 +8,7 @@ import Util from './../common/Util.js'
 import PuzzleGraphics from './PuzzleGraphics.js'
 import Game from './Game.js'
 import fireworksController from './Fireworks.js'
+import { Rng } from '../common/Rng.js'
 
 if (typeof GAME_ID === 'undefined') throw '[ GAME_ID not set ]'
 if (typeof WS_ADDRESS === 'undefined') throw '[ WS_ADDRESS not set ]'
@@ -324,6 +325,7 @@ async function main() {
   }
 
   const game = await Communication.connect(gameId, CLIENT_ID)
+  game.rng.obj = Rng.unserialize(game.rng.obj)
   Game.newGame(game)
 
   const bitmaps = await PuzzleGraphics.loadPuzzleBitmaps(game.puzzle)
@@ -338,7 +340,7 @@ async function main() {
   let finished = longFinished ? true : false
   const justFinished = () => !!(finished && !longFinished)
 
-  const fireworks = new fireworksController(canvas)
+  const fireworks = new fireworksController(canvas, game.rng.obj)
   fireworks.init(canvas)
 
   const ctx = canvas.getContext('2d')

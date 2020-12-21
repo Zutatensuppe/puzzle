@@ -10,6 +10,7 @@ import Game from './Game.js'
 import twing from 'twing'
 import bodyParser from 'body-parser'
 import v8 from 'v8'
+import { Rng } from '../common/Rng.js'
 
 const allImages = () => [
   ...fs.readdirSync('./../data/uploads/').map(f => ({
@@ -130,9 +131,14 @@ wss.on('message', async ({socket, data}) => {
         Game.addPlayer(gameId, clientId)
         Game.addSocket(gameId, socket)
         const game = Game.get(gameId)
+        console.log(gameId, game)
         notify(
           [Protocol.EV_SERVER_INIT, {
             id: game.id,
+            rng: {
+              type: game.rng.type,
+              obj: Rng.serialize(game.rng.obj),
+            },
             puzzle: game.puzzle,
             players: game.players,
             sockets: [],

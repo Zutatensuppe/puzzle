@@ -1,4 +1,5 @@
-import Util from './../common/Util.js'
+import { Rng } from '../common/Rng.js'
+import Util from '../common/Util.js'
 
 let minVx = -10
 let deltaVx = 20
@@ -17,22 +18,22 @@ const explosionDividerFactor = 10
 const nBombs = 1
 const percentChanceNewBomb = 5
 
-function color() {
-  const r = Util.randomInt(0, 255)
-  const g = Util.randomInt(0, 255)
-  const b = Util.randomInt(0, 255)
+function color(/** @type Rng */ rng) {
+  const r = Util.randomInt(rng, 0, 255)
+  const g = Util.randomInt(rng, 0, 255)
+  const b = Util.randomInt(rng, 0, 255)
   return 'rgba(' + r + ',' + g + ',' + b + ', 0.8)'
 }
 
 // A Bomb. Or firework.
 class Bomb {
-  constructor() {
+  constructor(/** @type Rng */ rng) {
     this.radius = bombRadius
     this.previousRadius = bombRadius
     this.explodingDuration = explodingDuration
     this.hasExploded = false
     this.alive = true
-    this.color = color()
+    this.color = color(rng)
 
     this.px = (window.innerWidth / 4) + (Math.random() * window.innerWidth / 2)
     this.py = window.innerHeight
@@ -124,8 +125,9 @@ class Particle {
 }
 
 class Controller {
-  constructor(canvas) {
+  constructor(canvas, /** @type Rng */ rng) {
     this.canvas = canvas
+    this.rng = rng
     this.ctx = this.canvas.getContext('2d')
     this.resize()
 
@@ -161,13 +163,13 @@ class Controller {
     this.particles = []
 
     for (let i = 0; i < nBombs; i++) {
-      this.readyBombs.push(new Bomb())
+      this.readyBombs.push(new Bomb(this.rng))
     }
   }
 
   update() {
     if (Math.random() * 100 < percentChanceNewBomb) {
-      this.readyBombs.push(new Bomb())
+      this.readyBombs.push(new Bomb(this.rng))
     }
 
     const aliveBombs = []

@@ -7,9 +7,10 @@ function exists(gameId) {
   return (!!GAMES[gameId]) || false
 }
 
-function createGame(id, puzzle, players, sockets, evtInfos) {
+function createGame(id, rng, puzzle, players, sockets, evtInfos) {
   return {
     id: id,
+    rng: rng,
     puzzle: puzzle,
     players: players,
     sockets: sockets,
@@ -31,8 +32,8 @@ function createPlayer(id, ts) {
   }
 }
 
-function newGame({id, puzzle, players, sockets, evtInfos}) {
-  const game = createGame(id, puzzle, players, sockets, evtInfos)
+function newGame({id, rng, puzzle, players, sockets, evtInfos}) {
+  const game = createGame(id, rng, puzzle, players, sockets, evtInfos)
   setGame(id, game)
   return game
 }

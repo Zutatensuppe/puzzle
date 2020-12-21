@@ -1,11 +1,20 @@
+import { Rng } from './Rng.js'
+
 // get a unique id
 export const uniqId = () => Date.now().toString(36) + Math.random().toString(36).substring(2)
 
 // get a random int between min and max (inclusive)
-export const randomInt = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min
+export const randomInt = (
+  /** @type Rng */ rng,
+  min,
+  max
+) => rng.random(min, max)
 
 // get one random item from the given array
-export const choice = (array) => array[randomInt(0, array.length - 1)]
+export const choice = (
+  /** @type Rng */ rng,
+  array
+) => array[randomInt(rng, 0, array.length - 1)]
 
 export const throttle = (fn, delay) => {
   let canCall = true
@@ -21,11 +30,14 @@ export const throttle = (fn, delay) => {
 }
 
 // return a shuffled (shallow) copy of the given array
-export const shuffle = (array) => {
+export const shuffle = (
+  /** @type Rng */ rng,
+  array
+) => {
   let arr = array.slice()
   for (let i = 0; i <= arr.length - 2; i++)
   {
-    const j = randomInt(i, arr.length -1);
+    const j = randomInt(rng, i, arr.length -1);
     const tmp = arr[i];
     arr[i] = arr[j];
     arr[j] = tmp;

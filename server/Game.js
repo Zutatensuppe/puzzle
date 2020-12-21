@@ -2,6 +2,7 @@ import fs from 'fs'
 import { createPuzzle } from './Puzzle.js'
 import GameCommon from './../common/GameCommon.js'
 import Util from './../common/Util.js'
+import { Rng } from '../common/Rng.js'
 
 const DATA_DIR = './../data'
 
@@ -28,6 +29,10 @@ function loadAllGames() {
     }
     GameCommon.newGame({
       id: game.id,
+      rng: {
+        type: game.rng ? game.rng.type : '_fake_',
+        obj: game.rng ? Rng.unserialize(game.rng.obj) : new Rng(),
+      },
       puzzle: game.puzzle,
       players: game.players,
       sockets: [],
@@ -38,9 +43,14 @@ function loadAllGames() {
 
 const changedGames = {}
 async function createGame(gameId, targetTiles, image) {
+  const rng = new Rng(gameId);
   GameCommon.newGame({
     id: gameId,
-    puzzle: await createPuzzle(targetTiles, image),
+    rng: {
+      type: 'Rng',
+      obj: rng,
+    },
+    puzzle: await createPuzzle(rng, targetTiles, image),
     players: {},
     sockets: [],
     evtInfos: {},
@@ -70,6 +80,10 @@ function persistChangedGames() {
       delete changedGames[game.id]
       fs.writeFileSync(`${DATA_DIR}/${game.id}.json`, JSON.stringify({
         id: game.id,
+        rng: {
+          type: game.rng.type,
+          obj: Rng.serialize(game.rng.obj),
+        },
         puzzle: game.puzzle,
         players: game.players,
       }))
