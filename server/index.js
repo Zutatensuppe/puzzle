@@ -131,7 +131,6 @@ wss.on('message', async ({socket, data}) => {
         Game.addPlayer(gameId, clientId)
         Game.addSocket(gameId, socket)
         const game = Game.get(gameId)
-        console.log(gameId, game)
         notify(
           [Protocol.EV_SERVER_INIT, {
             id: game.id,
