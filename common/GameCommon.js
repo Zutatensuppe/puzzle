@@ -61,10 +61,20 @@ function playerExists(gameId, playerId) {
   return !!GAMES[gameId].players[playerId]
 }
 
+function getRelevantPlayers(gameId) {
+  const ts = Util.timestamp()
+  const minTs = ts - 30000
+  return getAllPlayers(gameId).filter(player => {
+    return player.ts >= minTs || player.points > 0
+  })
+}
+
 function getActivePlayers(gameId) {
   const ts = Util.timestamp()
   const minTs = ts - 30000
-  return getAllPlayers(gameId).filter(player => player.ts >= minTs)
+  return getAllPlayers(gameId).filter(player => {
+    return player.ts >= minTs
+  })
 }
 
 function addPlayer(gameId, playerId) {
@@ -606,6 +616,7 @@ export default {
   newGame,
   exists,
   playerExists,
+  getRelevantPlayers,
   getActivePlayers,
   addPlayer,
   socketExists,

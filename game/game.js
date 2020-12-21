@@ -142,20 +142,33 @@ function addMenuToDom(gameId) {
 
   const scoresListEl = document.createElement('table')
   const updateScores = () => {
-    const activePlayers = Game.getActivePlayers(gameId)
-    const scores = activePlayers.map(p => ({
-      name: p.name,
-      points: p.points,
-      color: p.color,
-    }))
-    scores.sort((a, b) => b.points - a.points)
+    const ts = Util.timestamp()
+    const minTs = ts - 30000
+
+    const players = Game.getRelevantPlayers(gameId)
+    const actives = players.filter(player => player.ts >= minTs)
+    const nonActives = players.filter(player => player.ts < minTs)
+
+    actives.sort((a, b) => b.points - a.points)
+    nonActives.sort((a, b) => b.points - a.points)
+
     scoresListEl.innerHTML = ''
-    for (let score of scores) {
+    for (let player of actives) {
       const r = row(
-        document.createTextNode(score.name),
-        document.createTextNode(score.points)
+        document.createTextNode('⚡'),
+        document.createTextNode(player.name),
+        document.createTextNode(player.points)
       )
-      r.style.color = score.color
+      r.style.color = player.color
+      scoresListEl.appendChild(r)
+    }
+    for (let player of nonActives) {
+      const r = row(
+        document.createTextNode('💤'),
+        document.createTextNode(player.name),
+        document.createTextNode(player.points)
+      )
+      r.style.color = player.color
       scoresListEl.appendChild(r)
     }
   }

@@ -86,6 +86,7 @@ export default {
   addSocket,
   handleInput,
   getAllGames: GameCommon.getAllGames,
+  getRelevantPlayers: GameCommon.getRelevantPlayers,
   getActivePlayers: GameCommon.getActivePlayers,
   getFinishedTileCount: GameCommon.getFinishedTileCount,
   getImageUrl: GameCommon.getImageUrl,
