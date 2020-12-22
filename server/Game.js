@@ -1,8 +1,9 @@
 import fs from 'fs'
-import { createPuzzle } from './Puzzle.js'
 import GameCommon from './../common/GameCommon.js'
 import Util from './../common/Util.js'
 import { Rng } from '../common/Rng.js'
+import GameLog from './GameLog.js'
+import { createPuzzle } from './Puzzle.js'
 
 const DATA_DIR = './../data'
 
@@ -42,24 +43,44 @@ function loadAllGames() {
 }
 
 const changedGames = {}
-async function createGame(gameId, targetTiles, image) {
-  const rng = new Rng(gameId);
+async function createGameObject(gameId, targetTiles, image, ts) {
+  const seed = Util.hash(gameId + ' ' + ts)
+  const rng = new Rng(seed)
+  return GameCommon.__createGameObject(
+    gameId,
+    {
+      type: 'Rng',
+      obj: rng,
+    },
+    await createPuzzle(rng, targetTiles, image, ts),
+    {},
+    [],
+    {}
+  )
+}
+async function createGame(gameId, targetTiles, image, ts) {
+  GameLog.log(gameId, 'createGame', targetTiles, image, ts)
+
+  const seed = Util.hash(gameId + ' ' + ts)
+  const rng = new Rng(seed)
   GameCommon.newGame({
     id: gameId,
     rng: {
       type: 'Rng',
       obj: rng,
     },
-    puzzle: await createPuzzle(rng, targetTiles, image),
+    puzzle: await createPuzzle(rng, targetTiles, image, ts),
     players: {},
     sockets: [],
     evtInfos: {},
   })
+
   changedGames[gameId] = true
 }
 
-function addPlayer(gameId, playerId) {
-  GameCommon.addPlayer(gameId, playerId)
+function addPlayer(gameId, playerId, ts) {
+  GameLog.log(gameId, 'addPlayer', playerId, ts)
+  GameCommon.addPlayer(gameId, playerId, ts)
   changedGames[gameId] = true
 }
 
@@ -68,8 +89,10 @@ function addSocket(gameId, socket) {
   changedGames[gameId] = true
 }
 
-function handleInput(gameId, playerId, input) {
-  const ret = GameCommon.handleInput(gameId, playerId, input)
+function handleInput(gameId, playerId, input, ts) {
+  GameLog.log(gameId, 'handleInput', playerId, input, ts)
+
+  const ret = GameCommon.handleInput(gameId, playerId, input, ts)
   changedGames[gameId] = true
   return ret
 }
@@ -93,6 +116,7 @@ function persistChangedGames() {
 }
 
 export default {
+  createGameObject,
   loadAllGames,
   persistChangedGames,
   createGame,

@@ -40,12 +40,16 @@ EV_SERVER_INIT: event sent to one client after that client
 */
 const EV_SERVER_EVENT = 1
 const EV_SERVER_INIT = 4
+const EV_SERVER_INIT_REPLAY = 5
 const EV_CLIENT_EVENT = 2
 const EV_CLIENT_INIT = 3
+const EV_CLIENT_INIT_REPLAY = 6
 
 export default {
   EV_SERVER_EVENT,
   EV_SERVER_INIT,
+  EV_SERVER_INIT_REPLAY,
   EV_CLIENT_EVENT,
   EV_CLIENT_INIT,
+  EV_CLIENT_INIT_REPLAY,
 }

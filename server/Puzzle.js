@@ -1,5 +1,5 @@
 import sizeOf from 'image-size'
-import Util from './../common/Util.js'
+import Util from '../common/Util.js'
 import exif from 'exif'
 import { Rng } from '../common/Rng.js'
 
@@ -38,7 +38,8 @@ async function getExifOrientation(imagePath) {
 async function createPuzzle(
   /** @type Rng */ rng,
   targetTiles,
-  image
+  image,
+  ts
 ) {
   const imagePath = image.file
   const imageUrl = image.url
@@ -135,7 +136,7 @@ async function createPuzzle(
       // TODO: maybe calculate this each time?
       maxZ: 0,     // max z of all pieces
       maxGroup: 0, // max group of all pieces
-      started: Util.timestamp(), // start timestamp
+      started: ts, // start timestamp
       finished: 0, // finish timestamp
     },
     // static puzzle information. stays same for complete duration of

@@ -12,10 +12,13 @@ import { Rng } from '../common/Rng.js'
 
 if (typeof GAME_ID === 'undefined') throw '[ GAME_ID not set ]'
 if (typeof WS_ADDRESS === 'undefined') throw '[ WS_ADDRESS not set ]'
+if (typeof MODE === 'undefined') throw '[ MODE not set ]'
 
 if (typeof DEBUG === 'undefined') window.DEBUG = false
 
 let RERENDER = true
+
+let TIME = () => Util.timestamp()
 
 function addCanvasToDom(canvas) {
   canvas.width = window.innerWidth
@@ -39,6 +42,13 @@ function addMenuToDom(gameId) {
       row.appendChild(td)
     }
     return row
+  }
+
+  function btn(txt) {
+    const btn = document.createElement('button')
+    btn.classList.add('btn')
+    btn.innerText = txt
+    return btn
   }
 
   function colorinput() {
@@ -143,10 +153,10 @@ function addMenuToDom(gameId) {
 
   const scoresListEl = document.createElement('table')
   const updateScores = () => {
-    const ts = Util.timestamp()
+    const ts = TIME()
     const minTs = ts - 30000
 
-    const players = Game.getRelevantPlayers(gameId)
+    const players = Game.getRelevantPlayers(gameId, ts)
     const actives = players.filter(player => player.ts >= minTs)
     const nonActives = players.filter(player => player.ts < minTs)
 
@@ -181,7 +191,7 @@ function addMenuToDom(gameId) {
     const icon = ended ? '🏁' : '⏳'
 
     const from = started;
-    const to = ended || Util.timestamp()
+    const to = ended || TIME()
 
     const MS = 1
     const SEC = MS * 1000
@@ -208,11 +218,26 @@ function addMenuToDom(gameId) {
   timerCountdownEl.innerText = timerStr()
   setInterval(() => {
     timerCountdownEl.innerText = timerStr()
-  }, 1000)
+  }, 50) // needs to be small, so that it updates quick enough in replay
 
   const timerEl = document.createElement('div')
   timerEl.classList.add('timer')
   timerEl.appendChild(timerCountdownEl)
+
+  let replayControl = null
+  if (MODE === 'replay') {
+    const replayControlEl = document.createElement('div')
+    const speedUp = btn('⏫')
+    const speedDown = btn('⏬')
+    const pause = btn('⏸️')
+    const speed = document.createElement('div')
+    replayControlEl.appendChild(speed)
+    replayControlEl.appendChild(speedUp)
+    replayControlEl.appendChild(speedDown)
+    replayControlEl.appendChild(pause)
+    timerEl.appendChild(replayControlEl)
+    replayControl = { speedUp, speedDown, pause, speed }
+  }
 
   const scoresEl = document.createElement('div')
   scoresEl.classList.add('scores')
@@ -230,6 +255,7 @@ function addMenuToDom(gameId) {
     playerColorPickerEl,
     nameChangeEl,
     updateScores,
+    replayControl,
   }
 }
 
@@ -324,23 +350,46 @@ async function main() {
     return cursors[key]
   }
 
-  const game = await Communication.connect(gameId, CLIENT_ID)
-  game.rng.obj = Rng.unserialize(game.rng.obj)
-  Game.newGame(game)
-
-  const bitmaps = await PuzzleGraphics.loadPuzzleBitmaps(game.puzzle)
-
-  const {bgColorPickerEl, playerColorPickerEl, nameChangeEl, updateScores} = addMenuToDom(gameId)
-  updateScores()
-
-  // Create a dom and attach adapters to it so we can work with it
+  // Create a canvas and attach adapters to it so we can work with it
   const canvas = addCanvasToDom(Graphics.createCanvas())
+
+
+  // stuff only available in replay mode...
+  // TODO: refactor
+  let GAME_LOG
+  let GAME_LOG_IDX = 0
+  let REPLAY_SPEEDS = [0.5, 1, 2, 5, 10, 20, 50]
+  let REPLAY_SPEED_IDX = 1
+  let REPLAY_PAUSED = false
+  let lastRealTime = null
+  let lastGameTime = null
+
+  if (MODE === 'play') {
+    const game = await Communication.connect(gameId, CLIENT_ID)
+    game.rng.obj = Rng.unserialize(game.rng.obj)
+    Game.newGame(game)
+  } else if (MODE === 'replay') {
+    const {game, log} = await Communication.connectReplay(gameId, CLIENT_ID)
+    game.rng.obj = Rng.unserialize(game.rng.obj)
+    Game.newGame(game)
+    GAME_LOG = log
+    lastRealTime = Util.timestamp()
+    lastGameTime = GAME_LOG[0][GAME_LOG[0].length - 1]
+    TIME = () => lastGameTime
+  } else {
+    throw '[ 2020-12-22 MODE invalid, must be play|replay ]'
+  }
+
+  const bitmaps = await PuzzleGraphics.loadPuzzleBitmaps(Game.getPuzzle(gameId))
+
+  const {bgColorPickerEl, playerColorPickerEl, nameChangeEl, updateScores, replayControl} = addMenuToDom(gameId)
+  updateScores()
 
   const longFinished = Game.getFinishTs(gameId)
   let finished = longFinished ? true : false
   const justFinished = () => !!(finished && !longFinished)
 
-  const fireworks = new fireworksController(canvas, game.rng.obj)
+  const fireworks = new fireworksController(canvas, Game.getRng(gameId))
   fireworks.init(canvas)
 
   const ctx = canvas.getContext('2d')
@@ -371,97 +420,194 @@ async function main() {
   }
 
   const evts = new EventAdapter(canvas, viewport)
-  bgColorPickerEl.value = playerBgColor()
-  evts.addEvent(['bg_color', bgColorPickerEl.value])
-  bgColorPickerEl.addEventListener('change', () => {
-    localStorage.setItem('bg_color', bgColorPickerEl.value)
+  if (MODE === 'play') {
+    bgColorPickerEl.value = playerBgColor()
     evts.addEvent(['bg_color', bgColorPickerEl.value])
-  })
-  playerColorPickerEl.value = playerColor()
-  evts.addEvent(['player_color', playerColorPickerEl.value])
-  playerColorPickerEl.addEventListener('change', () => {
-    localStorage.setItem('player_color', playerColorPickerEl.value)
+    bgColorPickerEl.addEventListener('change', () => {
+      localStorage.setItem('bg_color', bgColorPickerEl.value)
+      evts.addEvent(['bg_color', bgColorPickerEl.value])
+    })
+    playerColorPickerEl.value = playerColor()
     evts.addEvent(['player_color', playerColorPickerEl.value])
-  })
-  nameChangeEl.value = playerName()
-  evts.addEvent(['player_name', nameChangeEl.value])
-  nameChangeEl.addEventListener('change', () => {
-    localStorage.setItem('player_name', nameChangeEl.value)
+    playerColorPickerEl.addEventListener('change', () => {
+      localStorage.setItem('player_color', playerColorPickerEl.value)
+      evts.addEvent(['player_color', playerColorPickerEl.value])
+    })
+    nameChangeEl.value = playerName()
     evts.addEvent(['player_name', nameChangeEl.value])
-  })
-
-  Communication.onServerChange((msg) => {
-    const msgType = msg[0]
-    const evClientId = msg[1]
-    const evClientSeq = msg[2]
-    const evChanges = msg[3]
-    for(let [changeType, changeData] of evChanges) {
-      switch (changeType) {
-        case 'player': {
-          const p = Util.decodePlayer(changeData)
-          if (p.id !== CLIENT_ID) {
-            Game.setPlayer(gameId, p.id, p)
-            RERENDER = true
-          }
-        } break;
-        case 'tile': {
-          const t = Util.decodeTile(changeData)
-          Game.setTile(gameId, t.idx, t)
-          RERENDER = true
-        } break;
-        case 'data': {
-          Game.setPuzzleData(gameId, changeData)
-          RERENDER = true
-        } break;
-      }
+    nameChangeEl.addEventListener('change', () => {
+      localStorage.setItem('player_name', nameChangeEl.value)
+      evts.addEvent(['player_name', nameChangeEl.value])
+    })
+  } else if (MODE === 'replay') {
+    let setSpeedStatus = () => {
+      replayControl.speed.innerText = 'Replay-Speed: ' + (REPLAY_SPEEDS[REPLAY_SPEED_IDX] + 'x') + (REPLAY_PAUSED ? ' Paused' : '')
     }
-    finished = Game.getFinishTs(gameId)
-  })
+    setSpeedStatus()
+    replayControl.speedUp.addEventListener('click', () => {
+      if (REPLAY_SPEED_IDX + 1 < REPLAY_SPEEDS.length) {
+        REPLAY_SPEED_IDX++
+        setSpeedStatus()
+      }
+    })
+    replayControl.speedDown.addEventListener('click', () => {
+      if (REPLAY_SPEED_IDX >= 1) {
+        REPLAY_SPEED_IDX--
+        setSpeedStatus()
+      }
+    })
+    replayControl.pause.addEventListener('click', () => {
+      REPLAY_PAUSED = !REPLAY_PAUSED
+      setSpeedStatus()
+    })
+  }
+
+  if (MODE === 'play') {
+    Communication.onServerChange((msg) => {
+      const msgType = msg[0]
+      const evClientId = msg[1]
+      const evClientSeq = msg[2]
+      const evChanges = msg[3]
+      for(let [changeType, changeData] of evChanges) {
+        switch (changeType) {
+          case 'player': {
+            const p = Util.decodePlayer(changeData)
+            if (p.id !== CLIENT_ID) {
+              Game.setPlayer(gameId, p.id, p)
+              RERENDER = true
+            }
+          } break;
+          case 'tile': {
+            const t = Util.decodeTile(changeData)
+            Game.setTile(gameId, t.idx, t)
+            RERENDER = true
+          } break;
+          case 'data': {
+            Game.setPuzzleData(gameId, changeData)
+            RERENDER = true
+          } break;
+        }
+      }
+      finished = Game.getFinishTs(gameId)
+    })
+  } else if (MODE === 'replay') {
+    // no external communication for replay mode,
+    // only the GAME_LOG is relevant
+    let inter = setInterval(() => {
+      let realTime = Util.timestamp()
+      if (REPLAY_PAUSED) {
+        lastRealTime = realTime
+        return
+      }
+      let timePassedReal = realTime - lastRealTime
+
+      let timePassedGame = timePassedReal * REPLAY_SPEEDS[REPLAY_SPEED_IDX]
+      let maxGameTs = lastGameTime + timePassedGame
+      do {
+        if (REPLAY_PAUSED) {
+          break
+        }
+        let nextIdx = GAME_LOG_IDX + 1
+        if (nextIdx >= GAME_LOG.length) {
+          clearInterval(inter)
+          break
+        }
+
+        let logEntry = GAME_LOG[nextIdx]
+        let nextTs = logEntry[logEntry.length - 1]
+        if (nextTs > maxGameTs) {
+          break
+        }
+
+        if (logEntry[0] === 'addPlayer') {
+          Game.addPlayer(gameId, ...logEntry.slice(1))
+          RERENDER = true
+        } else if (logEntry[0] === 'handleInput') {
+          Game.handleInput(gameId, ...logEntry.slice(1))
+          RERENDER = true
+        }
+        GAME_LOG_IDX = nextIdx
+      } while (true)
+      lastRealTime = realTime
+      lastGameTime = maxGameTs
+    }, 50)
+  }
 
   let _last_mouse_down = null
   const onUpdate = () => {
     for (let evt of evts.consumeAll()) {
+      if (MODE === 'play') {
+        // LOCAL ONLY CHANGES
+        // -------------------------------------------------------------
+        const type = evt[0]
+        if (type === 'move') {
+          if (_last_mouse_down && !Game.getFirstOwnedTile(gameId, CLIENT_ID)) {
+            // move the cam
+            const pos = { x: evt[1], y: evt[2] }
+            const mouse = viewport.worldToViewport(pos)
+            const diffX = Math.round(mouse.x - _last_mouse_down.x)
+            const diffY = Math.round(mouse.y - _last_mouse_down.y)
+            RERENDER = true
+            viewport.move(diffX, diffY)
 
-      // LOCAL ONLY CHANGES
-      // -------------------------------------------------------------
-      const type = evt[0]
-      if (type === 'move') {
-        if (_last_mouse_down && !Game.getFirstOwnedTile(gameId, CLIENT_ID)) {
-          // move the cam
+            _last_mouse_down = mouse
+          }
+        } else if (type === 'down') {
           const pos = { x: evt[1], y: evt[2] }
-          const mouse = viewport.worldToViewport(pos)
-          const diffX = Math.round(mouse.x - _last_mouse_down.x)
-          const diffY = Math.round(mouse.y - _last_mouse_down.y)
-          viewport.move(diffX, diffY)
+          _last_mouse_down = viewport.worldToViewport(pos)
+        } else if (type === 'up') {
+          _last_mouse_down = null
+        } else if (type === 'zoomin') {
+          if (viewport.zoomIn()) {
+            const pos = { x: evt[1], y: evt[2] }
+            RERENDER = true
+            Game.changePlayer(gameId, CLIENT_ID, pos)
+          }
+        } else if (type === 'zoomout') {
+          if (viewport.zoomOut()) {
+            const pos = { x: evt[1], y: evt[2] }
+            RERENDER = true
+            Game.changePlayer(gameId, CLIENT_ID, pos)
+          }
+        }
 
-          _last_mouse_down = mouse
-        }
-      } else if (type === 'down') {
-        const pos = { x: evt[1], y: evt[2] }
-        _last_mouse_down = viewport.worldToViewport(pos)
-      } else if (type === 'up') {
-        _last_mouse_down = null
-      } else if (type === 'zoomin') {
-        if (viewport.zoomIn()) {
-          const pos = { x: evt[1], y: evt[2] }
+        // LOCAL + SERVER CHANGES
+        // -------------------------------------------------------------
+        const ts = TIME()
+        const changes = Game.handleInput(GAME_ID, CLIENT_ID, evt, ts)
+        if (changes.length > 0) {
           RERENDER = true
-          Game.changePlayer(gameId, CLIENT_ID, pos)
         }
-      } else if (type === 'zoomout') {
-        if (viewport.zoomOut()) {
+        Communication.sendClientEvent(evt)
+      } else if (MODE === 'replay') {
+        // LOCAL ONLY CHANGES
+        // -------------------------------------------------------------
+        const type = evt[0]
+        if (type === 'move') {
+          if (_last_mouse_down) {
+            // move the cam
+            const pos = { x: evt[1], y: evt[2] }
+            const mouse = viewport.worldToViewport(pos)
+            const diffX = Math.round(mouse.x - _last_mouse_down.x)
+            const diffY = Math.round(mouse.y - _last_mouse_down.y)
+            RERENDER = true
+            viewport.move(diffX, diffY)
+
+            _last_mouse_down = mouse
+          }
+        } else if (type === 'down') {
           const pos = { x: evt[1], y: evt[2] }
+          _last_mouse_down = viewport.worldToViewport(pos)
+        } else if (type === 'up') {
+          _last_mouse_down = null
+        } else if (type === 'zoomin') {
+          viewport.zoomIn()
           RERENDER = true
-          Game.changePlayer(gameId, CLIENT_ID, pos)
+        } else if (type === 'zoomout') {
+          viewport.zoomOut()
+          RERENDER = true
         }
       }
-
-      // LOCAL + SERVER CHANGES
-      // -------------------------------------------------------------
-      const changes = Game.handleInput(GAME_ID, CLIENT_ID, evt)
-      if (changes.length > 0) {
-        RERENDER = true
-      }
-      Communication.sendClientEvent(evt)
     }
 
     finished = Game.getFinishTs(gameId)
@@ -528,14 +674,25 @@ async function main() {
 
     // DRAW PLAYERS
     // ---------------------------------------------------------------
-    for (let player of Game.getActivePlayers(gameId)) {
+    const ts = TIME()
+    for (let player of Game.getActivePlayers(gameId, ts)) {
       const cursor = await getPlayerCursor(player)
       const pos = viewport.worldToViewport(player)
       ctx.drawImage(cursor,
         Math.round(pos.x - cursor.width/2),
         Math.round(pos.y - cursor.height/2)
       )
-      if (player.id !== CLIENT_ID) {
+      if (MODE === 'play') {
+        if (player.id !== CLIENT_ID) {
+          ctx.fillStyle = 'white'
+          ctx.font = '10px sans-serif'
+          ctx.textAlign = 'center'
+          ctx.fillText(player.name + ' (' + player.points + ')',
+            Math.round(pos.x),
+            Math.round(pos.y) + cursor.height
+          )
+        }
+      } else if (MODE === 'replay') {
         ctx.fillStyle = 'white'
         ctx.font = '10px sans-serif'
         ctx.textAlign = 'center'

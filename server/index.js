@@ -11,6 +11,7 @@ import twing from 'twing'
 import bodyParser from 'body-parser'
 import v8 from 'v8'
 import { Rng } from '../common/Rng.js'
+import GameLog from './GameLog.js'
 
 const allImages = () => [
   ...fs.readdirSync('./../data/uploads/').map(f => ({
@@ -50,6 +51,14 @@ app.use('/g/:gid', async (req, res, next) => {
     WS_ADDRESS: config.ws.connectstring,
   }))
 })
+
+app.use('/replay/:gid', async (req, res, next) => {
+  res.send(await render('replay.html.twig', {
+    GAME_ID: req.params.gid,
+    WS_ADDRESS: config.ws.connectstring,
+  }))
+})
+
 app.post('/upload', (req, res) => {
   upload(req, res, (err) => {
     if (err) {
@@ -68,7 +77,8 @@ app.post('/newgame', bodyParser.json(), async (req, res) => {
   console.log(req.body.tiles, req.body.image)
   const gameId = Util.uniqId()
   if (!Game.exists(gameId)) {
-    await Game.createGame(gameId, req.body.tiles, req.body.image)
+    const ts = Util.timestamp()
+    await Game.createGame(gameId, req.body.tiles, req.body.image, ts)
   }
   res.send({ url: `/g/${gameId}` })
 })
@@ -77,6 +87,7 @@ app.use('/common/', express.static('./../common/'))
 app.use('/uploads/', express.static('./../data/uploads/'))
 app.use('/', async (req, res, next) => {
   if (req.path === '/') {
+    const ts = Util.timestamp()
     const games = [
       ...Game.getAllGames().map(game => ({
         id: game.id,
@@ -84,7 +95,7 @@ app.use('/', async (req, res, next) => {
         finished: Game.getFinishTs(game.id),
         tilesFinished: Game.getFinishedTileCount(game.id),
         tilesTotal: Game.getTileCount(game.id),
-        players: Game.getActivePlayers(game.id).length,
+        players: Game.getActivePlayers(game.id, ts).length,
         imageUrl: Game.getImageUrl(game.id),
       })),
     ]
@@ -124,11 +135,36 @@ wss.on('message', async ({socket, data}) => {
     const msg = JSON.parse(data)
     const msgType = msg[0]
     switch (msgType) {
+      case Protocol.EV_CLIENT_INIT_REPLAY: {
+        const log = GameLog.get(gameId)
+        let game = await Game.createGameObject(
+          gameId,
+          log[0][1],
+          log[0][2],
+          log[0][3]
+        )
+        notify(
+          [Protocol.EV_SERVER_INIT_REPLAY, {
+            id: game.id,
+            rng: {
+              type: game.rng.type,
+              obj: Rng.serialize(game.rng.obj),
+            },
+            puzzle: game.puzzle,
+            players: game.players,
+            sockets: [],
+            evtInfos: game.evtInfos,
+          }, log],
+          [socket]
+        )
+      } break;
+
       case Protocol.EV_CLIENT_INIT: {
         if (!Game.exists(gameId)) {
           throw `[game ${gameId} does not exist... ]`
         }
-        Game.addPlayer(gameId, clientId)
+        const ts = Util.timestamp()
+        Game.addPlayer(gameId, clientId, ts)
         Game.addSocket(gameId, socket)
         const game = Game.get(gameId)
         notify(
@@ -150,7 +186,9 @@ wss.on('message', async ({socket, data}) => {
       case Protocol.EV_CLIENT_EVENT: {
         const clientSeq = msg[1]
         const clientEvtData = msg[2]
-        Game.addPlayer(gameId, clientId)
+        const ts = Util.timestamp()
+
+        Game.addPlayer(gameId, clientId, ts)
         Game.addSocket(gameId, socket)
 
         const game = Game.get(gameId)
@@ -164,7 +202,7 @@ wss.on('message', async ({socket, data}) => {
           }],
           [socket]
         )
-        const changes = Game.handleInput(gameId, clientId, clientEvtData)
+        const changes = Game.handleInput(gameId, clientId, clientEvtData, ts)
         notify(
           [Protocol.EV_SERVER_EVENT, clientId, clientSeq, changes],
           Game.getSockets(gameId)

@@ -7,7 +7,7 @@ function exists(gameId) {
   return (!!GAMES[gameId]) || false
 }
 
-function createGame(id, rng, puzzle, players, sockets, evtInfos) {
+function __createGameObject(id, rng, puzzle, players, sockets, evtInfos) {
   return {
     id: id,
     rng: rng,
@@ -18,7 +18,7 @@ function createGame(id, rng, puzzle, players, sockets, evtInfos) {
   }
 }
 
-function createPlayer(id, ts) {
+function __createPlayerObject(id, ts) {
   return {
     id: id,
     x: 0,
@@ -33,7 +33,7 @@ function createPlayer(id, ts) {
 }
 
 function newGame({id, rng, puzzle, players, sockets, evtInfos}) {
-  const game = createGame(id, rng, puzzle, players, sockets, evtInfos)
+  const game = __createGameObject(id, rng, puzzle, players, sockets, evtInfos)
   setGame(id, game)
   return game
 }
@@ -62,26 +62,23 @@ function playerExists(gameId, playerId) {
   return !!GAMES[gameId].players[playerId]
 }
 
-function getRelevantPlayers(gameId) {
-  const ts = Util.timestamp()
+function getRelevantPlayers(gameId, ts) {
   const minTs = ts - 30000
   return getAllPlayers(gameId).filter(player => {
     return player.ts >= minTs || player.points > 0
   })
 }
 
-function getActivePlayers(gameId) {
-  const ts = Util.timestamp()
+function getActivePlayers(gameId, ts) {
   const minTs = ts - 30000
   return getAllPlayers(gameId).filter(player => {
     return player.ts >= minTs
   })
 }
 
-function addPlayer(gameId, playerId) {
-  const ts = Util.timestamp()
+function addPlayer(gameId, playerId, ts) {
   if (!GAMES[gameId].players[playerId]) {
-    setPlayer(gameId, playerId, createPlayer(playerId, ts))
+    setPlayer(gameId, playerId, __createPlayerObject(playerId, ts))
   } else {
     changePlayer(gameId, playerId, { ts })
   }
@@ -368,19 +365,23 @@ const freeTileIdxByPos = (gameId, pos) => {
 }
 
 const getPlayerBgColor = (gameId, playerId) => {
-  return getPlayer(gameId, playerId).bgcolor
+  const p = getPlayer(gameId, playerId)
+  return p ? p.bgcolor : null
 }
 
 const getPlayerColor = (gameId, playerId) => {
-  return getPlayer(gameId, playerId).color
+  const p = getPlayer(gameId, playerId)
+  return p ? p.color : null
 }
 
 const getPlayerName = (gameId, playerId) => {
-  return getPlayer(gameId, playerId).name
+  const p = getPlayer(gameId, playerId)
+  return p ? p.name : null
 }
 
 const getPlayerPoints = (gameId, playerId) => {
-  return getPlayer(gameId, playerId).points
+  const p = getPlayer(gameId, playerId)
+  return p ? p.points : null
 }
 
 // determine if two tiles are grouped together
@@ -398,6 +399,14 @@ const getTableHeight = (gameId) => {
   return GAMES[gameId].puzzle.info.table.height
 }
 
+const getPuzzle = (gameId) => {
+  return GAMES[gameId].puzzle
+}
+
+const getRng = (gameId) => {
+  return GAMES[gameId].rng.obj
+}
+
 const getPuzzleWidth = (gameId) => {
   return GAMES[gameId].puzzle.info.width
 }
@@ -406,7 +415,7 @@ const getPuzzleHeight = (gameId) => {
   return GAMES[gameId].puzzle.info.height
 }
 
-function handleInput(gameId, playerId, input) {
+function handleInput(gameId, playerId, input, ts) {
   const puzzle = GAMES[gameId].puzzle
   let evtInfo = GAMES[gameId].evtInfos[playerId]
 
@@ -471,8 +480,6 @@ function handleInput(gameId, playerId, input) {
       }
     }
   }
-
-  const ts = Util.timestamp()
 
   const type = input[0]
   if (type === 'bg_color') {
@@ -559,7 +566,7 @@ function handleInput(gameId, playerId, input) {
         _tileChanges(tileIdxs)
         // check if the puzzle is finished
         if (getFinishedTileCount(gameId) === getTileCount(gameId)) {
-          changeData(gameId, { finished: Util.timestamp() })
+          changeData(gameId, { finished: ts })
           _dataChange()
         }
       } else {
@@ -614,6 +621,8 @@ function handleInput(gameId, playerId, input) {
 }
 
 export default {
+  __createGameObject,
+  __createPlayerObject,
   newGame,
   exists,
   playerExists,
@@ -638,6 +647,8 @@ export default {
   setPuzzleData,
   getTableWidth,
   getTableHeight,
+  getPuzzle,
+  getRng,
   getPuzzleWidth,
   getPuzzleHeight,
   getTilesSortedByZIndex,

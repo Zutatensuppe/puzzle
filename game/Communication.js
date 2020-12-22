@@ -42,6 +42,25 @@ function connect(gameId, clientId) {
   })
 }
 
+function connectReplay(gameId, clientId) {
+  clientSeq = 0
+  events = {}
+  conn = new WsClient(WS_ADDRESS, clientId + '|' + gameId)
+  return new Promise(r => {
+    conn.connect()
+    send([Protocol.EV_CLIENT_INIT_REPLAY])
+    conn.onSocket('message', async ({ data }) => {
+      const msg = JSON.parse(data)
+      const msgType = msg[0]
+      if (msgType === Protocol.EV_SERVER_INIT_REPLAY) {
+        const game = msg[1]
+        const log = msg[2]
+        r({game, log})
+      }
+    })
+  })
+}
+
 function sendClientEvent(mouse) {
   // when sending event, increase number of sent events
   // and add the event locally
@@ -52,6 +71,7 @@ function sendClientEvent(mouse) {
 
 export default {
   connect,
+  connectReplay,
   onServerChange,
   sendClientEvent,
 }

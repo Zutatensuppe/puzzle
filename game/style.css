@@ -22,6 +22,7 @@ a:hover { color: var(--link-hover-color); }
 .scores {
   position: absolute;
   right: 0;
+  top: 0;
 
   background: var(--bg-color);
   padding: 5px;
@@ -32,6 +33,7 @@ a:hover { color: var(--link-hover-color); }
 .timer {
   position: absolute;
   left: 0;
+  top: 0;
 
   background: var(--bg-color);
   padding: 5px;
@@ -41,6 +43,8 @@ a:hover { color: var(--link-hover-color); }
 
 .menu {
   position: absolute;
+  top: 0;
+
   left: 50%;
   transform: translateX(-50%);
   background: var(--bg-color);
@@ -191,4 +195,10 @@ input:focus {
   top: 0;
   background: var(--bg-color);
   padding: 5px;
+}
+
+.game-replay {
+  position: absolute;
+  top: 0;
+  right: 0;
 }
