@@ -60,6 +60,9 @@ export default {
           {{time(g.started, g.finished)}}<br />
         </span>
       </a>
+      <a v-if="g.hasReplay" class="game-replay" :href="'/replay/' + g.id">
+        ↪️ Watch replay
+      </a>
     </div>
   </div>
 

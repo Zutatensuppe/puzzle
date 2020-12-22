@@ -91,6 +91,7 @@ app.use('/', async (req, res, next) => {
     const games = [
       ...Game.getAllGames().map(game => ({
         id: game.id,
+        hasReplay: GameLog.exists(game.id),
         started: Game.getStartTs(game.id),
         finished: Game.getFinishTs(game.id),
         tilesFinished: Game.getFinishedTileCount(game.id),

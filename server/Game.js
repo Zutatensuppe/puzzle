@@ -59,6 +59,7 @@ async function createGameObject(gameId, targetTiles, image, ts) {
   )
 }
 async function createGame(gameId, targetTiles, image, ts) {
+  GameLog.create(gameId)
   GameLog.log(gameId, 'createGame', targetTiles, image, ts)
 
   const seed = Util.hash(gameId + ' ' + ts)
