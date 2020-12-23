@@ -40,7 +40,6 @@ function loadAllGames() {
       },
       puzzle: game.puzzle,
       players: game.players,
-      sockets: [],
       evtInfos: {}
     })
   }
@@ -57,7 +56,6 @@ async function createGameObject(gameId, targetTiles, image, ts) {
       obj: rng,
     },
     await createPuzzle(rng, targetTiles, image, ts),
-    [],
     [],
     {}
   )
@@ -76,7 +74,6 @@ async function createGame(gameId, targetTiles, image, ts) {
     },
     puzzle: await createPuzzle(rng, targetTiles, image, ts),
     players: [],
-    sockets: [],
     evtInfos: {},
   })
 
@@ -94,11 +91,6 @@ function addPlayer(gameId, playerId, ts) {
   }
 
   GameCommon.addPlayer(gameId, playerId, ts)
-  changedGames[gameId] = true
-}
-
-function addSocket(gameId, socket) {
-  GameCommon.addSocket(gameId, socket)
   changedGames[gameId] = true
 }
 
@@ -136,7 +128,6 @@ export default {
   persistChangedGames,
   createGame,
   addPlayer,
-  addSocket,
   handleInput,
   getAllGames: GameCommon.getAllGames,
   getRelevantPlayers: GameCommon.getRelevantPlayers,
@@ -146,10 +137,7 @@ export default {
   getTileCount: GameCommon.getTileCount,
   exists: GameCommon.exists,
   playerExists: GameCommon.playerExists,
-  socketExists: GameCommon.socketExists,
-  removeSocket: GameCommon.removeSocket,
   get: GameCommon.get,
-  getSockets: GameCommon.getSockets,
   getStartTs: GameCommon.getStartTs,
   getFinishTs: GameCommon.getFinishTs,
 }

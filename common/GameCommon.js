@@ -2,19 +2,19 @@ import Geometry from './Geometry.js'
 import Protocol from './Protocol.js'
 import Util from './Util.js'
 
+// Map<gameId, GameObject>
 const GAMES = {}
 
 function exists(gameId) {
   return (!!GAMES[gameId]) || false
 }
 
-function __createGameObject(id, rng, puzzle, players, sockets, evtInfos) {
+function __createGameObject(id, rng, puzzle, players, evtInfos) {
   return {
     id: id,
     rng: rng,
     puzzle: puzzle,
     players: players,
-    sockets: sockets,
     evtInfos: evtInfos,
   }
 }
@@ -33,8 +33,8 @@ function __createPlayerObject(id, ts) {
   }
 }
 
-function newGame({id, rng, puzzle, players, sockets, evtInfos}) {
-  const game = __createGameObject(id, rng, puzzle, players, sockets, evtInfos)
+function newGame({id, rng, puzzle, players, evtInfos}) {
+  const game = __createGameObject(id, rng, puzzle, players, evtInfos)
   setGame(id, game)
   return game
 }
@@ -116,21 +116,6 @@ function addPlayer(gameId, playerId, ts) {
   }
 }
 
-function socketExists(gameId, socket) {
-  return GAMES[gameId].sockets.includes(socket)
-}
-
-function addSocket(gameId, socket) {
-  if (!GAMES[gameId].sockets.includes(socket)) {
-    console.log('adding socket: ', gameId, socket.protocol)
-    GAMES[gameId].sockets.push(socket)
-  }
-}
-
-function removeSocket(gameId, socket) {
-  GAMES[gameId].sockets = GAMES[gameId].sockets.filter(s => s !== socket)
-}
-
 function getAllGames() {
   return Object.values(GAMES).sort((a, b) => {
     // when both have same finished state, sort by started
@@ -177,10 +162,6 @@ function getFinishedTileCount(gameId) {
 function getTilesSortedByZIndex(gameId) {
   const tiles = GAMES[gameId].puzzle.tiles.map(Util.decodeTile)
   return tiles.sort((t1, t2) => t1.z - t2.z)
-}
-
-function getSockets(gameId) {
-  return GAMES[gameId].sockets
 }
 
 function changePlayer(gameId, playerId, change) {
@@ -655,15 +636,11 @@ export default {
   getRelevantPlayers,
   getActivePlayers,
   addPlayer,
-  socketExists,
-  addSocket,
-  removeSocket,
   getFinishedTileCount,
   getTileCount,
   getImageUrl,
   get,
   getAllGames,
-  getSockets,
   getPlayerBgColor,
   getPlayerColor,
   getPlayerName,

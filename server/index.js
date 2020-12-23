@@ -12,6 +12,7 @@ import bodyParser from 'body-parser'
 import v8 from 'v8'
 import { Rng } from '../common/Rng.js'
 import GameLog from './GameLog.js'
+import GameSockets from './GameSockets.js'
 
 const allImages = () => [
   ...fs.readdirSync('./../data/uploads/').map(f => ({
@@ -124,7 +125,7 @@ wss.on('close', async ({socket}) => {
   const clientId = proto[0]
   const gameId = proto[1]
   if (Game.exists(gameId)) {
-    Game.removeSocket(gameId, socket)
+    GameSockets.removeSocket(gameId, socket)
   }
 })
 
@@ -153,7 +154,6 @@ wss.on('message', async ({socket, data}) => {
             },
             puzzle: game.puzzle,
             players: game.players,
-            sockets: [],
             evtInfos: game.evtInfos,
           }, log],
           [socket]
@@ -166,7 +166,7 @@ wss.on('message', async ({socket, data}) => {
         }
         const ts = Util.timestamp()
         Game.addPlayer(gameId, clientId, ts)
-        Game.addSocket(gameId, socket)
+        GameSockets.addSocket(gameId, socket)
         const game = Game.get(gameId)
         notify(
           [Protocol.EV_SERVER_INIT, {
@@ -177,7 +177,6 @@ wss.on('message', async ({socket, data}) => {
             },
             puzzle: game.puzzle,
             players: game.players,
-            sockets: [],
             evtInfos: game.evtInfos,
           }],
           [socket]
@@ -190,7 +189,7 @@ wss.on('message', async ({socket, data}) => {
         const ts = Util.timestamp()
 
         Game.addPlayer(gameId, clientId, ts)
-        Game.addSocket(gameId, socket)
+        GameSockets.addSocket(gameId, socket)
 
         const game = Game.get(gameId)
         notify(
@@ -198,7 +197,6 @@ wss.on('message', async ({socket, data}) => {
             id: game.id,
             puzzle: game.puzzle,
             players: game.players,
-            sockets: [],
             evtInfos: game.evtInfos,
           }],
           [socket]
@@ -206,7 +204,7 @@ wss.on('message', async ({socket, data}) => {
         const changes = Game.handleInput(gameId, clientId, clientEvtData, ts)
         notify(
           [Protocol.EV_SERVER_EVENT, clientId, clientSeq, changes],
-          Game.getSockets(gameId)
+          GameSockets.getSockets(gameId)
         )
       } break;
     }
