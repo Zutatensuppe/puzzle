@@ -6,6 +6,7 @@ export default {
   getActivePlayers: GameCommon.getActivePlayers,
   addPlayer: GameCommon.addPlayer,
   handleInput: GameCommon.handleInput,
+  getPlayerIdByIndex: GameCommon.getPlayerIdByIndex,
   getPlayerBgColor: GameCommon.getPlayerBgColor,
   getPlayerColor: GameCommon.getPlayerColor,
   getPlayerName: GameCommon.getPlayerName,

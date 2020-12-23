@@ -1,4 +1,5 @@
 import Geometry from './Geometry.js'
+import Protocol from './Protocol.js'
 import Util from './Util.js'
 
 const GAMES = {}
@@ -42,12 +43,36 @@ function setGame(gameId, game) {
   GAMES[gameId] = game
 }
 
+function getPlayerIndexById(gameId, playerId) {
+  let i = 0;
+  for (let player of GAMES[gameId].players) {
+    if (Util.decodePlayer(player).id === playerId) {
+      return i
+    }
+    i++
+  }
+  return -1
+}
+
+function getPlayerIdByIndex(gameId, playerIndex) {
+  if (GAMES[gameId].players.length > playerIndex) {
+    return Util.decodePlayer(GAMES[gameId].players[playerIndex]).id
+  }
+  return null
+}
+
 function getPlayer(gameId, playerId) {
-  return Util.decodePlayer(GAMES[gameId].players[playerId])
+  let idx = getPlayerIndexById(gameId, playerId)
+  return Util.decodePlayer(GAMES[gameId].players[idx])
 }
 
 function setPlayer(gameId, playerId, player) {
-  GAMES[gameId].players[playerId] = Util.encodePlayer(player)
+  let idx = getPlayerIndexById(gameId, playerId)
+  if (idx === -1) {
+    GAMES[gameId].players.push(Util.encodePlayer(player))
+  } else {
+    GAMES[gameId].players[idx] = Util.encodePlayer(player)
+  }
 }
 
 function setTile(gameId, tileIdx, tile) {
@@ -59,7 +84,8 @@ function setPuzzleData(gameId, data) {
 }
 
 function playerExists(gameId, playerId) {
-  return !!GAMES[gameId].players[playerId]
+  const idx = getPlayerIndexById(gameId, playerId)
+  return idx !== -1
 }
 
 function getRelevantPlayers(gameId, ts) {
@@ -77,7 +103,7 @@ function getActivePlayers(gameId, ts) {
 }
 
 function addPlayer(gameId, playerId, ts) {
-  if (!GAMES[gameId].players[playerId]) {
+  if (!playerExists(gameId, playerId)) {
     setPlayer(gameId, playerId, __createPlayerObject(playerId, ts))
   } else {
     changePlayer(gameId, playerId, { ts })
@@ -118,7 +144,7 @@ function getAllGames() {
 
 function getAllPlayers(gameId) {
   return GAMES[gameId]
-    ? Object.values(GAMES[gameId].players).map(Util.decodePlayer)
+    ? GAMES[gameId].players.map(Util.decodePlayer)
     : []
 }
 
@@ -436,7 +462,7 @@ function handleInput(gameId, playerId, input, ts) {
   }
 
   const _playerChange = () => {
-    changes.push(['player', GAMES[gameId].players[playerId]])
+    changes.push(['player', Util.encodePlayer(getPlayer(gameId, playerId))])
   }
 
   // put both tiles (and their grouped tiles) in the same group
@@ -482,19 +508,19 @@ function handleInput(gameId, playerId, input, ts) {
   }
 
   const type = input[0]
-  if (type === 'bg_color') {
+  if (type === Protocol.INPUT_EV_BG_COLOR) {
     const bgcolor = input[1]
     changePlayer(gameId, playerId, { bgcolor, ts })
     _playerChange()
-  } else if (type === 'player_color') {
+  } else if (type === Protocol.INPUT_EV_PLAYER_COLOR) {
     const color = input[1]
     changePlayer(gameId, playerId, { color, ts })
     _playerChange()
-  } else if (type === 'player_name') {
+  } else if (type === Protocol.INPUT_EV_PLAYER_NAME) {
     const name = `${input[1]}`.substr(0, 16)
     changePlayer(gameId, playerId, { name, ts })
     _playerChange()
-  } else if (type === 'down') {
+  } else if (type === Protocol.INPUT_EV_MOUSE_DOWN) {
     const x = input[1]
     const y = input[2]
     const pos = {x, y}
@@ -515,7 +541,7 @@ function handleInput(gameId, playerId, input, ts) {
     }
     evtInfo._last_mouse = pos
 
-  } else if (type === 'move') {
+  } else if (type === Protocol.INPUT_EV_MOUSE_MOVE) {
     const x = input[1]
     const y = input[2]
     const pos = {x, y}
@@ -538,7 +564,7 @@ function handleInput(gameId, playerId, input, ts) {
     }
     evtInfo._last_mouse = pos
 
-  } else if (type === 'up') {
+  } else if (type === Protocol.INPUT_EV_MOUSE_UP) {
     const x = input[1]
     const y = input[2]
     const pos = {x, y}
@@ -641,6 +667,8 @@ export default {
   getPlayerBgColor,
   getPlayerColor,
   getPlayerName,
+  getPlayerIndexById,
+  getPlayerIdByIndex,
   changePlayer,
   setPlayer,
   setTile,

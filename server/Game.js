@@ -4,6 +4,7 @@ import Util from './../common/Util.js'
 import { Rng } from '../common/Rng.js'
 import GameLog from './GameLog.js'
 import { createPuzzle } from './Puzzle.js'
+import Protocol from '../common/Protocol.js'
 
 const DATA_DIR = './../data'
 
@@ -27,6 +28,9 @@ function loadAllGames() {
     if (typeof game.puzzle.data.finished === 'undefined') {
       let unfinished = game.puzzle.tiles.map(Util.decodeTile).find(t => t.owner !== -1)
       game.puzzle.data.finished = unfinished ? 0 : Util.timestamp()
+    }
+    if (!Array.isArray(game.players)) {
+      game.players = Object.values(game.players)
     }
     GameCommon.newGame({
       id: game.id,
@@ -53,14 +57,14 @@ async function createGameObject(gameId, targetTiles, image, ts) {
       obj: rng,
     },
     await createPuzzle(rng, targetTiles, image, ts),
-    {},
+    [],
     [],
     {}
   )
 }
 async function createGame(gameId, targetTiles, image, ts) {
   GameLog.create(gameId)
-  GameLog.log(gameId, 'createGame', targetTiles, image, ts)
+  GameLog.log(gameId, Protocol.LOG_HEADER, 1, targetTiles, image, ts)
 
   const seed = Util.hash(gameId + ' ' + ts)
   const rng = new Rng(seed)
@@ -71,7 +75,7 @@ async function createGame(gameId, targetTiles, image, ts) {
       obj: rng,
     },
     puzzle: await createPuzzle(rng, targetTiles, image, ts),
-    players: {},
+    players: [],
     sockets: [],
     evtInfos: {},
   })
@@ -80,7 +84,15 @@ async function createGame(gameId, targetTiles, image, ts) {
 }
 
 function addPlayer(gameId, playerId, ts) {
-  GameLog.log(gameId, 'addPlayer', playerId, ts)
+  const idx = GameCommon.getPlayerIndexById(gameId, playerId)
+  if (idx === -1) {
+    const diff = ts - GameCommon.getStartTs(gameId)
+    GameLog.log(gameId, Protocol.LOG_ADD_PLAYER, playerId, diff)
+  } else {
+    const diff = ts - GameCommon.getStartTs(gameId)
+    GameLog.log(gameId, Protocol.LOG_UPDATE_PLAYER, idx, diff)
+  }
+
   GameCommon.addPlayer(gameId, playerId, ts)
   changedGames[gameId] = true
 }
@@ -91,7 +103,9 @@ function addSocket(gameId, socket) {
 }
 
 function handleInput(gameId, playerId, input, ts) {
-  GameLog.log(gameId, 'handleInput', playerId, input, ts)
+  const idx = GameCommon.getPlayerIndexById(gameId, playerId)
+  const diff = ts - GameCommon.getStartTs(gameId)
+  GameLog.log(gameId, Protocol.LOG_HANDLE_INPUT, idx, input, diff)
 
   const ret = GameCommon.handleInput(gameId, playerId, input, ts)
   changedGames[gameId] = true

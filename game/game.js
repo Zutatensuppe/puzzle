@@ -9,6 +9,7 @@ import PuzzleGraphics from './PuzzleGraphics.js'
 import Game from './Game.js'
 import fireworksController from './Fireworks.js'
 import { Rng } from '../common/Rng.js'
+import Protocol from '../common/Protocol.js'
 
 if (typeof GAME_ID === 'undefined') throw '[ GAME_ID not set ]'
 if (typeof WS_ADDRESS === 'undefined') throw '[ WS_ADDRESS not set ]'
@@ -298,7 +299,7 @@ export default class EventAdapter {
         x: e.offsetX,
         y: e.offsetY,
       })
-      this.addEvent(['down', pos.x, pos.y])
+      this.addEvent([Protocol.INPUT_EV_MOUSE_DOWN, pos.x, pos.y])
     }
   }
 
@@ -308,7 +309,7 @@ export default class EventAdapter {
         x: e.offsetX,
         y: e.offsetY,
       })
-      this.addEvent(['up', pos.x, pos.y])
+      this.addEvent([Protocol.INPUT_EV_MOUSE_UP, pos.x, pos.y])
     }
   }
 
@@ -317,7 +318,7 @@ export default class EventAdapter {
       x: e.offsetX,
       y: e.offsetY,
     })
-    this.addEvent(['move', pos.x, pos.y])
+    this.addEvent([Protocol.INPUT_EV_MOUSE_MOVE, pos.x, pos.y])
   }
 
   _wheel(e) {
@@ -325,7 +326,7 @@ export default class EventAdapter {
       x: e.offsetX,
       y: e.offsetY,
     })
-    const evt = e.deltaY < 0 ? 'zoomin' : 'zoomout'
+    const evt = e.deltaY < 0 ? Protocol.INPUT_EV_ZOOM_IN : Protocol.INPUT_EV_ZOOM_OUT
     this.addEvent([evt, pos.x, pos.y])
   }
 }
@@ -363,6 +364,7 @@ async function main() {
   let REPLAY_PAUSED = false
   let lastRealTime = null
   let lastGameTime = null
+  let GAME_START_TS = null
 
   if (MODE === 'play') {
     const game = await Communication.connect(gameId, CLIENT_ID)
@@ -374,7 +376,8 @@ async function main() {
     Game.newGame(game)
     GAME_LOG = log
     lastRealTime = Util.timestamp()
-    lastGameTime = GAME_LOG[0][GAME_LOG[0].length - 1]
+    GAME_START_TS = GAME_LOG[0][GAME_LOG[0].length - 1]
+    lastGameTime = GAME_START_TS
     TIME = () => lastGameTime
   } else {
     throw '[ 2020-12-22 MODE invalid, must be play|replay ]'
@@ -422,22 +425,22 @@ async function main() {
   const evts = new EventAdapter(canvas, viewport)
   if (MODE === 'play') {
     bgColorPickerEl.value = playerBgColor()
-    evts.addEvent(['bg_color', bgColorPickerEl.value])
+    evts.addEvent([Protocol.INPUT_EV_BG_COLOR, bgColorPickerEl.value])
     bgColorPickerEl.addEventListener('change', () => {
       localStorage.setItem('bg_color', bgColorPickerEl.value)
-      evts.addEvent(['bg_color', bgColorPickerEl.value])
+      evts.addEvent([Protocol.INPUT_EV_BG_COLOR, bgColorPickerEl.value])
     })
     playerColorPickerEl.value = playerColor()
-    evts.addEvent(['player_color', playerColorPickerEl.value])
+    evts.addEvent([Protocol.INPUT_EV_PLAYER_COLOR, playerColorPickerEl.value])
     playerColorPickerEl.addEventListener('change', () => {
       localStorage.setItem('player_color', playerColorPickerEl.value)
-      evts.addEvent(['player_color', playerColorPickerEl.value])
+      evts.addEvent([Protocol.INPUT_EV_PLAYER_COLOR, playerColorPickerEl.value])
     })
     nameChangeEl.value = playerName()
-    evts.addEvent(['player_name', nameChangeEl.value])
+    evts.addEvent([Protocol.INPUT_EV_PLAYER_NAME, nameChangeEl.value])
     nameChangeEl.addEventListener('change', () => {
       localStorage.setItem('player_name', nameChangeEl.value)
-      evts.addEvent(['player_name', nameChangeEl.value])
+      evts.addEvent([Protocol.INPUT_EV_PLAYER_NAME, nameChangeEl.value])
     })
   } else if (MODE === 'replay') {
     let setSpeedStatus = () => {
@@ -514,16 +517,23 @@ async function main() {
         }
 
         let logEntry = GAME_LOG[nextIdx]
-        let nextTs = logEntry[logEntry.length - 1]
+        let nextTs = GAME_START_TS + logEntry[logEntry.length - 1]
         if (nextTs > maxGameTs) {
           break
         }
 
-        if (logEntry[0] === 'addPlayer') {
-          Game.addPlayer(gameId, ...logEntry.slice(1))
+        let entryWithTs = logEntry.slice()
+        entryWithTs[entryWithTs.length - 1] = nextTs
+        if (entryWithTs[0] === Protocol.LOG_ADD_PLAYER) {
+          Game.addPlayer(gameId, ...entryWithTs.slice(1))
           RERENDER = true
-        } else if (logEntry[0] === 'handleInput') {
-          Game.handleInput(gameId, ...logEntry.slice(1))
+        } else if (entryWithTs[0] === Protocol.LOG_UPDATE_PLAYER) {
+          let playerId = Game.getPlayerIdByIndex(gameId, entryWithTs[1])
+          Game.addPlayer(gameId, playerId, ...entryWithTs.slice(2))
+          RERENDER = true
+        } else if (entryWithTs[0] === Protocol.LOG_HANDLE_INPUT) {
+          let playerId = Game.getPlayerIdByIndex(gameId, entryWithTs[1])
+          Game.handleInput(gameId, playerId, ...entryWithTs.slice(2))
           RERENDER = true
         }
         GAME_LOG_IDX = nextIdx
@@ -540,7 +550,7 @@ async function main() {
         // LOCAL ONLY CHANGES
         // -------------------------------------------------------------
         const type = evt[0]
-        if (type === 'move') {
+        if (type === Protocol.INPUT_EV_MOUSE_MOVE) {
           if (_last_mouse_down && !Game.getFirstOwnedTile(gameId, CLIENT_ID)) {
             // move the cam
             const pos = { x: evt[1], y: evt[2] }
@@ -552,18 +562,18 @@ async function main() {
 
             _last_mouse_down = mouse
           }
-        } else if (type === 'down') {
+        } else if (type === Protocol.INPUT_EV_MOUSE_DOWN) {
           const pos = { x: evt[1], y: evt[2] }
           _last_mouse_down = viewport.worldToViewport(pos)
-        } else if (type === 'up') {
+        } else if (type === Protocol.INPUT_EV_MOUSE_UP) {
           _last_mouse_down = null
-        } else if (type === 'zoomin') {
+        } else if (type === Protocol.INPUT_EV_ZOOM_IN) {
           if (viewport.zoomIn()) {
             const pos = { x: evt[1], y: evt[2] }
             RERENDER = true
             Game.changePlayer(gameId, CLIENT_ID, pos)
           }
-        } else if (type === 'zoomout') {
+        } else if (type === Protocol.INPUT_EV_ZOOM_OUT) {
           if (viewport.zoomOut()) {
             const pos = { x: evt[1], y: evt[2] }
             RERENDER = true
@@ -583,7 +593,7 @@ async function main() {
         // LOCAL ONLY CHANGES
         // -------------------------------------------------------------
         const type = evt[0]
-        if (type === 'move') {
+        if (type === Protocol.INPUT_EV_MOUSE_MOVE) {
           if (_last_mouse_down) {
             // move the cam
             const pos = { x: evt[1], y: evt[2] }
@@ -595,15 +605,15 @@ async function main() {
 
             _last_mouse_down = mouse
           }
-        } else if (type === 'down') {
+        } else if (type === Protocol.INPUT_EV_MOUSE_DOWN) {
           const pos = { x: evt[1], y: evt[2] }
           _last_mouse_down = viewport.worldToViewport(pos)
-        } else if (type === 'up') {
+        } else if (type === Protocol.INPUT_EV_MOUSE_UP) {
           _last_mouse_down = null
-        } else if (type === 'zoomin') {
+        } else if (type === Protocol.INPUT_EV_ZOOM_IN) {
           viewport.zoomIn()
           RERENDER = true
-        } else if (type === 'zoomout') {
+        } else if (type === Protocol.INPUT_EV_ZOOM_OUT) {
           viewport.zoomOut()
           RERENDER = true
         }

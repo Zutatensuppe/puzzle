@@ -140,9 +140,9 @@ wss.on('message', async ({socket, data}) => {
         const log = GameLog.get(gameId)
         let game = await Game.createGameObject(
           gameId,
-          log[0][1],
           log[0][2],
-          log[0][3]
+          log[0][3],
+          log[0][4]
         )
         notify(
           [Protocol.EV_SERVER_INIT_REPLAY, {
