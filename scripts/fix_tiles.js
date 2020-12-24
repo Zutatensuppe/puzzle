@@ -3,7 +3,7 @@ import GameCommon from '../common/GameCommon.js'
 import Game from '../server/Game.js'
 
 function fix_tiles(gameId) {
-  Game.loadAllGames()
+  Game.loadGame(gameId)
   let changed = false
   const tiles = GameCommon.getTilesSortedByZIndex(gameId)
   for (let tile of tiles) {

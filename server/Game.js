@@ -11,38 +11,44 @@ const DATA_DIR = './../data'
 function loadAllGames() {
   const files = fs.readdirSync(DATA_DIR)
   for (const f of files) {
-    if (!f.match(/\.json$/)) {
+    const m = f.match(/^([a-z0-9]+)\.json$/)
+    if (!m) {
       continue
     }
-    const file = `${DATA_DIR}/${f}`
-    const contents = fs.readFileSync(file, 'utf-8')
-    let game
-    try {
-      game = JSON.parse(contents)
-    } catch {
-      console.log(`[ERR] unable to load game from file ${f}`);
-    }
-    if (typeof game.puzzle.data.started === 'undefined') {
-      game.puzzle.data.started = Math.round(fs.statSync(file).ctimeMs)
-    }
-    if (typeof game.puzzle.data.finished === 'undefined') {
-      let unfinished = game.puzzle.tiles.map(Util.decodeTile).find(t => t.owner !== -1)
-      game.puzzle.data.finished = unfinished ? 0 : Util.timestamp()
-    }
-    if (!Array.isArray(game.players)) {
-      game.players = Object.values(game.players)
-    }
-    GameCommon.newGame({
-      id: game.id,
-      rng: {
-        type: game.rng ? game.rng.type : '_fake_',
-        obj: game.rng ? Rng.unserialize(game.rng.obj) : new Rng(),
-      },
-      puzzle: game.puzzle,
-      players: game.players,
-      evtInfos: {}
-    })
+    const gameId = m[1]
+    loadGame(gameId)
   }
+}
+
+function loadGame(gameId) {
+  const file = `${DATA_DIR}/${gameId}.json`
+  const contents = fs.readFileSync(file, 'utf-8')
+  let game
+  try {
+    game = JSON.parse(contents)
+  } catch {
+    console.log(`[ERR] unable to load game from file ${file}`);
+  }
+  if (typeof game.puzzle.data.started === 'undefined') {
+    game.puzzle.data.started = Math.round(fs.statSync(file).ctimeMs)
+  }
+  if (typeof game.puzzle.data.finished === 'undefined') {
+    let unfinished = game.puzzle.tiles.map(Util.decodeTile).find(t => t.owner !== -1)
+    game.puzzle.data.finished = unfinished ? 0 : Util.timestamp()
+  }
+  if (!Array.isArray(game.players)) {
+    game.players = Object.values(game.players)
+  }
+  GameCommon.newGame({
+    id: game.id,
+    rng: {
+      type: game.rng ? game.rng.type : '_fake_',
+      obj: game.rng ? Rng.unserialize(game.rng.obj) : new Rng(),
+    },
+    puzzle: game.puzzle,
+    players: game.players,
+    evtInfos: {}
+  })
 }
 
 const changedGames = {}
@@ -130,6 +136,7 @@ function persistGame(gameId) {
 export default {
   createGameObject,
   loadAllGames,
+  loadGame,
   persistChangedGames,
   persistGame,
   createGame,
