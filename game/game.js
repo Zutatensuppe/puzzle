@@ -368,12 +368,10 @@ async function main() {
 
   if (MODE === 'play') {
     const game = await Communication.connect(gameId, CLIENT_ID)
-    game.rng.obj = Rng.unserialize(game.rng.obj)
-    Game.newGame(game)
+    Game.newGame(Util.decodeGame(game))
   } else if (MODE === 'replay') {
     const {game, log} = await Communication.connectReplay(gameId, CLIENT_ID)
-    game.rng.obj = Rng.unserialize(game.rng.obj)
-    Game.newGame(game)
+    Game.newGame(Util.decodeGame(game))
     GAME_LOG = log
     lastRealTime = Util.timestamp()
     GAME_START_TS = GAME_LOG[0][GAME_LOG[0].length - 1]

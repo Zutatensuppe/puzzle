@@ -10,7 +10,6 @@ import Game from './Game.js'
 import twing from 'twing'
 import bodyParser from 'body-parser'
 import v8 from 'v8'
-import { Rng } from '../common/Rng.js'
 import GameLog from './GameLog.js'
 import GameSockets from './GameSockets.js'
 
@@ -74,6 +73,7 @@ app.post('/upload', (req, res) => {
     })
   })
 })
+
 app.post('/newgame', bodyParser.json(), async (req, res) => {
   console.log(req.body.tiles, req.body.image)
   const gameId = Util.uniqId()
@@ -151,19 +151,10 @@ wss.on('message', async ({socket, data}) => {
           log[0][4]
         )
         notify(
-          [Protocol.EV_SERVER_INIT_REPLAY, {
-            id: game.id,
-            rng: {
-              type: game.rng.type,
-              obj: Rng.serialize(game.rng.obj),
-            },
-            puzzle: game.puzzle,
-            players: game.players,
-            evtInfos: game.evtInfos,
-          }, log],
+          [Protocol.EV_SERVER_INIT_REPLAY, Util.encodeGame(game), log],
           [socket]
         )
-      } break;
+      } break
 
       case Protocol.EV_CLIENT_INIT: {
         if (!Game.exists(gameId)) {
@@ -174,19 +165,10 @@ wss.on('message', async ({socket, data}) => {
         GameSockets.addSocket(gameId, socket)
         const game = Game.get(gameId)
         notify(
-          [Protocol.EV_SERVER_INIT, {
-            id: game.id,
-            rng: {
-              type: game.rng.type,
-              obj: Rng.serialize(game.rng.obj),
-            },
-            puzzle: game.puzzle,
-            players: game.players,
-            evtInfos: game.evtInfos,
-          }],
+          [Protocol.EV_SERVER_INIT, Util.encodeGame(game)],
           [socket]
         )
-      } break;
+      } break
 
       case Protocol.EV_CLIENT_EVENT: {
         if (!Game.exists(gameId)) {
@@ -196,25 +178,29 @@ wss.on('message', async ({socket, data}) => {
         const clientEvtData = msg[2]
         const ts = Util.timestamp()
 
-        Game.addPlayer(gameId, clientId, ts)
-        GameSockets.addSocket(gameId, socket)
+        let sendGame = false
+        if (!Game.playerExists(gameId, clientId)) {
+          Game.addPlayer(gameId, clientId, ts)
+          sendGame = true
+        }
+        if (!GameSockets.socketExists(gameId, socket)) {
+          GameSockets.addSocket(gameId, socket)
+          sendGame = true
+        }
+        if (sendGame) {
+          const game = Game.get(gameId)
+          notify(
+            [Protocol.EV_SERVER_INIT, Util.encodeGame(game)],
+            [socket]
+          )
+        }
 
-        const game = Game.get(gameId)
-        notify(
-          [Protocol.EV_SERVER_INIT, {
-            id: game.id,
-            puzzle: game.puzzle,
-            players: game.players,
-            evtInfos: game.evtInfos,
-          }],
-          [socket]
-        )
         const changes = Game.handleInput(gameId, clientId, clientEvtData, ts)
         notify(
           [Protocol.EV_SERVER_EVENT, clientId, clientSeq, changes],
           GameSockets.getSockets(gameId)
         )
-      } break;
+      } break
     }
   } catch (e) {
     console.error(e)
@@ -243,7 +229,7 @@ memoryUsageHuman()
 
 // persist games in fixed interval
 const persistInterval = setInterval(() => {
-  console.log('Persisting games...');
+  console.log('Persisting games...')
   Game.persistChangedGames()
 
   memoryUsageHuman()
@@ -271,12 +257,12 @@ const gracefulShutdown = (signal) => {
 // used by nodemon
 process.once('SIGUSR2', function () {
   gracefulShutdown('SIGUSR2')
-});
+})
 
 process.once('SIGINT', function (code) {
   gracefulShutdown('SIGINT')
-});
+})
 
 process.once('SIGTERM', function (code) {
   gracefulShutdown('SIGTERM')
-});
+})

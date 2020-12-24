@@ -144,6 +144,36 @@ function decodePlayer(data) {
   }
 }
 
+function encodeGame(data) {
+  if (Array.isArray(data)) {
+    return data
+  }
+  return [
+    data.id,
+    data.rng.type,
+    Rng.serialize(data.rng.obj),
+    data.puzzle,
+    data.players,
+    data.evtInfos,
+  ]
+}
+
+function decodeGame(data) {
+  if (!Array.isArray(data)) {
+    return data
+  }
+  return {
+    id: data[0],
+    rng: {
+      type: data[1],
+      obj: Rng.unserialize(data[2]),
+    },
+    puzzle: data[3],
+    players: data[4],
+    evtInfos: data[5],
+  }
+}
+
 function coordByTileIdx(info, tileIdx) {
   const wTiles = info.width / info.tileSize
   return {
@@ -180,6 +210,9 @@ export default {
 
   encodePlayer,
   decodePlayer,
+
+  encodeGame,
+  decodeGame,
 
   coordByTileIdx,
 }

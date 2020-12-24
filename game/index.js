@@ -83,7 +83,7 @@ export default {
       (or select from below)
     </span>
   </div>
-  <span class="btn" :class="" @click="newGame">Start new game</span>
+  <span class="btn" :class="" @click="onNewGameClick">Start new game</span>
 
   <h1>Image lib</h1>
   <div>
@@ -131,7 +131,7 @@ export default {
     mediaImgUploaded(j) {
       this.image = j.image
     },
-    async newGame() {
+    async onNewGameClick() {
       const res = await fetch('/newgame', {
         method: 'post',
         headers: {
