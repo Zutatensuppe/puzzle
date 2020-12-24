@@ -31,7 +31,6 @@ class WebSocketServer {
   constructor(config) {
     this.config = config
     this._websocketserver = null
-    this._interval = null
 
     this.evt = new EvtBus()
   }
@@ -49,15 +48,13 @@ class WebSocketServer {
         socket.close()
         return
       }
-
       socket.on('message', (data) => {
         console.log(`ws`, socket.protocol, data)
         this.evt.dispatch('message', {socket, data})
       })
-    })
-
-    this._websocketserver.on('close', () => {
-      clearInterval(this._interval)
+      socket.on('close', () => {
+        this.evt.dispatch('close', {socket})
+      })
     })
   }
 

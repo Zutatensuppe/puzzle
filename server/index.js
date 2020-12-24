@@ -121,11 +121,13 @@ const notify = (data, sockets) => {
 }
 
 wss.on('close', async ({socket}) => {
-  const proto = socket.protocol.split('|')
-  const clientId = proto[0]
-  const gameId = proto[1]
-  if (Game.exists(gameId)) {
+  try {
+    const proto = socket.protocol.split('|')
+    const clientId = proto[0]
+    const gameId = proto[1]
     GameSockets.removeSocket(gameId, socket)
+  } catch (e) {
+    console.error(e)
   }
 })
 
