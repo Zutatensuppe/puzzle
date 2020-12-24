@@ -10,14 +10,14 @@ function fix_tiles(gameId) {
     if (tile.owner === -1) {
       const p = GameCommon.getFinalTilePos(gameId, tile.idx)
       if (p.x === tile.pos.x && p.y === tile.pos.y) {
-        console.log('all good', tile.pos)
+        // console.log('all good', tile.pos)
       } else {
         console.log('bad tile pos', tile.pos, 'should be: ', p)
         tile.pos = p
         GameCommon.setTile(gameId, tile.idx, tile)
         changed = true
       }
-    } else {
+    } else if (tile.owner !== 0) {
       tile.owner = 0
       console.log('unowning tile', tile.idx)
       GameCommon.setTile(gameId, tile.idx, tile)
