@@ -140,6 +140,9 @@ wss.on('message', async ({socket, data}) => {
     const msgType = msg[0]
     switch (msgType) {
       case Protocol.EV_CLIENT_INIT_REPLAY: {
+        if (!GameLog.exists(gameId)) {
+          throw `[gamelog ${gameId} does not exist... ]`
+        }
         const log = GameLog.get(gameId)
         let game = await Game.createGameObject(
           gameId,
@@ -186,6 +189,9 @@ wss.on('message', async ({socket, data}) => {
       } break;
 
       case Protocol.EV_CLIENT_EVENT: {
+        if (!Game.exists(gameId)) {
+          throw `[game ${gameId} does not exist... ]`
+        }
         const clientSeq = msg[1]
         const clientEvtData = msg[2]
         const ts = Util.timestamp()
