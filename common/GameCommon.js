@@ -660,6 +660,7 @@ export default {
   getFirstOwnedTile,
   getTileDrawOffset,
   getTileDrawSize,
+  getFinalTilePos,
   getStartTs,
   getFinishTs,
   handleInput,

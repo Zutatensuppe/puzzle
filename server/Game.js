@@ -105,27 +105,33 @@ function handleInput(gameId, playerId, input, ts) {
 }
 
 function persistChangedGames() {
-  for (const game of GameCommon.getAllGames()) {
-    if (game.id in changedGames) {
-      delete changedGames[game.id]
-      fs.writeFileSync(`${DATA_DIR}/${game.id}.json`, JSON.stringify({
-        id: game.id,
-        rng: {
-          type: game.rng.type,
-          obj: Rng.serialize(game.rng.obj),
-        },
-        puzzle: game.puzzle,
-        players: game.players,
-      }))
-      console.info(`[INFO] persisted game ${game.id}`)
-    }
+  for (const gameId of Object.keys(changedGames)) {
+    persistGame(gameId)
   }
+}
+
+function persistGame(gameId) {
+  const game = GameCommon.get(gameId)
+  if (game.id in changedGames) {
+    delete changedGames[game.id]
+  }
+  fs.writeFileSync(`${DATA_DIR}/${game.id}.json`, JSON.stringify({
+    id: game.id,
+    rng: {
+      type: game.rng.type,
+      obj: Rng.serialize(game.rng.obj),
+    },
+    puzzle: game.puzzle,
+    players: game.players,
+  }))
+  console.info(`[INFO] persisted game ${game.id}`)
 }
 
 export default {
   createGameObject,
   loadAllGames,
   persistChangedGames,
+  persistGame,
   createGame,
   addPlayer,
   handleInput,
