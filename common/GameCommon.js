@@ -108,12 +108,20 @@ function addPlayer(gameId, playerId, ts) {
   } else {
     changePlayer(gameId, playerId, { ts })
   }
-  if (!GAMES[gameId].evtInfos[playerId]) {
-    GAMES[gameId].evtInfos[playerId] = {
-      _last_mouse: null,
-      _last_mouse_down: null,
-    }
+}
+
+function getEvtInfo(gameId, playerId) {
+  if (playerId in GAMES[gameId].evtInfos) {
+    return GAMES[gameId].evtInfos[playerId]
   }
+  return {
+    _last_mouse: null,
+    _last_mouse_down: null,
+  }
+}
+
+function setEvtInfo(gameId, playerId, evtInfo) {
+  GAMES[gameId].evtInfos[playerId] = evtInfo
 }
 
 function getAllGames() {
@@ -424,7 +432,7 @@ const getPuzzleHeight = (gameId) => {
 
 function handleInput(gameId, playerId, input, ts) {
   const puzzle = GAMES[gameId].puzzle
-  let evtInfo = GAMES[gameId].evtInfos[playerId]
+  let evtInfo = getEvtInfo(gameId, playerId)
 
   let changes = []
 
@@ -527,18 +535,27 @@ function handleInput(gameId, playerId, input, ts) {
     const y = input[2]
     const pos = {x, y}
 
-    changePlayer(gameId, playerId, {x, y, ts})
-    _playerChange()
-
-    if (evtInfo._last_mouse_down !== null) {
+    if (evtInfo._last_mouse_down === null) {
+      // player is just moving the hand
+      changePlayer(gameId, playerId, {x, y, ts})
+      _playerChange()
+    } else {
       let tileIdx = getFirstOwnedTileIdx(gameId, playerId)
       if (tileIdx >= 0) {
+        // player is moving a tile (and hand)
+        changePlayer(gameId, playerId, {x, y, ts})
+        _playerChange()
+
         const diffX = x - evtInfo._last_mouse_down.x
         const diffY = y - evtInfo._last_mouse_down.y
         const diff = { x: diffX, y: diffY }
         const tileIdxs = getGroupedTileIdxs(gameId, tileIdx)
         moveTilesDiff(gameId, tileIdxs, diff)
         _tileChanges(tileIdxs)
+      } else {
+        // player is just moving map, so no change in position!
+        changePlayer(gameId, playerId, {ts})
+        _playerChange()
       }
 
       evtInfo._last_mouse_down = pos
@@ -624,6 +641,7 @@ function handleInput(gameId, playerId, input, ts) {
     _playerChange()
   }
 
+  setEvtInfo(gameId, playerId, evtInfo)
   return changes
 }
 
