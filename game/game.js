@@ -8,7 +8,6 @@ import Util from './../common/Util.js'
 import PuzzleGraphics from './PuzzleGraphics.js'
 import Game from './Game.js'
 import fireworksController from './Fireworks.js'
-import { Rng } from '../common/Rng.js'
 import Protocol from '../common/Protocol.js'
 
 if (typeof GAME_ID === 'undefined') throw '[ GAME_ID not set ]'
@@ -645,15 +644,15 @@ async function main() {
 
     // DRAW BOARD
     // ---------------------------------------------------------------
-    pos = viewport.worldToViewport({
+    pos = viewport.worldToViewportRaw({
       x: (Game.getTableWidth(gameId) - Game.getPuzzleWidth(gameId)) / 2,
       y: (Game.getTableHeight(gameId) - Game.getPuzzleHeight(gameId)) / 2
     })
-    dim = viewport.worldDimToViewport({
+    dim = viewport.worldDimToViewportRaw({
       w: Game.getPuzzleWidth(gameId),
       h: Game.getPuzzleHeight(gameId),
     })
-    ctx.fillStyle = 'rgba(255, 255, 255, .5)'
+    ctx.fillStyle = 'rgba(255, 255, 255, .3)'
     ctx.fillRect(pos.x, pos.y, dim.w, dim.h)
     if (DEBUG) Debug.checkpoint('board done')
     // ---------------------------------------------------------------
@@ -663,11 +662,11 @@ async function main() {
     // ---------------------------------------------------------------
     for (let tile of Game.getTilesSortedByZIndex(gameId)) {
       const bmp = bitmaps[tile.idx]
-      pos = viewport.worldToViewport({
+      pos = viewport.worldToViewportRaw({
         x: Game.getTileDrawOffset(gameId) + tile.pos.x,
         y: Game.getTileDrawOffset(gameId) + tile.pos.y,
       })
-      dim = viewport.worldDimToViewport({
+      dim = viewport.worldDimToViewportRaw({
         w: Game.getTileDrawSize(gameId),
         h: Game.getTileDrawSize(gameId),
       })
@@ -685,7 +684,7 @@ async function main() {
     const ts = TIME()
     for (let player of Game.getActivePlayers(gameId, ts)) {
       const cursor = await getPlayerCursor(player)
-      const pos = viewport.worldToViewport(player)
+      const pos = viewport.worldToViewportRaw(player)
       ctx.drawImage(cursor,
         Math.round(pos.x - cursor.width/2),
         Math.round(pos.y - cursor.height/2)
