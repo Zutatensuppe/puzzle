@@ -17,6 +17,11 @@ function fix_tiles(gameId) {
         GameCommon.setTile(gameId, tile.idx, tile)
         changed = true
       }
+    } else {
+      tile.owner = 0
+      console.log('unowning tile', tile.idx)
+      GameCommon.setTile(gameId, tile.idx, tile)
+      changed = true
     }
   }
   if (changed) {
