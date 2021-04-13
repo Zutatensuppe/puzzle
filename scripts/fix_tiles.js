@@ -13,7 +13,7 @@ function fix_tiles(gameId) {
     if (tile.owner === -1) {
       const p = GameCommon.getFinalTilePos(gameId, tile.idx)
       if (p.x === tile.pos.x && p.y === tile.pos.y) {
-        // console.log('all good', tile.pos)
+        // log.log('all good', tile.pos)
       } else {
         log.log('bad tile pos', tile.pos, 'should be: ', p)
         tile.pos = p

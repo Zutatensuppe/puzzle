@@ -132,7 +132,7 @@ function persistGame(gameId) {
     puzzle: game.puzzle,
     players: game.players,
   }))
-  console.info(`[INFO] persisted game ${game.id}`)
+  log.info(`[INFO] persisted game ${game.id}`)
 }
 
 export default {

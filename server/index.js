@@ -129,7 +129,7 @@ wss.on('close', async ({socket}) => {
     const gameId = proto[1]
     GameSockets.removeSocket(gameId, socket)
   } catch (e) {
-    console.error(e)
+    log.error(e)
   }
 })
 
@@ -205,7 +205,7 @@ wss.on('message', async ({socket, data}) => {
       } break
     }
   } catch (e) {
-    console.error(e)
+    log.error(e)
   }
 })
 
