@@ -1,4 +1,7 @@
 import fs from 'fs'
+import { logger } from '../common/Util.js'
+
+const log = logger('GameLog.js')
 
 const DATA_DIR = './../data'
 
@@ -16,7 +19,7 @@ const exists = (gameId) => {
   return fs.existsSync(file)
 }
 
-const log = (gameId, ...args) => {
+const _log = (gameId, ...args) => {
   const file = filename(gameId)
   if (!fs.existsSync(file)) {
     return
@@ -35,8 +38,8 @@ const get = (gameId) => {
     try {
       return JSON.parse(line)
     } catch (e) {
-      console.log(line)
-      console.log(e)
+      log.log(line)
+      log.log(e)
     }
   })
 }
@@ -44,6 +47,6 @@ const get = (gameId) => {
 export default {
   create,
   exists,
-  log,
+  log: _log,
   get,
 }

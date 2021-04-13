@@ -1,10 +1,12 @@
 import fs from 'fs'
 import GameCommon from './../common/GameCommon.js'
-import Util from './../common/Util.js'
+import Util, { logger } from './../common/Util.js'
 import { Rng } from '../common/Rng.js'
 import GameLog from './GameLog.js'
 import { createPuzzle } from './Puzzle.js'
 import Protocol from '../common/Protocol.js'
+
+const log = logger('Game.js')
 
 const DATA_DIR = './../data'
 
@@ -27,7 +29,7 @@ function loadGame(gameId) {
   try {
     game = JSON.parse(contents)
   } catch {
-    console.log(`[ERR] unable to load game from file ${file}`);
+    log.log(`[ERR] unable to load game from file ${file}`);
   }
   if (typeof game.puzzle.data.started === 'undefined') {
     game.puzzle.data.started = Math.round(fs.statSync(file).ctimeMs)

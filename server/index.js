@@ -5,13 +5,15 @@ import express from 'express'
 import multer from 'multer'
 import config from './../config.js'
 import Protocol from './../common/Protocol.js'
-import Util from './../common/Util.js'
+import Util, { logger } from './../common/Util.js'
 import Game from './Game.js'
 import twing from 'twing'
 import bodyParser from 'body-parser'
 import v8 from 'v8'
 import GameLog from './GameLog.js'
 import GameSockets from './GameSockets.js'
+
+const log = logger('index.js')
 
 const allImages = () => [
   ...fs.readdirSync('./../data/uploads/').map(f => ({
@@ -62,7 +64,7 @@ app.use('/replay/:gid', async (req, res, next) => {
 app.post('/upload', (req, res) => {
   upload(req, res, (err) => {
     if (err) {
-      console.log(err)
+      log.log(err)
       res.status(400).send("Something went wrong!");
     }
     res.send({
@@ -75,7 +77,7 @@ app.post('/upload', (req, res) => {
 })
 
 app.post('/newgame', bodyParser.json(), async (req, res) => {
-  console.log(req.body.tiles, req.body.image)
+  log.log(req.body.tiles, req.body.image)
   const gameId = Util.uniqId()
   if (!Game.exists(gameId)) {
     const ts = Util.timestamp()
@@ -211,7 +213,7 @@ Game.loadAllGames()
 const server = app.listen(
   port,
   hostname,
-  () => console.log(`server running on http://${hostname}:${port}`)
+  () => log.log(`server running on http://${hostname}:${port}`)
 )
 wss.listen()
 
@@ -220,37 +222,37 @@ const memoryUsageHuman = () => {
   const totalHeapSize = v8.getHeapStatistics().total_available_size
   let totalHeapSizeInGB = (totalHeapSize / 1024 / 1024 / 1024).toFixed(2)
 
-  console.log(`Total heap size (bytes) ${totalHeapSize}, (GB ~${totalHeapSizeInGB})`)
+  log.log(`Total heap size (bytes) ${totalHeapSize}, (GB ~${totalHeapSizeInGB})`)
   const used = process.memoryUsage().heapUsed / 1024 / 1024
-  console.log(`Mem: ${Math.round(used * 100) / 100}M`)
+  log.log(`Mem: ${Math.round(used * 100) / 100}M`)
 }
 
 memoryUsageHuman()
 
 // persist games in fixed interval
 const persistInterval = setInterval(() => {
-  console.log('Persisting games...')
+  log.log('Persisting games...')
   Game.persistChangedGames()
 
   memoryUsageHuman()
 }, config.persistence.interval)
 
 const gracefulShutdown = (signal) => {
-  console.log(`${signal} received...`)
+  log.log(`${signal} received...`)
 
-  console.log('clearing persist interval...')
+  log.log('clearing persist interval...')
   clearInterval(persistInterval)
 
-  console.log('persisting games...')
+  log.log('persisting games...')
   Game.persistChangedGames()
 
-  console.log('shutting down webserver...')
+  log.log('shutting down webserver...')
   server.close()
 
-  console.log('shutting down websocketserver...')
+  log.log('shutting down websocketserver...')
   wss.close()
 
-  console.log('shutting down...')
+  log.log('shutting down...')
   process.exit()
 }
 

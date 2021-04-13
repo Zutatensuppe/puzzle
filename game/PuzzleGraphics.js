@@ -1,8 +1,11 @@
 import Geometry from '../common/Geometry.js'
 import Graphics from './Graphics.js'
-import Util from './../common/Util.js'
+import Util, { logger } from './../common/Util.js'
+
+const log = logger('PuzzleGraphics.js')
 
 async function createPuzzleTileBitmaps(img, tiles, info) {
+  log.log('start createPuzzleTileBitmaps')
   var tileSize = info.tileSize
   var tileMarginWidth = info.tileMarginWidth
   var tileDrawSize = info.tileDrawSize
@@ -190,6 +193,7 @@ async function createPuzzleTileBitmaps(img, tiles, info) {
     bitmaps[tile.idx] = await createImageBitmap(c)
   }
 
+  log.log('end createPuzzleTileBitmaps')
   return bitmaps
 }
 

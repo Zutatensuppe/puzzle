@@ -1,6 +1,9 @@
-import fs from 'fs'
 import GameCommon from '../common/GameCommon.js'
+import { logger } from '../common/Util.js'
 import Game from '../server/Game.js'
+
+
+const log = logger('fix_tiles.js')
 
 function fix_tiles(gameId) {
   Game.loadGame(gameId)
@@ -12,14 +15,14 @@ function fix_tiles(gameId) {
       if (p.x === tile.pos.x && p.y === tile.pos.y) {
         // console.log('all good', tile.pos)
       } else {
-        console.log('bad tile pos', tile.pos, 'should be: ', p)
+        log.log('bad tile pos', tile.pos, 'should be: ', p)
         tile.pos = p
         GameCommon.setTile(gameId, tile.idx, tile)
         changed = true
       }
     } else if (tile.owner !== 0) {
       tile.owner = 0
-      console.log('unowning tile', tile.idx)
+      log.log('unowning tile', tile.idx)
       GameCommon.setTile(gameId, tile.idx, tile)
       changed = true
     }

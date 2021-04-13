@@ -1,4 +1,7 @@
 import WebSocket from 'ws'
+import { logger } from '../common/Util.js'
+
+const log = logger('WebSocketServer.js')
 
 /*
 Example config
@@ -44,12 +47,12 @@ class WebSocketServer {
     this._websocketserver.on('connection', (socket, request, client) => {
       const pathname = new URL(this.config.connectstring).pathname
       if (request.url.indexOf(pathname) !== 0) {
-        console.log('bad request url: ', request.url)
+        log.log('bad request url: ', request.url)
         socket.close()
         return
       }
       socket.on('message', (data) => {
-        console.log(`ws`, socket.protocol, data)
+        log.log(`ws`, socket.protocol, data)
         this.evt.dispatch('message', {socket, data})
       })
       socket.on('close', () => {

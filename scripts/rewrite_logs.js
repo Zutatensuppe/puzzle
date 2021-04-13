@@ -1,5 +1,8 @@
 import fs from 'fs'
 import Protocol from '../common/Protocol.js'
+import { logger } from '../common/Util.js'
+
+const log = logger('rewrite_logs')
 
 const DATA_DIR = '../data'
 
@@ -7,7 +10,7 @@ const filename = (gameId) => `${DATA_DIR}/log_${gameId}.log`
 
 const rewrite = (gameId) => {
   const file = filename(gameId)
-  console.log(file)
+  log.log(file)
   if (!fs.existsSync(file)) {
     return []
   }

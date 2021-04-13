@@ -1,5 +1,29 @@
 import { Rng } from './Rng.js'
 
+
+const pad = (x, pad) => {
+  const str = `${x}`
+  if (str.length >= pad.length) {
+    return str
+  }
+  return pad.substr(0, pad.length - str.length) + str
+}
+
+export const logger = (...pre) => {
+  const log = (m) => (...args) => {
+    const d = new Date()
+    const hh = pad(d.getHours(), '00')
+    const mm = pad(d.getMinutes(), '00')
+    const ss = pad(d.getSeconds(), '00')
+    console[m](`${hh}:${mm}:${ss}`, ...pre, ...args)
+  }
+  return {
+    log: log('log'),
+    error: log('error'),
+    info: log('info'),
+  }
+}
+
 // get a unique id
 export const uniqId = () => Date.now().toString(36) + Math.random().toString(36).substring(2)
 

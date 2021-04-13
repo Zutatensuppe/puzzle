@@ -1,3 +1,7 @@
+import { logger } from '../common/Util.js'
+
+const log = logger('GameSocket.js')
+
 // Map<gameId, Socket[]>
 const SOCKETS = {}
 
@@ -13,8 +17,8 @@ function removeSocket(gameId, socket) {
     return
   }
   SOCKETS[gameId] = SOCKETS[gameId].filter(s => s !== socket)
-  console.log('removed socket: ', gameId, socket.protocol)
-  console.log('socket count: ', Object.keys(SOCKETS[gameId]).length)
+  log.log('removed socket: ', gameId, socket.protocol)
+  log.log('socket count: ', Object.keys(SOCKETS[gameId]).length)
 }
 
 function addSocket(gameId, socket) {
@@ -23,8 +27,8 @@ function addSocket(gameId, socket) {
   }
   if (!SOCKETS[gameId].includes(socket)) {
     SOCKETS[gameId].push(socket)
-    console.log('added socket: ', gameId, socket.protocol)
-    console.log('socket count: ', Object.keys(SOCKETS[gameId]).length)
+    log.log('added socket: ', gameId, socket.protocol)
+    log.log('socket count: ', Object.keys(SOCKETS[gameId]).length)
   }
 }
 
