@@ -2,17 +2,22 @@
 
 RUN_BIN="$(realpath "$0")"
 RUN_DIR=$(dirname "$RUN_BIN")
+RUN_SCRIPTS_DIR="$RUN_DIR/scripts"
 
-export RUN_BIN
-export RUN_DIR
+if [ $# -eq 0 ]; then
+  ls $RUN_SCRIPTS_DIR
+  exit 0
+fi
 
-TASK="$1"
+RUN_TASK="$1"
 [ $# -gt 0 ] && shift
 
-# Map task to scripts here
-if [ -f "$RUN_DIR/scripts/$TASK" ]; then
-  exec "$RUN_DIR/scripts/$TASK" "$@"
+if [ -f "$RUN_SCRIPTS_DIR/$RUN_TASK" ]; then
+  export RUN_BIN
+  export RUN_DIR
+  export RUN_TASK
+  exec "$RUN_SCRIPTS_DIR/$RUN_TASK" "$@"
 else
-  echo "Task not found: $TASK" >&2
+  echo "Task not found: $RUN_TASK" >&2
   exit 2
 fi
