@@ -33,12 +33,23 @@ function addCanvasToDom(canvas) {
   return canvas
 }
 
+const ELEMENTS = {
+  TABLE: document.createElement('table'),
+  TR: document.createElement('tr'),
+  TD: document.createElement('td'),
+  BUTTON: document.createElement('button'),
+  INPUT: document.createElement('input'),
+  LABEL: document.createElement('label'),
+  DIV: document.createElement('div'),
+  A: document.createElement('a'),
+}
+
 function addMenuToDom(gameId) {
   const previewImageUrl = Game.getImageUrl(gameId)
   function row (...elements) {
-    const row = document.createElement('tr')
+    const row = ELEMENTS.TR.cloneNode(true)
     for (let el of elements) {
-      const td = document.createElement('td')
+      const td = ELEMENTS.TD.cloneNode(true)
       td.appendChild(el)
       row.appendChild(td)
     }
@@ -46,27 +57,27 @@ function addMenuToDom(gameId) {
   }
 
   function btn(txt) {
-    const btn = document.createElement('button')
+    const btn = ELEMENTS.BUTTON.cloneNode(true)
     btn.classList.add('btn')
     btn.innerText = txt
     return btn
   }
 
   function colorinput() {
-    const input = document.createElement('input')
+    const input = ELEMENTS.INPUT.cloneNode(true)
     input.type = 'color'
     return input
   }
 
   function textinput(maxLength) {
-    const input = document.createElement('input')
+    const input = ELEMENTS.INPUT.cloneNode(true)
     input.type = 'text'
     input.maxLength = maxLength
     return input
   }
 
   function label(text) {
-    const label = document.createElement('label')
+    const label = ELEMENTS.LABEL.cloneNode(true)
     label.innerText = text
     return label
   }
@@ -89,7 +100,7 @@ function addMenuToDom(gameId) {
     nameChangeEl
   )
 
-  const settingsEl = document.createElement('table')
+  const settingsEl = ELEMENTS.TABLE.cloneNode(true)
   settingsEl.classList.add('settings')
   settingsEl.appendChild(bgColorPickerRow)
   settingsEl.appendChild(playerColorPickerRow)
@@ -98,63 +109,62 @@ function addMenuToDom(gameId) {
     e.stopPropagation()
   })
 
-  const settingsOverlay = document.createElement('div')
+  const settingsOverlay = ELEMENTS.DIV.cloneNode(true)
   settingsOverlay.classList.add('overlay', 'transparent', 'closed')
   settingsOverlay.appendChild(settingsEl)
   settingsOverlay.addEventListener('click', () => {
     settingsOverlay.classList.toggle('closed')
   })
 
-  const previewEl = document.createElement('div')
+  const previewEl = ELEMENTS.DIV.cloneNode(true)
   previewEl.classList.add('preview')
 
-  const imgEl = document.createElement('div')
+  const imgEl = ELEMENTS.DIV.cloneNode(true)
   imgEl.classList.add('img')
   imgEl.style.backgroundImage = `url(${previewImageUrl})`
   previewEl.appendChild(imgEl)
 
-  const previewOverlay = document.createElement('div')
+  const previewOverlay = ELEMENTS.DIV.cloneNode(true)
   previewOverlay.classList.add('overlay', 'closed')
   previewOverlay.appendChild(previewEl)
   previewOverlay.addEventListener('click', () => {
     previewOverlay.classList.toggle('closed')
   })
 
-  const settingsOpenerEl = document.createElement('div')
+  const settingsOpenerEl = ELEMENTS.DIV.cloneNode(true)
   settingsOpenerEl.classList.add('opener')
   settingsOpenerEl.appendChild(document.createTextNode('🛠️ Settings'))
   settingsOpenerEl.addEventListener('click', () => {
     settingsOverlay.classList.toggle('closed')
   })
 
-  const homeEl = document.createElement('a')
+  const homeEl = ELEMENTS.A.cloneNode(true)
   homeEl.classList.add('opener')
   homeEl.appendChild(document.createTextNode('🧩 Puzzles'))
   homeEl.href = "/"
 
-  const previewOpenerEl = document.createElement('div')
+  const previewOpenerEl = ELEMENTS.DIV.cloneNode(true)
   previewOpenerEl.classList.add('opener')
   previewOpenerEl.appendChild(document.createTextNode('🖼️ Preview'))
   previewOpenerEl.addEventListener('click', () => {
     previewOverlay.classList.toggle('closed')
   })
 
-  const tabsEl = document.createElement('div')
+  const tabsEl = ELEMENTS.DIV.cloneNode(true)
   tabsEl.classList.add('tabs')
   tabsEl.appendChild(homeEl)
   tabsEl.appendChild(previewOpenerEl)
   tabsEl.appendChild(settingsOpenerEl)
 
-  const menuEl = document.createElement('div')
+  const menuEl = ELEMENTS.DIV.cloneNode(true)
   menuEl.classList.add('menu')
   menuEl.appendChild(tabsEl)
 
-  const scoresTitleEl = document.createElement('div')
+  const scoresTitleEl = ELEMENTS.DIV.cloneNode(true)
   scoresTitleEl.appendChild(document.createTextNode('Scores'))
 
-  const scoresListEl = document.createElement('table')
-  const updateScores = () => {
-    const ts = TIME()
+  const scoresListEl = ELEMENTS.TABLE.cloneNode(true)
+  const updateScoreBoard = (ts) => {
     const minTs = ts - 30 * Time.SEC
 
     const players = Game.getRelevantPlayers(gameId, ts)
@@ -195,23 +205,23 @@ function addMenuToDom(gameId) {
     return `${icon} ${timeDiffStr}`
   }
 
-  const timerCountdownEl = document.createElement('div')
+  const timerCountdownEl = ELEMENTS.DIV.cloneNode(true)
   timerCountdownEl.innerText = timerStr()
   setInterval(() => {
     timerCountdownEl.innerText = timerStr()
   }, 50) // needs to be small, so that it updates quick enough in replay
 
-  const timerEl = document.createElement('div')
+  const timerEl = ELEMENTS.DIV.cloneNode(true)
   timerEl.classList.add('timer')
   timerEl.appendChild(timerCountdownEl)
 
   let replayControl = null
   if (MODE === 'replay') {
-    const replayControlEl = document.createElement('div')
+    const replayControlEl = ELEMENTS.DIV.cloneNode(true)
     const speedUp = btn('⏫')
     const speedDown = btn('⏬')
     const pause = btn('⏸️')
-    const speed = document.createElement('div')
+    const speed = ELEMENTS.DIV.cloneNode(true)
     replayControlEl.appendChild(speed)
     replayControlEl.appendChild(speedUp)
     replayControlEl.appendChild(speedDown)
@@ -220,7 +230,7 @@ function addMenuToDom(gameId) {
     replayControl = { speedUp, speedDown, pause, speed }
   }
 
-  const scoresEl = document.createElement('div')
+  const scoresEl = ELEMENTS.DIV.cloneNode(true)
   scoresEl.classList.add('scores')
   scoresEl.appendChild(scoresTitleEl)
   scoresEl.appendChild(scoresListEl)
@@ -235,7 +245,7 @@ function addMenuToDom(gameId) {
     bgColorPickerEl,
     playerColorPickerEl,
     nameChangeEl,
-    updateScores,
+    updateScoreBoard,
     replayControl,
   }
 }
@@ -322,7 +332,7 @@ async function main() {
 
   const cursors = {}
   const getPlayerCursor = async (p) => {
-    let key = p.color + ' ' + p.d
+    const key = p.color + ' ' + p.d
     if (!cursors[key]) {
       const cursor = p.d ? cursorGrab : cursorHand
       const mask = p.d ? cursorGrabMask : cursorHandMask
@@ -361,10 +371,17 @@ async function main() {
     throw '[ 2020-12-22 MODE invalid, must be play|replay ]'
   }
 
+  const TILE_DRAW_OFFSET = Game.getTileDrawOffset(gameId)
+  const TILE_DRAW_SIZE = Game.getTileDrawSize(gameId)
+  const PUZZLE_WIDTH = Game.getPuzzleWidth(gameId)
+  const PUZZLE_HEIGHT = Game.getPuzzleHeight(gameId)
+  const TABLE_WIDTH = Game.getTableWidth(gameId)
+  const TABLE_HEIGHT = Game.getTableHeight(gameId)
+
   const bitmaps = await PuzzleGraphics.loadPuzzleBitmaps(Game.getPuzzle(gameId))
 
-  const {bgColorPickerEl, playerColorPickerEl, nameChangeEl, updateScores, replayControl} = addMenuToDom(gameId)
-  updateScores()
+  const {bgColorPickerEl, playerColorPickerEl, nameChangeEl, updateScoreBoard, replayControl} = addMenuToDom(gameId)
+  updateScoreBoard(TIME())
 
   const longFinished = Game.getFinishTs(gameId)
   let finished = longFinished ? true : false
@@ -381,8 +398,8 @@ async function main() {
   const viewport = new Camera(canvas)
   // center viewport
   viewport.move(
-    -(Game.getTableWidth(gameId) - viewport.width) /2,
-    -(Game.getTableHeight(gameId) - viewport.height) /2
+    -(TABLE_WIDTH - viewport.width) /2,
+    -(TABLE_HEIGHT - viewport.height) /2
   )
 
   const playerBgColor = () => {
@@ -627,12 +644,12 @@ async function main() {
     // DRAW BOARD
     // ---------------------------------------------------------------
     pos = viewport.worldToViewportRaw({
-      x: (Game.getTableWidth(gameId) - Game.getPuzzleWidth(gameId)) / 2,
-      y: (Game.getTableHeight(gameId) - Game.getPuzzleHeight(gameId)) / 2
+      x: (TABLE_WIDTH - PUZZLE_WIDTH) / 2,
+      y: (TABLE_HEIGHT - PUZZLE_HEIGHT) / 2
     })
     dim = viewport.worldDimToViewportRaw({
-      w: Game.getPuzzleWidth(gameId),
-      h: Game.getPuzzleHeight(gameId),
+      w: PUZZLE_WIDTH,
+      h: PUZZLE_HEIGHT,
     })
     ctx.fillStyle = 'rgba(255, 255, 255, .3)'
     ctx.fillRect(pos.x, pos.y, dim.w, dim.h)
@@ -645,12 +662,12 @@ async function main() {
     for (let tile of Game.getTilesSortedByZIndex(gameId)) {
       const bmp = bitmaps[tile.idx]
       pos = viewport.worldToViewportRaw({
-        x: Game.getTileDrawOffset(gameId) + tile.pos.x,
-        y: Game.getTileDrawOffset(gameId) + tile.pos.y,
+        x: TILE_DRAW_OFFSET + tile.pos.x,
+        y: TILE_DRAW_OFFSET + tile.pos.y,
       })
       dim = viewport.worldDimToViewportRaw({
-        w: Game.getTileDrawSize(gameId),
-        h: Game.getTileDrawSize(gameId),
+        w: TILE_DRAW_SIZE,
+        h: TILE_DRAW_SIZE,
       })
       ctx.drawImage(bmp,
         0, 0, bmp.width, bmp.height,
@@ -695,7 +712,7 @@ async function main() {
 
     // DRAW PLAYERS
     // ---------------------------------------------------------------
-    updateScores()
+    updateScoreBoard(ts)
     if (DEBUG) Debug.checkpoint('scores done')
     // ---------------------------------------------------------------
 
