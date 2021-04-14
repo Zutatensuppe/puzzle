@@ -116,7 +116,7 @@ a:hover { color: var(--link-hover-color); }
   cursor: pointer;
 }
 
-canvas {
+canvas.loaded {
   cursor: none;
 }
 

@@ -374,6 +374,7 @@ async function main() {
   fireworks.init(canvas)
 
   const ctx = canvas.getContext('2d')
+  canvas.classList.add('loaded')
 
   // initialize some view data
   // this global data will change according to input events
