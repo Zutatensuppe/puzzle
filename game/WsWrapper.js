@@ -1,3 +1,5 @@
+import Time from '../common/Time.js'
+
 /**
  * Wrapper around ws that
  * - buffers 'send' until a connection is available
@@ -48,12 +50,12 @@ export default class WsWrapper {
     }
     ws.onerror = (e) => {
       this.handle = null
-      this.reconnectTimeout = setTimeout(() => { this.connect() }, 1000)
+      this.reconnectTimeout = setTimeout(() => { this.connect() }, 1 * Time.SEC)
       this.onclose(e)
     }
     ws.onclose = (e) => {
       this.handle = null
-      this.reconnectTimeout = setTimeout(() => { this.connect() }, 1000)
+      this.reconnectTimeout = setTimeout(() => { this.connect() }, 1 * Time.SEC)
       this.onclose(e)
     }
   }

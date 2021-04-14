@@ -12,6 +12,7 @@ import bodyParser from 'body-parser'
 import v8 from 'v8'
 import GameLog from './GameLog.js'
 import GameSockets from './GameSockets.js'
+import Time from '../common/Time.js'
 
 const log = logger('index.js')
 
@@ -80,7 +81,7 @@ app.post('/newgame', bodyParser.json(), async (req, res) => {
   log.log(req.body.tiles, req.body.image)
   const gameId = Util.uniqId()
   if (!Game.exists(gameId)) {
-    const ts = Util.timestamp()
+    const ts = Time.timestamp()
     await Game.createGame(gameId, req.body.tiles, req.body.image, ts)
   }
   res.send({ url: `/g/${gameId}` })
@@ -90,7 +91,7 @@ app.use('/common/', express.static('./../common/'))
 app.use('/uploads/', express.static('./../data/uploads/'))
 app.use('/', async (req, res, next) => {
   if (req.path === '/') {
-    const ts = Util.timestamp()
+    const ts = Time.timestamp()
     const games = [
       ...Game.getAllGames().map(game => ({
         id: game.id,
@@ -162,7 +163,7 @@ wss.on('message', async ({socket, data}) => {
         if (!Game.exists(gameId)) {
           throw `[game ${gameId} does not exist... ]`
         }
-        const ts = Util.timestamp()
+        const ts = Time.timestamp()
         Game.addPlayer(gameId, clientId, ts)
         GameSockets.addSocket(gameId, socket)
         const game = Game.get(gameId)
@@ -178,7 +179,7 @@ wss.on('message', async ({socket, data}) => {
         }
         const clientSeq = msg[1]
         const clientEvtData = msg[2]
-        const ts = Util.timestamp()
+        const ts = Time.timestamp()
 
         let sendGame = false
         if (!Game.playerExists(gameId, clientId)) {

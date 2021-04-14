@@ -1,3 +1,5 @@
+import Time from '../common/Time.js'
+
 const Upload = {
   name: 'upload',
   props: {
@@ -24,20 +26,6 @@ const Upload = {
       this.$emit('uploaded', j)
     },
   }
-}
-
-
-export const timestamp = () => {
-  const d = new Date();
-  return Date.UTC(
-    d.getUTCFullYear(),
-    d.getUTCMonth(),
-    d.getUTCDate(),
-    d.getUTCHours(),
-    d.getUTCMinutes(),
-    d.getUTCSeconds(),
-    d.getUTCMilliseconds(),
-  )
 }
 
 export default {
@@ -104,29 +92,10 @@ export default {
   methods: {
     time(start, end) {
       const icon = end ? '🏁' : '⏳'
-
       const from = start;
-      const to = end || timestamp()
-
-      const MS = 1
-      const SEC = MS * 1000
-      const MIN = SEC * 60
-      const HOUR = MIN * 60
-      const DAY = HOUR * 24
-
-      let diff = to - from
-      const d = Math.floor(diff / DAY)
-      diff = diff % DAY
-
-      const h = Math.floor(diff / HOUR)
-      diff = diff % HOUR
-
-      const m = Math.floor(diff / MIN)
-      diff = diff % MIN
-
-      const s = Math.floor(diff / SEC)
-
-      return `${icon} ${d}d ${h}h ${m}m ${s}s`
+      const to = end || Time.timestamp()
+      const timeDiffStr = Time.timeDiffStr(from, to)
+      return `${icon} ${timeDiffStr}`
     },
     mediaImgUploaded(j) {
       this.image = j.image

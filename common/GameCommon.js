@@ -1,5 +1,6 @@
 import Geometry from './Geometry.js'
 import Protocol from './Protocol.js'
+import Time from './Time.js'
 import Util from './Util.js'
 
 // Map<gameId, GameObject>
@@ -89,14 +90,14 @@ function playerExists(gameId, playerId) {
 }
 
 function getRelevantPlayers(gameId, ts) {
-  const minTs = ts - 30000
+  const minTs = ts - 30 * Time.SEC
   return getAllPlayers(gameId).filter(player => {
     return player.ts >= minTs || player.points > 0
   })
 }
 
 function getActivePlayers(gameId, ts) {
-  const minTs = ts - 30000
+  const minTs = ts - 30 * Time.SEC
   return getAllPlayers(gameId).filter(player => {
     return player.ts >= minTs
   })

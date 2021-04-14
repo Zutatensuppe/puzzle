@@ -69,19 +69,6 @@ export const shuffle = (
   return arr
 }
 
-export const timestamp = () => {
-  const d = new Date();
-  return Date.UTC(
-    d.getUTCFullYear(),
-    d.getUTCMonth(),
-    d.getUTCDate(),
-    d.getUTCHours(),
-    d.getUTCMinutes(),
-    d.getUTCSeconds(),
-    d.getUTCMilliseconds(),
-  )
-}
-
 function encodeShape(data) {
   if (typeof data === 'number') {
       return data
@@ -224,7 +211,6 @@ export default {
   choice,
   throttle,
   shuffle,
-  timestamp,
 
   encodeShape,
   decodeShape,

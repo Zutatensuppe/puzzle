@@ -9,6 +9,7 @@ import PuzzleGraphics from './PuzzleGraphics.js'
 import Game from './Game.js'
 import fireworksController from './Fireworks.js'
 import Protocol from '../common/Protocol.js'
+import Time from '../common/Time.js'
 
 if (typeof GAME_ID === 'undefined') throw '[ GAME_ID not set ]'
 if (typeof WS_ADDRESS === 'undefined') throw '[ WS_ADDRESS not set ]'
@@ -18,7 +19,7 @@ if (typeof DEBUG === 'undefined') window.DEBUG = false
 
 let RERENDER = true
 
-let TIME = () => Util.timestamp()
+let TIME = () => Time.timestamp()
 
 function addCanvasToDom(canvas) {
   canvas.width = window.innerWidth
@@ -154,7 +155,7 @@ function addMenuToDom(gameId) {
   const scoresListEl = document.createElement('table')
   const updateScores = () => {
     const ts = TIME()
-    const minTs = ts - 30000
+    const minTs = ts - 30 * Time.SEC
 
     const players = Game.getRelevantPlayers(gameId, ts)
     const actives = players.filter(player => player.ts >= minTs)
@@ -187,31 +188,11 @@ function addMenuToDom(gameId) {
   const timerStr = () => {
     const started = Game.getStartTs(gameId)
     const ended = Game.getFinishTs(gameId)
-
     const icon = ended ? '🏁' : '⏳'
-
     const from = started;
     const to = ended || TIME()
-
-    const MS = 1
-    const SEC = MS * 1000
-    const MIN = SEC * 60
-    const HOUR = MIN * 60
-    const DAY = HOUR * 24
-
-    let diff = to - from
-    const d = Math.floor(diff / DAY)
-    diff = diff % DAY
-
-    const h = Math.floor(diff / HOUR)
-    diff = diff % HOUR
-
-    const m = Math.floor(diff / MIN)
-    diff = diff % MIN
-
-    const s = Math.floor(diff / SEC)
-
-    return `${icon} ${d}d ${h}h ${m}m ${s}s`
+    const timeDiffStr = Time.timeDiffStr(from, to)
+    return `${icon} ${timeDiffStr}`
   }
 
   const timerCountdownEl = document.createElement('div')
@@ -372,7 +353,7 @@ async function main() {
     const {game, log} = await Communication.connectReplay(gameId, CLIENT_ID)
     Game.newGame(Util.decodeGame(game))
     GAME_LOG = log
-    lastRealTime = Util.timestamp()
+    lastRealTime = Time.timestamp()
     GAME_START_TS = GAME_LOG[0][GAME_LOG[0].length - 1]
     lastGameTime = GAME_START_TS
     TIME = () => lastGameTime
@@ -440,7 +421,7 @@ async function main() {
       evts.addEvent([Protocol.INPUT_EV_PLAYER_NAME, nameChangeEl.value])
     })
   } else if (MODE === 'replay') {
-    let setSpeedStatus = () => {
+    const setSpeedStatus = () => {
       replayControl.speed.innerText = 'Replay-Speed: ' + (REPLAY_SPEEDS[REPLAY_SPEED_IDX] + 'x') + (REPLAY_PAUSED ? ' Paused' : '')
     }
     setSpeedStatus()
@@ -494,7 +475,7 @@ async function main() {
     // no external communication for replay mode,
     // only the GAME_LOG is relevant
     let inter = setInterval(() => {
-      let realTime = Util.timestamp()
+      let realTime = Time.timestamp()
       if (REPLAY_PAUSED) {
         lastRealTime = realTime
         return
