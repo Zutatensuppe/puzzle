@@ -564,14 +564,14 @@ async function main() {
         } else if (type === Protocol.INPUT_EV_MOUSE_UP) {
           _last_mouse_down = null
         } else if (type === Protocol.INPUT_EV_ZOOM_IN) {
-          if (viewport.zoomIn()) {
-            const pos = { x: evt[1], y: evt[2] }
+          const pos = { x: evt[1], y: evt[2] }
+          if (viewport.zoomIn(viewport.worldToViewport(pos))) {
             RERENDER = true
             Game.changePlayer(gameId, CLIENT_ID, pos)
           }
         } else if (type === Protocol.INPUT_EV_ZOOM_OUT) {
-          if (viewport.zoomOut()) {
-            const pos = { x: evt[1], y: evt[2] }
+          const pos = { x: evt[1], y: evt[2] }
+          if (viewport.zoomOut(viewport.worldToViewport(pos))) {
             RERENDER = true
             Game.changePlayer(gameId, CLIENT_ID, pos)
           }
@@ -607,10 +607,12 @@ async function main() {
         } else if (type === Protocol.INPUT_EV_MOUSE_UP) {
           _last_mouse_down = null
         } else if (type === Protocol.INPUT_EV_ZOOM_IN) {
-          viewport.zoomIn()
+          const pos = { x: evt[1], y: evt[2] }
+          viewport.zoomIn(viewport.worldToViewport(pos))
           RERENDER = true
         } else if (type === Protocol.INPUT_EV_ZOOM_OUT) {
-          viewport.zoomOut()
+          const pos = { x: evt[1], y: evt[2] }
+          viewport.zoomOut(viewport.worldToViewport(pos))
           RERENDER = true
         }
       }

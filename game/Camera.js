@@ -28,27 +28,32 @@ export default class Camera {
     this.y += y / this.zoom
   }
 
-  setZoom(newzoom) {
+  setZoom(newzoom, centerCoordViewport) {
     const zoom = Math.min(Math.max(newzoom, this.minZoom), this.maxZoom)
     if (zoom == this.zoom) {
       return false
     }
 
-    // centered zoom
-    // TODO: mouse-centered-zoom
-    this.x -= Math.round(((this.width / this.zoom) - (this.width / zoom)) / 2)
-    this.y -= Math.round(((this.height / this.zoom) - (this.height / zoom)) / 2)
+    const zoomToCoord = center || {
+      x: this.width / 2,
+      y: this.height / 2
+    }
+    const zoomFactor = (1 / this.zoom) - (1 / zoom)
+
+    this.x -= Math.round(zoomToCoord.x * zoomFactor)
+    this.y -= Math.round(zoomToCoord.y * zoomFactor)
 
     this.zoom = zoom
+
     return true
   }
 
-  zoomOut() {
-    return this.setZoom(this.zoom - this.zoomStep * this.zoom)
+  zoomOut(centerCoordViewport) {
+    return this.setZoom(this.zoom - this.zoomStep * this.zoom, centerCoordViewport)
   }
 
-  zoomIn() {
-    return this.setZoom(this.zoom + this.zoomStep * this.zoom)
+  zoomIn(centerCoordViewport) {
+    return this.setZoom(this.zoom + this.zoomStep * this.zoom, centerCoordViewport)
   }
 
   /**
