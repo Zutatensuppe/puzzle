@@ -6,12 +6,13 @@ function createCanvas(width = 0, height = 0) {
 }
 
 async function loadImageToBitmap(imagePath) {
-  const img = new Image()
-  await new Promise((resolve) => {
-    img.onload = resolve
+  return new Promise((resolve) => {
+    const img = new Image()
+    img.onload = () => {
+      createImageBitmap(img).then(resolve)
+    }
     img.src = imagePath
-  });
-  return await createImageBitmap(img, 0, 0, img.width, img.height)
+  })
 }
 
 async function resizeBitmap (bitmap, width, height) {
