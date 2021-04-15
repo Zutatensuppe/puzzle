@@ -28,13 +28,13 @@ export default class Camera {
     this.y += y / this.zoom
   }
 
-  setZoom(newzoom, centerCoordViewport) {
+  setZoom(newzoom, viewportCoordCenter) {
     const zoom = Math.min(Math.max(newzoom, this.minZoom), this.maxZoom)
     if (zoom == this.zoom) {
       return false
     }
 
-    const zoomToCoord = centerCoordViewport || {
+    const zoomToCoord = viewportCoordCenter || {
       x: this.width / 2,
       y: this.height / 2
     }
@@ -48,21 +48,27 @@ export default class Camera {
     return true
   }
 
-  zoomOut(centerCoordViewport) {
-    return this.setZoom(this.zoom - this.zoomStep * this.zoom, centerCoordViewport)
+  zoomOut(viewportCoordCenter) {
+    return this.setZoom(
+      this.zoom - this.zoomStep * this.zoom,
+      viewportCoordCenter
+    )
   }
 
-  zoomIn(centerCoordViewport) {
-    return this.setZoom(this.zoom + this.zoomStep * this.zoom, centerCoordViewport)
+  zoomIn(viewportCoordCenter) {
+    return this.setZoom(
+      this.zoom + this.zoomStep * this.zoom,
+      viewportCoordCenter
+    )
   }
 
   /**
    * Translate a coordinate in the viewport to a
    * coordinate in the world, rounded
-   * @param {x, y} coord
+   * @param {x, y} viewportCoord
    */
-  viewportToWorld(coord) {
-    const worldCoord = this.viewportToWorldRaw(coord)
+  viewportToWorld(viewportCoord) {
+    const worldCoord = this.viewportToWorldRaw(viewportCoord)
     return {
       x: Math.round(worldCoord.x),
       y: Math.round(worldCoord.y),
@@ -72,22 +78,22 @@ export default class Camera {
   /**
    * Translate a coordinate in the viewport to a
    * coordinate in the world, not rounded
-   * @param {x, y} coord
+   * @param {x, y} viewportCoord
    */
-  viewportToWorldRaw(coord) {
+  viewportToWorldRaw(viewportCoord) {
     return {
-      x: (coord.x / this.zoom) - this.x,
-      y: (coord.y / this.zoom) - this.y,
+      x: (viewportCoord.x / this.zoom) - this.x,
+      y: (viewportCoord.y / this.zoom) - this.y,
     }
   }
 
   /**
    * Translate a coordinate in the world to a
    * coordinate in the viewport, rounded
-   * @param {x, y} coord
+   * @param {x, y} worldCoord
    */
-  worldToViewport(coord) {
-    const viewportCoord = this.worldToViewportRaw(coord)
+  worldToViewport(worldCoord) {
+    const viewportCoord = this.worldToViewportRaw(worldCoord)
     return {
       x: Math.round(viewportCoord.x),
       y: Math.round(viewportCoord.y),
@@ -97,22 +103,22 @@ export default class Camera {
   /**
    * Translate a coordinate in the world to a
    * coordinate in the viewport, not rounded
-   * @param {x, y} coord
+   * @param {x, y} worldCoord
    */
-  worldToViewportRaw(coord) {
+  worldToViewportRaw(worldCoord) {
     return {
-      x: (coord.x + this.x) * this.zoom,
-      y: (coord.y + this.y) * this.zoom,
+      x: (worldCoord.x + this.x) * this.zoom,
+      y: (worldCoord.y + this.y) * this.zoom,
     }
   }
 
   /**
    * Translate a 2d dimension (width/height) in the world to
    * one in the viewport, rounded
-   * @param {x, y} coord
+   * @param {w, h} worldDim
    */
-  worldDimToViewport(dim) {
-    const viewportDim = this.worldDimToViewportRaw(dim)
+  worldDimToViewport(worldDim) {
+    const viewportDim = this.worldDimToViewportRaw(worldDim)
     return {
       w: Math.round(viewportDim.w),
       h: Math.round(viewportDim.h),
@@ -123,12 +129,12 @@ export default class Camera {
   /**
    * Translate a 2d dimension (width/height) in the world to
    * one in the viewport, not rounded
-   * @param {x, y} coord
+   * @param {w, h} worldDim
    */
-  worldDimToViewportRaw(dim) {
+  worldDimToViewportRaw(worldDim) {
     return {
-      w: dim.w * this.zoom,
-      h: dim.h * this.zoom,
+      w: worldDim.w * this.zoom,
+      h: worldDim.h * this.zoom,
     }
   }
 }
