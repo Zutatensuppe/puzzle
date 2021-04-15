@@ -26,6 +26,15 @@ function rectCenter(rect) {
   }
 }
 
+/**
+ * Returns a rectangle with same dimensions as the given one, but
+ * location (x/y) moved by x and y.
+ *
+ * @param {x, y, w,, h} rect
+ * @param number x
+ * @param number y
+ * @returns {x, y, w, h}
+ */
 function rectMoved(rect, x, y) {
   return {
     x: rect.x + x,
