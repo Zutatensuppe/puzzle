@@ -141,7 +141,8 @@ function addMenuToDom(gameId) {
   const homeEl = ELEMENTS.A.cloneNode(true)
   homeEl.classList.add('opener')
   homeEl.appendChild(document.createTextNode('🧩 Puzzles'))
-  homeEl.href = "/"
+  homeEl.target = '_blank'
+  homeEl.href = '/'
 
   const previewOpenerEl = ELEMENTS.DIV.cloneNode(true)
   previewOpenerEl.classList.add('opener')
