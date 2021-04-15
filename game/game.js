@@ -608,12 +608,14 @@ async function main() {
           _last_mouse_down = null
         } else if (type === Protocol.INPUT_EV_ZOOM_IN) {
           const pos = { x: evt[1], y: evt[2] }
-          viewport.zoomIn(viewport.worldToViewport(pos))
-          RERENDER = true
+          if (viewport.zoomIn(viewport.worldToViewport(pos))) {
+            RERENDER = true
+          }
         } else if (type === Protocol.INPUT_EV_ZOOM_OUT) {
           const pos = { x: evt[1], y: evt[2] }
-          viewport.zoomOut(viewport.worldToViewport(pos))
-          RERENDER = true
+          if (viewport.zoomOut(viewport.worldToViewport(pos))) {
+            RERENDER = true
+          }
         }
       }
     }
