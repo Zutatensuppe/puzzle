@@ -35,6 +35,22 @@ function rectMoved(rect, x, y) {
   }
 }
 
+/**
+ * Returns true if the rectangles overlap, including their borders.
+ *
+ * @param {x, y, w, h} rectA
+ * @param {x, y, w, h} rectB
+ * @returns bool
+ */
+function rectsOverlap(rectA, rectB) {
+  return !(
+    rectB.x > (rectA.x + rectA.w)
+    || rectA.x > (rectB.x + rectB.w)
+    || rectB.y > (rectA.y + rectA.h)
+    || rectA.y > (rectB.y + rectB.h)
+  )
+}
+
 function rectCenterDistance(rectA, rectB) {
   return pointDistance(rectCenter(rectA), rectCenter(rectB))
 }
@@ -47,4 +63,5 @@ export default {
   rectCenter,
   rectMoved,
   rectCenterDistance,
+  rectsOverlap,
 }
