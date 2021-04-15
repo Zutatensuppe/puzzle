@@ -58,7 +58,7 @@ export const shuffle = (
   /** @type Rng */ rng,
   array
 ) => {
-  let arr = array.slice()
+  const arr = array.slice()
   for (let i = 0; i <= arr.length - 2; i++)
   {
     const j = randomInt(rng, i, arr.length -1);
