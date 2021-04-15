@@ -347,14 +347,16 @@ async function main() {
 
   // stuff only available in replay mode...
   // TODO: refactor
-  let GAME_LOG
-  let GAME_LOG_IDX = 0
-  let REPLAY_SPEEDS = [0.5, 1, 2, 5, 10, 20, 50]
-  let REPLAY_SPEED_IDX = 1
-  let REPLAY_PAUSED = false
-  let lastRealTime = null
-  let lastGameTime = null
-  let GAME_START_TS = null
+  const REPLAY = {
+    log: null,
+    logIdx: 0,
+    speeds: [0.5, 1, 2, 5, 10, 20, 50],
+    speedIdx: 1,
+    paused: false,
+    lastRealTs: null,
+    lastGameTs: null,
+    gameStartTs: null,
+  }
 
   if (MODE === 'play') {
     const game = await Communication.connect(gameId, CLIENT_ID)
@@ -362,11 +364,11 @@ async function main() {
   } else if (MODE === 'replay') {
     const {game, log} = await Communication.connectReplay(gameId, CLIENT_ID)
     Game.newGame(Util.decodeGame(game))
-    GAME_LOG = log
-    lastRealTime = Time.timestamp()
-    GAME_START_TS = GAME_LOG[0][GAME_LOG[0].length - 1]
-    lastGameTime = GAME_START_TS
-    TIME = () => lastGameTime
+    REPLAY.log = log
+    REPLAY.lastRealTs = Time.timestamp()
+    REPLAY.gameStartTs = REPLAY.log[0][REPLAY.log[0].length - 1]
+    REPLAY.lastGameTs = REPLAY.gameStartTs
+    TIME = () => REPLAY.lastGameTs
   } else {
     throw '[ 2020-12-22 MODE invalid, must be play|replay ]'
   }
@@ -383,9 +385,9 @@ async function main() {
   const {bgColorPickerEl, playerColorPickerEl, nameChangeEl, updateScoreBoard, replayControl} = addMenuToDom(gameId)
   updateScoreBoard(TIME())
 
-  const longFinished = Game.getFinishTs(gameId)
-  let finished = longFinished ? true : false
-  const justFinished = () => !!(finished && !longFinished)
+  const longFinished = !! Game.getFinishTs(gameId)
+  let finished = longFinished
+  const justFinished = () => finished && !longFinished
 
   const fireworks = new fireworksController(canvas, Game.getRng(gameId))
   fireworks.init(canvas)
@@ -440,23 +442,25 @@ async function main() {
     })
   } else if (MODE === 'replay') {
     const setSpeedStatus = () => {
-      replayControl.speed.innerText = 'Replay-Speed: ' + (REPLAY_SPEEDS[REPLAY_SPEED_IDX] + 'x') + (REPLAY_PAUSED ? ' Paused' : '')
+      replayControl.speed.innerText = 'Replay-Speed: ' +
+        (REPLAY.speeds[REPLAY.speedIdx] + 'x') +
+        (REPLAY.paused ? ' Paused' : '')
     }
     setSpeedStatus()
     replayControl.speedUp.addEventListener('click', () => {
-      if (REPLAY_SPEED_IDX + 1 < REPLAY_SPEEDS.length) {
-        REPLAY_SPEED_IDX++
+      if (REPLAY.speedIdx + 1 < REPLAY.speeds.length) {
+        REPLAY.speedIdx++
         setSpeedStatus()
       }
     })
     replayControl.speedDown.addEventListener('click', () => {
-      if (REPLAY_SPEED_IDX >= 1) {
-        REPLAY_SPEED_IDX--
+      if (REPLAY.speedIdx >= 1) {
+        REPLAY.speedIdx--
         setSpeedStatus()
       }
     })
     replayControl.pause.addEventListener('click', () => {
-      REPLAY_PAUSED = !REPLAY_PAUSED
+      REPLAY.paused = !REPLAY.paused
       setSpeedStatus()
     })
   }
@@ -487,55 +491,54 @@ async function main() {
           } break;
         }
       }
-      finished = Game.getFinishTs(gameId)
+      finished = !! Game.getFinishTs(gameId)
     })
   } else if (MODE === 'replay') {
     // no external communication for replay mode,
-    // only the GAME_LOG is relevant
+    // only the REPLAY.log is relevant
     let inter = setInterval(() => {
-      let realTime = Time.timestamp()
-      if (REPLAY_PAUSED) {
-        lastRealTime = realTime
+      const realTs = Time.timestamp()
+      if (REPLAY.paused) {
+        REPLAY.lastRealTs = realTs
         return
       }
-      let timePassedReal = realTime - lastRealTime
-
-      let timePassedGame = timePassedReal * REPLAY_SPEEDS[REPLAY_SPEED_IDX]
-      let maxGameTs = lastGameTime + timePassedGame
+      const timePassedReal = realTs - REPLAY.lastRealTs
+      const timePassedGame = timePassedReal * REPLAY.speeds[REPLAY.speedIdx]
+      const maxGameTs = REPLAY.lastGameTs + timePassedGame
       do {
-        if (REPLAY_PAUSED) {
+        if (REPLAY.paused) {
           break
         }
-        let nextIdx = GAME_LOG_IDX + 1
-        if (nextIdx >= GAME_LOG.length) {
+        const nextIdx = REPLAY.logIdx + 1
+        if (nextIdx >= REPLAY.log.length) {
           clearInterval(inter)
           break
         }
 
-        let logEntry = GAME_LOG[nextIdx]
-        let nextTs = GAME_START_TS + logEntry[logEntry.length - 1]
+        const logEntry = REPLAY.log[nextIdx]
+        const nextTs = REPLAY.gameStartTs + logEntry[logEntry.length - 1]
         if (nextTs > maxGameTs) {
           break
         }
 
-        let entryWithTs = logEntry.slice()
+        const entryWithTs = logEntry.slice()
         entryWithTs[entryWithTs.length - 1] = nextTs
         if (entryWithTs[0] === Protocol.LOG_ADD_PLAYER) {
           Game.addPlayer(gameId, ...entryWithTs.slice(1))
           RERENDER = true
         } else if (entryWithTs[0] === Protocol.LOG_UPDATE_PLAYER) {
-          let playerId = Game.getPlayerIdByIndex(gameId, entryWithTs[1])
+          const playerId = Game.getPlayerIdByIndex(gameId, entryWithTs[1])
           Game.addPlayer(gameId, playerId, ...entryWithTs.slice(2))
           RERENDER = true
         } else if (entryWithTs[0] === Protocol.LOG_HANDLE_INPUT) {
-          let playerId = Game.getPlayerIdByIndex(gameId, entryWithTs[1])
+          const playerId = Game.getPlayerIdByIndex(gameId, entryWithTs[1])
           Game.handleInput(gameId, playerId, ...entryWithTs.slice(2))
           RERENDER = true
         }
-        GAME_LOG_IDX = nextIdx
+        REPLAY.logIdx = nextIdx
       } while (true)
-      lastRealTime = realTime
-      lastGameTime = maxGameTs
+      REPLAY.lastRealTs = realTs
+      REPLAY.lastGameTs = maxGameTs
     }, 50)
   }
 
@@ -620,7 +623,7 @@ async function main() {
       }
     }
 
-    finished = Game.getFinishTs(gameId)
+    finished = !! Game.getFinishTs(gameId)
     if (justFinished()) {
       fireworks.update()
       RERENDER = true
