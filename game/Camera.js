@@ -34,7 +34,7 @@ export default class Camera {
       return false
     }
 
-    const zoomToCoord = center || {
+    const zoomToCoord = centerCoordViewport || {
       x: this.width / 2,
       y: this.height / 2
     }
