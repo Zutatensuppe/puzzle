@@ -666,7 +666,10 @@ async function main() {
 
     // DRAW TILES
     // ---------------------------------------------------------------
-    for (let tile of Game.getTilesSortedByZIndex(gameId)) {
+    const tiles = Game.getTilesSortedByZIndex(gameId)
+    if (DEBUG) Debug.checkpoint('get tiles done')
+
+    for (let tile of tiles) {
       const bmp = bitmaps[tile.idx]
       pos = viewport.worldToViewportRaw({
         x: TILE_DRAW_OFFSET + tile.pos.x,
