@@ -11,12 +11,12 @@ const checkpoint_start = (mindiff) => {
 }
 
 const checkpoint = (label) => {
-  const now = performance.now();
+  const now = performance.now()
   const diff = now - _pt
   if (diff > _mindiff) {
-    log.log(label + ': ' + (diff));
+    log.log(label + ': ' + (diff))
   }
-  _pt = now;
+  _pt = now
 }
 
 export default {
