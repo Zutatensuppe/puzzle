@@ -16,16 +16,23 @@ import Time from '../common/Time.js'
 
 const log = logger('index.js')
 
-const allImages = () => [
-  ...fs.readdirSync('./../data/uploads/').map(f => ({
-    file: `./../data/uploads/${f}`,
-    url: `/uploads/${f}`,
-  })),
-  ...fs.readdirSync('./../game/example-images/').map(f => ({
-    file: `./../game/example-images/${f}`,
-    url: `/example-images/${f}`,
-  })),
-]
+const allImages = () => {
+  const images = fs.readdirSync('./../data/uploads/')
+    .map(f => ({
+      file: `./../data/uploads/${f}`,
+      url: `/uploads/${f}`,
+    }))
+    .sort((a, b) => {
+      return fs.statSync(b.file).mtime.getTime() -
+        fs.statSync(a.file).mtime.getTime()
+    })
+  const exampleImages = fs.readdirSync('./../game/example-images/')
+    .map(f => ({
+      file: `./../game/example-images/${f}`,
+      url: `/example-images/${f}`,
+    }))
+  return [...images, ...exampleImages]
+}
 
 const port = config.http.port
 const hostname = config.http.hostname
