@@ -165,6 +165,8 @@ async function createPuzzleTileBitmaps(img, tiles, info) {
     ctx.stroke(path)
     ctx.restore()
 
+    // Draw the path (border) in the color of the
+    // surrounding tile, this makes the tile look more realistic
     // -----------------------------------------------------------
     // -----------------------------------------------------------
     ctx2.clearRect(0, 0, tileDrawSize, tileDrawSize)
