@@ -17,6 +17,9 @@ if (typeof MODE === 'undefined') throw '[ MODE not set ]'
 
 if (typeof DEBUG === 'undefined') window.DEBUG = false
 
+const MODE_PLAY = 'play'
+const MODE_REPLAY = 'replay'
+
 let RERENDER = true
 
 let TIME = () => Time.timestamp()
@@ -216,7 +219,7 @@ function addMenuToDom(gameId) {
   timerEl.appendChild(timerCountdownEl)
 
   let replayControl = null
-  if (MODE === 'replay') {
+  if (MODE === MODE_REPLAY) {
     const replayControlEl = ELEMENTS.DIV.cloneNode(true)
     const speedUp = btn('⏫')
     const speedDown = btn('⏬')
@@ -331,6 +334,12 @@ async function main() {
   const cursorGrabMask = await Graphics.loadImageToBitmap('/grab_mask.png')
   const cursorHandMask = await Graphics.loadImageToBitmap('/hand_mask.png')
 
+  // all cursors must be of the same dimensions
+  const CURSOR_W = cursorGrab.width
+  const CURSOR_W_2 = Math.round(CURSOR_W / 2)
+  const CURSOR_H = cursorGrab.height
+  const CURSOR_H_2 = Math.round(CURSOR_H / 2)
+
   const cursors = {}
   const getPlayerCursor = async (p) => {
     const key = p.color + ' ' + p.d
@@ -359,10 +368,10 @@ async function main() {
     gameStartTs: null,
   }
 
-  if (MODE === 'play') {
+  if (MODE === MODE_PLAY) {
     const game = await Communication.connect(gameId, CLIENT_ID)
     Game.newGame(Util.decodeGame(game))
-  } else if (MODE === 'replay') {
+  } else if (MODE === MODE_REPLAY) {
     const {game, log} = await Communication.connectReplay(gameId, CLIENT_ID)
     Game.newGame(Util.decodeGame(game))
     REPLAY.log = log
@@ -423,7 +432,7 @@ async function main() {
   }
 
   const evts = new EventAdapter(canvas, viewport)
-  if (MODE === 'play') {
+  if (MODE === MODE_PLAY) {
     bgColorPickerEl.value = playerBgColor()
     evts.addEvent([Protocol.INPUT_EV_BG_COLOR, bgColorPickerEl.value])
     bgColorPickerEl.addEventListener('change', () => {
@@ -443,7 +452,7 @@ async function main() {
       evts.addEvent([Protocol.INPUT_EV_PLAYER_NAME, nameChangeEl.value])
     })
     setInterval(updateTimer, 1000)
-  } else if (MODE === 'replay') {
+  } else if (MODE === MODE_REPLAY) {
     const setSpeedStatus = () => {
       replayControl.speed.innerText = 'Replay-Speed: ' +
         (REPLAY.speeds[REPLAY.speedIdx] + 'x') +
@@ -468,7 +477,7 @@ async function main() {
     })
   }
 
-  if (MODE === 'play') {
+  if (MODE === MODE_PLAY) {
     Communication.onServerChange((msg) => {
       const msgType = msg[0]
       const evClientId = msg[1]
@@ -496,7 +505,7 @@ async function main() {
       }
       finished = !! Game.getFinishTs(gameId)
     })
-  } else if (MODE === 'replay') {
+  } else if (MODE === MODE_REPLAY) {
     // no external communication for replay mode,
     // only the REPLAY.log is relevant
     let inter = setInterval(() => {
@@ -549,7 +558,7 @@ async function main() {
   let _last_mouse_down = null
   const onUpdate = () => {
     for (let evt of evts.consumeAll()) {
-      if (MODE === 'play') {
+      if (MODE === MODE_PLAY) {
         // LOCAL ONLY CHANGES
         // -------------------------------------------------------------
         const type = evt[0]
@@ -592,7 +601,7 @@ async function main() {
           RERENDER = true
         }
         Communication.sendClientEvent(evt)
-      } else if (MODE === 'replay') {
+      } else if (MODE === MODE_REPLAY) {
         // LOCAL ONLY CHANGES
         // -------------------------------------------------------------
         const type = evt[0]
@@ -695,33 +704,35 @@ async function main() {
     // DRAW PLAYERS
     // ---------------------------------------------------------------
     const ts = TIME()
+    const texts = []
+    // Cursors
     for (let player of Game.getActivePlayers(gameId, ts)) {
       const cursor = await getPlayerCursor(player)
-      const pos = viewport.worldToViewportRaw(player)
-      ctx.drawImage(cursor,
-        Math.round(pos.x - cursor.width/2),
-        Math.round(pos.y - cursor.height/2)
-      )
-      if (MODE === 'play') {
-        if (player.id !== CLIENT_ID) {
-          ctx.fillStyle = 'white'
-          ctx.font = '10px sans-serif'
-          ctx.textAlign = 'center'
-          ctx.fillText(player.name + ' (' + player.points + ')',
-            Math.round(pos.x),
-            Math.round(pos.y) + cursor.height
-          )
-        }
-      } else if (MODE === 'replay') {
-        ctx.fillStyle = 'white'
-        ctx.font = '10px sans-serif'
-        ctx.textAlign = 'center'
-        ctx.fillText(player.name + ' (' + player.points + ')',
-          Math.round(pos.x),
-          Math.round(pos.y) + cursor.height
-        )
+      const pos = viewport.worldToViewport(player)
+      ctx.drawImage(cursor, pos.x - CURSOR_W_2, pos.y - CURSOR_H_2)
+      if (
+        (MODE === MODE_PLAY && player.id !== CLIENT_ID)
+        || (MODE === MODE_REPLAY)
+      ) {
+        // performance:
+        // not drawing text directly here, to have less ctx
+        // switches between drawImage and fillTxt
+        texts.push([
+          `${player.name} (${player.points})`,
+          pos.x,
+          pos.y + CURSOR_H,
+        ])
       }
     }
+
+    // Names
+    ctx.fillStyle = 'white'
+    ctx.font = '10px sans-serif'
+    ctx.textAlign = 'center'
+    for (let [txt, x, y] of texts) {
+      ctx.fillText(txt, x, y)
+    }
+
     if (DEBUG) Debug.checkpoint('players done')
 
     // DRAW PLAYERS
