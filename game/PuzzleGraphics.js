@@ -80,13 +80,18 @@ async function createPuzzleTileBitmaps(img, tiles, info) {
     return path
   }
 
+  const c = Graphics.createCanvas(tileDrawSize, tileDrawSize)
+  const ctx = c.getContext('2d')
+
+  const c2 = Graphics.createCanvas(tileDrawSize, tileDrawSize)
+  const ctx2 = c2.getContext('2d')
+
   for (let t of tiles) {
     const tile = Util.decodeTile(t)
     const srcRect = srcRectByIdx(info, tile.idx)
     const path = pathForShape(Util.decodeShape(info.shapes[tile.idx]))
 
-    const c = Graphics.createCanvas(tileDrawSize, tileDrawSize)
-    const ctx = c.getContext('2d')
+    ctx.clearRect(0, 0, tileDrawSize, tileDrawSize)
 
     // stroke (slightly darker version of image)
     // -----------------------------------------------------------
@@ -162,8 +167,7 @@ async function createPuzzleTileBitmaps(img, tiles, info) {
 
     // -----------------------------------------------------------
     // -----------------------------------------------------------
-    const tmpc = Graphics.createCanvas(tileDrawSize, tileDrawSize)
-    const ctx2 = tmpc.getContext('2d')
+    ctx2.clearRect(0, 0, tileDrawSize, tileDrawSize)
     ctx2.save()
     ctx2.lineWidth = 1
     ctx2.stroke(path)
@@ -180,15 +184,7 @@ async function createPuzzleTileBitmaps(img, tiles, info) {
       tileDrawSize + 100,
     )
     ctx2.restore()
-    // ctx2.save()
-    // ctx2.globalCompositeOperation = 'source-in'
-    // ctx2.globalAlpha = .1
-    // ctx2.fillStyle = 'black'
-    // ctx2.fillRect(0,0, c.width, c.height)
-    // ctx2.restore()
-    // ctx.globalCompositeOperation = 'darken'
-    ctx.drawImage(tmpc, 0, 0)
-
+    ctx.drawImage(c2, 0, 0)
 
     bitmaps[tile.idx] = await createImageBitmap(c)
   }
