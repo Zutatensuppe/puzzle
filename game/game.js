@@ -207,10 +207,9 @@ function addMenuToDom(gameId) {
   }
 
   const timerCountdownEl = ELEMENTS.DIV.cloneNode(true)
-  timerCountdownEl.innerText = timerStr()
-  setInterval(() => {
+  const updateTimer = () => {
     timerCountdownEl.innerText = timerStr()
-  }, 50) // needs to be small, so that it updates quick enough in replay
+  }
 
   const timerEl = ELEMENTS.DIV.cloneNode(true)
   timerEl.classList.add('timer')
@@ -247,6 +246,7 @@ function addMenuToDom(gameId) {
     playerColorPickerEl,
     nameChangeEl,
     updateScoreBoard,
+    updateTimer,
     replayControl,
   }
 }
@@ -383,7 +383,8 @@ async function main() {
 
   const bitmaps = await PuzzleGraphics.loadPuzzleBitmaps(Game.getPuzzle(gameId))
 
-  const {bgColorPickerEl, playerColorPickerEl, nameChangeEl, updateScoreBoard, replayControl} = addMenuToDom(gameId)
+  const {bgColorPickerEl, playerColorPickerEl, nameChangeEl, updateScoreBoard, updateTimer, replayControl} = addMenuToDom(gameId)
+  updateTimer()
   updateScoreBoard(TIME())
 
   const longFinished = !! Game.getFinishTs(gameId)
@@ -441,6 +442,7 @@ async function main() {
       localStorage.setItem('player_name', nameChangeEl.value)
       evts.addEvent([Protocol.INPUT_EV_PLAYER_NAME, nameChangeEl.value])
     })
+    setInterval(updateTimer, 1000)
   } else if (MODE === 'replay') {
     const setSpeedStatus = () => {
       replayControl.speed.innerText = 'Replay-Speed: ' +
@@ -540,6 +542,7 @@ async function main() {
       } while (true)
       REPLAY.lastRealTs = realTs
       REPLAY.lastGameTs = maxGameTs
+      updateTimer()
     }, 50)
   }
 
