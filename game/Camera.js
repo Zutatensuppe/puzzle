@@ -1,26 +1,12 @@
 export default class Camera {
-  constructor(canvas) {
+  constructor() {
     this.x = 0
     this.y = 0
-
-    // TODO: when canvas resizes, this should
-    //       syncronize with the cam
-    this.width = canvas.width
-    this.height = canvas.height
 
     this.zoom = 1
     this.minZoom = .1
     this.maxZoom = 6
     this.zoomStep = .05
-  }
-
-  rect() {
-    return {
-      x: -this.x,
-      y: -this.y,
-      w: this.width / this.zoom,
-      h: this.height / this.zoom,
-    }
   }
 
   move(x, y) {
@@ -34,10 +20,7 @@ export default class Camera {
       return false
     }
 
-    const zoomToCoord = viewportCoordCenter || {
-      x: this.width / 2,
-      y: this.height / 2
-    }
+    const zoomToCoord = viewportCoordCenter
     const zoomFactor = (1 / this.zoom) - (1 / zoom)
 
     this.x -= Math.round(zoomToCoord.x * zoomFactor)

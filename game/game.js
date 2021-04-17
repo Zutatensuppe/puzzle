@@ -408,11 +408,11 @@ async function main() {
 
   // initialize some view data
   // this global data will change according to input events
-  const viewport = new Camera(canvas)
+  const viewport = new Camera()
   // center viewport
   viewport.move(
-    -(TABLE_WIDTH - viewport.width) /2,
-    -(TABLE_HEIGHT - viewport.height) /2
+    -(TABLE_WIDTH - canvas.width) /2,
+    -(TABLE_HEIGHT - canvas.height) /2
   )
 
   const playerBgColor = () => {
