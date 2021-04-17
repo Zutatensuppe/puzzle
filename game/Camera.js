@@ -20,14 +20,12 @@ export default class Camera {
       return false
     }
 
-    const zoomToCoord = viewportCoordCenter
-    const zoomFactor = (1 / this.zoom) - (1 / zoom)
-
-    this.x -= Math.round(zoomToCoord.x * zoomFactor)
-    this.y -= Math.round(zoomToCoord.y * zoomFactor)
-
+    const zoomFactor = 1 - (this.zoom / zoom)
+    this.move(
+      -viewportCoordCenter.x * zoomFactor,
+      -viewportCoordCenter.y * zoomFactor,
+    )
     this.zoom = zoom
-
     return true
   }
 
