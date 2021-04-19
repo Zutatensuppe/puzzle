@@ -438,11 +438,11 @@ function handleInput(gameId, playerId, input, ts) {
   let changes = []
 
   const _dataChange = () => {
-    changes.push(['data', puzzle.data])
+    changes.push([Protocol.CHANGE_DATA, puzzle.data])
   }
 
   const _tileChange = (tileIdx) => {
-    changes.push(['tile', getTile(gameId, tileIdx)])
+    changes.push([Protocol.CHANGE_TILE, getTile(gameId, tileIdx)])
   }
 
   const _tileChanges = (tileIdxs) => {
@@ -452,7 +452,7 @@ function handleInput(gameId, playerId, input, ts) {
   }
 
   const _playerChange = () => {
-    changes.push(['player', Util.encodePlayer(getPlayer(gameId, playerId))])
+    changes.push([Protocol.CHANGE_PLAYER, Util.encodePlayer(getPlayer(gameId, playerId))])
   }
 
   // put both tiles (and their grouped tiles) in the same group

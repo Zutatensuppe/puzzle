@@ -130,8 +130,11 @@ function addMenuToDom(gameId) {
   const previewOverlay = ELEMENTS.DIV.cloneNode(true)
   previewOverlay.classList.add('overlay', 'closed')
   previewOverlay.appendChild(previewEl)
-  previewOverlay.addEventListener('click', () => {
+  const togglePreview = () => {
     previewOverlay.classList.toggle('closed')
+  }
+  previewOverlay.addEventListener('click', () => {
+    togglePreview()
   })
 
   const settingsOpenerEl = ELEMENTS.DIV.cloneNode(true)
@@ -250,6 +253,7 @@ function addMenuToDom(gameId) {
     nameChangeEl,
     updateScoreBoard,
     updateTimer,
+    togglePreview,
     replayControl,
   }
 }
@@ -265,13 +269,41 @@ function initme() {
 }
 
 export default class EventAdapter {
-  constructor(canvas, viewport) {
+  constructor(canvas, window, viewport) {
     this.events = []
     this._viewport = viewport
+
+    this.LEFT = false
+    this.RIGHT = false
+    this.UP = false
+    this.DOWN = false
     canvas.addEventListener('mousedown', this._mouseDown.bind(this))
     canvas.addEventListener('mouseup', this._mouseUp.bind(this))
     canvas.addEventListener('mousemove', this._mouseMove.bind(this))
     canvas.addEventListener('wheel', this._wheel.bind(this))
+
+    window.addEventListener('keydown', (ev) => {
+      if (ev.key === 'ArrowUp') {
+        this.UP = true
+      } else if (ev.key === 'ArrowDown') {
+        this.DOWN = true
+      } else if (ev.key === 'ArrowLeft') {
+        this.LEFT = true
+      } else if (ev.key === 'ArrowRight') {
+        this.RIGHT = true
+      }
+    })
+    window.addEventListener('keyup', (ev) => {
+      if (ev.key === 'ArrowUp') {
+        this.UP = false
+      } else if (ev.key === 'ArrowDown') {
+        this.DOWN = false
+      } else if (ev.key === 'ArrowLeft') {
+        this.LEFT = false
+      } else if (ev.key === 'ArrowRight') {
+        this.RIGHT = false
+      }
+    })
   }
 
   addEvent(event) {
@@ -285,6 +317,27 @@ export default class EventAdapter {
     const all = this.events.slice()
     this.events = []
     return all
+  }
+
+  _keydowns() {
+    let amount = 10
+    let x = 0
+    let y = 0
+    if (this.UP) {
+      y += amount
+    }
+    if (this.DOWN) {
+      y -= amount
+    }
+    if (this.LEFT) {
+      x += amount
+    }
+    if (this.RIGHT) {
+      x -= amount
+    }
+    if (x !== 0 || y !== 0) {
+      this.addEvent([Protocol.INPUT_EV_MOVE, x, y])
+    }
   }
 
   _mouseDown(e) {
@@ -392,7 +445,15 @@ async function main() {
 
   const bitmaps = await PuzzleGraphics.loadPuzzleBitmaps(Game.getPuzzle(gameId))
 
-  const {bgColorPickerEl, playerColorPickerEl, nameChangeEl, updateScoreBoard, updateTimer, replayControl} = addMenuToDom(gameId)
+  const {
+    bgColorPickerEl,
+    playerColorPickerEl,
+    nameChangeEl,
+    updateScoreBoard,
+    updateTimer,
+    togglePreview,
+    replayControl,
+  } = addMenuToDom(gameId)
   updateTimer()
   updateScoreBoard(TIME())
 
@@ -431,7 +492,14 @@ async function main() {
         || 'anon')
   }
 
-  const evts = new EventAdapter(canvas, viewport)
+  window.addEventListener('keypress', (ev) => {
+    if (ev.key === ' ') {
+      togglePreview()
+    }
+  })
+
+  const evts = new EventAdapter(canvas, window, viewport)
+
   if (MODE === MODE_PLAY) {
     bgColorPickerEl.value = playerBgColor()
     evts.addEvent([Protocol.INPUT_EV_BG_COLOR, bgColorPickerEl.value])
@@ -485,19 +553,19 @@ async function main() {
       const evChanges = msg[3]
       for(let [changeType, changeData] of evChanges) {
         switch (changeType) {
-          case 'player': {
+          case Protocol.CHANGE_PLAYER: {
             const p = Util.decodePlayer(changeData)
             if (p.id !== CLIENT_ID) {
               Game.setPlayer(gameId, p.id, p)
               RERENDER = true
             }
           } break;
-          case 'tile': {
+          case Protocol.CHANGE_TILE: {
             const t = Util.decodeTile(changeData)
             Game.setTile(gameId, t.idx, t)
             RERENDER = true
           } break;
-          case 'data': {
+          case Protocol.CHANGE_DATA: {
             Game.setPuzzleData(gameId, changeData)
             RERENDER = true
           } break;
@@ -557,12 +625,22 @@ async function main() {
 
   let _last_mouse_down = null
   const onUpdate = () => {
+    // handle key downs once per onUpdate
+    // this will create Protocol.INPUT_EV_MOVE events if something
+    // relevant is pressed
+    evts._keydowns()
+
     for (let evt of evts.consumeAll()) {
       if (MODE === MODE_PLAY) {
         // LOCAL ONLY CHANGES
         // -------------------------------------------------------------
         const type = evt[0]
-        if (type === Protocol.INPUT_EV_MOUSE_MOVE) {
+        if (type === Protocol.INPUT_EV_MOVE) {
+          const diffX = evt[1]
+          const diffY = evt[2]
+          RERENDER = true
+          viewport.move(diffX, diffY)
+        } else if (type === Protocol.INPUT_EV_MOUSE_MOVE) {
           if (_last_mouse_down && !Game.getFirstOwnedTile(gameId, CLIENT_ID)) {
             // move the cam
             const pos = { x: evt[1], y: evt[2] }
