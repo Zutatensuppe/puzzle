@@ -27,4 +27,6 @@ export default {
   getTileDrawSize: GameCommon.getTileDrawSize,
   getStartTs: GameCommon.getStartTs,
   getFinishTs: GameCommon.getFinishTs,
+  getFinishedTileCount: GameCommon.getFinishedTileCount,
+  getTileCount: GameCommon.getTileCount,
 }

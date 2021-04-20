@@ -216,9 +216,16 @@ function addMenuToDom(gameId) {
   const updateTimer = () => {
     timerCountdownEl.innerText = timerStr()
   }
+  const tilesDoneEl = ELEMENTS.DIV.cloneNode(true)
+  const udateTilesDone = () => {
+    const tilesFinished = Game.getFinishedTileCount(gameId)
+    const tilesTotal = Game.getTileCount(gameId)
+    tilesDoneEl.innerText = `🧩 ${tilesFinished}/${tilesTotal}`
+  }
 
   const timerEl = ELEMENTS.DIV.cloneNode(true)
   timerEl.classList.add('timer')
+  timerEl.appendChild(tilesDoneEl)
   timerEl.appendChild(timerCountdownEl)
 
   let replayControl = null
@@ -253,6 +260,7 @@ function addMenuToDom(gameId) {
     nameChangeEl,
     updateScoreBoard,
     updateTimer,
+    udateTilesDone,
     togglePreview,
     replayControl,
   }
@@ -451,10 +459,12 @@ async function main() {
     nameChangeEl,
     updateScoreBoard,
     updateTimer,
+    udateTilesDone,
     togglePreview,
     replayControl,
   } = addMenuToDom(gameId)
   updateTimer()
+  udateTilesDone()
   updateScoreBoard(TIME())
 
   const longFinished = !! Game.getFinishTs(gameId)
@@ -816,6 +826,7 @@ async function main() {
     // DRAW PLAYERS
     // ---------------------------------------------------------------
     updateScoreBoard(ts)
+    udateTilesDone()
     if (DEBUG) Debug.checkpoint('scores done')
     // ---------------------------------------------------------------
 
