@@ -113,7 +113,8 @@ app.use('/', async (req, res, next) => {
     ]
 
     res.send(await render('index.html.twig', {
-      games,
+      gamesRunning: games.filter(g => !g.finished),
+      gamesFinished: games.filter(g => !!g.finished),
       images: allImages(),
     }))
   } else {

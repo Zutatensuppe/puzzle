@@ -12,7 +12,8 @@
     el: '#app',
     render: (h) => h(Page, {
       props: {
-        games: {{ games|json_encode|raw }},
+        gamesRunning: {{ gamesRunning|json_encode|raw }},
+        gamesFinished: {{ gamesFinished|json_encode|raw }},
         images: {{ images|json_encode|raw }},
       },
     }),

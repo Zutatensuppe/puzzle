@@ -202,3 +202,15 @@ input:focus {
   top: 0;
   right: 0;
 }
+
+
+.imageteaser {
+  width: 150px;
+  height: 100px;
+  display: inline-block;
+  margin: 5px;
+  background-size: contain;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-color: #222;
+}
