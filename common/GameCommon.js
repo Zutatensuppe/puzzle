@@ -219,6 +219,32 @@ const getTilePos = (gameId, tileIdx) => {
   return tile.pos
 }
 
+// todo: instead, just make the table bigger and use that :)
+const getBounds = (gameId) => {
+  const tw = getTableWidth(gameId)
+  const th = getTableHeight(gameId)
+
+  const overX = Math.round(tw / 4)
+  const overY = Math.round(th / 4)
+  return {
+    x: 0 - overX,
+    y: 0 - overY,
+    w: tw + 2 * overX,
+    h: th + 2 * overY,
+  }
+}
+
+const getTileBounds = (gameId, tileIdx) => {
+  const s = getTileSize(gameId)
+  const tile = getTile(gameId, tileIdx)
+  return {
+    x: tile.pos.x,
+    y: tile.pos.y,
+    w: s,
+    h: s,
+  }
+}
+
 const getTileZIndex = (gameId, tileIdx) => {
   const tile = getTile(gameId, tileIdx)
   return tile.z
@@ -245,6 +271,10 @@ const getTileDrawOffset = (gameId) => {
 
 const getTileDrawSize = (gameId) => {
   return GAMES[gameId].puzzle.info.tileDrawSize
+}
+
+const getTileSize = (gameId) => {
+  return GAMES[gameId].puzzle.info.tileSize
 }
 
 const getStartTs = (gameId) => {
@@ -314,8 +344,26 @@ const moveTileDiff = (gameId, tileIdx, diff) => {
 }
 
 const moveTilesDiff = (gameId, tileIdxs, diff) => {
+  const tileDrawSize = getTileDrawSize(gameId)
+  const bounds = getBounds(gameId)
+  const cappedDiff = diff
+
   for (let tileIdx of tileIdxs) {
-    moveTileDiff(gameId, tileIdx, diff)
+    const t = getTile(gameId, tileIdx)
+    if (t.pos.x + diff.x < bounds.x) {
+      cappedDiff.x = Math.max(bounds.x - t.pos.x, cappedDiff.x)
+    } else if (t.pos.x + tileDrawSize + diff.x > bounds.x + bounds.w) {
+      cappedDiff.x = Math.min(bounds.x + bounds.w - t.pos.x + tileDrawSize, cappedDiff.x)
+    }
+    if (t.pos.y + diff.y < bounds.y) {
+      cappedDiff.y = Math.max(bounds.y - t.pos.y, cappedDiff.y)
+    } else if (t.pos.y + tileDrawSize + diff.y > bounds.y + bounds.h) {
+      cappedDiff.y = Math.min(bounds.y + bounds.h - t.pos.y + tileDrawSize, cappedDiff.y)
+    }
+  }
+
+  for (let tileIdx of tileIdxs) {
+    moveTileDiff(gameId, tileIdx, cappedDiff)
   }
 }
 
@@ -547,12 +595,27 @@ function handleInput(gameId, playerId, input, ts) {
         changePlayer(gameId, playerId, {x, y, ts})
         _playerChange()
 
-        const diffX = x - evtInfo._last_mouse_down.x
-        const diffY = y - evtInfo._last_mouse_down.y
-        const diff = { x: diffX, y: diffY }
+        // check if pos is on the tile, otherwise dont move
+        // (mouse could be out of table, but tile stays on it)
         const tileIdxs = getGroupedTileIdxs(gameId, tileIdx)
-        moveTilesDiff(gameId, tileIdxs, diff)
-        _tileChanges(tileIdxs)
+        let anyOk = Geometry.pointInBounds(pos, getBounds(gameId))
+          && Geometry.pointInBounds(evtInfo._last_mouse_down, getBounds(gameId))
+        for (let idx of tileIdxs) {
+          const bounds = getTileBounds(gameId, idx)
+          if (Geometry.pointInBounds(pos, bounds)) {
+            anyOk = true
+            break
+          }
+        }
+        if (anyOk) {
+          const diffX = x - evtInfo._last_mouse_down.x
+          const diffY = y - evtInfo._last_mouse_down.y
+
+          const diff = { x: diffX, y: diffY }
+          moveTilesDiff(gameId, tileIdxs, diff)
+
+          _tileChanges(tileIdxs)
+        }
       } else {
         // player is just moving map, so no change in position!
         changePlayer(gameId, playerId, {ts})
