@@ -16,10 +16,10 @@ async function getExifOrientation(imagePath) {
   })
 }
 
-const dir = `${process.env.RUN_DIR}/data/uploads`
+const dir = `./../data/uploads`
 const images = fs.readdirSync(dir)
 images.forEach(async (image) => {
-  if (!image.match(/\.(jpe?g|webp|png)$/)) {
+  if (!image.toLowerCase().match(/\.(jpe?g|webp|png)$/)) {
     return
   }
   console.log(image)

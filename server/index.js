@@ -44,7 +44,7 @@ async function getExifOrientation(imagePath) {
 
 const resizeImage = async (filename) => {
   const dir = `./../data/uploads/`
-  if (!filename.match(/\.(jpe?g|webp|png)$/)) {
+  if (!filename.toLowerCase().match(/\.(jpe?g|webp|png)$/)) {
     return
   }
   console.log(filename)
@@ -74,7 +74,7 @@ const resizeImage = async (filename) => {
 
 const allImages = () => {
   const images = fs.readdirSync('./../data/uploads/')
-    .filter(f => f.match(/\.(jpe?g|webp|png)$/))
+    .filter(f => f.toLowerCase().match(/\.(jpe?g|webp|png)$/))
     .map(f => ({
       file: `./../data/uploads/${f}`,
       url: `/uploads/${f}`,
