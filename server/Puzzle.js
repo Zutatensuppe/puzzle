@@ -1,39 +1,10 @@
-import sizeOf from 'image-size'
 import Util from '../common/Util.js'
-import exif from 'exif'
 import { Rng } from '../common/Rng.js'
+import Images from './Images.js'
 
 // cut size of each puzzle tile in the
 // final resized version of the puzzle image
 const TILE_SIZE = 64
-
-async function getDimensions(imagePath) {
-  let dimensions = sizeOf(imagePath)
-  try {
-    const orientation = await getExifOrientation(imagePath)
-    // when image is rotated to the left or right, switch width/height
-    // https://jdhao.github.io/2019/07/31/image_rotation_exif_info/
-    if (orientation === 6 || orientation === 8) {
-      return {
-        width: dimensions.height,
-        height: dimensions.width,
-      }
-    }
-  } catch {}
-  return dimensions
-}
-
-async function getExifOrientation(imagePath) {
-  return new Promise((resolve, reject) => {
-    new exif.ExifImage({ image: imagePath }, function (error, exifData) {
-      if (error) {
-        reject(error)
-      } else {
-        resolve(exifData.image.Orientation)
-      }
-    })
-  })
-}
 
 async function createPuzzle(
   /** @type Rng */ rng,
@@ -44,10 +15,8 @@ async function createPuzzle(
   const imagePath = image.file
   const imageUrl = image.url
 
-  // load bitmap, to determine the original size of the image
-  const dim = await getDimensions(imagePath)
-
-  // determine puzzle information from the bitmap
+  // determine puzzle information from the image dimensions
+  const dim = await Images.getDimensions(imagePath)
   const info = determinePuzzleInfo(dim.width, dim.height, targetTiles)
 
   let tiles = new Array(info.tiles)
@@ -58,7 +27,7 @@ async function createPuzzle(
 
   let positions = new Array(info.tiles)
   for (let tile of tiles) {
-    let coord = Util.coordByTileIdx(info, tile.idx)
+    const coord = Util.coordByTileIdx(info, tile.idx)
     positions[tile.idx] ={
       // instead of info.tileSize, we use info.tileDrawSize
       // to spread the tiles a bit

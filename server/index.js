@@ -1,6 +1,5 @@
 import WebSocketServer from './WebSocketServer.js'
 
-import fs from 'fs'
 import express from 'express'
 import multer from 'multer'
 import config from './../config.js'
@@ -13,96 +12,33 @@ import v8 from 'v8'
 import GameLog from './GameLog.js'
 import GameSockets from './GameSockets.js'
 import Time from '../common/Time.js'
-import exif from 'exif'
-import sharp from 'sharp'
+import Images from './Images.js'
+import {
+  UPLOAD_DIR,
+  UPLOAD_URL,
+  COMMON_DIR,
+  GAME_DIR,
+  TEMPLATE_DIR,
+} from './Dirs.js'
 
 const log = logger('index.js')
-
-async function getExifOrientation(imagePath) {
-  return new Promise((resolve, reject) => {
-    new exif.ExifImage({ image: imagePath }, function (error, exifData) {
-      if (error) {
-        resolve(0)
-
-async function getExifOrientation(imagePath) {
-  return new Promise((resolve, reject) => {
-    new exif.ExifImage({ image: imagePath }, function (error, exifData) {
-      if (error) {
-        resolve(0)
-      } else {
-        resolve(exifData.image.Orientation)
-      }
-    })
-  })
-}
-   } else {
-        resolve(exifData.image.Orientation)
-      }
-    })
-  })
-}
-
-const resizeImage = async (filename) => {
-  const dir = `./../data/uploads/`
-  if (!filename.toLowerCase().match(/\.(jpe?g|webp|png)$/)) {
-    return
-  }
-  console.log(filename)
-
-  const imagePath = `${dir}/${filename}`
-  const iamgeOutPath = `${dir}/r/${filename}`
-  const orientation = await getExifOrientation(imagePath)
-
-  let sharpImg = sharp(imagePath, { failOnError: false })
-  // when image is rotated to the left or right, switch width/height
-  // https://jdhao.github.io/2019/07/31/image_rotation_exif_info/
-  if (orientation === 6) {
-    sharpImg = sharpImg.rotate()
-  } else if (orientation === 3) {
-    sharpImg = sharpImg.rotate().rotate()
-  } else if (orientation === 8) {
-    sharpImg = sharpImg.rotate().rotate().rotate()
-  }
-  const sizes = [
-    [150, 100],
-    [375, 210],
-  ]
-  sizes.forEach(([w, h]) => {
-    sharpImg.resize(w, h, {fit: 'contain'}).toFile(`${iamgeOutPath}-${w}x${h}.webp`)
-  })
-}
-
-const allImages = () => {
-  const images = fs.readdirSync('./../data/uploads/')
-    .filter(f => f.toLowerCase().match(/\.(jpe?g|webp|png)$/))
-    .map(f => ({
-      file: `./../data/uploads/${f}`,
-      url: `/uploads/${f}`,
-    }))
-    .sort((a, b) => {
-      return fs.statSync(b.file).mtime.getTime() -
-        fs.statSync(a.file).mtime.getTime()
-    })
-  return images
-}
 
 const port = config.http.port
 const hostname = config.http.hostname
 const app = express()
 
-const uploadDir = './../data/uploads'
 const storage = multer.diskStorage({
-  destination: uploadDir,
+  destination: UPLOAD_DIR,
   filename: function (req, file, cb) {
     cb(null , file.originalname);
   }
 })
 const upload = multer({storage}).single('file');
 
-const statics = express.static('./../game/')
+const statics = express.static(GAME_DIR)
 
 const render = async (template, data) => {
-  const loader = new twing.TwingLoaderFilesystem('./../game/templates')
+  const loader = new twing.TwingLoaderFilesystem(TEMPLATE_DIR)
   const env = new twing.TwingEnvironment(loader)
   return env.render(template, data)
 }
@@ -129,7 +65,7 @@ app.post('/upload', (req, res) => {
     }
 
     try {
-      await resizeImage(req.file.filename)
+      await Images.resizeImage(req.file.filename)
     } catch (err) {
       log.log(err)
       res.status(400).send("Something went wrong!");
@@ -137,8 +73,8 @@ app.post('/upload', (req, res) => {
 
     res.send({
       image: {
-        file: './../data/uploads/' + req.file.filename,
-        url: '/uploads/' + req.file.filename,
+        file: `${UPLOAD_DIR}/${req.file.filename}`,
+        url: `${UPLOAD_URL}/${req.file.filename}`,
       },
     })
   })
@@ -154,8 +90,8 @@ app.post('/newgame', bodyParser.json(), async (req, res) => {
   res.send({ url: `/g/${gameId}` })
 })
 
-app.use('/common/', express.static('./../common/'))
-app.use('/uploads/', express.static('./../data/uploads/'))
+app.use('/common/', express.static(COMMON_DIR))
+app.use('/uploads/', express.static(UPLOAD_DIR))
 app.use('/', async (req, res, next) => {
   if (req.path === '/') {
     const ts = Time.timestamp()
@@ -175,7 +111,7 @@ app.use('/', async (req, res, next) => {
     res.send(await render('index.html.twig', {
       gamesRunning: games.filter(g => !g.finished),
       gamesFinished: games.filter(g => !!g.finished),
-      images: allImages(),
+      images: Images.allImages(),
     }))
   } else {
     statics(req, res, next)

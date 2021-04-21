@@ -1,7 +1,5 @@
 #!/bin/sh
 
-cd "$RUN_DIR/server"
-
 npm install
 
 if [ ! -e "$RUN_DIR/server/config.js" ]; then

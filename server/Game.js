@@ -5,10 +5,9 @@ import { Rng } from '../common/Rng.js'
 import GameLog from './GameLog.js'
 import { createPuzzle } from './Puzzle.js'
 import Protocol from '../common/Protocol.js'
+import { DATA_DIR } from './Dirs.js'
 
 const log = logger('Game.js')
-
-const DATA_DIR = './../data'
 
 function loadAllGames() {
   const files = fs.readdirSync(DATA_DIR)

@@ -1,9 +1,8 @@
 import fs from 'fs'
 import { logger } from '../common/Util.js'
+import { DATA_DIR } from '../server/Dirs.js'
 
 const log = logger('GameLog.js')
-
-const DATA_DIR = './../data'
 
 const filename = (gameId) => `${DATA_DIR}/log_${gameId}.log`
 

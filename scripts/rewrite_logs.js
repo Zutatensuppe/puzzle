@@ -1,10 +1,9 @@
 import fs from 'fs'
 import Protocol from '../common/Protocol.js'
 import { logger } from '../common/Util.js'
+import { DATA_DIR } from '../server/Dirs.js'
 
 const log = logger('rewrite_logs')
-
-const DATA_DIR = '../data'
 
 const filename = (gameId) => `${DATA_DIR}/log_${gameId}.log`
 
