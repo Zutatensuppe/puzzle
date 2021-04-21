@@ -42,7 +42,7 @@ const GameTeaser = {
         {{time(game.started, game.finished)}}<br />
       </span>
     </a>
-    <a v-if="game.hasReplay" class="game-replay" :href="'/replay/' + game.id">
+    <a v-if="false && game.hasReplay" class="game-replay" :href="'/replay/' + game.id">
       ↪️ Watch replay
     </a>
   </div>`,
