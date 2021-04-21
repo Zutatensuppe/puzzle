@@ -53,7 +53,7 @@ const resizeImage = async (filename) => {
   const iamgeOutPath = `${dir}/r/${filename}`
   const orientation = await getExifOrientation(imagePath)
 
-  let sharpImg = sharp(imagePath)
+  let sharpImg = sharp(imagePath, { failOnError: false })
   // when image is rotated to the left or right, switch width/height
   // https://jdhao.github.io/2019/07/31/image_rotation_exif_info/
   if (orientation === 6) {
