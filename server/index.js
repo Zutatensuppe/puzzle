@@ -13,11 +13,68 @@ import v8 from 'v8'
 import GameLog from './GameLog.js'
 import GameSockets from './GameSockets.js'
 import Time from '../common/Time.js'
+import exif from 'exif'
+import sharp from 'sharp'
 
 const log = logger('index.js')
 
+async function getExifOrientation(imagePath) {
+  return new Promise((resolve, reject) => {
+    new exif.ExifImage({ image: imagePath }, function (error, exifData) {
+      if (error) {
+        resolve(0)
+
+async function getExifOrientation(imagePath) {
+  return new Promise((resolve, reject) => {
+    new exif.ExifImage({ image: imagePath }, function (error, exifData) {
+      if (error) {
+        resolve(0)
+      } else {
+        resolve(exifData.image.Orientation)
+      }
+    })
+  })
+}
+   } else {
+        resolve(exifData.image.Orientation)
+      }
+    })
+  })
+}
+
+const resizeImage = async (filename) => {
+  const dir = `./../data/uploads/`
+  if (!filename.match(/\.(jpe?g|webp|png)$/)) {
+    return
+  }
+  console.log(filename)
+
+  const imagePath = `${dir}/${filename}`
+  const iamgeOutPath = `${dir}/r/${filename}`
+  const orientation = await getExifOrientation(imagePath)
+
+  let sharpImg = sharp(imagePath)
+  // when image is rotated to the left or right, switch width/height
+  // https://jdhao.github.io/2019/07/31/image_rotation_exif_info/
+  if (orientation === 6) {
+    sharpImg = sharpImg.rotate()
+  } else if (orientation === 3) {
+    sharpImg = sharpImg.rotate().rotate()
+  } else if (orientation === 8) {
+    sharpImg = sharpImg.rotate().rotate().rotate()
+  }
+  const sizes = [
+    [150, 100],
+    [375, 210],
+  ]
+  sizes.forEach(([w, h]) => {
+    sharpImg.resize(w, h, {fit: 'contain'}).toFile(`${iamgeOutPath}-${w}x${h}.webp`)
+  })
+}
+
 const allImages = () => {
   const images = fs.readdirSync('./../data/uploads/')
+    .filter(f => f.match(/\.(jpe?g|webp|png)$/))
     .map(f => ({
       file: `./../data/uploads/${f}`,
       url: `/uploads/${f}`,
@@ -26,12 +83,7 @@ const allImages = () => {
       return fs.statSync(b.file).mtime.getTime() -
         fs.statSync(a.file).mtime.getTime()
     })
-  const exampleImages = fs.readdirSync('./../game/example-images/')
-    .map(f => ({
-      file: `./../game/example-images/${f}`,
-      url: `/example-images/${f}`,
-    }))
-  return [...images, ...exampleImages]
+  return images
 }
 
 const port = config.http.port
@@ -70,11 +122,19 @@ app.use('/replay/:gid', async (req, res, next) => {
 })
 
 app.post('/upload', (req, res) => {
-  upload(req, res, (err) => {
+  upload(req, res, async (err) => {
     if (err) {
       log.log(err)
       res.status(400).send("Something went wrong!");
     }
+
+    try {
+      await resizeImage(req.file.filename)
+    } catch (err) {
+      log.log(err)
+      res.status(400).send("Something went wrong!");
+    }
+
     res.send({
       image: {
         file: './../data/uploads/' + req.file.filename,

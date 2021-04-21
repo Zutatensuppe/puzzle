@@ -34,7 +34,7 @@ const GameTeaser = {
     game: Object,
   },
   template: `
-  <div class="game-teaser" :style="'background-image: url('+game.imageUrl+')'">
+  <div class="game-teaser" :style="style">
     <a class="game-info" :href="'/g/' + game.id">
       <span class="game-info-text">
         🧩 {{game.tilesFinished}}/{{game.tilesTotal}}<br />
@@ -46,6 +46,14 @@ const GameTeaser = {
       ↪️ Watch replay
     </a>
   </div>`,
+  computed: {
+    style() {
+      const url = this.game.imageUrl.replace('uploads/', 'uploads/r/') + '-375x210.webp'
+      return {
+        'background-image': `url("${url}")`,
+      }
+    },
+  },
   methods: {
     time(start, end) {
       const icon = end ? '🏁' : '⏳'
@@ -65,8 +73,9 @@ const ImageTeaser = {
   template: `<div class="imageteaser" :style="style" @click="onClick"></div>`,
   computed: {
     style() {
+      const url = this.image.url.replace('uploads/', 'uploads/r/') + '-150x100.webp'
       return {
-        'background-image': `url("${this.image.url}")`,
+        'background-image': `url("${url}")`,
       }
     },
   },

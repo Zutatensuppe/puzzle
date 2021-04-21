@@ -154,6 +154,10 @@ function getImageUrl(gameId) {
   return GAMES[gameId].puzzle.info.imageUrl
 }
 
+function setImageUrl(gameId, imageUrl) {
+  GAMES[gameId].puzzle.info.imageUrl = imageUrl
+}
+
 function isFinished(gameId) {
   return getFinishedTileCount(gameId) === getTileCount(gameId)
 }
@@ -721,6 +725,7 @@ export default {
   getFinishedTileCount,
   getTileCount,
   getImageUrl,
+  setImageUrl,
   get,
   getAllGames,
   getPlayerBgColor,
