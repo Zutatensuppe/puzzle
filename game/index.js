@@ -29,7 +29,7 @@ const Upload = {
 }
 
 const GameTeaser = {
-  name: 'gameteaser',
+  name: 'game-teaser',
   props: {
     game: Object,
   },
@@ -57,10 +57,26 @@ const GameTeaser = {
   },
 }
 
+const ImageTeaser = {
+  name: 'image-teaser',
+  props: {
+    image: Object
+  },
+  template: `<div class="imageteaser" :style="style"></div>`,
+  computed: {
+    style() {
+      return {
+        'background-image': `url("${this.image.url}")`,
+      }
+    },
+  },
+}
+
 export default {
   components: {
     Upload,
     GameTeaser,
+    ImageTeaser,
   },
   props: {
     gamesRunning: Array,
@@ -95,11 +111,7 @@ export default {
 
   <h1>Image lib</h1>
   <div>
-    <div
-      v-for="i in images"
-      @click="image = i"
-      class="imageteaser"
-      :style="{'background-image': 'url(' + i.url + ')'}"></div>
+    <image-teaser v-for="i in images" :image="i" @click="image = i" />
   </div>
 
   <h1>Finished games</h1>
