@@ -62,12 +62,17 @@ const ImageTeaser = {
   props: {
     image: Object
   },
-  template: `<div class="imageteaser" :style="style"></div>`,
+  template: `<div class="imageteaser" :style="style" @click="onClick"></div>`,
   computed: {
     style() {
       return {
         'background-image': `url("${this.image.url}")`,
       }
+    },
+  },
+  methods: {
+    onClick() {
+      this.$emit('click')
     },
   },
 }
