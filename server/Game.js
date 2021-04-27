@@ -48,12 +48,13 @@ function loadGame(gameId) {
     },
     puzzle: game.puzzle,
     players: game.players,
-    evtInfos: {}
+    evtInfos: {},
+    scoreMode: game.scoreMode || GameCommon.SCORE_MODE_FINAL,
   })
 }
 
 const changedGames = {}
-async function createGameObject(gameId, targetTiles, image, ts) {
+async function createGameObject(gameId, targetTiles, image, ts, scoreMode) {
   const seed = Util.hash(gameId + ' ' + ts)
   const rng = new Rng(seed)
   return GameCommon.__createGameObject(
@@ -64,12 +65,13 @@ async function createGameObject(gameId, targetTiles, image, ts) {
     },
     await createPuzzle(rng, targetTiles, image, ts),
     [],
-    {}
+    {},
+    scoreMode
   )
 }
-async function createGame(gameId, targetTiles, image, ts) {
+async function createGame(gameId, targetTiles, image, ts, scoreMode) {
   GameLog.create(gameId)
-  GameLog.log(gameId, Protocol.LOG_HEADER, 1, targetTiles, image, ts)
+  GameLog.log(gameId, Protocol.LOG_HEADER, 1, targetTiles, image, ts, scoreMode)
 
   const seed = Util.hash(gameId + ' ' + ts)
   const rng = new Rng(seed)
@@ -82,6 +84,7 @@ async function createGame(gameId, targetTiles, image, ts) {
     puzzle: await createPuzzle(rng, targetTiles, image, ts),
     players: [],
     evtInfos: {},
+    scoreMode,
   })
 
   changedGames[gameId] = true
@@ -130,6 +133,7 @@ function persistGame(gameId) {
     },
     puzzle: game.puzzle,
     players: game.players,
+    scoreMode: game.scoreMode,
   }))
   log.info(`[INFO] persisted game ${game.id}`)
 }

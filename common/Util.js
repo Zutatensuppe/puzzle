@@ -166,6 +166,7 @@ function encodeGame(data) {
     data.puzzle,
     data.players,
     data.evtInfos,
+    data.scoreMode,
   ]
 }
 
@@ -182,6 +183,7 @@ function decodeGame(data) {
     puzzle: data[3],
     players: data[4],
     evtInfos: data[5],
+    scoreMode: data[6],
   }
 }
 

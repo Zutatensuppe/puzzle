@@ -3,6 +3,9 @@ import Protocol from './Protocol.js'
 import Time from './Time.js'
 import Util from './Util.js'
 
+const SCORE_MODE_FINAL = 0
+const SCORE_MODE_ANY = 1
+
 // Map<gameId, GameObject>
 const GAMES = {}
 
@@ -10,13 +13,14 @@ function exists(gameId) {
   return (!!GAMES[gameId]) || false
 }
 
-function __createGameObject(id, rng, puzzle, players, evtInfos) {
+function __createGameObject(id, rng, puzzle, players, evtInfos, scoreMode) {
   return {
     id: id,
     rng: rng,
     puzzle: puzzle,
     players: players,
     evtInfos: evtInfos,
+    scoreMode: scoreMode,
   }
 }
 
@@ -34,8 +38,8 @@ function __createPlayerObject(id, ts) {
   }
 }
 
-function newGame({id, rng, puzzle, players, evtInfos}) {
-  const game = __createGameObject(id, rng, puzzle, players, evtInfos)
+function newGame({id, rng, puzzle, players, evtInfos, scoreMode}) {
+  const game = __createGameObject(id, rng, puzzle, players, evtInfos, scoreMode)
   setGame(id, game)
   return game
 }
@@ -156,6 +160,10 @@ function getImageUrl(gameId) {
 
 function setImageUrl(gameId, imageUrl) {
   GAMES[gameId].puzzle.info.imageUrl = imageUrl
+}
+
+function getScoreMode(gameId) {
+  return GAMES[gameId].scoreMode || SCORE_MODE_FINAL
 }
 
 function isFinished(gameId) {
@@ -654,8 +662,23 @@ function handleInput(gameId, playerId, input, ts) {
         // Snap the tile to the final destination
         moveTilesDiff(gameId, tileIdxs, diff)
         finishTiles(gameId, tileIdxs)
-        changePlayer(gameId, playerId, { points: getPlayerPoints(gameId, playerId) + tileIdxs.length })
         _tileChanges(tileIdxs)
+
+        if (getScoreMode(gameId) === SCORE_MODE_FINAL) {
+          changePlayer(gameId, playerId, {
+            points: getPlayerPoints(gameId, playerId) + tileIdxs.length,
+          })
+          _playerChange()
+        } else if (getScoreMode(gameId) === SCORE_MODE_ANY) {
+          changePlayer(gameId, playerId, {
+            points: getPlayerPoints(gameId, playerId) + 1,
+          })
+          _playerChange()
+        } else {
+          // no score mode... should never occur, because there is a
+          // fallback to SCORE_MODE_FINAL in getScoreMode function
+        }
+
         // check if the puzzle is finished
         if (getFinishedTileCount(gameId) === getTileCount(gameId)) {
           changeData(gameId, { finished: ts })
@@ -685,6 +708,12 @@ function handleInput(gameId, playerId, input, ts) {
             const zIndex = getMaxZIndexByTileIdxs(gameId, tileIdxs)
             setTilesZIndex(gameId, tileIdxs, zIndex)
             _tileChanges(tileIdxs)
+            if (getScoreMode(gameId) === SCORE_MODE_ANY) {
+              changePlayer(gameId, playerId, {
+                points: getPlayerPoints(gameId, playerId) + 1,
+              })
+              _playerChange()
+            }
             return true
           }
           return false
@@ -751,4 +780,6 @@ export default {
   getStartTs,
   getFinishTs,
   handleInput,
+  SCORE_MODE_FINAL,
+  SCORE_MODE_ANY,
 }

@@ -20,6 +20,7 @@ import {
   GAME_DIR,
   TEMPLATE_DIR,
 } from './Dirs.js'
+import GameCommon from '../common/GameCommon.js'
 
 const log = logger('index.js')
 
@@ -85,7 +86,13 @@ app.post('/newgame', bodyParser.json(), async (req, res) => {
   const gameId = Util.uniqId()
   if (!Game.exists(gameId)) {
     const ts = Time.timestamp()
-    await Game.createGame(gameId, req.body.tiles, req.body.image, ts)
+    await Game.createGame(
+      gameId,
+      req.body.tiles,
+      req.body.image,
+      ts,
+      req.body.scoreMode
+    )
   }
   res.send({ url: `/g/${gameId}` })
 })
@@ -151,11 +158,12 @@ wss.on('message', async ({socket, data}) => {
           throw `[gamelog ${gameId} does not exist... ]`
         }
         const log = GameLog.get(gameId)
-        let game = await Game.createGameObject(
+        const game = await Game.createGameObject(
           gameId,
           log[0][2],
           log[0][3],
-          log[0][4]
+          log[0][4],
+          log[0][5] || GameCommon.SCORE_MODE_FINAL
         )
         notify(
           [Protocol.EV_SERVER_INIT_REPLAY, Util.encodeGame(game), log],
