@@ -47,13 +47,19 @@ const ELEMENTS = {
   A: document.createElement('a'),
 }
 
+let KEY_LISTENER_OFF = false
+
 function addMenuToDom(gameId) {
   const previewImageUrl = Game.getImageUrl(gameId)
   function row (...elements) {
     const row = ELEMENTS.TR.cloneNode(true)
     for (let el of elements) {
       const td = ELEMENTS.TD.cloneNode(true)
-      td.appendChild(el)
+      if (typeof el === 'string') {
+        td.appendChild(document.createTextNode(el))
+      } else {
+        td.appendChild(el)
+      }
       row.appendChild(td)
     }
     return row
@@ -103,6 +109,52 @@ function addMenuToDom(gameId) {
     nameChangeEl
   )
 
+  const kbd = function(txt) {
+    const el = document.createElement('kbd')
+    el.appendChild(document.createTextNode(txt))
+    return el
+  }
+
+  const h = function(...els) {
+    const el = ELEMENTS.DIV.cloneNode(true)
+    for (const other of els) {
+      if (typeof other === 'string') {
+        el.appendChild(document.createTextNode(other))
+      } else {
+        el.appendChild(other)
+      }
+    }
+    return el
+  }
+
+  const helpEl = ELEMENTS.TABLE.cloneNode(true)
+  helpEl.classList.add('help')
+  helpEl.appendChild(row('⬆️ Move up:', h(kbd('W'), '/', kbd('↑'), '/🖱️')))
+  helpEl.appendChild(row('⬇️ Move down:', h(kbd('S'), '/', kbd('↓'), '/🖱️')))
+  helpEl.appendChild(row('⬅️ Move left:', h(kbd('A'), '/', kbd('←'), '/🖱️')))
+  helpEl.appendChild(row('➡️ Move right:', h(kbd('D'), '/', kbd('→'), '/🖱️')))
+  helpEl.appendChild(row('', h('Move faster by holding ', kbd('Shift'))))
+  helpEl.appendChild(row('🔍+ Zoom in:', h(kbd('E'), '/🖱️-Wheel')))
+  helpEl.appendChild(row('🔍- Zoom out:', h(kbd('Q'), '/🖱️-Wheel')))
+  helpEl.appendChild(row('🖼️ Toggle preview:', h(kbd('Space'))))
+  helpEl.addEventListener('click', (e) => {
+    e.stopPropagation()
+  })
+
+  const toggle = (el, disableHotkeys = true) => {
+    el.classList.toggle('closed')
+    if (disableHotkeys) {
+      KEY_LISTENER_OFF = !el.classList.contains('closed')
+    }
+  }
+
+  const helpOverlay = ELEMENTS.DIV.cloneNode(true)
+  helpOverlay.classList.add('overlay', 'transparent', 'closed')
+  helpOverlay.appendChild(helpEl)
+  helpOverlay.addEventListener('click', () => {
+    toggle(helpOverlay)
+  })
+
   const settingsEl = ELEMENTS.TABLE.cloneNode(true)
   settingsEl.classList.add('settings')
   settingsEl.appendChild(bgColorPickerRow)
@@ -116,7 +168,7 @@ function addMenuToDom(gameId) {
   settingsOverlay.classList.add('overlay', 'transparent', 'closed')
   settingsOverlay.appendChild(settingsEl)
   settingsOverlay.addEventListener('click', () => {
-    settingsOverlay.classList.toggle('closed')
+    toggle(settingsOverlay)
   })
 
   const previewEl = ELEMENTS.DIV.cloneNode(true)
@@ -137,12 +189,15 @@ function addMenuToDom(gameId) {
     togglePreview()
   })
 
-  const settingsOpenerEl = ELEMENTS.DIV.cloneNode(true)
-  settingsOpenerEl.classList.add('opener')
-  settingsOpenerEl.appendChild(document.createTextNode('🛠️ Settings'))
-  settingsOpenerEl.addEventListener('click', () => {
-    settingsOverlay.classList.toggle('closed')
-  })
+  const opener = (txt, overlay, disableHotkeys = true) => {
+    const el = ELEMENTS.DIV.cloneNode(true)
+    el.classList.add('opener')
+    el.appendChild(document.createTextNode(txt))
+    el.addEventListener('click', () => {
+      toggle(overlay, disableHotkeys)
+    })
+    return el
+  }
 
   const homeEl = ELEMENTS.A.cloneNode(true)
   homeEl.classList.add('opener')
@@ -150,18 +205,16 @@ function addMenuToDom(gameId) {
   homeEl.target = '_blank'
   homeEl.href = '/'
 
-  const previewOpenerEl = ELEMENTS.DIV.cloneNode(true)
-  previewOpenerEl.classList.add('opener')
-  previewOpenerEl.appendChild(document.createTextNode('🖼️ Preview'))
-  previewOpenerEl.addEventListener('click', () => {
-    previewOverlay.classList.toggle('closed')
-  })
+  const settingsOpenerEl = opener('🛠️ Settings', settingsOverlay)
+  const previewOpenerEl = opener('🖼️ Preview', previewOverlay, false)
+  const helpOpenerEl = opener('ℹ️ Help', helpOverlay)
 
   const tabsEl = ELEMENTS.DIV.cloneNode(true)
   tabsEl.classList.add('tabs')
   tabsEl.appendChild(homeEl)
   tabsEl.appendChild(previewOpenerEl)
   tabsEl.appendChild(settingsOpenerEl)
+  tabsEl.appendChild(helpOpenerEl)
 
   const menuEl = ELEMENTS.DIV.cloneNode(true)
   menuEl.classList.add('menu')
@@ -250,6 +303,7 @@ function addMenuToDom(gameId) {
 
   document.body.appendChild(settingsOverlay)
   document.body.appendChild(previewOverlay)
+  document.body.appendChild(helpOverlay)
   document.body.appendChild(timerEl)
   document.body.appendChild(menuEl)
   document.body.appendChild(scoresEl)
@@ -296,6 +350,9 @@ export default class EventAdapter {
     canvas.addEventListener('wheel', this._wheel.bind(this))
 
     window.addEventListener('keydown', (ev) => {
+      if (KEY_LISTENER_OFF) {
+        return
+      }
       if (ev.key === 'Shift') {
         this.SHIFT = true
       } else if (ev.key === 'ArrowUp' || ev.key === 'w' || ev.key === 'W') {
@@ -313,6 +370,9 @@ export default class EventAdapter {
       }
     })
     window.addEventListener('keyup', (ev) => {
+      if (KEY_LISTENER_OFF) {
+        return
+      }
       if (ev.key === 'Shift') {
         this.SHIFT = false
       } else if (ev.key === 'ArrowUp' || ev.key === 'w' || ev.key === 'W') {
@@ -534,6 +594,9 @@ async function main() {
   }
 
   window.addEventListener('keypress', (ev) => {
+    if (KEY_LISTENER_OFF) {
+      return
+    }
     if (ev.key === ' ') {
       togglePreview()
     }
@@ -846,7 +909,6 @@ async function main() {
 
     // Names
     ctx.fillStyle = 'white'
-    ctx.font = '10px sans-serif'
     ctx.textAlign = 'center'
     for (let [txt, x, y] of texts) {
       ctx.fillText(txt, x, y)
