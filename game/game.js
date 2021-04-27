@@ -613,7 +613,6 @@ async function main() {
       PIECE_VIEW_LOOSE = !PIECE_VIEW_LOOSE
       RERENDER = true
     }
-    console.log(PIECE_VIEW_FIXED, PIECE_VIEW_LOOSE)
   })
 
   const evts = new EventAdapter(canvas, window, viewport)
@@ -880,12 +879,10 @@ async function main() {
 
     for (let tile of tiles) {
       if (tile.owner === -1) {
-        // piece is fixed...
         if (!PIECE_VIEW_FIXED) {
           continue;
         }
       } else {
-        // not finished
         if (!PIECE_VIEW_LOOSE) {
           continue;
         }
