@@ -280,36 +280,53 @@ export default class EventAdapter {
   constructor(canvas, window, viewport) {
     this.events = []
     this._viewport = viewport
+    this._canvas = canvas
 
     this.LEFT = false
     this.RIGHT = false
     this.UP = false
     this.DOWN = false
+    this.ZOOM_IN = false
+    this.ZOOM_OUT = false
+    this.SHIFT = false
+
     canvas.addEventListener('mousedown', this._mouseDown.bind(this))
     canvas.addEventListener('mouseup', this._mouseUp.bind(this))
     canvas.addEventListener('mousemove', this._mouseMove.bind(this))
     canvas.addEventListener('wheel', this._wheel.bind(this))
 
     window.addEventListener('keydown', (ev) => {
-      if (ev.key === 'ArrowUp') {
+      if (ev.key === 'Shift') {
+        this.SHIFT = true
+      } else if (ev.key === 'ArrowUp' || ev.key === 'w' || ev.key === 'W') {
         this.UP = true
-      } else if (ev.key === 'ArrowDown') {
+      } else if (ev.key === 'ArrowDown' || ev.key === 's' || ev.key === 'S') {
         this.DOWN = true
-      } else if (ev.key === 'ArrowLeft') {
+      } else if (ev.key === 'ArrowLeft' || ev.key === 'a' || ev.key === 'A') {
         this.LEFT = true
-      } else if (ev.key === 'ArrowRight') {
+      } else if (ev.key === 'ArrowRight' || ev.key === 'd' || ev.key === 'D') {
         this.RIGHT = true
+      } else if (ev.key === 'q') {
+        this.ZOOM_OUT = true
+      } else if (ev.key === 'e') {
+        this.ZOOM_IN = true
       }
     })
     window.addEventListener('keyup', (ev) => {
-      if (ev.key === 'ArrowUp') {
+      if (ev.key === 'Shift') {
+        this.SHIFT = false
+      } else if (ev.key === 'ArrowUp' || ev.key === 'w' || ev.key === 'W') {
         this.UP = false
-      } else if (ev.key === 'ArrowDown') {
+      } else if (ev.key === 'ArrowDown' || ev.key === 's' || ev.key === 'S') {
         this.DOWN = false
-      } else if (ev.key === 'ArrowLeft') {
+      } else if (ev.key === 'ArrowLeft' || ev.key === 'a' || ev.key === 'A') {
         this.LEFT = false
-      } else if (ev.key === 'ArrowRight') {
+      } else if (ev.key === 'ArrowRight' || ev.key === 'd' || ev.key === 'D') {
         this.RIGHT = false
+      } else if (ev.key === 'q') {
+        this.ZOOM_OUT = false
+      } else if (ev.key === 'e') {
+        this.ZOOM_IN = false
       }
     })
   }
@@ -328,7 +345,7 @@ export default class EventAdapter {
   }
 
   _keydowns() {
-    let amount = 10
+    let amount = this.SHIFT ? 20 : 10
     let x = 0
     let y = 0
     if (this.UP) {
@@ -343,8 +360,22 @@ export default class EventAdapter {
     if (this.RIGHT) {
       x -= amount
     }
+
     if (x !== 0 || y !== 0) {
       this.addEvent([Protocol.INPUT_EV_MOVE, x, y])
+    }
+
+    // zoom keys
+    const pos = this._viewport.viewportToWorld({
+      x: this._canvas.width / 2,
+      y: this._canvas.height / 2,
+    })
+    if (this.ZOOM_IN && this.ZOOM_OUT) {
+      // cancel each other out
+    } else if (this.ZOOM_IN) {
+      this.addEvent([Protocol.INPUT_EV_ZOOM_IN, pos.x, pos.y])
+    } else if (this.ZOOM_OUT) {
+      this.addEvent([Protocol.INPUT_EV_ZOOM_OUT, pos.x, pos.y])
     }
   }
 
