@@ -49,6 +49,9 @@ const ELEMENTS = {
 
 let KEY_LISTENER_OFF = false
 
+let PIECE_VIEW_FIXED = true
+let PIECE_VIEW_LOOSE = true
+
 function addMenuToDom(gameId) {
   const previewImageUrl = Game.getImageUrl(gameId)
   function row (...elements) {
@@ -137,6 +140,8 @@ function addMenuToDom(gameId) {
   helpEl.appendChild(row('🔍+ Zoom in:', h(kbd('E'), '/🖱️-Wheel')))
   helpEl.appendChild(row('🔍- Zoom out:', h(kbd('Q'), '/🖱️-Wheel')))
   helpEl.appendChild(row('🖼️ Toggle preview:', h(kbd('Space'))))
+  helpEl.appendChild(row('🧩✔️ Toggle fixed pieces:', h(kbd('F'))))
+  helpEl.appendChild(row('🧩❓ Toggle loose pieces:', h(kbd('G'))))
   helpEl.addEventListener('click', (e) => {
     e.stopPropagation()
   })
@@ -600,6 +605,15 @@ async function main() {
     if (ev.key === ' ') {
       togglePreview()
     }
+    if (ev.key === 'F' || ev.key === 'f') {
+      PIECE_VIEW_FIXED = !PIECE_VIEW_FIXED
+      RERENDER = true
+    }
+    if (ev.key === 'G' || ev.key === 'g') {
+      PIECE_VIEW_LOOSE = !PIECE_VIEW_LOOSE
+      RERENDER = true
+    }
+    console.log(PIECE_VIEW_FIXED, PIECE_VIEW_LOOSE)
   })
 
   const evts = new EventAdapter(canvas, window, viewport)
@@ -865,6 +879,17 @@ async function main() {
     if (DEBUG) Debug.checkpoint('get tiles done')
 
     for (let tile of tiles) {
+      if (tile.owner === -1) {
+        // piece is fixed...
+        if (!PIECE_VIEW_FIXED) {
+          continue;
+        }
+      } else {
+        // not finished
+        if (!PIECE_VIEW_LOOSE) {
+          continue;
+        }
+      }
       const bmp = bitmaps[tile.idx]
       pos = viewport.worldToViewportRaw({
         x: TILE_DRAW_OFFSET + tile.pos.x,
