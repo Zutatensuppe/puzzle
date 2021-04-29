@@ -70,16 +70,8 @@ async function createGame(gameId, targetTiles, image, ts, scoreMode) {
   GameLog.create(gameId)
   GameLog.log(gameId, Protocol.LOG_HEADER, 1, targetTiles, image, ts, scoreMode)
 
-  const seed = Util.hash(gameId + ' ' + ts)
-  const rng = new Rng(seed)
-  GameCommon.newGame({
-    id: gameId,
-    rng: { type: 'Rng', obj: rng },
-    puzzle: await createPuzzle(rng, targetTiles, image, ts),
-    players: [],
-    evtInfos: {},
-    scoreMode,
-  })
+  const gameObject = await createGameObject(gameId, targetTiles, image, ts, scoreMode)
+  GameCommon.newGame(gameObject)
 
   changedGames[gameId] = true
 }
