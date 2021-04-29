@@ -40,7 +40,7 @@ function loadGame(gameId) {
   if (!Array.isArray(game.players)) {
     game.players = Object.values(game.players)
   }
-  GameCommon.newGame({
+  const gameObject = {
     id: game.id,
     rng: {
       type: game.rng ? game.rng.type : '_fake_',
@@ -50,7 +50,8 @@ function loadGame(gameId) {
     players: game.players,
     evtInfos: {},
     scoreMode: game.scoreMode || GameCommon.SCORE_MODE_FINAL,
-  })
+  }
+  GameCommon.setGame(gameObject.id, gameObject)
 }
 
 const changedGames = {}
@@ -67,11 +68,12 @@ async function createGameObject(gameId, targetTiles, image, ts, scoreMode) {
   }
 }
 async function createGame(gameId, targetTiles, image, ts, scoreMode) {
+  const gameObject = await createGameObject(gameId, targetTiles, image, ts, scoreMode)
+
   GameLog.create(gameId)
   GameLog.log(gameId, Protocol.LOG_HEADER, 1, targetTiles, image, ts, scoreMode)
 
-  const gameObject = await createGameObject(gameId, targetTiles, image, ts, scoreMode)
-  GameCommon.newGame(gameObject)
+  GameCommon.setGame(gameObject.id, gameObject)
 
   changedGames[gameId] = true
 }

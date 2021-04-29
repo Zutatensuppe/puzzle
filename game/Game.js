@@ -1,7 +1,7 @@
 import GameCommon from './../common/GameCommon.js'
 
 export default {
-  newGame: GameCommon.newGame,
+  setGame: GameCommon.setGame,
   getRelevantPlayers: GameCommon.getRelevantPlayers,
   getActivePlayers: GameCommon.getActivePlayers,
   addPlayer: GameCommon.addPlayer,

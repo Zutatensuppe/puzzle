@@ -27,19 +27,6 @@ function __createPlayerObject(id, ts) {
   }
 }
 
-function newGame({id, rng, puzzle, players, evtInfos, scoreMode}) {
-  const game = {
-    id: id,
-    rng: rng,
-    puzzle: puzzle,
-    players: players,
-    evtInfos: evtInfos,
-    scoreMode: scoreMode,
-  }
-  setGame(id, game)
-  return game
-}
-
 function setGame(gameId, game) {
   GAMES[gameId] = game
 }
@@ -740,7 +727,7 @@ function handleInput(gameId, playerId, input, ts) {
 
 export default {
   __createPlayerObject,
-  newGame,
+  setGame,
   exists,
   playerExists,
   getRelevantPlayers,

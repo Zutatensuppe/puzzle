@@ -527,10 +527,12 @@ async function main() {
 
   if (MODE === MODE_PLAY) {
     const game = await Communication.connect(gameId, CLIENT_ID)
-    Game.newGame(Util.decodeGame(game))
+    const gameObject = Util.decodeGame(game)
+    Game.setGame(gameObject.id, gameObject)
   } else if (MODE === MODE_REPLAY) {
     const {game, log} = await Communication.connectReplay(gameId, CLIENT_ID)
-    Game.newGame(Util.decodeGame(game))
+    const gameObject = Util.decodeGame(game)
+    Game.setGame(gameObject.id, gameObject)
     REPLAY.log = log
     REPLAY.lastRealTs = Time.timestamp()
     REPLAY.gameStartTs = REPLAY.log[0][REPLAY.log[0].length - 1]
