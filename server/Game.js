@@ -78,11 +78,10 @@ async function createGame(gameId, targetTiles, image, ts, scoreMode) {
 
 function addPlayer(gameId, playerId, ts) {
   const idx = GameCommon.getPlayerIndexById(gameId, playerId)
+  const diff = ts - GameCommon.getStartTs(gameId)
   if (idx === -1) {
-    const diff = ts - GameCommon.getStartTs(gameId)
     GameLog.log(gameId, Protocol.LOG_ADD_PLAYER, playerId, diff)
   } else {
-    const diff = ts - GameCommon.getStartTs(gameId)
     GameLog.log(gameId, Protocol.LOG_UPDATE_PLAYER, idx, diff)
   }
 
