@@ -57,17 +57,14 @@ const changedGames = {}
 async function createGameObject(gameId, targetTiles, image, ts, scoreMode) {
   const seed = Util.hash(gameId + ' ' + ts)
   const rng = new Rng(seed)
-  return GameCommon.__createGameObject(
-    gameId,
-    {
-      type: 'Rng',
-      obj: rng,
-    },
-    await createPuzzle(rng, targetTiles, image, ts),
-    [],
-    {},
-    scoreMode
-  )
+  return {
+    id: gameId,
+    rng: { type: 'Rng', obj: rng },
+    puzzle: await createPuzzle(rng, targetTiles, image, ts),
+    players: [],
+    evtInfos: {},
+    scoreMode,
+  }
 }
 async function createGame(gameId, targetTiles, image, ts, scoreMode) {
   GameLog.create(gameId)
@@ -77,10 +74,7 @@ async function createGame(gameId, targetTiles, image, ts, scoreMode) {
   const rng = new Rng(seed)
   GameCommon.newGame({
     id: gameId,
-    rng: {
-      type: 'Rng',
-      obj: rng,
-    },
+    rng: { type: 'Rng', obj: rng },
     puzzle: await createPuzzle(rng, targetTiles, image, ts),
     players: [],
     evtInfos: {},

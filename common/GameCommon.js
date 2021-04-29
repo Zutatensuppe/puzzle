@@ -13,17 +13,6 @@ function exists(gameId) {
   return (!!GAMES[gameId]) || false
 }
 
-function __createGameObject(id, rng, puzzle, players, evtInfos, scoreMode) {
-  return {
-    id: id,
-    rng: rng,
-    puzzle: puzzle,
-    players: players,
-    evtInfos: evtInfos,
-    scoreMode: scoreMode,
-  }
-}
-
 function __createPlayerObject(id, ts) {
   return {
     id: id,
@@ -39,7 +28,14 @@ function __createPlayerObject(id, ts) {
 }
 
 function newGame({id, rng, puzzle, players, evtInfos, scoreMode}) {
-  const game = __createGameObject(id, rng, puzzle, players, evtInfos, scoreMode)
+  const game = {
+    id: id,
+    rng: rng,
+    puzzle: puzzle,
+    players: players,
+    evtInfos: evtInfos,
+    scoreMode: scoreMode,
+  }
   setGame(id, game)
   return game
 }
@@ -743,7 +739,6 @@ function handleInput(gameId, playerId, input, ts) {
 }
 
 export default {
-  __createGameObject,
   __createPlayerObject,
   newGame,
   exists,
