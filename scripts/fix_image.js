@@ -7,7 +7,7 @@ import Game from '../server/Game.js'
 const log = logger('fix_image.js')
 
 function fix(gameId) {
-  Game.loadGame(gameId)
+  Game.loadGameFromFile(gameId)
   let changed = false
 
   let imgUrl = GameCommon.getImageUrl(gameId)

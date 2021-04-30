@@ -6,7 +6,7 @@ import Game from '../server/Game.js'
 const log = logger('fix_tiles.js')
 
 function fix_tiles(gameId) {
-  Game.loadGame(gameId)
+  Game.loadGameFromFile(gameId)
   let changed = false
   const tiles = GameCommon.getTilesSortedByZIndex(gameId)
   for (let tile of tiles) {

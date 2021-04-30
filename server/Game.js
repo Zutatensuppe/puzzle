@@ -17,11 +17,11 @@ function loadAllGames() {
       continue
     }
     const gameId = m[1]
-    loadGame(gameId)
+    loadGameFromFile(gameId)
   }
 }
 
-function loadGame(gameId) {
+function loadGameFromFile(gameId) {
   const file = `${DATA_DIR}/${gameId}.json`
   const contents = fs.readFileSync(file, 'utf-8')
   let game
@@ -128,7 +128,7 @@ function persistGame(gameId) {
 export default {
   createGameObject,
   loadAllGames,
-  loadGame,
+  loadGameFromFile,
   persistChangedGames,
   persistGame,
   createGame,
