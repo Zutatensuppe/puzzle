@@ -18,7 +18,7 @@ function fix(gameId) {
     changed = true
   }
   if (changed) {
-    Game.persistGame(gameId)
+    Game.writeGameToFile(gameId)
   }
 }
 

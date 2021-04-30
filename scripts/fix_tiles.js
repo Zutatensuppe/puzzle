@@ -28,7 +28,7 @@ function fix_tiles(gameId) {
     }
   }
   if (changed) {
-    Game.persistGame(gameId)
+    Game.writeGameToFile(gameId)
   }
 }
 

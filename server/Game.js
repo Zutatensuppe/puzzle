@@ -103,11 +103,11 @@ function handleInput(gameId, playerId, input, ts) {
 
 function persistChangedGames() {
   for (const gameId of Object.keys(changedGames)) {
-    persistGame(gameId)
+    writeGameToFile(gameId)
   }
 }
 
-function persistGame(gameId) {
+function writeGameToFile(gameId) {
   const game = GameCommon.get(gameId)
   if (game.id in changedGames) {
     delete changedGames[game.id]
@@ -126,11 +126,11 @@ function persistGame(gameId) {
 }
 
 export default {
+  loadGameFromFile,
+  writeGameToFile,
   createGameObject,
   loadAllGames,
-  loadGameFromFile,
   persistChangedGames,
-  persistGame,
   createGame,
   addPlayer,
   handleInput,
