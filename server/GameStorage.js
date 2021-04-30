@@ -61,7 +61,7 @@ function loadGame(gameId) {
 }
 
 function persistGames() {
-  for (const gameId of Object.keys(changedGames)) {
+  for (const gameId of Object.keys(DIRTY_GAMES)) {
     persistGame(gameId)
   }
 }
