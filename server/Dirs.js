@@ -10,5 +10,5 @@ export const DATA_DIR = `${BASE_DIR}/data`
 export const UPLOAD_DIR = `${BASE_DIR}/data/uploads`
 export const UPLOAD_URL = `/uploads`
 export const COMMON_DIR = `${BASE_DIR}/common/`
-export const GAME_DIR = `${BASE_DIR}/game/`
-export const TEMPLATE_DIR = `${BASE_DIR}/game/templates`
+export const PUBLIC_DIR = `${BASE_DIR}/public/`
+export const TEMPLATE_DIR = `${BASE_DIR}/templates`

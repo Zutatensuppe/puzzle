@@ -17,7 +17,7 @@ import {
   UPLOAD_DIR,
   UPLOAD_URL,
   COMMON_DIR,
-  GAME_DIR,
+  PUBLIC_DIR,
   TEMPLATE_DIR,
 } from './Dirs.js'
 import GameCommon from '../common/GameCommon.js'
@@ -37,7 +37,7 @@ const storage = multer.diskStorage({
 })
 const upload = multer({storage}).single('file');
 
-const statics = express.static(GAME_DIR)
+const statics = express.static(PUBLIC_DIR)
 
 const render = async (template, data) => {
   const loader = new twing.TwingLoaderFilesystem(TEMPLATE_DIR)
