@@ -18,6 +18,7 @@ async function createGameObject(gameId, targetTiles, image, ts, scoreMode) {
     scoreMode,
   }
 }
+
 async function createGame(gameId, targetTiles, image, ts, scoreMode) {
   const gameObject = await createGameObject(gameId, targetTiles, image, ts, scoreMode)
 
