@@ -1,60 +1,11 @@
-import fs from 'fs'
 import GameCommon from './../common/GameCommon.js'
-import Util, { logger } from './../common/Util.js'
+import Util from './../common/Util.js'
 import { Rng } from '../common/Rng.js'
 import GameLog from './GameLog.js'
 import { createPuzzle } from './Puzzle.js'
 import Protocol from '../common/Protocol.js'
-import { DATA_DIR } from './Dirs.js'
+import GameStorage from './GameStorage.js'
 
-const log = logger('Game.js')
-
-function loadAllGames() {
-  const files = fs.readdirSync(DATA_DIR)
-  for (const f of files) {
-    const m = f.match(/^([a-z0-9]+)\.json$/)
-    if (!m) {
-      continue
-    }
-    const gameId = m[1]
-    loadGameFromFile(gameId)
-  }
-}
-
-function loadGameFromFile(gameId) {
-  const file = `${DATA_DIR}/${gameId}.json`
-  const contents = fs.readFileSync(file, 'utf-8')
-  let game
-  try {
-    game = JSON.parse(contents)
-  } catch {
-    log.log(`[ERR] unable to load game from file ${file}`);
-  }
-  if (typeof game.puzzle.data.started === 'undefined') {
-    game.puzzle.data.started = Math.round(fs.statSync(file).ctimeMs)
-  }
-  if (typeof game.puzzle.data.finished === 'undefined') {
-    let unfinished = game.puzzle.tiles.map(Util.decodeTile).find(t => t.owner !== -1)
-    game.puzzle.data.finished = unfinished ? 0 : Util.timestamp()
-  }
-  if (!Array.isArray(game.players)) {
-    game.players = Object.values(game.players)
-  }
-  const gameObject = {
-    id: game.id,
-    rng: {
-      type: game.rng ? game.rng.type : '_fake_',
-      obj: game.rng ? Rng.unserialize(game.rng.obj) : new Rng(),
-    },
-    puzzle: game.puzzle,
-    players: game.players,
-    evtInfos: {},
-    scoreMode: game.scoreMode || GameCommon.SCORE_MODE_FINAL,
-  }
-  GameCommon.setGame(gameObject.id, gameObject)
-}
-
-const changedGames = {}
 async function createGameObject(gameId, targetTiles, image, ts, scoreMode) {
   const seed = Util.hash(gameId + ' ' + ts)
   const rng = new Rng(seed)
@@ -74,8 +25,7 @@ async function createGame(gameId, targetTiles, image, ts, scoreMode) {
   GameLog.log(gameId, Protocol.LOG_HEADER, 1, targetTiles, image, ts, scoreMode)
 
   GameCommon.setGame(gameObject.id, gameObject)
-
-  changedGames[gameId] = true
+  GameStorage.setDirty(gameId)
 }
 
 function addPlayer(gameId, playerId, ts) {
@@ -88,7 +38,7 @@ function addPlayer(gameId, playerId, ts) {
   }
 
   GameCommon.addPlayer(gameId, playerId, ts)
-  changedGames[gameId] = true
+  GameStorage.setDirty(gameId)
 }
 
 function handleInput(gameId, playerId, input, ts) {
@@ -97,40 +47,12 @@ function handleInput(gameId, playerId, input, ts) {
   GameLog.log(gameId, Protocol.LOG_HANDLE_INPUT, idx, input, diff)
 
   const ret = GameCommon.handleInput(gameId, playerId, input, ts)
-  changedGames[gameId] = true
+  GameStorage.setDirty(gameId)
   return ret
 }
 
-function persistChangedGames() {
-  for (const gameId of Object.keys(changedGames)) {
-    writeGameToFile(gameId)
-  }
-}
-
-function writeGameToFile(gameId) {
-  const game = GameCommon.get(gameId)
-  if (game.id in changedGames) {
-    delete changedGames[game.id]
-  }
-  fs.writeFileSync(`${DATA_DIR}/${game.id}.json`, JSON.stringify({
-    id: game.id,
-    rng: {
-      type: game.rng.type,
-      obj: Rng.serialize(game.rng.obj),
-    },
-    puzzle: game.puzzle,
-    players: game.players,
-    scoreMode: game.scoreMode,
-  }))
-  log.info(`[INFO] persisted game ${game.id}`)
-}
-
 export default {
-  loadGameFromFile,
-  writeGameToFile,
   createGameObject,
-  loadAllGames,
-  persistChangedGames,
   createGame,
   addPlayer,
   handleInput,

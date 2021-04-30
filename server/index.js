@@ -21,6 +21,7 @@ import {
   TEMPLATE_DIR,
 } from './Dirs.js'
 import GameCommon from '../common/GameCommon.js'
+import GameStorage from './GameStorage.js'
 
 const log = logger('index.js')
 
@@ -222,7 +223,7 @@ wss.on('message', async ({socket, data}) => {
   }
 })
 
-Game.loadAllGames()
+GameStorage.loadGames()
 const server = app.listen(
   port,
   hostname,
@@ -245,7 +246,7 @@ memoryUsageHuman()
 // persist games in fixed interval
 const persistInterval = setInterval(() => {
   log.log('Persisting games...')
-  Game.persistChangedGames()
+  GameStorage.persistGames()
 
   memoryUsageHuman()
 }, config.persistence.interval)
@@ -257,7 +258,7 @@ const gracefulShutdown = (signal) => {
   clearInterval(persistInterval)
 
   log.log('persisting games...')
-  Game.persistChangedGames()
+  GameStorage.persistGames()
 
   log.log('shutting down webserver...')
   server.close()

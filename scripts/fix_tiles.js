@@ -1,12 +1,11 @@
 import GameCommon from '../common/GameCommon.js'
 import { logger } from '../common/Util.js'
-import Game from '../server/Game.js'
-
+import GameStorage from '../server/GameStorage.js'
 
 const log = logger('fix_tiles.js')
 
 function fix_tiles(gameId) {
-  Game.loadGameFromFile(gameId)
+  GameStorage.loadGame(gameId)
   let changed = false
   const tiles = GameCommon.getTilesSortedByZIndex(gameId)
   for (let tile of tiles) {
@@ -28,7 +27,7 @@ function fix_tiles(gameId) {
     }
   }
   if (changed) {
-    Game.writeGameToFile(gameId)
+    GameStorage.persistGame(gameId)
   }
 }
 

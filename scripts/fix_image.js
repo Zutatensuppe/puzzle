@@ -2,12 +2,12 @@
 
 import GameCommon from '../common/GameCommon.js'
 import { logger } from '../common/Util.js'
-import Game from '../server/Game.js'
+import GameStorage from '../server/GameStorage.js'
 
 const log = logger('fix_image.js')
 
 function fix(gameId) {
-  Game.loadGameFromFile(gameId)
+  GameStorage.loadGame(gameId)
   let changed = false
 
   let imgUrl = GameCommon.getImageUrl(gameId)
@@ -18,7 +18,7 @@ function fix(gameId) {
     changed = true
   }
   if (changed) {
-    Game.writeGameToFile(gameId)
+    GameStorage.persistGame(gameId)
   }
 }
 
