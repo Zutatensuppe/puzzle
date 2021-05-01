@@ -10,11 +10,6 @@ export default {
     GameTeaser,
     ImageTeaser,
   },
-  props: {
-    gamesRunning: Array,
-    gamesFinished: Array,
-    images: Array,
-  },
   template: `
 <div id="app">
   <h1>Running games</h1>
@@ -72,7 +67,18 @@ export default {
       tiles: 1000,
       image: '',
       scoreMode: GameCommon.SCORE_MODE_ANY,
+
+      gamesRunning: [],
+      gamesFinished: [],
+      images: [],
     }
+  },
+  async created() {
+    const res = await fetch('/api/index-data')
+    const json = await res.json()
+    this.gamesRunning = json.gamesRunning
+    this.gamesFinished = json.gamesFinished
+    this.images = json.images
   },
   methods: {
     time(start, end) {

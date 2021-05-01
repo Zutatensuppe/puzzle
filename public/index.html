@@ -8,16 +8,7 @@
   <div id="app"></div>
   <script type="module">
   import Index from "/views/Index.vue.js"
-  new Vue({
-    el: '#app',
-    render: (h) => h(Index, {
-      props: {
-        gamesRunning: {{ gamesRunning|json_encode|raw }},
-        gamesFinished: {{ gamesFinished|json_encode|raw }},
-        images: {{ images|json_encode|raw }},
-      },
-    }),
-  })
+  new Vue({ el: '#app', render: (h) => h(Index) })
   </script>
 </body>
 </html>

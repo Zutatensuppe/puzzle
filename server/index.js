@@ -37,8 +37,6 @@ const storage = multer.diskStorage({
 })
 const upload = multer({storage}).single('file');
 
-const statics = express.static(PUBLIC_DIR)
-
 const render = async (template, data) => {
   const loader = new twing.TwingLoaderFilesystem(TEMPLATE_DIR)
   const env = new twing.TwingEnvironment(loader)
@@ -57,6 +55,28 @@ app.use('/replay/:gid', async (req, res, next) => {
     GAME_ID: req.params.gid,
     WS_ADDRESS: config.ws.connectstring,
   }))
+})
+
+app.get('/api/index-data', (req, res) => {
+  const ts = Time.timestamp()
+  const games = [
+    ...Game.getAllGames().map(game => ({
+      id: game.id,
+      hasReplay: GameLog.exists(game.id),
+      started: Game.getStartTs(game.id),
+      finished: Game.getFinishTs(game.id),
+      tilesFinished: Game.getFinishedTileCount(game.id),
+      tilesTotal: Game.getTileCount(game.id),
+      players: Game.getActivePlayers(game.id, ts).length,
+      imageUrl: Game.getImageUrl(game.id),
+    })),
+  ]
+
+  res.send({
+    gamesRunning: games.filter(g => !g.finished),
+    gamesFinished: games.filter(g => !!g.finished),
+    images: Images.allImages(),
+  })
 })
 
 app.post('/upload', (req, res) => {
@@ -100,31 +120,7 @@ app.post('/newgame', bodyParser.json(), async (req, res) => {
 
 app.use('/common/', express.static(COMMON_DIR))
 app.use('/uploads/', express.static(UPLOAD_DIR))
-app.use('/', async (req, res, next) => {
-  if (req.path === '/') {
-    const ts = Time.timestamp()
-    const games = [
-      ...Game.getAllGames().map(game => ({
-        id: game.id,
-        hasReplay: GameLog.exists(game.id),
-        started: Game.getStartTs(game.id),
-        finished: Game.getFinishTs(game.id),
-        tilesFinished: Game.getFinishedTileCount(game.id),
-        tilesTotal: Game.getTileCount(game.id),
-        players: Game.getActivePlayers(game.id, ts).length,
-        imageUrl: Game.getImageUrl(game.id),
-      })),
-    ]
-
-    res.send(await render('index.html.twig', {
-      gamesRunning: games.filter(g => !g.finished),
-      gamesFinished: games.filter(g => !!g.finished),
-      images: Images.allImages(),
-    }))
-  } else {
-    statics(req, res, next)
-  }
-})
+app.use('/', express.static(PUBLIC_DIR))
 
 const wss = new WebSocketServer(config.ws);
 
