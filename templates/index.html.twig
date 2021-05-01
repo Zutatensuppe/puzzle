@@ -7,10 +7,10 @@
 <body>
   <div id="app"></div>
   <script type="module">
-  import Page from "/index.js"
+  import Index from "/views/Index.vue.js"
   new Vue({
     el: '#app',
-    render: (h) => h(Page, {
+    render: (h) => h(Index, {
       props: {
         gamesRunning: {{ gamesRunning|json_encode|raw }},
         gamesFinished: {{ gamesFinished|json_encode|raw }},
