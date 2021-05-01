@@ -17,6 +17,8 @@ if (typeof MODE === 'undefined') throw '[ MODE not set ]'
 
 if (typeof DEBUG === 'undefined') window.DEBUG = false
 
+const TARGET_EL = document.getElementById('app')
+
 const MODE_PLAY = 'play'
 const MODE_REPLAY = 'replay'
 
@@ -27,7 +29,7 @@ let TIME = () => Time.timestamp()
 function addCanvasToDom(canvas) {
   canvas.width = window.innerWidth
   canvas.height = window.innerHeight
-  document.body.appendChild(canvas)
+  TARGET_EL.appendChild(canvas)
   window.addEventListener('resize', () => {
     canvas.width = window.innerWidth
     canvas.height = window.innerHeight
@@ -306,12 +308,12 @@ function addMenuToDom(gameId) {
   scoresEl.appendChild(scoresTitleEl)
   scoresEl.appendChild(scoresListEl)
 
-  document.body.appendChild(settingsOverlay)
-  document.body.appendChild(previewOverlay)
-  document.body.appendChild(helpOverlay)
-  document.body.appendChild(timerEl)
-  document.body.appendChild(menuEl)
-  document.body.appendChild(scoresEl)
+  TARGET_EL.appendChild(settingsOverlay)
+  TARGET_EL.appendChild(previewOverlay)
+  TARGET_EL.appendChild(helpOverlay)
+  TARGET_EL.appendChild(timerEl)
+  TARGET_EL.appendChild(menuEl)
+  TARGET_EL.appendChild(scoresEl)
 
   return {
     bgColorPickerEl,
