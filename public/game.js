@@ -537,7 +537,7 @@ async function main() {
     Game.setGame(gameObject.id, gameObject)
     REPLAY.log = log
     REPLAY.lastRealTs = Time.timestamp()
-    REPLAY.gameStartTs = REPLAY.log[0][REPLAY.log[0].length - 1]
+    REPLAY.gameStartTs = REPLAY.log[0][REPLAY.log[0].length - 2]
     REPLAY.lastGameTs = REPLAY.gameStartTs
     TIME = () => REPLAY.lastGameTs
   } else {
