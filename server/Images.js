@@ -51,7 +51,7 @@ const allImages = () => {
     .map(f => ({
       filename: f,
       file: `${UPLOAD_DIR}/${f}`,
-      url: `${UPLOAD_URL}/${f}`,
+      url: `${UPLOAD_URL}/${encodeURIComponent(f)}`,
     }))
     .sort((a, b) => {
       return fs.statSync(b.file).mtime.getTime() -
