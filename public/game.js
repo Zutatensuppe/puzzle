@@ -183,7 +183,7 @@ function addMenuToDom(gameId) {
 
   const imgEl = ELEMENTS.DIV.cloneNode(true)
   imgEl.classList.add('img')
-  imgEl.style.backgroundImage = `url(${previewImageUrl})`
+  imgEl.style.backgroundImage = `url('${previewImageUrl}')`
   previewEl.appendChild(imgEl)
 
   const previewOverlay = ELEMENTS.DIV.cloneNode(true)
