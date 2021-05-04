@@ -54,8 +54,7 @@ let KEY_LISTENER_OFF = false
 let PIECE_VIEW_FIXED = true
 let PIECE_VIEW_LOOSE = true
 
-function addMenuToDom(gameId) {
-  const previewImageUrl = Game.getImageUrl(gameId)
+function addMenuToDom(previewImageUrl) {
   function row (...elements) {
     const row = ELEMENTS.TR.cloneNode(true)
     for (let el of elements) {
@@ -231,10 +230,9 @@ function addMenuToDom(gameId) {
   scoresTitleEl.appendChild(document.createTextNode('Scores'))
 
   const scoresListEl = ELEMENTS.TABLE.cloneNode(true)
-  const updateScoreBoard = (ts) => {
+  const updateScoreBoard = (players, ts) => {
     const minTs = ts - 30 * Time.SEC
 
-    const players = Game.getRelevantPlayers(gameId, ts)
     const actives = players.filter(player => player.ts >= minTs)
     const nonActives = players.filter(player => player.ts < minTs)
 
@@ -262,25 +260,21 @@ function addMenuToDom(gameId) {
     }
   }
 
-  const timerStr = () => {
-    const started = Game.getStartTs(gameId)
-    const ended = Game.getFinishTs(gameId)
+  const timerStr = (started, ended, ts) => {
     const icon = ended ? '🏁' : '⏳'
     const from = started;
-    const to = ended || TIME()
+    const to = ended || ts
     const timeDiffStr = Time.timeDiffStr(from, to)
     return `${icon} ${timeDiffStr}`
   }
 
   const timerCountdownEl = ELEMENTS.DIV.cloneNode(true)
-  const updateTimer = () => {
-    timerCountdownEl.innerText = timerStr()
+  const updateTimer = (started, ended, ts) => {
+    timerCountdownEl.innerText = timerStr(started, ended, ts)
   }
   const tilesDoneEl = ELEMENTS.DIV.cloneNode(true)
-  const udateTilesDone = () => {
-    const tilesFinished = Game.getFinishedTileCount(gameId)
-    const tilesTotal = Game.getTileCount(gameId)
-    tilesDoneEl.innerText = `🧩 ${tilesFinished}/${tilesTotal}`
+  const udateTilesDone = (finished, total) => {
+    tilesDoneEl.innerText = `🧩 ${finished}/${total}`
   }
 
   const timerEl = ELEMENTS.DIV.cloneNode(true)
@@ -562,10 +556,12 @@ async function main() {
     udateTilesDone,
     togglePreview,
     replayControl,
-  } = addMenuToDom(gameId)
-  updateTimer()
-  udateTilesDone()
-  updateScoreBoard(TIME())
+  } = addMenuToDom(Game.getImageUrl(gameId))
+
+  const ts = TIME()
+  updateTimer(Game.getStartTs(gameId), Game.getFinishTs(gameId), ts)
+  udateTilesDone(Game.getFinishedTileCount(gameId), Game.getTileCount(gameId))
+  updateScoreBoard(Game.getRelevantPlayers(gameId, ts), ts)
 
   const longFinished = !! Game.getFinishTs(gameId)
   let finished = longFinished
@@ -640,7 +636,13 @@ async function main() {
       localStorage.setItem('player_name', nameChangeEl.value)
       evts.addEvent([Protocol.INPUT_EV_PLAYER_NAME, nameChangeEl.value])
     })
-    setInterval(updateTimer, 1000)
+    setInterval(() => {
+      updateTimer(
+        Game.getStartTs(gameId),
+        Game.getFinishTs(gameId),
+        TIME()
+      )
+    }, 1000)
   } else if (MODE === MODE_REPLAY) {
     const setSpeedStatus = () => {
       replayControl.speed.innerText = 'Replay-Speed: ' +
@@ -740,7 +742,11 @@ async function main() {
       } while (true)
       REPLAY.lastRealTs = realTs
       REPLAY.lastGameTs = maxGameTs
-      updateTimer()
+      updateTimer(
+        Game.getStartTs(gameId),
+        Game.getFinishTs(gameId),
+        TIME()
+      )
     }, 50)
   }
 
@@ -944,8 +950,8 @@ async function main() {
 
     // DRAW PLAYERS
     // ---------------------------------------------------------------
-    updateScoreBoard(ts)
-    udateTilesDone()
+    updateScoreBoard(Game.getRelevantPlayers(gameId, ts), ts)
+    udateTilesDone(Game.getFinishedTileCount(gameId), Game.getTileCount(gameId))
     if (DEBUG) Debug.checkpoint('scores done')
     // ---------------------------------------------------------------
 
