@@ -47,7 +47,7 @@ export default {
     </tr>
     <tr>
       <td colspan="2">
-        <span class="btn" :class="" @click="onNewGameClick">Start new game</span>
+        <button class="btn" :disabled="!canStartNewGame" :class="" @click="onNewGameClick">Start new game</button>
       </td>
     </tr>
   </table>
@@ -80,6 +80,20 @@ export default {
     this.gamesFinished = json.gamesFinished
     this.images = json.images
   },
+  computed: {
+    scoreModeInt () {
+      return parseInt(this.scoreMode, 10)
+    },
+    tilesInt () {
+      return parseInt(this.tiles, 10)
+    },
+    canStartNewGame () {
+      if (!this.tilesInt || !this.image || ![0, 1].includes(this.scoreModeInt)) {
+        return false
+      }
+      return true
+    },
+  },
   methods: {
     time(start, end) {
       const icon = end ? '🏁' : '⏳'
@@ -99,9 +113,9 @@ export default {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          tiles: this.tiles,
+          tiles: this.tilesInt,
           image: this.image,
-          scoreMode: parseInt(this.scoreMode, 10),
+          scoreMode: this.scoreModeInt,
         }),
       })
       if (res.status === 200) {
