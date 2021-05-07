@@ -331,7 +331,7 @@ function initme() {
   return ID
 }
 
-export default class EventAdapter {
+class EventAdapter {
   constructor(canvas, window, viewport) {
     this.events = []
     this._viewport = viewport
