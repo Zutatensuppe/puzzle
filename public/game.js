@@ -48,11 +48,13 @@ const ELEMENTS = {
   DIV: document.createElement('div'),
   A: document.createElement('a'),
 }
+const txt = (str) => document.createTextNode(str)
 
 let KEY_LISTENER_OFF = false
 
 let PIECE_VIEW_FIXED = true
 let PIECE_VIEW_LOOSE = true
+
 
 function addMenuToDom(previewImageUrl) {
   function row (...elements) {
@@ -60,7 +62,7 @@ function addMenuToDom(previewImageUrl) {
     for (let el of elements) {
       const td = ELEMENTS.TD.cloneNode(true)
       if (typeof el === 'string') {
-        td.appendChild(document.createTextNode(el))
+        td.appendChild(txt(el))
       } else {
         td.appendChild(el)
       }
@@ -104,9 +106,9 @@ function addMenuToDom(previewImageUrl) {
   const nameChangeEl = textinput(16)
   const nameChangeRow = row(label('Name: '), nameChangeEl)
 
-  const kbd = function(txt) {
+  const kbd = function(str) {
     const el = document.createElement('kbd')
-    el.appendChild(document.createTextNode(txt))
+    el.appendChild(txt(str))
     return el
   }
 
@@ -114,7 +116,7 @@ function addMenuToDom(previewImageUrl) {
     const el = ELEMENTS.DIV.cloneNode(true)
     for (const other of els) {
       if (typeof other === 'string') {
-        el.appendChild(document.createTextNode(other))
+        el.appendChild(txt(other))
       } else {
         el.appendChild(other)
       }
@@ -186,10 +188,10 @@ function addMenuToDom(previewImageUrl) {
     togglePreview()
   })
 
-  const opener = (txt, overlay, disableHotkeys = true) => {
+  const opener = (str, overlay, disableHotkeys = true) => {
     const el = ELEMENTS.DIV.cloneNode(true)
     el.classList.add('opener')
-    el.appendChild(document.createTextNode(txt))
+    el.appendChild(txt(str))
     el.addEventListener('click', () => {
       toggle(overlay, disableHotkeys)
     })
@@ -198,7 +200,7 @@ function addMenuToDom(previewImageUrl) {
 
   const homeEl = ELEMENTS.A.cloneNode(true)
   homeEl.classList.add('opener')
-  homeEl.appendChild(document.createTextNode('🧩 Puzzles'))
+  homeEl.appendChild(txt('🧩 Puzzles'))
   homeEl.target = '_blank'
   homeEl.href = '/'
 
@@ -218,36 +220,29 @@ function addMenuToDom(previewImageUrl) {
   menuEl.appendChild(tabsEl)
 
   const scoresTitleEl = ELEMENTS.DIV.cloneNode(true)
-  scoresTitleEl.appendChild(document.createTextNode('Scores'))
+  scoresTitleEl.appendChild(txt('Scores'))
 
   const scoresListEl = ELEMENTS.TABLE.cloneNode(true)
   const updateScoreBoard = (players, ts) => {
     const minTs = ts - 30 * Time.SEC
-
     const actives = players.filter(player => player.ts >= minTs)
     const nonActives = players.filter(player => player.ts < minTs)
 
     actives.sort((a, b) => b.points - a.points)
     nonActives.sort((a, b) => b.points - a.points)
 
-    scoresListEl.innerHTML = ''
-    for (let player of actives) {
-      const r = row(
-        document.createTextNode('⚡'),
-        document.createTextNode(player.name),
-        document.createTextNode(player.points)
-      )
+    const _row = (icon, player) => {
+      const r = row(txt(icon), txt(player.name), txt(player.points))
       r.style.color = player.color
-      scoresListEl.appendChild(r)
+      return r
     }
-    for (let player of nonActives) {
-      const r = row(
-        document.createTextNode('💤'),
-        document.createTextNode(player.name),
-        document.createTextNode(player.points)
-      )
-      r.style.color = player.color
-      scoresListEl.appendChild(r)
+
+    scoresListEl.innerHTML = ''
+    for (const player of actives) {
+      scoresListEl.appendChild(_row('⚡', player))
+    }
+    for (const player of nonActives) {
+      scoresListEl.appendChild(_row('💤', player))
     }
   }
 
@@ -322,150 +317,121 @@ function initme() {
   return ID
 }
 
-class EventAdapter {
-  constructor(canvas, window, viewport) {
-    this.events = []
-    this._viewport = viewport
-    this._canvas = canvas
+function EventAdapter (canvas, window, viewport) {
+  let events = []
 
-    this.LEFT = false
-    this.RIGHT = false
-    this.UP = false
-    this.DOWN = false
-    this.ZOOM_IN = false
-    this.ZOOM_OUT = false
-    this.SHIFT = false
+  let LEFT = false
+  let RIGHT = false
+  let UP = false
+  let DOWN = false
+  let ZOOM_IN = false
+  let ZOOM_OUT = false
+  let SHIFT = false
 
-    canvas.addEventListener('mousedown', this._mouseDown.bind(this))
-    canvas.addEventListener('mouseup', this._mouseUp.bind(this))
-    canvas.addEventListener('mousemove', this._mouseMove.bind(this))
-    canvas.addEventListener('wheel', this._wheel.bind(this))
-
-    window.addEventListener('keydown', (ev) => {
-      if (KEY_LISTENER_OFF) {
-        return
-      }
-      if (ev.key === 'Shift') {
-        this.SHIFT = true
-      } else if (ev.key === 'ArrowUp' || ev.key === 'w' || ev.key === 'W') {
-        this.UP = true
-      } else if (ev.key === 'ArrowDown' || ev.key === 's' || ev.key === 'S') {
-        this.DOWN = true
-      } else if (ev.key === 'ArrowLeft' || ev.key === 'a' || ev.key === 'A') {
-        this.LEFT = true
-      } else if (ev.key === 'ArrowRight' || ev.key === 'd' || ev.key === 'D') {
-        this.RIGHT = true
-      } else if (ev.key === 'q') {
-        this.ZOOM_OUT = true
-      } else if (ev.key === 'e') {
-        this.ZOOM_IN = true
-      }
-    })
-    window.addEventListener('keyup', (ev) => {
-      if (KEY_LISTENER_OFF) {
-        return
-      }
-      if (ev.key === 'Shift') {
-        this.SHIFT = false
-      } else if (ev.key === 'ArrowUp' || ev.key === 'w' || ev.key === 'W') {
-        this.UP = false
-      } else if (ev.key === 'ArrowDown' || ev.key === 's' || ev.key === 'S') {
-        this.DOWN = false
-      } else if (ev.key === 'ArrowLeft' || ev.key === 'a' || ev.key === 'A') {
-        this.LEFT = false
-      } else if (ev.key === 'ArrowRight' || ev.key === 'd' || ev.key === 'D') {
-        this.RIGHT = false
-      } else if (ev.key === 'q') {
-        this.ZOOM_OUT = false
-      } else if (ev.key === 'e') {
-        this.ZOOM_IN = false
-      }
-    })
+  const toWorldPoint = (x, y) => {
+    const pos = viewport.viewportToWorld({x, y})
+    return [pos.x, pos.y]
   }
 
-  addEvent(event) {
-    this.events.push(event)
+  const mousePos = (ev) => toWorldPoint(ev.offsetX, ev.offsetY)
+  const canvasCenter = () => toWorldPoint(canvas.width / 2, canvas.height / 2)
+
+  const key = (state, ev) => {
+    if (KEY_LISTENER_OFF) {
+      return
+    }
+    if (ev.key === 'Shift') {
+      SHIFT = state
+    } else if (ev.key === 'ArrowUp' || ev.key === 'w' || ev.key === 'W') {
+      UP = state
+    } else if (ev.key === 'ArrowDown' || ev.key === 's' || ev.key === 'S') {
+      DOWN = state
+    } else if (ev.key === 'ArrowLeft' || ev.key === 'a' || ev.key === 'A') {
+      LEFT = state
+    } else if (ev.key === 'ArrowRight' || ev.key === 'd' || ev.key === 'D') {
+      RIGHT = state
+    } else if (ev.key === 'q') {
+      ZOOM_OUT = state
+    } else if (ev.key === 'e') {
+      ZOOM_IN = state
+    }
   }
 
-  consumeAll() {
-    if (this.events.length === 0) {
+  canvas.addEventListener('mousedown', (ev) => {
+    if (ev.button === 0) {
+      addEvent([Protocol.INPUT_EV_MOUSE_DOWN, ...mousePos(ev)])
+    }
+  })
+
+  canvas.addEventListener('mouseup', (ev) => {
+    if (ev.button === 0) {
+      addEvent([Protocol.INPUT_EV_MOUSE_UP, ...mousePos(ev)])
+    }
+  })
+
+  canvas.addEventListener('mousemove', (ev) => {
+    addEvent([Protocol.INPUT_EV_MOUSE_MOVE, ...mousePos(ev)])
+  })
+
+  canvas.addEventListener('wheel', (ev) => {
+    const [x, y] = mousePos(ev)
+    const evt = ev.deltaY < 0
+      ? Protocol.INPUT_EV_ZOOM_IN
+      : Protocol.INPUT_EV_ZOOM_OUT
+    addEvent([evt, x, y])
+  })
+
+  window.addEventListener('keydown', (ev) => key(true, ev))
+  window.addEventListener('keyup', (ev) => key(false, ev))
+
+  const addEvent = (event) => {
+    events.push(event)
+  }
+
+  const consumeAll = () => {
+    if (events.length === 0) {
       return []
     }
-    const all = this.events.slice()
-    this.events = []
+    const all = events.slice()
+    events = []
     return all
   }
 
-  _keydowns() {
-    let amount = this.SHIFT ? 20 : 10
+  const createKeyEvents = () => {
+    let amount = SHIFT ? 20 : 10
     let x = 0
     let y = 0
-    if (this.UP) {
+    if (UP) {
       y += amount
     }
-    if (this.DOWN) {
+    if (DOWN) {
       y -= amount
     }
-    if (this.LEFT) {
+    if (LEFT) {
       x += amount
     }
-    if (this.RIGHT) {
+    if (RIGHT) {
       x -= amount
     }
 
     if (x !== 0 || y !== 0) {
-      this.addEvent([Protocol.INPUT_EV_MOVE, x, y])
+      addEvent([Protocol.INPUT_EV_MOVE, x, y])
     }
 
     // zoom keys
-    const pos = this._viewport.viewportToWorld({
-      x: this._canvas.width / 2,
-      y: this._canvas.height / 2,
-    })
-    if (this.ZOOM_IN && this.ZOOM_OUT) {
+    if (ZOOM_IN && ZOOM_OUT) {
       // cancel each other out
-    } else if (this.ZOOM_IN) {
-      this.addEvent([Protocol.INPUT_EV_ZOOM_IN, pos.x, pos.y])
-    } else if (this.ZOOM_OUT) {
-      this.addEvent([Protocol.INPUT_EV_ZOOM_OUT, pos.x, pos.y])
+    } else if (ZOOM_IN) {
+      addEvent([Protocol.INPUT_EV_ZOOM_IN, ...canvasCenter()])
+    } else if (ZOOM_OUT) {
+      addEvent([Protocol.INPUT_EV_ZOOM_OUT, ...canvasCenter()])
     }
   }
 
-  _mouseDown(e) {
-    if (e.button === 0) {
-      const pos = this._viewport.viewportToWorld({
-        x: e.offsetX,
-        y: e.offsetY,
-      })
-      this.addEvent([Protocol.INPUT_EV_MOUSE_DOWN, pos.x, pos.y])
-    }
-  }
-
-  _mouseUp(e) {
-    if (e.button === 0) {
-      const pos = this._viewport.viewportToWorld({
-        x: e.offsetX,
-        y: e.offsetY,
-      })
-      this.addEvent([Protocol.INPUT_EV_MOUSE_UP, pos.x, pos.y])
-    }
-  }
-
-  _mouseMove(e) {
-    const pos = this._viewport.viewportToWorld({
-      x: e.offsetX,
-      y: e.offsetY,
-    })
-    this.addEvent([Protocol.INPUT_EV_MOUSE_MOVE, pos.x, pos.y])
-  }
-
-  _wheel(e) {
-    const pos = this._viewport.viewportToWorld({
-      x: e.offsetX,
-      y: e.offsetY,
-    })
-    const evt = e.deltaY < 0 ? Protocol.INPUT_EV_ZOOM_IN : Protocol.INPUT_EV_ZOOM_OUT
-    this.addEvent([evt, pos.x, pos.y])
+  return {
+    addEvent,
+    consumeAll,
+    createKeyEvents,
   }
 }
 
@@ -746,7 +712,7 @@ async function main() {
     // handle key downs once per onUpdate
     // this will create Protocol.INPUT_EV_MOVE events if something
     // relevant is pressed
-    evts._keydowns()
+    evts.createKeyEvents()
 
     for (let evt of evts.consumeAll()) {
       if (MODE === MODE_PLAY) {
