@@ -96,22 +96,13 @@ function addMenuToDom(previewImageUrl) {
   }
 
   const bgColorPickerEl = colorinput()
-  const bgColorPickerRow = row(
-    label('Background: '),
-    bgColorPickerEl
-  )
+  const bgColorPickerRow = row(label('Background: '), bgColorPickerEl)
 
   const playerColorPickerEl = colorinput()
-  const playerColorPickerRow = row(
-    label('Color: '),
-    playerColorPickerEl
-  )
+  const playerColorPickerRow = row(label('Color: '), playerColorPickerEl)
 
   const nameChangeEl = textinput(16)
-  const nameChangeRow = row(
-    label('Name: '),
-    nameChangeEl
-  )
+  const nameChangeRow = row(label('Name: '), nameChangeEl)
 
   const kbd = function(txt) {
     const el = document.createElement('kbd')
