@@ -458,9 +458,15 @@ async function main() {
     replayControl,
   } = addMenuToDom(Game.getImageUrl(gameId), evts.setHotkeys)
 
-  const ts = TIME()
-  updateTimer(Game.getStartTs(gameId), Game.getFinishTs(gameId), ts)
+  const updateTimerElements = () => updateTimer(
+    Game.getStartTs(gameId),
+    Game.getFinishTs(gameId),
+    TIME()
+  )
+
+  updateTimerElements()
   udateTilesDone(Game.getFinishedTileCount(gameId), Game.getTileCount(gameId))
+  const ts = TIME()
   updateScoreBoard(Game.getRelevantPlayers(gameId, ts), ts)
 
   const longFinished = !! Game.getFinishTs(gameId)
@@ -502,13 +508,7 @@ async function main() {
       localStorage.setItem('player_name', nameChangeEl.value)
       evts.addEvent([Protocol.INPUT_EV_PLAYER_NAME, nameChangeEl.value])
     })
-    setInterval(() => {
-      updateTimer(
-        Game.getStartTs(gameId),
-        Game.getFinishTs(gameId),
-        TIME()
-      )
-    }, 1000)
+    setInterval(updateTimerElements, 1000)
   } else if (MODE === MODE_REPLAY) {
     const setSpeedStatus = () => {
       replayControl.speed.innerText = 'Replay-Speed: ' +
@@ -608,11 +608,7 @@ async function main() {
       } while (true)
       REPLAY.lastRealTs = realTs
       REPLAY.lastGameTs = maxGameTs
-      updateTimer(
-        Game.getStartTs(gameId),
-        Game.getFinishTs(gameId),
-        TIME()
-      )
+      updateTimerElements()
     }, 50)
   }
 
