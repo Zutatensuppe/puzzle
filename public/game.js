@@ -1,4 +1,5 @@
 "use strict"
+
 import {run} from './gameloop.js'
 import Camera from './Camera.js'
 import Graphics from './Graphics.js'
@@ -308,7 +309,6 @@ function addMenuToDom(previewImageUrl) {
 }
 
 function initme() {
-  // return uniqId()
   let ID = localStorage.getItem('ID')
   if (!ID) {
     ID = Util.uniqId()
@@ -399,26 +399,12 @@ function EventAdapter (canvas, window, viewport) {
 
   const createKeyEvents = () => {
     let amount = SHIFT ? 20 : 10
-    let x = 0
-    let y = 0
-    if (UP) {
-      y += amount
-    }
-    if (DOWN) {
-      y -= amount
-    }
-    if (LEFT) {
-      x += amount
-    }
-    if (RIGHT) {
-      x -= amount
-    }
-
+    let x = (LEFT ? amount : 0) - (RIGHT ? amount : 0)
+    let y = (UP ? amount : 0) - (DOWN ? amount : 0)
     if (x !== 0 || y !== 0) {
       addEvent([Protocol.INPUT_EV_MOVE, x, y])
     }
 
-    // zoom keys
     if (ZOOM_IN && ZOOM_OUT) {
       // cancel each other out
     } else if (ZOOM_IN) {

@@ -1,3 +1,5 @@
+"use strict"
+
 function createCanvas(width = 0, height = 0) {
     const c = document.createElement('canvas')
     c.width = width

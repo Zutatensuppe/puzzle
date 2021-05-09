@@ -1,3 +1,5 @@
+"use strict"
+
 export const run = options => {
   const fps = options.fps || 60
   const slow = options.slow || 1

@@ -1,3 +1,5 @@
+"use strict"
+
 const Upload = {
   name: 'upload',
   props: {

@@ -1,3 +1,5 @@
+"use strict"
+
 import WsWrapper from './WsWrapper.js'
 
 export default class WsClient extends WsWrapper {

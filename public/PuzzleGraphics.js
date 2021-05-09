@@ -1,3 +1,5 @@
+"use strict"
+
 import Geometry from '../common/Geometry.js'
 import Graphics from './Graphics.js'
 import Util, { logger } from './../common/Util.js'

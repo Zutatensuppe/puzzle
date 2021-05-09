@@ -1,3 +1,5 @@
+"use strict"
+
 import Time from '../common/Time.js'
 
 /**

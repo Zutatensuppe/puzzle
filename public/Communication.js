@@ -1,3 +1,5 @@
+"use strict"
+
 import WsClient from './WsClient.js'
 import Protocol from './../common/Protocol.js'
 

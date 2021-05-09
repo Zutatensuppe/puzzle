@@ -1,3 +1,5 @@
+"use strict"
+
 const ImageTeaser = {
   name: 'image-teaser',
   props: {

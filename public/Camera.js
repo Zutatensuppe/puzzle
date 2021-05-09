@@ -1,3 +1,5 @@
+"use strict"
+
 export default class Camera {
   constructor() {
     this.x = 0

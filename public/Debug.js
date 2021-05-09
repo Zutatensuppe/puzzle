@@ -1,3 +1,5 @@
+"use strict"
+
 import { logger } from '../common/Util.js'
 
 const log = logger('Debug.js')

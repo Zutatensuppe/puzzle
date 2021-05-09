@@ -1,3 +1,5 @@
+"use strict"
+
 import GameCommon from './../../common/GameCommon.js'
 import Time from './../../common/Time.js'
 import Upload from './../components/Upload.vue.js'

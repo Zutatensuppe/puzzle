@@ -1,3 +1,5 @@
+"use strict"
+
 import { Rng } from '../common/Rng.js'
 import Util from '../common/Util.js'
 
