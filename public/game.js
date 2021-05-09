@@ -26,6 +26,13 @@ const MODE_REPLAY = 'replay'
 let PIECE_VIEW_FIXED = true
 let PIECE_VIEW_LOOSE = true
 
+const shouldDrawPiece = (piece) => {
+  if (piece.owner === -1) {
+    return PIECE_VIEW_FIXED
+  }
+  return PIECE_VIEW_LOOSE
+}
+
 let RERENDER = true
 
 function addCanvasToDom(canvas) {
@@ -332,9 +339,9 @@ function EventAdapter (canvas, window, viewport) {
   }
 
   const createKeyEvents = () => {
-    let amount = SHIFT ? 20 : 10
-    let x = (LEFT ? amount : 0) - (RIGHT ? amount : 0)
-    let y = (UP ? amount : 0) - (DOWN ? amount : 0)
+    const amount = SHIFT ? 20 : 10
+    const x = (LEFT ? amount : 0) - (RIGHT ? amount : 0)
+    const y = (UP ? amount : 0) - (DOWN ? amount : 0)
     if (x !== 0 || y !== 0) {
       addEvent([Protocol.INPUT_EV_MOVE, x, y])
     }
@@ -361,8 +368,11 @@ function EventAdapter (canvas, window, viewport) {
 }
 
 async function main() {
-  let gameId = GAME_ID
-  let CLIENT_ID = initme()
+  const gameId = GAME_ID
+  const CLIENT_ID = initme()
+  const shouldDrawPlayerText = (player) => {
+    return MODE === MODE_REPLAY || player.id !== CLIENT_ID
+  }
 
   const cursorGrab = await Graphics.loadImageToBitmap('/grab.png')
   const cursorHand = await Graphics.loadImageToBitmap('/hand.png')
@@ -428,6 +438,19 @@ async function main() {
   const TABLE_WIDTH = Game.getTableWidth(gameId)
   const TABLE_HEIGHT = Game.getTableHeight(gameId)
 
+  const BOARD_POS = {
+    x: (TABLE_WIDTH - PUZZLE_WIDTH) / 2,
+    y: (TABLE_HEIGHT - PUZZLE_HEIGHT) / 2
+  }
+  const BOARD_DIM = {
+    w: PUZZLE_WIDTH,
+    h: PUZZLE_HEIGHT,
+  }
+  const PIECE_DIM = {
+    w: TILE_DRAW_SIZE,
+    h: TILE_DRAW_SIZE,
+  }
+
   const bitmaps = await PuzzleGraphics.loadPuzzleBitmaps(Game.getPuzzle(gameId))
 
   const fireworks = new fireworksController(canvas, Game.getRng(gameId))
@@ -458,11 +481,9 @@ async function main() {
     replayControl,
   } = addMenuToDom(Game.getImageUrl(gameId), evts.setHotkeys)
 
-  const updateTimerElements = () => updateTimer(
-    Game.getStartTs(gameId),
-    Game.getFinishTs(gameId),
-    TIME()
-  )
+  const updateTimerElements = () => {
+    updateTimer(Game.getStartTs(gameId), Game.getFinishTs(gameId), TIME())
+  }
 
   updateTimerElements()
   udateTilesDone(Game.getFinishedTileCount(gameId), Game.getTileCount(gameId))
@@ -674,7 +695,12 @@ async function main() {
         // LOCAL ONLY CHANGES
         // -------------------------------------------------------------
         const type = evt[0]
-        if (type === Protocol.INPUT_EV_MOUSE_MOVE) {
+        if (type === Protocol.INPUT_EV_MOVE) {
+          const diffX = evt[1]
+          const diffY = evt[2]
+          RERENDER = true
+          viewport.move(diffX, diffY)
+        } else if (type === Protocol.INPUT_EV_MOUSE_MOVE) {
           if (_last_mouse_down) {
             // move the cam
             const pos = { x: evt[1], y: evt[2] }
@@ -719,8 +745,11 @@ async function main() {
       return
     }
 
+    const ts = TIME()
+
     let pos
     let dim
+    let bmp
 
     if (DEBUG) Debug.checkpoint_start(0)
 
@@ -734,14 +763,8 @@ async function main() {
 
     // DRAW BOARD
     // ---------------------------------------------------------------
-    pos = viewport.worldToViewportRaw({
-      x: (TABLE_WIDTH - PUZZLE_WIDTH) / 2,
-      y: (TABLE_HEIGHT - PUZZLE_HEIGHT) / 2
-    })
-    dim = viewport.worldDimToViewportRaw({
-      w: PUZZLE_WIDTH,
-      h: PUZZLE_HEIGHT,
-    })
+    pos = viewport.worldToViewportRaw(BOARD_POS)
+    dim = viewport.worldDimToViewportRaw(BOARD_DIM)
     ctx.fillStyle = 'rgba(255, 255, 255, .3)'
     ctx.fillRect(pos.x, pos.y, dim.w, dim.h)
     if (DEBUG) Debug.checkpoint('board done')
@@ -753,24 +776,15 @@ async function main() {
     const tiles = Game.getTilesSortedByZIndex(gameId)
     if (DEBUG) Debug.checkpoint('get tiles done')
 
+    dim = viewport.worldDimToViewportRaw(PIECE_DIM)
     for (const tile of tiles) {
-      if (tile.owner === -1) {
-        if (!PIECE_VIEW_FIXED) {
-          continue;
-        }
-      } else {
-        if (!PIECE_VIEW_LOOSE) {
-          continue;
-        }
+      if (!shouldDrawPiece(tile)) {
+        continue
       }
-      const bmp = bitmaps[tile.idx]
+      bmp = bitmaps[tile.idx]
       pos = viewport.worldToViewportRaw({
         x: TILE_DRAW_OFFSET + tile.pos.x,
         y: TILE_DRAW_OFFSET + tile.pos.y,
-      })
-      dim = viewport.worldDimToViewportRaw({
-        w: TILE_DRAW_SIZE,
-        h: TILE_DRAW_SIZE,
       })
       ctx.drawImage(bmp,
         0, 0, bmp.width, bmp.height,
@@ -783,25 +797,17 @@ async function main() {
 
     // DRAW PLAYERS
     // ---------------------------------------------------------------
-    const ts = TIME()
     const texts = []
     // Cursors
-    for (const player of Game.getActivePlayers(gameId, ts)) {
-      const cursor = await getPlayerCursor(player)
-      const pos = viewport.worldToViewport(player)
-      ctx.drawImage(cursor, pos.x - CURSOR_W_2, pos.y - CURSOR_H_2)
-      if (
-        (MODE === MODE_PLAY && player.id !== CLIENT_ID)
-        || (MODE === MODE_REPLAY)
-      ) {
+    for (const p of Game.getActivePlayers(gameId, ts)) {
+      bmp = await getPlayerCursor(p)
+      pos = viewport.worldToViewport(p)
+      ctx.drawImage(bmp, pos.x - CURSOR_W_2, pos.y - CURSOR_H_2)
+      if (shouldDrawPlayerText(p)) {
         // performance:
         // not drawing text directly here, to have less ctx
         // switches between drawImage and fillTxt
-        texts.push([
-          `${player.name} (${player.points})`,
-          pos.x,
-          pos.y + CURSOR_H,
-        ])
+        texts.push([`${p.name} (${p.points})`, pos.x, pos.y + CURSOR_H])
       }
     }
 
