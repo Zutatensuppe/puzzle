@@ -42,7 +42,7 @@ function addCanvasToDom(canvas) {
 
 function addMenuToDom(previewImageUrl, setHotkeys) {
   const ELEMENTS = {}
-  const mk = (type, props, children) => {
+  const h = (type, props, children) => {
     if (typeof props === 'string' || typeof props === 'number') {
       children = [props]
       props = {}
@@ -96,11 +96,11 @@ function addMenuToDom(previewImageUrl, setHotkeys) {
       children = props
       props = {}
     }
-    return mk('tr', props, children.map(el => mk('td', {}, el)))
+    return h('tr', props, children.map(el => h('td', {}, el)))
   }
-  const bgColorPickerEl = mk('input', { type: 'color' })
-  const playerColorPickerEl = mk('input', { type: 'color' })
-  const nameChangeEl = mk('input', { type: 'text', maxLength: 16 })
+  const bgColorPickerEl = h('input', { type: 'color' })
+  const playerColorPickerEl = h('input', { type: 'color' })
+  const nameChangeEl = h('input', { type: 'text', maxLength: 16 })
 
   const stopProp = (e) => e.stopPropagation()
   const mkToggler = (overlay, toggleHotkeys = true) => () => toggle(overlay, toggleHotkeys)
@@ -112,48 +112,48 @@ function addMenuToDom(previewImageUrl, setHotkeys) {
     }
   }
 
-  const helpOverlay = mk(
+  const helpOverlay = h(
     'div',
     { cls: ['overlay', 'transparent', 'closed'], click: mkSelfToggler() },
     [
-      mk('table', { cls: 'help', click: stopProp }, [
-        row(['⬆️ Move up:', mk('div', [mk('kbd', 'W'), '/', mk('kbd', '↑'), '/🖱️'])]),
-        row(['⬇️ Move down:', mk('div', [mk('kbd', 'S'), '/', mk('kbd', '↓'), '/🖱️'])]),
-        row(['⬅️ Move left:', mk('div', [mk('kbd', 'A'), '/', mk('kbd', '←'), '/🖱️'])]),
-        row(['➡️ Move right:', mk('div', [mk('kbd', 'D'), '/', mk('kbd', '→'), '/🖱️'])]),
-        row(['', mk('div', ['Move faster by holding ', mk('kbd', 'Shift')])]),
-        row(['🔍+ Zoom in:', mk('div', [mk('kbd', 'E'), '/🖱️-Wheel'])]),
-        row(['🔍- Zoom out:', mk('div', [mk('kbd', 'Q'), '/🖱️-Wheel'])]),
-        row(['🖼️ Toggle preview:', mk('div', [mk('kbd', 'Space')])]),
-        row(['🧩✔️ Toggle fixed pieces:', mk('div', [mk('kbd', 'F')])]),
-        row(['🧩❓ Toggle loose pieces:', mk('div', [mk('kbd', 'G')])]),
+      h('table', { cls: 'help', click: stopProp }, [
+        row(['⬆️ Move up:', h('div', [h('kbd', 'W'), '/', h('kbd', '↑'), '/🖱️'])]),
+        row(['⬇️ Move down:', h('div', [h('kbd', 'S'), '/', h('kbd', '↓'), '/🖱️'])]),
+        row(['⬅️ Move left:', h('div', [h('kbd', 'A'), '/', h('kbd', '←'), '/🖱️'])]),
+        row(['➡️ Move right:', h('div', [h('kbd', 'D'), '/', h('kbd', '→'), '/🖱️'])]),
+        row(['', h('div', ['Move faster by holding ', h('kbd', 'Shift')])]),
+        row(['🔍+ Zoom in:', h('div', [h('kbd', 'E'), '/🖱️-Wheel'])]),
+        row(['🔍- Zoom out:', h('div', [h('kbd', 'Q'), '/🖱️-Wheel'])]),
+        row(['🖼️ Toggle preview:', h('div', [h('kbd', 'Space')])]),
+        row(['🧩✔️ Toggle fixed pieces:', h('div', [h('kbd', 'F')])]),
+        row(['🧩❓ Toggle loose pieces:', h('div', [h('kbd', 'G')])]),
       ]),
     ]
   )
 
-  const settingsOverlay = mk(
+  const settingsOverlay = h(
     'div',
     { cls: ['overlay', 'transparent', 'closed'], click: mkSelfToggler() },
     [
-      mk('table', { cls: 'settings', click: stopProp }, [
-        row([mk('label', 'Background: '), bgColorPickerEl]),
-        row([mk('label', 'Color: '), playerColorPickerEl]),
-        row([mk('label', 'Name: '), nameChangeEl]),
+      h('table', { cls: 'settings', click: stopProp }, [
+        row([h('label', 'Background: '), bgColorPickerEl]),
+        row([h('label', 'Color: '), playerColorPickerEl]),
+        row([h('label', 'Name: '), nameChangeEl]),
       ]),
     ]
   )
 
-  const previewOverlay = mk(
+  const previewOverlay = h(
     'div',
     { cls: ['overlay', 'closed'], click: mkSelfToggler() },
     [
-      mk('div', { cls: 'preview' }, [
-        mk('div', { cls: 'img', style: { backgroundImage: `url('${previewImageUrl}')` } })
+      h('div', { cls: 'preview' }, [
+        h('div', { cls: 'img', style: { backgroundImage: `url('${previewImageUrl}')` } })
       ])
     ]
   )
 
-  const scoresListEl = mk('table')
+  const scoresListEl = h('table')
   const updateScoreBoard = (players, ts) => {
     const minTs = ts - 30 * Time.SEC
     const actives = players.filter(player => player.ts >= minTs)
@@ -172,26 +172,26 @@ function addMenuToDom(previewImageUrl, setHotkeys) {
     nonActives.forEach(player => scoresListEl.appendChild(_row('💤', player)))
   }
 
-  const timerCountdownEl = mk('div')
+  const timerCountdownEl = h('div')
   const updateTimer = (from, ended, ts) => {
     const icon = ended ? '🏁' : '⏳'
     const timeDiffStr = Time.timeDiffStr(from, ended || ts)
     timerCountdownEl.innerText = `${icon} ${timeDiffStr}`
   }
-  const tilesDoneEl = mk('div')
+  const tilesDoneEl = h('div')
   const udateTilesDone = (finished, total) => {
     tilesDoneEl.innerText = `🧩 ${finished}/${total}`
   }
 
-  const timerEl = mk('div', { cls: 'timer' }, [tilesDoneEl, timerCountdownEl])
+  const timerEl = h('div', { cls: 'timer' }, [tilesDoneEl, timerCountdownEl])
 
   let replayControl = null
   if (MODE === MODE_REPLAY) {
-    const speedUp = mk('button', { cls: 'btn' }, ['⏫'])
-    const speedDown = mk('button', { cls: 'btn' }, ['⏬'])
-    const pause = mk('button', { cls: 'btn' }, ['⏸️'])
-    const speed = mk('div')
-    timerEl.appendChild(mk('div', [ speed, speedUp, speedDown, pause ]))
+    const speedUp = h('button', { cls: 'btn' }, ['⏫'])
+    const speedDown = h('button', { cls: 'btn' }, ['⏬'])
+    const pause = h('button', { cls: 'btn' }, ['⏸️'])
+    const speed = h('div')
+    timerEl.appendChild(h('div', [ speed, speedUp, speedDown, pause ]))
     replayControl = { speedUp, speedDown, pause, speed }
   }
 
@@ -199,16 +199,16 @@ function addMenuToDom(previewImageUrl, setHotkeys) {
   TARGET_EL.appendChild(previewOverlay)
   TARGET_EL.appendChild(helpOverlay)
   TARGET_EL.appendChild(timerEl)
-  TARGET_EL.appendChild(mk('div', { cls: 'menu' }, [
-    mk('div', { cls: 'tabs' }, [
-      mk('a', { cls: 'opener', target: '_blank', href: '/' }, '🧩 Puzzles'),
-      mk('div', { cls: 'opener', click: mkToggler(previewOverlay, false) }, '🖼️ Preview'),
-      mk('div', { cls: 'opener', click: mkToggler(settingsOverlay) }, '🛠️ Settings'),
-      mk('div', { cls: 'opener', click: mkToggler(helpOverlay) }, 'ℹ️ Help'),
+  TARGET_EL.appendChild(h('div', { cls: 'menu' }, [
+    h('div', { cls: 'tabs' }, [
+      h('a', { cls: 'opener', target: '_blank', href: '/' }, '🧩 Puzzles'),
+      h('div', { cls: 'opener', click: mkToggler(previewOverlay, false) }, '🖼️ Preview'),
+      h('div', { cls: 'opener', click: mkToggler(settingsOverlay) }, '🛠️ Settings'),
+      h('div', { cls: 'opener', click: mkToggler(helpOverlay) }, 'ℹ️ Help'),
     ])
   ]))
-  TARGET_EL.appendChild(mk('div', { cls: 'scores' }, [
-    mk('div', 'Scores'),
+  TARGET_EL.appendChild(h('div', { cls: 'scores' }, [
+    h('div', 'Scores'),
     scoresListEl,
   ]))
 
