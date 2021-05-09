@@ -41,101 +41,70 @@ function addCanvasToDom(canvas) {
 }
 
 function addMenuToDom(previewImageUrl, setHotkeys) {
-  const ELEMENTS = {
-    TABLE: document.createElement('table'),
-    TR: document.createElement('tr'),
-    TD: document.createElement('td'),
-    BUTTON: document.createElement('button'),
-    INPUT: document.createElement('input'),
-    LABEL: document.createElement('label'),
-    DIV: document.createElement('div'),
-    A: document.createElement('a'),
-  }
-  const txt = (str) => document.createTextNode(str)
-
-  function row (...elements) {
-    const row = ELEMENTS.TR.cloneNode(true)
-    for (const el of elements) {
-      const td = ELEMENTS.TD.cloneNode(true)
-      if (typeof el === 'string') {
-        td.appendChild(txt(el))
-      } else {
-        td.appendChild(el)
-      }
-      row.appendChild(td)
+  const ELEMENTS = {}
+  const mk = (type, props, children) => {
+    if (typeof props === 'string' || typeof props === 'number') {
+      children = [props]
+      props = {}
     }
-    return row
-  }
-
-  function btn(txt) {
-    const btn = ELEMENTS.BUTTON.cloneNode(true)
-    btn.classList.add('btn')
-    btn.innerText = txt
-    return btn
-  }
-
-  function colorinput() {
-    const input = ELEMENTS.INPUT.cloneNode(true)
-    input.type = 'color'
-    return input
-  }
-
-  function textinput(maxLength) {
-    const input = ELEMENTS.INPUT.cloneNode(true)
-    input.type = 'text'
-    input.maxLength = maxLength
-    return input
-  }
-
-  function label(text) {
-    const label = ELEMENTS.LABEL.cloneNode(true)
-    label.innerText = text
-    return label
-  }
-
-  const bgColorPickerEl = colorinput()
-  const bgColorPickerRow = row(label('Background: '), bgColorPickerEl)
-
-  const playerColorPickerEl = colorinput()
-  const playerColorPickerRow = row(label('Color: '), playerColorPickerEl)
-
-  const nameChangeEl = textinput(16)
-  const nameChangeRow = row(label('Name: '), nameChangeEl)
-
-  const kbd = function(str) {
-    const el = document.createElement('kbd')
-    el.appendChild(txt(str))
-    return el
-  }
-
-  const h = function(...els) {
-    const el = ELEMENTS.DIV.cloneNode(true)
-    for (const other of els) {
-      if (typeof other === 'string') {
-        el.appendChild(txt(other))
-      } else {
-        el.appendChild(other)
+    if (props instanceof Array) {
+      children = props
+      props = {}
+    }
+    if (children && !(children instanceof Array)) {
+      children = [children]
+    }
+    if (!ELEMENTS[type]) {
+      ELEMENTS[type] = document.createElement(type)
+    }
+    const el = ELEMENTS[type].cloneNode(true)
+    if (children) {
+      for (const child of children) {
+        if (typeof child === 'string' || typeof child === 'number') {
+          el.appendChild(document.createTextNode(child))
+        } else {
+          el.appendChild(child)
+        }
+      }
+    }
+    if (props) {
+      for (const k in props) {
+        if (k === 'click') {
+          el.addEventListener('click', props[k])
+        } else if (k === 'cls') {
+          if (typeof props[k] === 'string') {
+            el.classList.add(props[k])
+          } else {
+            for (const cls of props[k]) {
+              el.classList.add(cls)
+            }
+          }
+        } else if (k === 'style') {
+          for (const s in props[k]) {
+            el.style[s] = props[k][s]
+          }
+        } else {
+          el[k] = props[k]
+        }
       }
     }
     return el
   }
 
-  const helpEl = ELEMENTS.TABLE.cloneNode(true)
-  helpEl.classList.add('help')
-  helpEl.appendChild(row('⬆️ Move up:', h(kbd('W'), '/', kbd('↑'), '/🖱️')))
-  helpEl.appendChild(row('⬇️ Move down:', h(kbd('S'), '/', kbd('↓'), '/🖱️')))
-  helpEl.appendChild(row('⬅️ Move left:', h(kbd('A'), '/', kbd('←'), '/🖱️')))
-  helpEl.appendChild(row('➡️ Move right:', h(kbd('D'), '/', kbd('→'), '/🖱️')))
-  helpEl.appendChild(row('', h('Move faster by holding ', kbd('Shift'))))
-  helpEl.appendChild(row('🔍+ Zoom in:', h(kbd('E'), '/🖱️-Wheel')))
-  helpEl.appendChild(row('🔍- Zoom out:', h(kbd('Q'), '/🖱️-Wheel')))
-  helpEl.appendChild(row('🖼️ Toggle preview:', h(kbd('Space'))))
-  helpEl.appendChild(row('🧩✔️ Toggle fixed pieces:', h(kbd('F'))))
-  helpEl.appendChild(row('🧩❓ Toggle loose pieces:', h(kbd('G'))))
-  helpEl.addEventListener('click', (e) => {
-    e.stopPropagation()
-  })
+  const row = (props, children) => {
+    if (props instanceof Array) {
+      children = props
+      props = {}
+    }
+    return mk('tr', props, children.map(el => mk('td', {}, el)))
+  }
+  const bgColorPickerEl = mk('input', { type: 'color' })
+  const playerColorPickerEl = mk('input', { type: 'color' })
+  const nameChangeEl = mk('input', { type: 'text', maxLength: 16 })
 
+  const stopProp = (e) => e.stopPropagation()
+  const mkToggler = (overlay, toggleHotkeys = true) => () => toggle(overlay, toggleHotkeys)
+  const mkSelfToggler = (toggleHotkeys = true) => (ev) => toggle(ev.target, toggleHotkeys)
   const toggle = (el, toggleHotkeys = true) => {
     el.classList.toggle('closed')
     if (toggleHotkeys) {
@@ -143,82 +112,48 @@ function addMenuToDom(previewImageUrl, setHotkeys) {
     }
   }
 
-  const helpOverlay = ELEMENTS.DIV.cloneNode(true)
-  helpOverlay.classList.add('overlay', 'transparent', 'closed')
-  helpOverlay.appendChild(helpEl)
-  helpOverlay.addEventListener('click', () => {
-    toggle(helpOverlay)
-  })
+  const helpOverlay = mk(
+    'div',
+    { cls: ['overlay', 'transparent', 'closed'], click: mkSelfToggler() },
+    [
+      mk('table', { cls: 'help', click: stopProp }, [
+        row(['⬆️ Move up:', mk('div', [mk('kbd', 'W'), '/', mk('kbd', '↑'), '/🖱️'])]),
+        row(['⬇️ Move down:', mk('div', [mk('kbd', 'S'), '/', mk('kbd', '↓'), '/🖱️'])]),
+        row(['⬅️ Move left:', mk('div', [mk('kbd', 'A'), '/', mk('kbd', '←'), '/🖱️'])]),
+        row(['➡️ Move right:', mk('div', [mk('kbd', 'D'), '/', mk('kbd', '→'), '/🖱️'])]),
+        row(['', mk('div', ['Move faster by holding ', mk('kbd', 'Shift')])]),
+        row(['🔍+ Zoom in:', mk('div', [mk('kbd', 'E'), '/🖱️-Wheel'])]),
+        row(['🔍- Zoom out:', mk('div', [mk('kbd', 'Q'), '/🖱️-Wheel'])]),
+        row(['🖼️ Toggle preview:', mk('div', [mk('kbd', 'Space')])]),
+        row(['🧩✔️ Toggle fixed pieces:', mk('div', [mk('kbd', 'F')])]),
+        row(['🧩❓ Toggle loose pieces:', mk('div', [mk('kbd', 'G')])]),
+      ]),
+    ]
+  )
 
-  const settingsEl = ELEMENTS.TABLE.cloneNode(true)
-  settingsEl.classList.add('settings')
-  settingsEl.appendChild(bgColorPickerRow)
-  settingsEl.appendChild(playerColorPickerRow)
-  settingsEl.appendChild(nameChangeRow)
-  settingsEl.addEventListener('click', (e) => {
-    e.stopPropagation()
-  })
+  const settingsOverlay = mk(
+    'div',
+    { cls: ['overlay', 'transparent', 'closed'], click: mkSelfToggler() },
+    [
+      mk('table', { cls: 'settings', click: stopProp }, [
+        row([mk('label', 'Background: '), bgColorPickerEl]),
+        row([mk('label', 'Color: '), playerColorPickerEl]),
+        row([mk('label', 'Name: '), nameChangeEl]),
+      ]),
+    ]
+  )
 
-  const settingsOverlay = ELEMENTS.DIV.cloneNode(true)
-  settingsOverlay.classList.add('overlay', 'transparent', 'closed')
-  settingsOverlay.appendChild(settingsEl)
-  settingsOverlay.addEventListener('click', () => {
-    toggle(settingsOverlay)
-  })
+  const previewOverlay = mk(
+    'div',
+    { cls: ['overlay', 'closed'], click: mkSelfToggler() },
+    [
+      mk('div', { cls: 'preview' }, [
+        mk('div', { cls: 'img', style: { backgroundImage: `url('${previewImageUrl}')` } })
+      ])
+    ]
+  )
 
-  const previewEl = ELEMENTS.DIV.cloneNode(true)
-  previewEl.classList.add('preview')
-
-  const imgEl = ELEMENTS.DIV.cloneNode(true)
-  imgEl.classList.add('img')
-  imgEl.style.backgroundImage = `url('${previewImageUrl}')`
-  previewEl.appendChild(imgEl)
-
-  const previewOverlay = ELEMENTS.DIV.cloneNode(true)
-  previewOverlay.classList.add('overlay', 'closed')
-  previewOverlay.appendChild(previewEl)
-  const togglePreview = () => {
-    previewOverlay.classList.toggle('closed')
-  }
-  previewOverlay.addEventListener('click', () => {
-    togglePreview()
-  })
-
-  const opener = (str, overlay, disableHotkeys = true) => {
-    const el = ELEMENTS.DIV.cloneNode(true)
-    el.classList.add('opener')
-    el.appendChild(txt(str))
-    el.addEventListener('click', () => {
-      toggle(overlay, disableHotkeys)
-    })
-    return el
-  }
-
-  const homeEl = ELEMENTS.A.cloneNode(true)
-  homeEl.classList.add('opener')
-  homeEl.appendChild(txt('🧩 Puzzles'))
-  homeEl.target = '_blank'
-  homeEl.href = '/'
-
-  const settingsOpenerEl = opener('🛠️ Settings', settingsOverlay)
-  const previewOpenerEl = opener('🖼️ Preview', previewOverlay, false)
-  const helpOpenerEl = opener('ℹ️ Help', helpOverlay)
-
-  const tabsEl = ELEMENTS.DIV.cloneNode(true)
-  tabsEl.classList.add('tabs')
-  tabsEl.appendChild(homeEl)
-  tabsEl.appendChild(previewOpenerEl)
-  tabsEl.appendChild(settingsOpenerEl)
-  tabsEl.appendChild(helpOpenerEl)
-
-  const menuEl = ELEMENTS.DIV.cloneNode(true)
-  menuEl.classList.add('menu')
-  menuEl.appendChild(tabsEl)
-
-  const scoresTitleEl = ELEMENTS.DIV.cloneNode(true)
-  scoresTitleEl.appendChild(txt('Scores'))
-
-  const scoresListEl = ELEMENTS.TABLE.cloneNode(true)
+  const scoresListEl = mk('table')
   const updateScoreBoard = (players, ts) => {
     const minTs = ts - 30 * Time.SEC
     const actives = players.filter(player => player.ts >= minTs)
@@ -227,69 +162,55 @@ function addMenuToDom(previewImageUrl, setHotkeys) {
     actives.sort((a, b) => b.points - a.points)
     nonActives.sort((a, b) => b.points - a.points)
 
-    const _row = (icon, player) => {
-      const r = row(txt(icon), txt(player.name), txt(player.points))
-      r.style.color = player.color
-      return r
-    }
+    const _row = (icon, player) => row(
+      { style: { color: player.color} },
+      [icon, player.name, player.points]
+    )
 
     scoresListEl.innerHTML = ''
-    for (const player of actives) {
-      scoresListEl.appendChild(_row('⚡', player))
-    }
-    for (const player of nonActives) {
-      scoresListEl.appendChild(_row('💤', player))
-    }
+    actives.forEach(player => scoresListEl.appendChild(_row('⚡', player)))
+    nonActives.forEach(player => scoresListEl.appendChild(_row('💤', player)))
   }
 
-  const timerStr = (started, ended, ts) => {
+  const timerCountdownEl = mk('div')
+  const updateTimer = (from, ended, ts) => {
     const icon = ended ? '🏁' : '⏳'
-    const from = started;
-    const to = ended || ts
-    const timeDiffStr = Time.timeDiffStr(from, to)
-    return `${icon} ${timeDiffStr}`
+    const timeDiffStr = Time.timeDiffStr(from, ended || ts)
+    timerCountdownEl.innerText = `${icon} ${timeDiffStr}`
   }
-
-  const timerCountdownEl = ELEMENTS.DIV.cloneNode(true)
-  const updateTimer = (started, ended, ts) => {
-    timerCountdownEl.innerText = timerStr(started, ended, ts)
-  }
-  const tilesDoneEl = ELEMENTS.DIV.cloneNode(true)
+  const tilesDoneEl = mk('div')
   const udateTilesDone = (finished, total) => {
     tilesDoneEl.innerText = `🧩 ${finished}/${total}`
   }
 
-  const timerEl = ELEMENTS.DIV.cloneNode(true)
-  timerEl.classList.add('timer')
-  timerEl.appendChild(tilesDoneEl)
-  timerEl.appendChild(timerCountdownEl)
+  const timerEl = mk('div', { cls: 'timer' }, [tilesDoneEl, timerCountdownEl])
 
   let replayControl = null
   if (MODE === MODE_REPLAY) {
-    const replayControlEl = ELEMENTS.DIV.cloneNode(true)
-    const speedUp = btn('⏫')
-    const speedDown = btn('⏬')
-    const pause = btn('⏸️')
-    const speed = ELEMENTS.DIV.cloneNode(true)
-    replayControlEl.appendChild(speed)
-    replayControlEl.appendChild(speedUp)
-    replayControlEl.appendChild(speedDown)
-    replayControlEl.appendChild(pause)
-    timerEl.appendChild(replayControlEl)
+    const speedUp = mk('button', { cls: 'btn' }, ['⏫'])
+    const speedDown = mk('button', { cls: 'btn' }, ['⏬'])
+    const pause = mk('button', { cls: 'btn' }, ['⏸️'])
+    const speed = mk('div')
+    timerEl.appendChild(mk('div', [ speed, speedUp, speedDown, pause ]))
     replayControl = { speedUp, speedDown, pause, speed }
   }
-
-  const scoresEl = ELEMENTS.DIV.cloneNode(true)
-  scoresEl.classList.add('scores')
-  scoresEl.appendChild(scoresTitleEl)
-  scoresEl.appendChild(scoresListEl)
 
   TARGET_EL.appendChild(settingsOverlay)
   TARGET_EL.appendChild(previewOverlay)
   TARGET_EL.appendChild(helpOverlay)
   TARGET_EL.appendChild(timerEl)
-  TARGET_EL.appendChild(menuEl)
-  TARGET_EL.appendChild(scoresEl)
+  TARGET_EL.appendChild(mk('div', { cls: 'menu' }, [
+    mk('div', { cls: 'tabs' }, [
+      mk('a', { cls: 'opener', target: '_blank', href: '/' }, '🧩 Puzzles'),
+      mk('div', { cls: 'opener', click: mkToggler(previewOverlay, false) }, '🖼️ Preview'),
+      mk('div', { cls: 'opener', click: mkToggler(settingsOverlay) }, '🛠️ Settings'),
+      mk('div', { cls: 'opener', click: mkToggler(helpOverlay) }, 'ℹ️ Help'),
+    ])
+  ]))
+  TARGET_EL.appendChild(mk('div', { cls: 'scores' }, [
+    mk('div', 'Scores'),
+    scoresListEl,
+  ]))
 
   return {
     bgColorPickerEl,
@@ -298,7 +219,7 @@ function addMenuToDom(previewImageUrl, setHotkeys) {
     updateScoreBoard,
     updateTimer,
     udateTilesDone,
-    togglePreview,
+    togglePreview: () => toggle(previewOverlay, false),
     replayControl,
   }
 }
