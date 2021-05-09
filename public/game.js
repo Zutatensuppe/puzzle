@@ -744,7 +744,7 @@ async function main() {
         // LOCAL + SERVER CHANGES
         // -------------------------------------------------------------
         const ts = TIME()
-        const changes = Game.handleInput(GAME_ID, CLIENT_ID, evt, ts)
+        const changes = Game.handleInput(gameId, CLIENT_ID, evt, ts)
         if (changes.length > 0) {
           RERENDER = true
         }

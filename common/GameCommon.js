@@ -476,36 +476,42 @@ const getPuzzleHeight = (gameId) => {
 
 function handleInput(gameId, playerId, input, ts) {
   const puzzle = GAMES[gameId].puzzle
-  let evtInfo = getEvtInfo(gameId, playerId)
+  const evtInfo = getEvtInfo(gameId, playerId)
 
-  let changes = []
+  const changes = []
 
   const _dataChange = () => {
     changes.push([Protocol.CHANGE_DATA, puzzle.data])
   }
 
   const _tileChange = (tileIdx) => {
-    changes.push([Protocol.CHANGE_TILE, getTile(gameId, tileIdx)])
+    changes.push([
+      Protocol.CHANGE_TILE,
+      Util.encodeTile(getTile(gameId, tileIdx)),
+    ])
   }
 
   const _tileChanges = (tileIdxs) => {
-    for (let tileIdx of tileIdxs) {
+    for (const tileIdx of tileIdxs) {
       _tileChange(tileIdx)
     }
   }
 
   const _playerChange = () => {
-    changes.push([Protocol.CHANGE_PLAYER, Util.encodePlayer(getPlayer(gameId, playerId))])
+    changes.push([
+      Protocol.CHANGE_PLAYER,
+      Util.encodePlayer(getPlayer(gameId, playerId)),
+    ])
   }
 
   // put both tiles (and their grouped tiles) in the same group
   const groupTiles = (gameId, tileIdx1, tileIdx2) => {
-    let tiles = GAMES[gameId].puzzle.tiles
-    let group1 = getTileGroup(gameId, tileIdx1)
-    let group2 = getTileGroup(gameId, tileIdx2)
+    const tiles = GAMES[gameId].puzzle.tiles
+    const group1 = getTileGroup(gameId, tileIdx1)
+    const group2 = getTileGroup(gameId, tileIdx2)
 
     let group
-    let searchGroups = []
+    const searchGroups = []
     if (group1) {
       searchGroups.push(group1)
     }
@@ -517,7 +523,7 @@ function handleInput(gameId, playerId, input, ts) {
     } else if (group2) {
       group = group2
     } else {
-      let maxGroup = getMaxGroup(gameId) + 1
+      const maxGroup = getMaxGroup(gameId) + 1
       changeData(gameId, { maxGroup })
       _dataChange()
       group = getMaxGroup(gameId)
@@ -530,7 +536,7 @@ function handleInput(gameId, playerId, input, ts) {
 
     // TODO: strange
     if (searchGroups.length > 0) {
-      for (let t of tiles) {
+      for (const t of tiles) {
         const tile = Util.decodeTile(t)
         if (searchGroups.includes(tile.group)) {
           changeTile(gameId, tile.idx, { group })
