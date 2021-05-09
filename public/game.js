@@ -103,11 +103,11 @@ function addMenuToDom(previewImageUrl, setHotkeys) {
   const nameChangeEl = h('input', { type: 'text', maxLength: 16 })
 
   const stopProp = (e) => e.stopPropagation()
-  const mkToggler = (overlay, toggleHotkeys = true) => () => toggle(overlay, toggleHotkeys)
-  const mkSelfToggler = (toggleHotkeys = true) => (ev) => toggle(ev.target, toggleHotkeys)
-  const toggle = (el, toggleHotkeys = true) => {
+  const mkToggler = (el, hotkeys = true) => () => toggle(el, hotkeys)
+  const mkSelfToggler = (hotkeys = true) => (ev) => toggle(ev.target, hotkeys)
+  const toggle = (el, hotkeys = true) => {
     el.classList.toggle('closed')
-    if (toggleHotkeys) {
+    if (hotkeys) {
       setHotkeys(el.classList.contains('closed'))
     }
   }
