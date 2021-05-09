@@ -23,9 +23,10 @@ const TARGET_EL = document.getElementById('app')
 const MODE_PLAY = 'play'
 const MODE_REPLAY = 'replay'
 
-let RERENDER = true
+let PIECE_VIEW_FIXED = true
+let PIECE_VIEW_LOOSE = true
 
-let TIME = () => Time.timestamp()
+let RERENDER = true
 
 function addCanvasToDom(canvas) {
   canvas.width = window.innerWidth
@@ -39,28 +40,22 @@ function addCanvasToDom(canvas) {
   return canvas
 }
 
-const ELEMENTS = {
-  TABLE: document.createElement('table'),
-  TR: document.createElement('tr'),
-  TD: document.createElement('td'),
-  BUTTON: document.createElement('button'),
-  INPUT: document.createElement('input'),
-  LABEL: document.createElement('label'),
-  DIV: document.createElement('div'),
-  A: document.createElement('a'),
-}
-const txt = (str) => document.createTextNode(str)
+function addMenuToDom(previewImageUrl, setHotkeys) {
+  const ELEMENTS = {
+    TABLE: document.createElement('table'),
+    TR: document.createElement('tr'),
+    TD: document.createElement('td'),
+    BUTTON: document.createElement('button'),
+    INPUT: document.createElement('input'),
+    LABEL: document.createElement('label'),
+    DIV: document.createElement('div'),
+    A: document.createElement('a'),
+  }
+  const txt = (str) => document.createTextNode(str)
 
-let KEY_LISTENER_OFF = false
-
-let PIECE_VIEW_FIXED = true
-let PIECE_VIEW_LOOSE = true
-
-
-function addMenuToDom(previewImageUrl) {
   function row (...elements) {
     const row = ELEMENTS.TR.cloneNode(true)
-    for (let el of elements) {
+    for (const el of elements) {
       const td = ELEMENTS.TD.cloneNode(true)
       if (typeof el === 'string') {
         td.appendChild(txt(el))
@@ -141,10 +136,10 @@ function addMenuToDom(previewImageUrl) {
     e.stopPropagation()
   })
 
-  const toggle = (el, disableHotkeys = true) => {
+  const toggle = (el, toggleHotkeys = true) => {
     el.classList.toggle('closed')
-    if (disableHotkeys) {
-      KEY_LISTENER_OFF = !el.classList.contains('closed')
+    if (toggleHotkeys) {
+      setHotkeys(el.classList.contains('closed'))
     }
   }
 
@@ -320,6 +315,8 @@ function initme() {
 function EventAdapter (canvas, window, viewport) {
   let events = []
 
+  let KEYS_ON = true
+
   let LEFT = false
   let RIGHT = false
   let UP = false
@@ -337,7 +334,7 @@ function EventAdapter (canvas, window, viewport) {
   const canvasCenter = () => toWorldPoint(canvas.width / 2, canvas.height / 2)
 
   const key = (state, ev) => {
-    if (KEY_LISTENER_OFF) {
+    if (!KEYS_ON) {
       return
     }
     if (ev.key === 'Shift') {
@@ -374,15 +371,31 @@ function EventAdapter (canvas, window, viewport) {
   })
 
   canvas.addEventListener('wheel', (ev) => {
-    const [x, y] = mousePos(ev)
     const evt = ev.deltaY < 0
       ? Protocol.INPUT_EV_ZOOM_IN
       : Protocol.INPUT_EV_ZOOM_OUT
-    addEvent([evt, x, y])
+    addEvent([evt, ...mousePos(ev)])
   })
 
   window.addEventListener('keydown', (ev) => key(true, ev))
   window.addEventListener('keyup', (ev) => key(false, ev))
+
+  window.addEventListener('keypress', (ev) => {
+    if (!KEYS_ON) {
+      return
+    }
+    if (ev.key === ' ') {
+      addEvent([Protocol.INPUT_EV_TOGGLE_PREVIEW])
+    }
+    if (ev.key === 'F' || ev.key === 'f') {
+      PIECE_VIEW_FIXED = !PIECE_VIEW_FIXED
+      RERENDER = true
+    }
+    if (ev.key === 'G' || ev.key === 'g') {
+      PIECE_VIEW_LOOSE = !PIECE_VIEW_LOOSE
+      RERENDER = true
+    }
+  })
 
   const addEvent = (event) => {
     events.push(event)
@@ -414,10 +427,15 @@ function EventAdapter (canvas, window, viewport) {
     }
   }
 
+  const setHotkeys = (state) => {
+    KEYS_ON = state
+  }
+
   return {
     addEvent,
     consumeAll,
     createKeyEvents,
+    setHotkeys,
   }
 }
 
@@ -450,7 +468,6 @@ async function main() {
   // Create a canvas and attach adapters to it so we can work with it
   const canvas = addCanvasToDom(Graphics.createCanvas())
 
-
   // stuff only available in replay mode...
   // TODO: refactor
   const REPLAY = {
@@ -464,10 +481,12 @@ async function main() {
     gameStartTs: null,
   }
 
+  let TIME
   if (MODE === MODE_PLAY) {
     const game = await Communication.connect(gameId, CLIENT_ID)
     const gameObject = Util.decodeGame(game)
     Game.setGame(gameObject.id, gameObject)
+    TIME = () => Time.timestamp()
   } else if (MODE === MODE_REPLAY) {
     const {game, log} = await Communication.connectReplay(gameId, CLIENT_ID)
     const gameObject = Util.decodeGame(game)
@@ -490,26 +509,6 @@ async function main() {
 
   const bitmaps = await PuzzleGraphics.loadPuzzleBitmaps(Game.getPuzzle(gameId))
 
-  const {
-    bgColorPickerEl,
-    playerColorPickerEl,
-    nameChangeEl,
-    updateScoreBoard,
-    updateTimer,
-    udateTilesDone,
-    togglePreview,
-    replayControl,
-  } = addMenuToDom(Game.getImageUrl(gameId))
-
-  const ts = TIME()
-  updateTimer(Game.getStartTs(gameId), Game.getFinishTs(gameId), ts)
-  udateTilesDone(Game.getFinishedTileCount(gameId), Game.getTileCount(gameId))
-  updateScoreBoard(Game.getRelevantPlayers(gameId, ts), ts)
-
-  const longFinished = !! Game.getFinishTs(gameId)
-  let finished = longFinished
-  const justFinished = () => finished && !longFinished
-
   const fireworks = new fireworksController(canvas, Game.getRng(gameId))
   fireworks.init(canvas)
 
@@ -524,6 +523,28 @@ async function main() {
     -(TABLE_WIDTH - canvas.width) /2,
     -(TABLE_HEIGHT - canvas.height) /2
   )
+
+  const evts = new EventAdapter(canvas, window, viewport)
+
+  const {
+    bgColorPickerEl,
+    playerColorPickerEl,
+    nameChangeEl,
+    updateScoreBoard,
+    updateTimer,
+    udateTilesDone,
+    togglePreview,
+    replayControl,
+  } = addMenuToDom(Game.getImageUrl(gameId), evts.setHotkeys)
+
+  const ts = TIME()
+  updateTimer(Game.getStartTs(gameId), Game.getFinishTs(gameId), ts)
+  udateTilesDone(Game.getFinishedTileCount(gameId), Game.getTileCount(gameId))
+  updateScoreBoard(Game.getRelevantPlayers(gameId, ts), ts)
+
+  const longFinished = !! Game.getFinishTs(gameId)
+  let finished = longFinished
+  const justFinished = () => finished && !longFinished
 
   const playerBgColor = () => {
     return (Game.getPlayerBgColor(gameId, CLIENT_ID)
@@ -540,25 +561,6 @@ async function main() {
         || localStorage.getItem('player_name')
         || 'anon')
   }
-
-  window.addEventListener('keypress', (ev) => {
-    if (KEY_LISTENER_OFF) {
-      return
-    }
-    if (ev.key === ' ') {
-      togglePreview()
-    }
-    if (ev.key === 'F' || ev.key === 'f') {
-      PIECE_VIEW_FIXED = !PIECE_VIEW_FIXED
-      RERENDER = true
-    }
-    if (ev.key === 'G' || ev.key === 'g') {
-      PIECE_VIEW_LOOSE = !PIECE_VIEW_LOOSE
-      RERENDER = true
-    }
-  })
-
-  const evts = new EventAdapter(canvas, window, viewport)
 
   if (MODE === MODE_PLAY) {
     bgColorPickerEl.value = playerBgColor()
@@ -617,7 +619,7 @@ async function main() {
       const evClientId = msg[1]
       const evClientSeq = msg[2]
       const evChanges = msg[3]
-      for(let [changeType, changeData] of evChanges) {
+      for (const [changeType, changeData] of evChanges) {
         switch (changeType) {
           case Protocol.CHANGE_PLAYER: {
             const p = Util.decodePlayer(changeData)
@@ -700,7 +702,7 @@ async function main() {
     // relevant is pressed
     evts.createKeyEvents()
 
-    for (let evt of evts.consumeAll()) {
+    for (const evt of evts.consumeAll()) {
       if (MODE === MODE_PLAY) {
         // LOCAL ONLY CHANGES
         // -------------------------------------------------------------
@@ -739,6 +741,8 @@ async function main() {
             RERENDER = true
             Game.changePlayer(gameId, CLIENT_ID, pos)
           }
+        } else if (type === Protocol.INPUT_EV_TOGGLE_PREVIEW) {
+          togglePreview()
         }
 
         // LOCAL + SERVER CHANGES
@@ -780,6 +784,8 @@ async function main() {
           if (viewport.zoomOut(viewport.worldToViewport(pos))) {
             RERENDER = true
           }
+        } else if (type === Protocol.INPUT_EV_TOGGLE_PREVIEW) {
+          togglePreview()
         }
       }
     }
@@ -830,7 +836,7 @@ async function main() {
     const tiles = Game.getTilesSortedByZIndex(gameId)
     if (DEBUG) Debug.checkpoint('get tiles done')
 
-    for (let tile of tiles) {
+    for (const tile of tiles) {
       if (tile.owner === -1) {
         if (!PIECE_VIEW_FIXED) {
           continue;
@@ -863,7 +869,7 @@ async function main() {
     const ts = TIME()
     const texts = []
     // Cursors
-    for (let player of Game.getActivePlayers(gameId, ts)) {
+    for (const player of Game.getActivePlayers(gameId, ts)) {
       const cursor = await getPlayerCursor(player)
       const pos = viewport.worldToViewport(player)
       ctx.drawImage(cursor, pos.x - CURSOR_W_2, pos.y - CURSOR_H_2)
@@ -885,7 +891,7 @@ async function main() {
     // Names
     ctx.fillStyle = 'white'
     ctx.textAlign = 'center'
-    for (let [txt, x, y] of texts) {
+    for (const [txt, x, y] of texts) {
       ctx.fillText(txt, x, y)
     }
 
