@@ -12,14 +12,6 @@ import fireworksController from './Fireworks.js'
 import Protocol from '../common/Protocol.js'
 import Time from '../common/Time.js'
 
-if (typeof GAME_ID === 'undefined') throw '[ GAME_ID not set ]'
-if (typeof WS_ADDRESS === 'undefined') throw '[ WS_ADDRESS not set ]'
-if (typeof MODE === 'undefined') throw '[ MODE not set ]'
-
-if (typeof DEBUG === 'undefined') window.DEBUG = false
-
-const TARGET_EL = document.getElementById('app')
-
 const MODE_PLAY = 'play'
 const MODE_REPLAY = 'replay'
 
@@ -35,7 +27,7 @@ const shouldDrawPiece = (piece) => {
 
 let RERENDER = true
 
-function addCanvasToDom(canvas) {
+function addCanvasToDom(TARGET_EL, canvas) {
   canvas.width = window.innerWidth
   canvas.height = window.innerHeight
   TARGET_EL.appendChild(canvas)
@@ -47,7 +39,7 @@ function addCanvasToDom(canvas) {
   return canvas
 }
 
-function addMenuToDom(previewImageUrl, setHotkeys) {
+function addMenuToDom(TARGET_EL, previewImageUrl, setHotkeys) {
   const ELEMENTS = {}
   const h = (type, props, children) => {
     if (typeof props === 'string' || typeof props === 'number') {
@@ -367,7 +359,13 @@ function EventAdapter (canvas, window, viewport) {
   }
 }
 
-async function main() {
+async function main(TARGET_EL) {
+  if (typeof GAME_ID === 'undefined') throw '[ GAME_ID not set ]'
+  if (typeof WS_ADDRESS === 'undefined') throw '[ WS_ADDRESS not set ]'
+  if (typeof MODE === 'undefined') throw '[ MODE not set ]'
+
+  if (typeof DEBUG === 'undefined') window.DEBUG = false
+
   const gameId = GAME_ID
   const CLIENT_ID = initme()
   const shouldDrawPlayerText = (player) => {
@@ -397,7 +395,7 @@ async function main() {
   }
 
   // Create a canvas and attach adapters to it so we can work with it
-  const canvas = addCanvasToDom(Graphics.createCanvas())
+  const canvas = addCanvasToDom(TARGET_EL, Graphics.createCanvas())
 
   // stuff only available in replay mode...
   // TODO: refactor
@@ -479,7 +477,7 @@ async function main() {
     udateTilesDone,
     togglePreview,
     replayControl,
-  } = addMenuToDom(Game.getImageUrl(gameId), evts.setHotkeys)
+  } = addMenuToDom(TARGET_EL, Game.getImageUrl(gameId), evts.setHotkeys)
 
   const updateTimerElements = () => {
     updateTimer(Game.getStartTs(gameId), Game.getFinishTs(gameId), TIME())
@@ -840,4 +838,4 @@ async function main() {
   })
 }
 
-main()
+export default main

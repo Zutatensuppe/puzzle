@@ -1,5 +1,7 @@
 "use strict"
 
+import main from './../game.js'
+
 export default {
   name: 'replay',
   template: `<div>{{replayData}}</div>`,
@@ -21,6 +23,11 @@ export default {
       const res = await fetch(`/api/replay-data/${this.$route.params.id}`)
       const json = await res.json()
       this.replayData = json
+
+      window.GAME_ID = this.gameData.GAME_ID
+      window.WS_ADDRESS = this.gameData.WS_ADDRESS
+      window.MODE = 'replay'
+      main(this.$el)
     },
   },
 }

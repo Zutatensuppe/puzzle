@@ -15,6 +15,9 @@
   <script>window.GAME_ID = '{{GAME_ID}}'</script>
   <script>window.WS_ADDRESS = '{{WS_ADDRESS}}'</script>
   <script>window.MODE = 'play'</script>
-  <script src="/game.js" type="module"></script>
+  <script type="module">
+  import main from '/game.js'
+  main(document.getElementById('app'))
+  </script>
 </body>
 </html>
