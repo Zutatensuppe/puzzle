@@ -5,7 +5,7 @@ import Upload from './../components/Upload.vue.js'
 import ImageTeaser from './../components/ImageTeaser.vue.js'
 
 export default {
-  name: 'NewGameDialog',
+  name: 'new-game-dialog',
   components: {
     Upload,
     ImageTeaser,
