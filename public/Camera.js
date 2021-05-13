@@ -1,43 +1,41 @@
 "use strict"
 
-export default class Camera {
-  constructor() {
-    this.x = 0
-    this.y = 0
+const MIN_ZOOM = .1
+const MAX_ZOOM = 6
+const ZOOM_STEP = .05
 
-    this.curZoom = 1
-    this.minZoom = .1
-    this.maxZoom = 6
-    this.zoomStep = .05
+export default function Camera () {
+  let x = 0
+  let y = 0
+  let curZoom = 1
+
+  const move = (byX, byY) => {
+    x += byX / curZoom
+    y += byY / curZoom
   }
 
-  move(x, y) {
-    this.x += x / this.curZoom
-    this.y += y / this.curZoom
-  }
-
-  canZoom(inout) {
-    return this.curZoom != this.calculateNewZoom(inout)
-  }
-
-  calculateNewZoom(inout) {
+  const calculateNewZoom = (inout) => {
     const factor = inout === 'in' ? 1 : -1
-    const newzoom = this.curZoom + this.zoomStep * this.curZoom * factor
-    const capped = Math.min(Math.max(newzoom, this.minZoom), this.maxZoom)
+    const newzoom = curZoom + ZOOM_STEP * curZoom * factor
+    const capped = Math.min(Math.max(newzoom, MIN_ZOOM), MAX_ZOOM)
     return capped
   }
 
-  setZoom(newzoom, viewportCoordCenter) {
-    if (this.curZoom == newzoom) {
+  const canZoom = (inout) => {
+    return curZoom != calculateNewZoom(inout)
+  }
+
+  const setZoom = (newzoom, viewportCoordCenter) => {
+    if (curZoom == newzoom) {
       return false
     }
 
-    const zoomFactor = 1 - (this.curZoom / newzoom)
-    this.move(
+    const zoomFactor = 1 - (curZoom / newzoom)
+    move(
       -viewportCoordCenter.x * zoomFactor,
       -viewportCoordCenter.y * zoomFactor,
     )
-    this.curZoom = newzoom
+    curZoom = newzoom
     return true
   }
 
@@ -45,8 +43,8 @@ export default class Camera {
    * Zooms towards/away from the provided coordinate, if possible.
    * If at max or min zoom respectively, no zooming is performed.
    */
-  zoom(inout, viewportCoordCenter) {
-    return this.setZoom(this.calculateNewZoom(inout), viewportCoordCenter)
+  const zoom = (inout, viewportCoordCenter) => {
+    return setZoom(calculateNewZoom(inout), viewportCoordCenter)
   }
 
   /**
@@ -54,12 +52,9 @@ export default class Camera {
    * coordinate in the world, rounded
    * @param {x, y} viewportCoord
    */
-  viewportToWorld(viewportCoord) {
-    const worldCoord = this.viewportToWorldRaw(viewportCoord)
-    return {
-      x: Math.round(worldCoord.x),
-      y: Math.round(worldCoord.y),
-    }
+  const viewportToWorld = (viewportCoord) => {
+    const { x, y } = viewportToWorldRaw(viewportCoord)
+    return { x: Math.round(x), y: Math.round(y) }
   }
 
   /**
@@ -67,10 +62,10 @@ export default class Camera {
    * coordinate in the world, not rounded
    * @param {x, y} viewportCoord
    */
-  viewportToWorldRaw(viewportCoord) {
+  const viewportToWorldRaw = (viewportCoord) => {
     return {
-      x: (viewportCoord.x / this.curZoom) - this.x,
-      y: (viewportCoord.y / this.curZoom) - this.y,
+      x: (viewportCoord.x / curZoom) - x,
+      y: (viewportCoord.y / curZoom) - y,
     }
   }
 
@@ -79,12 +74,9 @@ export default class Camera {
    * coordinate in the viewport, rounded
    * @param {x, y} worldCoord
    */
-  worldToViewport(worldCoord) {
-    const viewportCoord = this.worldToViewportRaw(worldCoord)
-    return {
-      x: Math.round(viewportCoord.x),
-      y: Math.round(viewportCoord.y),
-    }
+  const worldToViewport = (worldCoord) => {
+    const { x, y } = worldToViewportRaw(worldCoord)
+    return { x: Math.round(x), y: Math.round(y) }
   }
 
   /**
@@ -92,10 +84,10 @@ export default class Camera {
    * coordinate in the viewport, not rounded
    * @param {x, y} worldCoord
    */
-  worldToViewportRaw(worldCoord) {
+  const worldToViewportRaw = (worldCoord) => {
     return {
-      x: (worldCoord.x + this.x) * this.curZoom,
-      y: (worldCoord.y + this.y) * this.curZoom,
+      x: (worldCoord.x + x) * curZoom,
+      y: (worldCoord.y + y) * curZoom,
     }
   }
 
@@ -104,12 +96,9 @@ export default class Camera {
    * one in the viewport, rounded
    * @param {w, h} worldDim
    */
-  worldDimToViewport(worldDim) {
-    const viewportDim = this.worldDimToViewportRaw(worldDim)
-    return {
-      w: Math.round(viewportDim.w),
-      h: Math.round(viewportDim.h),
-    }
+  const worldDimToViewport = (worldDim) => {
+    const { w, h } = worldDimToViewportRaw(worldDim)
+    return { w: Math.round(w), h: Math.round(h) }
   }
 
 
@@ -118,10 +107,22 @@ export default class Camera {
    * one in the viewport, not rounded
    * @param {w, h} worldDim
    */
-  worldDimToViewportRaw(worldDim) {
+  const worldDimToViewportRaw = (worldDim) => {
     return {
-      w: worldDim.w * this.curZoom,
-      h: worldDim.h * this.curZoom,
+      w: worldDim.w * curZoom,
+      h: worldDim.h * curZoom,
     }
+  }
+
+  return {
+    move,
+    canZoom,
+    zoom,
+    worldToViewport,
+    worldToViewportRaw,
+    worldDimToViewport, // not used outside
+    worldDimToViewportRaw,
+    viewportToWorld,
+    viewportToWorldRaw, // not used outside
   }
 }
