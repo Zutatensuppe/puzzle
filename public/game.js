@@ -39,15 +39,6 @@ function addCanvasToDom(TARGET_EL, canvas) {
   return canvas
 }
 
-function initme() {
-  let ID = localStorage.getItem('ID')
-  if (!ID) {
-    ID = Util.uniqId()
-    localStorage.setItem('ID', ID)
-  }
-  return ID
-}
-
 function EventAdapter (canvas, window, viewport) {
   let events = []
 
@@ -107,10 +98,12 @@ function EventAdapter (canvas, window, viewport) {
   })
 
   canvas.addEventListener('wheel', (ev) => {
-    const evt = ev.deltaY < 0
-      ? Protocol.INPUT_EV_ZOOM_IN
-      : Protocol.INPUT_EV_ZOOM_OUT
-    addEvent([evt, ...mousePos(ev)])
+    if (viewport.canZoom(ev.deltaY < 0 ? 'in' : 'out')) {
+      const evt = ev.deltaY < 0
+        ? Protocol.INPUT_EV_ZOOM_IN
+        : Protocol.INPUT_EV_ZOOM_OUT
+      addEvent([evt, ...mousePos(ev)])
+    }
   })
 
   window.addEventListener('keydown', (ev) => key(true, ev))
@@ -157,9 +150,13 @@ function EventAdapter (canvas, window, viewport) {
     if (ZOOM_IN && ZOOM_OUT) {
       // cancel each other out
     } else if (ZOOM_IN) {
-      addEvent([Protocol.INPUT_EV_ZOOM_IN, ...canvasCenter()])
+      if (viewport.canZoom('in')) {
+        addEvent([Protocol.INPUT_EV_ZOOM_IN, ...canvasCenter()])
+      }
     } else if (ZOOM_OUT) {
-      addEvent([Protocol.INPUT_EV_ZOOM_OUT, ...canvasCenter()])
+      if (viewport.canZoom('out')) {
+        addEvent([Protocol.INPUT_EV_ZOOM_OUT, ...canvasCenter()])
+      }
     }
   }
 
@@ -175,16 +172,11 @@ function EventAdapter (canvas, window, viewport) {
   }
 }
 
-export async function main(gameId, wsAddress, MODE, TARGET_EL, HUD) {
-  if (typeof gameId === 'undefined') throw '[ gameId not set ]'
-  if (typeof wsAddress === 'undefined') throw '[ wsAddress not set ]'
-  if (typeof MODE === 'undefined') throw '[ MODE not set ]'
-
+export async function main(gameId, clientId, wsAddress, MODE, TARGET_EL, HUD) {
   if (typeof DEBUG === 'undefined') window.DEBUG = false
 
-  const CLIENT_ID = initme()
   const shouldDrawPlayerText = (player) => {
-    return MODE === MODE_REPLAY || player.id !== CLIENT_ID
+    return MODE === MODE_REPLAY || player.id !== clientId
   }
 
   const cursorGrab = await Graphics.loadImageToBitmap('/grab.png')
@@ -227,12 +219,12 @@ export async function main(gameId, wsAddress, MODE, TARGET_EL, HUD) {
 
   let TIME
   if (MODE === MODE_PLAY) {
-    const game = await Communication.connect(wsAddress, gameId, CLIENT_ID)
+    const game = await Communication.connect(wsAddress, gameId, clientId)
     const gameObject = Util.decodeGame(game)
     Game.setGame(gameObject.id, gameObject)
     TIME = () => Time.timestamp()
   } else if (MODE === MODE_REPLAY) {
-    const {game, log} = await Communication.connectReplay(wsAddress, gameId, CLIENT_ID)
+    const {game, log} = await Communication.connectReplay(wsAddress, gameId, clientId)
     const gameObject = Util.decodeGame(game)
     Game.setGame(gameObject.id, gameObject)
     REPLAY.log = log
@@ -285,16 +277,6 @@ export async function main(gameId, wsAddress, MODE, TARGET_EL, HUD) {
 
   const previewImageUrl = Game.getImageUrl(gameId)
 
-  const activePlayers = (gameId, ts) => {
-    const minTs = ts - 30 * Time.SEC
-    const players = Game.getRelevantPlayers(gameId, ts)
-    return players.filter(player => player.ts >= minTs)
-  }
-  const idlePlayers = (gameId, ts) => {
-    const minTs = ts - 30 * Time.SEC
-    const players = Game.getRelevantPlayers(gameId, ts)
-    return players.filter(player => player.ts < minTs)
-  }
   const updateTimerElements = () => {
     const startTs = Game.getStartTs(gameId)
     const finishTs = Game.getFinishTs(gameId)
@@ -308,40 +290,27 @@ export async function main(gameId, wsAddress, MODE, TARGET_EL, HUD) {
   HUD.setPiecesDone(Game.getFinishedTileCount(gameId))
   HUD.setPiecesTotal(Game.getTileCount(gameId))
   const ts = TIME()
-  HUD.setActivePlayers(activePlayers(gameId, ts))
-  HUD.setIdlePlayers(idlePlayers(gameId, ts))
+  HUD.setActivePlayers(Game.getActivePlayers(gameId, ts))
+  HUD.setIdlePlayers(Game.getIdlePlayers(gameId, ts))
 
   const longFinished = !! Game.getFinishTs(gameId)
   let finished = longFinished
   const justFinished = () => finished && !longFinished
 
   const playerBgColor = () => {
-    return (Game.getPlayerBgColor(gameId, CLIENT_ID)
+    return (Game.getPlayerBgColor(gameId, clientId)
         || localStorage.getItem('bg_color')
         || '#222222')
   }
   const playerColor = () => {
-    return (Game.getPlayerColor(gameId, CLIENT_ID)
+    return (Game.getPlayerColor(gameId, clientId)
         || localStorage.getItem('player_color')
         || '#ffffff')
   }
   const playerName = () => {
-    return (Game.getPlayerName(gameId, CLIENT_ID)
+    return (Game.getPlayerName(gameId, clientId)
         || localStorage.getItem('player_name')
         || 'anon')
-  }
-
-  const onBgChange = (value) => {
-    localStorage.setItem('bg_color', value)
-    evts.addEvent([Protocol.INPUT_EV_BG_COLOR, value])
-  }
-  const onColorChange = (value) => {
-    localStorage.setItem('player_color', value)
-    evts.addEvent([Protocol.INPUT_EV_PLAYER_COLOR, value])
-  }
-  const onNameChange = (value) => {
-    localStorage.setItem('player_name', value)
-    evts.addEvent([Protocol.INPUT_EV_PLAYER_NAME, value])
   }
 
   const doSetSpeedStatus = () => {
@@ -382,7 +351,7 @@ export async function main(gameId, wsAddress, MODE, TARGET_EL, HUD) {
         switch (changeType) {
           case Protocol.CHANGE_PLAYER: {
             const p = Util.decodePlayer(changeData)
-            if (p.id !== CLIENT_ID) {
+            if (p.id !== clientId) {
               Game.setPlayer(gameId, p.id, p)
               RERENDER = true
             }
@@ -468,7 +437,7 @@ export async function main(gameId, wsAddress, MODE, TARGET_EL, HUD) {
           RERENDER = true
           viewport.move(diffX, diffY)
         } else if (type === Protocol.INPUT_EV_MOUSE_MOVE) {
-          if (_last_mouse_down && !Game.getFirstOwnedTile(gameId, CLIENT_ID)) {
+          if (_last_mouse_down && !Game.getFirstOwnedTile(gameId, clientId)) {
             // move the cam
             const pos = { x: evt[1], y: evt[2] }
             const mouse = viewport.worldToViewport(pos)
@@ -486,16 +455,12 @@ export async function main(gameId, wsAddress, MODE, TARGET_EL, HUD) {
           _last_mouse_down = null
         } else if (type === Protocol.INPUT_EV_ZOOM_IN) {
           const pos = { x: evt[1], y: evt[2] }
-          if (viewport.zoomIn(viewport.worldToViewport(pos))) {
-            RERENDER = true
-            Game.changePlayer(gameId, CLIENT_ID, pos)
-          }
+          RERENDER = true
+          viewport.zoom('in', viewport.worldToViewport(pos))
         } else if (type === Protocol.INPUT_EV_ZOOM_OUT) {
           const pos = { x: evt[1], y: evt[2] }
-          if (viewport.zoomOut(viewport.worldToViewport(pos))) {
-            RERENDER = true
-            Game.changePlayer(gameId, CLIENT_ID, pos)
-          }
+          RERENDER = true
+          viewport.zoom('out', viewport.worldToViewport(pos))
         } else if (type === Protocol.INPUT_EV_TOGGLE_PREVIEW) {
           HUD.togglePreview()
         }
@@ -503,7 +468,7 @@ export async function main(gameId, wsAddress, MODE, TARGET_EL, HUD) {
         // LOCAL + SERVER CHANGES
         // -------------------------------------------------------------
         const ts = TIME()
-        const changes = Game.handleInput(gameId, CLIENT_ID, evt, ts)
+        const changes = Game.handleInput(gameId, clientId, evt, ts)
         if (changes.length > 0) {
           RERENDER = true
         }
@@ -536,14 +501,12 @@ export async function main(gameId, wsAddress, MODE, TARGET_EL, HUD) {
           _last_mouse_down = null
         } else if (type === Protocol.INPUT_EV_ZOOM_IN) {
           const pos = { x: evt[1], y: evt[2] }
-          if (viewport.zoomIn(viewport.worldToViewport(pos))) {
-            RERENDER = true
-          }
+          RERENDER = true
+          viewport.zoom('in', viewport.worldToViewport(pos))
         } else if (type === Protocol.INPUT_EV_ZOOM_OUT) {
           const pos = { x: evt[1], y: evt[2] }
-          if (viewport.zoomOut(viewport.worldToViewport(pos))) {
-            RERENDER = true
-          }
+          RERENDER = true
+          viewport.zoom('out', viewport.worldToViewport(pos))
         } else if (type === Protocol.INPUT_EV_TOGGLE_PREVIEW) {
           HUD.togglePreview()
         }
@@ -639,8 +602,8 @@ export async function main(gameId, wsAddress, MODE, TARGET_EL, HUD) {
 
     // propagate HUD changes
     // ---------------------------------------------------------------
-    HUD.setActivePlayers(activePlayers(gameId, ts))
-    HUD.setIdlePlayers(idlePlayers(gameId, ts))
+    HUD.setActivePlayers(Game.getActivePlayers(gameId, ts))
+    HUD.setIdlePlayers(Game.getIdlePlayers(gameId, ts))
     HUD.setPiecesDone(Game.getFinishedTileCount(gameId))
     if (DEBUG) Debug.checkpoint('HUD done')
     // ---------------------------------------------------------------
@@ -661,9 +624,18 @@ export async function main(gameId, wsAddress, MODE, TARGET_EL, HUD) {
     setHotkeys: (state) => {
       evts.setHotkeys(state)
     },
-    onBgChange,
-    onColorChange,
-    onNameChange,
+    onBgChange: (value) => {
+      localStorage.setItem('bg_color', value)
+      evts.addEvent([Protocol.INPUT_EV_BG_COLOR, value])
+    },
+    onColorChange: (value) => {
+      localStorage.setItem('player_color', value)
+      evts.addEvent([Protocol.INPUT_EV_PLAYER_COLOR, value])
+    },
+    onNameChange: (value) => {
+      localStorage.setItem('player_name', value)
+      evts.addEvent([Protocol.INPUT_EV_PLAYER_NAME, value])
+    },
     replayOnSpeedUp,
     replayOnSpeedDown,
     replayOnPauseToggle,

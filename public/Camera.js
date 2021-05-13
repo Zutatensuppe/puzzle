@@ -5,44 +5,48 @@ export default class Camera {
     this.x = 0
     this.y = 0
 
-    this.zoom = 1
+    this.curZoom = 1
     this.minZoom = .1
     this.maxZoom = 6
     this.zoomStep = .05
   }
 
   move(x, y) {
-    this.x += x / this.zoom
-    this.y += y / this.zoom
+    this.x += x / this.curZoom
+    this.y += y / this.curZoom
+  }
+
+  canZoom(inout) {
+    return this.curZoom != this.calculateNewZoom(inout)
+  }
+
+  calculateNewZoom(inout) {
+    const factor = inout === 'in' ? 1 : -1
+    const newzoom = this.curZoom + this.zoomStep * this.curZoom * factor
+    const capped = Math.min(Math.max(newzoom, this.minZoom), this.maxZoom)
+    return capped
   }
 
   setZoom(newzoom, viewportCoordCenter) {
-    const zoom = Math.min(Math.max(newzoom, this.minZoom), this.maxZoom)
-    if (zoom == this.zoom) {
+    if (this.curZoom == newzoom) {
       return false
     }
 
-    const zoomFactor = 1 - (this.zoom / zoom)
+    const zoomFactor = 1 - (this.curZoom / newzoom)
     this.move(
       -viewportCoordCenter.x * zoomFactor,
       -viewportCoordCenter.y * zoomFactor,
     )
-    this.zoom = zoom
+    this.curZoom = newzoom
     return true
   }
 
-  zoomOut(viewportCoordCenter) {
-    return this.setZoom(
-      this.zoom - this.zoomStep * this.zoom,
-      viewportCoordCenter
-    )
-  }
-
-  zoomIn(viewportCoordCenter) {
-    return this.setZoom(
-      this.zoom + this.zoomStep * this.zoom,
-      viewportCoordCenter
-    )
+  /**
+   * Zooms towards/away from the provided coordinate, if possible.
+   * If at max or min zoom respectively, no zooming is performed.
+   */
+  zoom(inout, viewportCoordCenter) {
+    return this.setZoom(this.calculateNewZoom(inout), viewportCoordCenter)
   }
 
   /**
@@ -65,8 +69,8 @@ export default class Camera {
    */
   viewportToWorldRaw(viewportCoord) {
     return {
-      x: (viewportCoord.x / this.zoom) - this.x,
-      y: (viewportCoord.y / this.zoom) - this.y,
+      x: (viewportCoord.x / this.curZoom) - this.x,
+      y: (viewportCoord.y / this.curZoom) - this.y,
     }
   }
 
@@ -90,8 +94,8 @@ export default class Camera {
    */
   worldToViewportRaw(worldCoord) {
     return {
-      x: (worldCoord.x + this.x) * this.zoom,
-      y: (worldCoord.y + this.y) * this.zoom,
+      x: (worldCoord.x + this.x) * this.curZoom,
+      y: (worldCoord.y + this.y) * this.curZoom,
     }
   }
 
@@ -116,8 +120,8 @@ export default class Camera {
    */
   worldDimToViewportRaw(worldDim) {
     return {
-      w: worldDim.w * this.zoom,
-      h: worldDim.h * this.zoom,
+      w: worldDim.w * this.curZoom,
+      h: worldDim.h * this.curZoom,
     }
   }
 }

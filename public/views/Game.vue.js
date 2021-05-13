@@ -82,6 +82,7 @@ export default {
     })
     this.g = await main(
       this.$route.params.id,
+      this.$clientId,
       this.$config.WS_ADDRESS,
       MODE_PLAY,
       this.$el,

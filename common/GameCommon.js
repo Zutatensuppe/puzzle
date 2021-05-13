@@ -6,6 +6,8 @@ import Util from './Util.js'
 const SCORE_MODE_FINAL = 0
 const SCORE_MODE_ANY = 1
 
+const IDLE_TIMEOUT_SEC = 30
+
 // Map<gameId, GameObject>
 const GAMES = {}
 
@@ -76,18 +78,14 @@ function playerExists(gameId, playerId) {
   return idx !== -1
 }
 
-function getRelevantPlayers(gameId, ts) {
-  const minTs = ts - 30 * Time.SEC
-  return getAllPlayers(gameId).filter(player => {
-    return player.ts >= minTs || player.points > 0
-  })
+function getActivePlayers(gameId, ts) {
+  const minTs = ts - IDLE_TIMEOUT_SEC * Time.SEC
+  return getAllPlayers(gameId).filter(p => p.ts >= minTs)
 }
 
-function getActivePlayers(gameId, ts) {
-  const minTs = ts - 30 * Time.SEC
-  return getAllPlayers(gameId).filter(player => {
-    return player.ts >= minTs
-  })
+function getIdlePlayers(gameId, ts) {
+  const minTs = ts - IDLE_TIMEOUT_SEC * Time.SEC
+  return getAllPlayers(gameId).filter(p => p.ts < minTs && p.points > 0)
 }
 
 function addPlayer(gameId, playerId, ts) {
@@ -722,6 +720,16 @@ function handleInput(gameId, playerId, input, ts) {
       }
     }
     evtInfo._last_mouse = pos
+  } else if (type === Protocol.INPUT_EV_ZOOM_IN) {
+    const pos = { x: input[1], y: input[2] }
+    changePlayer(gameId, playerId, pos)
+    _playerChange()
+    evtInfo._last_mouse = pos
+  } else if (type === Protocol.INPUT_EV_ZOOM_OUT) {
+    const pos = { x: input[1], y: input[2] }
+    changePlayer(gameId, playerId, pos)
+    _playerChange()
+    evtInfo._last_mouse = pos
   } else {
     changePlayer(gameId, playerId, { ts })
     _playerChange()
@@ -736,8 +744,8 @@ export default {
   setGame,
   exists,
   playerExists,
-  getRelevantPlayers,
   getActivePlayers,
+  getIdlePlayers,
   addPlayer,
   getFinishedTileCount,
   getTileCount,
