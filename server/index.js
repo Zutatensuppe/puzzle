@@ -57,6 +57,26 @@ app.use('/replay/:gid', async (req, res, next) => {
   }))
 })
 
+app.get('/api/game-data/:gid', (req, res) => {
+  res.send({
+    GAME_ID: req.params.gid,
+    WS_ADDRESS: config.ws.connectstring,
+  })
+})
+
+app.get('/api/replay-data/:gid', (req, res) => {
+  res.send({
+    GAME_ID: req.params.gid,
+    WS_ADDRESS: config.ws.connectstring,
+  })
+})
+
+app.get('/api/newgame-data', (req, res) => {
+  res.send({
+    images: Images.allImages(),
+  })
+})
+
 app.get('/api/index-data', (req, res) => {
   const ts = Time.timestamp()
   const games = [
@@ -75,7 +95,6 @@ app.get('/api/index-data', (req, res) => {
   res.send({
     gamesRunning: games.filter(g => !g.finished),
     gamesFinished: games.filter(g => !!g.finished),
-    images: Images.allImages(),
   })
 })
 
