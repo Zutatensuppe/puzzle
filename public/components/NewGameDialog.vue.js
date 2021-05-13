@@ -42,7 +42,7 @@ export default {
       </tr>
       <tr>
         <td colspan="2">
-          <button class="btn" :disabled="!canStartNewGame" :class="" @click="onNewGameClick">Start new game</button>
+          <button class="btn" :disabled="!canStartNewGame" @click="onNewGameClick">Start new game</button>
         </td>
       </tr>
     </table>

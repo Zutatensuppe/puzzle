@@ -9,28 +9,34 @@ export default {
     GameTeaser,
     NewGameDialog,
   },
+  // TODO: use vue router
   template: `
 <div id="app">
-  <span class="btn" @click="showNewGameDialog = !showNewGameDialog">New game</span>
-  <new-game-dialog
-    v-if="showNewGameDialog"
+  <ul class="nav">
+    <li><span class="btn" @click="view = 'index'">Home</span></li>
+    <li><span class="btn" @click="view = 'new-game'">New game</span></li>
+  </ul>
+
+  <new-game-dialog v-if="view === 'new-game'"
     :images="images"
     @newGame="onNewGame"
     />
 
-  <h1>Running games</h1>
-  <div class="game-teaser-wrap" v-for="g in gamesRunning">
-    <game-teaser :game="g" />
-  </div>
+  <div v-if="view === 'index'">
+    <h1>Running games</h1>
+    <div class="game-teaser-wrap" v-for="g in gamesRunning">
+      <game-teaser :game="g" />
+    </div>
 
-  <h1>Finished games</h1>
-  <div class="game-teaser-wrap" v-for="g in gamesFinished">
-    <game-teaser :game="g" />
+    <h1>Finished games</h1>
+    <div class="game-teaser-wrap" v-for="g in gamesFinished">
+      <game-teaser :game="g" />
+    </div>
   </div>
 </div>`,
   data() {
     return {
-      showNewGameDialog: false,
+      view: 'index',
 
       gamesRunning: [],
       gamesFinished: [],
