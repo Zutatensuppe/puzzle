@@ -12,8 +12,8 @@ import fireworksController from './Fireworks.js'
 import Protocol from '../common/Protocol.js'
 import Time from '../common/Time.js'
 
-const MODE_PLAY = 'play'
-const MODE_REPLAY = 'replay'
+export const MODE_PLAY = 'play'
+export const MODE_REPLAY = 'replay'
 
 let PIECE_VIEW_FIXED = true
 let PIECE_VIEW_LOOSE = true
@@ -37,190 +37,6 @@ function addCanvasToDom(TARGET_EL, canvas) {
     RERENDER = true
   })
   return canvas
-}
-
-function addMenuToDom(TARGET_EL, previewImageUrl, setHotkeys) {
-  const ELEMENTS = {}
-  const h = (type, props, children) => {
-    if (typeof props === 'string' || typeof props === 'number') {
-      children = [props]
-      props = {}
-    }
-    if (props instanceof Array) {
-      children = props
-      props = {}
-    }
-    if (children && !(children instanceof Array)) {
-      children = [children]
-    }
-    if (!ELEMENTS[type]) {
-      ELEMENTS[type] = document.createElement(type)
-    }
-    const el = ELEMENTS[type].cloneNode(true)
-    if (children) {
-      for (const child of children) {
-        if (typeof child === 'string' || typeof child === 'number') {
-          el.appendChild(document.createTextNode(child))
-        } else {
-          el.appendChild(child)
-        }
-      }
-    }
-    if (props) {
-      for (const k in props) {
-        if (k === 'click') {
-          el.addEventListener('click', props[k])
-        } else if (k === 'cls') {
-          if (typeof props[k] === 'string') {
-            el.classList.add(props[k])
-          } else {
-            for (const cls of props[k]) {
-              el.classList.add(cls)
-            }
-          }
-        } else if (k === 'style') {
-          for (const s in props[k]) {
-            el.style[s] = props[k][s]
-          }
-        } else {
-          el[k] = props[k]
-        }
-      }
-    }
-    return el
-  }
-
-  const row = (props, children) => {
-    if (props instanceof Array) {
-      children = props
-      props = {}
-    }
-    return h('tr', props, children.map(el => h('td', {}, el)))
-  }
-  const bgColorPickerEl = h('input', { type: 'color' })
-  const playerColorPickerEl = h('input', { type: 'color' })
-  const nameChangeEl = h('input', { type: 'text', maxLength: 16 })
-
-  const stopProp = (e) => e.stopPropagation()
-  const mkToggler = (el, hotkeys = true) => () => toggle(el, hotkeys)
-  const mkSelfToggler = (hotkeys = true) => (ev) => toggle(ev.target, hotkeys)
-  const toggle = (el, hotkeys = true) => {
-    el.classList.toggle('closed')
-    if (hotkeys) {
-      setHotkeys(el.classList.contains('closed'))
-    }
-  }
-
-  const helpOverlay = h(
-    'div',
-    { cls: ['overlay', 'transparent', 'closed'], click: mkSelfToggler() },
-    [
-      h('table', { cls: 'help', click: stopProp }, [
-        row(['⬆️ Move up:', h('div', [h('kbd', 'W'), '/', h('kbd', '↑'), '/🖱️'])]),
-        row(['⬇️ Move down:', h('div', [h('kbd', 'S'), '/', h('kbd', '↓'), '/🖱️'])]),
-        row(['⬅️ Move left:', h('div', [h('kbd', 'A'), '/', h('kbd', '←'), '/🖱️'])]),
-        row(['➡️ Move right:', h('div', [h('kbd', 'D'), '/', h('kbd', '→'), '/🖱️'])]),
-        row(['', h('div', ['Move faster by holding ', h('kbd', 'Shift')])]),
-        row(['🔍+ Zoom in:', h('div', [h('kbd', 'E'), '/🖱️-Wheel'])]),
-        row(['🔍- Zoom out:', h('div', [h('kbd', 'Q'), '/🖱️-Wheel'])]),
-        row(['🖼️ Toggle preview:', h('div', [h('kbd', 'Space')])]),
-        row(['🧩✔️ Toggle fixed pieces:', h('div', [h('kbd', 'F')])]),
-        row(['🧩❓ Toggle loose pieces:', h('div', [h('kbd', 'G')])]),
-      ]),
-    ]
-  )
-
-  const settingsOverlay = h(
-    'div',
-    { cls: ['overlay', 'transparent', 'closed'], click: mkSelfToggler() },
-    [
-      h('table', { cls: 'settings', click: stopProp }, [
-        row([h('label', 'Background: '), bgColorPickerEl]),
-        row([h('label', 'Color: '), playerColorPickerEl]),
-        row([h('label', 'Name: '), nameChangeEl]),
-      ]),
-    ]
-  )
-
-  const previewOverlay = h(
-    'div',
-    { cls: ['overlay', 'closed'], click: mkSelfToggler() },
-    [
-      h('div', { cls: 'preview' }, [
-        h('div', { cls: 'img', style: { backgroundImage: `url('${previewImageUrl}')` } })
-      ])
-    ]
-  )
-
-  const scoresListEl = h('table')
-  const updateScoreBoard = (players, ts) => {
-    const minTs = ts - 30 * Time.SEC
-    const actives = players.filter(player => player.ts >= minTs)
-    const nonActives = players.filter(player => player.ts < minTs)
-
-    actives.sort((a, b) => b.points - a.points)
-    nonActives.sort((a, b) => b.points - a.points)
-
-    const _row = (icon, player) => row(
-      { style: { color: player.color} },
-      [icon, player.name, player.points]
-    )
-
-    scoresListEl.innerHTML = ''
-    actives.forEach(player => scoresListEl.appendChild(_row('⚡', player)))
-    nonActives.forEach(player => scoresListEl.appendChild(_row('💤', player)))
-  }
-
-  const timerCountdownEl = h('div')
-  const updateTimer = (from, ended, ts) => {
-    const icon = ended ? '🏁' : '⏳'
-    const timeDiffStr = Time.timeDiffStr(from, ended || ts)
-    timerCountdownEl.innerText = `${icon} ${timeDiffStr}`
-  }
-  const tilesDoneEl = h('div')
-  const udateTilesDone = (finished, total) => {
-    tilesDoneEl.innerText = `🧩 ${finished}/${total}`
-  }
-
-  const timerEl = h('div', { cls: 'timer' }, [tilesDoneEl, timerCountdownEl])
-
-  let replayControl = null
-  if (MODE === MODE_REPLAY) {
-    const speedUp = h('button', { cls: 'btn' }, ['⏫'])
-    const speedDown = h('button', { cls: 'btn' }, ['⏬'])
-    const pause = h('button', { cls: 'btn' }, ['⏸️'])
-    const speed = h('div')
-    timerEl.appendChild(h('div', [ speed, speedUp, speedDown, pause ]))
-    replayControl = { speedUp, speedDown, pause, speed }
-  }
-
-  TARGET_EL.appendChild(settingsOverlay)
-  TARGET_EL.appendChild(previewOverlay)
-  TARGET_EL.appendChild(helpOverlay)
-  TARGET_EL.appendChild(timerEl)
-  TARGET_EL.appendChild(h('div', { cls: 'menu' }, [
-    h('div', { cls: 'tabs' }, [
-      h('a', { cls: 'opener', target: '_blank', href: '/' }, '🧩 Puzzles'),
-      h('div', { cls: 'opener', click: mkToggler(previewOverlay, false) }, '🖼️ Preview'),
-      h('div', { cls: 'opener', click: mkToggler(settingsOverlay) }, '🛠️ Settings'),
-      h('div', { cls: 'opener', click: mkToggler(helpOverlay) }, 'ℹ️ Help'),
-    ])
-  ]))
-  TARGET_EL.appendChild(h('div', { cls: 'scores' }, [
-    h('div', 'Scores'),
-    scoresListEl,
-  ]))
-
-  return {
-    bgColorPickerEl,
-    playerColorPickerEl,
-    nameChangeEl,
-    updateScoreBoard,
-    updateTimer,
-    udateTilesDone,
-    togglePreview: () => toggle(previewOverlay, false),
-    replayControl,
-  }
 }
 
 function initme() {
@@ -359,14 +175,13 @@ function EventAdapter (canvas, window, viewport) {
   }
 }
 
-async function main(TARGET_EL) {
-  if (typeof GAME_ID === 'undefined') throw '[ GAME_ID not set ]'
-  if (typeof WS_ADDRESS === 'undefined') throw '[ WS_ADDRESS not set ]'
+export async function main(gameId, wsAddress, MODE, TARGET_EL, HUD) {
+  if (typeof gameId === 'undefined') throw '[ gameId not set ]'
+  if (typeof wsAddress === 'undefined') throw '[ wsAddress not set ]'
   if (typeof MODE === 'undefined') throw '[ MODE not set ]'
 
   if (typeof DEBUG === 'undefined') window.DEBUG = false
 
-  const gameId = GAME_ID
   const CLIENT_ID = initme()
   const shouldDrawPlayerText = (player) => {
     return MODE === MODE_REPLAY || player.id !== CLIENT_ID
@@ -412,12 +227,12 @@ async function main(TARGET_EL) {
 
   let TIME
   if (MODE === MODE_PLAY) {
-    const game = await Communication.connect(gameId, CLIENT_ID)
+    const game = await Communication.connect(wsAddress, gameId, CLIENT_ID)
     const gameObject = Util.decodeGame(game)
     Game.setGame(gameObject.id, gameObject)
     TIME = () => Time.timestamp()
   } else if (MODE === MODE_REPLAY) {
-    const {game, log} = await Communication.connectReplay(gameId, CLIENT_ID)
+    const {game, log} = await Communication.connectReplay(wsAddress, gameId, CLIENT_ID)
     const gameObject = Util.decodeGame(game)
     Game.setGame(gameObject.id, gameObject)
     REPLAY.log = log
@@ -468,25 +283,33 @@ async function main(TARGET_EL) {
 
   const evts = new EventAdapter(canvas, window, viewport)
 
-  const {
-    bgColorPickerEl,
-    playerColorPickerEl,
-    nameChangeEl,
-    updateScoreBoard,
-    updateTimer,
-    udateTilesDone,
-    togglePreview,
-    replayControl,
-  } = addMenuToDom(TARGET_EL, Game.getImageUrl(gameId), evts.setHotkeys)
+  const previewImageUrl = Game.getImageUrl(gameId)
 
+  const activePlayers = (gameId, ts) => {
+    const minTs = ts - 30 * Time.SEC
+    const players = Game.getRelevantPlayers(gameId, ts)
+    return players.filter(player => player.ts >= minTs)
+  }
+  const idlePlayers = (gameId, ts) => {
+    const minTs = ts - 30 * Time.SEC
+    const players = Game.getRelevantPlayers(gameId, ts)
+    return players.filter(player => player.ts < minTs)
+  }
   const updateTimerElements = () => {
-    updateTimer(Game.getStartTs(gameId), Game.getFinishTs(gameId), TIME())
+    const startTs = Game.getStartTs(gameId)
+    const finishTs = Game.getFinishTs(gameId)
+    const ts = TIME()
+
+    HUD.setFinished(!!(finishTs))
+    HUD.setDuration((finishTs || ts) - startTs)
   }
 
   updateTimerElements()
-  udateTilesDone(Game.getFinishedTileCount(gameId), Game.getTileCount(gameId))
+  HUD.setPiecesDone(Game.getFinishedTileCount(gameId))
+  HUD.setPiecesTotal(Game.getTileCount(gameId))
   const ts = TIME()
-  updateScoreBoard(Game.getRelevantPlayers(gameId, ts), ts)
+  HUD.setActivePlayers(activePlayers(gameId, ts))
+  HUD.setIdlePlayers(idlePlayers(gameId, ts))
 
   const longFinished = !! Game.getFinishTs(gameId)
   let finished = longFinished
@@ -508,49 +331,45 @@ async function main(TARGET_EL) {
         || 'anon')
   }
 
+  const onBgChange = (value) => {
+    localStorage.setItem('bg_color', value)
+    evts.addEvent([Protocol.INPUT_EV_BG_COLOR, value])
+  }
+  const onColorChange = (value) => {
+    localStorage.setItem('player_color', value)
+    evts.addEvent([Protocol.INPUT_EV_PLAYER_COLOR, value])
+  }
+  const onNameChange = (value) => {
+    localStorage.setItem('player_name', value)
+    evts.addEvent([Protocol.INPUT_EV_PLAYER_NAME, value])
+  }
+
+  const doSetSpeedStatus = () => {
+    HUD.setReplaySpeed(REPLAY.speeds[REPLAY.speedIdx])
+    HUD.setReplayPaused(REPLAY.paused)
+  }
+
+  const replayOnSpeedUp = () => {
+    if (REPLAY.speedIdx + 1 < REPLAY.speeds.length) {
+      REPLAY.speedIdx++
+      doSetSpeedStatus()
+    }
+  }
+  const replayOnSpeedDown = () => {
+    if (REPLAY.speedIdx >= 1) {
+      REPLAY.speedIdx--
+      doSetSpeedStatus()
+    }
+  }
+  const replayOnPauseToggle = () => {
+    REPLAY.paused = !REPLAY.paused
+    doSetSpeedStatus()
+  }
+
   if (MODE === MODE_PLAY) {
-    bgColorPickerEl.value = playerBgColor()
-    evts.addEvent([Protocol.INPUT_EV_BG_COLOR, bgColorPickerEl.value])
-    bgColorPickerEl.addEventListener('change', () => {
-      localStorage.setItem('bg_color', bgColorPickerEl.value)
-      evts.addEvent([Protocol.INPUT_EV_BG_COLOR, bgColorPickerEl.value])
-    })
-    playerColorPickerEl.value = playerColor()
-    evts.addEvent([Protocol.INPUT_EV_PLAYER_COLOR, playerColorPickerEl.value])
-    playerColorPickerEl.addEventListener('change', () => {
-      localStorage.setItem('player_color', playerColorPickerEl.value)
-      evts.addEvent([Protocol.INPUT_EV_PLAYER_COLOR, playerColorPickerEl.value])
-    })
-    nameChangeEl.value = playerName()
-    evts.addEvent([Protocol.INPUT_EV_PLAYER_NAME, nameChangeEl.value])
-    nameChangeEl.addEventListener('change', () => {
-      localStorage.setItem('player_name', nameChangeEl.value)
-      evts.addEvent([Protocol.INPUT_EV_PLAYER_NAME, nameChangeEl.value])
-    })
     setInterval(updateTimerElements, 1000)
   } else if (MODE === MODE_REPLAY) {
-    const setSpeedStatus = () => {
-      replayControl.speed.innerText = 'Replay-Speed: ' +
-        (REPLAY.speeds[REPLAY.speedIdx] + 'x') +
-        (REPLAY.paused ? ' Paused' : '')
-    }
-    setSpeedStatus()
-    replayControl.speedUp.addEventListener('click', () => {
-      if (REPLAY.speedIdx + 1 < REPLAY.speeds.length) {
-        REPLAY.speedIdx++
-        setSpeedStatus()
-      }
-    })
-    replayControl.speedDown.addEventListener('click', () => {
-      if (REPLAY.speedIdx >= 1) {
-        REPLAY.speedIdx--
-        setSpeedStatus()
-      }
-    })
-    replayControl.pause.addEventListener('click', () => {
-      REPLAY.paused = !REPLAY.paused
-      setSpeedStatus()
-    })
+    doSetSpeedStatus()
   }
 
   if (MODE === MODE_PLAY) {
@@ -678,7 +497,7 @@ async function main(TARGET_EL) {
             Game.changePlayer(gameId, CLIENT_ID, pos)
           }
         } else if (type === Protocol.INPUT_EV_TOGGLE_PREVIEW) {
-          togglePreview()
+          HUD.togglePreview()
         }
 
         // LOCAL + SERVER CHANGES
@@ -726,7 +545,7 @@ async function main(TARGET_EL) {
             RERENDER = true
           }
         } else if (type === Protocol.INPUT_EV_TOGGLE_PREVIEW) {
-          togglePreview()
+          HUD.togglePreview()
         }
       }
     }
@@ -818,11 +637,12 @@ async function main(TARGET_EL) {
 
     if (DEBUG) Debug.checkpoint('players done')
 
-    // DRAW PLAYERS
+    // propagate HUD changes
     // ---------------------------------------------------------------
-    updateScoreBoard(Game.getRelevantPlayers(gameId, ts), ts)
-    udateTilesDone(Game.getFinishedTileCount(gameId), Game.getTileCount(gameId))
-    if (DEBUG) Debug.checkpoint('scores done')
+    HUD.setActivePlayers(activePlayers(gameId, ts))
+    HUD.setIdlePlayers(idlePlayers(gameId, ts))
+    HUD.setPiecesDone(Game.getFinishedTileCount(gameId))
+    if (DEBUG) Debug.checkpoint('HUD done')
     // ---------------------------------------------------------------
 
     if (justFinished()) {
@@ -836,6 +656,23 @@ async function main(TARGET_EL) {
     update: onUpdate,
     render: onRender,
   })
-}
 
-export default main
+  return {
+    setHotkeys: (state) => {
+      evts.setHotkeys(state)
+    },
+    onBgChange,
+    onColorChange,
+    onNameChange,
+    replayOnSpeedUp,
+    replayOnSpeedDown,
+    replayOnPauseToggle,
+    previewImageUrl,
+    player: {
+      background: playerBgColor(),
+      color: playerColor(),
+      name: playerName(),
+    },
+    disconnect: Communication.disconnect,
+  }
+}

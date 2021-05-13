@@ -1,6 +1,6 @@
 "use strict"
 
-const Upload = {
+export default {
   name: 'upload',
   props: {
     accept: String,
@@ -27,5 +27,3 @@ const Upload = {
     },
   }
 }
-
-export default Upload

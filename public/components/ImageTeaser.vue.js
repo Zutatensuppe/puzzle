@@ -1,6 +1,6 @@
 "use strict"
 
-const ImageTeaser = {
+export default {
   name: 'image-teaser',
   props: {
     image: Object
@@ -20,5 +20,3 @@ const ImageTeaser = {
     },
   },
 }
-
-export default ImageTeaser

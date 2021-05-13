@@ -17,21 +17,22 @@ export const timestamp = () => {
   )
 }
 
-export const timeDiffStr = (from, to) => {
-  let diff = to - from
-  const d = Math.floor(diff / DAY)
-  diff = diff % DAY
+export const durationStr = (duration) => {
+  const d = Math.floor(duration / DAY)
+  duration = duration % DAY
 
-  const h = Math.floor(diff / HOUR)
-  diff = diff % HOUR
+  const h = Math.floor(duration / HOUR)
+  duration = duration % HOUR
 
-  const m = Math.floor(diff / MIN)
-  diff = diff % MIN
+  const m = Math.floor(duration / MIN)
+  duration = duration % MIN
 
-  const s = Math.floor(diff / SEC)
+  const s = Math.floor(duration / SEC)
 
   return `${d}d ${h}h ${m}m ${s}s`
 }
+
+export const timeDiffStr = (from, to) => durationStr(to - from)
 
 export default {
   MS,
@@ -42,4 +43,5 @@ export default {
 
   timestamp,
   timeDiffStr,
+  durationStr,
 }

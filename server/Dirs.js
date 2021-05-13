@@ -11,4 +11,3 @@ export const UPLOAD_DIR = `${BASE_DIR}/data/uploads`
 export const UPLOAD_URL = `/uploads`
 export const COMMON_DIR = `${BASE_DIR}/common/`
 export const PUBLIC_DIR = `${BASE_DIR}/public/`
-export const TEMPLATE_DIR = `${BASE_DIR}/templates`

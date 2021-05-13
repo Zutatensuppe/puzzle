@@ -278,3 +278,10 @@ kbd {
   top: 0;
   right: 0;
 }
+
+html.view-game { overflow: hidden; }
+html.view-game body { overflow: hidden; }
+
+html.view-replay { overflow: hidden; }
+html.view-replay body { overflow: hidden; }
+html.view-replay canvas { cursor: grab; }

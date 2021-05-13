@@ -2,6 +2,8 @@
 
 import Time from '../common/Time.js'
 
+const CODE_CUSTOM_DISCONNECT = 4000
+
 /**
  * Wrapper around ws that
  * - buffers 'send' until a connection is available
@@ -57,8 +59,16 @@ export default class WsWrapper {
     }
     ws.onclose = (e) => {
       this.handle = null
-      this.reconnectTimeout = setTimeout(() => { this.connect() }, 1 * Time.SEC)
+      if (e.code !== CODE_CUSTOM_DISCONNECT) {
+        this.reconnectTimeout = setTimeout(() => { this.connect() }, 1 * Time.SEC)
+      }
       this.onclose(e)
+    }
+  }
+
+  disconnect() {
+    if (this.handle) {
+      this.handle.close(CODE_CUSTOM_DISCONNECT)
     }
   }
 }

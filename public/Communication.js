@@ -17,10 +17,10 @@ function send(message) {
 
 let clientSeq
 let events
-function connect(gameId, clientId) {
+function connect(address, gameId, clientId) {
   clientSeq = 0
   events = {}
-  conn = new WsClient(WS_ADDRESS, clientId + '|' + gameId)
+  conn = new WsClient(address, clientId + '|' + gameId)
   return new Promise(resolve => {
     conn.connect()
     conn.onSocket('message', async ({ data }) => {
@@ -46,10 +46,10 @@ function connect(gameId, clientId) {
   })
 }
 
-function connectReplay(gameId, clientId) {
+function connectReplay(address, gameId, clientId) {
   clientSeq = 0
   events = {}
-  conn = new WsClient(WS_ADDRESS, clientId + '|' + gameId)
+  conn = new WsClient(address, clientId + '|' + gameId)
   return new Promise(resolve => {
     conn.connect()
     conn.onSocket('message', async ({ data }) => {
@@ -67,6 +67,14 @@ function connectReplay(gameId, clientId) {
   })
 }
 
+function disconnect() {
+  if (conn) {
+    conn.disconnect()
+  }
+  clientSeq = 0
+  events = {}
+}
+
 function sendClientEvent(evt) {
   // when sending event, increase number of sent events
   // and add the event locally
@@ -78,6 +86,7 @@ function sendClientEvent(evt) {
 export default {
   connect,
   connectReplay,
+  disconnect,
   onServerChange,
   sendClientEvent,
 }

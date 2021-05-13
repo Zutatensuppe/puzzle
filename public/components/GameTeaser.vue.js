@@ -2,23 +2,23 @@
 
 import Time from './../../common/Time.js'
 
-const GameTeaser = {
+export default {
   name: 'game-teaser',
   props: {
     game: Object,
   },
   template: `
   <div class="game-teaser" :style="style">
-    <a class="game-info" :href="'/g/' + game.id">
+    <router-link class="game-info" :to="{ name: 'game', params: { id: game.id } }">
       <span class="game-info-text">
         🧩 {{game.tilesFinished}}/{{game.tilesTotal}}<br />
         👥 {{game.players}}<br />
         {{time(game.started, game.finished)}}<br />
       </span>
-    </a>
-    <a v-if="false && game.hasReplay" class="game-replay" :href="'/replay/' + game.id">
+    </router-link>
+    <router-link v-if="false && game.hasReplay" class="game-replay" :to="{ name: 'replay', params: { id: game.id } }">
       ↪️ Watch replay
-    </a>
+    </router-link>
   </div>`,
   computed: {
     style() {
@@ -38,5 +38,3 @@ const GameTeaser = {
     },
   },
 }
-
-export default GameTeaser

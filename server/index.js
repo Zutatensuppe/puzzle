@@ -6,7 +6,6 @@ import config from './../config.js'
 import Protocol from './../common/Protocol.js'
 import Util, { logger } from './../common/Util.js'
 import Game from './Game.js'
-import twing from 'twing'
 import bodyParser from 'body-parser'
 import v8 from 'v8'
 import GameLog from './GameLog.js'
@@ -18,7 +17,6 @@ import {
   UPLOAD_URL,
   COMMON_DIR,
   PUBLIC_DIR,
-  TEMPLATE_DIR,
 } from './Dirs.js'
 import GameCommon from '../common/GameCommon.js'
 import GameStorage from './GameStorage.js'
@@ -37,36 +35,8 @@ const storage = multer.diskStorage({
 })
 const upload = multer({storage}).single('file');
 
-const render = async (template, data) => {
-  const loader = new twing.TwingLoaderFilesystem(TEMPLATE_DIR)
-  const env = new twing.TwingEnvironment(loader)
-  return env.render(template, data)
-}
-
-app.use('/g/:gid', async (req, res, next) => {
-  res.send(await render('game.html.twig', {
-    GAME_ID: req.params.gid,
-    WS_ADDRESS: config.ws.connectstring,
-  }))
-})
-
-app.use('/replay/:gid', async (req, res, next) => {
-  res.send(await render('replay.html.twig', {
-    GAME_ID: req.params.gid,
-    WS_ADDRESS: config.ws.connectstring,
-  }))
-})
-
-app.get('/api/game-data/:gid', (req, res) => {
+app.get('/api/conf', (req, res) => {
   res.send({
-    GAME_ID: req.params.gid,
-    WS_ADDRESS: config.ws.connectstring,
-  })
-})
-
-app.get('/api/replay-data/:gid', (req, res) => {
-  res.send({
-    GAME_ID: req.params.gid,
     WS_ADDRESS: config.ws.connectstring,
   })
 })
