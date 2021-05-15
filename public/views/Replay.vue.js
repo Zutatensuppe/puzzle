@@ -109,6 +109,7 @@ export default {
         setPiecesDone: (v) => { this.piecesDone = v },
         setPiecesTotal: (v) => { this.piecesTotal = v },
         togglePreview: () => { this.toggle('preview', false) },
+        setConnectionState: (v) => { this.connectionState = v },
         setReplaySpeed: (v) => { this.replay.speed = v },
         setReplayPaused: (v) => { this.replay.paused = v },
       }
