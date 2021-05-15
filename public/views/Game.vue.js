@@ -4,6 +4,7 @@ import Scores from './../components/Scores.vue.js'
 import PuzzleStatus from './../components/PuzzleStatus.vue.js'
 import SettingsOverlay from './../components/SettingsOverlay.vue.js'
 import PreviewOverlay from './../components/PreviewOverlay.vue.js'
+import ConnectionOverlay from './../components/ConnectionOverlay.vue.js'
 import HelpOverlay from './../components/HelpOverlay.vue.js'
 
 import { main, MODE_PLAY } from './../game.js'
@@ -15,12 +16,18 @@ export default {
     Scores,
     SettingsOverlay,
     PreviewOverlay,
+    ConnectionOverlay,
     HelpOverlay,
   },
   template: `<div id="game">
     <settings-overlay v-show="overlay === 'settings'" @bgclick="toggle('settings', true)" v-model="g.player" />
     <preview-overlay v-show="overlay === 'preview'" @bgclick="toggle('preview', false)" :img="g.previewImageUrl" />
     <help-overlay v-show="overlay === 'help'" @bgclick="toggle('help', true)" />
+
+    <connection-overlay
+      :connectionState="connectionState"
+      @reconnect="reconnect"
+      />
 
     <puzzle-status
       :finished="finished"
@@ -52,6 +59,8 @@ export default {
 
       overlay: null,
 
+      connectionState: 0,
+
       g: {
         player: {
           background: '',
@@ -64,6 +73,7 @@ export default {
         onColorChange: () => {},
         onNameChange: () => {},
         disconnect: () => {},
+        connect: () => {},
       },
     }
   },
@@ -93,6 +103,7 @@ export default {
         setDuration: (v) => { this.duration = v },
         setPiecesDone: (v) => { this.piecesDone = v },
         setPiecesTotal: (v) => { this.piecesTotal = v },
+        setConnectionState: (v) => { this.connectionState = v },
         togglePreview: () => { this.toggle('preview', false) },
       }
     )
@@ -101,6 +112,9 @@ export default {
     this.g.disconnect()
   },
   methods: {
+    reconnect() {
+      this.g.connect()
+    },
     toggle(overlay, affectsHotkeys) {
       if (this.overlay === null) {
         this.overlay = overlay

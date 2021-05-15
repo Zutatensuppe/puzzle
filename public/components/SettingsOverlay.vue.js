@@ -7,7 +7,7 @@ export default {
   name: 'settings-overlay',
   template: `
     <div class="overlay transparent" @click="$emit('bgclick')">
-      <table class="settings" @click.stop="">
+      <table class="overlay-content settings" @click.stop="">
         <tr>
           <td><label>Background: </label></td>
           <td><input type="color" v-model="modelValue.background" /></td>

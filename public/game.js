@@ -12,7 +12,7 @@ import fireworksController from './Fireworks.js'
 import Protocol from '../common/Protocol.js'
 import Time from '../common/Time.js'
 
-const log = logger('game.js')
+// const log = logger('game.js')
 
 export const MODE_PLAY = 'play'
 export const MODE_REPLAY = 'replay'
@@ -174,7 +174,14 @@ function EventAdapter (canvas, window, viewport) {
   }
 }
 
-export async function main(gameId, clientId, wsAddress, MODE, TARGET_EL, HUD) {
+export async function main(
+  gameId,
+  clientId,
+  wsAddress,
+  MODE,
+  TARGET_EL,
+  HUD
+) {
   if (typeof DEBUG === 'undefined') window.DEBUG = false
 
   const shouldDrawPlayerText = (player) => {
@@ -219,29 +226,36 @@ export async function main(gameId, clientId, wsAddress, MODE, TARGET_EL, HUD) {
     gameStartTs: null,
   }
 
-
-  Communication.onConnectionLost(() => {
-    log('connection lost ... should reload / hit reconnect button / etc.')
+  Communication.onConnectionStateChange((state) => {
+    HUD.setConnectionState(state)
   })
 
   let TIME
-  if (MODE === MODE_PLAY) {
-    const game = await Communication.connect(wsAddress, gameId, clientId)
-    const gameObject = Util.decodeGame(game)
-    Game.setGame(gameObject.id, gameObject)
-    TIME = () => Time.timestamp()
-  } else if (MODE === MODE_REPLAY) {
-    const {game, log} = await Communication.connectReplay(wsAddress, gameId, clientId)
-    const gameObject = Util.decodeGame(game)
-    Game.setGame(gameObject.id, gameObject)
-    REPLAY.log = log
-    REPLAY.lastRealTs = Time.timestamp()
-    REPLAY.gameStartTs = REPLAY.log[0][REPLAY.log[0].length - 2]
-    REPLAY.lastGameTs = REPLAY.gameStartTs
-    TIME = () => REPLAY.lastGameTs
-  } else {
-    throw '[ 2020-12-22 MODE invalid, must be play|replay ]'
+  const connect = async () => {
+    if (MODE === MODE_PLAY) {
+      const game = await Communication.connect(wsAddress, gameId, clientId)
+      const gameObject = Util.decodeGame(game)
+      Game.setGame(gameObject.id, gameObject)
+      TIME = () => Time.timestamp()
+    } else if (MODE === MODE_REPLAY) {
+      // TODO: change how replay connect is done...
+      const {game, log} = await Communication.connectReplay(wsAddress, gameId, clientId)
+      const gameObject = Util.decodeGame(game)
+      Game.setGame(gameObject.id, gameObject)
+      REPLAY.log = log
+      REPLAY.lastRealTs = Time.timestamp()
+      REPLAY.gameStartTs = REPLAY.log[0][REPLAY.log[0].length - 2]
+      REPLAY.lastGameTs = REPLAY.gameStartTs
+      TIME = () => REPLAY.lastGameTs
+    } else {
+      throw '[ 2020-12-22 MODE invalid, must be play|replay ]'
+    }
+
+    // rerender after (re-)connect
+    RERENDER = true
   }
+
+  await connect()
 
   const TILE_DRAW_OFFSET = Game.getTileDrawOffset(gameId)
   const TILE_DRAW_SIZE = Game.getTileDrawSize(gameId)
@@ -653,5 +667,6 @@ export async function main(gameId, clientId, wsAddress, MODE, TARGET_EL, HUD) {
       name: playerName(),
     },
     disconnect: Communication.disconnect,
+    connect: connect,
   }
 }

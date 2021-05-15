@@ -6,7 +6,7 @@
 export default {
   name: 'help-overlay',
   template: `<div class="overlay transparent" @click="$emit('bgclick')">
-    <table class="help" @click.stop="">
+    <table class="overlay-content help" @click.stop="">
       <tr><td>⬆️ Move up:</td><td><div><kbd>W</kbd>/<kbd>↑</kbd>/🖱️</div></td></tr>
       <tr><td>⬇️ Move down:</td><td><div><kbd>S</kbd>/<kbd>↓</kbd>/🖱️</div></td></tr>
       <tr><td>⬅️ Move left:</td><td><div><kbd>A</kbd>/<kbd>←</kbd>/🖱️</div></td></tr>

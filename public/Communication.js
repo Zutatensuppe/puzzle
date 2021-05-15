@@ -1,35 +1,65 @@
 "use strict"
 
-import WsClient from './WsClient.js'
+import { logger } from '../common/Util.js'
 import Protocol from './../common/Protocol.js'
 
-/** @type WsClient */
-let conn
+const log = logger('Communication.js')
+
+const CODE_GOING_AWAY = 1001
+const CODE_CUSTOM_DISCONNECT = 4000
+
+const CONN_STATE_NOT_CONNECTED = 0 // not connected yet
+const CONN_STATE_DISCONNECTED = 1 // not connected, but was connected before
+const CONN_STATE_CONNECTED = 2 // connected
+const CONN_STATE_CONNECTING = 3 // connecting
+const CONN_STATE_CLOSED = 4 // not connected (closed on purpose)
+
+/** @type WebSocket */
+let ws
 let changesCallback = () => {}
-let connectionLostCallback = () => {}
+let connectionStateChangeCallback = () => {}
 
 // TODO: change these to something like on(EVT, cb)
 function onServerChange(callback) {
   changesCallback = callback
 }
-function onConnectionLost(callback) {
-  connectionLostCallback = callback
+function onConnectionStateChange(callback) {
+  connectionStateChangeCallback = callback
 }
 
-function send(message) {
-  conn.send(JSON.stringify(message))
+let connectionState = CONN_STATE_NOT_CONNECTED
+const setConnectionState = (v) => {
+  if (connectionState !== v) {
+    connectionState = v
+    connectionStateChangeCallback(v)
+  }
 }
+function send(message) {
+  if (connectionState === CONN_STATE_CONNECTED) {
+    try {
+      ws.send(JSON.stringify(message))
+    } catch (e) {
+      log.info('unable to send message.. maybe because ws is invalid?')
+    }
+  }
+}
+
 
 let clientSeq
 let events
 function connect(address, gameId, clientId) {
   clientSeq = 0
   events = {}
-  conn = new WsClient(address, clientId + '|' + gameId)
+  setConnectionState(CONN_STATE_CONNECTING)
   return new Promise(resolve => {
-    conn.connect()
-    conn.onSocket('message', async ({ data }) => {
-      const msg = JSON.parse(data)
+    ws = new WebSocket(address, clientId + '|' + gameId)
+    ws.onopen = (e) => {
+      setConnectionState(CONN_STATE_CONNECTED)
+      connectionStateChangeCallback()
+      send([Protocol.EV_CLIENT_INIT])
+    }
+    ws.onmessage = (e) => {
+      const msg = JSON.parse(e.data)
       const msgType = msg[0]
       if (msgType === Protocol.EV_SERVER_INIT) {
         const game = msg[1]
@@ -46,22 +76,36 @@ function connect(address, gameId, clientId) {
       } else {
         throw `[ 2021-05-09 invalid connect msgType ${msgType} ]`
       }
-    })
-    conn.onclose(() => {
-      connectionLostCallback()
-    })
-    send([Protocol.EV_CLIENT_INIT])
+    }
+
+    ws.onerror = (e) => {
+      setConnectionState(CONN_STATE_DISCONNECTED)
+      throw `[ 2021-05-15 onerror ]`
+    }
+
+    ws.onclose = (e) => {
+      if (e.code === CODE_CUSTOM_DISCONNECT || e.code === CODE_GOING_AWAY) {
+        setConnectionState(CONN_STATE_CLOSED)
+      } else {
+        setConnectionState(CONN_STATE_DISCONNECTED)
+      }
+    }
   })
 }
 
+// TOOD: change replay stuff
 function connectReplay(address, gameId, clientId) {
   clientSeq = 0
   events = {}
-  conn = new WsClient(address, clientId + '|' + gameId)
+  setConnectionState(CONN_STATE_CONNECTING)
   return new Promise(resolve => {
-    conn.connect()
-    conn.onSocket('message', async ({ data }) => {
-      const msg = JSON.parse(data)
+    ws = new WebSocket(address, clientId + '|' + gameId)
+    ws.onopen = (e) => {
+      setConnectionState(CONN_STATE_CONNECTED)
+      send([Protocol.EV_CLIENT_INIT_REPLAY])
+    }
+    ws.onmessage = (e) => {
+      const msg = JSON.parse(e.data)
       const msgType = msg[0]
       if (msgType === Protocol.EV_SERVER_INIT_REPLAY) {
         const game = msg[1]
@@ -70,14 +114,26 @@ function connectReplay(address, gameId, clientId) {
       } else {
         throw `[ 2021-05-09 invalid connectReplay msgType ${msgType} ]`
       }
-    })
-    send([Protocol.EV_CLIENT_INIT_REPLAY])
+    }
+
+    ws.onerror = (e) => {
+      setConnectionState(CONN_STATE_DISCONNECTED)
+      throw `[ 2021-05-15 onerror ]`
+    }
+
+    ws.onclose = (e) => {
+      if (e.code === CODE_CUSTOM_DISCONNECT || e.code === CODE_GOING_AWAY) {
+        setConnectionState(CONN_STATE_CLOSED)
+      } else {
+        setConnectionState(CONN_STATE_DISCONNECTED)
+      }
+    }
   })
 }
 
 function disconnect() {
-  if (conn) {
-    conn.disconnect()
+  if (ws) {
+    ws.close(CODE_CUSTOM_DISCONNECT)
   }
   clientSeq = 0
   events = {}
@@ -97,5 +153,12 @@ export default {
   disconnect,
   sendClientEvent,
   onServerChange,
-  onConnectionLost,
+  onConnectionStateChange,
+  CODE_CUSTOM_DISCONNECT,
+
+  CONN_STATE_NOT_CONNECTED,
+  CONN_STATE_DISCONNECTED,
+  CONN_STATE_CLOSED,
+  CONN_STATE_CONNECTED,
+  CONN_STATE_CONNECTING,
 }

@@ -133,7 +133,7 @@ input:focus {
   background: transparent;
 }
 
-.help {
+.overlay-content {
   position: absolute;
   left: 50%;
   top: 50%;
@@ -145,16 +145,9 @@ input:focus {
   z-index: 1;
 }
 
-.settings {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  transform: translate(-50%,-50%);
-  background: var(--bg-color);
-  padding: 5px;
-  border: solid 1px black;
-  box-shadow: 0 0 10px 0 rgba(0,0,0,.7);
-  z-index: 1;
+.connection-lost .overlay-content {
+  padding: 20px;
+  text-align: center;
 }
 
 .preview {
