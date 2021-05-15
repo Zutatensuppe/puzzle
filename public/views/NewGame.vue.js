@@ -33,7 +33,7 @@ export default {
       })
       if (res.status === 200) {
         const game = await res.json()
-        location.assign(game.url)
+        this.$router.push({ name: 'game', params: { id: game.id } })
       }
     }
   }

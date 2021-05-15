@@ -104,7 +104,7 @@ app.post('/newgame', bodyParser.json(), async (req, res) => {
       req.body.scoreMode
     )
   }
-  res.send({ url: `/g/${gameId}` })
+  res.send({ id: gameId })
 })
 
 app.use('/common/', express.static(COMMON_DIR))
