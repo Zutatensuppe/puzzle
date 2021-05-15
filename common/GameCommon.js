@@ -629,9 +629,8 @@ function handleInput(gameId, playerId, input, ts) {
     const x = input[1]
     const y = input[2]
     const pos = {x, y}
+    const d = 0
 
-    changePlayer(gameId, playerId, { d: 0, ts })
-    _playerChange()
     evtInfo._last_mouse_down = null
 
     let tileIdx = getFirstOwnedTileIdx(gameId, playerId)
@@ -651,20 +650,17 @@ function handleInput(gameId, playerId, input, ts) {
         finishTiles(gameId, tileIdxs)
         _tileChanges(tileIdxs)
 
+        let points = getPlayerPoints(gameId, playerId)
         if (getScoreMode(gameId) === SCORE_MODE_FINAL) {
-          changePlayer(gameId, playerId, {
-            points: getPlayerPoints(gameId, playerId) + tileIdxs.length,
-          })
-          _playerChange()
+          points += tileIdxs.length
         } else if (getScoreMode(gameId) === SCORE_MODE_ANY) {
-          changePlayer(gameId, playerId, {
-            points: getPlayerPoints(gameId, playerId) + 1,
-          })
-          _playerChange()
+          points += 1
         } else {
           // no score mode... should never occur, because there is a
           // fallback to SCORE_MODE_FINAL in getScoreMode function
         }
+        changePlayer(gameId, playerId, { d, ts, points })
+        _playerChange()
 
         // check if the puzzle is finished
         if (getFinishedTileCount(gameId) === getTileCount(gameId)) {
@@ -695,17 +691,12 @@ function handleInput(gameId, playerId, input, ts) {
             const zIndex = getMaxZIndexByTileIdxs(gameId, tileIdxs)
             setTilesZIndex(gameId, tileIdxs, zIndex)
             _tileChanges(tileIdxs)
-            if (getScoreMode(gameId) === SCORE_MODE_ANY) {
-              changePlayer(gameId, playerId, {
-                points: getPlayerPoints(gameId, playerId) + 1,
-              })
-              _playerChange()
-            }
             return true
           }
           return false
         }
 
+        let snapped = false
         for (let tileIdxTmp of getGroupedTileIdxs(gameId, tileIdx)) {
           let othersIdxs = getSurroundingTilesByIdx(gameId, tileIdxTmp)
           if (
@@ -714,22 +705,36 @@ function handleInput(gameId, playerId, input, ts) {
             || check(gameId, tileIdxTmp, othersIdxs[2], [0, -1]) // bottom
             || check(gameId, tileIdxTmp, othersIdxs[3], [1, 0]) // left
           ) {
+            snapped = true
             break
           }
         }
+        if (snapped && getScoreMode(gameId) === SCORE_MODE_ANY) {
+          const points = getPlayerPoints(gameId, playerId) + 1
+          changePlayer(gameId, playerId, { d, ts, points })
+          _playerChange()
+        } else {
+          changePlayer(gameId, playerId, { d, ts })
+          _playerChange()
+        }
       }
+    } else {
+      changePlayer(gameId, playerId, { d, ts })
+      _playerChange()
     }
     evtInfo._last_mouse = pos
   } else if (type === Protocol.INPUT_EV_ZOOM_IN) {
-    const pos = { x: input[1], y: input[2] }
-    changePlayer(gameId, playerId, pos)
+    const x = input[1]
+    const y = input[2]
+    changePlayer(gameId, playerId, { x, y, ts })
     _playerChange()
-    evtInfo._last_mouse = pos
+    evtInfo._last_mouse = { x, y }
   } else if (type === Protocol.INPUT_EV_ZOOM_OUT) {
-    const pos = { x: input[1], y: input[2] }
-    changePlayer(gameId, playerId, pos)
+    const x = input[1]
+    const y = input[2]
+    changePlayer(gameId, playerId, { x, y, ts })
     _playerChange()
-    evtInfo._last_mouse = pos
+    evtInfo._last_mouse = { x, y }
   } else {
     changePlayer(gameId, playerId, { ts })
     _playerChange()
