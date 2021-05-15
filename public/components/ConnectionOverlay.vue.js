@@ -10,7 +10,7 @@ export default {
       <div>⁉️ LOST CONNECTION ⁉️</div>
       <span class="btn" @click="$emit('reconnect')">Reconnect</span>
     </div>
-    <div class="overlay-content" v-if="connectionState === 3">
+    <div class="overlay-content" v-if="connecting">
       <div>Connecting...</div>
     </div>
   </div>`,
