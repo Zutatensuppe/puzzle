@@ -5,12 +5,14 @@ import Camera from './Camera.js'
 import Graphics from './Graphics.js'
 import Debug from './Debug.js'
 import Communication from './Communication.js'
-import Util from './../common/Util.js'
+import Util, { logger } from './../common/Util.js'
 import PuzzleGraphics from './PuzzleGraphics.js'
 import Game from './../common/GameCommon.js'
 import fireworksController from './Fireworks.js'
 import Protocol from '../common/Protocol.js'
 import Time from '../common/Time.js'
+
+const log = logger('game.js')
 
 export const MODE_PLAY = 'play'
 export const MODE_REPLAY = 'replay'
@@ -216,6 +218,11 @@ export async function main(gameId, clientId, wsAddress, MODE, TARGET_EL, HUD) {
     lastGameTs: null,
     gameStartTs: null,
   }
+
+
+  Communication.onConnectionLost(() => {
+    log('connection lost ... should reload / hit reconnect button / etc.')
+  })
 
   let TIME
   if (MODE === MODE_PLAY) {

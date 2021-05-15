@@ -6,9 +6,14 @@ import Protocol from './../common/Protocol.js'
 /** @type WsClient */
 let conn
 let changesCallback = () => {}
+let connectionLostCallback = () => {}
 
+// TODO: change these to something like on(EVT, cb)
 function onServerChange(callback) {
   changesCallback = callback
+}
+function onConnectionLost(callback) {
+  connectionLostCallback = callback
 }
 
 function send(message) {
@@ -41,6 +46,9 @@ function connect(address, gameId, clientId) {
       } else {
         throw `[ 2021-05-09 invalid connect msgType ${msgType} ]`
       }
+    })
+    conn.onclose(() => {
+      connectionLostCallback()
     })
     send([Protocol.EV_CLIENT_INIT])
   })
@@ -87,6 +95,7 @@ export default {
   connect,
   connectReplay,
   disconnect,
-  onServerChange,
   sendClientEvent,
+  onServerChange,
+  onConnectionLost,
 }
