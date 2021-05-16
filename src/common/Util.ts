@@ -27,35 +27,6 @@ export const logger = (...pre: Array<any>) => {
 // get a unique id
 export const uniqId = () => Date.now().toString(36) + Math.random().toString(36).substring(2)
 
-// get a random int between min and max (inclusive)
-export const randomInt = (
-  rng: Rng,
-  min: number,
-  max: number,
-) => rng.random(min, max)
-
-// get one random item from the given array
-export const choice = (
-  rng: Rng,
-  array: Array<any>
-) => array[randomInt(rng, 0, array.length - 1)]
-
-// return a shuffled (shallow) copy of the given array
-export const shuffle = (
-  rng: Rng,
-  array: Array<any>
-) => {
-  const arr = array.slice()
-  for (let i = 0; i <= arr.length - 2; i++)
-  {
-    const j = randomInt(rng, i, arr.length -1);
-    const tmp = arr[i];
-    arr[i] = arr[j];
-    arr[j] = tmp;
-  }
-  return arr
-}
-
 function encodeShape(data: any): number {
   if (typeof data === 'number') {
       return data
@@ -196,9 +167,6 @@ const hash = (str: string): number => {
 export default {
   hash,
   uniqId,
-  randomInt,
-  choice,
-  shuffle,
 
   encodeShape,
   decodeShape,

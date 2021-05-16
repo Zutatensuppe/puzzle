@@ -7,6 +7,19 @@ export default {
     dir: 'build/server',
     format: 'es',
   },
+  external: [
+    "express",
+    "multer",
+    "body-parser",
+    "v8",
+    "fs",
+    "ws",
+    "image-size",
+    "exif",
+    "sharp",
+    "url",
+    "path",
+  ],
   plugins: [typescript({
     "tsconfig": "tsconfig.server.json"
   })],

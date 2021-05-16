@@ -3,7 +3,7 @@ import fs from 'fs'
 import exif from 'exif'
 import sharp from 'sharp'
 
-import {UPLOAD_DIR, UPLOAD_URL} from './Dirs.js'
+import {UPLOAD_DIR, UPLOAD_URL} from './Dirs'
 
 const resizeImage = async (filename: string) => {
   if (!filename.toLowerCase().match(/\.(jpe?g|webp|png)$/)) {

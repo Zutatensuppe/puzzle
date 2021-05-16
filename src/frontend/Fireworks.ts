@@ -20,10 +20,10 @@ const explosionDividerFactor = 10
 const nBombs = 1
 const percentChanceNewBomb = 5
 
-function color(rng: Rng) {
-  const r = Util.randomInt(rng, 0, 255)
-  const g = Util.randomInt(rng, 0, 255)
-  const b = Util.randomInt(rng, 0, 255)
+function color(rng: Rng): string {
+  const r = rng.random(0, 255)
+  const g = rng.random(0, 255)
+  const b = rng.random(0, 255)
   return 'rgba(' + r + ',' + g + ',' + b + ', 0.8)'
 }
 

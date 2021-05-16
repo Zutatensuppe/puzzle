@@ -1,6 +1,6 @@
 import fs from 'fs'
-import { logger } from '../common/Util.js'
-import { DATA_DIR } from '../server/Dirs.js'
+import { logger } from './../common/Util'
+import { DATA_DIR } from './../server/Dirs'
 
 const log = logger('GameLog.js')
 

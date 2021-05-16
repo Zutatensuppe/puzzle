@@ -1,9 +1,9 @@
 import GameCommon from './../common/GameCommon'
 import Util from './../common/Util'
-import { Rng } from '../common/Rng'
+import { Rng } from './../common/Rng'
 import GameLog from './GameLog'
 import { createPuzzle } from './Puzzle'
-import Protocol from '../common/Protocol'
+import Protocol from './../common/Protocol'
 import GameStorage from './GameStorage'
 
 async function createGameObject(gameId: string, targetTiles: number, image: { file: string, url: string }, ts: number, scoreMode: number) {

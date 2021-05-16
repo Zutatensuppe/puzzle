@@ -21,6 +21,21 @@ class Rng {
         var n = (this.rand_high >>> 0) / 0xffffffff;
         return (min + n * (max - min + 1)) | 0;
     }
+    // get one random item from the given array
+    choice(array) {
+        return array[this.random(0, array.length - 1)];
+    }
+    // return a shuffled (shallow) copy of the given array
+    shuffle(array) {
+        const arr = array.slice();
+        for (let i = 0; i <= arr.length - 2; i++) {
+            const j = this.random(i, arr.length - 1);
+            const tmp = arr[i];
+            arr[i] = arr[j];
+            arr[j] = tmp;
+        }
+        return arr;
+    }
     static serialize(rng) {
         return {
             rand_high: rng.rand_high,
@@ -58,21 +73,6 @@ const logger = (...pre) => {
 };
 // get a unique id
 const uniqId = () => Date.now().toString(36) + Math.random().toString(36).substring(2);
-// get a random int between min and max (inclusive)
-const randomInt = (rng, min, max) => rng.random(min, max);
-// get one random item from the given array
-const choice = (rng, array) => array[randomInt(rng, 0, array.length - 1)];
-// return a shuffled (shallow) copy of the given array
-const shuffle = (rng, array) => {
-    const arr = array.slice();
-    for (let i = 0; i <= arr.length - 2; i++) {
-        const j = randomInt(rng, i, arr.length - 1);
-        const tmp = arr[i];
-        arr[i] = arr[j];
-        arr[j] = tmp;
-    }
-    return arr;
-};
 function encodeShape(data) {
     if (typeof data === 'number') {
         return data;
@@ -202,9 +202,6 @@ const hash = (str) => {
 var Util = {
     hash,
     uniqId,
-    randomInt,
-    choice,
-    shuffle,
     encodeShape,
     decodeShape,
     encodeTile,
@@ -1345,7 +1342,7 @@ async function createPuzzle(rng, targetTiles, image, ts) {
         }
     }
     // then shuffle the positions
-    positions = Util.shuffle(rng, positions);
+    positions = rng.shuffle(positions);
     tiles = tiles.map(tile => {
         return Util.encodeTile({
             idx: tile.idx,
@@ -1413,9 +1410,9 @@ function determinePuzzleTileShapes(rng, info) {
         let coord = Util.coordByTileIdx(info, i);
         shapes[i] = {
             top: coord.y === 0 ? 0 : shapes[i - info.tilesX].bottom * -1,
-            right: coord.x === info.tilesX - 1 ? 0 : Util.choice(rng, tabs),
+            right: coord.x === info.tilesX - 1 ? 0 : rng.choice(tabs),
             left: coord.x === 0 ? 0 : shapes[i - 1].right * -1,
-            bottom: coord.y === info.tilesY - 1 ? 0 : Util.choice(rng, tabs),
+            bottom: coord.y === info.tilesY - 1 ? 0 : rng.choice(tabs),
         };
     }
     return shapes.map(Util.encodeShape);

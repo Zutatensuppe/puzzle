@@ -1,6 +1,6 @@
-import Util from '../common/Util'
-import { Rng } from '../common/Rng'
-import Images from './Images.js'
+import Util from './../common/Util'
+import { Rng } from './../common/Rng'
+import Images from './Images'
 
 interface PuzzleInfo {
   width: number
@@ -89,7 +89,7 @@ async function createPuzzle(
   }
 
   // then shuffle the positions
-  positions = Util.shuffle(rng, positions)
+  positions = rng.shuffle(positions)
 
   tiles = tiles.map(tile => {
     return Util.encodeTile({
@@ -167,9 +167,9 @@ function determinePuzzleTileShapes(
     let coord = Util.coordByTileIdx(info, i)
     shapes[i] = {
       top: coord.y === 0 ? 0 : shapes[i - info.tilesX].bottom * -1,
-      right: coord.x === info.tilesX - 1 ? 0 : Util.choice(rng, tabs),
+      right: coord.x === info.tilesX - 1 ? 0 : rng.choice(tabs),
       left: coord.x === 0 ? 0 : shapes[i - 1].right * -1,
-      bottom: coord.y === info.tilesY - 1 ? 0 : Util.choice(rng, tabs),
+      bottom: coord.y === info.tilesY - 1 ? 0 : rng.choice(tabs),
     }
   }
   return shapes.map(Util.encodeShape)

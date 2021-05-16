@@ -10,13 +10,9 @@ import v8 from 'v8'
 import fs from 'fs'
 import GameLog from './GameLog'
 import GameSockets from './GameSockets'
-import Time from '../common/Time'
+import Time from './../common/Time'
 import Images from './Images'
-import {
-  UPLOAD_DIR,
-  UPLOAD_URL,
-  PUBLIC_DIR,
-} from './Dirs'
+import { UPLOAD_DIR, UPLOAD_URL, PUBLIC_DIR } from './Dirs'
 import GameCommon from '../common/GameCommon'
 import GameStorage from './GameStorage'
 

@@ -1,5 +1,5 @@
 import WebSocket from 'ws'
-import { logger } from '../common/Util.js'
+import { logger } from './../common/Util'
 
 const log = logger('WebSocketServer.js')
 

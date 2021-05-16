@@ -1,4 +1,4 @@
-import { logger } from '../common/Util.js'
+import { logger } from './../common/Util'
 import WebSocket from 'ws'
 
 const log = logger('GameSocket.js')

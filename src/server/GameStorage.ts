@@ -1,7 +1,7 @@
 import fs from 'fs'
 import GameCommon from './../common/GameCommon'
 import Util, { logger } from './../common/Util'
-import { Rng } from '../common/Rng'
+import { Rng } from './../common/Rng'
 import { DATA_DIR } from './Dirs'
 import Time from './../common/Time'
 
