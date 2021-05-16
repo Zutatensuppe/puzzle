@@ -1,5 +1,5 @@
 #!/bin/sh
 
-cd "$RUN_DIR/server"
+cd "$RUN_DIR/build/server"
 
-nodemon --max-old-space-size=64 index.js -e js
+nodemon --max-old-space-size=64 main.js -c ../../config.json

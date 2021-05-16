@@ -1,0 +1,7 @@
+#!/bin/sh -ex
+
+# server build
+npm run rollup -- -c rollup.server.config.js
+
+# frontend build
+npm run vite -- build
