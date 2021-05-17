@@ -29,7 +29,7 @@
   </div>
 </template>
 <script lang="ts">
-import { defineComponent, PropType } from 'vue'
+import { defineComponent } from 'vue'
 
 import Scores from './../components/Scores.vue'
 import PuzzleStatus from './../components/PuzzleStatus.vue'
@@ -39,6 +39,7 @@ import ConnectionOverlay from './../components/ConnectionOverlay.vue'
 import HelpOverlay from './../components/HelpOverlay.vue'
 
 import { main, MODE_PLAY } from './../game'
+import { Player } from '../../common/GameCommon'
 
 export default defineComponent({
   name: 'game',
@@ -52,9 +53,8 @@ export default defineComponent({
   },
   data() {
     return {
-      // TODO: ts Array<Player> type
-      activePlayers: [] as PropType<Array<any>>,
-      idlePlayers: [] as PropType<Array<any>>,
+      activePlayers: [] as Array<Player>,
+      idlePlayers: [] as Array<Player>,
 
       finished: false,
       duration: 0,
@@ -103,8 +103,8 @@ export default defineComponent({
       MODE_PLAY,
       this.$el,
       {
-        setActivePlayers: (v: Array<any>) => { this.activePlayers = v },
-        setIdlePlayers: (v: Array<any>) => { this.idlePlayers = v },
+        setActivePlayers: (v: Array<Player>) => { this.activePlayers = v },
+        setIdlePlayers: (v: Array<Player>) => { this.idlePlayers = v },
         setFinished: (v: boolean) => { this.finished = v },
         setDuration: (v: number) => { this.duration = v },
         setPiecesDone: (v: number) => { this.piecesDone = v },

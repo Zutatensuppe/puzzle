@@ -1,5 +1,5 @@
 import fs from 'fs'
-import GameCommon from './../common/GameCommon'
+import GameCommon, { ScoreMode } from './../common/GameCommon'
 import Util, { logger } from './../common/Util'
 import { Rng } from './../common/Rng'
 import { DATA_DIR } from './Dirs'
@@ -55,7 +55,7 @@ function loadGame(gameId: string): void {
     puzzle: game.puzzle,
     players: game.players,
     evtInfos: {},
-    scoreMode: game.scoreMode || GameCommon.SCORE_MODE_FINAL,
+    scoreMode: game.scoreMode || ScoreMode.FINAL,
   }
   GameCommon.setGame(gameObject.id, gameObject)
 }

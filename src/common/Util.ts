@@ -1,3 +1,5 @@
+import { EncodedPiece, EncodedPieceShape, EncodedPlayer, Piece, PieceShape, Player } from './GameCommon'
+import { Point } from './Geometry'
 import { Rng } from './Rng'
 
 
@@ -27,10 +29,7 @@ export const logger = (...pre: Array<any>) => {
 // get a unique id
 export const uniqId = () => Date.now().toString(36) + Math.random().toString(36).substring(2)
 
-function encodeShape(data: any): number {
-  if (typeof data === 'number') {
-      return data
-  }
+function encodeShape(data: PieceShape): EncodedPieceShape {
   /* encoded in 1 byte:
     00000000
           ^^ top
@@ -44,10 +43,7 @@ function encodeShape(data: any): number {
        | ((data.left   + 1) << 6)
 }
 
-function decodeShape(data: any) {
-  if (typeof data !== 'number') {
-      return data
-  }
+function decodeShape(data: EncodedPieceShape): PieceShape {
   return {
     top:    (data >> 0 & 0b11) - 1,
     right:  (data >> 2 & 0b11) - 1,
@@ -56,17 +52,11 @@ function decodeShape(data: any) {
   }
 }
 
-function encodeTile(data: any): Array<any> {
-  if (Array.isArray(data)) {
-    return data
-  }
+function encodeTile(data: Piece): EncodedPiece {
   return [data.idx, data.pos.x, data.pos.y, data.z, data.owner, data.group]
 }
 
-function decodeTile(data: any) {
-  if (!Array.isArray(data)) {
-    return data
-  }
+function decodeTile(data: EncodedPiece): Piece {
   return {
     idx: data[0],
     pos: {
@@ -79,10 +69,7 @@ function decodeTile(data: any) {
   }
 }
 
-function encodePlayer(data: any): Array<any> {
-  if (Array.isArray(data)) {
-    return data
-  }
+function encodePlayer(data: Player): EncodedPlayer {
   return [
     data.id,
     data.x,
@@ -96,10 +83,7 @@ function encodePlayer(data: any): Array<any> {
   ]
 }
 
-function decodePlayer(data: any) {
-  if (!Array.isArray(data)) {
-    return data
-  }
+function decodePlayer(data: EncodedPlayer): Player {
   return {
     id: data[0],
     x: data[1],
@@ -145,7 +129,7 @@ function decodeGame(data: any) {
   }
 }
 
-function coordByTileIdx(info: any, tileIdx: number) {
+function coordByTileIdx(info: any, tileIdx: number): Point {
   const wTiles = info.width / info.tileSize
   return {
     x: tileIdx % wTiles,

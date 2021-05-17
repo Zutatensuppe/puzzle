@@ -74,9 +74,6 @@ const logger = (...pre) => {
 // get a unique id
 const uniqId = () => Date.now().toString(36) + Math.random().toString(36).substring(2);
 function encodeShape(data) {
-    if (typeof data === 'number') {
-        return data;
-    }
     /* encoded in 1 byte:
       00000000
             ^^ top
@@ -90,9 +87,6 @@ function encodeShape(data) {
         | ((data.left + 1) << 6);
 }
 function decodeShape(data) {
-    if (typeof data !== 'number') {
-        return data;
-    }
     return {
         top: (data >> 0 & 0b11) - 1,
         right: (data >> 2 & 0b11) - 1,
@@ -101,15 +95,9 @@ function decodeShape(data) {
     };
 }
 function encodeTile(data) {
-    if (Array.isArray(data)) {
-        return data;
-    }
     return [data.idx, data.pos.x, data.pos.y, data.z, data.owner, data.group];
 }
 function decodeTile(data) {
-    if (!Array.isArray(data)) {
-        return data;
-    }
     return {
         idx: data[0],
         pos: {
@@ -122,9 +110,6 @@ function decodeTile(data) {
     };
 }
 function encodePlayer(data) {
-    if (Array.isArray(data)) {
-        return data;
-    }
     return [
         data.id,
         data.x,
@@ -138,9 +123,6 @@ function encodePlayer(data) {
     ];
 }
 function decodePlayer(data) {
-    if (!Array.isArray(data)) {
-        return data;
-    }
     return {
         id: data[0],
         x: data[1],
@@ -461,8 +443,17 @@ var Time = {
     durationStr,
 };
 
-const SCORE_MODE_FINAL = 0;
-const SCORE_MODE_ANY = 1;
+var PieceEdge;
+(function (PieceEdge) {
+    PieceEdge[PieceEdge["Flat"] = 0] = "Flat";
+    PieceEdge[PieceEdge["Out"] = 1] = "Out";
+    PieceEdge[PieceEdge["In"] = -1] = "In";
+})(PieceEdge || (PieceEdge = {}));
+var ScoreMode;
+(function (ScoreMode) {
+    ScoreMode[ScoreMode["FINAL"] = 0] = "FINAL";
+    ScoreMode[ScoreMode["ANY"] = 1] = "ANY";
+})(ScoreMode || (ScoreMode = {}));
 const IDLE_TIMEOUT_SEC = 30;
 // Map<gameId, Game>
 const GAMES = {};
@@ -502,11 +493,11 @@ function getPlayerIdByIndex(gameId, playerIndex) {
     return null;
 }
 function getPlayer(gameId, playerId) {
-    let idx = getPlayerIndexById(gameId, playerId);
+    const idx = getPlayerIndexById(gameId, playerId);
     return Util.decodePlayer(GAMES[gameId].players[idx]);
 }
 function setPlayer(gameId, playerId, player) {
-    let idx = getPlayerIndexById(gameId, playerId);
+    const idx = getPlayerIndexById(gameId, playerId);
     if (idx === -1) {
         GAMES[gameId].players.push(Util.encodePlayer(player));
     }
@@ -580,7 +571,7 @@ function setImageUrl(gameId, imageUrl) {
     GAMES[gameId].puzzle.info.imageUrl = imageUrl;
 }
 function getScoreMode(gameId) {
-    return GAMES[gameId].scoreMode || SCORE_MODE_FINAL;
+    return GAMES[gameId].scoreMode || ScoreMode.FINAL;
 }
 function isFinished(gameId) {
     return getFinishedTileCount(gameId) === getTileCount(gameId);
@@ -601,6 +592,7 @@ function getTilesSortedByZIndex(gameId) {
 function changePlayer(gameId, playerId, change) {
     const player = getPlayer(gameId, playerId);
     for (let k of Object.keys(change)) {
+        // @ts-ignore
         player[k] = change[k];
     }
     setPlayer(gameId, playerId, player);
@@ -614,6 +606,7 @@ function changeData(gameId, change) {
 function changeTile(gameId, tileIdx, change) {
     for (let k of Object.keys(change)) {
         const tile = Util.decodeTile(GAMES[gameId].puzzle.tiles[tileIdx]);
+        // @ts-ignore
         tile[k] = change[k];
         GAMES[gameId].puzzle.tiles[tileIdx] = Util.encodeTile(tile);
     }
@@ -832,7 +825,7 @@ const getPlayerName = (gameId, playerId) => {
 };
 const getPlayerPoints = (gameId, playerId) => {
     const p = getPlayer(gameId, playerId);
-    return p ? p.points : null;
+    return p ? p.points : 0;
 };
 // determine if two tiles are grouped together
 const areGrouped = (gameId, tileIdx1, tileIdx2) => {
@@ -1023,10 +1016,10 @@ function handleInput$1(gameId, playerId, input, ts) {
                 finishTiles(gameId, tileIdxs);
                 _tileChanges(tileIdxs);
                 let points = getPlayerPoints(gameId, playerId);
-                if (getScoreMode(gameId) === SCORE_MODE_FINAL) {
+                if (getScoreMode(gameId) === ScoreMode.FINAL) {
                     points += tileIdxs.length;
                 }
-                else if (getScoreMode(gameId) === SCORE_MODE_ANY) {
+                else if (getScoreMode(gameId) === ScoreMode.ANY) {
                     points += 1;
                 }
                 else ;
@@ -1075,7 +1068,7 @@ function handleInput$1(gameId, playerId, input, ts) {
                         break;
                     }
                 }
-                if (snapped && getScoreMode(gameId) === SCORE_MODE_ANY) {
+                if (snapped && getScoreMode(gameId) === ScoreMode.ANY) {
                     const points = getPlayerPoints(gameId, playerId) + 1;
                     changePlayer(gameId, playerId, { d, ts, points });
                     _playerChange();
@@ -1150,8 +1143,6 @@ var GameCommon = {
     getStartTs,
     getFinishTs,
     handleInput: handleInput$1,
-    SCORE_MODE_FINAL,
-    SCORE_MODE_ANY,
 };
 
 const __filename = fileURLToPath(import.meta.url);
@@ -1343,7 +1334,7 @@ async function createPuzzle(rng, targetTiles, image, ts) {
     }
     // then shuffle the positions
     positions = rng.shuffle(positions);
-    tiles = tiles.map(tile => {
+    const pieces = tiles.map(tile => {
         return Util.encodeTile({
             idx: tile.idx,
             group: 0,
@@ -1362,7 +1353,7 @@ async function createPuzzle(rng, targetTiles, image, ts) {
     // Complete puzzle object
     return {
         // tiles array
-        tiles,
+        tiles: pieces,
         // game data for puzzle, data changes during the game
         data: {
             // TODO: maybe calculate this each time?
@@ -1500,7 +1491,7 @@ function loadGame(gameId) {
         puzzle: game.puzzle,
         players: game.players,
         evtInfos: {},
-        scoreMode: game.scoreMode || GameCommon.SCORE_MODE_FINAL,
+        scoreMode: game.scoreMode || ScoreMode.FINAL,
     };
     GameCommon.setGame(gameObject.id, gameObject);
 }
@@ -1746,7 +1737,7 @@ wss.on('message', async ({ socket, data }) => {
                         throw `[gamelog ${gameId} does not exist... ]`;
                     }
                     const log = GameLog.get(gameId);
-                    const game = await Game.createGameObject(gameId, log[0][2], log[0][3], log[0][4], log[0][5] || GameCommon.SCORE_MODE_FINAL);
+                    const game = await Game.createGameObject(gameId, log[0][2], log[0][3], log[0][4], log[0][5] || ScoreMode.FINAL);
                     notify([Protocol.EV_SERVER_INIT_REPLAY, Util.encodeGame(game), log], [socket]);
                 }
                 break;

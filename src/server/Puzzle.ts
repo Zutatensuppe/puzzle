@@ -1,6 +1,7 @@
 import Util from './../common/Util'
 import { Rng } from './../common/Rng'
 import Images from './Images'
+import { EncodedPiece, EncodedPieceShape, PieceShape } from '../common/GameCommon'
 
 interface PuzzleInfo {
   width: number
@@ -31,7 +32,7 @@ async function createPuzzle(
   if (!dim || !dim.width || !dim.height) {
     throw `[ 2021-05-16 invalid dimension for path ${imagePath} ]`
   }
-  const info = determinePuzzleInfo(dim.width, dim.height, targetTiles)
+  const info: PuzzleInfo = determinePuzzleInfo(dim.width, dim.height, targetTiles)
 
   let tiles = new Array(info.tiles)
   for (let i = 0; i < tiles.length; i++) {
@@ -91,7 +92,7 @@ async function createPuzzle(
   // then shuffle the positions
   positions = rng.shuffle(positions)
 
-  tiles = tiles.map(tile => {
+  const pieces: Array<EncodedPiece> = tiles.map(tile => {
     return Util.encodeTile({
       idx: tile.idx, // index of tile in the array
       group: 0, // if grouped with other tiles
@@ -113,7 +114,7 @@ async function createPuzzle(
   // Complete puzzle object
   return {
     // tiles array
-    tiles,
+    tiles: pieces,
     // game data for puzzle, data changes during the game
     data: {
       // TODO: maybe calculate this each time?
@@ -159,10 +160,10 @@ async function createPuzzle(
 function determinePuzzleTileShapes(
   rng: Rng,
   info: PuzzleInfo
-) {
+): Array<EncodedPieceShape> {
   const tabs = [-1, 1]
 
-  const shapes = new Array(info.tiles)
+  const shapes: Array<PieceShape> = new Array(info.tiles)
   for (let i = 0; i < info.tiles; i++) {
     let coord = Util.coordByTileIdx(info, i)
     shapes[i] = {
@@ -191,7 +192,11 @@ const determineTilesXY = (w: number, h: number, targetTiles: number) => {
   }
 }
 
-const determinePuzzleInfo = (w: number, h: number, targetTiles: number) => {
+const determinePuzzleInfo = (
+  w: number,
+  h: number,
+  targetTiles: number
+): PuzzleInfo => {
   const {tilesX, tilesY} = determineTilesXY(w, h, targetTiles)
   const tiles = tilesX * tilesY
   const tileSize = TILE_SIZE

@@ -17,15 +17,23 @@ async function loadImageToBitmap(imagePath: string): Promise<ImageBitmap> {
   })
 }
 
-async function resizeBitmap (bitmap: ImageBitmap, width: number, height: number): Promise<ImageBitmap> {
+async function resizeBitmap (
+  bitmap: ImageBitmap,
+  width: number,
+  height: number
+): Promise<ImageBitmap> {
   const c = createCanvas(width, height)
   const ctx = c.getContext('2d') as CanvasRenderingContext2D
   ctx.drawImage(bitmap, 0, 0, bitmap.width, bitmap.height, 0, 0, width, height)
   return await createImageBitmap(c)
 }
 
-async function colorize(image: ImageBitmap, mask: ImageBitmap, color: string): Promise<ImageBitmap> {
-  const c = createCanvas(image.width, image.height)
+async function colorize(
+  bitmap: ImageBitmap,
+  mask: ImageBitmap,
+  color: string
+): Promise<ImageBitmap> {
+  const c = createCanvas(bitmap.width, bitmap.height)
   const ctx = c.getContext('2d') as CanvasRenderingContext2D
   ctx.save()
   ctx.drawImage(mask, 0, 0)
@@ -35,7 +43,7 @@ async function colorize(image: ImageBitmap, mask: ImageBitmap, color: string): P
   ctx.restore()
   ctx.save()
   ctx.globalCompositeOperation = "destination-over"
-  ctx.drawImage(image, 0, 0)
+  ctx.drawImage(bitmap, 0, 0)
   ctx.restore()
   return await createImageBitmap(c)
 }

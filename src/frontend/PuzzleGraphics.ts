@@ -1,13 +1,17 @@
 "use strict"
 
-import Geometry from '../common/Geometry'
+import Geometry, { Rect } from '../common/Geometry'
 import Graphics from './Graphics'
 import Util, { logger } from './../common/Util'
 import { Puzzle, PuzzleInfo, PieceShape } from './../common/GameCommon'
 
 const log = logger('PuzzleGraphics.js')
 
-async function createPuzzleTileBitmaps(img: ImageBitmap, tiles: Array<any>, info: PuzzleInfo) {
+async function createPuzzleTileBitmaps(
+  img: ImageBitmap,
+  tiles: Array<any>,
+  info: PuzzleInfo
+): Promise<Array<ImageBitmap>> {
   log.log('start createPuzzleTileBitmaps')
   var tileSize = info.tileSize
   var tileMarginWidth = info.tileMarginWidth
@@ -23,7 +27,7 @@ async function createPuzzleTileBitmaps(img: ImageBitmap, tiles: Array<any>, info
     63, 5, 65, 15, 100, 0
   ];
 
-  const bitmaps = new Array(tiles.length)
+  const bitmaps: Array<ImageBitmap> = new Array(tiles.length)
 
   const paths: Record<string, Path2D> = {}
   function pathForShape(shape: PieceShape) {
@@ -89,7 +93,7 @@ async function createPuzzleTileBitmaps(img: ImageBitmap, tiles: Array<any>, info
   const c2 = Graphics.createCanvas(tileDrawSize, tileDrawSize)
   const ctx2 = c2.getContext('2d') as CanvasRenderingContext2D
 
-  for (let t of tiles) {
+  for (const t of tiles) {
     const tile = Util.decodeTile(t)
     const srcRect = srcRectByIdx(info, tile.idx)
     const path = pathForShape(Util.decodeShape(info.shapes[tile.idx]))
@@ -198,7 +202,7 @@ async function createPuzzleTileBitmaps(img: ImageBitmap, tiles: Array<any>, info
   return bitmaps
 }
 
-function srcRectByIdx(puzzleInfo: PuzzleInfo, idx: number) {
+function srcRectByIdx(puzzleInfo: PuzzleInfo, idx: number): Rect {
   const c = Util.coordByTileIdx(puzzleInfo, idx)
   return {
     x: c.x * puzzleInfo.tileSize,
@@ -208,7 +212,7 @@ function srcRectByIdx(puzzleInfo: PuzzleInfo, idx: number) {
   }
 }
 
-async function loadPuzzleBitmaps(puzzle: Puzzle) {
+async function loadPuzzleBitmaps(puzzle: Puzzle): Promise<Array<ImageBitmap>> {
   // load bitmap, to determine the original size of the image
   const bmp = await Graphics.loadImageToBitmap(puzzle.info.imageUrl)
 

@@ -11,6 +11,7 @@ import Game, { Player, Piece } from './../common/GameCommon'
 import fireworksController from './Fireworks'
 import Protocol from '../common/Protocol'
 import Time from '../common/Time'
+import { Dim, Point } from '../common/Geometry'
 
 declare global {
   interface Window {
@@ -34,10 +35,6 @@ export const MODE_REPLAY = 'replay'
 let PIECE_VIEW_FIXED = true
 let PIECE_VIEW_LOOSE = true
 
-interface Point {
-  x: number
-  y: number
-}
 interface Hud {
   setActivePlayers: (v: Array<any>) => void
   setIdlePlayers: (v: Array<any>) => void
@@ -474,10 +471,16 @@ export async function main(
           RERENDER = true
         } else if (entryWithTs[0] === Protocol.LOG_UPDATE_PLAYER) {
           const playerId = Game.getPlayerIdByIndex(gameId, entryWithTs[1])
+          if (!playerId) {
+            throw '[ 2021-05-17 player not found (update player) ]'
+          }
           Game.addPlayer(gameId, playerId, nextTs)
           RERENDER = true
         } else if (entryWithTs[0] === Protocol.LOG_HANDLE_INPUT) {
           const playerId = Game.getPlayerIdByIndex(gameId, entryWithTs[1])
+          if (!playerId) {
+            throw '[ 2021-05-17 player not found (handle input) ]'
+          }
           const input = entryWithTs[2]
           Game.handleInput(gameId, playerId, input, nextTs)
           RERENDER = true
@@ -598,9 +601,9 @@ export async function main(
 
     const ts = TIME()
 
-    let pos
-    let dim
-    let bmp
+    let pos: Point
+    let dim: Dim
+    let bmp: ImageBitmap
 
     if (window.DEBUG) Debug.checkpoint_start(0)
 

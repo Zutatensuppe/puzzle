@@ -1,11 +1,15 @@
-interface Point {
+export interface Point {
   x: number
   y: number
 }
 
-interface Rect {
+export interface Rect {
   x: number
   y: number
+  w: number
+  h: number
+}
+export interface Dim {
   w: number
   h: number
 }

@@ -1,16 +1,10 @@
+import { Dim, Point } from "../common/Geometry"
+
 const MIN_ZOOM = .1
 const MAX_ZOOM = 6
 const ZOOM_STEP = .05
 
 type ZOOM_DIR = 'in'|'out'
-interface Point {
-  x: number
-  y: number
-}
-interface Dim {
-  w: number
-  h: number
-}
 
 export default function Camera () {
   let x = 0

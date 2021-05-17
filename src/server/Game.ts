@@ -1,4 +1,4 @@
-import GameCommon from './../common/GameCommon'
+import GameCommon, { ScoreMode } from './../common/GameCommon'
 import Util from './../common/Util'
 import { Rng } from './../common/Rng'
 import GameLog from './GameLog'
@@ -6,7 +6,13 @@ import { createPuzzle } from './Puzzle'
 import Protocol from './../common/Protocol'
 import GameStorage from './GameStorage'
 
-async function createGameObject(gameId: string, targetTiles: number, image: { file: string, url: string }, ts: number, scoreMode: number) {
+async function createGameObject(
+  gameId: string,
+  targetTiles: number,
+  image: { file: string, url: string },
+  ts: number,
+  scoreMode: ScoreMode
+) {
   const seed = Util.hash(gameId + ' ' + ts)
   const rng = new Rng(seed)
   return {
@@ -19,7 +25,13 @@ async function createGameObject(gameId: string, targetTiles: number, image: { fi
   }
 }
 
-async function createGame(gameId: string, targetTiles: number, image: { file: string, url: string }, ts: number, scoreMode: number) {
+async function createGame(
+  gameId: string,
+  targetTiles: number,
+  image: { file: string, url: string },
+  ts: number,
+  scoreMode: ScoreMode
+) {
   const gameObject = await createGameObject(gameId, targetTiles, image, ts, scoreMode)
 
   GameLog.create(gameId)

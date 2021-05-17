@@ -44,7 +44,7 @@
 <script lang="ts">
 import { defineComponent } from 'vue'
 
-import GameCommon from './../../common/GameCommon'
+import { ScoreMode } from './../../common/GameCommon'
 import Upload from './../components/Upload.vue'
 import ImageTeaser from './../components/ImageTeaser.vue'
 
@@ -64,7 +64,7 @@ export default defineComponent({
     return {
       tiles: 1000,
       image: '',
-      scoreMode: GameCommon.SCORE_MODE_ANY,
+      scoreMode: ScoreMode.ANY,
     }
   },
   methods: {

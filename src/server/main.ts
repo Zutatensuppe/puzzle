@@ -13,7 +13,7 @@ import GameSockets from './GameSockets'
 import Time from './../common/Time'
 import Images from './Images'
 import { UPLOAD_DIR, UPLOAD_URL, PUBLIC_DIR } from './Dirs'
-import GameCommon from '../common/GameCommon'
+import GameCommon, { ScoreMode } from '../common/GameCommon'
 import GameStorage from './GameStorage'
 
 let configFile = ''
@@ -158,7 +158,7 @@ wss.on('message', async ({socket, data} : { socket: WebSocket, data: any }) => {
           log[0][2],
           log[0][3],
           log[0][4],
-          log[0][5] || GameCommon.SCORE_MODE_FINAL
+          log[0][5] || ScoreMode.FINAL
         )
         notify(
           [Protocol.EV_SERVER_INIT_REPLAY, Util.encodeGame(game), log],

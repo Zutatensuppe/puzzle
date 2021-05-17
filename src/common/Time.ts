@@ -4,7 +4,7 @@ const MIN = SEC * 60
 const HOUR = MIN * 60
 const DAY = HOUR * 24
 
-export const timestamp = () => {
+export const timestamp = (): number => {
   const d = new Date();
   return Date.UTC(
     d.getUTCFullYear(),
@@ -17,7 +17,7 @@ export const timestamp = () => {
   )
 }
 
-export const durationStr = (duration: number) => {
+export const durationStr = (duration: number): string => {
   const d = Math.floor(duration / DAY)
   duration = duration % DAY
 

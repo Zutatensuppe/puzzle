@@ -1,16 +1,12 @@
-import Geometry from './Geometry'
+import Geometry, { Point, Rect } from './Geometry'
 import Protocol from './Protocol'
 import { Rng } from './Rng'
 import Time from './Time'
 import Util from './Util'
 
-interface EncodedPlayer extends Array<any> {}
-interface EncodedPiece extends Array<any> {}
-
-interface Point {
-  x: number
-  y: number
-}
+export type EncodedPlayer = Array<any>
+export type EncodedPiece = Array<any>
+export type EncodedPieceShape = number
 
 interface GameRng {
   obj: Rng
@@ -22,7 +18,7 @@ interface Game {
   players: Array<EncodedPlayer>
   puzzle: Puzzle
   evtInfos: Record<string, EvtInfo>
-  scoreMode?: number
+  scoreMode?: ScoreMode
   rng: GameRng
 }
 
@@ -44,15 +40,24 @@ interface PuzzleTable {
   height: number
 }
 
+enum PieceEdge {
+  Flat = 0,
+  Out = 1,
+  In = -1,
+}
 export interface PieceShape {
-  top: 0|1|-1
-  bottom: 0|1|-1
-  left: 0|1|-1
-  right: 0|1|-1
+  top: PieceEdge
+  bottom: PieceEdge
+  left: PieceEdge
+  right: PieceEdge
 }
 
 export interface Piece {
   owner: string|number
+  idx: number
+  pos: Point
+  z: number
+  group: number
 }
 
 export interface PuzzleInfo {
@@ -72,8 +77,7 @@ export interface PuzzleInfo {
   tilesX: number
   tilesY: number
 
-  // TODO: ts type Array<PieceShape>
-  shapes: Array<any>
+  shapes: Array<EncodedPieceShape>
 }
 
 export interface Player {
@@ -93,8 +97,10 @@ interface EvtInfo {
   _last_mouse_down: Point|null
 }
 
-const SCORE_MODE_FINAL = 0
-const SCORE_MODE_ANY = 1
+export enum ScoreMode {
+  FINAL = 0,
+  ANY = 1,
+}
 
 const IDLE_TIMEOUT_SEC = 30
 
@@ -134,20 +140,20 @@ function getPlayerIndexById(gameId: string, playerId: string): number {
   return -1
 }
 
-function getPlayerIdByIndex(gameId: string, playerIndex: number) {
+function getPlayerIdByIndex(gameId: string, playerIndex: number): string|null {
   if (GAMES[gameId].players.length > playerIndex) {
     return Util.decodePlayer(GAMES[gameId].players[playerIndex]).id
   }
   return null
 }
 
-function getPlayer(gameId: string, playerId: string) {
-  let idx = getPlayerIndexById(gameId, playerId)
+function getPlayer(gameId: string, playerId: string): Player {
+  const idx = getPlayerIndexById(gameId, playerId)
   return Util.decodePlayer(GAMES[gameId].players[idx])
 }
 
 function setPlayer(gameId: string, playerId: string, player: Player) {
-  let idx = getPlayerIndexById(gameId, playerId)
+  const idx = getPlayerIndexById(gameId, playerId)
   if (idx === -1) {
     GAMES[gameId].players.push(Util.encodePlayer(player))
   } else {
@@ -168,17 +174,17 @@ function playerExists(gameId: string, playerId: string) {
   return idx !== -1
 }
 
-function getActivePlayers(gameId: string, ts: number) {
+function getActivePlayers(gameId: string, ts: number): Array<Player> {
   const minTs = ts - IDLE_TIMEOUT_SEC * Time.SEC
   return getAllPlayers(gameId).filter((p: Player) => p.ts >= minTs)
 }
 
-function getIdlePlayers(gameId: string, ts: number) {
+function getIdlePlayers(gameId: string, ts: number): Array<Player> {
   const minTs = ts - IDLE_TIMEOUT_SEC * Time.SEC
   return getAllPlayers(gameId).filter((p: Player) => p.ts < minTs && p.points > 0)
 }
 
-function addPlayer(gameId: string, playerId: string, ts: number) {
+function addPlayer(gameId: string, playerId: string, ts: number): void {
   if (!playerExists(gameId, playerId)) {
     setPlayer(gameId, playerId, __createPlayerObject(playerId, ts))
   } else {
@@ -186,7 +192,7 @@ function addPlayer(gameId: string, playerId: string, ts: number) {
   }
 }
 
-function getEvtInfo(gameId: string, playerId: string) {
+function getEvtInfo(gameId: string, playerId: string): EvtInfo {
   if (playerId in GAMES[gameId].evtInfos) {
     return GAMES[gameId].evtInfos[playerId]
   }
@@ -211,7 +217,7 @@ function getAllGames(): Array<Game> {
   })
 }
 
-function getAllPlayers(gameId: string) {
+function getAllPlayers(gameId: string): Array<Player> {
   return GAMES[gameId]
     ? GAMES[gameId].players.map(Util.decodePlayer)
     : []
@@ -221,11 +227,11 @@ function get(gameId: string) {
   return GAMES[gameId]
 }
 
-function getTileCount(gameId: string) {
+function getTileCount(gameId: string): number {
   return GAMES[gameId].puzzle.tiles.length
 }
 
-function getImageUrl(gameId: string) {
+function getImageUrl(gameId: string): string {
   return GAMES[gameId].puzzle.info.imageUrl
 }
 
@@ -233,8 +239,8 @@ function setImageUrl(gameId: string, imageUrl: string) {
   GAMES[gameId].puzzle.info.imageUrl = imageUrl
 }
 
-function getScoreMode(gameId: string) {
-  return GAMES[gameId].scoreMode || SCORE_MODE_FINAL
+function getScoreMode(gameId: string): ScoreMode {
+  return GAMES[gameId].scoreMode || ScoreMode.FINAL
 }
 
 function isFinished(gameId: string) {
@@ -259,6 +265,7 @@ function getTilesSortedByZIndex(gameId: string) {
 function changePlayer(gameId: string, playerId: string, change: any) {
   const player = getPlayer(gameId, playerId)
   for (let k of Object.keys(change)) {
+    // @ts-ignore
     player[k] = change[k]
   }
   setPlayer(gameId, playerId, player)
@@ -274,12 +281,13 @@ function changeData(gameId: string, change: any) {
 function changeTile(gameId: string, tileIdx: number, change: any) {
   for (let k of Object.keys(change)) {
     const tile = Util.decodeTile(GAMES[gameId].puzzle.tiles[tileIdx])
+    // @ts-ignore
     tile[k] = change[k]
     GAMES[gameId].puzzle.tiles[tileIdx] = Util.encodeTile(tile)
   }
 }
 
-const getTile = (gameId: string, tileIdx: number) => {
+const getTile = (gameId: string, tileIdx: number): Piece => {
   return Util.decodeTile(GAMES[gameId].puzzle.tiles[tileIdx])
 }
 
@@ -500,7 +508,7 @@ const freeTileIdxByPos = (gameId: string, pos: Point) => {
       continue
     }
 
-    const collisionRect = {
+    const collisionRect: Rect = {
       x: tile.pos.x,
       y: tile.pos.y,
       w: info.tileSize,
@@ -531,9 +539,9 @@ const getPlayerName = (gameId: string, playerId: string) => {
   return p ? p.name : null
 }
 
-const getPlayerPoints = (gameId: string, playerId: string) => {
+const getPlayerPoints = (gameId: string, playerId: string): number => {
   const p = getPlayer(gameId, playerId)
-  return p ? p.points : null
+  return p ? p.points : 0
 }
 
 // determine if two tiles are grouped together
@@ -746,13 +754,13 @@ function handleInput(gameId: string, playerId: string, input: any, ts: number) {
         _tileChanges(tileIdxs)
 
         let points = getPlayerPoints(gameId, playerId)
-        if (getScoreMode(gameId) === SCORE_MODE_FINAL) {
+        if (getScoreMode(gameId) === ScoreMode.FINAL) {
           points += tileIdxs.length
-        } else if (getScoreMode(gameId) === SCORE_MODE_ANY) {
+        } else if (getScoreMode(gameId) === ScoreMode.ANY) {
           points += 1
         } else {
           // no score mode... should never occur, because there is a
-          // fallback to SCORE_MODE_FINAL in getScoreMode function
+          // fallback to ScoreMode.FINAL in getScoreMode function
         }
         changePlayer(gameId, playerId, { d, ts, points })
         _playerChange()
@@ -809,7 +817,7 @@ function handleInput(gameId: string, playerId: string, input: any, ts: number) {
             break
           }
         }
-        if (snapped && getScoreMode(gameId) === SCORE_MODE_ANY) {
+        if (snapped && getScoreMode(gameId) === ScoreMode.ANY) {
           const points = getPlayerPoints(gameId, playerId) + 1
           changePlayer(gameId, playerId, { d, ts, points })
           _playerChange()
@@ -881,6 +889,4 @@ export default {
   getStartTs,
   getFinishTs,
   handleInput,
-  SCORE_MODE_FINAL,
-  SCORE_MODE_ANY,
 }
