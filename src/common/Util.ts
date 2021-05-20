@@ -148,6 +148,18 @@ const hash = (str: string): number => {
   return hash;
 }
 
+function asQueryArgs(data: any) {
+  const q = []
+  for (let k in data) {
+    const pair = [k, data[k]].map(encodeURIComponent)
+    q.push(pair.join('='))
+  }
+  if (q.length === 0) {
+    return ''
+  }
+  return `?${q.join('&')}`
+}
+
 export default {
   hash,
   uniqId,
@@ -165,4 +177,6 @@ export default {
   decodeGame,
 
   coordByTileIdx,
+
+  asQueryArgs,
 }

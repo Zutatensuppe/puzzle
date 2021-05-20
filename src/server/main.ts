@@ -13,7 +13,7 @@ import GameSockets from './GameSockets'
 import Time from './../common/Time'
 import Images from './Images'
 import { UPLOAD_DIR, UPLOAD_URL, PUBLIC_DIR } from './Dirs'
-import GameCommon, { ScoreMode } from '../common/GameCommon'
+import { GameSettings, ScoreMode } from '../common/GameCommon'
 import GameStorage from './GameStorage'
 
 let configFile = ''
@@ -52,8 +52,10 @@ app.get('/api/conf', (req, res) => {
 })
 
 app.get('/api/newgame-data', (req, res) => {
+  const q = req.query as any
   res.send({
-    images: Images.allImages(),
+    images: Images.allImages(q.sort),
+    categories: [],
   })
 })
 
@@ -102,16 +104,17 @@ app.post('/upload', (req, res) => {
 })
 
 app.post('/newgame', bodyParser.json(), async (req, res) => {
-  log.log(req.body.tiles, req.body.image)
+  const gameSettings = req.body as GameSettings
+  log.log(gameSettings)
   const gameId = Util.uniqId()
   if (!Game.exists(gameId)) {
     const ts = Time.timestamp()
     await Game.createGame(
       gameId,
-      req.body.tiles,
-      req.body.image,
+      gameSettings.tiles,
+      gameSettings.image,
       ts,
-      req.body.scoreMode
+      gameSettings.scoreMode
     )
   }
   res.send({ id: gameId })

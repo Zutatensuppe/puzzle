@@ -181,6 +181,17 @@ const hash = (str) => {
     }
     return hash;
 };
+function asQueryArgs(data) {
+    const q = [];
+    for (let k in data) {
+        const pair = [k, data[k]].map(encodeURIComponent);
+        q.push(pair.join('='));
+    }
+    if (q.length === 0) {
+        return '';
+    }
+    return `?${q.join('&')}`;
+}
 var Util = {
     hash,
     uniqId,
@@ -193,6 +204,7 @@ var Util = {
     encodeGame,
     decodeGame,
     coordByTileIdx,
+    asQueryArgs,
 };
 
 const log$4 = logger('WebSocketServer.js');
@@ -1236,18 +1248,40 @@ async function getExifOrientation(imagePath) {
         });
     });
 }
-const allImages = () => {
-    const images = fs.readdirSync(UPLOAD_DIR)
+const allImages = (sort) => {
+    let images = fs.readdirSync(UPLOAD_DIR)
         .filter(f => f.toLowerCase().match(/\.(jpe?g|webp|png)$/))
         .map(f => ({
         filename: f,
         file: `${UPLOAD_DIR}/${f}`,
         url: `${UPLOAD_URL}/${encodeURIComponent(f)}`,
-    }))
-        .sort((a, b) => {
-        return fs.statSync(b.file).mtime.getTime() -
-            fs.statSync(a.file).mtime.getTime();
-    });
+        title: '',
+        category: '',
+        ts: fs.statSync(`${UPLOAD_DIR}/${f}`).mtime.getTime(),
+    }));
+    switch (sort) {
+        case 'alpha_asc':
+            images = images.sort((a, b) => {
+                return a.file > b.file ? 1 : -1;
+            });
+            break;
+        case 'alpha_desc':
+            images = images.sort((a, b) => {
+                return a.file < b.file ? 1 : -1;
+            });
+            break;
+        case 'date_asc':
+            images = images.sort((a, b) => {
+                return a.ts > b.ts ? 1 : -1;
+            });
+            break;
+        case 'date_desc':
+        default:
+            images = images.sort((a, b) => {
+                return a.ts < b.ts ? 1 : -1;
+            });
+            break;
+    }
     return images;
 };
 async function getDimensions(imagePath) {
@@ -1650,8 +1684,10 @@ app.get('/api/conf', (req, res) => {
     });
 });
 app.get('/api/newgame-data', (req, res) => {
+    const q = req.query;
     res.send({
-        images: Images.allImages(),
+        images: Images.allImages(q.sort),
+        categories: [],
     });
 });
 app.get('/api/index-data', (req, res) => {
@@ -1695,11 +1731,12 @@ app.post('/upload', (req, res) => {
     });
 });
 app.post('/newgame', bodyParser.json(), async (req, res) => {
-    log.log(req.body.tiles, req.body.image);
+    const gameSettings = req.body;
+    log.log(gameSettings);
     const gameId = Util.uniqId();
     if (!Game.exists(gameId)) {
         const ts = Time.timestamp();
-        await Game.createGame(gameId, req.body.tiles, req.body.image, ts, req.body.scoreMode);
+        await Game.createGame(gameId, gameSettings.tiles, gameSettings.image, ts, gameSettings.scoreMode);
     }
     res.send({ id: gameId });
 });

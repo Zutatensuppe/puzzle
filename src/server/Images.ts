@@ -46,18 +46,44 @@ async function getExifOrientation(imagePath: string) {
   })
 }
 
-const allImages = () => {
-  const images = fs.readdirSync(UPLOAD_DIR)
+const allImages = (sort: string) => {
+  let images = fs.readdirSync(UPLOAD_DIR)
     .filter(f => f.toLowerCase().match(/\.(jpe?g|webp|png)$/))
     .map(f => ({
       filename: f,
       file: `${UPLOAD_DIR}/${f}`,
       url: `${UPLOAD_URL}/${encodeURIComponent(f)}`,
+      title: '',
+      category: '',
+      ts: fs.statSync(`${UPLOAD_DIR}/${f}`).mtime.getTime(),
     }))
-    .sort((a, b) => {
-      return fs.statSync(b.file).mtime.getTime() -
-        fs.statSync(a.file).mtime.getTime()
-    })
+
+  switch (sort) {
+    case 'alpha_asc':
+      images = images.sort((a, b) => {
+        return a.file > b.file ? 1 : -1
+      })
+      break;
+
+    case 'alpha_desc':
+      images = images.sort((a, b) => {
+        return a.file < b.file ? 1 : -1
+      })
+      break;
+
+    case 'date_asc':
+      images = images.sort((a, b) => {
+        return a.ts > b.ts ? 1 : -1
+      })
+      break;
+
+    case 'date_desc':
+    default:
+      images = images.sort((a, b) => {
+        return a.ts < b.ts ? 1 : -1
+      })
+      break;
+  }
   return images
 }
 
