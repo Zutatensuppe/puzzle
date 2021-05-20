@@ -1640,7 +1640,7 @@ const app = express();
 const storage = multer.diskStorage({
     destination: UPLOAD_DIR,
     filename: function (req, file, cb) {
-        cb(null, file.originalname);
+        cb(null, `${Util.uniqId()}-${file.originalname}`);
     }
 });
 const upload = multer({ storage }).single('file');
