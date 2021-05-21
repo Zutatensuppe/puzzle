@@ -8,4 +8,12 @@ export default vite.defineConfig({
     outDir: '../../build/public',
     emptyOutDir: true,
   },
+  server: {
+    proxy: {
+      '^/(api|uploads)/.*': {
+        target: 'http://localhost:1337',
+        secure: false,
+      },
+    },
+  },
 })
