@@ -12,9 +12,19 @@ import GameLog from './GameLog'
 import GameSockets from './GameSockets'
 import Time from './../common/Time'
 import Images from './Images'
-import { UPLOAD_DIR, UPLOAD_URL, PUBLIC_DIR } from './Dirs'
+import {
+  DB_FILE,
+  DB_PATCHES_DIR,
+  PUBLIC_DIR,
+  UPLOAD_DIR,
+  UPLOAD_URL
+} from './Dirs'
 import { GameSettings, ScoreMode } from '../common/GameCommon'
 import GameStorage from './GameStorage'
+import Db from './Db'
+
+const db = new Db(DB_FILE, DB_PATCHES_DIR)
+db.patch()
 
 let configFile = ''
 let last = ''
@@ -54,8 +64,8 @@ app.get('/api/conf', (req, res) => {
 app.get('/api/newgame-data', (req, res) => {
   const q = req.query as any
   res.send({
-    images: Images.allImages(q.sort),
-    categories: [],
+    images: Images.allImagesFromDb(db, q.category, q.sort),
+    categories: db.getMany('categories', {}, [{ title: 1 }]),
   })
 })
 
@@ -94,12 +104,26 @@ app.post('/upload', (req, res) => {
       res.status(400).send("Something went wrong!");
     }
 
-    res.send({
-      image: {
-        file: `${UPLOAD_DIR}/${req.file.filename}`,
-        url: `${UPLOAD_URL}/${req.file.filename}`,
-      },
+    const imageId = db.insert('images', {
+      filename: req.file.filename,
+      filename_original: req.file.originalname,
+      title: req.body.title || '',
+      created: Time.timestamp(),
     })
+
+    if (req.body.category) {
+      const title = req.body.category
+      const slug = Util.slug(title)
+      const id = db.upsert('categories', { slug, title }, { slug }, 'id')
+      if (id) {
+        db.insert('image_x_category', {
+          image_id: imageId,
+          category_id: id,
+        })
+      }
+    }
+
+    res.send(Images.imageFromDb(db, imageId as number))
   })
 })
 

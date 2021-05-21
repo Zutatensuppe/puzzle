@@ -106,6 +106,7 @@ export default defineComponent({
 }
 .new-game-dialog .area-image {
   grid-area: image;
+  margin: 20px;
 }
 .new-game-dialog .area-settings {
   grid-area: settings;

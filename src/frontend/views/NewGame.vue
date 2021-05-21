@@ -17,7 +17,7 @@ in jigsawpuzzles.io
         Category:
         <select v-model="filters.category" @change="filtersChanged">
           <option value="">All</option>
-          <option v-for="(c, idx) in categories" :key="idx" :value="c">{{c}}</option>
+          <option v-for="(c, idx) in categories" :key="idx" :value="c.slug">{{c.title}}</option>
         </select>
       </label>
       <label>
@@ -30,8 +30,8 @@ in jigsawpuzzles.io
         </select>
       </label>
     </div>
-    <image-library :images="images" :categories="categories" @imageClicked="imageClicked" />
-    <new-image-dialog v-if="dialog==='new-image'" @bgclick="dialog=''" @setupGameClick="setupGameClick" />
+    <image-library :images="images" @imageClicked="imageClicked" />
+    <new-image-dialog v-if="dialog==='new-image'" @bgclick="dialog=''" @postToGalleryClick="postToGalleryClick" @setupGameClick="setupGameClick" />
     <new-game-dialog v-if="image && dialog==='new-game'" @bgclick="dialog=''" @newGame="onNewGame" :image="image" />
   </div>
 </template>
@@ -61,10 +61,13 @@ export default defineComponent({
       categories: [],
 
       image: {
-        url: '',
+        id: 0,
+        filename: '',
         file: '',
+        url: '',
         title: '',
-        category: '',
+        categories: [],
+        created: 0,
       } as Image,
 
       dialog: '',
@@ -87,7 +90,26 @@ export default defineComponent({
       this.image = image
       this.dialog = 'new-game'
     },
-    setupGameClick (image: Image) {
+    async uploadImage (data: any) {
+      const formData = new FormData();
+      formData.append('file', data.file, data.file.name);
+      formData.append('title', data.title)
+      formData.append('category', data.category)
+
+      const res = await fetch('/upload', {
+        method: 'post',
+        body: formData,
+      })
+      return await res.json()
+    },
+    async postToGalleryClick(data: any) {
+      await this.uploadImage(data)
+      this.dialog = ''
+      await this.loadImages()
+    },
+    async setupGameClick (data: any) {
+      const image = await this.uploadImage(data)
+      this.loadImages() // load images in background
       this.image = image
       this.dialog = 'new-game'
     },

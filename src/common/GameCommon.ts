@@ -8,8 +8,11 @@ export type EncodedPlayer = Array<any>
 export type EncodedPiece = Array<any>
 export type EncodedPieceShape = number
 
-// TODO: maybe something other than string in the future
-export type Category = string
+export interface Category {
+  id: number
+  slug: string
+  title: string
+}
 
 interface GameRng {
   obj: Rng
@@ -26,10 +29,13 @@ interface Game {
 }
 
 export interface Image {
+  id: number
+  filename: string
   file: string
   url: string
-  category: Category
   title: string
+  categories: Array<Category>
+  created: number
 }
 
 export interface GameSettings {

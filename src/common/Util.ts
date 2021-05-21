@@ -2,6 +2,12 @@ import { EncodedPiece, EncodedPieceShape, EncodedPlayer, Piece, PieceShape, Play
 import { Point } from './Geometry'
 import { Rng } from './Rng'
 
+const slug = (str: string) => {
+  let tmp = str.toLowerCase()
+  tmp = tmp.replace(/[^a-z0-9]+/g, '-')
+  tmp = tmp.replace(/^-|-$/, '')
+  return tmp
+}
 
 const pad = (x: any, pad: string) => {
   const str = `${x}`
@@ -162,6 +168,7 @@ function asQueryArgs(data: any) {
 
 export default {
   hash,
+  slug,
   uniqId,
 
   encodeShape,

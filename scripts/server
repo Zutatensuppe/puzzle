@@ -1,5 +1,11 @@
 #!/bin/sh
 
+# TODO: add switch via param
+
+# server for built files
 cd "$RUN_DIR/build/server"
 
 nodemon --max-old-space-size=64 main.js -c ../../config.json
+
+# dev server
+# npm run ts-node src/server/main.ts -- -c config.json

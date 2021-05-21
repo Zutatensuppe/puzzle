@@ -1,6 +1,7 @@
 {
   "type": "module",
   "dependencies": {
+    "better-sqlite3": "^7.4.0",
     "body-parser": "^1.19.0",
     "exif": "^0.6.0",
     "express": "^4.17.1",
@@ -12,6 +13,7 @@
     "ws": "^7.3.1"
   },
   "devDependencies": {
+    "@types/better-sqlite3": "^5.4.1",
     "@types/exif": "^0.6.2",
     "@types/express": "^4.17.11",
     "@types/multer": "^1.4.5",
@@ -29,6 +31,7 @@
   },
   "scripts": {
     "rollup": "rollup",
-    "vite": "vite"
+    "vite": "vite",
+    "ts-node": "node --experimental-specifier-resolution=node --loader ts-node/esm"
   }
 }

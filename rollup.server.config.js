@@ -20,7 +20,5 @@ export default {
     "url",
     "path",
   ],
-  plugins: [typescript({
-    "tsconfig": "tsconfig.server.json"
-  })],
+  plugins: [typescript()],
 };

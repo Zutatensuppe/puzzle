@@ -1,0 +1,24 @@
+CREATE TABLE categories (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+
+  slug TEXT UNIQUE,
+  title TEXT UNIQUE
+);
+
+CREATE TABLE images (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+
+  created TIMESTAMP NOT NULL,
+
+  filename TEXT NOT NULL UNIQUE,
+  filename_original TEXT NOT NULL,
+  title TEXT NOT NULL
+);
+
+CREATE TABLE image_x_category (
+  image_id INTEGER NOT NULL,
+  category_id INTEGER NOT NULL,
+
+  FOREIGN KEY(image_id) REFERENCES images(id) ON DELETE CASCADE,
+  FOREIGN KEY(category_id) REFERENCES categories(id) ON DELETE CASCADE
+);

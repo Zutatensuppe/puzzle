@@ -9,6 +9,7 @@ import exif from 'exif';
 import sharp from 'sharp';
 import bodyParser from 'body-parser';
 import v8 from 'v8';
+import bsqlite from 'better-sqlite3';
 
 class Rng {
     constructor(seed) {
@@ -50,6 +51,12 @@ class Rng {
     }
 }
 
+const slug = (str) => {
+    let tmp = str.toLowerCase();
+    tmp = tmp.replace(/[^a-z0-9]+/g, '-');
+    tmp = tmp.replace(/^-|-$/, '');
+    return tmp;
+};
 const pad = (x, pad) => {
     const str = `${x}`;
     if (str.length >= pad.length) {
@@ -194,6 +201,7 @@ function asQueryArgs(data) {
 }
 var Util = {
     hash,
+    slug,
     uniqId,
     encodeShape,
     decodeShape,
@@ -207,7 +215,7 @@ var Util = {
     asQueryArgs,
 };
 
-const log$4 = logger('WebSocketServer.js');
+const log$5 = logger('WebSocketServer.js');
 /*
 Example config
 
@@ -245,12 +253,12 @@ class WebSocketServer {
         this._websocketserver.on('connection', (socket, request) => {
             const pathname = new URL(this.config.connectstring).pathname;
             if (request.url.indexOf(pathname) !== 0) {
-                log$4.log('bad request url: ', request.url);
+                log$5.log('bad request url: ', request.url);
                 socket.close();
                 return;
             }
             socket.on('message', (data) => {
-                log$4.log(`ws`, socket.protocol, data);
+                log$5.log(`ws`, socket.protocol, data);
                 this.evt.dispatch('message', { socket, data });
             });
             socket.on('close', () => {
@@ -1164,8 +1172,10 @@ const DATA_DIR = `${BASE_DIR}/data`;
 const UPLOAD_DIR = `${BASE_DIR}/data/uploads`;
 const UPLOAD_URL = `/uploads`;
 const PUBLIC_DIR = `${BASE_DIR}/build/public/`;
+const DB_PATCHES_DIR = `${BASE_DIR}/src/dbpatches`;
+const DB_FILE = `${BASE_DIR}/data/db.sqlite`;
 
-const log$3 = logger('GameLog.js');
+const log$4 = logger('GameLog.js');
 const filename = (gameId) => `${DATA_DIR}/log_${gameId}.log`;
 const create = (gameId) => {
     const file = filename(gameId);
@@ -1196,8 +1206,8 @@ const get = (gameId) => {
             return JSON.parse(line);
         }
         catch (e) {
-            log$3.log(line);
-            log$3.log(e);
+            log$4.log(line);
+            log$4.log(e);
         }
     });
 };
@@ -1248,16 +1258,71 @@ async function getExifOrientation(imagePath) {
         });
     });
 }
-const allImages = (sort) => {
+const getCategories = (db, imageId) => {
+    const query = `
+select * from categories c
+inner join image_x_category ixc on c.id = ixc.category_id
+where ixc.image_id = ?`;
+    return db._getMany(query, [imageId]);
+};
+const imageFromDb = (db, imageId) => {
+    const i = db.get('images', { id: imageId });
+    return {
+        id: i.id,
+        filename: i.filename,
+        file: `${UPLOAD_DIR}/${i.filename}`,
+        url: `${UPLOAD_URL}/${encodeURIComponent(i.filename)}`,
+        title: i.title,
+        categories: getCategories(db, i.id),
+        created: i.created * 1000,
+    };
+};
+const allImagesFromDb = (db, categorySlug, sort) => {
+    const sortMap = {
+        alpha_asc: [{ filename: 1 }],
+        alpha_desc: [{ filename: -1 }],
+        date_asc: [{ created: 1 }],
+        date_desc: [{ created: -1 }],
+    };
+    // TODO: .... clean up
+    const wheresRaw = {};
+    if (categorySlug !== '') {
+        const c = db.get('categories', { slug: categorySlug });
+        if (!c) {
+            return [];
+        }
+        const ids = db._getMany(`
+select i.id from image_x_category ixc
+inner join images i on i.id = ixc.image_id
+where ixc.category_id = ?;
+`, [c.id]).map(img => img.id);
+        if (ids.length === 0) {
+            return [];
+        }
+        wheresRaw['id'] = { '$in': ids };
+    }
+    const images = db.getMany('images', wheresRaw, sortMap[sort]);
+    return images.map(i => ({
+        id: i.id,
+        filename: i.filename,
+        file: `${UPLOAD_DIR}/${i.filename}`,
+        url: `${UPLOAD_URL}/${encodeURIComponent(i.filename)}`,
+        title: i.title,
+        categories: getCategories(db, i.id),
+        created: i.created * 1000,
+    }));
+};
+const allImagesFromDisk = (category, sort) => {
     let images = fs.readdirSync(UPLOAD_DIR)
         .filter(f => f.toLowerCase().match(/\.(jpe?g|webp|png)$/))
         .map(f => ({
+        id: 0,
         filename: f,
         file: `${UPLOAD_DIR}/${f}`,
         url: `${UPLOAD_URL}/${encodeURIComponent(f)}`,
-        title: '',
-        category: '',
-        ts: fs.statSync(`${UPLOAD_DIR}/${f}`).mtime.getTime(),
+        title: f.replace(/\.[a-z]+$/, ''),
+        categories: [],
+        created: fs.statSync(`${UPLOAD_DIR}/${f}`).mtime.getTime(),
     }));
     switch (sort) {
         case 'alpha_asc':
@@ -1272,13 +1337,13 @@ const allImages = (sort) => {
             break;
         case 'date_asc':
             images = images.sort((a, b) => {
-                return a.ts > b.ts ? 1 : -1;
+                return a.created > b.created ? 1 : -1;
             });
             break;
         case 'date_desc':
         default:
             images = images.sort((a, b) => {
-                return a.ts < b.ts ? 1 : -1;
+                return a.created < b.created ? 1 : -1;
             });
             break;
     }
@@ -1298,7 +1363,9 @@ async function getDimensions(imagePath) {
     return dimensions;
 }
 var Images = {
-    allImages,
+    allImagesFromDisk,
+    imageFromDb,
+    allImagesFromDb,
     resizeImage,
     getDimensions,
 };
@@ -1477,7 +1544,7 @@ const determinePuzzleInfo = (w, h, targetTiles) => {
     };
 };
 
-const log$2 = logger('GameStorage.js');
+const log$3 = logger('GameStorage.js');
 const DIRTY_GAMES = {};
 function setDirty(gameId) {
     DIRTY_GAMES[gameId] = true;
@@ -1504,7 +1571,7 @@ function loadGame(gameId) {
         game = JSON.parse(contents);
     }
     catch {
-        log$2.log(`[ERR] unable to load game from file ${file}`);
+        log$3.log(`[ERR] unable to load game from file ${file}`);
     }
     if (typeof game.puzzle.data.started === 'undefined') {
         game.puzzle.data.started = Math.round(fs.statSync(file).ctimeMs);
@@ -1549,7 +1616,7 @@ function persistGame(gameId) {
         players: game.players,
         scoreMode: game.scoreMode,
     }));
-    log$2.info(`[INFO] persisted game ${game.id}`);
+    log$3.info(`[INFO] persisted game ${game.id}`);
 }
 var GameStorage = {
     loadGames,
@@ -1615,7 +1682,7 @@ var Game = {
     getFinishTs: GameCommon.getFinishTs,
 };
 
-const log$1 = logger('GameSocket.js');
+const log$2 = logger('GameSocket.js');
 // Map<gameId, Socket[]>
 const SOCKETS = {};
 function socketExists(gameId, socket) {
@@ -1629,8 +1696,8 @@ function removeSocket(gameId, socket) {
         return;
     }
     SOCKETS[gameId] = SOCKETS[gameId].filter((s) => s !== socket);
-    log$1.log('removed socket: ', gameId, socket.protocol);
-    log$1.log('socket count: ', Object.keys(SOCKETS[gameId]).length);
+    log$2.log('removed socket: ', gameId, socket.protocol);
+    log$2.log('socket count: ', Object.keys(SOCKETS[gameId]).length);
 }
 function addSocket(gameId, socket) {
     if (!(gameId in SOCKETS)) {
@@ -1638,8 +1705,8 @@ function addSocket(gameId, socket) {
     }
     if (!SOCKETS[gameId].includes(socket)) {
         SOCKETS[gameId].push(socket);
-        log$1.log('added socket: ', gameId, socket.protocol);
-        log$1.log('socket count: ', Object.keys(SOCKETS[gameId]).length);
+        log$2.log('added socket: ', gameId, socket.protocol);
+        log$2.log('socket count: ', Object.keys(SOCKETS[gameId]).length);
     }
 }
 function getSockets(gameId) {
@@ -1655,6 +1722,155 @@ var GameSockets = {
     getSockets,
 };
 
+const log$1 = logger('Db.ts');
+class Db {
+    constructor(file, patchesDir) {
+        this.file = file;
+        this.patchesDir = patchesDir;
+        this.dbh = bsqlite(this.file);
+    }
+    close() {
+        this.dbh.close();
+    }
+    patch(verbose = true) {
+        if (!this.get('sqlite_master', { type: 'table', name: 'db_patches' })) {
+            this.run('CREATE TABLE db_patches ( id TEXT PRIMARY KEY);', []);
+        }
+        const files = fs.readdirSync(this.patchesDir);
+        const patches = (this.getMany('db_patches')).map(row => row.id);
+        for (const f of files) {
+            if (patches.includes(f)) {
+                if (verbose) {
+                    log$1.info(`➡ skipping already applied db patch: ${f}`);
+                }
+                continue;
+            }
+            const contents = fs.readFileSync(`${this.patchesDir}/${f}`, 'utf-8');
+            const all = contents.split(';').map(s => s.trim()).filter(s => !!s);
+            try {
+                this.dbh.transaction((all) => {
+                    for (const q of all) {
+                        if (verbose) {
+                            log$1.info(`Running: ${q}`);
+                        }
+                        this.run(q);
+                    }
+                    this.insert('db_patches', { id: f });
+                })(all);
+                log$1.info(`✓ applied db patch: ${f}`);
+            }
+            catch (e) {
+                log$1.error(`✖ unable to apply patch: ${f} ${e}`);
+                return;
+            }
+        }
+    }
+    _buildWhere(where) {
+        const wheres = [];
+        const values = [];
+        for (const k of Object.keys(where)) {
+            if (where[k] === null) {
+                wheres.push(k + ' IS NULL');
+                continue;
+            }
+            if (typeof where[k] === 'object') {
+                let prop = '$nin';
+                if (where[k][prop]) {
+                    if (where[k][prop].length > 0) {
+                        wheres.push(k + ' NOT IN (' + where[k][prop].map((_) => '?') + ')');
+                        values.push(...where[k][prop]);
+                    }
+                    continue;
+                }
+                prop = '$in';
+                if (where[k][prop]) {
+                    if (where[k][prop].length > 0) {
+                        wheres.push(k + ' IN (' + where[k][prop].map((_) => '?') + ')');
+                        values.push(...where[k][prop]);
+                    }
+                    continue;
+                }
+                // TODO: implement rest of mongo like query args ($eq, $lte, $in...)
+                throw new Error('not implemented: ' + JSON.stringify(where[k]));
+            }
+            wheres.push(k + ' = ?');
+            values.push(where[k]);
+        }
+        return {
+            sql: wheres.length > 0 ? ' WHERE ' + wheres.join(' AND ') : '',
+            values,
+        };
+    }
+    _buildOrderBy(orderBy) {
+        const sorts = [];
+        for (const s of orderBy) {
+            const k = Object.keys(s)[0];
+            sorts.push(k + ' COLLATE NOCASE ' + (s[k] > 0 ? 'ASC' : 'DESC'));
+        }
+        return sorts.length > 0 ? ' ORDER BY ' + sorts.join(', ') : '';
+    }
+    _get(query, params = []) {
+        return this.dbh.prepare(query).get(...params);
+    }
+    run(query, params = []) {
+        return this.dbh.prepare(query).run(...params);
+    }
+    _getMany(query, params = []) {
+        return this.dbh.prepare(query).all(...params);
+    }
+    get(table, whereRaw = {}, orderBy = []) {
+        const where = this._buildWhere(whereRaw);
+        const orderBySql = this._buildOrderBy(orderBy);
+        const sql = 'SELECT * FROM ' + table + where.sql + orderBySql;
+        return this._get(sql, where.values);
+    }
+    getMany(table, whereRaw = {}, orderBy = []) {
+        const where = this._buildWhere(whereRaw);
+        const orderBySql = this._buildOrderBy(orderBy);
+        const sql = 'SELECT * FROM ' + table + where.sql + orderBySql;
+        return this._getMany(sql, where.values);
+    }
+    delete(table, whereRaw = {}) {
+        const where = this._buildWhere(whereRaw);
+        const sql = 'DELETE FROM ' + table + where.sql;
+        return this.run(sql, where.values);
+    }
+    exists(table, whereRaw) {
+        return !!this.get(table, whereRaw);
+    }
+    upsert(table, data, check, idcol = null) {
+        if (!this.exists(table, check)) {
+            return this.insert(table, data);
+        }
+        this.update(table, data, check);
+        if (idcol === null) {
+            return 0; // dont care about id
+        }
+        return this.get(table, check)[idcol]; // get id manually
+    }
+    insert(table, data) {
+        const keys = Object.keys(data);
+        const values = keys.map(k => data[k]);
+        const sql = 'INSERT INTO ' + table
+            + ' (' + keys.join(',') + ')'
+            + ' VALUES (' + keys.map(k => '?').join(',') + ')';
+        return this.run(sql, values).lastInsertRowid;
+    }
+    update(table, data, whereRaw = {}) {
+        const keys = Object.keys(data);
+        if (keys.length === 0) {
+            return;
+        }
+        const values = keys.map(k => data[k]);
+        const setSql = ' SET ' + keys.join(' = ?,') + ' = ?';
+        const where = this._buildWhere(whereRaw);
+        const sql = 'UPDATE ' + table + setSql + where.sql;
+        this.run(sql, [...values, ...where.values]);
+    }
+}
+
+const db = new Db(DB_FILE, DB_PATCHES_DIR);
+db.patch();
 let configFile = '';
 let last = '';
 for (const val of process.argv) {
@@ -1686,8 +1902,8 @@ app.get('/api/conf', (req, res) => {
 app.get('/api/newgame-data', (req, res) => {
     const q = req.query;
     res.send({
-        images: Images.allImages(q.sort),
-        categories: [],
+        images: Images.allImagesFromDb(db, q.category, q.sort),
+        categories: db.getMany('categories', {}, [{ title: 1 }]),
     });
 });
 app.get('/api/index-data', (req, res) => {
@@ -1722,12 +1938,24 @@ app.post('/upload', (req, res) => {
             log.log(err);
             res.status(400).send("Something went wrong!");
         }
-        res.send({
-            image: {
-                file: `${UPLOAD_DIR}/${req.file.filename}`,
-                url: `${UPLOAD_URL}/${req.file.filename}`,
-            },
+        const imageId = db.insert('images', {
+            filename: req.file.filename,
+            filename_original: req.file.originalname,
+            title: req.body.title || '',
+            created: Time.timestamp(),
         });
+        if (req.body.category) {
+            const title = req.body.category;
+            const slug = Util.slug(title);
+            const id = db.upsert('categories', { slug, title }, { slug }, 'id');
+            if (id) {
+                db.insert('image_x_category', {
+                    image_id: imageId,
+                    category_id: id,
+                });
+            }
+        }
+        res.send(Images.imageFromDb(db, imageId));
     });
 });
 app.post('/newgame', bodyParser.json(), async (req, res) => {

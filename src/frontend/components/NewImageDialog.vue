@@ -7,15 +7,21 @@ gallery", if possible!
   <div class="overlay new-image-dialog" @click="$emit('bgclick')">
     <div class="overlay-content" @click.stop="">
 
-      <div class="area-image" :class="{'has-image': !!image.url, 'no-image': !image.url}">
+      <div class="area-image" :class="{'has-image': !!previewUrl, 'no-image': !previewUrl}">
         <!-- TODO: ...  -->
-        <div v-if="image.url" class="has-image">
-          <span class="remove btn" @click="image.url=''">X</span>
-          <responsive-image :src="image.url" />
+        <div v-if="previewUrl" class="has-image">
+          <span class="remove btn" @click="previewUrl=''">X</span>
+          <responsive-image :src="previewUrl" />
         </div>
         <div v-else>
+          <label class="upload">
+            <input type="file" style="display: none" @change="preview" accept="image/*" />
+            <span class="btn">{{label || 'Upload File'}}</span>
+          </label>
+
+
           <!-- TODO: drop area for image -->
-          <upload class="upload" @uploaded="mediaImgUploaded($event)" accept="image/*" label="Upload an image" />
+          <!-- <upload class="upload" @uploaded="mediaImgUploaded($event)" accept="image/*" label="Upload an image" /> -->
         </div>
       </div>
 
@@ -23,7 +29,7 @@ gallery", if possible!
         <table>
           <tr>
             <td><label>Title</label></td>
-            <td><input type="text" v-model="image.title" placeholder="Flower by @artist" /></td>
+            <td><input type="text" v-model="title" placeholder="Flower by @artist" /></td>
           </tr>
           <tr>
             <td colspan="2">
@@ -33,13 +39,13 @@ gallery", if possible!
           <tr>
             <!-- TODO: autocomplete category -->
             <td><label>Category</label></td>
-            <td><input type="text" v-model="image.category" placeholder="Plants" /></td>
+            <td><input type="text" v-model="category" placeholder="Plants" /></td>
           </tr>
         </table>
       </div>
 
       <div class="area-buttons">
-        <!-- <button class="btn" :disabled="!canPostToGallery" @click="postToGallery">🖼️ Post to gallery</button> -->
+        <button class="btn" :disabled="!canPostToGallery" @click="postToGallery">🖼️ Post to gallery</button>
         <button class="btn" :disabled="!canSetupGameClick" @click="setupGameClick">🧩 Post to gallery <br /> + set up game</button>
       </div>
 
@@ -51,7 +57,6 @@ import { defineComponent } from 'vue'
 
 import Upload from './Upload.vue'
 import ResponsiveImage from './ResponsiveImage.vue'
-import { Image } from '../../common/GameCommon'
 
 export default defineComponent({
   name: 'new-image-dialog',
@@ -62,35 +67,51 @@ export default defineComponent({
   emits: {
     bgclick: null,
     setupGameClick: null,
+    postToGalleryClick: null,
   },
   data () {
     return {
-      image: {
-        file: '',
-        url: '',
-        title: '',
-        category: '',
-      } as Image,
+      previewUrl: '',
+      file: null as File|null,
+      title: '',
+      category: '',
     }
   },
   computed: {
-    canPostToGallery () {
-      return !!this.image.url
+    canPostToGallery (): boolean {
+      return !!(this.previewUrl && this.file)
     },
-    canSetupGameClick () {
-      return !!this.image.url
+    canSetupGameClick (): boolean {
+      return !!(this.previewUrl && this.file)
     },
   },
   methods: {
-    mediaImgUploaded(data: any) {
-      this.image.file = data.image.file
-      this.image.url = data.image.url
+    preview (evt: Event) {
+      const target = (evt.target as HTMLInputElement)
+      if (!target.files) return;
+      const file = target.files[0]
+      if (!file) return;
+
+      const r = new FileReader()
+      r.readAsDataURL(file)
+      r.onload = (ev: any) => {
+        this.previewUrl = ev.target.result
+        this.file = file
+      }
     },
     postToGallery () {
-      this.$emit('postToGallery', this.image)
+      this.$emit('postToGalleryClick', {
+        file: this.file,
+        title: this.title,
+        category: this.category,
+      })
     },
     setupGameClick () {
-      this.$emit('setupGameClick', this.image)
+      this.$emit('setupGameClick', {
+        file: this.file,
+        title: this.title,
+        category: this.category,
+      })
     },
   },
 })
@@ -111,12 +132,12 @@ export default defineComponent({
 
 .new-image-dialog .area-image {
   grid-area: image;
+  margin: 20px;
 }
 .new-image-dialog .area-image.no-image {
   align-content: center;
   display: grid;
   text-align: center;
-  margin: 20px;
   border: dashed 6px;
   position: relative;
 }
@@ -146,6 +167,7 @@ export default defineComponent({
 }
 .new-image-dialog .area-buttons button {
   width: 100%;
+  margin-top: .5em;
 }
 .new-image-dialog .upload {
   position: absolute;

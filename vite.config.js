@@ -14,6 +14,10 @@ export default vite.defineConfig({
         target: 'http://localhost:1337',
         secure: false,
       },
+      '^/upload': {
+        target: 'http://localhost:1337',
+        secure: false,
+      },
     },
   },
 })

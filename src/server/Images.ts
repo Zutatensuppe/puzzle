@@ -4,6 +4,7 @@ import exif from 'exif'
 import sharp from 'sharp'
 
 import {UPLOAD_DIR, UPLOAD_URL} from './Dirs'
+import Db from './Db'
 
 const resizeImage = async (filename: string) => {
   if (!filename.toLowerCase().match(/\.(jpe?g|webp|png)$/)) {
@@ -46,16 +47,76 @@ async function getExifOrientation(imagePath: string) {
   })
 }
 
-const allImages = (sort: string) => {
+const getCategories = (db: Db, imageId: number) => {
+  const query = `
+select * from categories c
+inner join image_x_category ixc on c.id = ixc.category_id
+where ixc.image_id = ?`
+  return db._getMany(query, [imageId])
+}
+
+const imageFromDb = (db: Db, imageId: number) => {
+  const i = db.get('images', { id: imageId })
+  return {
+    id: i.id,
+    filename: i.filename,
+    file: `${UPLOAD_DIR}/${i.filename}`,
+    url: `${UPLOAD_URL}/${encodeURIComponent(i.filename)}`,
+    title: i.title,
+    categories: getCategories(db, i.id) as any[],
+    created: i.created * 1000,
+  }
+}
+
+const allImagesFromDb = (db: Db, categorySlug: string, sort: string) => {
+  const sortMap = {
+    alpha_asc: [{filename: 1}],
+    alpha_desc: [{filename: -1}],
+    date_asc: [{created: 1}],
+    date_desc: [{created: -1}],
+  } as Record<string, any>
+
+  // TODO: .... clean up
+  const wheresRaw: Record<string, any> = {}
+  if (categorySlug !== '') {
+    const c = db.get('categories', {slug: categorySlug})
+    if (!c) {
+      return []
+    }
+    const ids = db._getMany(`
+select i.id from image_x_category ixc
+inner join images i on i.id = ixc.image_id
+where ixc.category_id = ?;
+`, [c.id]).map(img => img.id)
+    if (ids.length === 0) {
+      return []
+    }
+    wheresRaw['id'] = {'$in': ids}
+  }
+  const images = db.getMany('images', wheresRaw, sortMap[sort])
+
+  return images.map(i => ({
+    id: i.id as number,
+    filename: i.filename,
+    file: `${UPLOAD_DIR}/${i.filename}`,
+    url: `${UPLOAD_URL}/${encodeURIComponent(i.filename)}`,
+    title: i.title,
+    categories: getCategories(db, i.id) as any[],
+    created: i.created * 1000,
+  }))
+}
+
+const allImagesFromDisk = (category: string, sort: string) => {
   let images = fs.readdirSync(UPLOAD_DIR)
     .filter(f => f.toLowerCase().match(/\.(jpe?g|webp|png)$/))
     .map(f => ({
+      id: 0,
       filename: f,
       file: `${UPLOAD_DIR}/${f}`,
       url: `${UPLOAD_URL}/${encodeURIComponent(f)}`,
-      title: '',
-      category: '',
-      ts: fs.statSync(`${UPLOAD_DIR}/${f}`).mtime.getTime(),
+      title: f.replace(/\.[a-z]+$/, ''),
+      categories: [] as any[],
+      created: fs.statSync(`${UPLOAD_DIR}/${f}`).mtime.getTime(),
     }))
 
   switch (sort) {
@@ -73,14 +134,14 @@ const allImages = (sort: string) => {
 
     case 'date_asc':
       images = images.sort((a, b) => {
-        return a.ts > b.ts ? 1 : -1
+        return a.created > b.created ? 1 : -1
       })
       break;
 
     case 'date_desc':
     default:
       images = images.sort((a, b) => {
-        return a.ts < b.ts ? 1 : -1
+        return a.created < b.created ? 1 : -1
       })
       break;
   }
@@ -102,7 +163,9 @@ async function getDimensions(imagePath: string) {
 }
 
 export default {
-  allImages,
+  allImagesFromDisk,
+  imageFromDb,
+  allImagesFromDb,
   resizeImage,
   getDimensions,
 }
