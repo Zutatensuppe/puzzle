@@ -30,8 +30,9 @@ in jigsawpuzzles.io
         </select>
       </label>
     </div>
-    <image-library :images="images" @imageClicked="imageClicked" />
+    <image-library :images="images" @imageClicked="onImageClicked" @imageEditClicked="onImageEditClicked" />
     <new-image-dialog v-if="dialog==='new-image'" @bgclick="dialog=''" @postToGalleryClick="postToGalleryClick" @setupGameClick="setupGameClick" />
+    <edit-image-dialog v-if="dialog==='edit-image'" @bgclick="dialog=''" @saveClick="onSaveImageClick" :image="image" />
     <new-game-dialog v-if="image && dialog==='new-game'" @bgclick="dialog=''" @newGame="onNewGame" :image="image" />
   </div>
 </template>
@@ -41,6 +42,7 @@ import { defineComponent } from 'vue'
 
 import ImageLibrary from './../components/ImageLibrary.vue'
 import NewImageDialog from './../components/NewImageDialog.vue'
+import EditImageDialog from './../components/EditImageDialog.vue'
 import NewGameDialog from './../components/NewGameDialog.vue'
 import { GameSettings, Image } from '../../common/GameCommon'
 import Util from '../../common/Util'
@@ -49,6 +51,7 @@ export default defineComponent({
   components: {
     ImageLibrary,
     NewImageDialog,
+    EditImageDialog,
     NewGameDialog,
   },
   data() {
@@ -86,9 +89,13 @@ export default defineComponent({
     async filtersChanged () {
       await this.loadImages()
     },
-    imageClicked (image: Image) {
+    onImageClicked (image: Image) {
       this.image = image
       this.dialog = 'new-game'
+    },
+    onImageEditClicked (image: Image) {
+      this.image = image
+      this.dialog = 'edit-image'
     },
     async uploadImage (data: any) {
       const formData = new FormData();
@@ -96,11 +103,31 @@ export default defineComponent({
       formData.append('title', data.title)
       formData.append('category', data.category)
 
-      const res = await fetch('/upload', {
+      const res = await fetch('/api/upload', {
         method: 'post',
         body: formData,
       })
       return await res.json()
+    },
+    async saveImage (data: any) {
+      const res = await fetch('/api/save-image', {
+        method: 'post',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          id: data.id,
+          title: data.title,
+          category: data.category,
+        }),
+      })
+      return await res.json()
+    },
+    async onSaveImageClick(data: any) {
+      await this.saveImage(data)
+      this.dialog = ''
+      await this.loadImages()
     },
     async postToGalleryClick(data: any) {
       await this.uploadImage(data)

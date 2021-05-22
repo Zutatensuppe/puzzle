@@ -90,7 +90,36 @@ app.get('/api/index-data', (req, res) => {
   })
 })
 
-app.post('/upload', (req, res) => {
+interface SaveImageRequestData {
+  id: number
+  title: string
+  category: string
+}
+app.post('/api/save-image', bodyParser.json(), (req, res) => {
+  const data = req.body as SaveImageRequestData
+  db.update('images', {
+    title: data.title,
+  }, {
+    id: data.id,
+  })
+
+  db.delete('image_x_category', { image_id: data.id })
+
+  if (data.category) {
+    const title = data.category
+    const slug = Util.slug(title)
+    const id = db.upsert('categories', { slug, title }, { slug }, 'id')
+    if (id) {
+      db.insert('image_x_category', {
+        image_id: data.id,
+        category_id: id,
+      })
+    }
+  }
+
+  res.send({ ok: true })
+})
+app.post('/api/upload', (req, res) => {
   upload(req, res, async (err: any) => {
     if (err) {
       log.log(err)

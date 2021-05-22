@@ -1,5 +1,10 @@
 <template>
-  <div class="imageteaser" :style="style" @click="onClick"></div>
+  <div
+    class="imageteaser"
+    :style="style"
+    @click="onClick">
+    <div class="btn edit" @click.stop="onEditClick">✏️</div>
+  </div>
 </template>
 <script lang="ts">
 import { defineComponent } from 'vue'
@@ -20,10 +25,22 @@ export default defineComponent({
       }
     },
   },
+  emits: {
+    click: null,
+    editClick: null,
+  },
   methods: {
     onClick() {
       this.$emit('click')
     },
+    onEditClick() {
+      this.$emit('editClick')
+    },
   },
 })
 </script>
+<style type="css">
+.imageteaser { position: relative; }
+.imageteaser .edit { display: none; position: absolute; }
+.imageteaser:hover .edit { display: inline-block; }
+</style>
