@@ -63,9 +63,10 @@ app.get('/api/conf', (req, res) => {
 
 app.get('/api/newgame-data', (req, res) => {
   const q = req.query as any
+  const tagSlugs: string[] = q.tags ? q.tags.split(',') : []
   res.send({
-    images: Images.allImagesFromDb(db, q.category, q.sort),
-    categories: db.getMany('categories', {}, [{ title: 1 }]),
+    images: Images.allImagesFromDb(db, tagSlugs, q.sort),
+    tags: db.getMany('categories', {}, [{ title: 1 }]),
   })
 })
 
@@ -93,8 +94,22 @@ app.get('/api/index-data', (req, res) => {
 interface SaveImageRequestData {
   id: number
   title: string
-  category: string
+  tags: string[]
 }
+
+const setImageTags = (db: Db, imageId: number, tags: string[]) => {
+  tags.forEach((tag: string) => {
+    const slug = Util.slug(tag)
+    const id = db.upsert('categories', { slug, title: tag }, { slug }, 'id')
+    if (id) {
+      db.insert('image_x_category', {
+        image_id: imageId,
+        category_id: id,
+      })
+    }
+  })
+}
+
 app.post('/api/save-image', bodyParser.json(), (req, res) => {
   const data = req.body as SaveImageRequestData
   db.update('images', {
@@ -105,16 +120,8 @@ app.post('/api/save-image', bodyParser.json(), (req, res) => {
 
   db.delete('image_x_category', { image_id: data.id })
 
-  if (data.category) {
-    const title = data.category
-    const slug = Util.slug(title)
-    const id = db.upsert('categories', { slug, title }, { slug }, 'id')
-    if (id) {
-      db.insert('image_x_category', {
-        image_id: data.id,
-        category_id: id,
-      })
-    }
+  if (data.tags) {
+    setImageTags(db, data.id, data.tags)
   }
 
   res.send({ ok: true })
@@ -140,16 +147,8 @@ app.post('/api/upload', (req, res) => {
       created: Time.timestamp(),
     })
 
-    if (req.body.category) {
-      const title = req.body.category
-      const slug = Util.slug(title)
-      const id = db.upsert('categories', { slug, title }, { slug }, 'id')
-      if (id) {
-        db.insert('image_x_category', {
-          image_id: imageId,
-          category_id: id,
-        })
-      }
+    if (req.body.tags) {
+      setImageTags(db, imageId as number, req.body.tags)
     }
 
     res.send(Images.imageFromDb(db, imageId as number))

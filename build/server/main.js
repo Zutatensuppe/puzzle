@@ -1258,7 +1258,7 @@ async function getExifOrientation(imagePath) {
         });
     });
 }
-const getCategories = (db, imageId) => {
+const getTags = (db, imageId) => {
     const query = `
 select * from categories c
 inner join image_x_category ixc on c.id = ixc.category_id
@@ -1273,11 +1273,11 @@ const imageFromDb = (db, imageId) => {
         file: `${UPLOAD_DIR}/${i.filename}`,
         url: `${UPLOAD_URL}/${encodeURIComponent(i.filename)}`,
         title: i.title,
-        categories: getCategories(db, i.id),
+        tags: getTags(db, i.id),
         created: i.created * 1000,
     };
 };
-const allImagesFromDb = (db, categorySlug, sort) => {
+const allImagesFromDb = (db, tagSlugs, sort) => {
     const sortMap = {
         alpha_asc: [{ filename: 1 }],
         alpha_desc: [{ filename: -1 }],
@@ -1286,16 +1286,18 @@ const allImagesFromDb = (db, categorySlug, sort) => {
     };
     // TODO: .... clean up
     const wheresRaw = {};
-    if (categorySlug !== '') {
-        const c = db.get('categories', { slug: categorySlug });
+    if (tagSlugs.length > 0) {
+        const c = db.getMany('categories', { slug: { '$in': tagSlugs } });
         if (!c) {
             return [];
         }
+        const where = db._buildWhere({
+            'category_id': { '$in': c.map(x => x.id) }
+        });
         const ids = db._getMany(`
 select i.id from image_x_category ixc
-inner join images i on i.id = ixc.image_id
-where ixc.category_id = ?;
-`, [c.id]).map(img => img.id);
+inner join images i on i.id = ixc.image_id ${where.sql};
+`, where.values).map(img => img.id);
         if (ids.length === 0) {
             return [];
         }
@@ -1308,11 +1310,11 @@ where ixc.category_id = ?;
         file: `${UPLOAD_DIR}/${i.filename}`,
         url: `${UPLOAD_URL}/${encodeURIComponent(i.filename)}`,
         title: i.title,
-        categories: getCategories(db, i.id),
+        tags: getTags(db, i.id),
         created: i.created * 1000,
     }));
 };
-const allImagesFromDisk = (category, sort) => {
+const allImagesFromDisk = (tags, sort) => {
     let images = fs.readdirSync(UPLOAD_DIR)
         .filter(f => f.toLowerCase().match(/\.(jpe?g|webp|png)$/))
         .map(f => ({
@@ -1321,7 +1323,7 @@ const allImagesFromDisk = (category, sort) => {
         file: `${UPLOAD_DIR}/${f}`,
         url: `${UPLOAD_URL}/${encodeURIComponent(f)}`,
         title: f.replace(/\.[a-z]+$/, ''),
-        categories: [],
+        tags: [],
         created: fs.statSync(`${UPLOAD_DIR}/${f}`).mtime.getTime(),
     }));
     switch (sort) {
@@ -1901,9 +1903,10 @@ app.get('/api/conf', (req, res) => {
 });
 app.get('/api/newgame-data', (req, res) => {
     const q = req.query;
+    const tagSlugs = q.tags ? q.tags.split(',') : [];
     res.send({
-        images: Images.allImagesFromDb(db, q.category, q.sort),
-        categories: db.getMany('categories', {}, [{ title: 1 }]),
+        images: Images.allImagesFromDb(db, tagSlugs, q.sort),
+        tags: db.getMany('categories', {}, [{ title: 1 }]),
     });
 });
 app.get('/api/index-data', (req, res) => {
@@ -1925,6 +1928,18 @@ app.get('/api/index-data', (req, res) => {
         gamesFinished: games.filter(g => !!g.finished),
     });
 });
+const setImageTags = (db, imageId, tags) => {
+    tags.forEach((tag) => {
+        const slug = Util.slug(tag);
+        const id = db.upsert('categories', { slug, title: tag }, { slug }, 'id');
+        if (id) {
+            db.insert('image_x_category', {
+                image_id: imageId,
+                category_id: id,
+            });
+        }
+    });
+};
 app.post('/api/save-image', bodyParser.json(), (req, res) => {
     const data = req.body;
     db.update('images', {
@@ -1933,16 +1948,8 @@ app.post('/api/save-image', bodyParser.json(), (req, res) => {
         id: data.id,
     });
     db.delete('image_x_category', { image_id: data.id });
-    if (data.category) {
-        const title = data.category;
-        const slug = Util.slug(title);
-        const id = db.upsert('categories', { slug, title }, { slug }, 'id');
-        if (id) {
-            db.insert('image_x_category', {
-                image_id: data.id,
-                category_id: id,
-            });
-        }
+    if (data.tags) {
+        setImageTags(db, data.id, data.tags);
     }
     res.send({ ok: true });
 });
@@ -1965,16 +1972,8 @@ app.post('/api/upload', (req, res) => {
             title: req.body.title || '',
             created: Time.timestamp(),
         });
-        if (req.body.category) {
-            const title = req.body.category;
-            const slug = Util.slug(title);
-            const id = db.upsert('categories', { slug, title }, { slug }, 'id');
-            if (id) {
-                db.insert('image_x_category', {
-                    image_id: imageId,
-                    category_id: id,
-                });
-            }
+        if (req.body.tags) {
+            setImageTags(db, imageId, req.body.tags);
         }
         res.send(Images.imageFromDb(db, imageId));
     });

@@ -6,6 +6,7 @@
   --link-color: #808db0;
   --link-hover-color: #c5cfeb;
   --highlight-color: #dd7e7e;
+  --positive-color: #64a756;
   --input-bg-color: #262523;
   --bg-color: rgba(0,0,0,.7);
 }
@@ -210,6 +211,18 @@ kbd {
 
 .hint {
   color: var(--main-darker-color);
+}
+
+.bit {
+  background: rgb(59, 55, 55);
+  border-radius: .5em;
+  padding: .25em .5em;
+  display: inline-block;
+  margin: 0 .25em .25em 0;
+  cursor: pointer;
+}
+.bit.on {
+  color: var(--positive-color);
 }
 
 .upload-image-teaser {

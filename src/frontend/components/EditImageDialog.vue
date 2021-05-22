@@ -20,9 +20,11 @@
             </td>
           </tr>
           <tr>
-            <!-- TODO: autocomplete category -->
-            <td><label>Category</label></td>
-            <td><input type="text" v-model="category" placeholder="Plants" /></td>
+            <!-- TODO: autocomplete tags -->
+            <td><label>Tags</label></td>
+            <td>
+              <tags-input v-model="tags" />
+            </td>
           </tr>
         </table>
       </div>
@@ -36,14 +38,16 @@
 </template>
 <script lang="ts">
 import { defineComponent, PropType } from 'vue'
-import { Image } from '../../common/GameCommon'
+import { Image, Tag } from '../../common/GameCommon'
 
 import ResponsiveImage from './ResponsiveImage.vue'
+import TagsInput from './TagsInput.vue'
 
 export default defineComponent({
   name: 'edit-image-dialog',
   components: {
     ResponsiveImage,
+    TagsInput,
   },
   props: {
     image: {
@@ -58,19 +62,19 @@ export default defineComponent({
   data () {
     return {
       title: '',
-      category: '',
+      tags: [] as string[],
     }
   },
   created () {
     this.title = this.image.title
-    this.category = this.image.categories.length > 0 ? this.image.categories[0].title : ''
+    this.tags = this.image.tags.map((t: Tag) => t.title)
   },
   methods: {
     saveImage () {
       this.$emit('saveClick', {
         id: this.image.id,
         title: this.title,
-        category: this.category,
+        tags: this.tags,
       })
     },
   },

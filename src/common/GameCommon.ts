@@ -8,7 +8,7 @@ export type EncodedPlayer = Array<any>
 export type EncodedPiece = Array<any>
 export type EncodedPieceShape = number
 
-export interface Category {
+export interface Tag {
   id: number
   slug: string
   title: string
@@ -34,7 +34,7 @@ export interface Image {
   file: string
   url: string
   title: string
-  categories: Array<Category>
+  tags: Array<Tag>
   created: number
 }
 

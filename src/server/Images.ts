@@ -47,7 +47,7 @@ async function getExifOrientation(imagePath: string) {
   })
 }
 
-const getCategories = (db: Db, imageId: number) => {
+const getTags = (db: Db, imageId: number) => {
   const query = `
 select * from categories c
 inner join image_x_category ixc on c.id = ixc.category_id
@@ -63,12 +63,12 @@ const imageFromDb = (db: Db, imageId: number) => {
     file: `${UPLOAD_DIR}/${i.filename}`,
     url: `${UPLOAD_URL}/${encodeURIComponent(i.filename)}`,
     title: i.title,
-    categories: getCategories(db, i.id) as any[],
+    tags: getTags(db, i.id) as any[],
     created: i.created * 1000,
   }
 }
 
-const allImagesFromDb = (db: Db, categorySlug: string, sort: string) => {
+const allImagesFromDb = (db: Db, tagSlugs: string[], sort: string) => {
   const sortMap = {
     alpha_asc: [{filename: 1}],
     alpha_desc: [{filename: -1}],
@@ -78,16 +78,18 @@ const allImagesFromDb = (db: Db, categorySlug: string, sort: string) => {
 
   // TODO: .... clean up
   const wheresRaw: Record<string, any> = {}
-  if (categorySlug !== '') {
-    const c = db.get('categories', {slug: categorySlug})
+  if (tagSlugs.length > 0) {
+    const c = db.getMany('categories', {slug: {'$in': tagSlugs}})
     if (!c) {
       return []
     }
+    const where = db._buildWhere({
+      'category_id': {'$in': c.map(x => x.id)}
+    })
     const ids = db._getMany(`
 select i.id from image_x_category ixc
-inner join images i on i.id = ixc.image_id
-where ixc.category_id = ?;
-`, [c.id]).map(img => img.id)
+inner join images i on i.id = ixc.image_id ${where.sql};
+`, where.values).map(img => img.id)
     if (ids.length === 0) {
       return []
     }
@@ -101,12 +103,12 @@ where ixc.category_id = ?;
     file: `${UPLOAD_DIR}/${i.filename}`,
     url: `${UPLOAD_URL}/${encodeURIComponent(i.filename)}`,
     title: i.title,
-    categories: getCategories(db, i.id) as any[],
+    tags: getTags(db, i.id) as any[],
     created: i.created * 1000,
   }))
 }
 
-const allImagesFromDisk = (category: string, sort: string) => {
+const allImagesFromDisk = (tags: string[], sort: string) => {
   let images = fs.readdirSync(UPLOAD_DIR)
     .filter(f => f.toLowerCase().match(/\.(jpe?g|webp|png)$/))
     .map(f => ({
@@ -115,7 +117,7 @@ const allImagesFromDisk = (category: string, sort: string) => {
       file: `${UPLOAD_DIR}/${f}`,
       url: `${UPLOAD_URL}/${encodeURIComponent(f)}`,
       title: f.replace(/\.[a-z]+$/, ''),
-      categories: [] as any[],
+      tags: [] as any[],
       created: fs.statSync(`${UPLOAD_DIR}/${f}`).mtime.getTime(),
     }))
 

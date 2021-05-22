@@ -13,12 +13,13 @@ in jigsawpuzzles.io
     </div>
 
     <div>
-      <label v-if="categories.length > 0">
-        Category:
-        <select v-model="filters.category" @change="filtersChanged">
+      <label v-if="tags.length > 0">
+        Tags:
+        <span class="bit" v-for="(t,idx) in tags" :key="idx" @click="toggleTag(t)" :class="{on: filters.tags.includes(t.slug)}">{{t.title}}</span>
+        <!-- <select v-model="filters.tags" @change="filtersChanged">
           <option value="">All</option>
-          <option v-for="(c, idx) in categories" :key="idx" :value="c.slug">{{c.title}}</option>
-        </select>
+          <option v-for="(c, idx) in tags" :key="idx" :value="c.slug">{{c.title}}</option>
+        </select> -->
       </label>
       <label>
         Sort by:
@@ -44,7 +45,7 @@ import ImageLibrary from './../components/ImageLibrary.vue'
 import NewImageDialog from './../components/NewImageDialog.vue'
 import EditImageDialog from './../components/EditImageDialog.vue'
 import NewGameDialog from './../components/NewGameDialog.vue'
-import { GameSettings, Image } from '../../common/GameCommon'
+import { GameSettings, Image, Tag } from '../../common/GameCommon'
 import Util from '../../common/Util'
 
 export default defineComponent({
@@ -58,10 +59,10 @@ export default defineComponent({
     return {
       filters: {
         sort: 'date_desc',
-        category: '',
+        tags: [] as string[],
       },
       images: [],
-      categories: [],
+      tags: [],
 
       image: {
         id: 0,
@@ -69,7 +70,7 @@ export default defineComponent({
         file: '',
         url: '',
         title: '',
-        categories: [],
+        tags: [],
         created: 0,
       } as Image,
 
@@ -80,11 +81,19 @@ export default defineComponent({
     await this.loadImages()
   },
   methods: {
+    toggleTag (t: Tag) {
+      if (this.filters.tags.includes(t.slug)) {
+        this.filters.tags = this.filters.tags.filter(slug => slug !== t.slug)
+      } else {
+        this.filters.tags.push(t.slug)
+      }
+      this.filtersChanged()
+    },
     async loadImages () {
       const res = await fetch(`/api/newgame-data${Util.asQueryArgs(this.filters)}`)
       const json = await res.json()
       this.images = json.images
-      this.categories = json.categories
+      this.tags = json.tags
     },
     async filtersChanged () {
       await this.loadImages()
@@ -101,7 +110,7 @@ export default defineComponent({
       const formData = new FormData();
       formData.append('file', data.file, data.file.name);
       formData.append('title', data.title)
-      formData.append('category', data.category)
+      formData.append('tags', data.tags)
 
       const res = await fetch('/api/upload', {
         method: 'post',
@@ -119,7 +128,7 @@ export default defineComponent({
         body: JSON.stringify({
           id: data.id,
           title: data.title,
-          category: data.category,
+          tags: data.tags,
         }),
       })
       return await res.json()

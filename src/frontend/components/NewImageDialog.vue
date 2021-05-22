@@ -16,12 +16,8 @@ gallery", if possible!
         <div v-else>
           <label class="upload">
             <input type="file" style="display: none" @change="preview" accept="image/*" />
-            <span class="btn">{{label || 'Upload File'}}</span>
+            <span class="btn">Upload File</span>
           </label>
-
-
-          <!-- TODO: drop area for image -->
-          <!-- <upload class="upload" @uploaded="mediaImgUploaded($event)" accept="image/*" label="Upload an image" /> -->
         </div>
       </div>
 
@@ -37,9 +33,11 @@ gallery", if possible!
             </td>
           </tr>
           <tr>
-            <!-- TODO: autocomplete category -->
-            <td><label>Category</label></td>
-            <td><input type="text" v-model="category" placeholder="Plants" /></td>
+            <!-- TODO: autocomplete tags -->
+            <td><label>Tags</label></td>
+            <td>
+              <tags-input v-model="tags" />
+            </td>
           </tr>
         </table>
       </div>
@@ -55,14 +53,14 @@ gallery", if possible!
 <script lang="ts">
 import { defineComponent } from 'vue'
 
-import Upload from './Upload.vue'
 import ResponsiveImage from './ResponsiveImage.vue'
+import TagsInput from './TagsInput.vue'
 
 export default defineComponent({
   name: 'new-image-dialog',
   components: {
-    Upload,
     ResponsiveImage,
+    TagsInput,
   },
   emits: {
     bgclick: null,
@@ -74,7 +72,7 @@ export default defineComponent({
       previewUrl: '',
       file: null as File|null,
       title: '',
-      category: '',
+      tags: [] as string[],
     }
   },
   computed: {
@@ -103,14 +101,14 @@ export default defineComponent({
       this.$emit('postToGalleryClick', {
         file: this.file,
         title: this.title,
-        category: this.category,
+        tags: this.tags,
       })
     },
     setupGameClick () {
       this.$emit('setupGameClick', {
         file: this.file,
         title: this.title,
-        category: this.category,
+        tags: this.tags,
       })
     },
   },
