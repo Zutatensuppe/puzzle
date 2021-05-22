@@ -1,6 +1,6 @@
-import GameCommon from '../common/GameCommon.js'
-import { logger } from '../common/Util.js'
-import GameStorage from '../server/GameStorage.js'
+import GameCommon from '../src/common/GameCommon'
+import { logger } from '../src/common/Util'
+import GameStorage from '../src/server/GameStorage'
 
 const log = logger('fix_tiles.js')
 

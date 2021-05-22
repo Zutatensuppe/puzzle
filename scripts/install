@@ -2,6 +2,6 @@
 
 npm install
 
-if [ ! -e "$RUN_DIR/server/config.js" ]; then
-  cp "$RUN_DIR/server/config.example.js" "$RUN_DIR/server/config.js"
+if [ ! -e "$RUN_DIR/config.json" ]; then
+  cp "$RUN_DIR/config.example.json" "$RUN_DIR/config.json"
 fi

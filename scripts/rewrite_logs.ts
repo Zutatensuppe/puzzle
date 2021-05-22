@@ -1,7 +1,7 @@
 import fs from 'fs'
-import Protocol from '../common/Protocol.js'
-import { logger } from '../common/Util.js'
-import { DATA_DIR } from '../server/Dirs.js'
+import Protocol from '../src/common/Protocol'
+import { logger } from '../src/common/Util'
+import { DATA_DIR } from '../src/server/Dirs'
 
 const log = logger('rewrite_logs')
 

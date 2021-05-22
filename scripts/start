@@ -1,0 +1,5 @@
+#!/bin/sh -e
+
+"$RUN_BIN" install
+"$RUN_BIN" build
+"$RUN_BIN" server

@@ -1,0 +1,8 @@
+#!/bin/sh
+
+nodemon \
+  -x "node --experimental-specifier-resolution=node --loader ts-node/esm" \
+  -w src/server \
+  -w src/common \
+  src/server/main.ts \
+  -- -c config.json
