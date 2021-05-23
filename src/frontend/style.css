@@ -189,10 +189,6 @@ input:focus {
   cursor: pointer;
 }
 
-canvas.loaded {
-  cursor: none;
-}
-
 kbd {
   background-color: #eee;
   border-radius: 3px;
@@ -312,4 +308,4 @@ html.view-game body { overflow: hidden; }
 
 html.view-replay { overflow: hidden; }
 html.view-replay body { overflow: hidden; }
-html.view-replay canvas { cursor: grab; }
+

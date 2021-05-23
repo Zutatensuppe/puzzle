@@ -28,11 +28,11 @@ async function resizeBitmap (
   return await createImageBitmap(c)
 }
 
-async function colorize(
+function colorizedCanvas(
   bitmap: ImageBitmap,
   mask: ImageBitmap,
-  color: string
-): Promise<ImageBitmap> {
+  color: string,
+): HTMLCanvasElement {
   const c = createCanvas(bitmap.width, bitmap.height)
   const ctx = c.getContext('2d') as CanvasRenderingContext2D
   ctx.save()
@@ -45,12 +45,12 @@ async function colorize(
   ctx.globalCompositeOperation = "destination-over"
   ctx.drawImage(bitmap, 0, 0)
   ctx.restore()
-  return await createImageBitmap(c)
+  return c
 }
 
 export default {
   createCanvas,
   loadImageToBitmap,
   resizeBitmap,
-  colorize,
+  colorizedCanvas,
 }

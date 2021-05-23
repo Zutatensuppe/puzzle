@@ -222,7 +222,7 @@ export async function main(
 ) {
   if (typeof window.DEBUG === 'undefined') window.DEBUG = false
 
-  const shouldDrawPlayerText = (player: Player) => {
+  const shouldDrawPlayer = (player: Player) => {
     return MODE === MODE_REPLAY || player.id !== clientId
   }
 
@@ -244,7 +244,9 @@ export async function main(
       const cursor = p.d ? cursorGrab : cursorHand
       if (p.color) {
         const mask = p.d ? cursorGrabMask : cursorHandMask
-        cursors[key] = await Graphics.colorize(cursor, mask, p.color)
+        cursors[key] = await createImageBitmap(
+          Graphics.colorizedCanvas(cursor, mask, p.color)
+        )
       } else {
         cursors[key] = cursor
       }
@@ -375,6 +377,21 @@ export async function main(
         || localStorage.getItem('player_name')
         || 'anon')
   }
+
+  let cursorDown: string = ''
+  let cursor: string = ''
+  let cursorState: boolean = false
+  const updatePlayerCursorState = (d: boolean) => {
+    cursorState = d
+    const [url, fallback] = d ? [cursorDown, 'grab'] : [cursor, 'default']
+    canvas.style.cursor = `url('${url}') ${CURSOR_W_2} ${CURSOR_H_2}, ${fallback}`
+  }
+  const updatePlayerCursorColor = (color: string) => {
+    cursorDown = Graphics.colorizedCanvas(cursorGrab, cursorGrabMask, color).toDataURL()
+    cursor = Graphics.colorizedCanvas(cursorHand, cursorHandMask, color).toDataURL()
+    updatePlayerCursorState(cursorState)
+  }
+  updatePlayerCursorColor(playerColor())
 
   const doSetSpeedStatus = () => {
     if (HUD.setReplaySpeed) {
@@ -522,11 +539,15 @@ export async function main(
 
             _last_mouse_down = mouse
           }
+        } else if (type === Protocol.INPUT_EV_PLAYER_COLOR) {
+          updatePlayerCursorColor(evt[1])
         } else if (type === Protocol.INPUT_EV_MOUSE_DOWN) {
           const pos = { x: evt[1], y: evt[2] }
           _last_mouse_down = viewport.worldToViewport(pos)
+          updatePlayerCursorState(true)
         } else if (type === Protocol.INPUT_EV_MOUSE_UP) {
           _last_mouse_down = null
+          updatePlayerCursorState(false)
         } else if (type === Protocol.INPUT_EV_ZOOM_IN) {
           const pos = { x: evt[1], y: evt[2] }
           RERENDER = true
@@ -654,10 +675,10 @@ export async function main(
     const texts: Array<FixedLengthArray<[string, number, number]>> = []
     // Cursors
     for (const p of Game.getActivePlayers(gameId, ts)) {
-      bmp = await getPlayerCursor(p)
-      pos = viewport.worldToViewport(p)
-      ctx.drawImage(bmp, pos.x - CURSOR_W_2, pos.y - CURSOR_H_2)
-      if (shouldDrawPlayerText(p)) {
+      if (shouldDrawPlayer(p)) {
+        bmp = await getPlayerCursor(p)
+        pos = viewport.worldToViewport(p)
+        ctx.drawImage(bmp, pos.x - CURSOR_W_2, pos.y - CURSOR_H_2)
         // performance:
         // not drawing text directly here, to have less ctx
         // switches between drawImage and fillTxt
