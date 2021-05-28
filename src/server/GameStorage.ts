@@ -1,5 +1,5 @@
 import fs from 'fs'
-import GameCommon, { ScoreMode } from './../common/GameCommon'
+import GameCommon, { Piece, ScoreMode } from './../common/GameCommon'
 import Util, { logger } from './../common/Util'
 import { Rng } from './../common/Rng'
 import { DATA_DIR } from './Dirs'
@@ -40,7 +40,9 @@ function loadGame(gameId: string): void {
     game.puzzle.data.started = Math.round(fs.statSync(file).ctimeMs)
   }
   if (typeof game.puzzle.data.finished === 'undefined') {
-    let unfinished = game.puzzle.tiles.map(Util.decodeTile).find((t: any) => t.owner !== -1)
+    const unfinished = game.puzzle.tiles
+      .map(Util.decodeTile)
+      .find((t: Piece) => t.owner !== -1)
     game.puzzle.data.finished = unfinished ? 0 : Time.timestamp()
   }
   if (!Array.isArray(game.players)) {
@@ -60,13 +62,13 @@ function loadGame(gameId: string): void {
   GameCommon.setGame(gameObject.id, gameObject)
 }
 
-function persistGames() {
+function persistGames(): void {
   for (const gameId of Object.keys(DIRTY_GAMES)) {
     persistGame(gameId)
   }
 }
 
-function persistGame(gameId: string) {
+function persistGame(gameId: string): void {
   const game = GameCommon.get(gameId)
   if (game.id in DIRTY_GAMES) {
     setClean(game.id)

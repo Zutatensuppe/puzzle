@@ -851,7 +851,7 @@ const getPlayerPoints = (gameId, playerId) => {
 const areGrouped = (gameId, tileIdx1, tileIdx2) => {
     const g1 = getTileGroup(gameId, tileIdx1);
     const g2 = getTileGroup(gameId, tileIdx2);
-    return g1 && g1 === g2;
+    return !!(g1 && g1 === g2);
 };
 const getTableWidth = (gameId) => {
     return GAMES[gameId].puzzle.info.table.width;
@@ -1358,11 +1358,14 @@ async function getDimensions(imagePath) {
     // https://jdhao.github.io/2019/07/31/image_rotation_exif_info/
     if (orientation === 6 || orientation === 8) {
         return {
-            width: dimensions.height,
-            height: dimensions.width,
+            w: dimensions.height || 0,
+            h: dimensions.width || 0,
         };
     }
-    return dimensions;
+    return {
+        w: dimensions.width || 0,
+        h: dimensions.height || 0,
+    };
 }
 var Images = {
     allImagesFromDisk,
@@ -1380,10 +1383,10 @@ async function createPuzzle(rng, targetTiles, image, ts) {
     const imageUrl = image.url;
     // determine puzzle information from the image dimensions
     const dim = await Images.getDimensions(imagePath);
-    if (!dim || !dim.width || !dim.height) {
+    if (!dim.w || !dim.h) {
         throw `[ 2021-05-16 invalid dimension for path ${imagePath} ]`;
     }
-    const info = determinePuzzleInfo(dim.width, dim.height, targetTiles);
+    const info = determinePuzzleInfo(dim.w, dim.h, targetTiles);
     let tiles = new Array(info.tiles);
     for (let i = 0; i < tiles.length; i++) {
         tiles[i] = { idx: i };
@@ -1579,7 +1582,9 @@ function loadGame(gameId) {
         game.puzzle.data.started = Math.round(fs.statSync(file).ctimeMs);
     }
     if (typeof game.puzzle.data.finished === 'undefined') {
-        let unfinished = game.puzzle.tiles.map(Util.decodeTile).find((t) => t.owner !== -1);
+        const unfinished = game.puzzle.tiles
+            .map(Util.decodeTile)
+            .find((t) => t.owner !== -1);
         game.puzzle.data.finished = unfinished ? 0 : Time.timestamp();
     }
     if (!Array.isArray(game.players)) {

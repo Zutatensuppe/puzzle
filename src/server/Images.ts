@@ -5,6 +5,7 @@ import sharp from 'sharp'
 
 import {UPLOAD_DIR, UPLOAD_URL} from './Dirs'
 import Db from './Db'
+import { Dim } from '../common/Geometry'
 
 const resizeImage = async (filename: string) => {
   if (!filename.toLowerCase().match(/\.(jpe?g|webp|png)$/)) {
@@ -150,18 +151,21 @@ const allImagesFromDisk = (tags: string[], sort: string) => {
   return images
 }
 
-async function getDimensions(imagePath: string) {
+async function getDimensions(imagePath: string): Promise<Dim> {
   let dimensions = sizeOf(imagePath)
   const orientation = await getExifOrientation(imagePath)
   // when image is rotated to the left or right, switch width/height
   // https://jdhao.github.io/2019/07/31/image_rotation_exif_info/
   if (orientation === 6 || orientation === 8) {
     return {
-      width: dimensions.height,
-      height: dimensions.width,
+      w: dimensions.height || 0,
+      h: dimensions.width || 0,
     }
   }
-  return dimensions
+  return {
+    w: dimensions.width || 0,
+    h: dimensions.height || 0,
+  }
 }
 
 export default {

@@ -31,7 +31,7 @@ async function createGame(
   image: { file: string, url: string },
   ts: number,
   scoreMode: ScoreMode
-) {
+): Promise<void> {
   const gameObject = await createGameObject(gameId, targetTiles, image, ts, scoreMode)
 
   GameLog.create(gameId)
@@ -41,7 +41,7 @@ async function createGame(
   GameStorage.setDirty(gameId)
 }
 
-function addPlayer(gameId: string, playerId: string, ts: number) {
+function addPlayer(gameId: string, playerId: string, ts: number): void {
   const idx = GameCommon.getPlayerIndexById(gameId, playerId)
   const diff = ts - GameCommon.getStartTs(gameId)
   if (idx === -1) {
@@ -54,7 +54,12 @@ function addPlayer(gameId: string, playerId: string, ts: number) {
   GameStorage.setDirty(gameId)
 }
 
-function handleInput(gameId: string, playerId: string, input: any, ts: number) {
+function handleInput(
+  gameId: string,
+  playerId: string,
+  input: any,
+  ts: number
+): Array<Array<any>> {
   const idx = GameCommon.getPlayerIndexById(gameId, playerId)
   const diff = ts - GameCommon.getStartTs(gameId)
   GameLog.log(gameId, Protocol.LOG_HANDLE_INPUT, idx, input, diff)

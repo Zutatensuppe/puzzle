@@ -1,9 +1,10 @@
 import Util from './../common/Util'
 import { Rng } from './../common/Rng'
 import Images from './Images'
-import { EncodedPiece, EncodedPieceShape, PieceShape } from '../common/GameCommon'
+import { EncodedPiece, EncodedPieceShape, PieceShape, Puzzle } from '../common/GameCommon'
+import { Point } from '../common/Geometry'
 
-interface PuzzleInfo {
+interface PuzzleCreationInfo {
   width: number
   height: number
   tileSize: number
@@ -23,16 +24,20 @@ async function createPuzzle(
   targetTiles: number,
   image: { file: string, url: string },
   ts: number
-) {
+): Promise<Puzzle> {
   const imagePath = image.file
   const imageUrl = image.url
 
   // determine puzzle information from the image dimensions
   const dim = await Images.getDimensions(imagePath)
-  if (!dim || !dim.width || !dim.height) {
+  if (!dim.w || !dim.h) {
     throw `[ 2021-05-16 invalid dimension for path ${imagePath} ]`
   }
-  const info: PuzzleInfo = determinePuzzleInfo(dim.width, dim.height, targetTiles)
+  const info: PuzzleCreationInfo = determinePuzzleInfo(
+    dim.w,
+    dim.h,
+    targetTiles
+  )
 
   let tiles = new Array(info.tiles)
   for (let i = 0; i < tiles.length; i++) {
@@ -40,10 +45,10 @@ async function createPuzzle(
   }
   const shapes = determinePuzzleTileShapes(rng, info)
 
-  let positions = new Array(info.tiles)
+  let positions: Point[] = new Array(info.tiles)
   for (let tile of tiles) {
     const coord = Util.coordByTileIdx(info, tile.idx)
-    positions[tile.idx] ={
+    positions[tile.idx] = {
       // instead of info.tileSize, we use info.tileDrawSize
       // to spread the tiles a bit
       x: coord.x * info.tileSize * 1.5,
@@ -55,7 +60,7 @@ async function createPuzzle(
   const tableHeight = info.height * 3
 
   const off = info.tileSize * 1.5
-  let last = {
+  let last: Point = {
     x: info.width - (1 * off),
     y: info.height - (2 * off),
   }
@@ -159,7 +164,7 @@ async function createPuzzle(
 
 function determinePuzzleTileShapes(
   rng: Rng,
-  info: PuzzleInfo
+  info: PuzzleCreationInfo
 ): Array<EncodedPieceShape> {
   const tabs = [-1, 1]
 
@@ -196,7 +201,7 @@ const determinePuzzleInfo = (
   w: number,
   h: number,
   targetTiles: number
-): PuzzleInfo => {
+): PuzzleCreationInfo => {
   const {tilesX, tilesY} = determineTilesXY(w, h, targetTiles)
   const tiles = tilesX * tilesY
   const tileSize = TILE_SIZE

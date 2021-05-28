@@ -4,16 +4,16 @@ import WebSocket from 'ws'
 const log = logger('GameSocket.js')
 
 // Map<gameId, Socket[]>
-const SOCKETS = {} as Record<string, Array<WebSocket>>
+const SOCKETS = {} as Record<string, WebSocket[]>
 
-function socketExists(gameId: string, socket: WebSocket) {
+function socketExists(gameId: string, socket: WebSocket): boolean {
   if (!(gameId in SOCKETS)) {
     return false
   }
   return SOCKETS[gameId].includes(socket)
 }
 
-function removeSocket(gameId: string, socket: WebSocket) {
+function removeSocket(gameId: string, socket: WebSocket): void {
   if (!(gameId in SOCKETS)) {
     return
   }
@@ -22,7 +22,7 @@ function removeSocket(gameId: string, socket: WebSocket) {
   log.log('socket count: ', Object.keys(SOCKETS[gameId]).length)
 }
 
-function addSocket(gameId: string, socket: WebSocket) {
+function addSocket(gameId: string, socket: WebSocket): void {
   if (!(gameId in SOCKETS)) {
     SOCKETS[gameId] = []
   }
@@ -33,7 +33,7 @@ function addSocket(gameId: string, socket: WebSocket) {
   }
 }
 
-function getSockets(gameId: string) {
+function getSockets(gameId: string): WebSocket[] {
   if (!(gameId in SOCKETS)) {
     return []
   }
