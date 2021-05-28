@@ -32,7 +32,10 @@ export const durationStr = (duration: number): string => {
   return `${d}d ${h}h ${m}m ${s}s`
 }
 
-export const timeDiffStr = (from: number, to: number) => durationStr(to - from)
+export const timeDiffStr = (
+  from: number,
+  to: number
+): string => durationStr(to - from)
 
 export default {
   MS,
