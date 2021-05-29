@@ -1,6 +1,7 @@
 import WebSocketServer from './WebSocketServer'
 import WebSocket from 'ws'
 import express from 'express'
+import compression from 'compression'
 import multer from 'multer'
 import Protocol from './../common/Protocol'
 import Util, { logger } from './../common/Util'
@@ -17,7 +18,6 @@ import {
   DB_PATCHES_DIR,
   PUBLIC_DIR,
   UPLOAD_DIR,
-  UPLOAD_URL
 } from './Dirs'
 import { GameSettings, ScoreMode } from '../common/GameCommon'
 import GameStorage from './GameStorage'
@@ -46,6 +46,8 @@ const log = logger('main.js')
 const port = config.http.port
 const hostname = config.http.hostname
 const app = express()
+
+app.use(compression())
 
 const storage = multer.diskStorage({
   destination: UPLOAD_DIR,

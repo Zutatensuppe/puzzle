@@ -1,5 +1,6 @@
 import WebSocket from 'ws';
 import express from 'express';
+import compression from 'compression';
 import multer from 'multer';
 import fs from 'fs';
 import readline from 'readline';
@@ -1916,6 +1917,7 @@ const log = logger('main.js');
 const port = config.http.port;
 const hostname = config.http.hostname;
 const app = express();
+app.use(compression());
 const storage = multer.diskStorage({
     destination: UPLOAD_DIR,
     filename: function (req, file, cb) {

@@ -268,7 +268,7 @@ export async function main(
     log: [],
     logPointer: 0,
     logIdx: 0,
-    speeds: [0.5, 1, 2, 5, 10, 20, 50],
+    speeds: [0.5, 1, 2, 5, 10, 20, 50, 100, 250, 500],
     speedIdx: 1,
     paused: false,
     lastRealTs: 0,
