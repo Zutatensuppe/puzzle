@@ -1930,12 +1930,21 @@ app.get('/api/conf', (req, res) => {
 });
 app.get('/api/replay-data', async (req, res) => {
     const q = req.query;
+    const offset = parseInt(q.offset, 10) || 0;
+    if (offset < 0) {
+        res.status(400).send({ reason: 'bad offset' });
+        return;
+    }
+    const size = parseInt(q.size, 10) || 10000;
+    if (size < 0 || size > 10000) {
+        res.status(400).send({ reason: 'bad size' });
+        return;
+    }
     const gameId = q.gameId || '';
     if (!GameLog.exists(q.gameId)) {
-        throw `[gamelog ${gameId} does not exist... ]`;
+        res.status(404).send({ reason: 'no log found' });
+        return;
     }
-    const offset = parseInt(q.offset, 10) || 0;
-    const size = parseInt(q.size, 10) || 10000;
     const log = await GameLog.get(gameId, offset, size);
     let game = null;
     if (offset === 0) {
