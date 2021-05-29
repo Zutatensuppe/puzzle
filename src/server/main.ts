@@ -61,6 +61,29 @@ app.get('/api/conf', (req, res) => {
   })
 })
 
+app.get('/api/replay-data', async (req, res) => {
+  const q = req.query as any
+  const gameId = q.gameId || ''
+  if (!GameLog.exists(q.gameId)) {
+    throw `[gamelog ${gameId} does not exist... ]`
+  }
+  const offset = parseInt(q.offset, 10) || 0
+  const size = parseInt(q.size, 10) || 10000
+  const log = await GameLog.get(gameId, offset, size)
+  let game = null
+  if (offset === 0) {
+    // also need the game
+    game = await Game.createGameObject(
+      gameId,
+      log[0][2],
+      log[0][3],
+      log[0][4],
+      log[0][5] || ScoreMode.FINAL
+    )
+  }
+  res.send({ log, game: game ? Util.encodeGame(game) : null })
+})
+
 app.get('/api/newgame-data', (req, res) => {
   const q = req.query as any
   const tagSlugs: string[] = q.tags ? q.tags.split(',') : []
@@ -203,31 +226,6 @@ wss.on('message', async ({socket, data} : { socket: WebSocket, data: any }) => {
     const msg = JSON.parse(data)
     const msgType = msg[0]
     switch (msgType) {
-      case Protocol.EV_CLIENT_REPLAY_DATA: {
-        if (!GameLog.exists(gameId)) {
-          throw `[gamelog ${gameId} does not exist... ]`
-        }
-        const offset = msg[1]
-        const size = msg[2]
-
-        const log = await GameLog.get(gameId, offset, size)
-        let game = null
-        if (offset === 0) {
-          // also need the game
-          game = await Game.createGameObject(
-            gameId,
-            log[0][2],
-            log[0][3],
-            log[0][4],
-            log[0][5] || ScoreMode.FINAL
-          )
-        }
-        notify(
-          [Protocol.EV_SERVER_REPLAY_DATA, log, game ? Util.encodeGame(game) : null],
-          [socket]
-        )
-      } break
-
       case Protocol.EV_CLIENT_INIT: {
         if (!Game.exists(gameId)) {
           throw `[game ${gameId} does not exist... ]`

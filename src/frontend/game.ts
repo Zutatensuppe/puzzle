@@ -280,6 +280,25 @@ export async function main(
     HUD.setConnectionState(state)
   })
 
+  const getNextReplayBatch = async (
+    gameId: string,
+    offset: number,
+    size: number
+  ) => {
+    const replay: {
+      game: any,
+      log: Array<any>
+    } = await Communication.requestReplayData(gameId, offset, size)
+    // cut log that was already handled
+    REPLAY.log = REPLAY.log.slice(REPLAY.logPointer)
+    REPLAY.logPointer = 0
+
+    REPLAY.log.push(...replay.log)
+    if (replay.log.length < 10000) {
+      REPLAY.final = true
+    }
+    REPLAY.requesting = false
+  }
   let TIME: () => number = () => 0
   const connect = async () => {
     if (MODE === MODE_PLAY) {
@@ -288,21 +307,10 @@ export async function main(
       Game.setGame(gameObject.id, gameObject)
       TIME = () => Time.timestamp()
     } else if (MODE === MODE_REPLAY) {
-      // TODO: change how replay connect is done...
-      Communication.onServerChange((msg) => {
-        const log = msg[1]
-
-        // cut log that was already handled
-        REPLAY.log = REPLAY.log.slice(REPLAY.logPointer)
-        REPLAY.logPointer = 0
-
-        REPLAY.log.push(...msg[1])
-        if (log.length < 10000) {
-          REPLAY.final = true
-        }
-        REPLAY.requesting = false
-      })
-      const replay: {game: any, log: Array<any>} = await Communication.connectReplay(wsAddress, gameId, clientId)
+      const replay: {
+        game: any,
+        log: Array<any>
+      } = await Communication.requestReplayData(gameId, 0, 10000)
       const gameObject = Util.decodeGame(replay.game)
       Game.setGame(gameObject.id, gameObject)
       REPLAY.requesting = false
@@ -487,7 +495,7 @@ export async function main(
       if (REPLAY.logPointer + 1 >= REPLAY.log.length) {
         REPLAY.lastRealTs = realTs
         REPLAY.requesting = true
-        Communication.requestReplayData(REPLAY.logIdx, 10000)
+        getNextReplayBatch(gameId, REPLAY.logIdx, 10000)
         return
       }
 

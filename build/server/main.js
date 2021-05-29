@@ -320,10 +320,8 @@ EV_SERVER_INIT: event sent to one client after that client
 */
 const EV_SERVER_EVENT = 1;
 const EV_SERVER_INIT = 4;
-const EV_SERVER_REPLAY_DATA = 5;
 const EV_CLIENT_EVENT = 2;
 const EV_CLIENT_INIT = 3;
-const EV_CLIENT_REPLAY_DATA = 6;
 const LOG_HEADER = 1;
 const LOG_ADD_PLAYER = 2;
 const LOG_UPDATE_PLAYER = 4;
@@ -344,10 +342,8 @@ const CHANGE_PLAYER = 3;
 var Protocol = {
     EV_SERVER_EVENT,
     EV_SERVER_INIT,
-    EV_SERVER_REPLAY_DATA,
     EV_CLIENT_EVENT,
     EV_CLIENT_INIT,
-    EV_CLIENT_REPLAY_DATA,
     LOG_HEADER,
     LOG_ADD_PLAYER,
     LOG_UPDATE_PLAYER,
@@ -1932,6 +1928,22 @@ app.get('/api/conf', (req, res) => {
         WS_ADDRESS: config.ws.connectstring,
     });
 });
+app.get('/api/replay-data', async (req, res) => {
+    const q = req.query;
+    const gameId = q.gameId || '';
+    if (!GameLog.exists(q.gameId)) {
+        throw `[gamelog ${gameId} does not exist... ]`;
+    }
+    const offset = parseInt(q.offset, 10) || 0;
+    const size = parseInt(q.size, 10) || 10000;
+    const log = await GameLog.get(gameId, offset, size);
+    let game = null;
+    if (offset === 0) {
+        // also need the game
+        game = await Game.createGameObject(gameId, log[0][2], log[0][3], log[0][4], log[0][5] || ScoreMode.FINAL);
+    }
+    res.send({ log, game: game ? Util.encodeGame(game) : null });
+});
 app.get('/api/newgame-data', (req, res) => {
     const q = req.query;
     const tagSlugs = q.tags ? q.tags.split(',') : [];
@@ -2047,22 +2059,6 @@ wss.on('message', async ({ socket, data }) => {
         const msg = JSON.parse(data);
         const msgType = msg[0];
         switch (msgType) {
-            case Protocol.EV_CLIENT_REPLAY_DATA:
-                {
-                    if (!GameLog.exists(gameId)) {
-                        throw `[gamelog ${gameId} does not exist... ]`;
-                    }
-                    const offset = msg[1];
-                    const size = msg[2];
-                    const log = await GameLog.get(gameId, offset, size);
-                    let game = null;
-                    if (offset === 0) {
-                        // also need the game
-                        game = await Game.createGameObject(gameId, log[0][2], log[0][3], log[0][4], log[0][5] || ScoreMode.FINAL);
-                    }
-                    notify([Protocol.EV_SERVER_REPLAY_DATA, log, game ? Util.encodeGame(game) : null], [socket]);
-                }
-                break;
             case Protocol.EV_CLIENT_INIT:
                 {
                     if (!Game.exists(gameId)) {

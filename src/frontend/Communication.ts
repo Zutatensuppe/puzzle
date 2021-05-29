@@ -96,63 +96,14 @@ function connect(
   })
 }
 
-function requestReplayData(
+async function requestReplayData(
+  gameId: string,
   offset: number,
   size: number
-): void {
-  send([Protocol.EV_CLIENT_REPLAY_DATA, offset, size])
-}
-
-// TOOD: change replay stuff
-function connectReplay(
-  address: string,
-  gameId: string,
-  clientId: string
-): Promise<{ game: any, log: Array<any> }> {
-  clientSeq = 0
-  events = {}
-  setConnectionState(CONN_STATE_CONNECTING)
-  return new Promise(resolve => {
-    ws = new WebSocket(address, clientId + '|' + gameId)
-    ws.onopen = (e) => {
-      setConnectionState(CONN_STATE_CONNECTED)
-      requestReplayData(0, 10000)
-    }
-    ws.onmessage = (e) => {
-      const msg = JSON.parse(e.data)
-      const msgType = msg[0]
-      if (msgType === Protocol.EV_SERVER_REPLAY_DATA) {
-        const log: any[] = msg[1]
-        const game = msg[2] // can be null or encoded game
-        if (game !== null) {
-          // this is the first/initial message
-          const replay: {
-            game: any,
-            log: any[]
-          } = { game, log }
-          resolve(replay)
-        } else {
-          // this is just the next batch of log entries
-          changesCallback(msg)
-        }
-      } else {
-        throw `[ 2021-05-09 invalid connectReplay msgType ${msgType} ]`
-      }
-    }
-
-    ws.onerror = (e) => {
-      setConnectionState(CONN_STATE_DISCONNECTED)
-      throw `[ 2021-05-15 onerror ]`
-    }
-
-    ws.onclose = (e) => {
-      if (e.code === CODE_CUSTOM_DISCONNECT || e.code === CODE_GOING_AWAY) {
-        setConnectionState(CONN_STATE_CLOSED)
-      } else {
-        setConnectionState(CONN_STATE_DISCONNECTED)
-      }
-    }
-  })
+): Promise<{ log: Array<any>, game: any }> {
+  const res = await fetch(`/api/replay-data?gameId=${gameId}&offset=${offset}&size=${size}`)
+  const json: { log: Array<any>, game: any } = await res.json()
+  return json
 }
 
 function disconnect(): void {
@@ -173,7 +124,6 @@ function sendClientEvent(evt: any): void {
 
 export default {
   connect,
-  connectReplay,
   requestReplayData,
   disconnect,
   sendClientEvent,
