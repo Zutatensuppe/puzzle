@@ -14,17 +14,17 @@ config = {
 */
 
 class EvtBus {
-  private _on: any
+  private _on: Record<string, Function[]>
   constructor() {
-    this._on = {} as any
+    this._on = {}
   }
 
-  on(type: string, callback: Function) {
+  on (type: string, callback: Function): void {
     this._on[type] = this._on[type] || []
     this._on[type].push(callback)
   }
 
-  dispatch(type: string, ...args: Array<any>) {
+  dispatch (type: string, ...args: Array<any>): void {
     (this._on[type] || []).forEach((cb: Function) => {
       cb(...args)
     })
@@ -43,13 +43,13 @@ class WebSocketServer {
     this.evt = new EvtBus()
   }
 
-  on(type: string, callback: Function) {
+  on (type: string, callback: Function): void {
     this.evt.on(type, callback)
   }
 
-  listen() {
+  listen (): void {
     this._websocketserver = new WebSocket.Server(this.config)
-    this._websocketserver.on('connection', (socket: WebSocket, request: Request) => {
+    this._websocketserver.on('connection', (socket: WebSocket, request: Request): void => {
       const pathname = new URL(this.config.connectstring).pathname
       if (request.url.indexOf(pathname) !== 0) {
         log.log('bad request url: ', request.url)
@@ -66,13 +66,13 @@ class WebSocketServer {
     })
   }
 
-  close() {
+  close (): void {
     if (this._websocketserver) {
       this._websocketserver.close()
     }
   }
 
-  notifyOne(data: any, socket: WebSocket) {
+  notifyOne (data: any, socket: WebSocket): void {
     socket.send(JSON.stringify(data))
   }
 }

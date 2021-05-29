@@ -1,7 +1,7 @@
 import Util from './../common/Util'
 import { Rng } from './../common/Rng'
 import Images from './Images'
-import { EncodedPiece, EncodedPieceShape, PieceShape, Puzzle } from '../common/GameCommon'
+import { EncodedPiece, EncodedPieceShape, PieceShape, Puzzle } from '../common/Types'
 import { Dim, Point } from '../common/Geometry'
 
 export interface PuzzleCreationImageInfo {
@@ -9,7 +9,7 @@ export interface PuzzleCreationImageInfo {
   url: string
 }
 
-interface PuzzleCreationInfo {
+export interface PuzzleCreationInfo {
   width: number
   height: number
   tileSize: number
@@ -40,16 +40,16 @@ async function createPuzzle(
   }
   const info: PuzzleCreationInfo = determinePuzzleInfo(dim, targetTiles)
 
-  let tiles = new Array(info.tiles)
-  for (let i = 0; i < tiles.length; i++) {
-    tiles[i] = { idx: i }
+  const rawPieces = new Array(info.tiles)
+  for (let i = 0; i < rawPieces.length; i++) {
+    rawPieces[i] = { idx: i }
   }
   const shapes = determinePuzzleTileShapes(rng, info)
 
   let positions: Point[] = new Array(info.tiles)
-  for (let tile of tiles) {
-    const coord = Util.coordByTileIdx(info, tile.idx)
-    positions[tile.idx] = {
+  for (const piece of rawPieces) {
+    const coord = Util.coordByPieceIdx(info, piece.idx)
+    positions[piece.idx] = {
       // instead of info.tileSize, we use info.tileDrawSize
       // to spread the tiles a bit
       x: coord.x * info.tileSize * 1.5,
@@ -61,7 +61,7 @@ async function createPuzzle(
   const tableHeight = info.height * 3
 
   const off = info.tileSize * 1.5
-  let last: Point = {
+  const last: Point = {
     x: info.width - (1 * off),
     y: info.height - (2 * off),
   }
@@ -71,7 +71,7 @@ async function createPuzzle(
   let diffX = off
   let diffY = 0
   let index = 0
-  for (let pos of positions) {
+  for (const pos of positions) {
     pos.x = last.x
     pos.y = last.y
     last.x+=diffX
@@ -98,9 +98,9 @@ async function createPuzzle(
   // then shuffle the positions
   positions = rng.shuffle(positions)
 
-  const pieces: Array<EncodedPiece> = tiles.map(tile => {
+  const pieces: Array<EncodedPiece> = rawPieces.map(piece => {
     return Util.encodePiece({
-      idx: tile.idx, // index of tile in the array
+      idx: piece.idx, // index of tile in the array
       group: 0, // if grouped with other tiles
       z: 0, // z index of the tile
 
@@ -113,7 +113,7 @@ async function createPuzzle(
       // physical current position of the tile (x/y in pixels)
       // this position is the initial position only and is the
       // value that changes when moving a tile
-      pos: positions[tile.idx],
+      pos: positions[piece.idx],
     })
   })
 
@@ -171,7 +171,7 @@ function determinePuzzleTileShapes(
 
   const shapes: Array<PieceShape> = new Array(info.tiles)
   for (let i = 0; i < info.tiles; i++) {
-    let coord = Util.coordByTileIdx(info, i)
+    const coord = Util.coordByPieceIdx(info, i)
     shapes[i] = {
       top: coord.y === 0 ? 0 : shapes[i - info.tilesX].bottom * -1,
       right: coord.x === info.tilesX - 1 ? 0 : rng.choice(tabs),

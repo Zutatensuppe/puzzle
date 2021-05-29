@@ -13,10 +13,11 @@ const log = logger('Db.ts')
  *   {name: 1}, // then by name ascending
  * ]
  */
-type OrderBy = Array<any>
 type Data = Record<string, any>
-type WhereRaw = Record<string, any>
 type Params = Array<any>
+
+export type WhereRaw = Record<string, any>
+export type OrderBy = Array<Record<string, 1|-1>>
 
 interface Where {
   sql: string
@@ -88,7 +89,7 @@ class Db {
         let prop = '$nin'
         if (where[k][prop]) {
           if (where[k][prop].length > 0) {
-            wheres.push(k + ' NOT IN (' + where[k][prop].map((_: any) => '?') + ')')
+            wheres.push(k + ' NOT IN (' + where[k][prop].map(() => '?') + ')')
             values.push(...where[k][prop])
           }
           continue
@@ -96,7 +97,7 @@ class Db {
         prop = '$in'
         if (where[k][prop]) {
           if (where[k][prop].length > 0) {
-            wheres.push(k + ' IN (' + where[k][prop].map((_: any) => '?') + ')')
+            wheres.push(k + ' IN (' + where[k][prop].map(() => '?') + ')')
             values.push(...where[k][prop])
           }
           continue
@@ -191,7 +192,7 @@ class Db {
     const values = keys.map(k => data[k])
     const sql = 'INSERT INTO '+ table
       + ' (' + keys.join(',') + ')'
-      + ' VALUES (' + keys.map(k => '?').join(',') + ')'
+      + ' VALUES (' + keys.map(() => '?').join(',') + ')'
     return this.run(sql, values).lastInsertRowid
   }
 

@@ -6,7 +6,6 @@ import multer from 'multer'
 import Protocol from './../common/Protocol'
 import Util, { logger } from './../common/Util'
 import Game from './Game'
-import bodyParser from 'body-parser'
 import v8 from 'v8'
 import fs from 'fs'
 import GameLog from './GameLog'
@@ -19,7 +18,8 @@ import {
   PUBLIC_DIR,
   UPLOAD_DIR,
 } from './Dirs'
-import GameCommon, { Game as GameType, GameSettings, ScoreMode } from '../common/GameCommon'
+import GameCommon from '../common/GameCommon'
+import { Game as GameType, GameSettings, ScoreMode } from '../common/Types'
 import GameStorage from './GameStorage'
 import Db from './Db'
 
@@ -144,7 +144,7 @@ const setImageTags = (db: Db, imageId: number, tags: string[]) => {
   })
 }
 
-app.post('/api/save-image', bodyParser.json(), (req, res) => {
+app.post('/api/save-image', express.json(), (req, res) => {
   const data = req.body as SaveImageRequestData
   db.update('images', {
     title: data.title,
@@ -189,7 +189,7 @@ app.post('/api/upload', (req, res) => {
   })
 })
 
-app.post('/newgame', bodyParser.json(), async (req, res) => {
+app.post('/newgame', express.json(), async (req, res) => {
   const gameSettings = req.body as GameSettings
   log.log(gameSettings)
   const gameId = Util.uniqId()
@@ -212,8 +212,7 @@ app.use('/', express.static(PUBLIC_DIR))
 const wss = new WebSocketServer(config.ws);
 
 const notify = (data: any, sockets: Array<WebSocket>) => {
-  // TODO: throttle?
-  for (let socket of sockets) {
+  for (const socket of sockets) {
     wss.notifyOne(data, socket)
   }
 }
@@ -221,7 +220,7 @@ const notify = (data: any, sockets: Array<WebSocket>) => {
 wss.on('close', async ({socket} : {socket: WebSocket}) => {
   try {
     const proto = socket.protocol.split('|')
-    const clientId = proto[0]
+    // const clientId = proto[0]
     const gameId = proto[1]
     GameSockets.removeSocket(gameId, socket)
   } catch (e) {
@@ -244,7 +243,11 @@ wss.on('message', async ({socket, data} : { socket: WebSocket, data: any }) => {
         const ts = Time.timestamp()
         Game.addPlayer(gameId, clientId, ts)
         GameSockets.addSocket(gameId, socket)
-        const game: GameType = GameCommon.get(gameId)
+
+        const game: GameType|null = GameCommon.get(gameId)
+        if (!game) {
+          throw `[game ${gameId} does not exist (anymore)... ]`
+        }
         notify(
           [Protocol.EV_SERVER_INIT, Util.encodeGame(game)],
           [socket]
@@ -269,7 +272,10 @@ wss.on('message', async ({socket, data} : { socket: WebSocket, data: any }) => {
           sendGame = true
         }
         if (sendGame) {
-          const game: GameType = GameCommon.get(gameId)
+          const game: GameType|null = GameCommon.get(gameId)
+          if (!game) {
+            throw `[game ${gameId} does not exist (anymore)... ]`
+          }
           notify(
             [Protocol.EV_SERVER_INIT, Util.encodeGame(game)],
             [socket]
@@ -299,7 +305,7 @@ wss.listen()
 
 const memoryUsageHuman = () => {
   const totalHeapSize = v8.getHeapStatistics().total_available_size
-  let totalHeapSizeInGB = (totalHeapSize / 1024 / 1024 / 1024).toFixed(2)
+  const totalHeapSizeInGB = (totalHeapSize / 1024 / 1024 / 1024).toFixed(2)
 
   log.log(`Total heap size (bytes) ${totalHeapSize}, (GB ~${totalHeapSizeInGB})`)
   const used = process.memoryUsage().heapUsed / 1024 / 1024
@@ -340,10 +346,10 @@ process.once('SIGUSR2', function () {
   gracefulShutdown('SIGUSR2')
 })
 
-process.once('SIGINT', function (code) {
+process.once('SIGINT', function () {
   gracefulShutdown('SIGINT')
 })
 
-process.once('SIGTERM', function (code) {
+process.once('SIGTERM', function () {
   gracefulShutdown('SIGTERM')
 })

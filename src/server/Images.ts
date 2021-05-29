@@ -4,10 +4,32 @@ import exif from 'exif'
 import sharp from 'sharp'
 
 import {UPLOAD_DIR, UPLOAD_URL} from './Dirs'
-import Db from './Db'
+import Db, { OrderBy, WhereRaw } from './Db'
 import { Dim } from '../common/Geometry'
+import { logger } from '../common/Util'
+import { Timestamp } from '../common/Types'
 
-const resizeImage = async (filename: string) => {
+const log = logger('Images.ts')
+
+interface Tag
+{
+  id: number
+  slug: string
+  title: string
+}
+
+interface ImageInfo
+{
+  id: number
+  filename: string
+  file: string
+  url: string
+  title: string
+  tags: Tag[]
+  created: Timestamp,
+}
+
+const resizeImage = async (filename: string): Promise<void> => {
   if (!filename.toLowerCase().match(/\.(jpe?g|webp|png)$/)) {
     return
   }
@@ -30,33 +52,39 @@ const resizeImage = async (filename: string) => {
     [150, 100],
     [375, 210],
   ]
-  for (let [w,h] of sizes) {
-    console.log(w, h, imagePath)
-    await sharpImg.resize(w, h, { fit: 'contain' }).toFile(`${imageOutPath}-${w}x${h}.webp`)
+  for (const [w,h] of sizes) {
+    log.info(w, h, imagePath)
+    await sharpImg
+      .resize(w, h, { fit: 'contain' })
+      .toFile(`${imageOutPath}-${w}x${h}.webp`)
   }
 }
 
-async function getExifOrientation(imagePath: string) {
-  return new Promise((resolve, reject) => {
-    new exif.ExifImage({ image: imagePath }, function (error, exifData) {
+async function getExifOrientation(imagePath: string): Promise<number> {
+  return new Promise((resolve) => {
+    new exif.ExifImage({ image: imagePath }, (error, exifData) => {
       if (error) {
         resolve(0)
       } else {
-        resolve(exifData.image.Orientation)
+        resolve(exifData.image.Orientation || 0)
       }
     })
   })
 }
 
-const getTags = (db: Db, imageId: number) => {
+const getTags = (db: Db, imageId: number): Tag[] => {
   const query = `
 select * from categories c
 inner join image_x_category ixc on c.id = ixc.category_id
 where ixc.image_id = ?`
-  return db._getMany(query, [imageId])
+  return db._getMany(query, [imageId]).map(row => ({
+    id: parseInt(row.number, 10) || 0,
+    slug: row.slug,
+    title: row.tittle,
+  }))
 }
 
-const imageFromDb = (db: Db, imageId: number) => {
+const imageFromDb = (db: Db, imageId: number): ImageInfo => {
   const i = db.get('images', { id: imageId })
   return {
     id: i.id,
@@ -64,21 +92,25 @@ const imageFromDb = (db: Db, imageId: number) => {
     file: `${UPLOAD_DIR}/${i.filename}`,
     url: `${UPLOAD_URL}/${encodeURIComponent(i.filename)}`,
     title: i.title,
-    tags: getTags(db, i.id) as any[],
+    tags: getTags(db, i.id),
     created: i.created * 1000,
   }
 }
 
-const allImagesFromDb = (db: Db, tagSlugs: string[], sort: string) => {
-  const sortMap = {
+const allImagesFromDb = (
+  db: Db,
+  tagSlugs: string[],
+  orderBy: string
+): ImageInfo[] => {
+  const orderByMap = {
     alpha_asc: [{filename: 1}],
     alpha_desc: [{filename: -1}],
     date_asc: [{created: 1}],
     date_desc: [{created: -1}],
-  } as Record<string, any>
+  } as Record<string, OrderBy>
 
   // TODO: .... clean up
-  const wheresRaw: Record<string, any> = {}
+  const wheresRaw: WhereRaw = {}
   if (tagSlugs.length > 0) {
     const c = db.getMany('categories', {slug: {'$in': tagSlugs}})
     if (!c) {
@@ -96,7 +128,7 @@ inner join images i on i.id = ixc.image_id ${where.sql};
     }
     wheresRaw['id'] = {'$in': ids}
   }
-  const images = db.getMany('images', wheresRaw, sortMap[sort])
+  const images = db.getMany('images', wheresRaw, orderByMap[orderBy])
 
   return images.map(i => ({
     id: i.id as number,
@@ -104,12 +136,15 @@ inner join images i on i.id = ixc.image_id ${where.sql};
     file: `${UPLOAD_DIR}/${i.filename}`,
     url: `${UPLOAD_URL}/${encodeURIComponent(i.filename)}`,
     title: i.title,
-    tags: getTags(db, i.id) as any[],
+    tags: getTags(db, i.id),
     created: i.created * 1000,
   }))
 }
 
-const allImagesFromDisk = (tags: string[], sort: string) => {
+const allImagesFromDisk = (
+  tags: string[],
+  sort: string
+): ImageInfo[] => {
   let images = fs.readdirSync(UPLOAD_DIR)
     .filter(f => f.toLowerCase().match(/\.(jpe?g|webp|png)$/))
     .map(f => ({
@@ -118,7 +153,7 @@ const allImagesFromDisk = (tags: string[], sort: string) => {
       file: `${UPLOAD_DIR}/${f}`,
       url: `${UPLOAD_URL}/${encodeURIComponent(f)}`,
       title: f.replace(/\.[a-z]+$/, ''),
-      tags: [] as any[],
+      tags: [] as Tag[],
       created: fs.statSync(`${UPLOAD_DIR}/${f}`).mtime.getTime(),
     }))
 
@@ -152,7 +187,7 @@ const allImagesFromDisk = (tags: string[], sort: string) => {
 }
 
 async function getDimensions(imagePath: string): Promise<Dim> {
-  let dimensions = sizeOf(imagePath)
+  const dimensions = sizeOf(imagePath)
   const orientation = await getExifOrientation(imagePath)
   // when image is rotated to the left or right, switch width/height
   // https://jdhao.github.io/2019/07/31/image_rotation_exif_info/

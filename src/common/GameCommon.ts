@@ -1,172 +1,31 @@
 import Geometry, { Point, Rect } from './Geometry'
 import Protocol from './Protocol'
-import { Rng, RngSerialized } from './Rng'
+import { Rng } from './Rng'
 import Time from './Time'
-import { FixedLengthArray } from './Types'
-import Util from './Util'
-
-export type Timestamp = number
-
-export type EncodedPlayer = FixedLengthArray<[
-  string,
-  number,
-  number,
-  0|1,
-  string|null,
-  string|null,
-  string|null,
-  number,
-  Timestamp,
-]>
-
-export type EncodedPiece = FixedLengthArray<[
-  number,
-  number,
-  number,
-  number,
-  string|number,
-  number,
-]>
-
-export type EncodedPieceShape = number
-
-export type EncodedGame = FixedLengthArray<[
-  string,
-  string,
-  RngSerialized,
+import {
+  Change,
+  EncodedPiece,
+  EvtInfo,
+  Game,
+  Input,
+  Piece,
+  PieceChange,
+  Player,
+  PlayerChange,
   Puzzle,
-  Array<EncodedPlayer>,
-  Record<string, EvtInfo>,
+  PuzzleData,
+  PuzzleDataChange,
   ScoreMode,
-]>
-
-export interface ReplayData {
-  log: any[],
-  game: EncodedGame|null
-}
-
-export interface Tag {
-  id: number
-  slug: string
-  title: string
-}
-
-interface GameRng {
-  obj: Rng
-  type?: string
-}
-
-export interface Game {
-  id: string
-  players: Array<EncodedPlayer>
-  puzzle: Puzzle
-  evtInfos: Record<string, EvtInfo>
-  scoreMode?: ScoreMode
-  rng: GameRng
-}
-
-export interface Image {
-  id: number
-  filename: string
-  file: string
-  url: string
-  title: string
-  tags: Array<Tag>
-  created: number
-}
-
-export interface GameSettings {
-  tiles: number
-  image: Image
-  scoreMode: ScoreMode
-}
-
-export interface Puzzle {
-  tiles: Array<EncodedPiece>
-  data: PuzzleData
-  info: PuzzleInfo
-}
-
-interface PuzzleData {
-  started: number
-  finished: number
-  maxGroup: number
-  maxZ: number
-}
-
-interface PuzzleTable {
-  width: number
-  height: number
-}
-
-enum PieceEdge {
-  Flat = 0,
-  Out = 1,
-  In = -1,
-}
-export interface PieceShape {
-  top: PieceEdge
-  bottom: PieceEdge
-  left: PieceEdge
-  right: PieceEdge
-}
-
-export interface Piece {
-  owner: string|number
-  idx: number
-  pos: Point
-  z: number
-  group: number
-}
-
-export interface PuzzleInfo {
-  table: PuzzleTable
-  targetTiles: number,
-  imageUrl: string
-
-  width: number
-  height: number
-  tileSize: number
-  tileDrawSize: number
-  tileMarginWidth: number
-  tileDrawOffset: number
-  snapDistance: number
-
-  tiles: number
-  tilesX: number
-  tilesY: number
-
-  shapes: Array<EncodedPieceShape>
-}
-
-export interface Player {
-  id: string
-  x: number
-  y: number
-  d: 0|1
-  name: string|null
-  color: string|null
-  bgcolor: string|null
-  points: number
-  ts: Timestamp
-}
-
-interface EvtInfo {
-  _last_mouse: Point|null
-  _last_mouse_down: Point|null
-}
-
-export enum ScoreMode {
-  FINAL = 0,
-  ANY = 1,
-}
+  Timestamp
+} from './Types'
+import Util from './Util'
 
 const IDLE_TIMEOUT_SEC = 30
 
 // Map<gameId, Game>
 const GAMES: Record<string, Game> = {}
 
-function exists(gameId: string) {
+function exists(gameId: string): boolean {
   return (!!GAMES[gameId]) || false
 }
 
@@ -190,7 +49,7 @@ function setGame(gameId: string, game: Game): void {
 
 function getPlayerIndexById(gameId: string, playerId: string): number {
   let i = 0;
-  for (let player of GAMES[gameId].players) {
+  for (const player of GAMES[gameId].players) {
     if (Util.decodePlayer(player).id === playerId) {
       return i
     }
@@ -293,8 +152,8 @@ function getAllPlayers(gameId: string): Array<Player> {
     : []
 }
 
-function get(gameId: string) {
-  return GAMES[gameId]
+function get(gameId: string): Game|null {
+  return GAMES[gameId] || null
 }
 
 function getPieceCount(gameId: string): number {
@@ -319,7 +178,7 @@ function isFinished(gameId: string): boolean {
 
 function getFinishedPiecesCount(gameId: string): number {
   let count = 0
-  for (let t of GAMES[gameId].puzzle.tiles) {
+  for (const t of GAMES[gameId].puzzle.tiles) {
     if (Util.decodePiece(t).owner === -1) {
       count++
     }
@@ -335,29 +194,33 @@ function getPiecesSortedByZIndex(gameId: string): Piece[] {
 function changePlayer(
   gameId: string,
   playerId: string,
-  change: any
+  change: PlayerChange
 ): void {
   const player = getPlayer(gameId, playerId)
   if (player === null) {
     return
   }
 
-  for (let k of Object.keys(change)) {
+  for (const k of Object.keys(change)) {
     // @ts-ignore
     player[k] = change[k]
   }
   setPlayer(gameId, playerId, player)
 }
 
-function changeData(gameId: string, change: any): void {
-  for (let k of Object.keys(change)) {
+function changeData(gameId: string, change: PuzzleDataChange): void {
+  for (const k of Object.keys(change)) {
     // @ts-ignore
     GAMES[gameId].puzzle.data[k] = change[k]
   }
 }
 
-function changeTile(gameId: string, pieceIdx: number, change: any): void {
-  for (let k of Object.keys(change)) {
+function changePiece(
+  gameId: string,
+  pieceIdx: number,
+  change: PieceChange
+): void {
+  for (const k of Object.keys(change)) {
     const piece = Util.decodePiece(GAMES[gameId].puzzle.tiles[pieceIdx])
     // @ts-ignore
     piece[k] = change[k]
@@ -415,13 +278,12 @@ const getPieceBounds = (gameId: string, tileIdx: number): Rect => {
   }
 }
 
-const getTileZIndex = (gameId: string, tileIdx: number): number => {
-  const tile = getPiece(gameId, tileIdx)
-  return tile.z
+const getPieceZIndex = (gameId: string, pieceIdx: number): number => {
+  return getPiece(gameId, pieceIdx).z
 }
 
 const getFirstOwnedPieceIdx = (gameId: string, playerId: string): number => {
-  for (let t of GAMES[gameId].puzzle.tiles) {
+  for (const t of GAMES[gameId].puzzle.tiles) {
     const tile = Util.decodePiece(t)
     if (tile.owner === playerId) {
       return tile.idx
@@ -430,7 +292,10 @@ const getFirstOwnedPieceIdx = (gameId: string, playerId: string): number => {
   return -1
 }
 
-const getFirstOwnedPiece = (gameId: string, playerId: string): EncodedPiece|null => {
+const getFirstOwnedPiece = (
+  gameId: string,
+  playerId: string
+): EncodedPiece|null => {
   const idx = getFirstOwnedPieceIdx(gameId, playerId)
   return idx < 0 ? null : GAMES[gameId].puzzle.tiles[idx]
 }
@@ -463,12 +328,12 @@ const getMaxZIndex = (gameId: string): number => {
   return GAMES[gameId].puzzle.data.maxZ
 }
 
-const getMaxZIndexByTileIdxs = (gameId: string, tileIdxs: Array<number>): number => {
+const getMaxZIndexByPieceIdxs = (gameId: string, pieceIdxs: Array<number>): number => {
   let maxZ = 0
-  for (let tileIdx of tileIdxs) {
-    let tileZIndex = getTileZIndex(gameId, tileIdx)
-    if (tileZIndex > maxZ) {
-      maxZ = tileZIndex
+  for (const pieceIdx of pieceIdxs) {
+    const curZ = getPieceZIndex(gameId, pieceIdx)
+    if (curZ > maxZ) {
+      maxZ = curZ
     }
   }
   return maxZ
@@ -477,7 +342,7 @@ const getMaxZIndexByTileIdxs = (gameId: string, tileIdxs: Array<number>): number
 function srcPosByTileIdx(gameId: string, tileIdx: number): Point {
   const info = GAMES[gameId].puzzle.info
 
-  const c = Util.coordByTileIdx(info, tileIdx)
+  const c = Util.coordByPieceIdx(info, tileIdx)
   const cx = c.x * info.tileSize
   const cy = c.y * info.tileSize
 
@@ -487,7 +352,7 @@ function srcPosByTileIdx(gameId: string, tileIdx: number): Point {
 function getSurroundingTilesByIdx(gameId: string, tileIdx: number) {
   const info = GAMES[gameId].puzzle.info
 
-  const c = Util.coordByTileIdx(info, tileIdx)
+  const c = Util.coordByPieceIdx(info, tileIdx)
 
   return [
     // top
@@ -501,29 +366,29 @@ function getSurroundingTilesByIdx(gameId: string, tileIdx: number) {
   ]
 }
 
-const setTilesZIndex = (gameId: string, tileIdxs: Array<number>, zIndex: number): void => {
-  for (let tilesIdx of tileIdxs) {
-    changeTile(gameId, tilesIdx, { z: zIndex })
+const setPiecesZIndex = (gameId: string, tileIdxs: Array<number>, zIndex: number): void => {
+  for (const tilesIdx of tileIdxs) {
+    changePiece(gameId, tilesIdx, { z: zIndex })
   }
 }
 
 const moveTileDiff = (gameId: string, tileIdx: number, diff: Point): void => {
   const oldPos = getPiecePos(gameId, tileIdx)
   const pos = Geometry.pointAdd(oldPos, diff)
-  changeTile(gameId, tileIdx, { pos })
+  changePiece(gameId, tileIdx, { pos })
 }
 
-const moveTilesDiff = (
+const movePiecesDiff = (
   gameId: string,
-  tileIdxs: Array<number>,
+  pieceIdxs: Array<number>,
   diff: Point
 ): void => {
   const drawSize = getPieceDrawSize(gameId)
   const bounds = getBounds(gameId)
   const cappedDiff = diff
 
-  for (let tileIdx of tileIdxs) {
-    const t = getPiece(gameId, tileIdx)
+  for (const pieceIdx of pieceIdxs) {
+    const t = getPiece(gameId, pieceIdx)
     if (t.pos.x + diff.x < bounds.x) {
       cappedDiff.x = Math.max(bounds.x - t.pos.x, cappedDiff.x)
     } else if (t.pos.x + drawSize + diff.x > bounds.x + bounds.w) {
@@ -536,24 +401,24 @@ const moveTilesDiff = (
     }
   }
 
-  for (let tileIdx of tileIdxs) {
-    moveTileDiff(gameId, tileIdx, cappedDiff)
+  for (const pieceIdx of pieceIdxs) {
+    moveTileDiff(gameId, pieceIdx, cappedDiff)
   }
 }
 
-const finishTiles = (gameId: string, tileIdxs: Array<number>): void => {
-  for (let tileIdx of tileIdxs) {
-    changeTile(gameId, tileIdx, { owner: -1, z: 1 })
+const finishPieces = (gameId: string, pieceIdxs: Array<number>): void => {
+  for (const pieceIdx of pieceIdxs) {
+    changePiece(gameId, pieceIdx, { owner: -1, z: 1 })
   }
 }
 
 const setTilesOwner = (
   gameId: string,
-  tileIdxs: Array<number>,
+  pieceIdxs: Array<number>,
   owner: string|number
 ): void => {
-  for (let tileIdx of tileIdxs) {
-    changeTile(gameId, tileIdx, { owner })
+  for (const pieceIdx of pieceIdxs) {
+    changePiece(gameId, pieceIdx, { owner })
   }
 }
 
@@ -564,7 +429,7 @@ function getGroupedPieceIdxs(gameId: string, pieceIdx: number): number[] {
 
   const grouped = []
   if (piece.group) {
-    for (let other of pieces) {
+    for (const other of pieces) {
       const otherPiece = Util.decodePiece(other)
       if (otherPiece.group === piece.group) {
         grouped.push(otherPiece.idx)
@@ -579,8 +444,8 @@ function getGroupedPieceIdxs(gameId: string, pieceIdx: number): number[] {
 // Returns the index of the puzzle tile with the highest z index
 // that is not finished yet and that matches the position
 const freePieceIdxByPos = (gameId: string, pos: Point): number => {
-  let info = GAMES[gameId].puzzle.info
-  let pieces = GAMES[gameId].puzzle.tiles
+  const info = GAMES[gameId].puzzle.info
+  const pieces = GAMES[gameId].puzzle.tiles
 
   let maxZ = -1
   let pieceIdx = -1
@@ -664,28 +529,28 @@ const getPuzzleHeight = (gameId: string): number => {
 function handleInput(
   gameId: string,
   playerId: string,
-  input: any,
-  ts: number
-): Array<Array<any>> {
+  input: Input,
+  ts: Timestamp
+): Array<Change> {
   const puzzle = GAMES[gameId].puzzle
   const evtInfo = getEvtInfo(gameId, playerId)
 
-  const changes = [] as Array<Array<any>>
+  const changes: Array<Change> = []
 
   const _dataChange = (): void => {
     changes.push([Protocol.CHANGE_DATA, puzzle.data])
   }
 
-  const _tileChange = (tileIdx: number): void => {
+  const _pieceChange = (pieceIdx: number): void => {
     changes.push([
       Protocol.CHANGE_TILE,
-      Util.encodePiece(getPiece(gameId, tileIdx)),
+      Util.encodePiece(getPiece(gameId, pieceIdx)),
     ])
   }
 
-  const _tileChanges = (tileIdxs: Array<number>): void => {
-    for (const tileIdx of tileIdxs) {
-      _tileChange(tileIdx)
+  const _pieceChanges = (pieceIdxs: Array<number>): void => {
+    for (const pieceIdx of pieceIdxs) {
+      _pieceChange(pieceIdx)
     }
   }
 
@@ -703,12 +568,12 @@ function handleInput(
   // put both tiles (and their grouped tiles) in the same group
   const groupTiles = (
     gameId: string,
-    tileIdx1: number,
-    tileIdx2: number
+    pieceIdx1: number,
+    pieceIdx2: number
   ): void => {
-    const tiles = GAMES[gameId].puzzle.tiles
-    const group1 = getPieceGroup(gameId, tileIdx1)
-    const group2 = getPieceGroup(gameId, tileIdx2)
+    const pieces = GAMES[gameId].puzzle.tiles
+    const group1 = getPieceGroup(gameId, pieceIdx1)
+    const group2 = getPieceGroup(gameId, pieceIdx2)
 
     let group
     const searchGroups = []
@@ -729,18 +594,18 @@ function handleInput(
       group = getMaxGroup(gameId)
     }
 
-    changeTile(gameId, tileIdx1, { group })
-    _tileChange(tileIdx1)
-    changeTile(gameId, tileIdx2, { group })
-    _tileChange(tileIdx2)
+    changePiece(gameId, pieceIdx1, { group })
+    _pieceChange(pieceIdx1)
+    changePiece(gameId, pieceIdx2, { group })
+    _pieceChange(pieceIdx2)
 
     // TODO: strange
     if (searchGroups.length > 0) {
-      for (const t of tiles) {
-        const piece = Util.decodePiece(t)
+      for (const p of pieces) {
+        const piece = Util.decodePiece(p)
         if (searchGroups.includes(piece.group)) {
-          changeTile(gameId, piece.idx, { group })
-          _tileChange(piece.idx)
+          changePiece(gameId, piece.idx, { group })
+          _pieceChange(piece.idx)
         }
       }
     }
@@ -770,13 +635,13 @@ function handleInput(
 
     const tileIdxAtPos = freePieceIdxByPos(gameId, pos)
     if (tileIdxAtPos >= 0) {
-      let maxZ = getMaxZIndex(gameId) + 1
+      const maxZ = getMaxZIndex(gameId) + 1
       changeData(gameId, { maxZ })
       _dataChange()
       const tileIdxs = getGroupedPieceIdxs(gameId, tileIdxAtPos)
-      setTilesZIndex(gameId, tileIdxs, getMaxZIndex(gameId))
+      setPiecesZIndex(gameId, tileIdxs, getMaxZIndex(gameId))
       setTilesOwner(gameId, tileIdxs, playerId)
-      _tileChanges(tileIdxs)
+      _pieceChanges(tileIdxs)
     }
     evtInfo._last_mouse = pos
 
@@ -790,18 +655,18 @@ function handleInput(
       changePlayer(gameId, playerId, {x, y, ts})
       _playerChange()
     } else {
-      let tileIdx = getFirstOwnedPieceIdx(gameId, playerId)
-      if (tileIdx >= 0) {
+      const pieceIdx = getFirstOwnedPieceIdx(gameId, playerId)
+      if (pieceIdx >= 0) {
         // player is moving a tile (and hand)
         changePlayer(gameId, playerId, {x, y, ts})
         _playerChange()
 
         // check if pos is on the tile, otherwise dont move
         // (mouse could be out of table, but tile stays on it)
-        const tileIdxs = getGroupedPieceIdxs(gameId, tileIdx)
+        const pieceIdxs = getGroupedPieceIdxs(gameId, pieceIdx)
         let anyOk = Geometry.pointInBounds(pos, getBounds(gameId))
           && Geometry.pointInBounds(evtInfo._last_mouse_down, getBounds(gameId))
-        for (let idx of tileIdxs) {
+        for (const idx of pieceIdxs) {
           const bounds = getPieceBounds(gameId, idx)
           if (Geometry.pointInBounds(pos, bounds)) {
             anyOk = true
@@ -813,9 +678,9 @@ function handleInput(
           const diffY = y - evtInfo._last_mouse_down.y
 
           const diff = { x: diffX, y: diffY }
-          moveTilesDiff(gameId, tileIdxs, diff)
+          movePiecesDiff(gameId, pieceIdxs, diff)
 
-          _tileChanges(tileIdxs)
+          _pieceChanges(pieceIdxs)
         }
       } else {
         // player is just moving map, so no change in position!
@@ -835,26 +700,26 @@ function handleInput(
 
     evtInfo._last_mouse_down = null
 
-    let tileIdx = getFirstOwnedPieceIdx(gameId, playerId)
-    if (tileIdx >= 0) {
+    const pieceIdx = getFirstOwnedPieceIdx(gameId, playerId)
+    if (pieceIdx >= 0) {
       // drop the tile(s)
-      let tileIdxs = getGroupedPieceIdxs(gameId, tileIdx)
-      setTilesOwner(gameId, tileIdxs, 0)
-      _tileChanges(tileIdxs)
+      const pieceIdxs = getGroupedPieceIdxs(gameId, pieceIdx)
+      setTilesOwner(gameId, pieceIdxs, 0)
+      _pieceChanges(pieceIdxs)
 
       // Check if the tile was dropped near the final location
-      let tilePos = getPiecePos(gameId, tileIdx)
-      let finalPos = getFinalPiecePos(gameId, tileIdx)
+      const tilePos = getPiecePos(gameId, pieceIdx)
+      const finalPos = getFinalPiecePos(gameId, pieceIdx)
       if (Geometry.pointDistance(finalPos, tilePos) < puzzle.info.snapDistance) {
-        let diff = Geometry.pointSub(finalPos, tilePos)
+        const diff = Geometry.pointSub(finalPos, tilePos)
         // Snap the tile to the final destination
-        moveTilesDiff(gameId, tileIdxs, diff)
-        finishTiles(gameId, tileIdxs)
-        _tileChanges(tileIdxs)
+        movePiecesDiff(gameId, pieceIdxs, diff)
+        finishPieces(gameId, pieceIdxs)
+        _pieceChanges(pieceIdxs)
 
         let points = getPlayerPoints(gameId, playerId)
         if (getScoreMode(gameId) === ScoreMode.FINAL) {
-          points += tileIdxs.length
+          points += pieceIdxs.length
         } else if (getScoreMode(gameId) === ScoreMode.ANY) {
           points += 1
         } else {
@@ -877,7 +742,7 @@ function handleInput(
           otherTileIdx: number,
           off: Array<number>
         ): boolean => {
-          let info = GAMES[gameId].puzzle.info
+          const info = GAMES[gameId].puzzle.info
           if (otherTileIdx < 0) {
             return false
           }
@@ -890,27 +755,27 @@ function handleInput(
             {x: off[0] * info.tileSize, y: off[1] * info.tileSize}
           )
           if (Geometry.pointDistance(tilePos, dstPos) < info.snapDistance) {
-            let diff = Geometry.pointSub(dstPos, tilePos)
-            let tileIdxs = getGroupedPieceIdxs(gameId, tileIdx)
-            moveTilesDiff(gameId, tileIdxs, diff)
+            const diff = Geometry.pointSub(dstPos, tilePos)
+            let pieceIdxs = getGroupedPieceIdxs(gameId, tileIdx)
+            movePiecesDiff(gameId, pieceIdxs, diff)
             groupTiles(gameId, tileIdx, otherTileIdx)
-            tileIdxs = getGroupedPieceIdxs(gameId, tileIdx)
-            const zIndex = getMaxZIndexByTileIdxs(gameId, tileIdxs)
-            setTilesZIndex(gameId, tileIdxs, zIndex)
-            _tileChanges(tileIdxs)
+            pieceIdxs = getGroupedPieceIdxs(gameId, tileIdx)
+            const zIndex = getMaxZIndexByPieceIdxs(gameId, pieceIdxs)
+            setPiecesZIndex(gameId, pieceIdxs, zIndex)
+            _pieceChanges(pieceIdxs)
             return true
           }
           return false
         }
 
         let snapped = false
-        for (let tileIdxTmp of getGroupedPieceIdxs(gameId, tileIdx)) {
-          let othersIdxs = getSurroundingTilesByIdx(gameId, tileIdxTmp)
+        for (const pieceIdxTmp of getGroupedPieceIdxs(gameId, pieceIdx)) {
+          const othersIdxs = getSurroundingTilesByIdx(gameId, pieceIdxTmp)
           if (
-            check(gameId, tileIdxTmp, othersIdxs[0], [0, 1]) // top
-            || check(gameId, tileIdxTmp, othersIdxs[1], [-1, 0]) // right
-            || check(gameId, tileIdxTmp, othersIdxs[2], [0, -1]) // bottom
-            || check(gameId, tileIdxTmp, othersIdxs[3], [1, 0]) // left
+            check(gameId, pieceIdxTmp, othersIdxs[0], [0, 1]) // top
+            || check(gameId, pieceIdxTmp, othersIdxs[1], [-1, 0]) // right
+            || check(gameId, pieceIdxTmp, othersIdxs[2], [0, -1]) // bottom
+            || check(gameId, pieceIdxTmp, othersIdxs[3], [1, 0]) // left
           ) {
             snapped = true
             break

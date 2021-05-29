@@ -1,5 +1,6 @@
 import fs from 'fs'
-import GameCommon, { Piece, ScoreMode } from './../common/GameCommon'
+import GameCommon from './../common/GameCommon'
+import { Piece, ScoreMode } from './../common/Types'
 import Util, { logger } from './../common/Util'
 import { Rng } from './../common/Rng'
 import { DATA_DIR } from './Dirs'
@@ -7,12 +8,12 @@ import Time from './../common/Time'
 
 const log = logger('GameStorage.js')
 
-const DIRTY_GAMES = {} as any
+const dirtyGames: Record<string, boolean> = {}
 function setDirty(gameId: string): void {
-  DIRTY_GAMES[gameId] = true
+  dirtyGames[gameId] = true
 }
 function setClean(gameId: string): void {
-  delete DIRTY_GAMES[gameId]
+  delete dirtyGames[gameId]
 }
 
 function loadGames(): void {
@@ -63,14 +64,19 @@ function loadGame(gameId: string): void {
 }
 
 function persistGames(): void {
-  for (const gameId of Object.keys(DIRTY_GAMES)) {
+  for (const gameId of Object.keys(dirtyGames)) {
     persistGame(gameId)
   }
 }
 
 function persistGame(gameId: string): void {
   const game = GameCommon.get(gameId)
-  if (game.id in DIRTY_GAMES) {
+  if (!game) {
+    log.error(`[ERROR] unable to persist non existing game ${gameId}`)
+    return
+  }
+
+  if (game.id in dirtyGames) {
     setClean(game.id)
   }
   fs.writeFileSync(`${DATA_DIR}/${game.id}.json`, JSON.stringify({

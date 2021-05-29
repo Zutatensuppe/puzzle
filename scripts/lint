@@ -1,0 +1,5 @@
+#!/bin/sh -e
+
+cd "$RUN_DIR"
+
+npm run eslint src

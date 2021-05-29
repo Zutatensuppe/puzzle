@@ -1,7 +1,6 @@
 "use strict"
 
 import { Rng } from '../common/Rng'
-import Util from '../common/Util'
 
 let minVx = -10
 let deltaVx = 20
@@ -108,11 +107,11 @@ class Bomb {
 }
 
 class Particle {
-  px: any
-  py: any
+  px: number
+  py: number
   vx: number
   vy: number
-  color: any
+  color: string
   duration: number
   alive: boolean
   radius: number
@@ -171,7 +170,7 @@ class Controller {
     })
   }
 
-  setSpeedParams() {
+  setSpeedParams(): void {
     let heightReached = 0
     let vy = 0
 
@@ -188,11 +187,11 @@ class Controller {
     deltaVx = 2 * vx
   }
 
-  resize() {
+  resize(): void {
     this.setSpeedParams()
   }
 
-  init() {
+  init(): void {
     this.readyBombs = []
     this.explodedBombs = []
     this.particles = []
@@ -202,7 +201,7 @@ class Controller {
     }
   }
 
-  update() {
+  update(): void {
     if (Math.random() * 100 < percentChanceNewBomb) {
       this.readyBombs.push(new Bomb(this.rng))
     }
@@ -250,7 +249,7 @@ class Controller {
     this.particles = aliveParticles
   }
 
-  render() {
+  render(): void {
     this.ctx.beginPath()
     this.ctx.fillStyle = 'rgba(0, 0, 0, 0.1)' // Ghostly effect
     this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height)

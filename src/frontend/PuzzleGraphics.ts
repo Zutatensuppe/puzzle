@@ -3,22 +3,22 @@
 import Geometry, { Rect } from '../common/Geometry'
 import Graphics from './Graphics'
 import Util, { logger } from './../common/Util'
-import { Puzzle, PuzzleInfo, PieceShape } from './../common/GameCommon'
+import { Puzzle, PuzzleInfo, PieceShape, EncodedPiece } from './../common/GameCommon'
 
 const log = logger('PuzzleGraphics.js')
 
 async function createPuzzleTileBitmaps(
   img: ImageBitmap,
-  tiles: Array<any>,
+  pieces: EncodedPiece[],
   info: PuzzleInfo
 ): Promise<Array<ImageBitmap>> {
   log.log('start createPuzzleTileBitmaps')
-  var tileSize = info.tileSize
-  var tileMarginWidth = info.tileMarginWidth
-  var tileDrawSize = info.tileDrawSize
-  var tileRatio = tileSize / 100.0
+  const tileSize = info.tileSize
+  const tileMarginWidth = info.tileMarginWidth
+  const tileDrawSize = info.tileDrawSize
+  const tileRatio = tileSize / 100.0
 
-  var curvyCoords = [
+  const curvyCoords = [
     0, 0, 40, 15, 37, 5,
     37, 5, 40, 0, 38, -5,
     38, -5, 20, -20, 50, -20,
@@ -27,7 +27,7 @@ async function createPuzzleTileBitmaps(
     63, 5, 65, 15, 100, 0
   ];
 
-  const bitmaps: Array<ImageBitmap> = new Array(tiles.length)
+  const bitmaps: Array<ImageBitmap> = new Array(pieces.length)
 
   const paths: Record<string, Path2D> = {}
   function pathForShape(shape: PieceShape) {
@@ -65,9 +65,9 @@ async function createPuzzleTileBitmaps(
     }
     if (shape.bottom !== 0) {
       for (let i = 0; i < curvyCoords.length / 6; i++) {
-        let p1 = Geometry.pointSub(bottomRightEdge, { x: curvyCoords[i * 6 + 0] * tileRatio, y: shape.bottom * curvyCoords[i * 6 + 1] * tileRatio })
-        let p2 = Geometry.pointSub(bottomRightEdge, { x: curvyCoords[i * 6 + 2] * tileRatio, y: shape.bottom * curvyCoords[i * 6 + 3] * tileRatio })
-        let p3 = Geometry.pointSub(bottomRightEdge, { x: curvyCoords[i * 6 + 4] * tileRatio, y: shape.bottom * curvyCoords[i * 6 + 5] * tileRatio })
+        const p1 = Geometry.pointSub(bottomRightEdge, { x: curvyCoords[i * 6 + 0] * tileRatio, y: shape.bottom * curvyCoords[i * 6 + 1] * tileRatio })
+        const p2 = Geometry.pointSub(bottomRightEdge, { x: curvyCoords[i * 6 + 2] * tileRatio, y: shape.bottom * curvyCoords[i * 6 + 3] * tileRatio })
+        const p3 = Geometry.pointSub(bottomRightEdge, { x: curvyCoords[i * 6 + 4] * tileRatio, y: shape.bottom * curvyCoords[i * 6 + 5] * tileRatio })
         path.bezierCurveTo(p1.x, p1.y, p2.x, p2.y, p3.x, p3.y);
       }
     } else {
@@ -75,9 +75,9 @@ async function createPuzzleTileBitmaps(
     }
     if (shape.left !== 0) {
       for (let i = 0; i < curvyCoords.length / 6; i++) {
-        let p1 = Geometry.pointSub(bottomLeftEdge, { x: -shape.left * curvyCoords[i * 6 + 1] * tileRatio, y: curvyCoords[i * 6 + 0] * tileRatio })
-        let p2 = Geometry.pointSub(bottomLeftEdge, { x: -shape.left * curvyCoords[i * 6 + 3] * tileRatio, y: curvyCoords[i * 6 + 2] * tileRatio })
-        let p3 = Geometry.pointSub(bottomLeftEdge, { x: -shape.left * curvyCoords[i * 6 + 5] * tileRatio, y: curvyCoords[i * 6 + 4] * tileRatio })
+        const p1 = Geometry.pointSub(bottomLeftEdge, { x: -shape.left * curvyCoords[i * 6 + 1] * tileRatio, y: curvyCoords[i * 6 + 0] * tileRatio })
+        const p2 = Geometry.pointSub(bottomLeftEdge, { x: -shape.left * curvyCoords[i * 6 + 3] * tileRatio, y: curvyCoords[i * 6 + 2] * tileRatio })
+        const p3 = Geometry.pointSub(bottomLeftEdge, { x: -shape.left * curvyCoords[i * 6 + 5] * tileRatio, y: curvyCoords[i * 6 + 4] * tileRatio })
         path.bezierCurveTo(p1.x, p1.y, p2.x, p2.y, p3.x, p3.y);
       }
     } else {
@@ -93,10 +93,10 @@ async function createPuzzleTileBitmaps(
   const c2 = Graphics.createCanvas(tileDrawSize, tileDrawSize)
   const ctx2 = c2.getContext('2d') as CanvasRenderingContext2D
 
-  for (const t of tiles) {
-    const tile = Util.decodePiece(t)
-    const srcRect = srcRectByIdx(info, tile.idx)
-    const path = pathForShape(Util.decodeShape(info.shapes[tile.idx]))
+  for (const p of pieces) {
+    const piece = Util.decodePiece(p)
+    const srcRect = srcRectByIdx(info, piece.idx)
+    const path = pathForShape(Util.decodeShape(info.shapes[piece.idx]))
 
     ctx.clearRect(0, 0, tileDrawSize, tileDrawSize)
 
@@ -195,7 +195,7 @@ async function createPuzzleTileBitmaps(
     ctx2.restore()
     ctx.drawImage(c2, 0, 0)
 
-    bitmaps[tile.idx] = await createImageBitmap(c)
+    bitmaps[piece.idx] = await createImageBitmap(c)
   }
 
   log.log('end createPuzzleTileBitmaps')
@@ -203,7 +203,7 @@ async function createPuzzleTileBitmaps(
 }
 
 function srcRectByIdx(puzzleInfo: PuzzleInfo, idx: number): Rect {
-  const c = Util.coordByTileIdx(puzzleInfo, idx)
+  const c = Util.coordByPieceIdx(puzzleInfo, idx)
   return {
     x: c.x * puzzleInfo.tileSize,
     y: c.y * puzzleInfo.tileSize,

@@ -7,13 +7,21 @@ import Debug from './Debug'
 import Communication from './Communication'
 import Util from './../common/Util'
 import PuzzleGraphics from './PuzzleGraphics'
-import Game, { Game as GameType, Player, Piece, EncodedGame, ReplayData, Timestamp } from './../common/GameCommon'
+import Game from './../common/GameCommon'
 import fireworksController from './Fireworks'
 import Protocol from '../common/Protocol'
 import Time from '../common/Time'
 import { Dim, Point } from '../common/Geometry'
-import { FixedLengthArray } from '../common/Types'
-
+import {
+  FixedLengthArray,
+  Game as GameType,
+  Player,
+  Piece,
+  EncodedGame,
+  ReplayData,
+  Timestamp,
+  GameEvent,
+} from '../common/Types'
 declare global {
   interface Window {
       DEBUG?: boolean
@@ -79,7 +87,7 @@ function addCanvasToDom(TARGET_EL: HTMLElement, canvas: HTMLCanvasElement) {
 }
 
 function EventAdapter (canvas: HTMLCanvasElement, window: any, viewport: any) {
-  let events: Array<Array<any>> = []
+  let events: Array<GameEvent> = []
 
   let KEYS_ON = true
 
@@ -165,11 +173,11 @@ function EventAdapter (canvas: HTMLCanvasElement, window: any, viewport: any) {
     }
   })
 
-  const addEvent = (event: Array<any>) => {
+  const addEvent = (event: GameEvent) => {
     events.push(event)
   }
 
-  const consumeAll = () => {
+  const consumeAll = (): GameEvent[] => {
     if (events.length === 0) {
       return []
     }
@@ -491,7 +499,7 @@ export async function main(
   } else if (MODE === MODE_REPLAY) {
     // no external communication for replay mode,
     // only the REPLAY.log is relevant
-    let inter = setInterval(() => {
+    const inter = setInterval(() => {
       const realTs = Time.timestamp()
       if (REPLAY.requesting) {
         REPLAY.lastRealTs = realTs
@@ -559,7 +567,7 @@ export async function main(
   }
 
   let _last_mouse_down: Point|null = null
-  const onUpdate = () => {
+  const onUpdate = (): void => {
     // handle key downs once per onUpdate
     // this will create Protocol.INPUT_EV_MOVE events if something
     // relevant is pressed
@@ -663,7 +671,7 @@ export async function main(
     }
   }
 
-  const onRender = async () => {
+  const onRender = async (): Promise<void> => {
     if (!RERENDER) {
       return
     }

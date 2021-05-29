@@ -1,3 +1,4 @@
+import { PuzzleCreationInfo } from '../server/Puzzle'
 import {
   EncodedGame,
   EncodedPiece,
@@ -7,19 +8,20 @@ import {
   Piece,
   PieceShape,
   Player,
+  PuzzleInfo,
   ScoreMode
-} from './GameCommon'
+} from './Types'
 import { Point } from './Geometry'
 import { Rng } from './Rng'
 
-const slug = (str: string) => {
+const slug = (str: string): string => {
   let tmp = str.toLowerCase()
   tmp = tmp.replace(/[^a-z0-9]+/g, '-')
   tmp = tmp.replace(/^-|-$/, '')
   return tmp
 }
 
-const pad = (x: any, pad: string) => {
+const pad = (x: number, pad: string): string => {
   const str = `${x}`
   if (str.length >= pad.length) {
     return str
@@ -43,7 +45,9 @@ export const logger = (...pre: Array<any>) => {
 }
 
 // get a unique id
-export const uniqId = () => Date.now().toString(36) + Math.random().toString(36).substring(2)
+export const uniqId = (): string => {
+  return Date.now().toString(36) + Math.random().toString(36).substring(2)
+}
 
 function encodeShape(data: PieceShape): EncodedPieceShape {
   /* encoded in 1 byte:
@@ -139,11 +143,11 @@ function decodeGame(data: EncodedGame): Game {
   }
 }
 
-function coordByTileIdx(info: any, tileIdx: number): Point {
+function coordByPieceIdx(info: PuzzleInfo|PuzzleCreationInfo, pieceIdx: number): Point {
   const wTiles = info.width / info.tileSize
   return {
-    x: tileIdx % wTiles,
-    y: Math.floor(tileIdx / wTiles),
+    x: pieceIdx % wTiles,
+    y: Math.floor(pieceIdx / wTiles),
   }
 }
 
@@ -151,16 +155,16 @@ const hash = (str: string): number => {
   let hash = 0
 
   for (let i = 0; i < str.length; i++) {
-    let chr = str.charCodeAt(i);
+    const chr = str.charCodeAt(i);
     hash = ((hash << 5) - hash) + chr;
     hash |= 0; // Convert to 32bit integer
   }
   return hash;
 }
 
-function asQueryArgs(data: any) {
+function asQueryArgs(data: Record<string, any>): string {
   const q = []
-  for (let k in data) {
+  for (const k in data) {
     const pair = [k, data[k]].map(encodeURIComponent)
     q.push(pair.join('='))
   }
@@ -187,7 +191,7 @@ export default {
   encodeGame,
   decodeGame,
 
-  coordByTileIdx,
+  coordByPieceIdx,
 
   asQueryArgs,
 }

@@ -1,6 +1,6 @@
 "use strict"
 
-import { EncodedGame, ReplayData } from '../common/GameCommon'
+import { ClientEvent, EncodedGame, GameEvent, ReplayData } from '../common/Types'
 import Util, { logger } from '../common/Util'
 import Protocol from './../common/Protocol'
 
@@ -16,25 +16,29 @@ const CONN_STATE_CONNECTING = 3 // connecting
 const CONN_STATE_CLOSED = 4 // not connected (closed on purpose)
 
 let ws: WebSocket
-let changesCallback = (msg: Array<any>) => {}
-let connectionStateChangeCallback = (state: number) => {}
+let changesCallback = (msg: Array<any>) => {
+  // empty
+}
+let connectionStateChangeCallback = (state: number) => {
+  // empty
+}
 
 // TODO: change these to something like on(EVT, cb)
-function onServerChange(callback: (msg: Array<any>) => void) {
+function onServerChange(callback: (msg: Array<any>) => void): void {
   changesCallback = callback
 }
-function onConnectionStateChange(callback: (state: number) => void) {
+function onConnectionStateChange(callback: (state: number) => void): void {
   connectionStateChangeCallback = callback
 }
 
 let connectionState = CONN_STATE_NOT_CONNECTED
-const setConnectionState = (state: number) => {
+const setConnectionState = (state: number): void => {
   if (connectionState !== state) {
     connectionState = state
     connectionStateChangeCallback(state)
   }
 }
-function send(message: Array<any>): void {
+function send(message: ClientEvent): void {
   if (connectionState === CONN_STATE_CONNECTED) {
     try {
       ws.send(JSON.stringify(message))
@@ -46,7 +50,7 @@ function send(message: Array<any>): void {
 
 
 let clientSeq: number
-let events: Record<number, any>
+let events: Record<number, GameEvent>
 
 function connect(
   address: string,
@@ -58,7 +62,7 @@ function connect(
   setConnectionState(CONN_STATE_CONNECTING)
   return new Promise(resolve => {
     ws = new WebSocket(address, clientId + '|' + gameId)
-    ws.onopen = (e) => {
+    ws.onopen = () => {
       setConnectionState(CONN_STATE_CONNECTED)
       send([Protocol.EV_CLIENT_INIT])
     }
@@ -82,7 +86,7 @@ function connect(
       }
     }
 
-    ws.onerror = (e) => {
+    ws.onerror = () => {
       setConnectionState(CONN_STATE_DISCONNECTED)
       throw `[ 2021-05-15 onerror ]`
     }
@@ -116,7 +120,7 @@ function disconnect(): void {
   events = {}
 }
 
-function sendClientEvent(evt: any): void {
+function sendClientEvent(evt: GameEvent): void {
   // when sending event, increase number of sent events
   // and add the event locally
   clientSeq++;

@@ -36,7 +36,7 @@
 <script lang="ts">
 import { defineComponent } from 'vue'
 
-import { GameSettings, ScoreMode } from './../../common/GameCommon'
+import { GameSettings, ScoreMode } from './../../common/Types'
 import ResponsiveImage from './ResponsiveImage.vue'
 
 export default defineComponent({

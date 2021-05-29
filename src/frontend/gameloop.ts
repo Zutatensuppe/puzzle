@@ -3,10 +3,10 @@
 interface GameLoopOptions {
   fps?: number
   slow?: number
-  update: (step: number) => any
-  render: (passed: number) => any
+  update: (step: number) => void
+  render: (passed: number) => void
 }
-export const run = (options: GameLoopOptions) => {
+export const run = (options: GameLoopOptions): void => {
   const fps = options.fps || 60
   const slow = options.slow || 1
   const update = options.update

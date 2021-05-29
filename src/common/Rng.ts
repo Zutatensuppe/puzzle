@@ -15,7 +15,7 @@ export class Rng {
   random (min: number, max: number): number {
     this.rand_high = ((this.rand_high << 16) + (this.rand_high >> 16) + this.rand_low) & 0xffffffff;
     this.rand_low = (this.rand_low + this.rand_high) & 0xffffffff;
-    var n = (this.rand_high >>> 0) / 0xffffffff;
+    const n = (this.rand_high >>> 0) / 0xffffffff;
     return (min + n * (max-min+1))|0;
   }
 

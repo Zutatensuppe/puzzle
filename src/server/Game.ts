@@ -1,4 +1,5 @@
-import GameCommon, { Game, ScoreMode, Timestamp } from './../common/GameCommon'
+import GameCommon from './../common/GameCommon'
+import { Change, Game, Input, ScoreMode, Timestamp } from './../common/Types'
 import Util from './../common/Util'
 import { Rng } from './../common/Rng'
 import GameLog from './GameLog'
@@ -10,7 +11,7 @@ async function createGameObject(
   gameId: string,
   targetTiles: number,
   image: PuzzleCreationImageInfo,
-  ts: number,
+  ts: Timestamp,
   scoreMode: ScoreMode
 ): Promise<Game> {
   const seed = Util.hash(gameId + ' ' + ts)
@@ -29,7 +30,7 @@ async function createGame(
   gameId: string,
   targetTiles: number,
   image: PuzzleCreationImageInfo,
-  ts: number,
+  ts: Timestamp,
   scoreMode: ScoreMode
 ): Promise<void> {
   const gameObject = await createGameObject(
@@ -63,9 +64,9 @@ function addPlayer(gameId: string, playerId: string, ts: Timestamp): void {
 function handleInput(
   gameId: string,
   playerId: string,
-  input: any,
-  ts: number
-): Array<Array<any>> {
+  input: Input,
+  ts: Timestamp
+): Array<Change> {
   const idx = GameCommon.getPlayerIndexById(gameId, playerId)
   const diff = ts - GameCommon.getStartTs(gameId)
   GameLog.log(gameId, Protocol.LOG_HANDLE_INPUT, idx, input, diff)
