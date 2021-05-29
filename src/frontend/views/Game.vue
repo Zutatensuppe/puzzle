@@ -39,7 +39,7 @@ import ConnectionOverlay from './../components/ConnectionOverlay.vue'
 import HelpOverlay from './../components/HelpOverlay.vue'
 
 import { main, MODE_PLAY } from './../game'
-import { Player } from '../../common/GameCommon'
+import { Player } from '../../common/Types'
 
 export default defineComponent({
   name: 'game',

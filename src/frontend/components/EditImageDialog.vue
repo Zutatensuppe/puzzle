@@ -38,7 +38,7 @@
 </template>
 <script lang="ts">
 import { defineComponent, PropType } from 'vue'
-import { Image, Tag } from '../../common/GameCommon'
+import { Image, Tag } from '../../common/Types'
 
 import ResponsiveImage from './ResponsiveImage.vue'
 import TagsInput from './TagsInput.vue'

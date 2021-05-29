@@ -45,7 +45,7 @@ import ImageLibrary from './../components/ImageLibrary.vue'
 import NewImageDialog from './../components/NewImageDialog.vue'
 import EditImageDialog from './../components/EditImageDialog.vue'
 import NewGameDialog from './../components/NewGameDialog.vue'
-import { GameSettings, Image, Tag } from '../../common/GameCommon'
+import { GameSettings, Image, Tag } from '../../common/Types'
 import Util from '../../common/Util'
 
 export default defineComponent({
@@ -150,7 +150,7 @@ export default defineComponent({
       this.dialog = 'new-game'
     },
     async onNewGame(gameSettings: GameSettings) {
-      const res = await fetch('/newgame', {
+      const res = await fetch('/api/newgame', {
         method: 'post',
         headers: {
           'Accept': 'application/json',

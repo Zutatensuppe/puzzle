@@ -5,7 +5,7 @@
 </template>
 <script lang="ts">
 import { defineComponent } from 'vue'
-import { Image } from '../../common/GameCommon'
+import { Image } from '../../common/Types'
 
 import ImageTeaser from './ImageTeaser.vue'
 
