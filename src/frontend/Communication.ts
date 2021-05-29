@@ -96,6 +96,13 @@ function connect(
   })
 }
 
+function requestReplayData(
+  offset: number,
+  size: number
+): void {
+  send([Protocol.EV_CLIENT_REPLAY_DATA, offset, size])
+}
+
 // TOOD: change replay stuff
 function connectReplay(
   address: string,
@@ -109,16 +116,25 @@ function connectReplay(
     ws = new WebSocket(address, clientId + '|' + gameId)
     ws.onopen = (e) => {
       setConnectionState(CONN_STATE_CONNECTED)
-      send([Protocol.EV_CLIENT_INIT_REPLAY])
+      requestReplayData(0, 10000)
     }
     ws.onmessage = (e) => {
       const msg = JSON.parse(e.data)
       const msgType = msg[0]
-      if (msgType === Protocol.EV_SERVER_INIT_REPLAY) {
-        const game = msg[1]
-        const log = msg[2]
-        const replay: { game: any, log: Array<any> } = { game, log }
-        resolve(replay)
+      if (msgType === Protocol.EV_SERVER_REPLAY_DATA) {
+        const log: any[] = msg[1]
+        const game = msg[2] // can be null or encoded game
+        if (game !== null) {
+          // this is the first/initial message
+          const replay: {
+            game: any,
+            log: any[]
+          } = { game, log }
+          resolve(replay)
+        } else {
+          // this is just the next batch of log entries
+          changesCallback(msg)
+        }
       } else {
         throw `[ 2021-05-09 invalid connectReplay msgType ${msgType} ]`
       }
@@ -158,6 +174,7 @@ function sendClientEvent(evt: any): void {
 export default {
   connect,
   connectReplay,
+  requestReplayData,
   disconnect,
   sendClientEvent,
   onServerChange,

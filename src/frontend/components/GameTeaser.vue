@@ -7,7 +7,7 @@
         {{time(game.started, game.finished)}}<br />
       </span>
     </router-link>
-    <router-link v-if="false && game.hasReplay" class="game-replay" :to="{ name: 'replay', params: { id: game.id } }">
+    <router-link v-if="game.hasReplay" class="game-replay" :to="{ name: 'replay', params: { id: game.id } }">
       ↪️ Watch replay
     </router-link>
   </div>

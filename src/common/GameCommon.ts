@@ -170,8 +170,11 @@ function getPlayerIdByIndex(gameId: string, playerIndex: number): string|null {
   return null
 }
 
-function getPlayer(gameId: string, playerId: string): Player {
+function getPlayer(gameId: string, playerId: string): Player|null {
   const idx = getPlayerIndexById(gameId, playerId)
+  if (idx === -1) {
+    return null
+  }
   return Util.decodePlayer(GAMES[gameId].players[idx])
 }
 
@@ -299,6 +302,10 @@ function changePlayer(
   change: any
 ): void {
   const player = getPlayer(gameId, playerId)
+  if (player === null) {
+    return
+  }
+
   for (let k of Object.keys(change)) {
     // @ts-ignore
     player[k] = change[k]
@@ -647,9 +654,13 @@ function handleInput(
   }
 
   const _playerChange = (): void => {
+    const player = getPlayer(gameId, playerId)
+    if (!player) {
+      return
+    }
     changes.push([
       Protocol.CHANGE_PLAYER,
-      Util.encodePlayer(getPlayer(gameId, playerId)),
+      Util.encodePlayer(player),
     ])
   }
 

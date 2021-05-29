@@ -48,7 +48,10 @@ interface Hud {
   setReplayPaused?: (v: boolean) => void
 }
 interface Replay {
+  final: boolean
+  requesting: boolean
   log: Array<any>
+  logPointer: number,
   logIdx: number
   speeds: Array<number>
   speedIdx: number
@@ -260,7 +263,10 @@ export async function main(
   // stuff only available in replay mode...
   // TODO: refactor
   const REPLAY: Replay = {
+    final: false,
+    requesting: true,
     log: [],
+    logPointer: 0,
     logIdx: 0,
     speeds: [0.5, 1, 2, 5, 10, 20, 50],
     speedIdx: 1,
@@ -283,12 +289,26 @@ export async function main(
       TIME = () => Time.timestamp()
     } else if (MODE === MODE_REPLAY) {
       // TODO: change how replay connect is done...
+      Communication.onServerChange((msg) => {
+        const log = msg[1]
+
+        // cut log that was already handled
+        REPLAY.log = REPLAY.log.slice(REPLAY.logPointer)
+        REPLAY.logPointer = 0
+
+        REPLAY.log.push(...msg[1])
+        if (log.length < 10000) {
+          REPLAY.final = true
+        }
+        REPLAY.requesting = false
+      })
       const replay: {game: any, log: Array<any>} = await Communication.connectReplay(wsAddress, gameId, clientId)
       const gameObject = Util.decodeGame(replay.game)
       Game.setGame(gameObject.id, gameObject)
+      REPLAY.requesting = false
       REPLAY.log = replay.log
       REPLAY.lastRealTs = Time.timestamp()
-      REPLAY.gameStartTs = parseInt(REPLAY.log[0][REPLAY.log[0].length - 2], 10)
+      REPLAY.gameStartTs = parseInt(REPLAY.log[0][4], 10)
       REPLAY.lastGameTs = REPLAY.gameStartTs
       TIME = () => REPLAY.lastGameTs
     } else {
@@ -426,6 +446,7 @@ export async function main(
   }
 
   if (MODE === MODE_PLAY) {
+    // TODO: register onServerChange function before connecting to server
     Communication.onServerChange((msg) => {
       const msgType = msg[0]
       const evClientId = msg[1]
@@ -458,6 +479,18 @@ export async function main(
     // only the REPLAY.log is relevant
     let inter = setInterval(() => {
       const realTs = Time.timestamp()
+      if (REPLAY.requesting) {
+        REPLAY.lastRealTs = realTs
+        return
+      }
+
+      if (REPLAY.logPointer + 1 >= REPLAY.log.length) {
+        REPLAY.lastRealTs = realTs
+        REPLAY.requesting = true
+        Communication.requestReplayData(REPLAY.logIdx, 10000)
+        return
+      }
+
       if (REPLAY.paused) {
         REPLAY.lastRealTs = realTs
         return
@@ -469,9 +502,11 @@ export async function main(
         if (REPLAY.paused) {
           break
         }
-        const nextIdx = REPLAY.logIdx + 1
+        const nextIdx = REPLAY.logPointer + 1
         if (nextIdx >= REPLAY.log.length) {
-          clearInterval(inter)
+          if (REPLAY.final) {
+            clearInterval(inter)
+          }
           break
         }
 
@@ -502,7 +537,8 @@ export async function main(
           Game.handleInput(gameId, playerId, input, nextTs)
           RERENDER = true
         }
-        REPLAY.logIdx = nextIdx
+        REPLAY.logPointer = nextIdx
+        REPLAY.logIdx++
       } while (true)
       REPLAY.lastRealTs = realTs
       REPLAY.lastGameTs = maxGameTs

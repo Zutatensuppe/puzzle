@@ -1,4 +1,6 @@
 import fs from 'fs'
+import readline from 'readline'
+import stream from 'stream'
 import { logger } from './../common/Util'
 import { DATA_DIR } from './../server/Dirs'
 
@@ -27,19 +29,39 @@ const _log = (gameId: string, ...args: Array<any>) => {
   fs.appendFileSync(file, str + "\n")
 }
 
-const get = (gameId: string) => {
+const get = async (
+  gameId: string,
+  offset: number = 0,
+  size: number = 10000
+): Promise<any[]> => {
   const file = filename(gameId)
   if (!fs.existsSync(file)) {
     return []
   }
-  const lines = fs.readFileSync(file, 'utf-8').split("\n")
-  return lines.filter((line: string) => !!line).map((line: string) => {
-    try {
-      return JSON.parse(line)
-    } catch (e) {
-      log.log(line)
-      log.log(e)
-    }
+  return new Promise((resolve) => {
+    const instream = fs.createReadStream(file)
+    const outstream = new stream.Writable()
+    const rl = readline.createInterface(instream, outstream)
+    const lines: any[] = []
+    let i = -1
+    rl.on('line', (line) => {
+      if (!line) {
+        // skip empty
+        return
+      }
+      i++
+      if (offset > i) {
+        return
+      }
+      if (offset + size <= i) {
+        rl.close()
+        return
+      }
+      lines.push(JSON.parse(line))
+    })
+    rl.on('close', () => {
+      resolve(lines)
+    })
   })
 }
 

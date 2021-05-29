@@ -203,20 +203,27 @@ wss.on('message', async ({socket, data} : { socket: WebSocket, data: any }) => {
     const msg = JSON.parse(data)
     const msgType = msg[0]
     switch (msgType) {
-      case Protocol.EV_CLIENT_INIT_REPLAY: {
+      case Protocol.EV_CLIENT_REPLAY_DATA: {
         if (!GameLog.exists(gameId)) {
           throw `[gamelog ${gameId} does not exist... ]`
         }
-        const log = GameLog.get(gameId)
-        const game = await Game.createGameObject(
-          gameId,
-          log[0][2],
-          log[0][3],
-          log[0][4],
-          log[0][5] || ScoreMode.FINAL
-        )
+        const offset = msg[1]
+        const size = msg[2]
+
+        const log = await GameLog.get(gameId, offset, size)
+        let game = null
+        if (offset === 0) {
+          // also need the game
+          game = await Game.createGameObject(
+            gameId,
+            log[0][2],
+            log[0][3],
+            log[0][4],
+            log[0][5] || ScoreMode.FINAL
+          )
+        }
         notify(
-          [Protocol.EV_SERVER_INIT_REPLAY, Util.encodeGame(game), log],
+          [Protocol.EV_SERVER_REPLAY_DATA, log, game ? Util.encodeGame(game) : null],
           [socket]
         )
       } break
