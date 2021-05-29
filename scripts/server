@@ -1,4 +1,4 @@
 #!/bin/sh
 
 # server for built files
-nodemon --max-old-space-size=64 build/server/main.js -c config.json
+nodemon --max-old-space-size=64 -e js build/server/main.js -c config.json
