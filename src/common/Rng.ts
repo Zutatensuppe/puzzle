@@ -1,4 +1,4 @@
-interface RngSerialized {
+export interface RngSerialized {
   rand_high: number,
   rand_low: number,
 }

@@ -94,7 +94,7 @@ async function createPuzzleTileBitmaps(
   const ctx2 = c2.getContext('2d') as CanvasRenderingContext2D
 
   for (const t of tiles) {
-    const tile = Util.decodeTile(t)
+    const tile = Util.decodePiece(t)
     const srcRect = srcRectByIdx(info, tile.idx)
     const path = pathForShape(Util.decodeShape(info.shapes[tile.idx]))
 

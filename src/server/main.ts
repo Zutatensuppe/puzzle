@@ -19,7 +19,7 @@ import {
   PUBLIC_DIR,
   UPLOAD_DIR,
 } from './Dirs'
-import { GameSettings, ScoreMode } from '../common/GameCommon'
+import GameCommon, { Game as GameType, GameSettings, ScoreMode } from '../common/GameCommon'
 import GameStorage from './GameStorage'
 import Db from './Db'
 
@@ -81,7 +81,7 @@ app.get('/api/replay-data', async (req, res) => {
     return
   }
   const log = await GameLog.get(gameId, offset, size)
-  let game = null
+  let game: GameType|null = null
   if (offset === 0) {
     // also need the game
     game = await Game.createGameObject(
@@ -107,15 +107,15 @@ app.get('/api/newgame-data', (req, res) => {
 app.get('/api/index-data', (req, res) => {
   const ts = Time.timestamp()
   const games = [
-    ...Game.getAllGames().map((game: any) => ({
+    ...GameCommon.getAllGames().map((game: any) => ({
       id: game.id,
       hasReplay: GameLog.exists(game.id),
-      started: Game.getStartTs(game.id),
-      finished: Game.getFinishTs(game.id),
-      tilesFinished: Game.getFinishedTileCount(game.id),
-      tilesTotal: Game.getTileCount(game.id),
-      players: Game.getActivePlayers(game.id, ts).length,
-      imageUrl: Game.getImageUrl(game.id),
+      started: GameCommon.getStartTs(game.id),
+      finished: GameCommon.getFinishTs(game.id),
+      tilesFinished: GameCommon.getFinishedPiecesCount(game.id),
+      tilesTotal: GameCommon.getPieceCount(game.id),
+      players: GameCommon.getActivePlayers(game.id, ts).length,
+      imageUrl: GameCommon.getImageUrl(game.id),
     })),
   ]
 
@@ -193,7 +193,7 @@ app.post('/newgame', bodyParser.json(), async (req, res) => {
   const gameSettings = req.body as GameSettings
   log.log(gameSettings)
   const gameId = Util.uniqId()
-  if (!Game.exists(gameId)) {
+  if (!GameCommon.exists(gameId)) {
     const ts = Time.timestamp()
     await Game.createGame(
       gameId,
@@ -238,13 +238,13 @@ wss.on('message', async ({socket, data} : { socket: WebSocket, data: any }) => {
     const msgType = msg[0]
     switch (msgType) {
       case Protocol.EV_CLIENT_INIT: {
-        if (!Game.exists(gameId)) {
+        if (!GameCommon.exists(gameId)) {
           throw `[game ${gameId} does not exist... ]`
         }
         const ts = Time.timestamp()
         Game.addPlayer(gameId, clientId, ts)
         GameSockets.addSocket(gameId, socket)
-        const game = Game.get(gameId)
+        const game: GameType = GameCommon.get(gameId)
         notify(
           [Protocol.EV_SERVER_INIT, Util.encodeGame(game)],
           [socket]
@@ -252,7 +252,7 @@ wss.on('message', async ({socket, data} : { socket: WebSocket, data: any }) => {
       } break
 
       case Protocol.EV_CLIENT_EVENT: {
-        if (!Game.exists(gameId)) {
+        if (!GameCommon.exists(gameId)) {
           throw `[game ${gameId} does not exist... ]`
         }
         const clientSeq = msg[1]
@@ -260,7 +260,7 @@ wss.on('message', async ({socket, data} : { socket: WebSocket, data: any }) => {
         const ts = Time.timestamp()
 
         let sendGame = false
-        if (!Game.playerExists(gameId, clientId)) {
+        if (!GameCommon.playerExists(gameId, clientId)) {
           Game.addPlayer(gameId, clientId, ts)
           sendGame = true
         }
@@ -269,7 +269,7 @@ wss.on('message', async ({socket, data} : { socket: WebSocket, data: any }) => {
           sendGame = true
         }
         if (sendGame) {
-          const game = Game.get(gameId)
+          const game: GameType = GameCommon.get(gameId)
           notify(
             [Protocol.EV_SERVER_INIT, Util.encodeGame(game)],
             [socket]

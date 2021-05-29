@@ -1,4 +1,14 @@
-import { EncodedPiece, EncodedPieceShape, EncodedPlayer, Piece, PieceShape, Player } from './GameCommon'
+import {
+  EncodedGame,
+  EncodedPiece,
+  EncodedPieceShape,
+  EncodedPlayer,
+  Game,
+  Piece,
+  PieceShape,
+  Player,
+  ScoreMode
+} from './GameCommon'
 import { Point } from './Geometry'
 import { Rng } from './Rng'
 
@@ -58,11 +68,11 @@ function decodeShape(data: EncodedPieceShape): PieceShape {
   }
 }
 
-function encodeTile(data: Piece): EncodedPiece {
+function encodePiece(data: Piece): EncodedPiece {
   return [data.idx, data.pos.x, data.pos.y, data.z, data.owner, data.group]
 }
 
-function decodeTile(data: EncodedPiece): Piece {
+function decodePiece(data: EncodedPiece): Piece {
   return {
     idx: data[0],
     pos: {
@@ -103,25 +113,19 @@ function decodePlayer(data: EncodedPlayer): Player {
   }
 }
 
-function encodeGame(data: any): Array<any> {
-  if (Array.isArray(data)) {
-    return data
-  }
+function encodeGame(data: Game): EncodedGame {
   return [
     data.id,
-    data.rng.type,
+    data.rng.type || '',
     Rng.serialize(data.rng.obj),
     data.puzzle,
     data.players,
     data.evtInfos,
-    data.scoreMode,
+    data.scoreMode || ScoreMode.FINAL,
   ]
 }
 
-function decodeGame(data: any) {
-  if (!Array.isArray(data)) {
-    return data
-  }
+function decodeGame(data: EncodedGame): Game {
   return {
     id: data[0],
     rng: {
@@ -174,8 +178,8 @@ export default {
   encodeShape,
   decodeShape,
 
-  encodeTile,
-  decodeTile,
+  encodePiece,
+  decodePiece,
 
   encodePlayer,
   decodePlayer,

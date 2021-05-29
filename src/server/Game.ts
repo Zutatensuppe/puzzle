@@ -1,18 +1,18 @@
-import GameCommon, { ScoreMode } from './../common/GameCommon'
+import GameCommon, { Game, ScoreMode, Timestamp } from './../common/GameCommon'
 import Util from './../common/Util'
 import { Rng } from './../common/Rng'
 import GameLog from './GameLog'
-import { createPuzzle } from './Puzzle'
+import { createPuzzle, PuzzleCreationImageInfo } from './Puzzle'
 import Protocol from './../common/Protocol'
 import GameStorage from './GameStorage'
 
 async function createGameObject(
   gameId: string,
   targetTiles: number,
-  image: { file: string, url: string },
+  image: PuzzleCreationImageInfo,
   ts: number,
   scoreMode: ScoreMode
-) {
+): Promise<Game> {
   const seed = Util.hash(gameId + ' ' + ts)
   const rng = new Rng(seed)
   return {
@@ -28,11 +28,17 @@ async function createGameObject(
 async function createGame(
   gameId: string,
   targetTiles: number,
-  image: { file: string, url: string },
+  image: PuzzleCreationImageInfo,
   ts: number,
   scoreMode: ScoreMode
 ): Promise<void> {
-  const gameObject = await createGameObject(gameId, targetTiles, image, ts, scoreMode)
+  const gameObject = await createGameObject(
+    gameId,
+    targetTiles,
+    image,
+    ts,
+    scoreMode
+  )
 
   GameLog.create(gameId)
   GameLog.log(gameId, Protocol.LOG_HEADER, 1, targetTiles, image, ts, scoreMode)
@@ -41,7 +47,7 @@ async function createGame(
   GameStorage.setDirty(gameId)
 }
 
-function addPlayer(gameId: string, playerId: string, ts: number): void {
+function addPlayer(gameId: string, playerId: string, ts: Timestamp): void {
   const idx = GameCommon.getPlayerIndexById(gameId, playerId)
   const diff = ts - GameCommon.getStartTs(gameId)
   if (idx === -1) {
@@ -74,14 +80,4 @@ export default {
   createGame,
   addPlayer,
   handleInput,
-  getAllGames: GameCommon.getAllGames,
-  getActivePlayers: GameCommon.getActivePlayers,
-  getFinishedTileCount: GameCommon.getFinishedTileCount,
-  getImageUrl: GameCommon.getImageUrl,
-  getTileCount: GameCommon.getTileCount,
-  exists: GameCommon.exists,
-  playerExists: GameCommon.playerExists,
-  get: GameCommon.get,
-  getStartTs: GameCommon.getStartTs,
-  getFinishTs: GameCommon.getFinishTs,
 }

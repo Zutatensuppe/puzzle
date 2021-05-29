@@ -2,7 +2,12 @@ import Util from './../common/Util'
 import { Rng } from './../common/Rng'
 import Images from './Images'
 import { EncodedPiece, EncodedPieceShape, PieceShape, Puzzle } from '../common/GameCommon'
-import { Point } from '../common/Geometry'
+import { Dim, Point } from '../common/Geometry'
+
+export interface PuzzleCreationImageInfo {
+  file: string
+  url: string
+}
 
 interface PuzzleCreationInfo {
   width: number
@@ -22,7 +27,7 @@ const TILE_SIZE = 64
 async function createPuzzle(
   rng: Rng,
   targetTiles: number,
-  image: { file: string, url: string },
+  image: PuzzleCreationImageInfo,
   ts: number
 ): Promise<Puzzle> {
   const imagePath = image.file
@@ -33,11 +38,7 @@ async function createPuzzle(
   if (!dim.w || !dim.h) {
     throw `[ 2021-05-16 invalid dimension for path ${imagePath} ]`
   }
-  const info: PuzzleCreationInfo = determinePuzzleInfo(
-    dim.w,
-    dim.h,
-    targetTiles
-  )
+  const info: PuzzleCreationInfo = determinePuzzleInfo(dim, targetTiles)
 
   let tiles = new Array(info.tiles)
   for (let i = 0; i < tiles.length; i++) {
@@ -98,7 +99,7 @@ async function createPuzzle(
   positions = rng.shuffle(positions)
 
   const pieces: Array<EncodedPiece> = tiles.map(tile => {
-    return Util.encodeTile({
+    return Util.encodePiece({
       idx: tile.idx, // index of tile in the array
       group: 0, // if grouped with other tiles
       z: 0, // z index of the tile
@@ -181,9 +182,12 @@ function determinePuzzleTileShapes(
   return shapes.map(Util.encodeShape)
 }
 
-const determineTilesXY = (w: number, h: number, targetTiles: number) => {
-  const w_ = w < h ? (w * h) : (w * w)
-  const h_ = w < h ? (h * h) : (w * h)
+const determineTilesXY = (
+  dim: Dim,
+  targetTiles: number
+): { tilesX: number, tilesY: number } => {
+  const w_ = dim.w < dim.h ? (dim.w * dim.h) : (dim.w * dim.w)
+  const h_ = dim.w < dim.h ? (dim.h * dim.h) : (dim.w * dim.h)
   let size = 0
   let tiles = 0
   do {
@@ -198,11 +202,10 @@ const determineTilesXY = (w: number, h: number, targetTiles: number) => {
 }
 
 const determinePuzzleInfo = (
-  w: number,
-  h: number,
+  dim: Dim,
   targetTiles: number
 ): PuzzleCreationInfo => {
-  const {tilesX, tilesY} = determineTilesXY(w, h, targetTiles)
+  const {tilesX, tilesY} = determineTilesXY(dim, targetTiles)
   const tiles = tilesX * tilesY
   const tileSize = TILE_SIZE
   const width = tilesX * tileSize

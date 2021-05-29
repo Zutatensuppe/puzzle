@@ -8,19 +8,19 @@ const log = logger('GameLog.js')
 
 const filename = (gameId: string) => `${DATA_DIR}/log_${gameId}.log`
 
-const create = (gameId: string) => {
+const create = (gameId: string): void => {
   const file = filename(gameId)
   if (!fs.existsSync(file)) {
     fs.appendFileSync(file, '')
   }
 }
 
-const exists = (gameId: string) => {
+const exists = (gameId: string): boolean => {
   const file = filename(gameId)
   return fs.existsSync(file)
 }
 
-const _log = (gameId: string, ...args: Array<any>) => {
+const _log = (gameId: string, ...args: Array<any>): void => {
   const file = filename(gameId)
   if (!fs.existsSync(file)) {
     return

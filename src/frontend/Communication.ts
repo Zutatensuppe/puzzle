@@ -1,6 +1,7 @@
 "use strict"
 
-import { logger } from '../common/Util'
+import { EncodedGame, ReplayData } from '../common/GameCommon'
+import Util, { logger } from '../common/Util'
 import Protocol from './../common/Protocol'
 
 const log = logger('Communication.js')
@@ -51,7 +52,7 @@ function connect(
   address: string,
   gameId: string,
   clientId: string
-): Promise<any> {
+): Promise<EncodedGame> {
   clientSeq = 0
   events = {}
   setConnectionState(CONN_STATE_CONNECTING)
@@ -100,9 +101,10 @@ async function requestReplayData(
   gameId: string,
   offset: number,
   size: number
-): Promise<{ log: Array<any>, game: any }> {
-  const res = await fetch(`/api/replay-data?gameId=${gameId}&offset=${offset}&size=${size}`)
-  const json: { log: Array<any>, game: any } = await res.json()
+): Promise<ReplayData> {
+  const args = { gameId, offset, size }
+  const res = await fetch(`/api/replay-data${Util.asQueryArgs(args)}`)
+  const json: ReplayData = await res.json()
   return json
 }
 

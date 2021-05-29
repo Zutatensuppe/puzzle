@@ -14,270 +14,72 @@ import bodyParser from 'body-parser';
 import v8 from 'v8';
 import bsqlite from 'better-sqlite3';
 
-class Rng {
-    constructor(seed) {
-        this.rand_high = seed || 0xDEADC0DE;
-        this.rand_low = seed ^ 0x49616E42;
-    }
-    random(min, max) {
-        this.rand_high = ((this.rand_high << 16) + (this.rand_high >> 16) + this.rand_low) & 0xffffffff;
-        this.rand_low = (this.rand_low + this.rand_high) & 0xffffffff;
-        var n = (this.rand_high >>> 0) / 0xffffffff;
-        return (min + n * (max - min + 1)) | 0;
-    }
-    // get one random item from the given array
-    choice(array) {
-        return array[this.random(0, array.length - 1)];
-    }
-    // return a shuffled (shallow) copy of the given array
-    shuffle(array) {
-        const arr = array.slice();
-        for (let i = 0; i <= arr.length - 2; i++) {
-            const j = this.random(i, arr.length - 1);
-            const tmp = arr[i];
-            arr[i] = arr[j];
-            arr[j] = tmp;
-        }
-        return arr;
-    }
-    static serialize(rng) {
-        return {
-            rand_high: rng.rand_high,
-            rand_low: rng.rand_low
-        };
-    }
-    static unserialize(rngSerialized) {
-        const rng = new Rng(0);
-        rng.rand_high = rngSerialized.rand_high;
-        rng.rand_low = rngSerialized.rand_low;
-        return rng;
-    }
+function pointSub(a, b) {
+    return { x: a.x - b.x, y: a.y - b.y };
 }
-
-const slug = (str) => {
-    let tmp = str.toLowerCase();
-    tmp = tmp.replace(/[^a-z0-9]+/g, '-');
-    tmp = tmp.replace(/^-|-$/, '');
-    return tmp;
+function pointAdd(a, b) {
+    return { x: a.x + b.x, y: a.y + b.y };
+}
+function pointDistance(a, b) {
+    const diffX = a.x - b.x;
+    const diffY = a.y - b.y;
+    return Math.sqrt(diffX * diffX + diffY * diffY);
+}
+function pointInBounds(pt, rect) {
+    return pt.x >= rect.x
+        && pt.x <= rect.x + rect.w
+        && pt.y >= rect.y
+        && pt.y <= rect.y + rect.h;
+}
+function rectCenter(rect) {
+    return {
+        x: rect.x + (rect.w / 2),
+        y: rect.y + (rect.h / 2),
+    };
+}
+/**
+ * Returns a rectangle with same dimensions as the given one, but
+ * location (x/y) moved by x and y.
+ *
+ * @param {x, y, w,, h} rect
+ * @param number x
+ * @param number y
+ * @returns {x, y, w, h}
+ */
+function rectMoved(rect, x, y) {
+    return {
+        x: rect.x + x,
+        y: rect.y + y,
+        w: rect.w,
+        h: rect.h,
+    };
+}
+/**
+ * Returns true if the rectangles overlap, including their borders.
+ *
+ * @param {x, y, w, h} rectA
+ * @param {x, y, w, h} rectB
+ * @returns bool
+ */
+function rectsOverlap(rectA, rectB) {
+    return !(rectB.x > (rectA.x + rectA.w)
+        || rectA.x > (rectB.x + rectB.w)
+        || rectB.y > (rectA.y + rectA.h)
+        || rectA.y > (rectB.y + rectB.h));
+}
+function rectCenterDistance(rectA, rectB) {
+    return pointDistance(rectCenter(rectA), rectCenter(rectB));
+}
+var Geometry = {
+    pointSub,
+    pointAdd,
+    pointDistance,
+    pointInBounds,
+    rectCenter,
+    rectMoved,
+    rectCenterDistance,
+    rectsOverlap,
 };
-const pad = (x, pad) => {
-    const str = `${x}`;
-    if (str.length >= pad.length) {
-        return str;
-    }
-    return pad.substr(0, pad.length - str.length) + str;
-};
-const logger = (...pre) => {
-    const log = (m) => (...args) => {
-        const d = new Date();
-        const hh = pad(d.getHours(), '00');
-        const mm = pad(d.getMinutes(), '00');
-        const ss = pad(d.getSeconds(), '00');
-        console[m](`${hh}:${mm}:${ss}`, ...pre, ...args);
-    };
-    return {
-        log: log('log'),
-        error: log('error'),
-        info: log('info'),
-    };
-};
-// get a unique id
-const uniqId = () => Date.now().toString(36) + Math.random().toString(36).substring(2);
-function encodeShape(data) {
-    /* encoded in 1 byte:
-      00000000
-            ^^ top
-          ^^   right
-        ^^     bottom
-      ^^       left
-    */
-    return ((data.top + 1) << 0)
-        | ((data.right + 1) << 2)
-        | ((data.bottom + 1) << 4)
-        | ((data.left + 1) << 6);
-}
-function decodeShape(data) {
-    return {
-        top: (data >> 0 & 0b11) - 1,
-        right: (data >> 2 & 0b11) - 1,
-        bottom: (data >> 4 & 0b11) - 1,
-        left: (data >> 6 & 0b11) - 1,
-    };
-}
-function encodeTile(data) {
-    return [data.idx, data.pos.x, data.pos.y, data.z, data.owner, data.group];
-}
-function decodeTile(data) {
-    return {
-        idx: data[0],
-        pos: {
-            x: data[1],
-            y: data[2],
-        },
-        z: data[3],
-        owner: data[4],
-        group: data[5],
-    };
-}
-function encodePlayer(data) {
-    return [
-        data.id,
-        data.x,
-        data.y,
-        data.d,
-        data.name,
-        data.color,
-        data.bgcolor,
-        data.points,
-        data.ts,
-    ];
-}
-function decodePlayer(data) {
-    return {
-        id: data[0],
-        x: data[1],
-        y: data[2],
-        d: data[3],
-        name: data[4],
-        color: data[5],
-        bgcolor: data[6],
-        points: data[7],
-        ts: data[8],
-    };
-}
-function encodeGame(data) {
-    if (Array.isArray(data)) {
-        return data;
-    }
-    return [
-        data.id,
-        data.rng.type,
-        Rng.serialize(data.rng.obj),
-        data.puzzle,
-        data.players,
-        data.evtInfos,
-        data.scoreMode,
-    ];
-}
-function decodeGame(data) {
-    if (!Array.isArray(data)) {
-        return data;
-    }
-    return {
-        id: data[0],
-        rng: {
-            type: data[1],
-            obj: Rng.unserialize(data[2]),
-        },
-        puzzle: data[3],
-        players: data[4],
-        evtInfos: data[5],
-        scoreMode: data[6],
-    };
-}
-function coordByTileIdx(info, tileIdx) {
-    const wTiles = info.width / info.tileSize;
-    return {
-        x: tileIdx % wTiles,
-        y: Math.floor(tileIdx / wTiles),
-    };
-}
-const hash = (str) => {
-    let hash = 0;
-    for (let i = 0; i < str.length; i++) {
-        let chr = str.charCodeAt(i);
-        hash = ((hash << 5) - hash) + chr;
-        hash |= 0; // Convert to 32bit integer
-    }
-    return hash;
-};
-function asQueryArgs(data) {
-    const q = [];
-    for (let k in data) {
-        const pair = [k, data[k]].map(encodeURIComponent);
-        q.push(pair.join('='));
-    }
-    if (q.length === 0) {
-        return '';
-    }
-    return `?${q.join('&')}`;
-}
-var Util = {
-    hash,
-    slug,
-    uniqId,
-    encodeShape,
-    decodeShape,
-    encodeTile,
-    decodeTile,
-    encodePlayer,
-    decodePlayer,
-    encodeGame,
-    decodeGame,
-    coordByTileIdx,
-    asQueryArgs,
-};
-
-const log$4 = logger('WebSocketServer.js');
-/*
-Example config
-
-config = {
-  hostname: 'localhost',
-  port: 1338,
-  connectstring: `ws://localhost:1338/ws`,
-}
-*/
-class EvtBus {
-    constructor() {
-        this._on = {};
-    }
-    on(type, callback) {
-        this._on[type] = this._on[type] || [];
-        this._on[type].push(callback);
-    }
-    dispatch(type, ...args) {
-        (this._on[type] || []).forEach((cb) => {
-            cb(...args);
-        });
-    }
-}
-class WebSocketServer {
-    constructor(config) {
-        this.config = config;
-        this._websocketserver = null;
-        this.evt = new EvtBus();
-    }
-    on(type, callback) {
-        this.evt.on(type, callback);
-    }
-    listen() {
-        this._websocketserver = new WebSocket.Server(this.config);
-        this._websocketserver.on('connection', (socket, request) => {
-            const pathname = new URL(this.config.connectstring).pathname;
-            if (request.url.indexOf(pathname) !== 0) {
-                log$4.log('bad request url: ', request.url);
-                socket.close();
-                return;
-            }
-            socket.on('message', (data) => {
-                log$4.log(`ws`, socket.protocol, data);
-                this.evt.dispatch('message', { socket, data });
-            });
-            socket.on('close', () => {
-                this.evt.dispatch('close', { socket });
-            });
-        });
-    }
-    close() {
-        if (this._websocketserver) {
-            this._websocketserver.close();
-        }
-    }
-    notifyOne(data, socket) {
-        socket.send(JSON.stringify(data));
-    }
-}
 
 /*
 SERVER_CLIENT_MESSAGE_PROTOCOL
@@ -362,73 +164,6 @@ var Protocol = {
     CHANGE_DATA,
     CHANGE_TILE,
     CHANGE_PLAYER,
-};
-
-function pointSub(a, b) {
-    return { x: a.x - b.x, y: a.y - b.y };
-}
-function pointAdd(a, b) {
-    return { x: a.x + b.x, y: a.y + b.y };
-}
-function pointDistance(a, b) {
-    const diffX = a.x - b.x;
-    const diffY = a.y - b.y;
-    return Math.sqrt(diffX * diffX + diffY * diffY);
-}
-function pointInBounds(pt, rect) {
-    return pt.x >= rect.x
-        && pt.x <= rect.x + rect.w
-        && pt.y >= rect.y
-        && pt.y <= rect.y + rect.h;
-}
-function rectCenter(rect) {
-    return {
-        x: rect.x + (rect.w / 2),
-        y: rect.y + (rect.h / 2),
-    };
-}
-/**
- * Returns a rectangle with same dimensions as the given one, but
- * location (x/y) moved by x and y.
- *
- * @param {x, y, w,, h} rect
- * @param number x
- * @param number y
- * @returns {x, y, w, h}
- */
-function rectMoved(rect, x, y) {
-    return {
-        x: rect.x + x,
-        y: rect.y + y,
-        w: rect.w,
-        h: rect.h,
-    };
-}
-/**
- * Returns true if the rectangles overlap, including their borders.
- *
- * @param {x, y, w, h} rectA
- * @param {x, y, w, h} rectB
- * @returns bool
- */
-function rectsOverlap(rectA, rectB) {
-    return !(rectB.x > (rectA.x + rectA.w)
-        || rectA.x > (rectB.x + rectB.w)
-        || rectB.y > (rectA.y + rectA.h)
-        || rectA.y > (rectB.y + rectB.h));
-}
-function rectCenterDistance(rectA, rectB) {
-    return pointDistance(rectCenter(rectA), rectCenter(rectB));
-}
-var Geometry = {
-    pointSub,
-    pointAdd,
-    pointDistance,
-    pointInBounds,
-    rectCenter,
-    rectMoved,
-    rectCenterDistance,
-    rectsOverlap,
 };
 
 const MS = 1;
@@ -527,8 +262,8 @@ function setPlayer(gameId, playerId, player) {
         GAMES[gameId].players[idx] = Util.encodePlayer(player);
     }
 }
-function setTile(gameId, tileIdx, tile) {
-    GAMES[gameId].puzzle.tiles[tileIdx] = Util.encodeTile(tile);
+function setPiece(gameId, pieceIdx, piece) {
+    GAMES[gameId].puzzle.tiles[pieceIdx] = Util.encodePiece(piece);
 }
 function setPuzzleData(gameId, data) {
     GAMES[gameId].puzzle.data = data;
@@ -583,7 +318,7 @@ function getAllPlayers(gameId) {
 function get$1(gameId) {
     return GAMES[gameId];
 }
-function getTileCount(gameId) {
+function getPieceCount(gameId) {
     return GAMES[gameId].puzzle.tiles.length;
 }
 function getImageUrl(gameId) {
@@ -596,20 +331,20 @@ function getScoreMode(gameId) {
     return GAMES[gameId].scoreMode || ScoreMode.FINAL;
 }
 function isFinished(gameId) {
-    return getFinishedTileCount(gameId) === getTileCount(gameId);
+    return getFinishedPiecesCount(gameId) === getPieceCount(gameId);
 }
-function getFinishedTileCount(gameId) {
+function getFinishedPiecesCount(gameId) {
     let count = 0;
     for (let t of GAMES[gameId].puzzle.tiles) {
-        if (Util.decodeTile(t).owner === -1) {
+        if (Util.decodePiece(t).owner === -1) {
             count++;
         }
     }
     return count;
 }
-function getTilesSortedByZIndex(gameId) {
-    const tiles = GAMES[gameId].puzzle.tiles.map(Util.decodeTile);
-    return tiles.sort((t1, t2) => t1.z - t2.z);
+function getPiecesSortedByZIndex(gameId) {
+    const pieces = GAMES[gameId].puzzle.tiles.map(Util.decodePiece);
+    return pieces.sort((t1, t2) => t1.z - t2.z);
 }
 function changePlayer(gameId, playerId, change) {
     const player = getPlayer(gameId, playerId);
@@ -628,22 +363,22 @@ function changeData(gameId, change) {
         GAMES[gameId].puzzle.data[k] = change[k];
     }
 }
-function changeTile(gameId, tileIdx, change) {
+function changeTile(gameId, pieceIdx, change) {
     for (let k of Object.keys(change)) {
-        const tile = Util.decodeTile(GAMES[gameId].puzzle.tiles[tileIdx]);
+        const piece = Util.decodePiece(GAMES[gameId].puzzle.tiles[pieceIdx]);
         // @ts-ignore
-        tile[k] = change[k];
-        GAMES[gameId].puzzle.tiles[tileIdx] = Util.encodeTile(tile);
+        piece[k] = change[k];
+        GAMES[gameId].puzzle.tiles[pieceIdx] = Util.encodePiece(piece);
     }
 }
-const getTile = (gameId, tileIdx) => {
-    return Util.decodeTile(GAMES[gameId].puzzle.tiles[tileIdx]);
+const getPiece = (gameId, pieceIdx) => {
+    return Util.decodePiece(GAMES[gameId].puzzle.tiles[pieceIdx]);
 };
-const getTileGroup = (gameId, tileIdx) => {
-    const tile = getTile(gameId, tileIdx);
+const getPieceGroup = (gameId, tileIdx) => {
+    const tile = getPiece(gameId, tileIdx);
     return tile.group;
 };
-const getFinalTilePos = (gameId, tileIdx) => {
+const getFinalPiecePos = (gameId, tileIdx) => {
     const info = GAMES[gameId].puzzle.info;
     const boardPos = {
         x: (info.table.width - info.width) / 2,
@@ -652,8 +387,8 @@ const getFinalTilePos = (gameId, tileIdx) => {
     const srcPos = srcPosByTileIdx(gameId, tileIdx);
     return Geometry.pointAdd(boardPos, srcPos);
 };
-const getTilePos = (gameId, tileIdx) => {
-    const tile = getTile(gameId, tileIdx);
+const getPiecePos = (gameId, tileIdx) => {
+    const tile = getPiece(gameId, tileIdx);
     return tile.pos;
 };
 // todo: instead, just make the table bigger and use that :)
@@ -669,9 +404,9 @@ const getBounds = (gameId) => {
         h: th + 2 * overY,
     };
 };
-const getTileBounds = (gameId, tileIdx) => {
-    const s = getTileSize(gameId);
-    const tile = getTile(gameId, tileIdx);
+const getPieceBounds = (gameId, tileIdx) => {
+    const s = getPieceSize(gameId);
+    const tile = getPiece(gameId, tileIdx);
     return {
         x: tile.pos.x,
         y: tile.pos.y,
@@ -680,29 +415,29 @@ const getTileBounds = (gameId, tileIdx) => {
     };
 };
 const getTileZIndex = (gameId, tileIdx) => {
-    const tile = getTile(gameId, tileIdx);
+    const tile = getPiece(gameId, tileIdx);
     return tile.z;
 };
-const getFirstOwnedTileIdx = (gameId, playerId) => {
+const getFirstOwnedPieceIdx = (gameId, playerId) => {
     for (let t of GAMES[gameId].puzzle.tiles) {
-        const tile = Util.decodeTile(t);
+        const tile = Util.decodePiece(t);
         if (tile.owner === playerId) {
             return tile.idx;
         }
     }
     return -1;
 };
-const getFirstOwnedTile = (gameId, playerId) => {
-    const idx = getFirstOwnedTileIdx(gameId, playerId);
+const getFirstOwnedPiece = (gameId, playerId) => {
+    const idx = getFirstOwnedPieceIdx(gameId, playerId);
     return idx < 0 ? null : GAMES[gameId].puzzle.tiles[idx];
 };
-const getTileDrawOffset = (gameId) => {
+const getPieceDrawOffset = (gameId) => {
     return GAMES[gameId].puzzle.info.tileDrawOffset;
 };
-const getTileDrawSize = (gameId) => {
+const getPieceDrawSize = (gameId) => {
     return GAMES[gameId].puzzle.info.tileDrawSize;
 };
-const getTileSize = (gameId) => {
+const getPieceSize = (gameId) => {
     return GAMES[gameId].puzzle.info.tileSize;
 };
 const getStartTs = (gameId) => {
@@ -754,27 +489,27 @@ const setTilesZIndex = (gameId, tileIdxs, zIndex) => {
     }
 };
 const moveTileDiff = (gameId, tileIdx, diff) => {
-    const oldPos = getTilePos(gameId, tileIdx);
+    const oldPos = getPiecePos(gameId, tileIdx);
     const pos = Geometry.pointAdd(oldPos, diff);
     changeTile(gameId, tileIdx, { pos });
 };
 const moveTilesDiff = (gameId, tileIdxs, diff) => {
-    const tileDrawSize = getTileDrawSize(gameId);
+    const drawSize = getPieceDrawSize(gameId);
     const bounds = getBounds(gameId);
     const cappedDiff = diff;
     for (let tileIdx of tileIdxs) {
-        const t = getTile(gameId, tileIdx);
+        const t = getPiece(gameId, tileIdx);
         if (t.pos.x + diff.x < bounds.x) {
             cappedDiff.x = Math.max(bounds.x - t.pos.x, cappedDiff.x);
         }
-        else if (t.pos.x + tileDrawSize + diff.x > bounds.x + bounds.w) {
-            cappedDiff.x = Math.min(bounds.x + bounds.w - t.pos.x + tileDrawSize, cappedDiff.x);
+        else if (t.pos.x + drawSize + diff.x > bounds.x + bounds.w) {
+            cappedDiff.x = Math.min(bounds.x + bounds.w - t.pos.x + drawSize, cappedDiff.x);
         }
         if (t.pos.y + diff.y < bounds.y) {
             cappedDiff.y = Math.max(bounds.y - t.pos.y, cappedDiff.y);
         }
-        else if (t.pos.y + tileDrawSize + diff.y > bounds.y + bounds.h) {
-            cappedDiff.y = Math.min(bounds.y + bounds.h - t.pos.y + tileDrawSize, cappedDiff.y);
+        else if (t.pos.y + drawSize + diff.y > bounds.y + bounds.h) {
+            cappedDiff.y = Math.min(bounds.y + bounds.h - t.pos.y + drawSize, cappedDiff.y);
         }
     }
     for (let tileIdx of tileIdxs) {
@@ -792,49 +527,49 @@ const setTilesOwner = (gameId, tileIdxs, owner) => {
     }
 };
 // get all grouped tiles for a tile
-function getGroupedTileIdxs(gameId, tileIdx) {
-    const tiles = GAMES[gameId].puzzle.tiles;
-    const tile = Util.decodeTile(tiles[tileIdx]);
+function getGroupedPieceIdxs(gameId, pieceIdx) {
+    const pieces = GAMES[gameId].puzzle.tiles;
+    const piece = Util.decodePiece(pieces[pieceIdx]);
     const grouped = [];
-    if (tile.group) {
-        for (let other of tiles) {
-            const otherTile = Util.decodeTile(other);
-            if (otherTile.group === tile.group) {
-                grouped.push(otherTile.idx);
+    if (piece.group) {
+        for (let other of pieces) {
+            const otherPiece = Util.decodePiece(other);
+            if (otherPiece.group === piece.group) {
+                grouped.push(otherPiece.idx);
             }
         }
     }
     else {
-        grouped.push(tile.idx);
+        grouped.push(piece.idx);
     }
     return grouped;
 }
 // Returns the index of the puzzle tile with the highest z index
 // that is not finished yet and that matches the position
-const freeTileIdxByPos = (gameId, pos) => {
+const freePieceIdxByPos = (gameId, pos) => {
     let info = GAMES[gameId].puzzle.info;
-    let tiles = GAMES[gameId].puzzle.tiles;
+    let pieces = GAMES[gameId].puzzle.tiles;
     let maxZ = -1;
-    let tileIdx = -1;
-    for (let idx = 0; idx < tiles.length; idx++) {
-        const tile = Util.decodeTile(tiles[idx]);
-        if (tile.owner !== 0) {
+    let pieceIdx = -1;
+    for (let idx = 0; idx < pieces.length; idx++) {
+        const piece = Util.decodePiece(pieces[idx]);
+        if (piece.owner !== 0) {
             continue;
         }
         const collisionRect = {
-            x: tile.pos.x,
-            y: tile.pos.y,
+            x: piece.pos.x,
+            y: piece.pos.y,
             w: info.tileSize,
             h: info.tileSize,
         };
         if (Geometry.pointInBounds(pos, collisionRect)) {
-            if (maxZ === -1 || tile.z > maxZ) {
-                maxZ = tile.z;
-                tileIdx = idx;
+            if (maxZ === -1 || piece.z > maxZ) {
+                maxZ = piece.z;
+                pieceIdx = idx;
             }
         }
     }
-    return tileIdx;
+    return pieceIdx;
 };
 const getPlayerBgColor = (gameId, playerId) => {
     const p = getPlayer(gameId, playerId);
@@ -854,8 +589,8 @@ const getPlayerPoints = (gameId, playerId) => {
 };
 // determine if two tiles are grouped together
 const areGrouped = (gameId, tileIdx1, tileIdx2) => {
-    const g1 = getTileGroup(gameId, tileIdx1);
-    const g2 = getTileGroup(gameId, tileIdx2);
+    const g1 = getPieceGroup(gameId, tileIdx1);
+    const g2 = getPieceGroup(gameId, tileIdx2);
     return !!(g1 && g1 === g2);
 };
 const getTableWidth = (gameId) => {
@@ -886,7 +621,7 @@ function handleInput$1(gameId, playerId, input, ts) {
     const _tileChange = (tileIdx) => {
         changes.push([
             Protocol.CHANGE_TILE,
-            Util.encodeTile(getTile(gameId, tileIdx)),
+            Util.encodePiece(getPiece(gameId, tileIdx)),
         ]);
     };
     const _tileChanges = (tileIdxs) => {
@@ -907,8 +642,8 @@ function handleInput$1(gameId, playerId, input, ts) {
     // put both tiles (and their grouped tiles) in the same group
     const groupTiles = (gameId, tileIdx1, tileIdx2) => {
         const tiles = GAMES[gameId].puzzle.tiles;
-        const group1 = getTileGroup(gameId, tileIdx1);
-        const group2 = getTileGroup(gameId, tileIdx2);
+        const group1 = getPieceGroup(gameId, tileIdx1);
+        const group2 = getPieceGroup(gameId, tileIdx2);
         let group;
         const searchGroups = [];
         if (group1) {
@@ -936,10 +671,10 @@ function handleInput$1(gameId, playerId, input, ts) {
         // TODO: strange
         if (searchGroups.length > 0) {
             for (const t of tiles) {
-                const tile = Util.decodeTile(t);
-                if (searchGroups.includes(tile.group)) {
-                    changeTile(gameId, tile.idx, { group });
-                    _tileChange(tile.idx);
+                const piece = Util.decodePiece(t);
+                if (searchGroups.includes(piece.group)) {
+                    changeTile(gameId, piece.idx, { group });
+                    _tileChange(piece.idx);
                 }
             }
         }
@@ -967,12 +702,12 @@ function handleInput$1(gameId, playerId, input, ts) {
         changePlayer(gameId, playerId, { d: 1, ts });
         _playerChange();
         evtInfo._last_mouse_down = pos;
-        const tileIdxAtPos = freeTileIdxByPos(gameId, pos);
+        const tileIdxAtPos = freePieceIdxByPos(gameId, pos);
         if (tileIdxAtPos >= 0) {
             let maxZ = getMaxZIndex(gameId) + 1;
             changeData(gameId, { maxZ });
             _dataChange();
-            const tileIdxs = getGroupedTileIdxs(gameId, tileIdxAtPos);
+            const tileIdxs = getGroupedPieceIdxs(gameId, tileIdxAtPos);
             setTilesZIndex(gameId, tileIdxs, getMaxZIndex(gameId));
             setTilesOwner(gameId, tileIdxs, playerId);
             _tileChanges(tileIdxs);
@@ -989,18 +724,18 @@ function handleInput$1(gameId, playerId, input, ts) {
             _playerChange();
         }
         else {
-            let tileIdx = getFirstOwnedTileIdx(gameId, playerId);
+            let tileIdx = getFirstOwnedPieceIdx(gameId, playerId);
             if (tileIdx >= 0) {
                 // player is moving a tile (and hand)
                 changePlayer(gameId, playerId, { x, y, ts });
                 _playerChange();
                 // check if pos is on the tile, otherwise dont move
                 // (mouse could be out of table, but tile stays on it)
-                const tileIdxs = getGroupedTileIdxs(gameId, tileIdx);
+                const tileIdxs = getGroupedPieceIdxs(gameId, tileIdx);
                 let anyOk = Geometry.pointInBounds(pos, getBounds(gameId))
                     && Geometry.pointInBounds(evtInfo._last_mouse_down, getBounds(gameId));
                 for (let idx of tileIdxs) {
-                    const bounds = getTileBounds(gameId, idx);
+                    const bounds = getPieceBounds(gameId, idx);
                     if (Geometry.pointInBounds(pos, bounds)) {
                         anyOk = true;
                         break;
@@ -1029,15 +764,15 @@ function handleInput$1(gameId, playerId, input, ts) {
         const pos = { x, y };
         const d = 0;
         evtInfo._last_mouse_down = null;
-        let tileIdx = getFirstOwnedTileIdx(gameId, playerId);
+        let tileIdx = getFirstOwnedPieceIdx(gameId, playerId);
         if (tileIdx >= 0) {
             // drop the tile(s)
-            let tileIdxs = getGroupedTileIdxs(gameId, tileIdx);
+            let tileIdxs = getGroupedPieceIdxs(gameId, tileIdx);
             setTilesOwner(gameId, tileIdxs, 0);
             _tileChanges(tileIdxs);
             // Check if the tile was dropped near the final location
-            let tilePos = getTilePos(gameId, tileIdx);
-            let finalPos = getFinalTilePos(gameId, tileIdx);
+            let tilePos = getPiecePos(gameId, tileIdx);
+            let finalPos = getFinalPiecePos(gameId, tileIdx);
             if (Geometry.pointDistance(finalPos, tilePos) < puzzle.info.snapDistance) {
                 let diff = Geometry.pointSub(finalPos, tilePos);
                 // Snap the tile to the final destination
@@ -1055,7 +790,7 @@ function handleInput$1(gameId, playerId, input, ts) {
                 changePlayer(gameId, playerId, { d, ts, points });
                 _playerChange();
                 // check if the puzzle is finished
-                if (getFinishedTileCount(gameId) === getTileCount(gameId)) {
+                if (getFinishedPiecesCount(gameId) === getPieceCount(gameId)) {
                     changeData(gameId, { finished: ts });
                     _dataChange();
                 }
@@ -1070,14 +805,14 @@ function handleInput$1(gameId, playerId, input, ts) {
                     if (areGrouped(gameId, tileIdx, otherTileIdx)) {
                         return false;
                     }
-                    const tilePos = getTilePos(gameId, tileIdx);
-                    const dstPos = Geometry.pointAdd(getTilePos(gameId, otherTileIdx), { x: off[0] * info.tileSize, y: off[1] * info.tileSize });
+                    const tilePos = getPiecePos(gameId, tileIdx);
+                    const dstPos = Geometry.pointAdd(getPiecePos(gameId, otherTileIdx), { x: off[0] * info.tileSize, y: off[1] * info.tileSize });
                     if (Geometry.pointDistance(tilePos, dstPos) < info.snapDistance) {
                         let diff = Geometry.pointSub(dstPos, tilePos);
-                        let tileIdxs = getGroupedTileIdxs(gameId, tileIdx);
+                        let tileIdxs = getGroupedPieceIdxs(gameId, tileIdx);
                         moveTilesDiff(gameId, tileIdxs, diff);
                         groupTiles(gameId, tileIdx, otherTileIdx);
-                        tileIdxs = getGroupedTileIdxs(gameId, tileIdx);
+                        tileIdxs = getGroupedPieceIdxs(gameId, tileIdx);
                         const zIndex = getMaxZIndexByTileIdxs(gameId, tileIdxs);
                         setTilesZIndex(gameId, tileIdxs, zIndex);
                         _tileChanges(tileIdxs);
@@ -1086,7 +821,7 @@ function handleInput$1(gameId, playerId, input, ts) {
                     return false;
                 };
                 let snapped = false;
-                for (let tileIdxTmp of getGroupedTileIdxs(gameId, tileIdx)) {
+                for (let tileIdxTmp of getGroupedPieceIdxs(gameId, tileIdx)) {
                     let othersIdxs = getSurroundingTilesByIdx(gameId, tileIdxTmp);
                     if (check(gameId, tileIdxTmp, othersIdxs[0], [0, 1]) // top
                         || check(gameId, tileIdxTmp, othersIdxs[1], [-1, 0]) // right
@@ -1136,15 +871,14 @@ function handleInput$1(gameId, playerId, input, ts) {
     return changes;
 }
 var GameCommon = {
-    __createPlayerObject,
     setGame,
     exists: exists$1,
     playerExists,
     getActivePlayers,
     getIdlePlayers,
     addPlayer: addPlayer$1,
-    getFinishedTileCount,
-    getTileCount,
+    getFinishedPiecesCount,
+    getPieceCount,
     getImageUrl,
     setImageUrl,
     get: get$1,
@@ -1156,7 +890,7 @@ var GameCommon = {
     getPlayerIdByIndex,
     changePlayer,
     setPlayer,
-    setTile,
+    setPiece,
     setPuzzleData,
     getTableWidth,
     getTableHeight,
@@ -1164,15 +898,274 @@ var GameCommon = {
     getRng,
     getPuzzleWidth,
     getPuzzleHeight,
-    getTilesSortedByZIndex,
-    getFirstOwnedTile,
-    getTileDrawOffset,
-    getTileDrawSize,
-    getFinalTilePos,
+    getPiecesSortedByZIndex,
+    getFirstOwnedPiece,
+    getPieceDrawOffset,
+    getPieceDrawSize,
+    getFinalPiecePos,
     getStartTs,
     getFinishTs,
     handleInput: handleInput$1,
 };
+
+class Rng {
+    constructor(seed) {
+        this.rand_high = seed || 0xDEADC0DE;
+        this.rand_low = seed ^ 0x49616E42;
+    }
+    random(min, max) {
+        this.rand_high = ((this.rand_high << 16) + (this.rand_high >> 16) + this.rand_low) & 0xffffffff;
+        this.rand_low = (this.rand_low + this.rand_high) & 0xffffffff;
+        var n = (this.rand_high >>> 0) / 0xffffffff;
+        return (min + n * (max - min + 1)) | 0;
+    }
+    // get one random item from the given array
+    choice(array) {
+        return array[this.random(0, array.length - 1)];
+    }
+    // return a shuffled (shallow) copy of the given array
+    shuffle(array) {
+        const arr = array.slice();
+        for (let i = 0; i <= arr.length - 2; i++) {
+            const j = this.random(i, arr.length - 1);
+            const tmp = arr[i];
+            arr[i] = arr[j];
+            arr[j] = tmp;
+        }
+        return arr;
+    }
+    static serialize(rng) {
+        return {
+            rand_high: rng.rand_high,
+            rand_low: rng.rand_low
+        };
+    }
+    static unserialize(rngSerialized) {
+        const rng = new Rng(0);
+        rng.rand_high = rngSerialized.rand_high;
+        rng.rand_low = rngSerialized.rand_low;
+        return rng;
+    }
+}
+
+const slug = (str) => {
+    let tmp = str.toLowerCase();
+    tmp = tmp.replace(/[^a-z0-9]+/g, '-');
+    tmp = tmp.replace(/^-|-$/, '');
+    return tmp;
+};
+const pad = (x, pad) => {
+    const str = `${x}`;
+    if (str.length >= pad.length) {
+        return str;
+    }
+    return pad.substr(0, pad.length - str.length) + str;
+};
+const logger = (...pre) => {
+    const log = (m) => (...args) => {
+        const d = new Date();
+        const hh = pad(d.getHours(), '00');
+        const mm = pad(d.getMinutes(), '00');
+        const ss = pad(d.getSeconds(), '00');
+        console[m](`${hh}:${mm}:${ss}`, ...pre, ...args);
+    };
+    return {
+        log: log('log'),
+        error: log('error'),
+        info: log('info'),
+    };
+};
+// get a unique id
+const uniqId = () => Date.now().toString(36) + Math.random().toString(36).substring(2);
+function encodeShape(data) {
+    /* encoded in 1 byte:
+      00000000
+            ^^ top
+          ^^   right
+        ^^     bottom
+      ^^       left
+    */
+    return ((data.top + 1) << 0)
+        | ((data.right + 1) << 2)
+        | ((data.bottom + 1) << 4)
+        | ((data.left + 1) << 6);
+}
+function decodeShape(data) {
+    return {
+        top: (data >> 0 & 0b11) - 1,
+        right: (data >> 2 & 0b11) - 1,
+        bottom: (data >> 4 & 0b11) - 1,
+        left: (data >> 6 & 0b11) - 1,
+    };
+}
+function encodePiece(data) {
+    return [data.idx, data.pos.x, data.pos.y, data.z, data.owner, data.group];
+}
+function decodePiece(data) {
+    return {
+        idx: data[0],
+        pos: {
+            x: data[1],
+            y: data[2],
+        },
+        z: data[3],
+        owner: data[4],
+        group: data[5],
+    };
+}
+function encodePlayer(data) {
+    return [
+        data.id,
+        data.x,
+        data.y,
+        data.d,
+        data.name,
+        data.color,
+        data.bgcolor,
+        data.points,
+        data.ts,
+    ];
+}
+function decodePlayer(data) {
+    return {
+        id: data[0],
+        x: data[1],
+        y: data[2],
+        d: data[3],
+        name: data[4],
+        color: data[5],
+        bgcolor: data[6],
+        points: data[7],
+        ts: data[8],
+    };
+}
+function encodeGame(data) {
+    return [
+        data.id,
+        data.rng.type || '',
+        Rng.serialize(data.rng.obj),
+        data.puzzle,
+        data.players,
+        data.evtInfos,
+        data.scoreMode || ScoreMode.FINAL,
+    ];
+}
+function decodeGame(data) {
+    return {
+        id: data[0],
+        rng: {
+            type: data[1],
+            obj: Rng.unserialize(data[2]),
+        },
+        puzzle: data[3],
+        players: data[4],
+        evtInfos: data[5],
+        scoreMode: data[6],
+    };
+}
+function coordByTileIdx(info, tileIdx) {
+    const wTiles = info.width / info.tileSize;
+    return {
+        x: tileIdx % wTiles,
+        y: Math.floor(tileIdx / wTiles),
+    };
+}
+const hash = (str) => {
+    let hash = 0;
+    for (let i = 0; i < str.length; i++) {
+        let chr = str.charCodeAt(i);
+        hash = ((hash << 5) - hash) + chr;
+        hash |= 0; // Convert to 32bit integer
+    }
+    return hash;
+};
+function asQueryArgs(data) {
+    const q = [];
+    for (let k in data) {
+        const pair = [k, data[k]].map(encodeURIComponent);
+        q.push(pair.join('='));
+    }
+    if (q.length === 0) {
+        return '';
+    }
+    return `?${q.join('&')}`;
+}
+var Util = {
+    hash,
+    slug,
+    uniqId,
+    encodeShape,
+    decodeShape,
+    encodePiece,
+    decodePiece,
+    encodePlayer,
+    decodePlayer,
+    encodeGame,
+    decodeGame,
+    coordByTileIdx,
+    asQueryArgs,
+};
+
+const log$4 = logger('WebSocketServer.js');
+/*
+Example config
+
+config = {
+  hostname: 'localhost',
+  port: 1338,
+  connectstring: `ws://localhost:1338/ws`,
+}
+*/
+class EvtBus {
+    constructor() {
+        this._on = {};
+    }
+    on(type, callback) {
+        this._on[type] = this._on[type] || [];
+        this._on[type].push(callback);
+    }
+    dispatch(type, ...args) {
+        (this._on[type] || []).forEach((cb) => {
+            cb(...args);
+        });
+    }
+}
+class WebSocketServer {
+    constructor(config) {
+        this.config = config;
+        this._websocketserver = null;
+        this.evt = new EvtBus();
+    }
+    on(type, callback) {
+        this.evt.on(type, callback);
+    }
+    listen() {
+        this._websocketserver = new WebSocket.Server(this.config);
+        this._websocketserver.on('connection', (socket, request) => {
+            const pathname = new URL(this.config.connectstring).pathname;
+            if (request.url.indexOf(pathname) !== 0) {
+                log$4.log('bad request url: ', request.url);
+                socket.close();
+                return;
+            }
+            socket.on('message', (data) => {
+                log$4.log(`ws`, socket.protocol, data);
+                this.evt.dispatch('message', { socket, data });
+            });
+            socket.on('close', () => {
+                this.evt.dispatch('close', { socket });
+            });
+        });
+    }
+    close() {
+        if (this._websocketserver) {
+            this._websocketserver.close();
+        }
+    }
+    notifyOne(data, socket) {
+        socket.send(JSON.stringify(data));
+    }
+}
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -1409,7 +1402,7 @@ async function createPuzzle(rng, targetTiles, image, ts) {
     if (!dim.w || !dim.h) {
         throw `[ 2021-05-16 invalid dimension for path ${imagePath} ]`;
     }
-    const info = determinePuzzleInfo(dim.w, dim.h, targetTiles);
+    const info = determinePuzzleInfo(dim, targetTiles);
     let tiles = new Array(info.tiles);
     for (let i = 0; i < tiles.length; i++) {
         tiles[i] = { idx: i };
@@ -1464,7 +1457,7 @@ async function createPuzzle(rng, targetTiles, image, ts) {
     // then shuffle the positions
     positions = rng.shuffle(positions);
     const pieces = tiles.map(tile => {
-        return Util.encodeTile({
+        return Util.encodePiece({
             idx: tile.idx,
             group: 0,
             z: 0,
@@ -1537,9 +1530,9 @@ function determinePuzzleTileShapes(rng, info) {
     }
     return shapes.map(Util.encodeShape);
 }
-const determineTilesXY = (w, h, targetTiles) => {
-    const w_ = w < h ? (w * h) : (w * w);
-    const h_ = w < h ? (h * h) : (w * h);
+const determineTilesXY = (dim, targetTiles) => {
+    const w_ = dim.w < dim.h ? (dim.w * dim.h) : (dim.w * dim.w);
+    const h_ = dim.w < dim.h ? (dim.h * dim.h) : (dim.w * dim.h);
     let size = 0;
     let tiles = 0;
     do {
@@ -1552,8 +1545,8 @@ const determineTilesXY = (w, h, targetTiles) => {
         tilesY: Math.round(h_ / size),
     };
 };
-const determinePuzzleInfo = (w, h, targetTiles) => {
-    const { tilesX, tilesY } = determineTilesXY(w, h, targetTiles);
+const determinePuzzleInfo = (dim, targetTiles) => {
+    const { tilesX, tilesY } = determineTilesXY(dim, targetTiles);
     const tiles = tilesX * tilesY;
     const tileSize = TILE_SIZE;
     const width = tilesX * tileSize;
@@ -1606,7 +1599,7 @@ function loadGame(gameId) {
     }
     if (typeof game.puzzle.data.finished === 'undefined') {
         const unfinished = game.puzzle.tiles
-            .map(Util.decodeTile)
+            .map(Util.decodePiece)
             .find((t) => t.owner !== -1);
         game.puzzle.data.finished = unfinished ? 0 : Time.timestamp();
     }
@@ -1700,16 +1693,6 @@ var Game = {
     createGame,
     addPlayer,
     handleInput,
-    getAllGames: GameCommon.getAllGames,
-    getActivePlayers: GameCommon.getActivePlayers,
-    getFinishedTileCount: GameCommon.getFinishedTileCount,
-    getImageUrl: GameCommon.getImageUrl,
-    getTileCount: GameCommon.getTileCount,
-    exists: GameCommon.exists,
-    playerExists: GameCommon.playerExists,
-    get: GameCommon.get,
-    getStartTs: GameCommon.getStartTs,
-    getFinishTs: GameCommon.getFinishTs,
 };
 
 const log$2 = logger('GameSocket.js');
@@ -1966,15 +1949,15 @@ app.get('/api/newgame-data', (req, res) => {
 app.get('/api/index-data', (req, res) => {
     const ts = Time.timestamp();
     const games = [
-        ...Game.getAllGames().map((game) => ({
+        ...GameCommon.getAllGames().map((game) => ({
             id: game.id,
             hasReplay: GameLog.exists(game.id),
-            started: Game.getStartTs(game.id),
-            finished: Game.getFinishTs(game.id),
-            tilesFinished: Game.getFinishedTileCount(game.id),
-            tilesTotal: Game.getTileCount(game.id),
-            players: Game.getActivePlayers(game.id, ts).length,
-            imageUrl: Game.getImageUrl(game.id),
+            started: GameCommon.getStartTs(game.id),
+            finished: GameCommon.getFinishTs(game.id),
+            tilesFinished: GameCommon.getFinishedPiecesCount(game.id),
+            tilesTotal: GameCommon.getPieceCount(game.id),
+            players: GameCommon.getActivePlayers(game.id, ts).length,
+            imageUrl: GameCommon.getImageUrl(game.id),
         })),
     ];
     res.send({
@@ -2036,7 +2019,7 @@ app.post('/newgame', bodyParser.json(), async (req, res) => {
     const gameSettings = req.body;
     log.log(gameSettings);
     const gameId = Util.uniqId();
-    if (!Game.exists(gameId)) {
+    if (!GameCommon.exists(gameId)) {
         const ts = Time.timestamp();
         await Game.createGame(gameId, gameSettings.tiles, gameSettings.image, ts, gameSettings.scoreMode);
     }
@@ -2072,26 +2055,26 @@ wss.on('message', async ({ socket, data }) => {
         switch (msgType) {
             case Protocol.EV_CLIENT_INIT:
                 {
-                    if (!Game.exists(gameId)) {
+                    if (!GameCommon.exists(gameId)) {
                         throw `[game ${gameId} does not exist... ]`;
                     }
                     const ts = Time.timestamp();
                     Game.addPlayer(gameId, clientId, ts);
                     GameSockets.addSocket(gameId, socket);
-                    const game = Game.get(gameId);
+                    const game = GameCommon.get(gameId);
                     notify([Protocol.EV_SERVER_INIT, Util.encodeGame(game)], [socket]);
                 }
                 break;
             case Protocol.EV_CLIENT_EVENT:
                 {
-                    if (!Game.exists(gameId)) {
+                    if (!GameCommon.exists(gameId)) {
                         throw `[game ${gameId} does not exist... ]`;
                     }
                     const clientSeq = msg[1];
                     const clientEvtData = msg[2];
                     const ts = Time.timestamp();
                     let sendGame = false;
-                    if (!Game.playerExists(gameId, clientId)) {
+                    if (!GameCommon.playerExists(gameId, clientId)) {
                         Game.addPlayer(gameId, clientId, ts);
                         sendGame = true;
                     }
@@ -2100,7 +2083,7 @@ wss.on('message', async ({ socket, data }) => {
                         sendGame = true;
                     }
                     if (sendGame) {
-                        const game = Game.get(gameId);
+                        const game = GameCommon.get(gameId);
                         notify([Protocol.EV_SERVER_INIT, Util.encodeGame(game)], [socket]);
                     }
                     const changes = Game.handleInput(gameId, clientId, clientEvtData, ts);

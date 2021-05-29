@@ -7,24 +7,18 @@ import Debug from './Debug'
 import Communication from './Communication'
 import Util from './../common/Util'
 import PuzzleGraphics from './PuzzleGraphics'
-import Game, { Player, Piece } from './../common/GameCommon'
+import Game, { Game as GameType, Player, Piece, EncodedGame, ReplayData, Timestamp } from './../common/GameCommon'
 import fireworksController from './Fireworks'
 import Protocol from '../common/Protocol'
 import Time from '../common/Time'
 import { Dim, Point } from '../common/Geometry'
+import { FixedLengthArray } from '../common/Types'
 
 declare global {
   interface Window {
       DEBUG?: boolean
   }
 }
-
-// @see https://stackoverflow.com/a/59906630/392905
-type ArrayLengthMutationKeys = 'splice' | 'push' | 'pop' | 'shift' | 'unshift' | number
-type ArrayItems<T extends Array<any>> = T extends Array<infer TItems> ? TItems : never
-type FixedLengthArray<T extends any[]> =
-  Pick<T, Exclude<keyof T, ArrayLengthMutationKeys>>
-  & { [Symbol.iterator]: () => IterableIterator< ArrayItems<T> > }
 
 // @ts-ignore
 const images = import.meta.globEager('./*.png')
@@ -50,15 +44,17 @@ interface Hud {
 interface Replay {
   final: boolean
   requesting: boolean
-  log: Array<any>
-  logPointer: number,
-  logIdx: number
+  log: Array<any> // current log entries
+  logPointer: number // pointer to current item in the log array
   speeds: Array<number>
   speedIdx: number
   paused: boolean
   lastRealTs: number
   lastGameTs: number
   gameStartTs: number
+  //
+  dataOffset: number
+  dataSize: number
 }
 
 const shouldDrawPiece = (piece: Piece) => {
@@ -267,51 +263,61 @@ export async function main(
     requesting: true,
     log: [],
     logPointer: 0,
-    logIdx: 0,
     speeds: [0.5, 1, 2, 5, 10, 20, 50, 100, 250, 500],
     speedIdx: 1,
     paused: false,
     lastRealTs: 0,
     lastGameTs: 0,
     gameStartTs: 0,
+    dataOffset: 0,
+    dataSize: 10000,
   }
 
   Communication.onConnectionStateChange((state) => {
     HUD.setConnectionState(state)
   })
 
+  const queryNextReplayBatch = async (
+    gameId: string
+  ): Promise<ReplayData> => {
+    REPLAY.requesting = true
+    const replay: ReplayData = await Communication.requestReplayData(
+      gameId,
+      REPLAY.dataOffset,
+      REPLAY.dataSize
+    )
+    REPLAY.dataOffset += REPLAY.dataSize
+    REPLAY.requesting = false
+    return replay
+  }
+
   const getNextReplayBatch = async (
-    gameId: string,
-    offset: number,
-    size: number
+    gameId: string
   ) => {
-    const replay: {
-      game: any,
-      log: Array<any>
-    } = await Communication.requestReplayData(gameId, offset, size)
+    const replay: ReplayData = await queryNextReplayBatch(gameId)
     // cut log that was already handled
     REPLAY.log = REPLAY.log.slice(REPLAY.logPointer)
     REPLAY.logPointer = 0
 
     REPLAY.log.push(...replay.log)
-    if (replay.log.length < 10000) {
+    if (replay.log.length < REPLAY.dataSize) {
       REPLAY.final = true
     }
-    REPLAY.requesting = false
   }
+
   let TIME: () => number = () => 0
   const connect = async () => {
     if (MODE === MODE_PLAY) {
-      const game = await Communication.connect(wsAddress, gameId, clientId)
-      const gameObject = Util.decodeGame(game)
+      const game: EncodedGame = await Communication.connect(wsAddress, gameId, clientId)
+      const gameObject: GameType = Util.decodeGame(game)
       Game.setGame(gameObject.id, gameObject)
       TIME = () => Time.timestamp()
     } else if (MODE === MODE_REPLAY) {
-      const replay: {
-        game: any,
-        log: Array<any>
-      } = await Communication.requestReplayData(gameId, 0, 10000)
-      const gameObject = Util.decodeGame(replay.game)
+      const replay: ReplayData = await queryNextReplayBatch(gameId)
+      if (!replay.game) {
+        throw '[ 2021-05-29 no game received ]'
+      }
+      const gameObject: GameType = Util.decodeGame(replay.game)
       Game.setGame(gameObject.id, gameObject)
       REPLAY.requesting = false
       REPLAY.log = replay.log
@@ -329,8 +335,8 @@ export async function main(
 
   await connect()
 
-  const TILE_DRAW_OFFSET = Game.getTileDrawOffset(gameId)
-  const TILE_DRAW_SIZE = Game.getTileDrawSize(gameId)
+  const PIECE_DRAW_OFFSET = Game.getPieceDrawOffset(gameId)
+  const PIECE_DRAW_SIZE = Game.getPieceDrawSize(gameId)
   const PUZZLE_WIDTH = Game.getPuzzleWidth(gameId)
   const PUZZLE_HEIGHT = Game.getPuzzleHeight(gameId)
   const TABLE_WIDTH = Game.getTableWidth(gameId)
@@ -345,8 +351,8 @@ export async function main(
     h: PUZZLE_HEIGHT,
   }
   const PIECE_DIM = {
-    w: TILE_DRAW_SIZE,
-    h: TILE_DRAW_SIZE,
+    w: PIECE_DRAW_SIZE,
+    h: PIECE_DRAW_SIZE,
   }
 
   const bitmaps = await PuzzleGraphics.loadPuzzleBitmaps(Game.getPuzzle(gameId))
@@ -380,8 +386,8 @@ export async function main(
   }
 
   updateTimerElements()
-  HUD.setPiecesDone(Game.getFinishedTileCount(gameId))
-  HUD.setPiecesTotal(Game.getTileCount(gameId))
+  HUD.setPiecesDone(Game.getFinishedPiecesCount(gameId))
+  HUD.setPiecesTotal(Game.getPieceCount(gameId))
   const ts = TIME()
   HUD.setActivePlayers(Game.getActivePlayers(gameId, ts))
   HUD.setIdlePlayers(Game.getIdlePlayers(gameId, ts))
@@ -470,8 +476,8 @@ export async function main(
             }
           } break;
           case Protocol.CHANGE_TILE: {
-            const t = Util.decodeTile(changeData)
-            Game.setTile(gameId, t.idx, t)
+            const t = Util.decodePiece(changeData)
+            Game.setPiece(gameId, t.idx, t)
             RERENDER = true
           } break;
           case Protocol.CHANGE_DATA: {
@@ -494,8 +500,7 @@ export async function main(
 
       if (REPLAY.logPointer + 1 >= REPLAY.log.length) {
         REPLAY.lastRealTs = realTs
-        REPLAY.requesting = true
-        getNextReplayBatch(gameId, REPLAY.logIdx, 10000)
+        getNextReplayBatch(gameId)
         return
       }
 
@@ -519,7 +524,7 @@ export async function main(
         }
 
         const logEntry = REPLAY.log[nextIdx]
-        const nextTs = REPLAY.gameStartTs + logEntry[logEntry.length - 1]
+        const nextTs: Timestamp = REPLAY.gameStartTs + logEntry[logEntry.length - 1]
         if (nextTs > maxGameTs) {
           break
         }
@@ -546,7 +551,6 @@ export async function main(
           RERENDER = true
         }
         REPLAY.logPointer = nextIdx
-        REPLAY.logIdx++
       } while (true)
       REPLAY.lastRealTs = realTs
       REPLAY.lastGameTs = maxGameTs
@@ -572,7 +576,7 @@ export async function main(
           RERENDER = true
           viewport.move(diffX, diffY)
         } else if (type === Protocol.INPUT_EV_MOUSE_MOVE) {
-          if (_last_mouse_down && !Game.getFirstOwnedTile(gameId, clientId)) {
+          if (_last_mouse_down && !Game.getFirstOwnedPiece(gameId, clientId)) {
             // move the cam
             const pos = { x: evt[1], y: evt[2] }
             const mouse = viewport.worldToViewport(pos)
@@ -692,7 +696,7 @@ export async function main(
 
     // DRAW TILES
     // ---------------------------------------------------------------
-    const tiles = Game.getTilesSortedByZIndex(gameId)
+    const tiles = Game.getPiecesSortedByZIndex(gameId)
     if (window.DEBUG) Debug.checkpoint('get tiles done')
 
     dim = viewport.worldDimToViewportRaw(PIECE_DIM)
@@ -702,8 +706,8 @@ export async function main(
       }
       bmp = bitmaps[tile.idx]
       pos = viewport.worldToViewportRaw({
-        x: TILE_DRAW_OFFSET + tile.pos.x,
-        y: TILE_DRAW_OFFSET + tile.pos.y,
+        x: PIECE_DRAW_OFFSET + tile.pos.x,
+        y: PIECE_DRAW_OFFSET + tile.pos.y,
       })
       ctx.drawImage(bmp,
         0, 0, bmp.width, bmp.height,
@@ -743,7 +747,7 @@ export async function main(
     // ---------------------------------------------------------------
     HUD.setActivePlayers(Game.getActivePlayers(gameId, ts))
     HUD.setIdlePlayers(Game.getIdlePlayers(gameId, ts))
-    HUD.setPiecesDone(Game.getFinishedTileCount(gameId))
+    HUD.setPiecesDone(Game.getFinishedPiecesCount(gameId))
     if (window.DEBUG) Debug.checkpoint('HUD done')
     // ---------------------------------------------------------------
 

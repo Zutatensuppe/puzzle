@@ -41,7 +41,7 @@ function loadGame(gameId: string): void {
   }
   if (typeof game.puzzle.data.finished === 'undefined') {
     const unfinished = game.puzzle.tiles
-      .map(Util.decodeTile)
+      .map(Util.decodePiece)
       .find((t: Piece) => t.owner !== -1)
     game.puzzle.data.finished = unfinished ? 0 : Time.timestamp()
   }
