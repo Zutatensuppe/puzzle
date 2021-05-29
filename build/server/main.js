@@ -2,6 +2,8 @@ import WebSocket from 'ws';
 import express from 'express';
 import multer from 'multer';
 import fs from 'fs';
+import readline from 'readline';
+import stream from 'stream';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
 import sizeOf from 'image-size';
@@ -215,7 +217,7 @@ var Util = {
     asQueryArgs,
 };
 
-const log$5 = logger('WebSocketServer.js');
+const log$4 = logger('WebSocketServer.js');
 /*
 Example config
 
@@ -253,12 +255,12 @@ class WebSocketServer {
         this._websocketserver.on('connection', (socket, request) => {
             const pathname = new URL(this.config.connectstring).pathname;
             if (request.url.indexOf(pathname) !== 0) {
-                log$5.log('bad request url: ', request.url);
+                log$4.log('bad request url: ', request.url);
                 socket.close();
                 return;
             }
             socket.on('message', (data) => {
-                log$5.log(`ws`, socket.protocol, data);
+                log$4.log(`ws`, socket.protocol, data);
                 this.evt.dispatch('message', { socket, data });
             });
             socket.on('close', () => {
@@ -318,10 +320,10 @@ EV_SERVER_INIT: event sent to one client after that client
 */
 const EV_SERVER_EVENT = 1;
 const EV_SERVER_INIT = 4;
-const EV_SERVER_INIT_REPLAY = 5;
+const EV_SERVER_REPLAY_DATA = 5;
 const EV_CLIENT_EVENT = 2;
 const EV_CLIENT_INIT = 3;
-const EV_CLIENT_INIT_REPLAY = 6;
+const EV_CLIENT_REPLAY_DATA = 6;
 const LOG_HEADER = 1;
 const LOG_ADD_PLAYER = 2;
 const LOG_UPDATE_PLAYER = 4;
@@ -342,10 +344,10 @@ const CHANGE_PLAYER = 3;
 var Protocol = {
     EV_SERVER_EVENT,
     EV_SERVER_INIT,
-    EV_SERVER_INIT_REPLAY,
+    EV_SERVER_REPLAY_DATA,
     EV_CLIENT_EVENT,
     EV_CLIENT_INIT,
-    EV_CLIENT_INIT_REPLAY,
+    EV_CLIENT_REPLAY_DATA,
     LOG_HEADER,
     LOG_ADD_PLAYER,
     LOG_UPDATE_PLAYER,
@@ -514,6 +516,9 @@ function getPlayerIdByIndex(gameId, playerIndex) {
 }
 function getPlayer(gameId, playerId) {
     const idx = getPlayerIndexById(gameId, playerId);
+    if (idx === -1) {
+        return null;
+    }
     return Util.decodePlayer(GAMES[gameId].players[idx]);
 }
 function setPlayer(gameId, playerId, player) {
@@ -611,6 +616,9 @@ function getTilesSortedByZIndex(gameId) {
 }
 function changePlayer(gameId, playerId, change) {
     const player = getPlayer(gameId, playerId);
+    if (player === null) {
+        return;
+    }
     for (let k of Object.keys(change)) {
         // @ts-ignore
         player[k] = change[k];
@@ -890,9 +898,13 @@ function handleInput$1(gameId, playerId, input, ts) {
         }
     };
     const _playerChange = () => {
+        const player = getPlayer(gameId, playerId);
+        if (!player) {
+            return;
+        }
         changes.push([
             Protocol.CHANGE_PLAYER,
-            Util.encodePlayer(getPlayer(gameId, playerId)),
+            Util.encodePlayer(player),
         ]);
     };
     // put both tiles (and their grouped tiles) in the same group
@@ -1175,7 +1187,6 @@ const PUBLIC_DIR = `${BASE_DIR}/build/public/`;
 const DB_PATCHES_DIR = `${BASE_DIR}/src/dbpatches`;
 const DB_FILE = `${BASE_DIR}/data/db.sqlite`;
 
-const log$4 = logger('GameLog.js');
 const filename = (gameId) => `${DATA_DIR}/log_${gameId}.log`;
 const create = (gameId) => {
     const file = filename(gameId);
@@ -1195,20 +1206,35 @@ const _log = (gameId, ...args) => {
     const str = JSON.stringify(args);
     fs.appendFileSync(file, str + "\n");
 };
-const get = (gameId) => {
+const get = async (gameId, offset = 0, size = 10000) => {
     const file = filename(gameId);
     if (!fs.existsSync(file)) {
         return [];
     }
-    const lines = fs.readFileSync(file, 'utf-8').split("\n");
-    return lines.filter((line) => !!line).map((line) => {
-        try {
-            return JSON.parse(line);
-        }
-        catch (e) {
-            log$4.log(line);
-            log$4.log(e);
-        }
+    return new Promise((resolve) => {
+        const instream = fs.createReadStream(file);
+        const outstream = new stream.Writable();
+        const rl = readline.createInterface(instream, outstream);
+        const lines = [];
+        let i = -1;
+        rl.on('line', (line) => {
+            if (!line) {
+                // skip empty
+                return;
+            }
+            i++;
+            if (offset > i) {
+                return;
+            }
+            if (offset + size <= i) {
+                rl.close();
+                return;
+            }
+            lines.push(JSON.parse(line));
+        });
+        rl.on('close', () => {
+            resolve(lines);
+        });
     });
 };
 var GameLog = {
@@ -2021,14 +2047,20 @@ wss.on('message', async ({ socket, data }) => {
         const msg = JSON.parse(data);
         const msgType = msg[0];
         switch (msgType) {
-            case Protocol.EV_CLIENT_INIT_REPLAY:
+            case Protocol.EV_CLIENT_REPLAY_DATA:
                 {
                     if (!GameLog.exists(gameId)) {
                         throw `[gamelog ${gameId} does not exist... ]`;
                     }
-                    const log = GameLog.get(gameId);
-                    const game = await Game.createGameObject(gameId, log[0][2], log[0][3], log[0][4], log[0][5] || ScoreMode.FINAL);
-                    notify([Protocol.EV_SERVER_INIT_REPLAY, Util.encodeGame(game), log], [socket]);
+                    const offset = msg[1];
+                    const size = msg[2];
+                    const log = await GameLog.get(gameId, offset, size);
+                    let game = null;
+                    if (offset === 0) {
+                        // also need the game
+                        game = await Game.createGameObject(gameId, log[0][2], log[0][3], log[0][4], log[0][5] || ScoreMode.FINAL);
+                    }
+                    notify([Protocol.EV_SERVER_REPLAY_DATA, log, game ? Util.encodeGame(game) : null], [socket]);
                 }
                 break;
             case Protocol.EV_CLIENT_INIT:
