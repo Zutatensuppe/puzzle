@@ -2027,7 +2027,7 @@ app.post('/api/upload', (req, res) => {
         res.send(Images.imageFromDb(db, imageId));
     });
 });
-app.post('/newgame', express.json(), async (req, res) => {
+app.post('/api/newgame', express.json(), async (req, res) => {
     const gameSettings = req.body;
     log.log(gameSettings);
     const gameId = Util.uniqId();

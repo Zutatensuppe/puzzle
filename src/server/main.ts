@@ -189,7 +189,7 @@ app.post('/api/upload', (req, res) => {
   })
 })
 
-app.post('/newgame', express.json(), async (req, res) => {
+app.post('/api/newgame', express.json(), async (req, res) => {
   const gameSettings = req.body as GameSettings
   log.log(gameSettings)
   const gameId = Util.uniqId()

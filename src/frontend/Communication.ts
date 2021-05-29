@@ -16,19 +16,31 @@ const CONN_STATE_CONNECTING = 3 // connecting
 const CONN_STATE_CLOSED = 4 // not connected (closed on purpose)
 
 let ws: WebSocket
+
+let missedMessages: Array<any> = []
 let changesCallback = (msg: Array<any>) => {
-  // empty
-}
-let connectionStateChangeCallback = (state: number) => {
-  // empty
+  missedMessages.push(msg)
 }
 
-// TODO: change these to something like on(EVT, cb)
+let missedStateChanges: Array<number> = []
+let connectionStateChangeCallback = (state: number) => {
+  missedStateChanges.push(state)
+}
+
 function onServerChange(callback: (msg: Array<any>) => void): void {
   changesCallback = callback
+  for (const missedMessage of missedMessages) {
+    changesCallback(missedMessage)
+  }
+  missedMessages = []
 }
+
 function onConnectionStateChange(callback: (state: number) => void): void {
   connectionStateChangeCallback = callback
+  for (const missedStateChange of missedStateChanges) {
+    connectionStateChangeCallback(missedStateChange)
+  }
+  missedStateChanges = []
 }
 
 let connectionState = CONN_STATE_NOT_CONNECTED
@@ -47,7 +59,6 @@ function send(message: ClientEvent): void {
     }
   }
 }
-
 
 let clientSeq: number
 let events: Record<number, GameEvent>
