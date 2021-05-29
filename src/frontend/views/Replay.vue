@@ -69,12 +69,14 @@ export default defineComponent({
           background: '',
           color: '',
           name: '',
+          soundsEnabled: false,
         },
         previewImageUrl: '',
         setHotkeys: (v: boolean) => {},
         onBgChange: (v: string) => {},
         onColorChange: (v: string) => {},
         onNameChange: (v: string) => {},
+        onSoundsEnabledChange: (v: boolean) => {},
         replayOnSpeedUp: () => {},
         replayOnSpeedDown: () => {},
         replayOnPauseToggle: () => {},
@@ -100,6 +102,9 @@ export default defineComponent({
     this.$watch(() => this.g.player.name, (value: string) => {
       this.g.onNameChange(value)
     })
+    this.$watch(() => this.g.player.soundsEnabled, (value: boolean) => {
+      this.g.onSoundsEnabledChange(value)
+    })
     this.g = await main(
       `${this.$route.params.id}`,
       // @ts-ignore
@@ -119,6 +124,7 @@ export default defineComponent({
         setConnectionState: (v: number) => { this.connectionState = v },
         setReplaySpeed: (v: number) => { this.replay.speed = v },
         setReplayPaused: (v: boolean) => { this.replay.paused = v },
+        toggleSoundsEnabled: () => { this.g.player.soundsEnabled = !this.g.player.soundsEnabled },
       }
     )
   },

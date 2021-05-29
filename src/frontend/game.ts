@@ -31,6 +31,9 @@ declare global {
 // @ts-ignore
 const images = import.meta.globEager('./*.png')
 
+// @ts-ignore
+const sounds = import.meta.globEager('./*.mp3')
+
 export const MODE_PLAY = 'play'
 export const MODE_REPLAY = 'replay'
 
@@ -46,6 +49,7 @@ interface Hud {
   setPiecesTotal: (v: number) => void
   setConnectionState: (v: number) => void
   togglePreview: () => void
+  toggleSoundsEnabled: () => void
   setReplaySpeed?: (v: number) => void
   setReplayPaused?: (v: boolean) => void
 }
@@ -171,6 +175,9 @@ function EventAdapter (canvas: HTMLCanvasElement, window: any, viewport: any) {
       PIECE_VIEW_LOOSE = !PIECE_VIEW_LOOSE
       RERENDER = true
     }
+    if (ev.key === 'M' || ev.key === 'm') {
+      addEvent([Protocol.INPUT_EV_TOGGLE_SOUNDS])
+    }
   })
 
   const addEvent = (event: GameEvent) => {
@@ -232,6 +239,9 @@ export async function main(
   const shouldDrawPlayer = (player: Player) => {
     return MODE === MODE_REPLAY || player.id !== clientId
   }
+
+  const click = sounds['./click.mp3'].default
+  const clickAudio = new Audio(click)
 
   const cursorGrab = await Graphics.loadImageToBitmap(images['./grab.png'].default)
   const cursorHand = await Graphics.loadImageToBitmap(images['./hand.png'].default)
@@ -404,6 +414,13 @@ export async function main(
   let finished = longFinished
   const justFinished = () => finished && !longFinished
 
+  const playerSoundEnabled = (): boolean => {
+    const enabled = localStorage.getItem('sound_enabled')
+    if (enabled === null) {
+      return false
+    }
+    return enabled === '1'
+  }
   const playerBgColor = () => {
     return (Game.getPlayerBgColor(gameId, clientId)
         || localStorage.getItem('bg_color')
@@ -614,12 +631,24 @@ export async function main(
           viewport.zoom('out', viewport.worldToViewport(pos))
         } else if (type === Protocol.INPUT_EV_TOGGLE_PREVIEW) {
           HUD.togglePreview()
+        } else if (type === Protocol.INPUT_EV_TOGGLE_SOUNDS) {
+          HUD.toggleSoundsEnabled()
         }
 
         // LOCAL + SERVER CHANGES
         // -------------------------------------------------------------
         const ts = TIME()
-        const changes = Game.handleInput(gameId, clientId, evt, ts)
+        const changes = Game.handleInput(
+          gameId,
+          clientId,
+          evt,
+          ts,
+          (playerId: string) => {
+            if (playerSoundEnabled()) {
+              clickAudio.play()
+            }
+          }
+        )
         if (changes.length > 0) {
           RERENDER = true
         }
@@ -787,6 +816,9 @@ export async function main(
       localStorage.setItem('player_name', value)
       evts.addEvent([Protocol.INPUT_EV_PLAYER_NAME, value])
     },
+    onSoundsEnabledChange: (value: boolean) => {
+      localStorage.setItem('sound_enabled', value ? '1' : '0')
+    },
     replayOnSpeedUp,
     replayOnSpeedDown,
     replayOnPauseToggle,
@@ -795,6 +827,7 @@ export async function main(
       background: playerBgColor(),
       color: playerColor(),
       name: playerName(),
+      soundsEnabled: playerSoundEnabled(),
     },
     disconnect: Communication.disconnect,
     connect: connect,

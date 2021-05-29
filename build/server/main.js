@@ -344,6 +344,7 @@ const INPUT_EV_PLAYER_COLOR = 7;
 const INPUT_EV_PLAYER_NAME = 8;
 const INPUT_EV_MOVE = 9;
 const INPUT_EV_TOGGLE_PREVIEW = 10;
+const INPUT_EV_TOGGLE_SOUNDS = 11;
 const CHANGE_DATA = 1;
 const CHANGE_TILE = 2;
 const CHANGE_PLAYER = 3;
@@ -366,6 +367,7 @@ var Protocol = {
     INPUT_EV_PLAYER_COLOR,
     INPUT_EV_PLAYER_NAME,
     INPUT_EV_TOGGLE_PREVIEW,
+    INPUT_EV_TOGGLE_SOUNDS,
     CHANGE_DATA,
     CHANGE_TILE,
     CHANGE_PLAYER,
@@ -871,7 +873,7 @@ const getPuzzleWidth = (gameId) => {
 const getPuzzleHeight = (gameId) => {
     return GAMES[gameId].puzzle.info.height;
 };
-function handleInput$1(gameId, playerId, input, ts) {
+function handleInput$1(gameId, playerId, input, ts, onSnap) {
     const puzzle = GAMES[gameId].puzzle;
     const evtInfo = getEvtInfo(gameId, playerId);
     const changes = [];
@@ -1054,6 +1056,9 @@ function handleInput$1(gameId, playerId, input, ts) {
                     changeData(gameId, { finished: ts });
                     _dataChange();
                 }
+                if (onSnap) {
+                    onSnap(playerId);
+                }
             }
             else {
                 // Snap to other tiles
@@ -1100,6 +1105,9 @@ function handleInput$1(gameId, playerId, input, ts) {
                 else {
                     changePlayer(gameId, playerId, { d, ts });
                     _playerChange();
+                }
+                if (snapped && onSnap) {
+                    onSnap(playerId);
                 }
             }
         }

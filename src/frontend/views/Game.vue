@@ -70,12 +70,14 @@ export default defineComponent({
           background: '',
           color: '',
           name: '',
+          soundsEnabled: false,
         },
         previewImageUrl: '',
         setHotkeys: (v: boolean) => {},
         onBgChange: (v: string) => {},
         onColorChange: (v: string) => {},
         onNameChange: (v: string) => {},
+        onSoundsEnabledChange: (v: boolean) => {},
         disconnect: () => {},
         connect: () => {},
       },
@@ -94,6 +96,9 @@ export default defineComponent({
     this.$watch(() => this.g.player.name, (value: string) => {
       this.g.onNameChange(value)
     })
+    this.$watch(() => this.g.player.soundsEnabled, (value: boolean) => {
+      this.g.onSoundsEnabledChange(value)
+    })
     this.g = await main(
       `${this.$route.params.id}`,
       // @ts-ignore
@@ -111,6 +116,7 @@ export default defineComponent({
         setPiecesTotal: (v: number) => { this.piecesTotal = v },
         setConnectionState: (v: number) => { this.connectionState = v },
         togglePreview: () => { this.toggle('preview', false) },
+        toggleSoundsEnabled: () => { this.g.player.soundsEnabled = !this.g.player.soundsEnabled },
       }
     )
   },

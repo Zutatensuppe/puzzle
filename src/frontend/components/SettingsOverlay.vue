@@ -13,6 +13,10 @@
         <td><label>Name: </label></td>
         <td><input type="text" maxLength="16" v-model="modelValue.name" /></td>
       </tr>
+      <tr>
+        <td><label>Sounds: </label></td>
+        <td><input type="checkbox" v-model="modelValue.soundsEnabled" /></td>
+      </tr>
     </table>
   </div>
 </template>

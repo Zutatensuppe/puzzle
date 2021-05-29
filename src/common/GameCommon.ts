@@ -530,7 +530,8 @@ function handleInput(
   gameId: string,
   playerId: string,
   input: Input,
-  ts: Timestamp
+  ts: Timestamp,
+  onSnap?: (playerId: string) => void
 ): Array<Change> {
   const puzzle = GAMES[gameId].puzzle
   const evtInfo = getEvtInfo(gameId, playerId)
@@ -734,6 +735,9 @@ function handleInput(
           changeData(gameId, { finished: ts })
           _dataChange()
         }
+        if (onSnap) {
+          onSnap(playerId)
+        }
       } else {
         // Snap to other tiles
         const check = (
@@ -788,6 +792,9 @@ function handleInput(
         } else {
           changePlayer(gameId, playerId, { d, ts })
           _playerChange()
+        }
+        if (snapped && onSnap) {
+          onSnap(playerId)
         }
       }
     } else {
