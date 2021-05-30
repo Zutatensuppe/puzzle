@@ -485,7 +485,6 @@ export async function main(
   }
 
   if (MODE === MODE_PLAY) {
-    // TODO: register onServerChange function before connecting to server
     Communication.onServerChange((msg) => {
       const msgType = msg[0]
       const evClientId = msg[1]
