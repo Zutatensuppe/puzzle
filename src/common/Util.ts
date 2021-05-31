@@ -29,8 +29,11 @@ const pad = (x: number, pad: string): string => {
   return pad.substr(0, pad.length - str.length) + str
 }
 
-export const logger = (...pre: Array<any>) => {
-  const log = (m: 'log'|'info'|'error') => (...args: Array<any>) => {
+type LogArgs = Array<any>
+type LogFn = (...args: LogArgs) => void
+
+export const logger = (...pre: string[]): { log: LogFn, error: LogFn, info: LogFn } => {
+  const log = (m: 'log'|'info'|'error') => (...args: LogArgs): void => {
     const d = new Date()
     const hh = pad(d.getHours(), '00')
     const mm = pad(d.getMinutes(), '00')

@@ -1186,6 +1186,17 @@ const PUBLIC_DIR = `${BASE_DIR}/build/public/`;
 const DB_PATCHES_DIR = `${BASE_DIR}/src/dbpatches`;
 const DB_FILE = `${BASE_DIR}/data/db.sqlite`;
 
+const POST_GAME_LOG_DURATION = 5 * Time.MIN;
+const shouldLog = (finishTs, currentTs) => {
+    // when not finished yet, always log
+    if (!finishTs) {
+        return true;
+    }
+    // in finished games, log max POST_GAME_LOG_DURATION after
+    // the game finished, to record winning dance moves etc :P
+    const timeSinceGameEnd = currentTs - finishTs;
+    return timeSinceGameEnd <= POST_GAME_LOG_DURATION;
+};
 const filename = (gameId) => `${DATA_DIR}/log_${gameId}.log`;
 const create = (gameId) => {
     const file = filename(gameId);
@@ -1237,6 +1248,7 @@ const get = async (gameId, offset = 0, size = 10000) => {
     });
 };
 var GameLog = {
+    shouldLog,
     create,
     exists,
     log: _log,
@@ -1689,21 +1701,25 @@ async function createGame(gameId, targetTiles, image, ts, scoreMode) {
     GameStorage.setDirty(gameId);
 }
 function addPlayer(gameId, playerId, ts) {
-    const idx = GameCommon.getPlayerIndexById(gameId, playerId);
-    const diff = ts - GameCommon.getStartTs(gameId);
-    if (idx === -1) {
-        GameLog.log(gameId, Protocol.LOG_ADD_PLAYER, playerId, diff);
-    }
-    else {
-        GameLog.log(gameId, Protocol.LOG_UPDATE_PLAYER, idx, diff);
+    if (GameLog.shouldLog(GameCommon.getFinishTs(gameId), ts)) {
+        const idx = GameCommon.getPlayerIndexById(gameId, playerId);
+        const diff = ts - GameCommon.getStartTs(gameId);
+        if (idx === -1) {
+            GameLog.log(gameId, Protocol.LOG_ADD_PLAYER, playerId, diff);
+        }
+        else {
+            GameLog.log(gameId, Protocol.LOG_UPDATE_PLAYER, idx, diff);
+        }
     }
     GameCommon.addPlayer(gameId, playerId, ts);
     GameStorage.setDirty(gameId);
 }
 function handleInput(gameId, playerId, input, ts) {
-    const idx = GameCommon.getPlayerIndexById(gameId, playerId);
-    const diff = ts - GameCommon.getStartTs(gameId);
-    GameLog.log(gameId, Protocol.LOG_HANDLE_INPUT, idx, input, diff);
+    if (GameLog.shouldLog(GameCommon.getFinishTs(gameId), ts)) {
+        const idx = GameCommon.getPlayerIndexById(gameId, playerId);
+        const diff = ts - GameCommon.getStartTs(gameId);
+        GameLog.log(gameId, Protocol.LOG_HANDLE_INPUT, idx, input, diff);
+    }
     const ret = GameCommon.handleInput(gameId, playerId, input, ts);
     GameStorage.setDirty(gameId);
     return ret;
@@ -2069,6 +2085,8 @@ wss.on('message', async ({ socket, data }) => {
         const proto = socket.protocol.split('|');
         const clientId = proto[0];
         const gameId = proto[1];
+        // TODO: maybe handle different types of data
+        // (but atm only string comes through)
         const msg = JSON.parse(data);
         const msgType = msg[0];
         switch (msgType) {
@@ -2152,12 +2170,12 @@ const gracefulShutdown = (signal) => {
     process.exit();
 };
 // used by nodemon
-process.once('SIGUSR2', function () {
+process.once('SIGUSR2', () => {
     gracefulShutdown('SIGUSR2');
 });
-process.once('SIGINT', function () {
+process.once('SIGINT', () => {
     gracefulShutdown('SIGINT');
 });
-process.once('SIGTERM', function () {
+process.once('SIGTERM', () => {
     gracefulShutdown('SIGTERM');
 });

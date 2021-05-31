@@ -19,7 +19,7 @@ import {
   UPLOAD_DIR,
 } from './Dirs'
 import GameCommon from '../common/GameCommon'
-import { Game as GameType, GameSettings, ScoreMode } from '../common/Types'
+import { ServerEvent, Game as GameType, GameSettings, ScoreMode } from '../common/Types'
 import GameStorage from './GameStorage'
 import Db from './Db'
 
@@ -57,14 +57,14 @@ const storage = multer.diskStorage({
 })
 const upload = multer({storage}).single('file');
 
-app.get('/api/conf', (req, res) => {
+app.get('/api/conf', (req, res): void => {
   res.send({
     WS_ADDRESS: config.ws.connectstring,
   })
 })
 
-app.get('/api/replay-data', async (req, res) => {
-  const q = req.query as any
+app.get('/api/replay-data', async (req, res): Promise<void> => {
+  const q: Record<string, any> = req.query
   const offset = parseInt(q.offset, 10) || 0
   if (offset < 0) {
     res.status(400).send({ reason: 'bad offset' })
@@ -95,8 +95,8 @@ app.get('/api/replay-data', async (req, res) => {
   res.send({ log, game: game ? Util.encodeGame(game) : null })
 })
 
-app.get('/api/newgame-data', (req, res) => {
-  const q = req.query as any
+app.get('/api/newgame-data', (req, res): void => {
+  const q: Record<string, any> = req.query
   const tagSlugs: string[] = q.tags ? q.tags.split(',') : []
   res.send({
     images: Images.allImagesFromDb(db, tagSlugs, q.sort),
@@ -104,10 +104,10 @@ app.get('/api/newgame-data', (req, res) => {
   })
 })
 
-app.get('/api/index-data', (req, res) => {
+app.get('/api/index-data', (req, res): void => {
   const ts = Time.timestamp()
   const games = [
-    ...GameCommon.getAllGames().map((game: any) => ({
+    ...GameCommon.getAllGames().map((game: GameType) => ({
       id: game.id,
       hasReplay: GameLog.exists(game.id),
       started: GameCommon.getStartTs(game.id),
@@ -131,7 +131,7 @@ interface SaveImageRequestData {
   tags: string[]
 }
 
-const setImageTags = (db: Db, imageId: number, tags: string[]) => {
+const setImageTags = (db: Db, imageId: number, tags: string[]): void => {
   tags.forEach((tag: string) => {
     const slug = Util.slug(tag)
     const id = db.upsert('categories', { slug, title: tag }, { slug }, 'id')
@@ -144,7 +144,7 @@ const setImageTags = (db: Db, imageId: number, tags: string[]) => {
   })
 }
 
-app.post('/api/save-image', express.json(), (req, res) => {
+app.post('/api/save-image', express.json(), (req, res): void => {
   const data = req.body as SaveImageRequestData
   db.update('images', {
     title: data.title,
@@ -160,8 +160,8 @@ app.post('/api/save-image', express.json(), (req, res) => {
 
   res.send({ ok: true })
 })
-app.post('/api/upload', (req, res) => {
-  upload(req, res, async (err: any) => {
+app.post('/api/upload', (req, res): void => {
+  upload(req, res, async (err: any): Promise<void> => {
     if (err) {
       log.log(err)
       res.status(400).send("Something went wrong!");
@@ -189,7 +189,7 @@ app.post('/api/upload', (req, res) => {
   })
 })
 
-app.post('/api/newgame', express.json(), async (req, res) => {
+app.post('/api/newgame', express.json(), async (req, res): Promise<void> => {
   const gameSettings = req.body as GameSettings
   log.log(gameSettings)
   const gameId = Util.uniqId()
@@ -211,13 +211,15 @@ app.use('/', express.static(PUBLIC_DIR))
 
 const wss = new WebSocketServer(config.ws);
 
-const notify = (data: any, sockets: Array<WebSocket>) => {
+const notify = (data: ServerEvent, sockets: Array<WebSocket>): void => {
   for (const socket of sockets) {
     wss.notifyOne(data, socket)
   }
 }
 
-wss.on('close', async ({socket} : {socket: WebSocket}) => {
+wss.on('close', async (
+  {socket} : { socket: WebSocket }
+): Promise<void> => {
   try {
     const proto = socket.protocol.split('|')
     // const clientId = proto[0]
@@ -228,12 +230,16 @@ wss.on('close', async ({socket} : {socket: WebSocket}) => {
   }
 })
 
-wss.on('message', async ({socket, data} : { socket: WebSocket, data: any }) => {
+wss.on('message', async (
+  {socket, data} : { socket: WebSocket, data: WebSocket.Data }
+): Promise<void> => {
   try {
     const proto = socket.protocol.split('|')
     const clientId = proto[0]
     const gameId = proto[1]
-    const msg = JSON.parse(data)
+    // TODO: maybe handle different types of data
+    // (but atm only string comes through)
+    const msg = JSON.parse(data as string)
     const msgType = msg[0]
     switch (msgType) {
       case Protocol.EV_CLIENT_INIT: {
@@ -303,7 +309,7 @@ const server = app.listen(
 wss.listen()
 
 
-const memoryUsageHuman = () => {
+const memoryUsageHuman = (): void => {
   const totalHeapSize = v8.getHeapStatistics().total_available_size
   const totalHeapSizeInGB = (totalHeapSize / 1024 / 1024 / 1024).toFixed(2)
 
@@ -322,7 +328,7 @@ const persistInterval = setInterval(() => {
   memoryUsageHuman()
 }, config.persistence.interval)
 
-const gracefulShutdown = (signal: any) => {
+const gracefulShutdown = (signal: string): void => {
   log.log(`${signal} received...`)
 
   log.log('clearing persist interval...')
@@ -342,14 +348,14 @@ const gracefulShutdown = (signal: any) => {
 }
 
 // used by nodemon
-process.once('SIGUSR2', function () {
+process.once('SIGUSR2', (): void => {
   gracefulShutdown('SIGUSR2')
 })
 
-process.once('SIGINT', function () {
+process.once('SIGINT', (): void => {
   gracefulShutdown('SIGINT')
 })
 
-process.once('SIGTERM', function () {
+process.once('SIGTERM', (): void => {
   gracefulShutdown('SIGTERM')
 })

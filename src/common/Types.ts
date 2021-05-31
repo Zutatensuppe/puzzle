@@ -15,6 +15,7 @@ export type Change = Array<any>
 
 export type GameEvent = Array<any>
 
+export type ServerEvent = Array<any>
 export type ClientEvent = Array<any>
 
 export type EncodedPlayer = FixedLengthArray<[

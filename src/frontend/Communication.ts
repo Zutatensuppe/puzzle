@@ -1,6 +1,6 @@
 "use strict"
 
-import { ClientEvent, EncodedGame, GameEvent, ReplayData } from '../common/Types'
+import { ClientEvent, EncodedGame, GameEvent, ReplayData, ServerEvent } from '../common/Types'
 import Util, { logger } from '../common/Util'
 import Protocol from './../common/Protocol'
 
@@ -17,8 +17,8 @@ const CONN_STATE_CLOSED = 4 // not connected (closed on purpose)
 
 let ws: WebSocket
 
-let missedMessages: Array<any> = []
-let changesCallback = (msg: Array<any>) => {
+let missedMessages: ServerEvent[] = []
+let changesCallback = (msg: ServerEvent) => {
   missedMessages.push(msg)
 }
 
@@ -27,7 +27,7 @@ let connectionStateChangeCallback = (state: number) => {
   missedStateChanges.push(state)
 }
 
-function onServerChange(callback: (msg: Array<any>) => void): void {
+function onServerChange(callback: (msg: ServerEvent) => void): void {
   changesCallback = callback
   for (const missedMessage of missedMessages) {
     changesCallback(missedMessage)
@@ -77,8 +77,8 @@ function connect(
       setConnectionState(CONN_STATE_CONNECTED)
       send([Protocol.EV_CLIENT_INIT])
     }
-    ws.onmessage = (e) => {
-      const msg = JSON.parse(e.data)
+    ws.onmessage = (e: MessageEvent) => {
+      const msg: ServerEvent = JSON.parse(e.data)
       const msgType = msg[0]
       if (msgType === Protocol.EV_SERVER_INIT) {
         const game = msg[1]
@@ -102,7 +102,7 @@ function connect(
       throw `[ 2021-05-15 onerror ]`
     }
 
-    ws.onclose = (e) => {
+    ws.onclose = (e: CloseEvent) => {
       if (e.code === CODE_CUSTOM_DISCONNECT || e.code === CODE_GOING_AWAY) {
         setConnectionState(CONN_STATE_CLOSED)
       } else {

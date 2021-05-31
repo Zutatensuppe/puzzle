@@ -21,6 +21,7 @@ import {
   ReplayData,
   Timestamp,
   GameEvent,
+  ServerEvent,
 } from '../common/Types'
 declare global {
   interface Window {
@@ -485,7 +486,7 @@ export async function main(
   }
 
   if (MODE === MODE_PLAY) {
-    Communication.onServerChange((msg) => {
+    Communication.onServerChange((msg: ServerEvent) => {
       const msgType = msg[0]
       const evClientId = msg[1]
       const evClientSeq = msg[2]

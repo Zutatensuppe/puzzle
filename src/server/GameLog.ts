@@ -1,10 +1,26 @@
 import fs from 'fs'
 import readline from 'readline'
 import stream from 'stream'
+import Time from '../common/Time'
+import { Timestamp } from '../common/Types'
 import { logger } from './../common/Util'
 import { DATA_DIR } from './../server/Dirs'
 
 const log = logger('GameLog.js')
+
+const POST_GAME_LOG_DURATION = 5 * Time.MIN
+
+const shouldLog = (finishTs: Timestamp, currentTs: Timestamp): boolean => {
+  // when not finished yet, always log
+  if (!finishTs) {
+    return true
+  }
+
+  // in finished games, log max POST_GAME_LOG_DURATION after
+  // the game finished, to record winning dance moves etc :P
+  const timeSinceGameEnd = currentTs - finishTs
+  return timeSinceGameEnd <= POST_GAME_LOG_DURATION
+}
 
 const filename = (gameId: string) => `${DATA_DIR}/log_${gameId}.log`
 
@@ -66,6 +82,7 @@ const get = async (
 }
 
 export default {
+  shouldLog,
   create,
   exists,
   log: _log,

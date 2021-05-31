@@ -1,11 +1,13 @@
 import GameCommon from './../common/GameCommon'
 import { Change, Game, Input, ScoreMode, Timestamp } from './../common/Types'
-import Util from './../common/Util'
+import Util, { logger } from './../common/Util'
 import { Rng } from './../common/Rng'
 import GameLog from './GameLog'
 import { createPuzzle, PuzzleCreationImageInfo } from './Puzzle'
 import Protocol from './../common/Protocol'
 import GameStorage from './GameStorage'
+
+const log = logger('Game.ts')
 
 async function createGameObject(
   gameId: string,
@@ -49,12 +51,14 @@ async function createGame(
 }
 
 function addPlayer(gameId: string, playerId: string, ts: Timestamp): void {
-  const idx = GameCommon.getPlayerIndexById(gameId, playerId)
-  const diff = ts - GameCommon.getStartTs(gameId)
-  if (idx === -1) {
-    GameLog.log(gameId, Protocol.LOG_ADD_PLAYER, playerId, diff)
-  } else {
-    GameLog.log(gameId, Protocol.LOG_UPDATE_PLAYER, idx, diff)
+  if (GameLog.shouldLog(GameCommon.getFinishTs(gameId), ts)) {
+    const idx = GameCommon.getPlayerIndexById(gameId, playerId)
+    const diff = ts - GameCommon.getStartTs(gameId)
+    if (idx === -1) {
+      GameLog.log(gameId, Protocol.LOG_ADD_PLAYER, playerId, diff)
+    } else {
+      GameLog.log(gameId, Protocol.LOG_UPDATE_PLAYER, idx, diff)
+    }
   }
 
   GameCommon.addPlayer(gameId, playerId, ts)
@@ -67,9 +71,11 @@ function handleInput(
   input: Input,
   ts: Timestamp
 ): Array<Change> {
-  const idx = GameCommon.getPlayerIndexById(gameId, playerId)
-  const diff = ts - GameCommon.getStartTs(gameId)
-  GameLog.log(gameId, Protocol.LOG_HANDLE_INPUT, idx, input, diff)
+  if (GameLog.shouldLog(GameCommon.getFinishTs(gameId), ts)) {
+    const idx = GameCommon.getPlayerIndexById(gameId, playerId)
+    const diff = ts - GameCommon.getStartTs(gameId)
+    GameLog.log(gameId, Protocol.LOG_HANDLE_INPUT, idx, input, diff)
+  }
 
   const ret = GameCommon.handleInput(gameId, playerId, input, ts)
   GameStorage.setDirty(gameId)
