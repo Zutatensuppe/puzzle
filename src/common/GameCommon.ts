@@ -625,6 +625,16 @@ function handleInput(
     const name = `${input[1]}`.substr(0, 16)
     changePlayer(gameId, playerId, { name, ts })
     _playerChange()
+  } else if (type === Protocol.INPUT_EV_MOVE) {
+    const w = input[1]
+    const h = input[2]
+    const player = getPlayer(gameId, playerId)
+    if (player) {
+      const x = player.x - w
+      const y = player.y - h
+      changePlayer(gameId, playerId, { ts, x, y })
+      _playerChange()
+    }
   } else if (type === Protocol.INPUT_EV_MOUSE_DOWN) {
     const x = input[1]
     const y = input[2]

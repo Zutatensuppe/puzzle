@@ -116,7 +116,20 @@ export default function Camera () {
     }
   }
 
+  const viewportDimToWorld = (viewportDim: Dim): Dim => {
+    const { w, h } = viewportDimToWorldRaw(viewportDim)
+    return { w: Math.round(w), h: Math.round(h) }
+  }
+
+  const viewportDimToWorldRaw = (viewportDim: Dim): Dim => {
+    return {
+      w: viewportDim.w / curZoom,
+      h: viewportDim.h / curZoom,
+    }
+  }
+
   return {
+    getCurrentZoom: () => curZoom,
     move,
     canZoom,
     zoom,
@@ -126,5 +139,7 @@ export default function Camera () {
     worldDimToViewportRaw,
     viewportToWorld,
     viewportToWorldRaw, // not used outside
+    viewportDimToWorld,
+    viewportDimToWorldRaw,
   }
 }

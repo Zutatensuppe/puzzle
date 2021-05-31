@@ -104,7 +104,7 @@ function EventAdapter (canvas: HTMLCanvasElement, window: any, viewport: any) {
   let ZOOM_OUT = false
   let SHIFT = false
 
-  const toWorldPoint = (x: number, y: number) => {
+  const toWorldPoint = (x: number, y: number): [number, number] => {
     const pos = viewport.viewportToWorld({x, y})
     return [pos.x, pos.y]
   }
@@ -133,28 +133,33 @@ function EventAdapter (canvas: HTMLCanvasElement, window: any, viewport: any) {
     }
   }
 
+  let lastMouse: [number, number]|null = null
   canvas.addEventListener('mousedown', (ev) => {
+    lastMouse = mousePos(ev)
     if (ev.button === 0) {
-      addEvent([Protocol.INPUT_EV_MOUSE_DOWN, ...mousePos(ev)])
+      addEvent([Protocol.INPUT_EV_MOUSE_DOWN, ...lastMouse])
     }
   })
 
   canvas.addEventListener('mouseup', (ev) => {
+    lastMouse = mousePos(ev)
     if (ev.button === 0) {
-      addEvent([Protocol.INPUT_EV_MOUSE_UP, ...mousePos(ev)])
+      addEvent([Protocol.INPUT_EV_MOUSE_UP, ...lastMouse])
     }
   })
 
   canvas.addEventListener('mousemove', (ev) => {
-    addEvent([Protocol.INPUT_EV_MOUSE_MOVE, ...mousePos(ev)])
+    lastMouse = mousePos(ev)
+    addEvent([Protocol.INPUT_EV_MOUSE_MOVE, ...lastMouse])
   })
 
   canvas.addEventListener('wheel', (ev) => {
+    lastMouse = mousePos(ev)
     if (viewport.canZoom(ev.deltaY < 0 ? 'in' : 'out')) {
       const evt = ev.deltaY < 0
         ? Protocol.INPUT_EV_ZOOM_IN
         : Protocol.INPUT_EV_ZOOM_OUT
-      addEvent([evt, ...mousePos(ev)])
+      addEvent([evt, ...lastMouse])
     }
   })
 
@@ -194,23 +199,30 @@ function EventAdapter (canvas: HTMLCanvasElement, window: any, viewport: any) {
     return all
   }
 
-  const createKeyEvents = () => {
-    const amount = SHIFT ? 20 : 10
-    const x = (LEFT ? amount : 0) - (RIGHT ? amount : 0)
-    const y = (UP ? amount : 0) - (DOWN ? amount : 0)
-    if (x !== 0 || y !== 0) {
-      addEvent([Protocol.INPUT_EV_MOVE, x, y])
+  const createKeyEvents = (): void => {
+    const w = (LEFT ? 1 : 0) - (RIGHT ? 1 : 0)
+    const h = (UP ? 1 : 0) - (DOWN ? 1 : 0)
+    if (w !== 0 || h !== 0) {
+      const amount = (SHIFT ? 24 : 12) * Math.sqrt(viewport.getCurrentZoom())
+      const pos = viewport.viewportDimToWorld({w: w * amount, h: h * amount})
+      addEvent([Protocol.INPUT_EV_MOVE, pos.w, pos.h])
+      if (lastMouse) {
+        lastMouse[0] -= pos.w
+        lastMouse[1] -= pos.h
+      }
     }
 
     if (ZOOM_IN && ZOOM_OUT) {
       // cancel each other out
     } else if (ZOOM_IN) {
       if (viewport.canZoom('in')) {
-        addEvent([Protocol.INPUT_EV_ZOOM_IN, ...canvasCenter()])
+        const target = lastMouse || canvasCenter()
+        addEvent([Protocol.INPUT_EV_ZOOM_IN, ...target])
       }
     } else if (ZOOM_OUT) {
       if (viewport.canZoom('out')) {
-        addEvent([Protocol.INPUT_EV_ZOOM_OUT, ...canvasCenter()])
+        const target = lastMouse || canvasCenter()
+        addEvent([Protocol.INPUT_EV_ZOOM_OUT, ...target])
       }
     }
   }
@@ -596,10 +608,11 @@ export async function main(
         // -------------------------------------------------------------
         const type = evt[0]
         if (type === Protocol.INPUT_EV_MOVE) {
-          const diffX = evt[1]
-          const diffY = evt[2]
+          const w = evt[1]
+          const h = evt[2]
+          const dim = viewport.worldDimToViewport({w, h})
           RERENDER = true
-          viewport.move(diffX, diffY)
+          viewport.move(dim.w, dim.h)
         } else if (type === Protocol.INPUT_EV_MOUSE_MOVE) {
           if (_last_mouse_down && !Game.getFirstOwnedPiece(gameId, clientId)) {
             // move the cam
