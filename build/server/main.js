@@ -2057,7 +2057,8 @@ app.post('/api/upload', (req, res) => {
             created: Time.timestamp(),
         });
         if (req.body.tags) {
-            setImageTags(db, imageId, req.body.tags);
+            const tags = req.body.tags.split(',').filter((tag) => !!tag);
+            setImageTags(db, imageId, tags);
         }
         res.send(Images.imageFromDb(db, imageId));
     });

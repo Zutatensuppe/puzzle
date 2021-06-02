@@ -182,7 +182,8 @@ app.post('/api/upload', (req, res): void => {
     })
 
     if (req.body.tags) {
-      setImageTags(db, imageId as number, req.body.tags)
+      const tags = req.body.tags.split(',').filter((tag: string) => !!tag)
+      setImageTags(db, imageId as number, tags)
     }
 
     res.send(Images.imageFromDb(db, imageId as number))
