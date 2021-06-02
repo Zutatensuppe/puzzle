@@ -80,7 +80,7 @@ where ixc.image_id = ?`
   return db._getMany(query, [imageId]).map(row => ({
     id: parseInt(row.number, 10) || 0,
     slug: row.slug,
-    title: row.tittle,
+    title: row.title,
   }))
 }
 
