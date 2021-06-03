@@ -15,7 +15,12 @@ in jigsawpuzzles.io
     <div>
       <label v-if="tags.length > 0">
         Tags:
-        <span class="bit" v-for="(t,idx) in tags" :key="idx" @click="toggleTag(t)" :class="{on: filters.tags.includes(t.slug)}">{{t.title}}</span>
+        <span
+          class="bit"
+          v-for="(t,idx) in relevantTags"
+          :key="idx"
+          @click="toggleTag(t)"
+          :class="{on: filters.tags.includes(t.slug)}">{{t.title}} ({{t.total}})</span>
         <!-- <select v-model="filters.tags" @change="filtersChanged">
           <option value="">All</option>
           <option v-for="(c, idx) in tags" :key="idx" :value="c.slug">{{c.title}}</option>
@@ -96,6 +101,11 @@ export default defineComponent({
   },
   async created() {
     await this.loadImages()
+  },
+  computed: {
+    relevantTags (): Tag[] {
+      return this.tags.filter((tag: Tag) => tag.total > 0)
+    },
   },
   methods: {
     autocompleteTags (input: string, exclude: string[]): string[] {

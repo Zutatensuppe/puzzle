@@ -101,7 +101,7 @@ app.get('/api/newgame-data', (req, res): void => {
   const tagSlugs: string[] = q.tags ? q.tags.split(',') : []
   res.send({
     images: Images.allImagesFromDb(db, tagSlugs, q.sort),
-    tags: db.getMany('categories', {}, [{ title: 1 }]),
+    tags: Images.getAllTags(db),
   })
 })
 

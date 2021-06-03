@@ -60,6 +60,7 @@ export interface Tag {
   id: number
   slug: string
   title: string
+  total: number
 }
 
 interface GameRng {

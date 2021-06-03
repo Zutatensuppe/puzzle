@@ -1315,15 +1315,28 @@ async function getExifOrientation(imagePath) {
         });
     });
 }
+const getAllTags = (db) => {
+    const query = `
+select c.id, c.slug, c.title, count(*) as total from categories c
+inner join image_x_category ixc on c.id = ixc.category_id
+group by c.id order by total desc;`;
+    return db._getMany(query).map(row => ({
+        id: parseInt(row.id, 10) || 0,
+        slug: row.slug,
+        title: row.title,
+        total: parseInt(row.total, 10) || 0,
+    }));
+};
 const getTags = (db, imageId) => {
     const query = `
 select * from categories c
 inner join image_x_category ixc on c.id = ixc.category_id
 where ixc.image_id = ?`;
     return db._getMany(query, [imageId]).map(row => ({
-        id: parseInt(row.number, 10) || 0,
+        id: parseInt(row.id, 10) || 0,
         slug: row.slug,
         title: row.title,
+        total: 0,
     }));
 };
 const imageFromDb = (db, imageId) => {
@@ -1432,6 +1445,7 @@ var Images = {
     allImagesFromDisk,
     imageFromDb,
     allImagesFromDb,
+    getAllTags,
     resizeImage,
     getDimensions,
 };
@@ -2008,7 +2022,7 @@ app.get('/api/newgame-data', (req, res) => {
     const tagSlugs = q.tags ? q.tags.split(',') : [];
     res.send({
         images: Images.allImagesFromDb(db, tagSlugs, q.sort),
-        tags: db.getMany('categories', {}, [{ title: 1 }]),
+        tags: Images.getAllTags(db),
     });
 });
 app.get('/api/index-data', (req, res) => {
