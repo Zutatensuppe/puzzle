@@ -1319,6 +1319,7 @@ const getAllTags = (db) => {
     const query = `
 select c.id, c.slug, c.title, count(*) as total from categories c
 inner join image_x_category ixc on c.id = ixc.category_id
+inner join images i on i.id = ixc.image_id
 group by c.id order by total desc;`;
     return db._getMany(query).map(row => ({
         id: parseInt(row.id, 10) || 0,
