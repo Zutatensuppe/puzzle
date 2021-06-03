@@ -23,7 +23,7 @@
             </td>
           </tr>
           <tr>
-            <td><label>shapes: </label></td>
+            <td><label>Shapes: </label></td>
             <td>
               <label><input type="radio" v-model="shapeMode" value="0" /> Normal</label>
               <br />
