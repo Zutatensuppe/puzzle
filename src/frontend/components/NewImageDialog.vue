@@ -36,7 +36,7 @@ gallery", if possible!
             <!-- TODO: autocomplete tags -->
             <td><label>Tags</label></td>
             <td>
-              <tags-input v-model="tags" />
+              <tags-input v-model="tags" :autocompleteTags="autocompleteTags" />
             </td>
           </tr>
         </table>
@@ -61,6 +61,11 @@ export default defineComponent({
   components: {
     ResponsiveImage,
     TagsInput,
+  },
+  props: {
+    autocompleteTags: {
+      type: Function,
+    },
   },
   emits: {
     bgclick: null,

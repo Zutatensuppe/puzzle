@@ -31,15 +31,32 @@ in jigsawpuzzles.io
         </select>
       </label>
     </div>
-    <image-library :images="images" @imageClicked="onImageClicked" @imageEditClicked="onImageEditClicked" />
-    <new-image-dialog v-if="dialog==='new-image'" @bgclick="dialog=''" @postToGalleryClick="postToGalleryClick" @setupGameClick="setupGameClick" />
-    <edit-image-dialog v-if="dialog==='edit-image'" @bgclick="dialog=''" @saveClick="onSaveImageClick" :image="image" />
-    <new-game-dialog v-if="image && dialog==='new-game'" @bgclick="dialog=''" @newGame="onNewGame" :image="image" />
+    <image-library
+      :images="images"
+      @imageClicked="onImageClicked"
+      @imageEditClicked="onImageEditClicked" />
+    <new-image-dialog
+      v-if="dialog==='new-image'"
+      :autocompleteTags="autocompleteTags"
+      @bgclick="dialog=''"
+      @postToGalleryClick="postToGalleryClick"
+      @setupGameClick="setupGameClick" />
+    <edit-image-dialog
+      v-if="dialog==='edit-image'"
+      :autocompleteTags="autocompleteTags"
+      @bgclick="dialog=''"
+      @saveClick="onSaveImageClick"
+      :image="image" />
+    <new-game-dialog
+      v-if="image && dialog==='new-game'"
+      @bgclick="dialog=''"
+      @newGame="onNewGame"
+      :image="image" />
   </div>
 </template>
 
 <script lang="ts">
-import { defineComponent } from 'vue'
+import { defineComponent, PropType } from 'vue'
 
 import ImageLibrary from './../components/ImageLibrary.vue'
 import NewImageDialog from './../components/NewImageDialog.vue'
@@ -62,7 +79,7 @@ export default defineComponent({
         tags: [] as string[],
       },
       images: [],
-      tags: [],
+      tags: [] as Tag[],
 
       image: {
         id: 0,
@@ -81,6 +98,15 @@ export default defineComponent({
     await this.loadImages()
   },
   methods: {
+    autocompleteTags (input: string, exclude: string[]): string[] {
+      return this.tags
+        .filter((tag: Tag) => {
+          return !exclude.includes(tag.title)
+            && tag.title.toLowerCase().startsWith(input.toLowerCase())
+        })
+        .slice(0, 10)
+        .map((tag: Tag) => tag.title)
+    },
     toggleTag (t: Tag) {
       if (this.filters.tags.includes(t.slug)) {
         this.filters.tags = this.filters.tags.filter(slug => slug !== t.slug)

@@ -23,7 +23,7 @@
             <!-- TODO: autocomplete tags -->
             <td><label>Tags</label></td>
             <td>
-              <tags-input v-model="tags" />
+              <tags-input v-model="tags" :autocompleteTags="autocompleteTags" />
             </td>
           </tr>
         </table>
@@ -53,6 +53,9 @@ export default defineComponent({
     image: {
       type: Object as PropType<Image>,
       required: true,
+    },
+    autocompleteTags: {
+      type: Function,
     },
   },
   emits: {
