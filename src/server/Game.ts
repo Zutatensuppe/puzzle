@@ -1,5 +1,5 @@
 import GameCommon from './../common/GameCommon'
-import { Change, Game, Input, ScoreMode, Timestamp } from './../common/Types'
+import { Change, Game, Input, ScoreMode, ShapeMode, Timestamp } from './../common/Types'
 import Util, { logger } from './../common/Util'
 import { Rng } from './../common/Rng'
 import GameLog from './GameLog'
@@ -14,17 +14,19 @@ async function createGameObject(
   targetTiles: number,
   image: PuzzleCreationImageInfo,
   ts: Timestamp,
-  scoreMode: ScoreMode
+  scoreMode: ScoreMode,
+  shapeMode: ShapeMode
 ): Promise<Game> {
   const seed = Util.hash(gameId + ' ' + ts)
   const rng = new Rng(seed)
   return {
     id: gameId,
     rng: { type: 'Rng', obj: rng },
-    puzzle: await createPuzzle(rng, targetTiles, image, ts),
+    puzzle: await createPuzzle(rng, targetTiles, image, ts, shapeMode),
     players: [],
     evtInfos: {},
     scoreMode,
+    shapeMode,
   }
 }
 
@@ -33,18 +35,29 @@ async function createGame(
   targetTiles: number,
   image: PuzzleCreationImageInfo,
   ts: Timestamp,
-  scoreMode: ScoreMode
+  scoreMode: ScoreMode,
+  shapeMode: ShapeMode
 ): Promise<void> {
   const gameObject = await createGameObject(
     gameId,
     targetTiles,
     image,
     ts,
-    scoreMode
+    scoreMode,
+    shapeMode
   )
 
   GameLog.create(gameId)
-  GameLog.log(gameId, Protocol.LOG_HEADER, 1, targetTiles, image, ts, scoreMode)
+  GameLog.log(
+    gameId,
+    Protocol.LOG_HEADER,
+    1,
+    targetTiles,
+    image,
+    ts,
+    scoreMode,
+    shapeMode
+  )
 
   GameCommon.setGame(gameObject.id, gameObject)
   GameStorage.setDirty(gameId)

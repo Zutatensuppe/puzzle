@@ -1,7 +1,7 @@
 import Util from './../common/Util'
 import { Rng } from './../common/Rng'
 import Images from './Images'
-import { EncodedPiece, EncodedPieceShape, PieceShape, Puzzle } from '../common/Types'
+import { EncodedPiece, EncodedPieceShape, PieceShape, Puzzle, ShapeMode } from '../common/Types'
 import { Dim, Point } from '../common/Geometry'
 
 export interface PuzzleCreationImageInfo {
@@ -28,7 +28,8 @@ async function createPuzzle(
   rng: Rng,
   targetTiles: number,
   image: PuzzleCreationImageInfo,
-  ts: number
+  ts: number,
+  shapeMode: ShapeMode
 ): Promise<Puzzle> {
   const imagePath = image.file
   const imageUrl = image.url
@@ -44,7 +45,7 @@ async function createPuzzle(
   for (let i = 0; i < rawPieces.length; i++) {
     rawPieces[i] = { idx: i }
   }
-  const shapes = determinePuzzleTileShapes(rng, info)
+  const shapes = determinePuzzleTileShapes(rng, info, shapeMode)
 
   let positions: Point[] = new Array(info.tiles)
   for (const piece of rawPieces) {
@@ -162,13 +163,24 @@ async function createPuzzle(
     },
   }
 }
+function determineTabs (shapeMode: ShapeMode): number[] {
+  switch(shapeMode) {
+    case ShapeMode.ANY:
+      return [-1, 0, 1]
+    case ShapeMode.FLAT:
+      return [0]
+    case ShapeMode.NORMAL:
+    default:
+      return [-1, 1]
+  }
+}
 
 function determinePuzzleTileShapes(
   rng: Rng,
-  info: PuzzleCreationInfo
+  info: PuzzleCreationInfo,
+  shapeMode: ShapeMode
 ): Array<EncodedPieceShape> {
-  const tabs = [-1, 1]
-
+  const tabs: number[] = determineTabs(shapeMode)
   const shapes: Array<PieceShape> = new Array(info.tiles)
   for (let i = 0; i < info.tiles; i++) {
     const coord = Util.coordByPieceIdx(info, i)

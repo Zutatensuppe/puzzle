@@ -24,6 +24,12 @@ var ScoreMode;
     ScoreMode[ScoreMode["FINAL"] = 0] = "FINAL";
     ScoreMode[ScoreMode["ANY"] = 1] = "ANY";
 })(ScoreMode || (ScoreMode = {}));
+var ShapeMode;
+(function (ShapeMode) {
+    ShapeMode[ShapeMode["NORMAL"] = 0] = "NORMAL";
+    ShapeMode[ShapeMode["ANY"] = 1] = "ANY";
+    ShapeMode[ShapeMode["FLAT"] = 2] = "FLAT";
+})(ShapeMode || (ShapeMode = {}));
 
 class Rng {
     constructor(seed) {
@@ -1433,7 +1439,7 @@ var Images = {
 // cut size of each puzzle tile in the
 // final resized version of the puzzle image
 const TILE_SIZE = 64;
-async function createPuzzle(rng, targetTiles, image, ts) {
+async function createPuzzle(rng, targetTiles, image, ts, shapeMode) {
     const imagePath = image.file;
     const imageUrl = image.url;
     // determine puzzle information from the image dimensions
@@ -1446,7 +1452,7 @@ async function createPuzzle(rng, targetTiles, image, ts) {
     for (let i = 0; i < rawPieces.length; i++) {
         rawPieces[i] = { idx: i };
     }
-    const shapes = determinePuzzleTileShapes(rng, info);
+    const shapes = determinePuzzleTileShapes(rng, info, shapeMode);
     let positions = new Array(info.tiles);
     for (const piece of rawPieces) {
         const coord = Util.coordByPieceIdx(info, piece.idx);
@@ -1555,8 +1561,19 @@ async function createPuzzle(rng, targetTiles, image, ts) {
         },
     };
 }
-function determinePuzzleTileShapes(rng, info) {
-    const tabs = [-1, 1];
+function determineTabs(shapeMode) {
+    switch (shapeMode) {
+        case ShapeMode.ANY:
+            return [-1, 0, 1];
+        case ShapeMode.FLAT:
+            return [0];
+        case ShapeMode.NORMAL:
+        default:
+            return [-1, 1];
+    }
+}
+function determinePuzzleTileShapes(rng, info, shapeMode) {
+    const tabs = determineTabs(shapeMode);
     const shapes = new Array(info.tiles);
     for (let i = 0; i < info.tiles; i++) {
         const coord = Util.coordByPieceIdx(info, i);
@@ -1692,22 +1709,23 @@ var GameStorage = {
     setDirty,
 };
 
-async function createGameObject(gameId, targetTiles, image, ts, scoreMode) {
+async function createGameObject(gameId, targetTiles, image, ts, scoreMode, shapeMode) {
     const seed = Util.hash(gameId + ' ' + ts);
     const rng = new Rng(seed);
     return {
         id: gameId,
         rng: { type: 'Rng', obj: rng },
-        puzzle: await createPuzzle(rng, targetTiles, image, ts),
+        puzzle: await createPuzzle(rng, targetTiles, image, ts, shapeMode),
         players: [],
         evtInfos: {},
         scoreMode,
+        shapeMode,
     };
 }
-async function createGame(gameId, targetTiles, image, ts, scoreMode) {
-    const gameObject = await createGameObject(gameId, targetTiles, image, ts, scoreMode);
+async function createGame(gameId, targetTiles, image, ts, scoreMode, shapeMode) {
+    const gameObject = await createGameObject(gameId, targetTiles, image, ts, scoreMode, shapeMode);
     GameLog.create(gameId);
-    GameLog.log(gameId, Protocol.LOG_HEADER, 1, targetTiles, image, ts, scoreMode);
+    GameLog.log(gameId, Protocol.LOG_HEADER, 1, targetTiles, image, ts, scoreMode, shapeMode);
     GameCommon.setGame(gameObject.id, gameObject);
     GameStorage.setDirty(gameId);
 }
@@ -1981,7 +1999,7 @@ app.get('/api/replay-data', async (req, res) => {
     let game = null;
     if (offset === 0) {
         // also need the game
-        game = await Game.createGameObject(gameId, log[0][2], log[0][3], log[0][4], log[0][5] || ScoreMode.FINAL);
+        game = await Game.createGameObject(gameId, log[0][2], log[0][3], log[0][4], log[0][5] || ScoreMode.FINAL, log[0][6] || ShapeMode.NORMAL);
     }
     res.send({ log, game: game ? Util.encodeGame(game) : null });
 });
@@ -2069,7 +2087,7 @@ app.post('/api/newgame', express.json(), async (req, res) => {
     const gameId = Util.uniqId();
     if (!GameCommon.exists(gameId)) {
         const ts = Time.timestamp();
-        await Game.createGame(gameId, gameSettings.tiles, gameSettings.image, ts, gameSettings.scoreMode);
+        await Game.createGame(gameId, gameSettings.tiles, gameSettings.image, ts, gameSettings.scoreMode, gameSettings.shapeMode);
     }
     res.send({ id: gameId });
 });

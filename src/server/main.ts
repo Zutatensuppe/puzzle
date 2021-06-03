@@ -19,7 +19,7 @@ import {
   UPLOAD_DIR,
 } from './Dirs'
 import GameCommon from '../common/GameCommon'
-import { ServerEvent, Game as GameType, GameSettings, ScoreMode } from '../common/Types'
+import { ServerEvent, Game as GameType, GameSettings, ScoreMode, ShapeMode } from '../common/Types'
 import GameStorage from './GameStorage'
 import Db from './Db'
 
@@ -89,7 +89,8 @@ app.get('/api/replay-data', async (req, res): Promise<void> => {
       log[0][2],
       log[0][3],
       log[0][4],
-      log[0][5] || ScoreMode.FINAL
+      log[0][5] || ScoreMode.FINAL,
+      log[0][6] || ShapeMode.NORMAL
     )
   }
   res.send({ log, game: game ? Util.encodeGame(game) : null })
@@ -201,7 +202,8 @@ app.post('/api/newgame', express.json(), async (req, res): Promise<void> => {
       gameSettings.tiles,
       gameSettings.image,
       ts,
-      gameSettings.scoreMode
+      gameSettings.scoreMode,
+      gameSettings.shapeMode
     )
   }
   res.send({ id: gameId })

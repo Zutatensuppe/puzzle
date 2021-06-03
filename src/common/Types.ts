@@ -73,6 +73,7 @@ export interface Game {
   puzzle: Puzzle
   evtInfos: Record<string, EvtInfo>
   scoreMode?: ScoreMode
+  shapeMode?: ShapeMode
   rng: GameRng
 }
 
@@ -90,6 +91,7 @@ export interface GameSettings {
   tiles: number
   image: Image
   scoreMode: ScoreMode
+  shapeMode: ShapeMode
 }
 
 export interface Puzzle {
@@ -197,4 +199,10 @@ export interface EvtInfo {
 export enum ScoreMode {
   FINAL = 0,
   ANY = 1,
+}
+
+export enum ShapeMode {
+  NORMAL = 0,
+  ANY = 1,
+  FLAT = 2,
 }

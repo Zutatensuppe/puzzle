@@ -22,6 +22,16 @@
               <label><input type="radio" v-model="scoreMode" value="0" /> Final (Score when pieces are put to their final location)</label>
             </td>
           </tr>
+          <tr>
+            <td><label>shapes: </label></td>
+            <td>
+              <label><input type="radio" v-model="shapeMode" value="0" /> Normal</label>
+              <br />
+              <label><input type="radio" v-model="shapeMode" value="1" /> Any (flat pieces can occur anywhere)</label>
+              <br />
+              <label><input type="radio" v-model="shapeMode" value="2" /> Flat (all pieces flat on all sides)</label>
+            </td>
+          </tr>
         </table>
       </div>
 
@@ -36,7 +46,7 @@
 <script lang="ts">
 import { defineComponent } from 'vue'
 
-import { GameSettings, ScoreMode } from './../../common/Types'
+import { GameSettings, ScoreMode, ShapeMode } from './../../common/Types'
 import ResponsiveImage from './ResponsiveImage.vue'
 
 export default defineComponent({
@@ -58,6 +68,7 @@ export default defineComponent({
     return {
       tiles: 1000,
       scoreMode: ScoreMode.ANY,
+      shapeMode: ShapeMode.NORMAL,
     }
   },
   methods: {
@@ -66,6 +77,7 @@ export default defineComponent({
         tiles: this.tilesInt,
         image: this.image,
         scoreMode: this.scoreModeInt,
+        shapeMode: this.shapeModeInt,
       } as GameSettings)
     },
   },
@@ -83,6 +95,9 @@ export default defineComponent({
     },
     scoreModeInt (): number {
       return parseInt(`${this.scoreMode}`, 10)
+    },
+    shapeModeInt (): number {
+      return parseInt(`${this.shapeMode}`, 10)
     },
     tilesInt (): number {
       return parseInt(`${this.tiles}`, 10)
