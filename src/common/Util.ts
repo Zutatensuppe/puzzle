@@ -9,7 +9,9 @@ import {
   PieceShape,
   Player,
   PuzzleInfo,
-  ScoreMode
+  ScoreMode,
+  ShapeMode,
+  SnapMode
 } from './Types'
 import { Point } from './Geometry'
 import { Rng } from './Rng'
@@ -129,6 +131,8 @@ function encodeGame(data: Game): EncodedGame {
     data.players,
     data.evtInfos,
     data.scoreMode || ScoreMode.FINAL,
+    data.shapeMode || ShapeMode.ANY,
+    data.snapMode || SnapMode.NORMAL,
   ]
 }
 
@@ -143,6 +147,8 @@ function decodeGame(data: EncodedGame): Game {
     players: data[4],
     evtInfos: data[5],
     scoreMode: data[6],
+    shapeMode: data[7],
+    snapMode: data[8],
   }
 }
 

@@ -32,6 +32,14 @@
               <label><input type="radio" v-model="shapeMode" value="2" /> Flat (all pieces flat on all sides)</label>
             </td>
           </tr>
+          <tr>
+            <td><label>Snapping: </label></td>
+            <td>
+              <label><input type="radio" v-model="snapMode" value="0" /> Normal (pieces snap to final destination and to each other)</label>
+              <br />
+              <label><input type="radio" v-model="snapMode" value="1" /> Real (pieces snap only to corners, already snapped pieces and to each other)</label>
+            </td>
+          </tr>
         </table>
       </div>
 
@@ -46,7 +54,7 @@
 <script lang="ts">
 import { defineComponent } from 'vue'
 
-import { GameSettings, ScoreMode, ShapeMode } from './../../common/Types'
+import { GameSettings, ScoreMode, ShapeMode, SnapMode } from './../../common/Types'
 import ResponsiveImage from './ResponsiveImage.vue'
 
 export default defineComponent({
@@ -69,6 +77,7 @@ export default defineComponent({
       tiles: 1000,
       scoreMode: ScoreMode.ANY,
       shapeMode: ShapeMode.NORMAL,
+      snapMode: SnapMode.NORMAL,
     }
   },
   methods: {
@@ -78,6 +87,7 @@ export default defineComponent({
         image: this.image,
         scoreMode: this.scoreModeInt,
         shapeMode: this.shapeModeInt,
+        snapMode: this.snapModeInt,
       } as GameSettings)
     },
   },
@@ -98,6 +108,9 @@ export default defineComponent({
     },
     shapeModeInt (): number {
       return parseInt(`${this.shapeMode}`, 10)
+    },
+    snapModeInt (): number {
+      return parseInt(`${this.snapMode}`, 10)
     },
     tilesInt (): number {
       return parseInt(`${this.tiles}`, 10)

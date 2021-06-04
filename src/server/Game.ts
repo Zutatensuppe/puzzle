@@ -1,5 +1,5 @@
 import GameCommon from './../common/GameCommon'
-import { Change, Game, Input, ScoreMode, ShapeMode, Timestamp } from './../common/Types'
+import { Change, Game, Input, ScoreMode, ShapeMode, SnapMode, Timestamp } from './../common/Types'
 import Util, { logger } from './../common/Util'
 import { Rng } from './../common/Rng'
 import GameLog from './GameLog'
@@ -15,7 +15,8 @@ async function createGameObject(
   image: PuzzleCreationImageInfo,
   ts: Timestamp,
   scoreMode: ScoreMode,
-  shapeMode: ShapeMode
+  shapeMode: ShapeMode,
+  snapMode: SnapMode
 ): Promise<Game> {
   const seed = Util.hash(gameId + ' ' + ts)
   const rng = new Rng(seed)
@@ -27,6 +28,7 @@ async function createGameObject(
     evtInfos: {},
     scoreMode,
     shapeMode,
+    snapMode,
   }
 }
 
@@ -36,7 +38,8 @@ async function createGame(
   image: PuzzleCreationImageInfo,
   ts: Timestamp,
   scoreMode: ScoreMode,
-  shapeMode: ShapeMode
+  shapeMode: ShapeMode,
+  snapMode: SnapMode
 ): Promise<void> {
   const gameObject = await createGameObject(
     gameId,
@@ -44,7 +47,8 @@ async function createGame(
     image,
     ts,
     scoreMode,
-    shapeMode
+    shapeMode,
+    snapMode
   )
 
   GameLog.create(gameId)
@@ -56,7 +60,8 @@ async function createGame(
     image,
     ts,
     scoreMode,
-    shapeMode
+    shapeMode,
+    snapMode
   )
 
   GameCommon.setGame(gameObject.id, gameObject)

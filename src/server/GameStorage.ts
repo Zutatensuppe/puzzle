@@ -1,6 +1,6 @@
 import fs from 'fs'
 import GameCommon from './../common/GameCommon'
-import { Piece, ScoreMode } from './../common/Types'
+import { Game, Piece, ScoreMode, ShapeMode, SnapMode } from './../common/Types'
 import Util, { logger } from './../common/Util'
 import { Rng } from './../common/Rng'
 import { DATA_DIR } from './Dirs'
@@ -49,7 +49,7 @@ function loadGame(gameId: string): void {
   if (!Array.isArray(game.players)) {
     game.players = Object.values(game.players)
   }
-  const gameObject = {
+  const gameObject: Game = {
     id: game.id,
     rng: {
       type: game.rng ? game.rng.type : '_fake_',
@@ -59,6 +59,8 @@ function loadGame(gameId: string): void {
     players: game.players,
     evtInfos: {},
     scoreMode: game.scoreMode || ScoreMode.FINAL,
+    shapeMode: game.shapeMode || ShapeMode.ANY,
+    snapMode: game.snapMode || SnapMode.NORMAL,
   }
   GameCommon.setGame(gameObject.id, gameObject)
 }
@@ -88,6 +90,8 @@ function persistGame(gameId: string): void {
     puzzle: game.puzzle,
     players: game.players,
     scoreMode: game.scoreMode,
+    shapeMode: game.shapeMode,
+    snapMode: game.snapMode,
   }))
   log.info(`[INFO] persisted game ${game.id}`)
 }

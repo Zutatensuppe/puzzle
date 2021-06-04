@@ -30,6 +30,11 @@ var ShapeMode;
     ShapeMode[ShapeMode["ANY"] = 1] = "ANY";
     ShapeMode[ShapeMode["FLAT"] = 2] = "FLAT";
 })(ShapeMode || (ShapeMode = {}));
+var SnapMode;
+(function (SnapMode) {
+    SnapMode[SnapMode["NORMAL"] = 0] = "NORMAL";
+    SnapMode[SnapMode["REAL"] = 1] = "REAL";
+})(SnapMode || (SnapMode = {}));
 
 class Rng {
     constructor(seed) {
@@ -173,6 +178,8 @@ function encodeGame(data) {
         data.players,
         data.evtInfos,
         data.scoreMode || ScoreMode.FINAL,
+        data.shapeMode || ShapeMode.ANY,
+        data.snapMode || SnapMode.NORMAL,
     ];
 }
 function decodeGame(data) {
@@ -186,6 +193,8 @@ function decodeGame(data) {
         players: data[4],
         evtInfos: data[5],
         scoreMode: data[6],
+        shapeMode: data[7],
+        snapMode: data[8],
     };
 }
 function coordByPieceIdx(info, pieceIdx) {
@@ -599,6 +608,9 @@ function setImageUrl(gameId, imageUrl) {
 function getScoreMode(gameId) {
     return GAMES[gameId].scoreMode || ScoreMode.FINAL;
 }
+function getSnapMode(gameId) {
+    return GAMES[gameId].snapMode || SnapMode.NORMAL;
+}
 function isFinished(gameId) {
     return getFinishedPiecesCount(gameId) === getPieceCount(gameId);
 }
@@ -646,6 +658,14 @@ const getPiece = (gameId, pieceIdx) => {
 const getPieceGroup = (gameId, tileIdx) => {
     const tile = getPiece(gameId, tileIdx);
     return tile.group;
+};
+const isCornerPiece = (gameId, tileIdx) => {
+    const info = GAMES[gameId].puzzle.info;
+    return (tileIdx === 0 // top left corner
+        || tileIdx === (info.tilesX - 1) // top right corner
+        || tileIdx === (info.tiles - info.tilesX) // bottom left corner
+        || tileIdx === (info.tiles - 1) // bottom right corner
+    );
 };
 const getFinalPiecePos = (gameId, tileIdx) => {
     const info = GAMES[gameId].puzzle.info;
@@ -783,6 +803,12 @@ const movePiecesDiff = (gameId, pieceIdxs, diff) => {
     for (const pieceIdx of pieceIdxs) {
         moveTileDiff(gameId, pieceIdx, cappedDiff);
     }
+};
+const isFinishedPiece = (gameId, pieceIdx) => {
+    return getPieceOwner(gameId, pieceIdx) === -1;
+};
+const getPieceOwner = (gameId, pieceIdx) => {
+    return getPiece(gameId, pieceIdx).owner;
 };
 const finishPieces = (gameId, pieceIdxs) => {
     for (const pieceIdx of pieceIdxs) {
@@ -1052,7 +1078,23 @@ function handleInput$1(gameId, playerId, input, ts, onSnap) {
             // Check if the tile was dropped near the final location
             const tilePos = getPiecePos(gameId, pieceIdx);
             const finalPos = getFinalPiecePos(gameId, pieceIdx);
-            if (Geometry.pointDistance(finalPos, tilePos) < puzzle.info.snapDistance) {
+            let canSnapToFinal = false;
+            console.log(getSnapMode(gameId));
+            if (getSnapMode(gameId) === SnapMode.REAL) {
+                // only can snap to final if any of the grouped pieces are
+                // corner pieces
+                for (const pieceIdxTmp of pieceIdxs) {
+                    if (isCornerPiece(gameId, pieceIdxTmp)) {
+                        canSnapToFinal = true;
+                        break;
+                    }
+                }
+            }
+            else {
+                canSnapToFinal = true;
+            }
+            if (canSnapToFinal
+                && Geometry.pointDistance(finalPos, tilePos) < puzzle.info.snapDistance) {
                 const diff = Geometry.pointSub(finalPos, tilePos);
                 // Snap the tile to the final destination
                 movePiecesDiff(gameId, pieceIdxs, diff);
@@ -1095,8 +1137,13 @@ function handleInput$1(gameId, playerId, input, ts, onSnap) {
                         movePiecesDiff(gameId, pieceIdxs, diff);
                         groupTiles(gameId, tileIdx, otherTileIdx);
                         pieceIdxs = getGroupedPieceIdxs(gameId, tileIdx);
-                        const zIndex = getMaxZIndexByPieceIdxs(gameId, pieceIdxs);
-                        setPiecesZIndex(gameId, pieceIdxs, zIndex);
+                        if (isFinishedPiece(gameId, otherTileIdx)) {
+                            finishPieces(gameId, pieceIdxs);
+                        }
+                        else {
+                            const zIndex = getMaxZIndexByPieceIdxs(gameId, pieceIdxs);
+                            setPiecesZIndex(gameId, pieceIdxs, zIndex);
+                        }
                         _pieceChanges(pieceIdxs);
                         return true;
                     }
@@ -1687,6 +1734,8 @@ function loadGame(gameId) {
         players: game.players,
         evtInfos: {},
         scoreMode: game.scoreMode || ScoreMode.FINAL,
+        shapeMode: game.shapeMode || ShapeMode.ANY,
+        snapMode: game.snapMode || SnapMode.NORMAL,
     };
     GameCommon.setGame(gameObject.id, gameObject);
 }
@@ -1713,6 +1762,8 @@ function persistGame(gameId) {
         puzzle: game.puzzle,
         players: game.players,
         scoreMode: game.scoreMode,
+        shapeMode: game.shapeMode,
+        snapMode: game.snapMode,
     }));
     log$3.info(`[INFO] persisted game ${game.id}`);
 }
@@ -1724,7 +1775,7 @@ var GameStorage = {
     setDirty,
 };
 
-async function createGameObject(gameId, targetTiles, image, ts, scoreMode, shapeMode) {
+async function createGameObject(gameId, targetTiles, image, ts, scoreMode, shapeMode, snapMode) {
     const seed = Util.hash(gameId + ' ' + ts);
     const rng = new Rng(seed);
     return {
@@ -1735,12 +1786,13 @@ async function createGameObject(gameId, targetTiles, image, ts, scoreMode, shape
         evtInfos: {},
         scoreMode,
         shapeMode,
+        snapMode,
     };
 }
-async function createGame(gameId, targetTiles, image, ts, scoreMode, shapeMode) {
-    const gameObject = await createGameObject(gameId, targetTiles, image, ts, scoreMode, shapeMode);
+async function createGame(gameId, targetTiles, image, ts, scoreMode, shapeMode, snapMode) {
+    const gameObject = await createGameObject(gameId, targetTiles, image, ts, scoreMode, shapeMode, snapMode);
     GameLog.create(gameId);
-    GameLog.log(gameId, Protocol.LOG_HEADER, 1, targetTiles, image, ts, scoreMode, shapeMode);
+    GameLog.log(gameId, Protocol.LOG_HEADER, 1, targetTiles, image, ts, scoreMode, shapeMode, snapMode);
     GameCommon.setGame(gameObject.id, gameObject);
     GameStorage.setDirty(gameId);
 }
@@ -2014,7 +2066,7 @@ app.get('/api/replay-data', async (req, res) => {
     let game = null;
     if (offset === 0) {
         // also need the game
-        game = await Game.createGameObject(gameId, log[0][2], log[0][3], log[0][4], log[0][5] || ScoreMode.FINAL, log[0][6] || ShapeMode.NORMAL);
+        game = await Game.createGameObject(gameId, log[0][2], log[0][3], log[0][4], log[0][5] || ScoreMode.FINAL, log[0][6] || ShapeMode.NORMAL, log[0][7] || SnapMode.NORMAL);
     }
     res.send({ log, game: game ? Util.encodeGame(game) : null });
 });
@@ -2102,7 +2154,7 @@ app.post('/api/newgame', express.json(), async (req, res) => {
     const gameId = Util.uniqId();
     if (!GameCommon.exists(gameId)) {
         const ts = Time.timestamp();
-        await Game.createGame(gameId, gameSettings.tiles, gameSettings.image, ts, gameSettings.scoreMode, gameSettings.shapeMode);
+        await Game.createGame(gameId, gameSettings.tiles, gameSettings.image, ts, gameSettings.scoreMode, gameSettings.shapeMode, gameSettings.snapMode);
     }
     res.send({ id: gameId });
 });

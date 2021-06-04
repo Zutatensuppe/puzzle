@@ -16,6 +16,7 @@ import {
   PuzzleData,
   PuzzleDataChange,
   ScoreMode,
+  SnapMode,
   Timestamp
 } from './Types'
 import Util from './Util'
@@ -172,6 +173,10 @@ function getScoreMode(gameId: string): ScoreMode {
   return GAMES[gameId].scoreMode || ScoreMode.FINAL
 }
 
+function getSnapMode(gameId: string): SnapMode {
+  return GAMES[gameId].snapMode || SnapMode.NORMAL
+}
+
 function isFinished(gameId: string): boolean {
   return getFinishedPiecesCount(gameId) === getPieceCount(gameId)
 }
@@ -235,6 +240,16 @@ const getPiece = (gameId: string, pieceIdx: number): Piece => {
 const getPieceGroup = (gameId: string, tileIdx: number): number => {
   const tile = getPiece(gameId, tileIdx)
   return tile.group
+}
+
+const isCornerPiece = (gameId: string, tileIdx: number): boolean => {
+  const info = GAMES[gameId].puzzle.info
+  return (
+    tileIdx === 0 // top left corner
+    || tileIdx === (info.tilesX - 1) // top right corner
+    || tileIdx === (info.tiles - info.tilesX) // bottom left corner
+    || tileIdx === (info.tiles - 1) // bottom right corner
+  )
 }
 
 const getFinalPiecePos = (gameId: string, tileIdx: number): Point => {
@@ -404,6 +419,14 @@ const movePiecesDiff = (
   for (const pieceIdx of pieceIdxs) {
     moveTileDiff(gameId, pieceIdx, cappedDiff)
   }
+}
+
+const isFinishedPiece = (gameId: string, pieceIdx: number): boolean => {
+  return getPieceOwner(gameId, pieceIdx) === -1
+}
+
+const getPieceOwner = (gameId: string, pieceIdx: number): string|number => {
+  return getPiece(gameId, pieceIdx).owner
 }
 
 const finishPieces = (gameId: string, pieceIdxs: Array<number>): void => {
@@ -721,7 +744,26 @@ function handleInput(
       // Check if the tile was dropped near the final location
       const tilePos = getPiecePos(gameId, pieceIdx)
       const finalPos = getFinalPiecePos(gameId, pieceIdx)
-      if (Geometry.pointDistance(finalPos, tilePos) < puzzle.info.snapDistance) {
+
+      let canSnapToFinal = false
+      console.log(getSnapMode(gameId))
+      if (getSnapMode(gameId) === SnapMode.REAL) {
+        // only can snap to final if any of the grouped pieces are
+        // corner pieces
+        for (const pieceIdxTmp of pieceIdxs) {
+          if (isCornerPiece(gameId, pieceIdxTmp)) {
+            canSnapToFinal = true
+            break
+          }
+        }
+      } else {
+        canSnapToFinal = true
+      }
+
+      if (
+        canSnapToFinal
+        && Geometry.pointDistance(finalPos, tilePos) < puzzle.info.snapDistance
+      ) {
         const diff = Geometry.pointSub(finalPos, tilePos)
         // Snap the tile to the final destination
         movePiecesDiff(gameId, pieceIdxs, diff)
@@ -774,8 +816,12 @@ function handleInput(
             movePiecesDiff(gameId, pieceIdxs, diff)
             groupTiles(gameId, tileIdx, otherTileIdx)
             pieceIdxs = getGroupedPieceIdxs(gameId, tileIdx)
-            const zIndex = getMaxZIndexByPieceIdxs(gameId, pieceIdxs)
-            setPiecesZIndex(gameId, pieceIdxs, zIndex)
+            if (isFinishedPiece(gameId, otherTileIdx)) {
+              finishPieces(gameId, pieceIdxs)
+            } else {
+              const zIndex = getMaxZIndexByPieceIdxs(gameId, pieceIdxs)
+              setPiecesZIndex(gameId, pieceIdxs, zIndex)
+            }
             _pieceChanges(pieceIdxs)
             return true
           }

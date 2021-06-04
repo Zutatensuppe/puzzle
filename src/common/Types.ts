@@ -49,6 +49,8 @@ export type EncodedGame = FixedLengthArray<[
   Array<EncodedPlayer>,
   Record<string, EvtInfo>,
   ScoreMode,
+  ShapeMode,
+  SnapMode,
 ]>
 
 export interface ReplayData {
@@ -75,6 +77,7 @@ export interface Game {
   evtInfos: Record<string, EvtInfo>
   scoreMode?: ScoreMode
   shapeMode?: ShapeMode
+  snapMode?: SnapMode
   rng: GameRng
 }
 
@@ -93,6 +96,7 @@ export interface GameSettings {
   image: Image
   scoreMode: ScoreMode
   shapeMode: ShapeMode
+  snapMode: SnapMode
 }
 
 export interface Puzzle {
@@ -206,4 +210,9 @@ export enum ShapeMode {
   NORMAL = 0,
   ANY = 1,
   FLAT = 2,
+}
+
+export enum SnapMode {
+  NORMAL = 0,
+  REAL = 1,
 }
