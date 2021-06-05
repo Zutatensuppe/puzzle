@@ -192,11 +192,15 @@ export default defineComponent({
       "settings"
       "buttons";
   }
+  .new-image-dialog .overlay-content .area-buttons .btn br {
+    display: none;
+  }
 }
 
 .new-image-dialog .area-image {
   grid-area: image;
-  margin: 20px;
+  margin: .5em;
+  border: solid 6px transparent;
 }
 .new-image-dialog .area-image.no-image {
   align-content: center;
