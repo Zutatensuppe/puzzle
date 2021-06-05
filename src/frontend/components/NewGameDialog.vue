@@ -6,6 +6,7 @@
         <div class="has-image">
           <responsive-image :src="image.url" :title="image.title" />
         </div>
+        <div class="image-title" v-if="image.title">"{{image.title}}"</div>
       </div>
 
       <div class="area-settings">
@@ -132,6 +133,15 @@ export default defineComponent({
   height: 90%;
   width: 80%;
 }
+.new-game-dialog .area-image {
+  grid-area: image;
+  display: grid;
+  grid-template-rows: 1fr min-content;
+  grid-template-areas:
+    "image"
+    "image-title";
+  margin-right: 1em;
+}
 @media (max-width: 1400px) {
   .new-game-dialog .overlay-content {
     grid-template-columns: auto;
@@ -141,10 +151,9 @@ export default defineComponent({
       "settings"
       "buttons";
   }
-}
-.new-game-dialog .area-image {
-  grid-area: image;
-  margin: 20px;
+  .new-game-dialog .area-image {
+    margin-right: 0;
+  }
 }
 .new-game-dialog .area-settings {
   grid-area: settings;
@@ -162,10 +171,22 @@ export default defineComponent({
   width: 100%;
 }
 .new-game-dialog .has-image {
+  box-sizing: border-box;
+  grid-area: image;
   position: relative;
   width: 100%;
   height: 100%;
+  border: solid 1px;
 }
+
+.new-game-dialog .image-title {
+  grid-area: image-title;
+  text-align: center;
+  padding: .5em 0;
+  background: var(--main-color);
+  color: #262523;
+}
+
 .new-game-dialog .has-image .remove {
   position: absolute;
   top: .5em;
