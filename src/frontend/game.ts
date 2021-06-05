@@ -92,7 +92,12 @@ function addCanvasToDom(TARGET_EL: HTMLElement, canvas: HTMLCanvasElement) {
   return canvas
 }
 
-function EventAdapter (canvas: HTMLCanvasElement, window: any, viewport: any) {
+function EventAdapter (
+  canvas: HTMLCanvasElement,
+  window: any,
+  viewport: any,
+  MODE: string
+) {
   let events: Array<GameEvent> = []
 
   let KEYS_ON = true
@@ -173,6 +178,20 @@ function EventAdapter (canvas: HTMLCanvasElement, window: any, viewport: any) {
     }
     if (ev.key === ' ') {
       addEvent([Protocol.INPUT_EV_TOGGLE_PREVIEW])
+    }
+
+    if (MODE === MODE_REPLAY) {
+      if (ev.key === 'I' || ev.key === 'i') {
+        addEvent([Protocol.INPUT_EV_REPLAY_SPEED_UP])
+      }
+
+      if (ev.key === 'O' || ev.key === 'o') {
+        addEvent([Protocol.INPUT_EV_REPLAY_SPEED_DOWN])
+      }
+
+      if (ev.key === 'P' || ev.key === 'p') {
+        addEvent([Protocol.INPUT_EV_REPLAY_TOGGLE_PAUSE])
+      }
     }
     if (ev.key === 'F' || ev.key === 'f') {
       PIECE_VIEW_FIXED = !PIECE_VIEW_FIXED
@@ -396,7 +415,7 @@ export async function main(
     -(TABLE_HEIGHT - canvas.height) /2
   )
 
-  const evts = EventAdapter(canvas, window, viewport)
+  const evts = EventAdapter(canvas, window, viewport, MODE)
 
   const previewImageUrl = Game.getImageUrl(gameId)
 
@@ -699,7 +718,13 @@ export async function main(
         // LOCAL ONLY CHANGES
         // -------------------------------------------------------------
         const type = evt[0]
-        if (type === Protocol.INPUT_EV_MOVE) {
+        if (type === Protocol.INPUT_EV_REPLAY_TOGGLE_PAUSE) {
+          replayOnPauseToggle()
+        } else if (type === Protocol.INPUT_EV_REPLAY_SPEED_DOWN) {
+          replayOnSpeedDown()
+        } else if (type === Protocol.INPUT_EV_REPLAY_SPEED_UP) {
+          replayOnSpeedUp()
+        } else if (type === Protocol.INPUT_EV_MOVE) {
           const diffX = evt[1]
           const diffY = evt[2]
           RERENDER = true
