@@ -7,7 +7,12 @@ gallery", if possible!
   <div class="overlay new-image-dialog" @click="$emit('bgclick')">
     <div class="overlay-content" @click.stop="">
 
-      <div class="area-image" :class="{'has-image': !!previewUrl, 'no-image': !previewUrl}">
+      <div
+        class="area-image"
+        :class="{'has-image': !!previewUrl, 'no-image': !previewUrl, droppable: droppable}"
+        @drop="onDrop"
+        @dragover="onDragover"
+        @dragleave="onDragleave">
         <!-- TODO: ...  -->
         <div v-if="previewUrl" class="has-image">
           <span class="remove btn" @click="previewUrl=''">X</span>
@@ -15,7 +20,7 @@ gallery", if possible!
         </div>
         <div v-else>
           <label class="upload">
-            <input type="file" style="display: none" @change="preview" accept="image/*" />
+            <input type="file" style="display: none" @change="onFileSelect" accept="image/*" />
             <span class="btn">Upload File</span>
           </label>
         </div>
@@ -52,9 +57,12 @@ gallery", if possible!
 </template>
 <script lang="ts">
 import { defineComponent } from 'vue'
+import { logger } from '../../common/Util'
 
 import ResponsiveImage from './ResponsiveImage.vue'
 import TagsInput from './TagsInput.vue'
+
+const log = logger('NewImageDialog.vue')
 
 export default defineComponent({
   name: 'new-image-dialog',
@@ -78,6 +86,7 @@ export default defineComponent({
       file: null as File|null,
       title: '',
       tags: [] as string[],
+      droppable: false,
     }
   },
   computed: {
@@ -89,12 +98,26 @@ export default defineComponent({
     },
   },
   methods: {
-    preview (evt: Event) {
+    imageFromDragEvt (evt: DragEvent): DataTransferItem|null {
+      const items = evt.dataTransfer?.items
+      if (!items || items.length === 0) {
+        return null
+      }
+      const item = items[0]
+      if (!item.type.startsWith('image/')) {
+        return null
+      }
+      return item
+    },
+    onFileSelect (evt: Event) {
       const target = (evt.target as HTMLInputElement)
       if (!target.files) return;
       const file = target.files[0]
       if (!file) return;
 
+      this.preview(file)
+    },
+    preview (file: File) {
       const r = new FileReader()
       r.readAsDataURL(file)
       r.onload = (ev: any) => {
@@ -116,6 +139,34 @@ export default defineComponent({
         tags: this.tags,
       })
     },
+    onDrop (evt: DragEvent): boolean {
+      this.droppable = false
+      const img = this.imageFromDragEvt(evt)
+      if (!img) {
+        return false
+      }
+      const f = img.getAsFile()
+      if (!f) {
+        return false
+      }
+      this.file = f
+      this.preview(f)
+      evt.preventDefault()
+      return false
+    },
+    onDragover (evt: DragEvent): boolean {
+      const img = this.imageFromDragEvt(evt)
+      if (!img) {
+        return false
+      }
+      this.droppable = true
+      evt.preventDefault()
+      return false
+    },
+    onDragleave () {
+      log.info('onDragleave')
+      this.droppable = false
+    },
   },
 })
 </script>
@@ -132,6 +183,16 @@ export default defineComponent({
   height: 90%;
   width: 80%;
 }
+@media (max-width: 1400px) {
+  .new-image-dialog .overlay-content {
+    grid-template-columns: auto;
+    grid-template-rows: 1fr min-content min-content;
+    grid-template-areas:
+      "image"
+      "settings"
+      "buttons";
+  }
+}
 
 .new-image-dialog .area-image {
   grid-area: image;
@@ -141,8 +202,14 @@ export default defineComponent({
   align-content: center;
   display: grid;
   text-align: center;
-  border: dashed 6px;
+  border: solid 6px;
   position: relative;
+}
+.new-image-dialog .area-image.droppable {
+  border: dashed 6px;
+}
+.area-image * {
+  pointer-events: none;
 }
 .new-image-dialog .area-image .has-image {
   position: relative;
