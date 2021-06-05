@@ -1,6 +1,4 @@
 import fs from 'fs'
-import readline from 'readline'
-import stream from 'stream'
 import Time from '../common/Time'
 import { Timestamp } from '../common/Types'
 import { logger } from './../common/Util'
