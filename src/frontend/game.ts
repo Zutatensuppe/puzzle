@@ -58,7 +58,6 @@ interface Hud {
 }
 interface Replay {
   final: boolean
-  requesting: boolean
   log: Array<any> // current log entries
   logPointer: number // pointer to current item in the log array
   speeds: Array<number>
@@ -67,6 +66,7 @@ interface Replay {
   lastRealTs: number
   lastGameTs: number
   gameStartTs: number
+  skipNonActionPhases: boolean
   //
   dataOffset: number
   dataSize: number
@@ -293,7 +293,6 @@ export async function main(
   // TODO: refactor
   const REPLAY: Replay = {
     final: false,
-    requesting: true,
     log: [],
     logPointer: 0,
     speeds: [0.5, 1, 2, 5, 10, 20, 50, 100, 250, 500],
@@ -302,6 +301,7 @@ export async function main(
     lastRealTs: 0,
     lastGameTs: 0,
     gameStartTs: 0,
+    skipNonActionPhases: false,
     dataOffset: 0,
     dataSize: 10000,
   }
@@ -313,29 +313,23 @@ export async function main(
   const queryNextReplayBatch = async (
     gameId: string
   ): Promise<ReplayData> => {
-    REPLAY.requesting = true
+    const offset = REPLAY.dataOffset
+    REPLAY.dataOffset += REPLAY.dataSize
     const replay: ReplayData = await Communication.requestReplayData(
       gameId,
-      REPLAY.dataOffset,
+      offset,
       REPLAY.dataSize
     )
-    REPLAY.dataOffset += REPLAY.dataSize
-    REPLAY.requesting = false
-    return replay
-  }
 
-  const getNextReplayBatch = async (
-    gameId: string
-  ) => {
-    const replay: ReplayData = await queryNextReplayBatch(gameId)
     // cut log that was already handled
     REPLAY.log = REPLAY.log.slice(REPLAY.logPointer)
     REPLAY.logPointer = 0
-
     REPLAY.log.push(...replay.log)
+
     if (replay.log.length < REPLAY.dataSize) {
       REPLAY.final = true
     }
+    return replay
   }
 
   let TIME: () => number = () => 0
@@ -346,6 +340,10 @@ export async function main(
       Game.setGame(gameObject.id, gameObject)
       TIME = () => Time.timestamp()
     } else if (MODE === MODE_REPLAY) {
+      REPLAY.logPointer = 0
+      REPLAY.dataSize = 10000
+      REPLAY.speeds = [0.5, 1, 2, 5, 10, 20, 50, 100, 250, 500]
+      REPLAY.speedIdx = 1
       const replay: ReplayData = await queryNextReplayBatch(gameId)
       if (!replay.game) {
         throw '[ 2021-05-29 no game received ]'
@@ -353,18 +351,11 @@ export async function main(
       const gameObject: GameType = Util.decodeGame(replay.game)
       Game.setGame(gameObject.id, gameObject)
 
-      REPLAY.requesting = false
-      REPLAY.log = replay.log
       REPLAY.lastRealTs = Time.timestamp()
-      REPLAY.gameStartTs = parseInt(REPLAY.log[0][4], 10)
+      REPLAY.gameStartTs = parseInt(replay.log[0][4], 10)
       REPLAY.lastGameTs = REPLAY.gameStartTs
-      REPLAY.final = false
-      REPLAY.logPointer = 0
-      REPLAY.speeds = [0.5, 1, 2, 5, 10, 20, 50, 100, 250, 500]
-      REPLAY.speedIdx = 1
       REPLAY.paused = false
-      REPLAY.dataOffset = 0
-      REPLAY.dataSize = 10000
+      REPLAY.skipNonActionPhases = false
 
       TIME = () => REPLAY.lastGameTs
     } else {
@@ -503,10 +494,14 @@ export async function main(
   }
 
   const intervals: NodeJS.Timeout[] = []
+  let to: NodeJS.Timeout
   const clearIntervals = () => {
     intervals.forEach(inter => {
       clearInterval(inter)
     })
+    if (to) {
+      clearTimeout(to)
+    }
   }
 
   let gameLoopInstance: GameLoopInstance
@@ -524,6 +519,9 @@ export async function main(
   } else if (MODE === MODE_REPLAY) {
     doSetSpeedStatus()
   }
+
+  // // TODO: remove (make changable via interface)
+  // REPLAY.skipNonActionPhases = true
 
   if (MODE === MODE_PLAY) {
     Communication.onServerChange((msg: ServerEvent) => {
@@ -554,65 +552,72 @@ export async function main(
       finished = !! Game.getFinishTs(gameId)
     })
   } else if (MODE === MODE_REPLAY) {
-    // no external communication for replay mode,
-    // only the REPLAY.log is relevant
-    intervals.push(setInterval(() => {
-      const realTs = Time.timestamp()
-      if (REPLAY.requesting) {
-        REPLAY.lastRealTs = realTs
-        return
+    const handleLogEntry = (logEntry: any[], ts: Timestamp) => {
+      const entry = logEntry
+      if (entry[0] === Protocol.LOG_ADD_PLAYER) {
+        const playerId = entry[1]
+        Game.addPlayer(gameId, playerId, ts)
+        return true
       }
+      if (entry[0] === Protocol.LOG_UPDATE_PLAYER) {
+        const playerId = Game.getPlayerIdByIndex(gameId, entry[1])
+        if (!playerId) {
+          throw '[ 2021-05-17 player not found (update player) ]'
+        }
+        Game.addPlayer(gameId, playerId, ts)
+        return true
+      }
+      if (entry[0] === Protocol.LOG_HANDLE_INPUT) {
+        const playerId = Game.getPlayerIdByIndex(gameId, entry[1])
+        if (!playerId) {
+          throw '[ 2021-05-17 player not found (handle input) ]'
+        }
+        const input = entry[2]
+        Game.handleInput(gameId, playerId, input, ts)
+        return true
+      }
+      return false
+    }
 
+    const next = async () => {
       if (REPLAY.logPointer + 1 >= REPLAY.log.length) {
-        REPLAY.lastRealTs = realTs
-        getNextReplayBatch(gameId)
-        return
+        await queryNextReplayBatch(gameId)
       }
 
+      const realTs = Time.timestamp()
       if (REPLAY.paused) {
         REPLAY.lastRealTs = realTs
+        to = setTimeout(next, 50)
         return
       }
       const timePassedReal = realTs - REPLAY.lastRealTs
       const timePassedGame = timePassedReal * REPLAY.speeds[REPLAY.speedIdx]
-      const maxGameTs = REPLAY.lastGameTs + timePassedGame
+      let maxGameTs = REPLAY.lastGameTs + timePassedGame
       do {
         if (REPLAY.paused) {
           break
         }
         const nextIdx = REPLAY.logPointer + 1
         if (nextIdx >= REPLAY.log.length) {
-          if (REPLAY.final) {
-            clearIntervals()
-          }
           break
         }
 
-        const logEntry = REPLAY.log[nextIdx]
-        const nextTs: Timestamp = REPLAY.gameStartTs + logEntry[logEntry.length - 1]
+        const currLogEntry = REPLAY.log[REPLAY.logPointer]
+        const currTs: Timestamp = REPLAY.gameStartTs + currLogEntry[currLogEntry.length - 1]
+        const nextLogEntry = REPLAY.log[nextIdx]
+        const nextTs: Timestamp = REPLAY.gameStartTs + nextLogEntry[nextLogEntry.length - 1]
         if (nextTs > maxGameTs) {
+          // next log entry is too far into the future
+          if (REPLAY.skipNonActionPhases && (maxGameTs + 50 < nextTs)) {
+            const skipInterval = nextTs - currTs
+            // lets skip to the next log entry
+            // log.info('skipping non-action, from', maxGameTs, skipInterval)
+            maxGameTs += skipInterval
+          }
           break
         }
 
-        const entryWithTs = logEntry.slice()
-        if (entryWithTs[0] === Protocol.LOG_ADD_PLAYER) {
-          const playerId = entryWithTs[1]
-          Game.addPlayer(gameId, playerId, nextTs)
-          RERENDER = true
-        } else if (entryWithTs[0] === Protocol.LOG_UPDATE_PLAYER) {
-          const playerId = Game.getPlayerIdByIndex(gameId, entryWithTs[1])
-          if (!playerId) {
-            throw '[ 2021-05-17 player not found (update player) ]'
-          }
-          Game.addPlayer(gameId, playerId, nextTs)
-          RERENDER = true
-        } else if (entryWithTs[0] === Protocol.LOG_HANDLE_INPUT) {
-          const playerId = Game.getPlayerIdByIndex(gameId, entryWithTs[1])
-          if (!playerId) {
-            throw '[ 2021-05-17 player not found (handle input) ]'
-          }
-          const input = entryWithTs[2]
-          Game.handleInput(gameId, playerId, input, nextTs)
+        if (handleLogEntry(nextLogEntry, nextTs)) {
           RERENDER = true
         }
         REPLAY.logPointer = nextIdx
@@ -620,7 +625,13 @@ export async function main(
       REPLAY.lastRealTs = realTs
       REPLAY.lastGameTs = maxGameTs
       updateTimerElements()
-    }, 50))
+
+      if (!REPLAY.final) {
+        to = setTimeout(next, 50)
+      }
+    }
+
+    next()
   }
 
   let _last_mouse_down: Point|null = null
