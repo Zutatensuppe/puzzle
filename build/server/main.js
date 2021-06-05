@@ -1173,6 +1173,12 @@ function handleInput$1(gameId, playerId, input, ts, onSnap) {
                     changePlayer(gameId, playerId, { d, ts });
                     _playerChange();
                 }
+                if (snapped && getSnapMode(gameId) === SnapMode.REAL) {
+                    if (getFinishedPiecesCount(gameId) === getPieceCount(gameId)) {
+                        changeData(gameId, { finished: ts });
+                        _dataChange();
+                    }
+                }
                 if (snapped && onSnap) {
                     onSnap(playerId);
                 }
@@ -1309,7 +1315,7 @@ const get = (gameId, offset = 0) => {
         return [];
     }
     const log = fs.readFileSync(file, 'utf-8').split("\n");
-    return log.map(line => {
+    return log.filter(line => !!line).map(line => {
         return JSON.parse(line);
     });
 };

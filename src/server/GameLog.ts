@@ -78,7 +78,7 @@ const get = (
   }
 
   const log = fs.readFileSync(file, 'utf-8').split("\n")
-  return log.map(line => {
+  return log.filter(line => !!line).map(line => {
     return JSON.parse(line)
   })
 }

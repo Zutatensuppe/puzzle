@@ -848,6 +848,13 @@ function handleInput(
           changePlayer(gameId, playerId, { d, ts })
           _playerChange()
         }
+
+        if (snapped && getSnapMode(gameId) === SnapMode.REAL) {
+          if (getFinishedPiecesCount(gameId) === getPieceCount(gameId)) {
+            changeData(gameId, { finished: ts })
+            _dataChange()
+          }
+        }
         if (snapped && onSnap) {
           onSnap(playerId)
         }
