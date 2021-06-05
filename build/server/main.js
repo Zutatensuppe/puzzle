@@ -1279,7 +1279,9 @@ const create = (gameId) => {
         const logfile = filename(gameId, 0);
         fs.appendFileSync(logfile, "");
         fs.appendFileSync(idxfile, JSON.stringify({
+            gameId: gameId,
             total: 0,
+            lastTs: 0,
             currentFile: logfile,
             perFile: LINES_PER_LOG_FILE,
         }));
@@ -1289,14 +1291,19 @@ const exists = (gameId) => {
     const idxfile = idxname(gameId);
     return fs.existsSync(idxfile);
 };
-const _log = (gameId, ...args) => {
+const _log = (gameId, type, ...args) => {
     const idxfile = idxname(gameId);
     if (!fs.existsSync(idxfile)) {
         return;
     }
+    const ts = args[args.length - 1];
+    const otherArgs = args.slice(0, -1);
     const idx = JSON.parse(fs.readFileSync(idxfile, 'utf-8'));
     idx.total++;
-    fs.appendFileSync(idx.currentFile, JSON.stringify(args) + "\n");
+    const diff = ts - idx.lastTs;
+    idx.lastTs = ts;
+    const line = JSON.stringify([type, ...otherArgs, diff]).slice(1, -1);
+    fs.appendFileSync(idx.currentFile, line + "\n");
     // prepare next log file
     if (idx.total % idx.perFile === 0) {
         const logfile = filename(gameId, idx.total);
@@ -1316,7 +1323,7 @@ const get = (gameId, offset = 0) => {
     }
     const log = fs.readFileSync(file, 'utf-8').split("\n");
     return log.filter(line => !!line).map(line => {
-        return JSON.parse(line);
+        return JSON.parse(`[${line}]`);
     });
 };
 var GameLog = {
@@ -1807,12 +1814,11 @@ async function createGame(gameId, targetTiles, image, ts, scoreMode, shapeMode, 
 function addPlayer(gameId, playerId, ts) {
     if (GameLog.shouldLog(GameCommon.getFinishTs(gameId), ts)) {
         const idx = GameCommon.getPlayerIndexById(gameId, playerId);
-        const diff = ts - GameCommon.getStartTs(gameId);
         if (idx === -1) {
-            GameLog.log(gameId, Protocol.LOG_ADD_PLAYER, playerId, diff);
+            GameLog.log(gameId, Protocol.LOG_ADD_PLAYER, playerId, ts);
         }
         else {
-            GameLog.log(gameId, Protocol.LOG_UPDATE_PLAYER, idx, diff);
+            GameLog.log(gameId, Protocol.LOG_UPDATE_PLAYER, idx, ts);
         }
     }
     GameCommon.addPlayer(gameId, playerId, ts);
@@ -1821,8 +1827,7 @@ function addPlayer(gameId, playerId, ts) {
 function handleInput(gameId, playerId, input, ts) {
     if (GameLog.shouldLog(GameCommon.getFinishTs(gameId), ts)) {
         const idx = GameCommon.getPlayerIndexById(gameId, playerId);
-        const diff = ts - GameCommon.getStartTs(gameId);
-        GameLog.log(gameId, Protocol.LOG_HANDLE_INPUT, idx, input, diff);
+        GameLog.log(gameId, Protocol.LOG_HANDLE_INPUT, idx, input, ts);
     }
     const ret = GameCommon.handleInput(gameId, playerId, input, ts);
     GameStorage.setDirty(gameId);

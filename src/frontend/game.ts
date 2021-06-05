@@ -590,6 +590,7 @@ export async function main(
       return false
     }
 
+    let GAME_TS = REPLAY.lastGameTs
     const next = async () => {
       if (REPLAY.logPointer + 1 >= REPLAY.log.length) {
         await queryNextReplayBatch(gameId)
@@ -614,18 +615,20 @@ export async function main(
         }
 
         const currLogEntry = REPLAY.log[REPLAY.logPointer]
-        const currTs: Timestamp = REPLAY.gameStartTs + currLogEntry[currLogEntry.length - 1]
+        const currTs: Timestamp = GAME_TS + currLogEntry[currLogEntry.length - 1]
+
         const nextLogEntry = REPLAY.log[nextIdx]
-        const nextTs: Timestamp = REPLAY.gameStartTs + nextLogEntry[nextLogEntry.length - 1]
+        const diffToNext = nextLogEntry[nextLogEntry.length - 1]
+        const nextTs: Timestamp = currTs + diffToNext
         if (nextTs > maxGameTs) {
           // next log entry is too far into the future
           if (REPLAY.skipNonActionPhases && (maxGameTs + 500 * Time.MS < nextTs)) {
-            const skipInterval = nextTs - currTs
-            maxGameTs += skipInterval
+            maxGameTs += diffToNext
           }
           break
         }
 
+        GAME_TS = currTs
         if (handleLogEntry(nextLogEntry, nextTs)) {
           RERENDER = true
         }

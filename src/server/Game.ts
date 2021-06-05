@@ -71,11 +71,10 @@ async function createGame(
 function addPlayer(gameId: string, playerId: string, ts: Timestamp): void {
   if (GameLog.shouldLog(GameCommon.getFinishTs(gameId), ts)) {
     const idx = GameCommon.getPlayerIndexById(gameId, playerId)
-    const diff = ts - GameCommon.getStartTs(gameId)
     if (idx === -1) {
-      GameLog.log(gameId, Protocol.LOG_ADD_PLAYER, playerId, diff)
+      GameLog.log(gameId, Protocol.LOG_ADD_PLAYER, playerId, ts)
     } else {
-      GameLog.log(gameId, Protocol.LOG_UPDATE_PLAYER, idx, diff)
+      GameLog.log(gameId, Protocol.LOG_UPDATE_PLAYER, idx, ts)
     }
   }
 
@@ -91,8 +90,7 @@ function handleInput(
 ): Array<Change> {
   if (GameLog.shouldLog(GameCommon.getFinishTs(gameId), ts)) {
     const idx = GameCommon.getPlayerIndexById(gameId, playerId)
-    const diff = ts - GameCommon.getStartTs(gameId)
-    GameLog.log(gameId, Protocol.LOG_HANDLE_INPUT, idx, input, diff)
+    GameLog.log(gameId, Protocol.LOG_HANDLE_INPUT, idx, input, ts)
   }
 
   const ret = GameCommon.handleInput(gameId, playerId, input, ts)

@@ -23,8 +23,8 @@ const shouldLog = (finishTs: Timestamp, currentTs: Timestamp): boolean => {
   return timeSinceGameEnd <= POST_GAME_LOG_DURATION
 }
 
-const filename = (gameId: string, offset: number) => `${DATA_DIR}/log_${gameId}-${offset}.log`
-const idxname = (gameId: string) => `${DATA_DIR}/log_${gameId}.idx.log`
+export const filename = (gameId: string, offset: number) => `${DATA_DIR}/log_${gameId}-${offset}.log`
+export const idxname = (gameId: string) => `${DATA_DIR}/log_${gameId}.idx.log`
 
 const create = (gameId: string): void => {
   const idxfile = idxname(gameId)
@@ -32,7 +32,9 @@ const create = (gameId: string): void => {
     const logfile = filename(gameId, 0)
     fs.appendFileSync(logfile, "")
     fs.appendFileSync(idxfile, JSON.stringify({
+      gameId: gameId,
       total: 0,
+      lastTs: 0,
       currentFile: logfile,
       perFile: LINES_PER_LOG_FILE,
     }))
@@ -44,15 +46,21 @@ const exists = (gameId: string): boolean => {
   return fs.existsSync(idxfile)
 }
 
-const _log = (gameId: string, ...args: Array<any>): void => {
+const _log = (gameId: string, type: number, ...args: Array<any>): void => {
   const idxfile = idxname(gameId)
   if (!fs.existsSync(idxfile)) {
     return
   }
 
+  const ts: Timestamp = args[args.length - 1]
+  const otherArgs: any[] = args.slice(0, -1)
+
   const idx = JSON.parse(fs.readFileSync(idxfile, 'utf-8'))
   idx.total++
-  fs.appendFileSync(idx.currentFile, JSON.stringify(args) + "\n")
+  const diff = ts - idx.lastTs
+  idx.lastTs = ts
+  const line = JSON.stringify([type, ...otherArgs, diff]).slice(1, -1)
+  fs.appendFileSync(idx.currentFile, line + "\n")
 
   // prepare next log file
   if (idx.total % idx.perFile === 0) {
@@ -79,7 +87,7 @@ const get = (
 
   const log = fs.readFileSync(file, 'utf-8').split("\n")
   return log.filter(line => !!line).map(line => {
-    return JSON.parse(line)
+    return JSON.parse(`[${line}]`)
   })
 }
 
