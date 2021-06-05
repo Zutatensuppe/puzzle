@@ -80,7 +80,9 @@ export default defineComponent({
         replayOnSpeedUp: () => {},
         replayOnSpeedDown: () => {},
         replayOnPauseToggle: () => {},
+        connect: () => {},
         disconnect: () => {},
+        unload: () => {},
       },
 
       replay: {
@@ -129,6 +131,7 @@ export default defineComponent({
     )
   },
   unmounted () {
+    this.g.unload()
     this.g.disconnect()
   },
   methods: {

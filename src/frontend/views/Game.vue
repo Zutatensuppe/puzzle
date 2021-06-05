@@ -78,8 +78,9 @@ export default defineComponent({
         onColorChange: (v: string) => {},
         onNameChange: (v: string) => {},
         onSoundsEnabledChange: (v: boolean) => {},
-        disconnect: () => {},
         connect: () => {},
+        disconnect: () => {},
+        unload: () => {},
       },
     }
   },
@@ -121,6 +122,7 @@ export default defineComponent({
     )
   },
   unmounted () {
+    this.g.unload()
     this.g.disconnect()
   },
   methods: {

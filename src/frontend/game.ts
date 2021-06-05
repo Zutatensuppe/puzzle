@@ -1,11 +1,11 @@
 "use strict"
 
-import {run} from './gameloop'
+import { GameLoopInstance, run } from './gameloop'
 import Camera from './Camera'
 import Graphics from './Graphics'
 import Debug from './Debug'
 import Communication from './Communication'
-import Util from './../common/Util'
+import Util, { logger } from './../common/Util'
 import PuzzleGraphics from './PuzzleGraphics'
 import Game from './../common/GameCommon'
 import fireworksController from './Fireworks'
@@ -28,6 +28,8 @@ declare global {
       DEBUG?: boolean
   }
 }
+
+const log = logger('game.ts')
 
 // @ts-ignore
 const images = import.meta.globEager('./*.png')
@@ -350,11 +352,20 @@ export async function main(
       }
       const gameObject: GameType = Util.decodeGame(replay.game)
       Game.setGame(gameObject.id, gameObject)
+
       REPLAY.requesting = false
       REPLAY.log = replay.log
       REPLAY.lastRealTs = Time.timestamp()
       REPLAY.gameStartTs = parseInt(REPLAY.log[0][4], 10)
       REPLAY.lastGameTs = REPLAY.gameStartTs
+      REPLAY.final = false
+      REPLAY.logPointer = 0
+      REPLAY.speeds = [0.5, 1, 2, 5, 10, 20, 50, 100, 250, 500]
+      REPLAY.speedIdx = 1
+      REPLAY.paused = false
+      REPLAY.dataOffset = 0
+      REPLAY.dataSize = 10000
+
       TIME = () => REPLAY.lastGameTs
     } else {
       throw '[ 2020-12-22 MODE invalid, must be play|replay ]'
@@ -491,8 +502,25 @@ export async function main(
     doSetSpeedStatus()
   }
 
+  const intervals: NodeJS.Timeout[] = []
+  const clearIntervals = () => {
+    intervals.forEach(inter => {
+      clearInterval(inter)
+    })
+  }
+
+  let gameLoopInstance: GameLoopInstance
+  const unload = () => {
+    clearIntervals()
+    if (gameLoopInstance) {
+      gameLoopInstance.stop()
+    }
+  }
+
   if (MODE === MODE_PLAY) {
-    setInterval(updateTimerElements, 1000)
+    intervals.push(setInterval(() => {
+      updateTimerElements()
+    }, 1000))
   } else if (MODE === MODE_REPLAY) {
     doSetSpeedStatus()
   }
@@ -528,7 +556,7 @@ export async function main(
   } else if (MODE === MODE_REPLAY) {
     // no external communication for replay mode,
     // only the REPLAY.log is relevant
-    const inter = setInterval(() => {
+    intervals.push(setInterval(() => {
       const realTs = Time.timestamp()
       if (REPLAY.requesting) {
         REPLAY.lastRealTs = realTs
@@ -555,7 +583,7 @@ export async function main(
         const nextIdx = REPLAY.logPointer + 1
         if (nextIdx >= REPLAY.log.length) {
           if (REPLAY.final) {
-            clearInterval(inter)
+            clearIntervals()
           }
           break
         }
@@ -592,7 +620,7 @@ export async function main(
       REPLAY.lastRealTs = realTs
       REPLAY.lastGameTs = maxGameTs
       updateTimerElements()
-    }, 50)
+    }, 50))
   }
 
   let _last_mouse_down: Point|null = null
@@ -808,7 +836,7 @@ export async function main(
     RERENDER = false
   }
 
-  run({
+  gameLoopInstance = run({
     update: onUpdate,
     render: onRender,
   })
@@ -844,5 +872,6 @@ export async function main(
     },
     disconnect: Communication.disconnect,
     connect: connect,
+    unload: unload,
   }
 }

@@ -6,7 +6,17 @@ interface GameLoopOptions {
   update: (step: number) => void
   render: (passed: number) => void
 }
-export const run = (options: GameLoopOptions): void => {
+
+export interface GameLoopInstance {
+  stop: () => void
+}
+
+export const run = (options: GameLoopOptions): GameLoopInstance => {
+  let stopped = false
+  const stop = () => {
+    stopped = true
+  }
+
   const fps = options.fps || 60
   const slow = options.slow || 1
   const update = options.update
@@ -28,10 +38,15 @@ export const run = (options: GameLoopOptions): void => {
     }
     render(dt / slow)
     last = now
-    raf(frame)
+    if (!stopped) {
+      raf(frame)
+    }
   }
 
   raf(frame)
+  return {
+    stop,
+  }
 }
 
 export default {
