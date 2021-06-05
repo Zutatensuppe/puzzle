@@ -80,7 +80,7 @@ app.get('/api/replay-data', async (req, res): Promise<void> => {
     res.status(404).send({ reason: 'no log found' })
     return
   }
-  const log = await GameLog.get(gameId, offset, size)
+  const log = GameLog.get(gameId, offset)
   let game: GameType|null = null
   if (offset === 0) {
     // also need the game

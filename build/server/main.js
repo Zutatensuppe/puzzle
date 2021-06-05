@@ -3,8 +3,6 @@ import express from 'express';
 import compression from 'compression';
 import multer from 'multer';
 import fs from 'fs';
-import readline from 'readline';
-import stream from 'stream';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
 import sizeOf from 'image-size';
@@ -1249,6 +1247,7 @@ const PUBLIC_DIR = `${BASE_DIR}/build/public/`;
 const DB_PATCHES_DIR = `${BASE_DIR}/src/dbpatches`;
 const DB_FILE = `${BASE_DIR}/data/db.sqlite`;
 
+const LINES_PER_LOG_FILE = 10000;
 const POST_GAME_LOG_DURATION = 5 * Time.MIN;
 const shouldLog = (finishTs, currentTs) => {
     // when not finished yet, always log
@@ -1260,54 +1259,52 @@ const shouldLog = (finishTs, currentTs) => {
     const timeSinceGameEnd = currentTs - finishTs;
     return timeSinceGameEnd <= POST_GAME_LOG_DURATION;
 };
-const filename = (gameId) => `${DATA_DIR}/log_${gameId}.log`;
+const filename = (gameId, offset) => `${DATA_DIR}/log_${gameId}-${offset}.log`;
+const idxname = (gameId) => `${DATA_DIR}/log_${gameId}.idx.log`;
 const create = (gameId) => {
-    const file = filename(gameId);
-    if (!fs.existsSync(file)) {
-        fs.appendFileSync(file, '');
+    const idxfile = idxname(gameId);
+    if (!fs.existsSync(idxfile)) {
+        const logfile = filename(gameId, 0);
+        fs.appendFileSync(logfile, "");
+        fs.appendFileSync(idxfile, JSON.stringify({
+            total: 0,
+            currentFile: logfile,
+            perFile: LINES_PER_LOG_FILE,
+        }));
     }
 };
 const exists = (gameId) => {
-    const file = filename(gameId);
-    return fs.existsSync(file);
+    const idxfile = idxname(gameId);
+    return fs.existsSync(idxfile);
 };
 const _log = (gameId, ...args) => {
-    const file = filename(gameId);
-    if (!fs.existsSync(file)) {
+    const idxfile = idxname(gameId);
+    if (!fs.existsSync(idxfile)) {
         return;
     }
-    const str = JSON.stringify(args);
-    fs.appendFileSync(file, str + "\n");
+    const idx = JSON.parse(fs.readFileSync(idxfile, 'utf-8'));
+    idx.total++;
+    fs.appendFileSync(idx.currentFile, JSON.stringify(args) + "\n");
+    // prepare next log file
+    if (idx.total % idx.perFile === 0) {
+        const logfile = filename(gameId, idx.total);
+        fs.appendFileSync(logfile, "");
+        idx.currentFile = logfile;
+    }
+    fs.writeFileSync(idxfile, JSON.stringify(idx));
 };
-const get = async (gameId, offset = 0, size = 10000) => {
-    const file = filename(gameId);
+const get = (gameId, offset = 0) => {
+    const idxfile = idxname(gameId);
+    if (!fs.existsSync(idxfile)) {
+        return [];
+    }
+    const file = filename(gameId, offset);
     if (!fs.existsSync(file)) {
         return [];
     }
-    return new Promise((resolve) => {
-        const instream = fs.createReadStream(file);
-        const outstream = new stream.Writable();
-        const rl = readline.createInterface(instream, outstream);
-        const lines = [];
-        let i = -1;
-        rl.on('line', (line) => {
-            if (!line) {
-                // skip empty
-                return;
-            }
-            i++;
-            if (offset > i) {
-                return;
-            }
-            if (offset + size <= i) {
-                rl.close();
-                return;
-            }
-            lines.push(JSON.parse(line));
-        });
-        rl.on('close', () => {
-            resolve(lines);
-        });
+    const log = fs.readFileSync(file, 'utf-8').split("\n");
+    return log.map(line => {
+        return JSON.parse(line);
     });
 };
 var GameLog = {
@@ -2061,7 +2058,7 @@ app.get('/api/replay-data', async (req, res) => {
         res.status(404).send({ reason: 'no log found' });
         return;
     }
-    const log = await GameLog.get(gameId, offset, size);
+    const log = GameLog.get(gameId, offset);
     let game = null;
     if (offset === 0) {
         // also need the game

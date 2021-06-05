@@ -69,7 +69,6 @@ interface Replay {
   skipNonActionPhases: boolean
   //
   dataOffset: number
-  dataSize: number
 }
 
 const shouldDrawPiece = (piece: Piece) => {
@@ -301,9 +300,8 @@ export async function main(
     lastRealTs: 0,
     lastGameTs: 0,
     gameStartTs: 0,
-    skipNonActionPhases: false,
+    skipNonActionPhases: true,
     dataOffset: 0,
-    dataSize: 10000,
   }
 
   Communication.onConnectionStateChange((state) => {
@@ -314,11 +312,10 @@ export async function main(
     gameId: string
   ): Promise<ReplayData> => {
     const offset = REPLAY.dataOffset
-    REPLAY.dataOffset += REPLAY.dataSize
+    REPLAY.dataOffset += 10000 // meh
     const replay: ReplayData = await Communication.requestReplayData(
       gameId,
-      offset,
-      REPLAY.dataSize
+      offset
     )
 
     // cut log that was already handled
@@ -326,7 +323,7 @@ export async function main(
     REPLAY.logPointer = 0
     REPLAY.log.push(...replay.log)
 
-    if (replay.log.length < REPLAY.dataSize) {
+    if (replay.log.length === 0) {
       REPLAY.final = true
     }
     return replay
@@ -340,10 +337,6 @@ export async function main(
       Game.setGame(gameObject.id, gameObject)
       TIME = () => Time.timestamp()
     } else if (MODE === MODE_REPLAY) {
-      REPLAY.logPointer = 0
-      REPLAY.dataSize = 10000
-      REPLAY.speeds = [0.5, 1, 2, 5, 10, 20, 50, 100, 250, 500]
-      REPLAY.speedIdx = 1
       const replay: ReplayData = await queryNextReplayBatch(gameId)
       if (!replay.game) {
         throw '[ 2021-05-29 no game received ]'
@@ -354,8 +347,6 @@ export async function main(
       REPLAY.lastRealTs = Time.timestamp()
       REPLAY.gameStartTs = parseInt(replay.log[0][4], 10)
       REPLAY.lastGameTs = REPLAY.gameStartTs
-      REPLAY.paused = false
-      REPLAY.skipNonActionPhases = false
 
       TIME = () => REPLAY.lastGameTs
     } else {
@@ -493,6 +484,10 @@ export async function main(
     doSetSpeedStatus()
   }
 
+  const replayOnSkipToggle = () => {
+    REPLAY.skipNonActionPhases = !REPLAY.skipNonActionPhases
+  }
+
   const intervals: NodeJS.Timeout[] = []
   let to: NodeJS.Timeout
   const clearIntervals = () => {
@@ -519,9 +514,6 @@ export async function main(
   } else if (MODE === MODE_REPLAY) {
     doSetSpeedStatus()
   }
-
-  // // TODO: remove (make changable via interface)
-  // REPLAY.skipNonActionPhases = true
 
   if (MODE === MODE_PLAY) {
     Communication.onServerChange((msg: ServerEvent) => {
@@ -608,10 +600,8 @@ export async function main(
         const nextTs: Timestamp = REPLAY.gameStartTs + nextLogEntry[nextLogEntry.length - 1]
         if (nextTs > maxGameTs) {
           // next log entry is too far into the future
-          if (REPLAY.skipNonActionPhases && (maxGameTs + 50 < nextTs)) {
+          if (REPLAY.skipNonActionPhases && (maxGameTs + 500 * Time.MS < nextTs)) {
             const skipInterval = nextTs - currTs
-            // lets skip to the next log entry
-            // log.info('skipping non-action, from', maxGameTs, skipInterval)
             maxGameTs += skipInterval
           }
           break
@@ -874,6 +864,7 @@ export async function main(
     replayOnSpeedUp,
     replayOnSpeedDown,
     replayOnPauseToggle,
+    replayOnSkipToggle,
     previewImageUrl,
     player: {
       background: playerBgColor(),

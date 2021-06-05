@@ -12,6 +12,12 @@
     >
       <div>
         <div>{{replayText}}</div>
+        <div>
+          <label>Skip no action phases: <input
+            type="checkbox"
+            v-model="skipNoAction"
+            @change="g.replayOnSkipToggle()" /></label>
+        </div>
         <button class="btn" @click="g.replayOnSpeedUp()">⏫</button>
         <button class="btn" @click="g.replayOnSpeedDown()">⏬</button>
         <button class="btn" @click="g.replayOnPauseToggle()">⏸️</button>
@@ -59,6 +65,7 @@ export default defineComponent({
       duration: 0,
       piecesDone: 0,
       piecesTotal: 0,
+      skipNoAction: true,
 
       overlay: '',
 
@@ -80,6 +87,7 @@ export default defineComponent({
         replayOnSpeedUp: () => {},
         replayOnSpeedDown: () => {},
         replayOnPauseToggle: () => {},
+        replayOnSkipToggle: () => {},
         connect: () => {},
         disconnect: () => {},
         unload: () => {},

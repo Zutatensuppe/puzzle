@@ -8,6 +8,7 @@ import { DATA_DIR } from './../server/Dirs'
 
 const log = logger('GameLog.js')
 
+const LINES_PER_LOG_FILE = 10000
 const POST_GAME_LOG_DURATION = 5 * Time.MIN
 
 const shouldLog = (finishTs: Timestamp, currentTs: Timestamp): boolean => {
@@ -22,62 +23,63 @@ const shouldLog = (finishTs: Timestamp, currentTs: Timestamp): boolean => {
   return timeSinceGameEnd <= POST_GAME_LOG_DURATION
 }
 
-const filename = (gameId: string) => `${DATA_DIR}/log_${gameId}.log`
+const filename = (gameId: string, offset: number) => `${DATA_DIR}/log_${gameId}-${offset}.log`
+const idxname = (gameId: string) => `${DATA_DIR}/log_${gameId}.idx.log`
 
 const create = (gameId: string): void => {
-  const file = filename(gameId)
-  if (!fs.existsSync(file)) {
-    fs.appendFileSync(file, '')
+  const idxfile = idxname(gameId)
+  if (!fs.existsSync(idxfile)) {
+    const logfile = filename(gameId, 0)
+    fs.appendFileSync(logfile, "")
+    fs.appendFileSync(idxfile, JSON.stringify({
+      total: 0,
+      currentFile: logfile,
+      perFile: LINES_PER_LOG_FILE,
+    }))
   }
 }
 
 const exists = (gameId: string): boolean => {
-  const file = filename(gameId)
-  return fs.existsSync(file)
+  const idxfile = idxname(gameId)
+  return fs.existsSync(idxfile)
 }
 
 const _log = (gameId: string, ...args: Array<any>): void => {
-  const file = filename(gameId)
-  if (!fs.existsSync(file)) {
+  const idxfile = idxname(gameId)
+  if (!fs.existsSync(idxfile)) {
     return
   }
-  const str = JSON.stringify(args)
-  fs.appendFileSync(file, str + "\n")
+
+  const idx = JSON.parse(fs.readFileSync(idxfile, 'utf-8'))
+  idx.total++
+  fs.appendFileSync(idx.currentFile, JSON.stringify(args) + "\n")
+
+  // prepare next log file
+  if (idx.total % idx.perFile === 0) {
+    const logfile = filename(gameId, idx.total)
+    fs.appendFileSync(logfile, "")
+    idx.currentFile = logfile
+  }
+  fs.writeFileSync(idxfile, JSON.stringify(idx))
 }
 
-const get = async (
+const get = (
   gameId: string,
   offset: number = 0,
-  size: number = 10000
-): Promise<any[]> => {
-  const file = filename(gameId)
+): any[] => {
+  const idxfile = idxname(gameId)
+  if (!fs.existsSync(idxfile)) {
+    return []
+  }
+
+  const file = filename(gameId, offset)
   if (!fs.existsSync(file)) {
     return []
   }
-  return new Promise((resolve) => {
-    const instream = fs.createReadStream(file)
-    const outstream = new stream.Writable()
-    const rl = readline.createInterface(instream, outstream)
-    const lines: any[] = []
-    let i = -1
-    rl.on('line', (line) => {
-      if (!line) {
-        // skip empty
-        return
-      }
-      i++
-      if (offset > i) {
-        return
-      }
-      if (offset + size <= i) {
-        rl.close()
-        return
-      }
-      lines.push(JSON.parse(line))
-    })
-    rl.on('close', () => {
-      resolve(lines)
-    })
+
+  const log = fs.readFileSync(file, 'utf-8').split("\n")
+  return log.map(line => {
+    return JSON.parse(line)
   })
 }
 

@@ -114,10 +114,9 @@ function connect(
 
 async function requestReplayData(
   gameId: string,
-  offset: number,
-  size: number
+  offset: number
 ): Promise<ReplayData> {
-  const args = { gameId, offset, size }
+  const args = { gameId, offset }
   const res = await fetch(`/api/replay-data${Util.asQueryArgs(args)}`)
   const json: ReplayData = await res.json()
   return json
