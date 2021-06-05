@@ -746,7 +746,6 @@ function handleInput(
       const finalPos = getFinalPiecePos(gameId, pieceIdx)
 
       let canSnapToFinal = false
-      console.log(getSnapMode(gameId))
       if (getSnapMode(gameId) === SnapMode.REAL) {
         // only can snap to final if any of the grouped pieces are
         // corner pieces
