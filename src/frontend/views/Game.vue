@@ -71,6 +71,7 @@ export default defineComponent({
           color: '',
           name: '',
           soundsEnabled: false,
+          soundsVolume: 100,
         },
         previewImageUrl: '',
         setHotkeys: (v: boolean) => {},
@@ -78,6 +79,7 @@ export default defineComponent({
         onColorChange: (v: string) => {},
         onNameChange: (v: string) => {},
         onSoundsEnabledChange: (v: boolean) => {},
+        onSoundsVolumeChange: (v: number) => {},
         connect: () => {},
         disconnect: () => {},
         unload: () => {},
@@ -99,6 +101,9 @@ export default defineComponent({
     })
     this.$watch(() => this.g.player.soundsEnabled, (value: boolean) => {
       this.g.onSoundsEnabledChange(value)
+    })
+    this.$watch(() => this.g.player.soundsVolume, (value: number) => {
+      this.g.onSoundsVolumeChange(value)
     })
     this.g = await main(
       `${this.$route.params.id}`,

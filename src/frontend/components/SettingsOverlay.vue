@@ -17,6 +17,20 @@
         <td><label>Sounds: </label></td>
         <td><input type="checkbox" v-model="modelValue.soundsEnabled" /></td>
       </tr>
+      <tr>
+        <td><label>Sounds Volume: </label></td>
+        <td class="sound-volume">
+          <span @click="decreaseVolume">🔉</span>
+          <input
+            type="range"
+            min="0"
+            max="100"
+            :value="modelValue.soundsVolume"
+            @change="updateVolume"
+            />
+          <span @click="increaseVolume">🔊</span>
+        </td>
+      </tr>
     </table>
   </div>
 </template>
@@ -30,7 +44,23 @@ export default defineComponent({
     'update:modelValue': null,
   },
   props: {
-    modelValue: Object,
+    modelValue: {
+      type: Object,
+      required: true,
+    },
+  },
+  methods: {
+    updateVolume (ev: Event): void {
+      (this.modelValue as any).soundsVolume = (ev.target as HTMLInputElement).value
+    },
+    decreaseVolume (): void {
+      const vol = parseInt(this.modelValue.soundsVolume, 10) - 5
+      this.modelValue.soundsVolume = Math.max(0, vol)
+    },
+    increaseVolume (): void {
+      const vol = parseInt(this.modelValue.soundsVolume, 10) + 5
+      this.modelValue.soundsVolume = Math.min(100, vol)
+    },
   },
   created () {
     // TODO: ts type PlayerSettings
@@ -40,3 +70,7 @@ export default defineComponent({
   },
 })
 </script>
+<style scoped>
+.sound-volume span { cursor: pointer; user-select: none; }
+.sound-volume input { vertical-align: middle; }
+</style>

@@ -439,6 +439,14 @@ export async function main(
   let finished = longFinished
   const justFinished = () => finished && !longFinished
 
+  const playerSoundVolume = (): number => {
+    const volume = localStorage.getItem('sound_volume')
+    if (volume === null) {
+      return 100
+    }
+    const vol = parseInt(volume, 10)
+    return isNaN(vol) ? 100 : vol
+  }
   const playerSoundEnabled = (): boolean => {
     const enabled = localStorage.getItem('sound_enabled')
     if (enabled === null) {
@@ -446,6 +454,13 @@ export async function main(
     }
     return enabled === '1'
   }
+
+  const playClick = () => {
+    const vol = playerSoundVolume()
+    clickAudio.volume = vol / 100
+    clickAudio.play()
+  }
+
   const playerBgColor = () => {
     return (Game.getPlayerBgColor(gameId, clientId)
         || localStorage.getItem('bg_color')
@@ -709,7 +724,7 @@ export async function main(
           ts,
           (playerId: string) => {
             if (playerSoundEnabled()) {
-              clickAudio.play()
+              playClick()
             }
           }
         )
@@ -889,6 +904,11 @@ export async function main(
     onSoundsEnabledChange: (value: boolean) => {
       localStorage.setItem('sound_enabled', value ? '1' : '0')
     },
+    onSoundsVolumeChange: (value: number) => {
+      log.info('vol changed', value)
+      localStorage.setItem('sound_volume', `${value}`)
+      playClick()
+    },
     replayOnSpeedUp,
     replayOnSpeedDown,
     replayOnPauseToggle,
@@ -899,6 +919,7 @@ export async function main(
       color: playerColor(),
       name: playerName(),
       soundsEnabled: playerSoundEnabled(),
+      soundsVolume: playerSoundVolume(),
     },
     disconnect: Communication.disconnect,
     connect: connect,
