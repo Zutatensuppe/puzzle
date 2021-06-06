@@ -463,6 +463,9 @@ export async function main(
   }
 
   const playerBgColor = () => {
+    if (MODE === MODE_REPLAY) {
+      return localStorage.getItem('bg_color') || '#222222'
+    }
     return (Game.getPlayerBgColor(gameId, clientId)
         || localStorage.getItem('bg_color')
         || '#222222')
