@@ -14,6 +14,7 @@ gallery", if possible!
         @dragover="onDragover"
         @dragleave="onDragleave">
         <!-- TODO: ...  -->
+        <div class="drop-target"></div>
         <div v-if="previewUrl" class="has-image">
           <span class="remove btn" @click="previewUrl=''">X</span>
           <responsive-image :src="previewUrl" />
@@ -212,9 +213,6 @@ export default defineComponent({
 .new-image-dialog .area-image.droppable {
   border: dashed 6px;
 }
-.area-image * {
-  pointer-events: none;
-}
 .new-image-dialog .area-image .has-image {
   position: relative;
   width: 100%;
@@ -255,5 +253,17 @@ export default defineComponent({
   position: absolute;
   top: 50%;
   transform: translate(-50%,-50%);
+}
+.area-image .drop-target {
+  display: none;
+}
+.area-image.droppable .drop-target {
+  pointer-events: none;
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 3;
 }
 </style>
