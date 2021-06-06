@@ -120,8 +120,8 @@ export default defineComponent({
         setDuration: (v: number) => { this.duration = v },
         setPiecesDone: (v: number) => { this.piecesDone = v },
         setPiecesTotal: (v: number) => { this.piecesTotal = v },
-        setConnectionState: (v: number) => { this.connectionState = v },
         togglePreview: () => { this.toggle('preview', false) },
+        setConnectionState: (v: number) => { this.connectionState = v },
         toggleSoundsEnabled: () => { this.g.player.soundsEnabled = !this.g.player.soundsEnabled },
       }
     )

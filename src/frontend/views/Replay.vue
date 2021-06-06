@@ -46,6 +46,7 @@ import PreviewOverlay from './../components/PreviewOverlay.vue'
 import HelpOverlay from './../components/HelpOverlay.vue'
 
 import { main, MODE_REPLAY } from './../game'
+import { Player } from '../../common/Types'
 
 export default defineComponent({
   name: 'replay',
@@ -58,8 +59,8 @@ export default defineComponent({
   },
   data() {
     return {
-      activePlayers: [] as Array<any>,
-      idlePlayers: [] as Array<any>,
+      activePlayers: [] as Array<Player>,
+      idlePlayers: [] as Array<Player>,
 
       finished: false,
       duration: 0,
@@ -129,8 +130,8 @@ export default defineComponent({
       MODE_REPLAY,
       this.$el,
       {
-        setActivePlayers: (v: Array<any>) => { this.activePlayers = v },
-        setIdlePlayers: (v: Array<any>) => { this.idlePlayers = v },
+        setActivePlayers: (v: Array<Player>) => { this.activePlayers = v },
+        setIdlePlayers: (v: Array<Player>) => { this.idlePlayers = v },
         setFinished: (v: boolean) => { this.finished = v },
         setDuration: (v: number) => { this.duration = v },
         setPiecesDone: (v: number) => { this.piecesDone = v },
