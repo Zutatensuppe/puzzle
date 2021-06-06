@@ -471,11 +471,17 @@ export async function main(
         || '#222222')
   }
   const playerColor = () => {
+    if (MODE === MODE_REPLAY) {
+      return localStorage.getItem('player_color') || '#ffffff'
+    }
     return (Game.getPlayerColor(gameId, clientId)
         || localStorage.getItem('player_color')
         || '#ffffff')
   }
   const playerName = () => {
+    if (MODE === MODE_REPLAY) {
+      return localStorage.getItem('player_name') || '#ffffff'
+    }
     return (Game.getPlayerName(gameId, clientId)
         || localStorage.getItem('player_name')
         || 'anon')
@@ -763,11 +769,15 @@ export async function main(
 
             _last_mouse_down = mouse
           }
+        } else if (type === Protocol.INPUT_EV_PLAYER_COLOR) {
+          updatePlayerCursorColor(evt[1])
         } else if (type === Protocol.INPUT_EV_MOUSE_DOWN) {
           const pos = { x: evt[1], y: evt[2] }
           _last_mouse_down = viewport.worldToViewport(pos)
+          updatePlayerCursorState(true)
         } else if (type === Protocol.INPUT_EV_MOUSE_UP) {
           _last_mouse_down = null
+          updatePlayerCursorState(false)
         } else if (type === Protocol.INPUT_EV_ZOOM_IN) {
           const pos = { x: evt[1], y: evt[2] }
           RERENDER = true
