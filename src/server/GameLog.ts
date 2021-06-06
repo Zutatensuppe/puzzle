@@ -24,7 +24,7 @@ const shouldLog = (finishTs: Timestamp, currentTs: Timestamp): boolean => {
 export const filename = (gameId: string, offset: number) => `${DATA_DIR}/log_${gameId}-${offset}.log`
 export const idxname = (gameId: string) => `${DATA_DIR}/log_${gameId}.idx.log`
 
-const create = (gameId: string): void => {
+const create = (gameId: string, ts: Timestamp): void => {
   const idxfile = idxname(gameId)
   if (!fs.existsSync(idxfile)) {
     const logfile = filename(gameId, 0)
@@ -32,7 +32,7 @@ const create = (gameId: string): void => {
     fs.appendFileSync(idxfile, JSON.stringify({
       gameId: gameId,
       total: 0,
-      lastTs: 0,
+      lastTs: ts,
       currentFile: logfile,
       perFile: LINES_PER_LOG_FILE,
     }))

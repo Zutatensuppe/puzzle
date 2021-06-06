@@ -51,7 +51,7 @@ async function createGame(
     snapMode
   )
 
-  GameLog.create(gameId)
+  GameLog.create(gameId, ts)
   GameLog.log(
     gameId,
     Protocol.LOG_HEADER,

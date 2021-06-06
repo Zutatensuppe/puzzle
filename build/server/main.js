@@ -1273,7 +1273,7 @@ const shouldLog = (finishTs, currentTs) => {
 };
 const filename = (gameId, offset) => `${DATA_DIR}/log_${gameId}-${offset}.log`;
 const idxname = (gameId) => `${DATA_DIR}/log_${gameId}.idx.log`;
-const create = (gameId) => {
+const create = (gameId, ts) => {
     const idxfile = idxname(gameId);
     if (!fs.existsSync(idxfile)) {
         const logfile = filename(gameId, 0);
@@ -1281,7 +1281,7 @@ const create = (gameId) => {
         fs.appendFileSync(idxfile, JSON.stringify({
             gameId: gameId,
             total: 0,
-            lastTs: 0,
+            lastTs: ts,
             currentFile: logfile,
             perFile: LINES_PER_LOG_FILE,
         }));
@@ -1806,7 +1806,7 @@ async function createGameObject(gameId, targetTiles, image, ts, scoreMode, shape
 }
 async function createGame(gameId, targetTiles, image, ts, scoreMode, shapeMode, snapMode) {
     const gameObject = await createGameObject(gameId, targetTiles, image, ts, scoreMode, shapeMode, snapMode);
-    GameLog.create(gameId);
+    GameLog.create(gameId, ts);
     GameLog.log(gameId, Protocol.LOG_HEADER, 1, targetTiles, image, ts, scoreMode, shapeMode, snapMode);
     GameCommon.setGame(gameObject.id, gameObject);
     GameStorage.setDirty(gameId);
