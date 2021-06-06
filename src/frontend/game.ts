@@ -122,19 +122,20 @@ function EventAdapter (
     if (!KEYS_ON) {
       return
     }
-    if (ev.key === 'Shift') {
+
+    if (ev.code === 'ShiftLeft' || ev.code === 'ShiftRight') {
       SHIFT = state
-    } else if (ev.key === 'ArrowUp' || ev.key === 'w' || ev.key === 'W') {
+    } else if (ev.code === 'ArrowUp' || ev.code === 'KeyW') {
       UP = state
-    } else if (ev.key === 'ArrowDown' || ev.key === 's' || ev.key === 'S') {
+    } else if (ev.code === 'ArrowDown' || ev.code === 'KeyS') {
       DOWN = state
-    } else if (ev.key === 'ArrowLeft' || ev.key === 'a' || ev.key === 'A') {
+    } else if (ev.code === 'ArrowLeft' || ev.code === 'KeyA') {
       LEFT = state
-    } else if (ev.key === 'ArrowRight' || ev.key === 'd' || ev.key === 'D') {
+    } else if (ev.code === 'ArrowRight' || ev.code === 'KeyD') {
       RIGHT = state
-    } else if (ev.key === 'q') {
+    } else if (ev.code === 'KeyQ') {
       ZOOM_OUT = state
-    } else if (ev.key === 'e') {
+    } else if (ev.code === 'KeyE') {
       ZOOM_IN = state
     }
   }
@@ -176,32 +177,32 @@ function EventAdapter (
     if (!KEYS_ON) {
       return
     }
-    if (ev.key === ' ') {
+    if (ev.code === 'Space') {
       addEvent([Protocol.INPUT_EV_TOGGLE_PREVIEW])
     }
 
     if (MODE === MODE_REPLAY) {
-      if (ev.key === 'I' || ev.key === 'i') {
+      if (ev.code === 'KeyI') {
         addEvent([Protocol.INPUT_EV_REPLAY_SPEED_UP])
       }
 
-      if (ev.key === 'O' || ev.key === 'o') {
+      if (ev.code === 'KeyO') {
         addEvent([Protocol.INPUT_EV_REPLAY_SPEED_DOWN])
       }
 
-      if (ev.key === 'P' || ev.key === 'p') {
+      if (ev.code === 'KeyP') {
         addEvent([Protocol.INPUT_EV_REPLAY_TOGGLE_PAUSE])
       }
     }
-    if (ev.key === 'F' || ev.key === 'f') {
+    if (ev.code === 'KeyF') {
       PIECE_VIEW_FIXED = !PIECE_VIEW_FIXED
       RERENDER = true
     }
-    if (ev.key === 'G' || ev.key === 'g') {
+    if (ev.code === 'KeyG') {
       PIECE_VIEW_LOOSE = !PIECE_VIEW_LOOSE
       RERENDER = true
     }
-    if (ev.key === 'M' || ev.key === 'm') {
+    if (ev.code === 'KeyM') {
       addEvent([Protocol.INPUT_EV_TOGGLE_SOUNDS])
     }
   })

@@ -56,14 +56,14 @@ export default defineComponent({
   },
   methods: {
     onKeyUp (ev: KeyboardEvent) {
-      if (ev.key === 'ArrowDown' && this.autocomplete.values.length > 0) {
+      if (ev.code === 'ArrowDown' && this.autocomplete.values.length > 0) {
         if (this.autocomplete.idx < this.autocomplete.values.length - 1) {
           this.autocomplete.idx++
         }
         ev.stopPropagation()
         return false
       }
-      if (ev.key === 'ArrowUp' && this.autocomplete.values.length > 0) {
+      if (ev.code === 'ArrowUp' && this.autocomplete.values.length > 0) {
         if (this.autocomplete.idx > 0) {
           this.autocomplete.idx--
         }
