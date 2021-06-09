@@ -1,4 +1,5 @@
 import fs from 'fs'
+import Protocol from '../common/Protocol'
 import Time from '../common/Time'
 import { Timestamp } from '../common/Types'
 import { logger } from './../common/Util'
@@ -27,13 +28,11 @@ export const idxname = (gameId: string) => `${DATA_DIR}/log_${gameId}.idx.log`
 const create = (gameId: string, ts: Timestamp): void => {
   const idxfile = idxname(gameId)
   if (!fs.existsSync(idxfile)) {
-    const logfile = filename(gameId, 0)
-    fs.appendFileSync(logfile, "")
     fs.appendFileSync(idxfile, JSON.stringify({
       gameId: gameId,
       total: 0,
       lastTs: ts,
-      currentFile: logfile,
+      currentFile: '',
       perFile: LINES_PER_LOG_FILE,
     }))
   }
@@ -50,23 +49,23 @@ const _log = (gameId: string, type: number, ...args: Array<any>): void => {
     return
   }
 
-  const ts: Timestamp = args[args.length - 1]
-  const otherArgs: any[] = args.slice(0, -1)
-
-  const idx = JSON.parse(fs.readFileSync(idxfile, 'utf-8'))
-  idx.total++
-  const diff = ts - idx.lastTs
-  idx.lastTs = ts
-  const line = JSON.stringify([type, ...otherArgs, diff]).slice(1, -1)
-  fs.appendFileSync(idx.currentFile, line + "\n")
-
-  // prepare next log file
-  if (idx.total % idx.perFile === 0) {
-    const logfile = filename(gameId, idx.total)
-    fs.appendFileSync(logfile, "")
-    idx.currentFile = logfile
+  const idxObj = JSON.parse(fs.readFileSync(idxfile, 'utf-8'))
+  if (idxObj.total % idxObj.perFile === 0) {
+    idxObj.currentFile = filename(gameId, idxObj.total)
   }
-  fs.writeFileSync(idxfile, JSON.stringify(idx))
+
+  const tsIdx = type === Protocol.LOG_HEADER ? 3 : (args.length - 1)
+  const ts: Timestamp = args[tsIdx]
+  if (type !== Protocol.LOG_HEADER) {
+    // for everything but header save the diff to last log entry
+    args[tsIdx] = ts - idxObj.lastTs
+  }
+  const line = JSON.stringify([type, ...args]).slice(1, -1)
+  fs.appendFileSync(idxObj.currentFile, line + "\n")
+
+  idxObj.total++
+  idxObj.lastTs = ts
+  fs.writeFileSync(idxfile, JSON.stringify(idxObj))
 }
 
 const get = (
