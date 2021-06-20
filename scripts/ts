@@ -1,3 +1,3 @@
 #!/bin/sh -e
 
-node --max-old-space-size=64 --experimental-specifier-resolution=node --loader ts-node/esm $@
+node --max-old-space-size=256 --experimental-specifier-resolution=node --loader ts-node/esm $@
