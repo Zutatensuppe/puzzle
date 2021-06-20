@@ -176,11 +176,16 @@ app.post('/api/upload', (req, res): void => {
       res.status(400).send("Something went wrong!");
     }
 
+    const dim = await Images.getDimensions(
+      `${UPLOAD_DIR}/${req.file.filename}`
+    )
     const imageId = db.insert('images', {
       filename: req.file.filename,
       filename_original: req.file.originalname,
       title: req.body.title || '',
       created: Time.timestamp(),
+      width: dim.w,
+      height: dim.h,
     })
 
     if (req.body.tags) {

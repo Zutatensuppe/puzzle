@@ -1,0 +1,22 @@
+-- Add width/height to images table
+
+CREATE TABLE images_new (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+
+  created TIMESTAMP NOT NULL,
+
+  filename TEXT NOT NULL UNIQUE,
+  filename_original TEXT NOT NULL,
+  title TEXT NOT NULL,
+
+  width INTEGER NOT NULL,
+  height INTEGER NOT NULL
+);
+
+INSERT INTO images_new
+SELECT id, created, filename, filename_original, title, 0, 0
+FROM images;
+
+DROP TABLE images;
+
+ALTER TABLE images_new RENAME TO images;
