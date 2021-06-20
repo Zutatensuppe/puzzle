@@ -1410,6 +1410,8 @@ const imageFromDb = (db, imageId) => {
         title: i.title,
         tags: getTags(db, i.id),
         created: i.created * 1000,
+        width: i.width,
+        height: i.height,
     };
 };
 const allImagesFromDb = (db, tagSlugs, orderBy) => {
@@ -1447,8 +1449,13 @@ inner join images i on i.id = ixc.image_id ${where.sql};
         title: i.title,
         tags: getTags(db, i.id),
         created: i.created * 1000,
+        width: i.width,
+        height: i.height,
     }));
 };
+/**
+ * @deprecated old function, now database is used
+ */
 const allImagesFromDisk = (tags, sort) => {
     let images = fs.readdirSync(UPLOAD_DIR)
         .filter(f => f.toLowerCase().match(/\.(jpe?g|webp|png)$/))
@@ -1460,6 +1467,8 @@ const allImagesFromDisk = (tags, sort) => {
         title: f.replace(/\.[a-z]+$/, ''),
         tags: [],
         created: fs.statSync(`${UPLOAD_DIR}/${f}`).mtime.getTime(),
+        width: 0,
+        height: 0, // may have to fill when the function is used again
     }));
     switch (sort) {
         case 'alpha_asc':

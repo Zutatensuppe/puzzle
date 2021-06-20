@@ -6,7 +6,10 @@
         <div class="has-image">
           <responsive-image :src="image.url" :title="image.title" />
         </div>
-        <div class="image-title" v-if="image.title">"{{image.title}}"</div>
+        <div class="image-title" v-if="image.title || image.width || image.height">
+          <span class="image-title-title" v-if="image.title">"{{image.title}}"</span>
+          <span class="image-title-dim" v-if="image.width || image.height">({{image.width}} ✕ {{image.height}})</span>
+        </div>
       </div>
 
       <div class="area-settings">
@@ -18,27 +21,34 @@
           <tr>
             <td><label>Scoring: </label></td>
             <td>
-              <label><input type="radio" v-model="scoreMode" value="1" /> Any (Score when pieces are connected to each other or on final location)</label>
+              <label><input type="radio" v-model="scoreMode" value="1" />
+              Any (Score when pieces are connected to each other or on final location)</label>
               <br />
-              <label><input type="radio" v-model="scoreMode" value="0" /> Final (Score when pieces are put to their final location)</label>
+              <label><input type="radio" v-model="scoreMode" value="0" />
+              Final (Score when pieces are put to their final location)</label>
             </td>
           </tr>
           <tr>
             <td><label>Shapes: </label></td>
             <td>
-              <label><input type="radio" v-model="shapeMode" value="0" /> Normal</label>
+              <label><input type="radio" v-model="shapeMode" value="0" />
+              Normal</label>
               <br />
-              <label><input type="radio" v-model="shapeMode" value="1" /> Any (flat pieces can occur anywhere)</label>
+              <label><input type="radio" v-model="shapeMode" value="1" />
+              Any (flat pieces can occur anywhere)</label>
               <br />
-              <label><input type="radio" v-model="shapeMode" value="2" /> Flat (all pieces flat on all sides)</label>
+              <label><input type="radio" v-model="shapeMode" value="2" />
+              Flat (all pieces flat on all sides)</label>
             </td>
           </tr>
           <tr>
             <td><label>Snapping: </label></td>
             <td>
-              <label><input type="radio" v-model="snapMode" value="0" /> Normal (pieces snap to final destination and to each other)</label>
+              <label><input type="radio" v-model="snapMode" value="0" />
+              Normal (pieces snap to final destination and to each other)</label>
               <br />
-              <label><input type="radio" v-model="snapMode" value="1" /> Real (pieces snap only to corners, already snapped pieces and to each other)</label>
+              <label><input type="radio" v-model="snapMode" value="1" />
+              Real (pieces snap only to corners, already snapped pieces and to each other)</label>
             </td>
           </tr>
         </table>
@@ -192,4 +202,8 @@ export default defineComponent({
   top: .5em;
   left: .5em;
 }
+
+.new-game-dialog .image-title > span { margin-right: .5em; }
+.new-game-dialog .image-title > span:last-child { margin-right: 0; }
+.image-title-dim { display: inline-block; white-space: no-wrap; }
 </style>

@@ -26,7 +26,9 @@ interface ImageInfo
   url: string
   title: string
   tags: Tag[]
-  created: Timestamp,
+  created: Timestamp
+  width: number
+  height: number
 }
 
 const resizeImage = async (filename: string): Promise<void> => {
@@ -109,6 +111,8 @@ const imageFromDb = (db: Db, imageId: number): ImageInfo => {
     title: i.title,
     tags: getTags(db, i.id),
     created: i.created * 1000,
+    width: i.width,
+    height: i.height,
   }
 }
 
@@ -153,9 +157,14 @@ inner join images i on i.id = ixc.image_id ${where.sql};
     title: i.title,
     tags: getTags(db, i.id),
     created: i.created * 1000,
+    width: i.width,
+    height: i.height,
   }))
 }
 
+/**
+ * @deprecated old function, now database is used
+ */
 const allImagesFromDisk = (
   tags: string[],
   sort: string
@@ -170,6 +179,8 @@ const allImagesFromDisk = (
       title: f.replace(/\.[a-z]+$/, ''),
       tags: [] as Tag[],
       created: fs.statSync(`${UPLOAD_DIR}/${f}`).mtime.getTime(),
+      width: 0, // may have to fill when the function is used again
+      height: 0, // may have to fill when the function is used again
     }))
 
   switch (sort) {
