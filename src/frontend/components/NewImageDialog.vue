@@ -49,10 +49,21 @@ gallery", if possible!
       </div>
 
       <div class="area-buttons">
-        <button class="btn" :disabled="!canPostToGallery" @click="postToGallery">🖼️ Post to gallery</button>
-        <button class="btn" :disabled="!canSetupGameClick" @click="setupGameClick">🧩 Post to gallery <br /> + set up game</button>
+        <button class="btn"
+          :disabled="!canPostToGallery"
+          @click="postToGallery"
+        >
+          <template v-if="uploading === 'postToGallery'">Uploading ({{uploadProgressPercent}}%)</template>
+          <template v-else>🖼️ Post to gallery</template>
+        </button>
+        <button class="btn"
+          :disabled="!canSetupGameClick"
+          @click="setupGameClick"
+        >
+          <template v-if="uploading === 'setupGame'">Uploading ({{uploadProgressPercent}}%)</template>
+          <template v-else>🧩 Post to gallery <br /> + set up game</template>
+        </button>
       </div>
-
     </div>
   </div>
 </template>
@@ -75,6 +86,12 @@ export default defineComponent({
     autocompleteTags: {
       type: Function,
     },
+    uploadProgress: {
+      type: Number,
+    },
+    uploading: {
+      type: String,
+    },
   },
   emits: {
     bgclick: null,
@@ -91,10 +108,19 @@ export default defineComponent({
     }
   },
   computed: {
+    uploadProgressPercent (): number {
+      return this.uploadProgress ? Math.round(this.uploadProgress * 100) : 0
+    },
     canPostToGallery (): boolean {
+      if (this.uploading) {
+        return false
+      }
       return !!(this.previewUrl && this.file)
     },
     canSetupGameClick (): boolean {
+      if (this.uploading) {
+        return false
+      }
       return !!(this.previewUrl && this.file)
     },
   },

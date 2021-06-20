@@ -44,8 +44,11 @@ in jigsawpuzzles.io
       v-if="dialog==='new-image'"
       :autocompleteTags="autocompleteTags"
       @bgclick="dialog=''"
+      :uploadProgress="uploadProgress"
+      :uploading="uploading"
       @postToGalleryClick="postToGalleryClick"
-      @setupGameClick="setupGameClick" />
+      @setupGameClick="setupGameClick"
+      />
     <edit-image-dialog
       v-if="dialog==='edit-image'"
       :autocompleteTags="autocompleteTags"
@@ -61,7 +64,7 @@ in jigsawpuzzles.io
 </template>
 
 <script lang="ts">
-import { defineComponent, PropType } from 'vue'
+import { defineComponent } from 'vue'
 
 import ImageLibrary from './../components/ImageLibrary.vue'
 import NewImageDialog from './../components/NewImageDialog.vue'
@@ -69,6 +72,7 @@ import EditImageDialog from './../components/EditImageDialog.vue'
 import NewGameDialog from './../components/NewGameDialog.vue'
 import { GameSettings, Image, Tag } from '../../common/Types'
 import Util from '../../common/Util'
+import xhr from '../xhr'
 
 export default defineComponent({
   components: {
@@ -97,6 +101,9 @@ export default defineComponent({
       } as Image,
 
       dialog: '',
+
+      uploading: '',
+      uploadProgress: 0,
     }
   },
   async created() {
@@ -143,15 +150,18 @@ export default defineComponent({
       this.dialog = 'edit-image'
     },
     async uploadImage (data: any) {
+      this.uploadProgress = 0
       const formData = new FormData();
       formData.append('file', data.file, data.file.name);
       formData.append('title', data.title)
       formData.append('tags', data.tags)
-
-      const res = await fetch('/api/upload', {
-        method: 'post',
+      const res = await xhr.post('/api/upload', {
         body: formData,
+        onUploadProgress: (evt: ProgressEvent<XMLHttpRequestEventTarget>): void => {
+          this.uploadProgress = evt.loaded / evt.total
+        },
       })
+      this.uploadProgress = 1
       return await res.json()
     },
     async saveImage (data: any) {
@@ -175,12 +185,16 @@ export default defineComponent({
       await this.loadImages()
     },
     async postToGalleryClick(data: any) {
+      this.uploading = 'postToGallery'
       await this.uploadImage(data)
+      this.uploading = ''
       this.dialog = ''
       await this.loadImages()
     },
     async setupGameClick (data: any) {
+      this.uploading = 'setupGame'
       const image = await this.uploadImage(data)
+      this.uploading = ''
       this.loadImages() // load images in background
       this.image = image
       this.dialog = 'new-game'
