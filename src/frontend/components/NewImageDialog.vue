@@ -210,7 +210,8 @@ export default defineComponent({
   height: 90%;
   width: 80%;
 }
-@media (max-width: 1400px) {
+@media (max-width: 1400px) and (min-height: 720px),
+       (max-width: 1000px) {
   .new-image-dialog .overlay-content {
     grid-template-columns: auto;
     grid-template-rows: 1fr min-content min-content;
