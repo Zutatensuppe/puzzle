@@ -528,10 +528,6 @@ export async function main(
     doSetSpeedStatus()
   }
 
-  const replayOnSkipToggle = () => {
-    REPLAY.skipNonActionPhases = !REPLAY.skipNonActionPhases
-  }
-
   const intervals: NodeJS.Timeout[] = []
   let to: NodeJS.Timeout
   const clearIntervals = () => {
@@ -926,7 +922,6 @@ export async function main(
     replayOnSpeedUp,
     replayOnSpeedDown,
     replayOnPauseToggle,
-    replayOnSkipToggle,
     previewImageUrl,
     player: {
       background: playerBgColor(),
