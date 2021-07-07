@@ -211,6 +211,9 @@ function EventAdapter (
     if (ev.code === 'KeyN') {
       addEvent([Protocol.INPUT_EV_TOGGLE_PLAYER_NAMES])
     }
+    if (ev.code === 'KeyC') {
+      addEvent([Protocol.INPUT_EV_CENTER_FIT_PUZZLE])
+    }
   })
 
   const addEvent = (event: GameEvent) => {
@@ -416,11 +419,33 @@ export async function main(
   // initialize some view data
   // this global data will change according to input events
   const viewport = Camera()
-  // center viewport
-  viewport.move(
-    -(TABLE_WIDTH - canvas.width) /2,
-    -(TABLE_HEIGHT - canvas.height) /2
-  )
+
+  const centerPuzzle = () => {
+    // center on the puzzle
+    viewport.reset()
+    viewport.move(
+      -(TABLE_WIDTH - canvas.width) /2,
+      -(TABLE_HEIGHT - canvas.height) /2
+    )
+
+    // zoom viewport to fit whole puzzle in
+    const x = viewport.worldDimToViewport(BOARD_DIM)
+    const border = 20
+    const targetW = canvas.width - (border * 2)
+    const targetH = canvas.height - (border * 2)
+    if (
+      (x.w > targetW || x.h > targetH)
+      || (x.w < targetW && x.h < targetH)
+    ) {
+      const zoom = Math.min(targetW / x.w, targetH / x.h)
+      viewport.setZoom(zoom, {
+        x: canvas.width / 2,
+        y: canvas.height / 2,
+      })
+    }
+  }
+
+  centerPuzzle()
 
   const evts = EventAdapter(canvas, window, viewport, MODE)
 
@@ -717,6 +742,8 @@ export async function main(
           HUD.toggleSoundsEnabled()
         } else if (type === Protocol.INPUT_EV_TOGGLE_PLAYER_NAMES) {
           HUD.togglePlayerNames()
+        } else if (type === Protocol.INPUT_EV_CENTER_FIT_PUZZLE) {
+          centerPuzzle()
         }
 
         // LOCAL + SERVER CHANGES
@@ -787,6 +814,8 @@ export async function main(
           HUD.toggleSoundsEnabled()
         } else if (type === Protocol.INPUT_EV_TOGGLE_PLAYER_NAMES) {
           HUD.togglePlayerNames()
+        } else if (type === Protocol.INPUT_EV_CENTER_FIT_PUZZLE) {
+          centerPuzzle()
         }
       }
     }

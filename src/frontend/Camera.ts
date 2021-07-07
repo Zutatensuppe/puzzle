@@ -11,6 +11,12 @@ export default function Camera () {
   let y = 0
   let curZoom = 1
 
+  const reset = () => {
+    x = 0
+    y = 0
+    curZoom = 1
+  }
+
   const move = (byX: number, byY: number) => {
     x += byX / curZoom
     y += byY / curZoom
@@ -130,9 +136,11 @@ export default function Camera () {
 
   return {
     getCurrentZoom: () => curZoom,
+    reset,
     move,
     canZoom,
     zoom,
+    setZoom,
     worldToViewport,
     worldToViewportRaw,
     worldDimToViewport, // not used outside
