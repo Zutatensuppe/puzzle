@@ -31,6 +31,10 @@
           <span @click="increaseVolume">🔊</span>
         </td>
       </tr>
+      <tr>
+        <td><label>Show player names: </label></td>
+        <td><input type="checkbox" v-model="modelValue.showPlayerNames" /></td>
+      </tr>
     </table>
   </div>
 </template>

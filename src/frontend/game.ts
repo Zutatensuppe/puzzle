@@ -11,6 +11,8 @@ import Game from './../common/GameCommon'
 import fireworksController from './Fireworks'
 import Protocol from '../common/Protocol'
 import Time from '../common/Time'
+import settings from './settings'
+import { SETTINGS } from './settings'
 import { Dim, Point } from '../common/Geometry'
 import {
   FixedLengthArray,
@@ -53,6 +55,7 @@ interface Hud {
   setConnectionState: (v: number) => void
   togglePreview: () => void
   toggleSoundsEnabled: () => void
+  togglePlayerNames: () => void
   setReplaySpeed?: (v: number) => void
   setReplayPaused?: (v: boolean) => void
 }
@@ -204,6 +207,9 @@ function EventAdapter (
     }
     if (ev.code === 'KeyM') {
       addEvent([Protocol.INPUT_EV_TOGGLE_SOUNDS])
+    }
+    if (ev.code === 'KeyN') {
+      addEvent([Protocol.INPUT_EV_TOGGLE_PLAYER_NAMES])
     }
   })
 
@@ -441,19 +447,13 @@ export async function main(
   const justFinished = () => finished && !longFinished
 
   const playerSoundVolume = (): number => {
-    const volume = localStorage.getItem('sound_volume')
-    if (volume === null) {
-      return 100
-    }
-    const vol = parseInt(volume, 10)
-    return isNaN(vol) ? 100 : vol
+    return settings.getInt(SETTINGS.SOUND_VOLUME, 100)
   }
   const playerSoundEnabled = (): boolean => {
-    const enabled = localStorage.getItem('sound_enabled')
-    if (enabled === null) {
-      return false
-    }
-    return enabled === '1'
+    return settings.getBool(SETTINGS.SOUND_ENABLED, false)
+  }
+  const showPlayerNames = (): boolean => {
+    return settings.getBool(SETTINGS.SHOW_PLAYER_NAMES, true)
   }
 
   const playClick = () => {
@@ -464,27 +464,24 @@ export async function main(
 
   const playerBgColor = () => {
     if (MODE === MODE_REPLAY) {
-      return localStorage.getItem('bg_color') || '#222222'
+      return settings.getStr(SETTINGS.COLOR_BACKGROUND, '#222222')
     }
-    return (Game.getPlayerBgColor(gameId, clientId)
-        || localStorage.getItem('bg_color')
-        || '#222222')
+    return Game.getPlayerBgColor(gameId, clientId)
+        || settings.getStr(SETTINGS.COLOR_BACKGROUND, '#222222')
   }
   const playerColor = () => {
     if (MODE === MODE_REPLAY) {
-      return localStorage.getItem('player_color') || '#ffffff'
+      return settings.getStr(SETTINGS.PLAYER_COLOR, '#ffffff')
     }
-    return (Game.getPlayerColor(gameId, clientId)
-        || localStorage.getItem('player_color')
-        || '#ffffff')
+    return Game.getPlayerColor(gameId, clientId)
+        || settings.getStr(SETTINGS.PLAYER_COLOR, '#ffffff')
   }
   const playerName = () => {
     if (MODE === MODE_REPLAY) {
-      return localStorage.getItem('player_name') || '#ffffff'
+      return settings.getStr(SETTINGS.PLAYER_NAME, 'anon')
     }
-    return (Game.getPlayerName(gameId, clientId)
-        || localStorage.getItem('player_name')
-        || 'anon')
+    return Game.getPlayerName(gameId, clientId)
+        || settings.getStr(SETTINGS.PLAYER_NAME, 'anon')
   }
 
   let cursorDown: string = ''
@@ -718,6 +715,8 @@ export async function main(
           HUD.togglePreview()
         } else if (type === Protocol.INPUT_EV_TOGGLE_SOUNDS) {
           HUD.toggleSoundsEnabled()
+        } else if (type === Protocol.INPUT_EV_TOGGLE_PLAYER_NAMES) {
+          HUD.togglePlayerNames()
         }
 
         // LOCAL + SERVER CHANGES
@@ -784,6 +783,10 @@ export async function main(
           viewport.zoom('out', viewport.worldToViewport(pos))
         } else if (type === Protocol.INPUT_EV_TOGGLE_PREVIEW) {
           HUD.togglePreview()
+        } else if (type === Protocol.INPUT_EV_TOGGLE_SOUNDS) {
+          HUD.toggleSoundsEnabled()
+        } else if (type === Protocol.INPUT_EV_TOGGLE_PLAYER_NAMES) {
+          HUD.togglePlayerNames()
         }
       }
     }
@@ -859,10 +862,12 @@ export async function main(
         bmp = await getPlayerCursor(p)
         pos = viewport.worldToViewport(p)
         ctx.drawImage(bmp, pos.x - CURSOR_W_2, pos.y - CURSOR_H_2)
-        // performance:
-        // not drawing text directly here, to have less ctx
-        // switches between drawImage and fillTxt
-        texts.push([`${p.name} (${p.points})`, pos.x, pos.y + CURSOR_H])
+        if (showPlayerNames()) {
+          // performance:
+          // not drawing text directly here, to have less ctx
+          // switches between drawImage and fillTxt
+          texts.push([`${p.name} (${p.points})`, pos.x, pos.y + CURSOR_H])
+        }
       }
     }
 
@@ -900,24 +905,26 @@ export async function main(
       evts.setHotkeys(state)
     },
     onBgChange: (value: string) => {
-      localStorage.setItem('bg_color', value)
+      settings.setStr(SETTINGS.COLOR_BACKGROUND, value)
       evts.addEvent([Protocol.INPUT_EV_BG_COLOR, value])
     },
     onColorChange: (value: string) => {
-      localStorage.setItem('player_color', value)
+      settings.setStr(SETTINGS.PLAYER_COLOR, value)
       evts.addEvent([Protocol.INPUT_EV_PLAYER_COLOR, value])
     },
     onNameChange: (value: string) => {
-      localStorage.setItem('player_name', value)
+      settings.setStr(SETTINGS.PLAYER_NAME, value)
       evts.addEvent([Protocol.INPUT_EV_PLAYER_NAME, value])
     },
     onSoundsEnabledChange: (value: boolean) => {
-      localStorage.setItem('sound_enabled', value ? '1' : '0')
+      settings.setBool(SETTINGS.SOUND_ENABLED, value)
     },
     onSoundsVolumeChange: (value: number) => {
-      log.info('vol changed', value)
-      localStorage.setItem('sound_volume', `${value}`)
+      settings.setInt(SETTINGS.SOUND_VOLUME, value)
       playClick()
+    },
+    onShowPlayerNamesChange: (value: boolean) => {
+      settings.setBool(SETTINGS.SHOW_PLAYER_NAMES, value)
     },
     replayOnSpeedUp,
     replayOnSpeedDown,
@@ -929,6 +936,7 @@ export async function main(
       name: playerName(),
       soundsEnabled: playerSoundEnabled(),
       soundsVolume: playerSoundVolume(),
+      showPlayerNames: showPlayerNames(),
     },
     disconnect: Communication.disconnect,
     connect: connect,

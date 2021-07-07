@@ -12,6 +12,8 @@
       <tr><td>🖼️ Toggle preview:</td><td><div><kbd>Space</kbd></div></td></tr>
       <tr><td>🧩✔️ Toggle fixed pieces:</td><td><div><kbd>F</kbd></div></td></tr>
       <tr><td>🧩❓ Toggle loose pieces:</td><td><div><kbd>G</kbd></div></td></tr>
+
+      <tr><td>👤 Toggle player names:</td><td><div><kbd>N</kbd></div></td></tr>
       <tr><td>🔉 Toggle sounds:</td><td><div><kbd>M</kbd></div></td></tr>
 
       <tr><td>⏫ Speed up (replay):</td><td><div><kbd>I</kbd></div></td></tr>
