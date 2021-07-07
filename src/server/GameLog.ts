@@ -1,7 +1,7 @@
 import fs from 'fs'
 import Protocol from '../common/Protocol'
 import Time from '../common/Time'
-import { Timestamp } from '../common/Types'
+import { DefaultScoreMode, DefaultShapeMode, DefaultSnapMode, Timestamp } from '../common/Types'
 import { logger } from './../common/Util'
 import { DATA_DIR } from './../server/Dirs'
 
@@ -82,10 +82,16 @@ const get = (
     return []
   }
 
-  const log = fs.readFileSync(file, 'utf-8').split("\n")
-  return log.filter(line => !!line).map(line => {
+  const lines = fs.readFileSync(file, 'utf-8').split("\n")
+  const log = lines.filter(line => !!line).map(line => {
     return JSON.parse(`[${line}]`)
   })
+  if (offset === 0 && log.length > 0) {
+    log[0][5] = DefaultScoreMode(log[0][5])
+    log[0][6] = DefaultShapeMode(log[0][6])
+    log[0][7] = DefaultSnapMode(log[0][7])
+  }
+  return log
 }
 
 export default {

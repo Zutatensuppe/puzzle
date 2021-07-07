@@ -170,11 +170,11 @@ function setImageUrl(gameId: string, imageUrl: string): void {
 }
 
 function getScoreMode(gameId: string): ScoreMode {
-  return GAMES[gameId].scoreMode || ScoreMode.FINAL
+  return GAMES[gameId].scoreMode
 }
 
 function getSnapMode(gameId: string): SnapMode {
-  return GAMES[gameId].snapMode || SnapMode.NORMAL
+  return GAMES[gameId].snapMode
 }
 
 function isFinished(gameId: string): boolean {

@@ -11,29 +11,6 @@ import sharp from 'sharp';
 import v8 from 'v8';
 import bsqlite from 'better-sqlite3';
 
-var PieceEdge;
-(function (PieceEdge) {
-    PieceEdge[PieceEdge["Flat"] = 0] = "Flat";
-    PieceEdge[PieceEdge["Out"] = 1] = "Out";
-    PieceEdge[PieceEdge["In"] = -1] = "In";
-})(PieceEdge || (PieceEdge = {}));
-var ScoreMode;
-(function (ScoreMode) {
-    ScoreMode[ScoreMode["FINAL"] = 0] = "FINAL";
-    ScoreMode[ScoreMode["ANY"] = 1] = "ANY";
-})(ScoreMode || (ScoreMode = {}));
-var ShapeMode;
-(function (ShapeMode) {
-    ShapeMode[ShapeMode["NORMAL"] = 0] = "NORMAL";
-    ShapeMode[ShapeMode["ANY"] = 1] = "ANY";
-    ShapeMode[ShapeMode["FLAT"] = 2] = "FLAT";
-})(ShapeMode || (ShapeMode = {}));
-var SnapMode;
-(function (SnapMode) {
-    SnapMode[SnapMode["NORMAL"] = 0] = "NORMAL";
-    SnapMode[SnapMode["REAL"] = 1] = "REAL";
-})(SnapMode || (SnapMode = {}));
-
 class Rng {
     constructor(seed) {
         this.rand_high = seed || 0xDEADC0DE;
@@ -175,9 +152,9 @@ function encodeGame(data) {
         data.puzzle,
         data.players,
         data.evtInfos,
-        data.scoreMode || ScoreMode.FINAL,
-        data.shapeMode || ShapeMode.ANY,
-        data.snapMode || SnapMode.NORMAL,
+        data.scoreMode,
+        data.shapeMode,
+        data.snapMode,
     ];
 }
 function decodeGame(data) {
@@ -494,6 +471,47 @@ var Time = {
     durationStr,
 };
 
+var PieceEdge;
+(function (PieceEdge) {
+    PieceEdge[PieceEdge["Flat"] = 0] = "Flat";
+    PieceEdge[PieceEdge["Out"] = 1] = "Out";
+    PieceEdge[PieceEdge["In"] = -1] = "In";
+})(PieceEdge || (PieceEdge = {}));
+var ScoreMode;
+(function (ScoreMode) {
+    ScoreMode[ScoreMode["FINAL"] = 0] = "FINAL";
+    ScoreMode[ScoreMode["ANY"] = 1] = "ANY";
+})(ScoreMode || (ScoreMode = {}));
+var ShapeMode;
+(function (ShapeMode) {
+    ShapeMode[ShapeMode["NORMAL"] = 0] = "NORMAL";
+    ShapeMode[ShapeMode["ANY"] = 1] = "ANY";
+    ShapeMode[ShapeMode["FLAT"] = 2] = "FLAT";
+})(ShapeMode || (ShapeMode = {}));
+var SnapMode;
+(function (SnapMode) {
+    SnapMode[SnapMode["NORMAL"] = 0] = "NORMAL";
+    SnapMode[SnapMode["REAL"] = 1] = "REAL";
+})(SnapMode || (SnapMode = {}));
+const DefaultScoreMode = (v) => {
+    if (v === ScoreMode.FINAL || v === ScoreMode.ANY) {
+        return v;
+    }
+    return ScoreMode.FINAL;
+};
+const DefaultShapeMode = (v) => {
+    if (v === ShapeMode.NORMAL || v === ShapeMode.ANY || v === ShapeMode.FLAT) {
+        return v;
+    }
+    return ShapeMode.NORMAL;
+};
+const DefaultSnapMode = (v) => {
+    if (v === SnapMode.NORMAL || v === SnapMode.REAL) {
+        return v;
+    }
+    return SnapMode.NORMAL;
+};
+
 const IDLE_TIMEOUT_SEC = 30;
 // Map<gameId, Game>
 const GAMES = {};
@@ -614,10 +632,10 @@ function setImageUrl(gameId, imageUrl) {
     GAMES[gameId].puzzle.info.imageUrl = imageUrl;
 }
 function getScoreMode(gameId) {
-    return GAMES[gameId].scoreMode || ScoreMode.FINAL;
+    return GAMES[gameId].scoreMode;
 }
 function getSnapMode(gameId) {
-    return GAMES[gameId].snapMode || SnapMode.NORMAL;
+    return GAMES[gameId].snapMode;
 }
 function isFinished(gameId) {
     return getFinishedPiecesCount(gameId) === getPieceCount(gameId);
@@ -1323,10 +1341,16 @@ const get = (gameId, offset = 0) => {
     if (!fs.existsSync(file)) {
         return [];
     }
-    const log = fs.readFileSync(file, 'utf-8').split("\n");
-    return log.filter(line => !!line).map(line => {
+    const lines = fs.readFileSync(file, 'utf-8').split("\n");
+    const log = lines.filter(line => !!line).map(line => {
         return JSON.parse(`[${line}]`);
     });
+    if (offset === 0 && log.length > 0) {
+        log[0][5] = DefaultScoreMode(log[0][5]);
+        log[0][6] = DefaultShapeMode(log[0][6]);
+        log[0][7] = DefaultSnapMode(log[0][7]);
+    }
+    return log;
 };
 var GameLog = {
     shouldLog,
@@ -1759,9 +1783,9 @@ function loadGame(gameId) {
         puzzle: game.puzzle,
         players: game.players,
         evtInfos: {},
-        scoreMode: game.scoreMode || ScoreMode.FINAL,
-        shapeMode: game.shapeMode || ShapeMode.ANY,
-        snapMode: game.snapMode || SnapMode.NORMAL,
+        scoreMode: DefaultScoreMode(game.scoreMode),
+        shapeMode: DefaultShapeMode(game.shapeMode),
+        snapMode: DefaultSnapMode(game.snapMode),
     };
     GameCommon.setGame(gameObject.id, gameObject);
 }
@@ -2090,7 +2114,7 @@ app.get('/api/replay-data', async (req, res) => {
     let game = null;
     if (offset === 0) {
         // also need the game
-        game = await Game.createGameObject(gameId, log[0][2], log[0][3], log[0][4], log[0][5] || ScoreMode.FINAL, log[0][6] || ShapeMode.NORMAL, log[0][7] || SnapMode.NORMAL);
+        game = await Game.createGameObject(gameId, log[0][2], log[0][3], log[0][4], log[0][5], log[0][6], log[0][7]);
     }
     res.send({ log, game: game ? Util.encodeGame(game) : null });
 });

@@ -130,9 +130,9 @@ function encodeGame(data: Game): EncodedGame {
     data.puzzle,
     data.players,
     data.evtInfos,
-    data.scoreMode || ScoreMode.FINAL,
-    data.shapeMode || ShapeMode.ANY,
-    data.snapMode || SnapMode.NORMAL,
+    data.scoreMode,
+    data.shapeMode,
+    data.snapMode,
   ]
 }
 

@@ -89,9 +89,9 @@ app.get('/api/replay-data', async (req, res): Promise<void> => {
       log[0][2],
       log[0][3],
       log[0][4],
-      log[0][5] || ScoreMode.FINAL,
-      log[0][6] || ShapeMode.NORMAL,
-      log[0][7] || SnapMode.NORMAL,
+      log[0][5],
+      log[0][6],
+      log[0][7],
     )
   }
   res.send({ log, game: game ? Util.encodeGame(game) : null })

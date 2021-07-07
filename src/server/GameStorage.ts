@@ -1,6 +1,6 @@
 import fs from 'fs'
 import GameCommon from './../common/GameCommon'
-import { Game, Piece, ScoreMode, ShapeMode, SnapMode } from './../common/Types'
+import { DefaultScoreMode, DefaultShapeMode, DefaultSnapMode, Game, Piece } from './../common/Types'
 import Util, { logger } from './../common/Util'
 import { Rng } from './../common/Rng'
 import { DATA_DIR } from './Dirs'
@@ -58,9 +58,9 @@ function loadGame(gameId: string): void {
     puzzle: game.puzzle,
     players: game.players,
     evtInfos: {},
-    scoreMode: game.scoreMode || ScoreMode.FINAL,
-    shapeMode: game.shapeMode || ShapeMode.ANY,
-    snapMode: game.snapMode || SnapMode.NORMAL,
+    scoreMode: DefaultScoreMode(game.scoreMode),
+    shapeMode: DefaultShapeMode(game.shapeMode),
+    snapMode: DefaultSnapMode(game.snapMode),
   }
   GameCommon.setGame(gameObject.id, gameObject)
 }

@@ -75,9 +75,9 @@ export interface Game {
   players: Array<EncodedPlayer>
   puzzle: Puzzle
   evtInfos: Record<string, EvtInfo>
-  scoreMode?: ScoreMode
-  shapeMode?: ShapeMode
-  snapMode?: SnapMode
+  scoreMode: ScoreMode
+  shapeMode: ShapeMode
+  snapMode: SnapMode
   rng: GameRng
 }
 
@@ -215,4 +215,25 @@ export enum ShapeMode {
 export enum SnapMode {
   NORMAL = 0,
   REAL = 1,
+}
+
+export const DefaultScoreMode = (v: any): ScoreMode => {
+  if (v === ScoreMode.FINAL || v === ScoreMode.ANY) {
+    return v
+  }
+  return ScoreMode.FINAL
+}
+
+export const DefaultShapeMode = (v: any): ShapeMode => {
+  if (v === ShapeMode.NORMAL || v === ShapeMode.ANY || v === ShapeMode.FLAT) {
+    return v
+  }
+  return ShapeMode.NORMAL
+}
+
+export const DefaultSnapMode = (v: any): SnapMode => {
+  if (v === SnapMode.NORMAL || v === SnapMode.REAL) {
+    return v
+  }
+  return SnapMode.NORMAL
 }
