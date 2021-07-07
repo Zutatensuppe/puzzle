@@ -46,6 +46,7 @@ let PIECE_VIEW_FIXED = true
 let PIECE_VIEW_LOOSE = true
 
 interface Hud {
+  setPuzzleCut: () => void
   setActivePlayers: (v: Array<any>) => void
   setIdlePlayers: (v: Array<any>) => void
   setFinished: (v: boolean) => void
@@ -415,6 +416,7 @@ export async function main(
 
   const ctx = canvas.getContext('2d') as CanvasRenderingContext2D
   canvas.classList.add('loaded')
+  HUD.setPuzzleCut()
 
   // initialize some view data
   // this global data will change according to input events

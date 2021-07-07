@@ -4,6 +4,12 @@
     <preview-overlay v-show="overlay === 'preview'" @bgclick="toggle('preview', false)" :img="g.previewImageUrl" />
     <help-overlay v-show="overlay === 'help'" @bgclick="toggle('help', true)" />
 
+    <div class="overlay" v-if="cuttingPuzzle">
+      <div class="overlay-content">
+        <div>⏳ Cutting puzzle, please wait... ⏳</div>
+      </div>
+    </div>
+
     <puzzle-status
       :finished="finished"
       :duration="duration"
@@ -64,6 +70,7 @@ export default defineComponent({
       overlay: '',
 
       connectionState: 0,
+      cuttingPuzzle: true,
 
       g: {
         player: {
@@ -127,6 +134,7 @@ export default defineComponent({
       MODE_REPLAY,
       this.$el,
       {
+        setPuzzleCut: () => { this.cuttingPuzzle = false },
         setActivePlayers: (v: Array<Player>) => { this.activePlayers = v },
         setIdlePlayers: (v: Array<Player>) => { this.idlePlayers = v },
         setFinished: (v: boolean) => { this.finished = v },
