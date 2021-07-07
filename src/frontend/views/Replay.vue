@@ -23,7 +23,7 @@
         <router-link class="opener" :to="{name: 'index'}" target="_blank">🧩 Puzzles</router-link>
         <div class="opener" @click="toggle('preview', false)">🖼️ Preview</div>
         <div class="opener" @click="toggle('settings', true)">🛠️ Settings</div>
-        <div class="opener" @click="toggle('help', true)">ℹ️ Help</div>
+        <div class="opener" @click="toggle('help', true)">ℹ️ Hotkeys</div>
       </div>
     </div>
 
