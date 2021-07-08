@@ -48,7 +48,7 @@ import ConnectionOverlay from './../components/ConnectionOverlay.vue'
 import HelpOverlay from './../components/HelpOverlay.vue'
 
 import { main, MODE_PLAY } from './../game'
-import { Player } from '../../common/Types'
+import { Game, Player } from '../../common/Types'
 
 export default defineComponent({
   name: 'game',
@@ -85,7 +85,7 @@ export default defineComponent({
           soundsVolume: 100,
           showPlayerNames: true,
         },
-        game: null,
+        game: null as Game|null,
         previewImageUrl: '',
         setHotkeys: (v: boolean) => {},
         onBgChange: (v: string) => {},
