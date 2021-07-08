@@ -2,6 +2,7 @@
   <div id="game">
     <settings-overlay v-show="overlay === 'settings'" @bgclick="toggle('settings', true)" v-model="g.player" />
     <preview-overlay v-show="overlay === 'preview'" @bgclick="toggle('preview', false)" :img="g.previewImageUrl" />
+    <info-overlay v-if="g.game" v-show="overlay === 'info'" @bgclick="toggle('info', true)" :game="g.game" />
     <help-overlay v-show="overlay === 'help'" @bgclick="toggle('help', true)" />
 
     <div class="overlay" v-if="cuttingPuzzle">
@@ -27,7 +28,8 @@
         <router-link class="opener" :to="{name: 'index'}" target="_blank">🧩 Puzzles</router-link>
         <div class="opener" @click="toggle('preview', false)">🖼️ Preview</div>
         <div class="opener" @click="toggle('settings', true)">🛠️ Settings</div>
-        <div class="opener" @click="toggle('help', true)">ℹ️ Hotkeys</div>
+        <div class="opener" @click="toggle('info', true)">ℹ️ Info</div>
+        <div class="opener" @click="toggle('help', true)">⌨️ Hotkeys</div>
       </div>
     </div>
 
@@ -41,6 +43,7 @@ import Scores from './../components/Scores.vue'
 import PuzzleStatus from './../components/PuzzleStatus.vue'
 import SettingsOverlay from './../components/SettingsOverlay.vue'
 import PreviewOverlay from './../components/PreviewOverlay.vue'
+import InfoOverlay from './../components/InfoOverlay.vue'
 import ConnectionOverlay from './../components/ConnectionOverlay.vue'
 import HelpOverlay from './../components/HelpOverlay.vue'
 
@@ -54,6 +57,7 @@ export default defineComponent({
     Scores,
     SettingsOverlay,
     PreviewOverlay,
+    InfoOverlay,
     ConnectionOverlay,
     HelpOverlay,
   },
@@ -81,6 +85,7 @@ export default defineComponent({
           soundsVolume: 100,
           showPlayerNames: true,
         },
+        game: null,
         previewImageUrl: '',
         setHotkeys: (v: boolean) => {},
         onBgChange: (v: string) => {},

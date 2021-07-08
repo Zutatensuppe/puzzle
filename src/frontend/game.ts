@@ -969,6 +969,7 @@ export async function main(
       soundsVolume: playerSoundVolume(),
       showPlayerNames: showPlayerNames(),
     },
+    game: Game.get(gameId),
     disconnect: Communication.disconnect,
     connect: connect,
     unload: unload,

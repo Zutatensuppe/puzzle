@@ -154,8 +154,9 @@ export interface PieceChange {
 
 export interface PuzzleInfo {
   table: PuzzleTable
-  targetTiles: number,
+  targetTiles: number
   imageUrl: string
+  imageTitle: string
 
   width: number
   height: number

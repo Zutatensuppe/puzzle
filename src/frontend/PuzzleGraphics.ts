@@ -3,7 +3,7 @@
 import Geometry, { Rect } from '../common/Geometry'
 import Graphics from './Graphics'
 import Util, { logger } from './../common/Util'
-import { Puzzle, PuzzleInfo, PieceShape, EncodedPiece } from './../common/GameCommon'
+import { Puzzle, PuzzleInfo, PieceShape, EncodedPiece } from './../common/Types'
 
 const log = logger('PuzzleGraphics.js')
 

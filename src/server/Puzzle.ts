@@ -7,6 +7,7 @@ import { Dim, Point } from '../common/Geometry'
 export interface PuzzleCreationImageInfo {
   file: string
   url: string
+  title: string
 }
 
 export interface PuzzleCreationInfo {
@@ -140,6 +141,7 @@ async function createPuzzle(
       // information that was used to create the puzzle
       targetTiles: targetTiles,
       imageUrl,
+      imageTitle: image.title || '',
 
       width: info.width, // actual puzzle width (same as bitmap.width)
       height: info.height, // actual puzzle height (same as bitmap.height)
