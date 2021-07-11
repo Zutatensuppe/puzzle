@@ -6,6 +6,7 @@
 </template>
 <script lang="ts">
 import { defineComponent } from 'vue'
+import xhr from '../xhr'
 
 export default defineComponent({
   name: 'upload',
@@ -21,8 +22,7 @@ export default defineComponent({
       if (!file) return;
       const formData = new FormData();
       formData.append('file', file, file.name);
-      const res = await fetch('/upload', {
-        method: 'post',
+      const res = await xhr.post('/upload', {
         body: formData,
       })
       const j = await res.json()

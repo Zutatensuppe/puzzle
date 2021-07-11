@@ -133,7 +133,7 @@ export default defineComponent({
       this.filtersChanged()
     },
     async loadImages () {
-      const res = await fetch(`/api/newgame-data${Util.asQueryArgs(this.filters)}`)
+      const res = await xhr.get(`/api/newgame-data${Util.asQueryArgs(this.filters)}`, {})
       const json = await res.json()
       this.images = json.images
       this.tags = json.tags
@@ -165,8 +165,7 @@ export default defineComponent({
       return await res.json()
     },
     async saveImage (data: any) {
-      const res = await fetch('/api/save-image', {
-        method: 'post',
+      const res = await xhr.post('/api/save-image', {
         headers: {
           'Accept': 'application/json',
           'Content-Type': 'application/json'
@@ -200,8 +199,7 @@ export default defineComponent({
       this.dialog = 'new-game'
     },
     async onNewGame(gameSettings: GameSettings) {
-      const res = await fetch('/api/newgame', {
-        method: 'post',
+      const res = await xhr.post('/api/newgame', {
         headers: {
           'Accept': 'application/json',
           'Content-Type': 'application/json'

@@ -3,6 +3,7 @@
 import { ClientEvent, EncodedGame, GameEvent, ReplayData, ServerEvent } from '../common/Types'
 import Util, { logger } from '../common/Util'
 import Protocol from './../common/Protocol'
+import xhr from './xhr'
 
 const log = logger('Communication.js')
 
@@ -117,7 +118,7 @@ async function requestReplayData(
   offset: number
 ): Promise<ReplayData> {
   const args = { gameId, offset }
-  const res = await fetch(`/api/replay-data${Util.asQueryArgs(args)}`)
+  const res = await xhr.get(`/api/replay-data${Util.asQueryArgs(args)}`, {})
   const json: ReplayData = await res.json()
   return json
 }

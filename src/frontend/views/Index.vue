@@ -13,6 +13,7 @@
 </template>
 <script lang="ts">
 import { defineComponent } from 'vue'
+import xhr from '../xhr'
 
 import GameTeaser from './../components/GameTeaser.vue'
 
@@ -27,7 +28,7 @@ export default defineComponent({
     }
   },
   async created() {
-    const res = await fetch('/api/index-data')
+    const res = await xhr.get('/api/index-data', {})
     const json = await res.json()
     this.gamesRunning = json.gamesRunning
     this.gamesFinished = json.gamesFinished

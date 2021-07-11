@@ -10,6 +10,7 @@ export interface Options {
   onUploadProgress?: (ev: ProgressEvent<XMLHttpRequestEventTarget>) => any,
 }
 
+let xhrClientId: string = ''
 const request = async (
   method: string,
   url: string,
@@ -22,6 +23,9 @@ const request = async (
     for (const k in options.headers || {}) {
       xhr.setRequestHeader(k, options.headers[k])
     }
+
+    xhr.setRequestHeader('Client-Id', xhrClientId)
+
     xhr.addEventListener('load', function (ev: ProgressEvent<XMLHttpRequestEventTarget>
       ) {
       resolve({
@@ -41,7 +45,7 @@ const request = async (
         }
       })
     }
-    xhr.send(options.body)
+    xhr.send(options.body || null)
   })
 }
 
@@ -52,5 +56,8 @@ export default {
   },
   post: (url: string, options: any): Promise<Response> => {
     return request('post', url, options)
+  },
+  setClientId: (clientId: string): void => {
+    xhrClientId = clientId
   },
 }

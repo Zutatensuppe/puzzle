@@ -7,19 +7,23 @@ import NewGame from './views/NewGame.vue'
 import Game from './views/Game.vue'
 import Replay from './views/Replay.vue'
 import Util from './../common/Util'
+import settings from './settings'
+import xhr from './xhr'
 
 (async () => {
-  const res = await fetch(`/api/conf`)
-  const conf = await res.json()
-
-  function initme() {
-    let ID = localStorage.getItem('ID')
+  function initClientId() {
+    let ID = settings.getStr('ID', '')
     if (!ID) {
       ID = Util.uniqId()
-      localStorage.setItem('ID', ID)
+      settings.setStr('ID', ID)
     }
     return ID
   }
+  const clientId = initClientId()
+  xhr.setClientId(clientId)
+
+  const res = await xhr.get(`/api/conf`, {})
+  const conf = await res.json()
 
   const router = VueRouter.createRouter({
     history: VueRouter.createWebHashHistory(),
@@ -40,7 +44,7 @@ import Util from './../common/Util'
 
   const app = Vue.createApp(App)
   app.config.globalProperties.$config = conf
-  app.config.globalProperties.$clientId = initme()
+  app.config.globalProperties.$clientId = clientId
   app.use(router)
   app.mount('#app')
 })()
