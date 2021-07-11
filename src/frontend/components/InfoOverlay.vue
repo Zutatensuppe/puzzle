@@ -9,15 +9,15 @@
         <td>{{game.puzzle.info.image.title}}</td>
       </tr>
       <tr>
-        <td>Snap Mode: </td>
+        <td>Scoring: </td>
         <td><span :title="snapMode[1]">{{scoreMode[0]}}</span></td>
       </tr>
       <tr>
-        <td>Shape Mode: </td>
+        <td>Shapes: </td>
         <td><span :title="snapMode[1]">{{shapeMode[0]}}</span></td>
       </tr>
       <tr>
-        <td>Score Mode: </td>
+        <td>Snapping: </td>
         <td><span :title="snapMode[1]">{{snapMode[0]}}</span></td>
       </tr>
     </table>
