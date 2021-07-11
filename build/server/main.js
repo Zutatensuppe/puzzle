@@ -610,12 +610,16 @@ function setEvtInfo(gameId, playerId, evtInfo) {
 }
 function getAllGames() {
     return Object.values(GAMES).sort((a, b) => {
+        const finished = isFinished(a.id);
         // when both have same finished state, sort by started
-        if (isFinished(a.id) === isFinished(b.id)) {
+        if (finished === isFinished(b.id)) {
+            if (finished) {
+                return b.puzzle.data.finished - a.puzzle.data.finished;
+            }
             return b.puzzle.data.started - a.puzzle.data.started;
         }
         // otherwise, sort: unfinished, finished
-        return isFinished(a.id) ? 1 : -1;
+        return finished ? 1 : -1;
     });
 }
 function getAllPlayers(gameId) {
@@ -1439,6 +1443,7 @@ const imageFromDb = (db, imageId) => {
     const i = db.get('images', { id: imageId });
     return {
         id: i.id,
+        uploaderUserId: i.uploader_user_id,
         filename: i.filename,
         url: `${UPLOAD_URL}/${encodeURIComponent(i.filename)}`,
         title: i.title,
@@ -1477,6 +1482,7 @@ inner join images i on i.id = ixc.image_id ${where.sql};
     const images = db.getMany('images', wheresRaw, orderByMap[orderBy]);
     return images.map(i => ({
         id: i.id,
+        uploaderUserId: i.uploader_user_id,
         filename: i.filename,
         url: `${UPLOAD_URL}/${encodeURIComponent(i.filename)}`,
         title: i.title,
@@ -1494,6 +1500,7 @@ const allImagesFromDisk = (tags, sort) => {
         .filter(f => f.toLowerCase().match(/\.(jpe?g|webp|png)$/))
         .map(f => ({
         id: 0,
+        uploaderUserId: null,
         filename: f,
         url: `${UPLOAD_URL}/${encodeURIComponent(f)}`,
         title: f.replace(/\.[a-z]+$/, ''),
@@ -2093,6 +2100,16 @@ const storage = multer.diskStorage({
     }
 });
 const upload = multer({ storage }).single('file');
+app.get('/api/me', (req, res) => {
+    let user = db.get('users', {
+        'client_id': req.headers['client-id'],
+        'client_secret': req.headers['client-secret'],
+    });
+    res.send({
+        id: user ? user.id : null,
+        created: user ? user.created : null,
+    });
+});
 app.get('/api/conf', (req, res) => {
     res.send({
         WS_ADDRESS: config.ws.connectstring,
@@ -2164,7 +2181,24 @@ const setImageTags = (db, imageId, tags) => {
     });
 };
 app.post('/api/save-image', express.json(), (req, res) => {
+    let user = db.get('users', {
+        'client_id': req.headers['client-id'],
+        'client_secret': req.headers['client-secret'],
+    });
+    let userId = null;
+    if (user) {
+        userId = parseInt(user.id, 10);
+    }
+    else {
+        res.status(403).send({ ok: false, error: 'forbidden' });
+        return;
+    }
     const data = req.body;
+    let image = db.get('images', { id: data.id });
+    if (parseInt(image.uploader_user_id, 10) !== userId) {
+        res.status(403).send({ ok: false, error: 'forbidden' });
+        return;
+    }
     db.update('images', {
         title: data.title,
     }, {
@@ -2189,8 +2223,24 @@ app.post('/api/upload', (req, res) => {
             log.log(err);
             res.status(400).send("Something went wrong!");
         }
+        let user = db.get('users', {
+            'client_id': req.headers['client-id'],
+            'client_secret': req.headers['client-secret'],
+        });
+        let userId = null;
+        if (user) {
+            userId = user.id;
+        }
+        else {
+            userId = db.insert('users', {
+                'client_id': req.headers['client-id'],
+                'client_secret': req.headers['client-secret'],
+                'created': Time.timestamp(),
+            });
+        }
         const dim = await Images.getDimensions(`${UPLOAD_DIR}/${req.file.filename}`);
         const imageId = db.insert('images', {
+            uploader_user_id: userId,
             filename: req.file.filename,
             filename_original: req.file.originalname,
             title: req.body.title || '',
