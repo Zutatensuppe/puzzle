@@ -48,8 +48,8 @@ export default defineComponent({
     },
     shapeMode () {
       switch (this.game.shapeMode) {
-        case ShapeMode.FLAT: return ['Flat', 'all pieces flat on all sides']
-        case ShapeMode.ANY: return ['Any', 'flat pieces can occur anywhere']
+        case ShapeMode.FLAT: return ['Flat', 'All pieces flat on all sides']
+        case ShapeMode.ANY: return ['Any', 'Flat pieces can occur anywhere']
         case ShapeMode.NORMAL:
         default:
           return ['Normal', '']
@@ -57,10 +57,10 @@ export default defineComponent({
     },
     snapMode () {
       switch (this.game.snapMode) {
-        case SnapMode.REAL: return ['Real', 'pieces snap only to corners, already snapped pieces and to each other']
+        case SnapMode.REAL: return ['Real', 'Pieces snap only to corners, already snapped pieces and to each other']
         case SnapMode.NORMAL:
         default:
-          return ['Normal', 'pieces snap to final destination and to each other']
+          return ['Normal', 'Pieces snap to final destination and to each other']
       }
     },
   },
