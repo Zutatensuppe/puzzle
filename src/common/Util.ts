@@ -133,6 +133,7 @@ function encodeGame(data: Game): EncodedGame {
     data.scoreMode,
     data.shapeMode,
     data.snapMode,
+    data.creatorUserId,
   ]
 }
 
@@ -149,6 +150,7 @@ function decodeGame(data: EncodedGame): Game {
     scoreMode: data[6],
     shapeMode: data[7],
     snapMode: data[8],
+    creatorUserId: data[9],
   }
 }
 

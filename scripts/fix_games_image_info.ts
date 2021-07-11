@@ -47,7 +47,7 @@ function fixOne(gameId: string) {
 
     log.log(g.puzzle.info.image.title, imageRow.id)
 
-    GameStorage.persistGame(gameId)
+    GameStorage.persistGameToDb(db, gameId)
   } else if (g.puzzle.info.image?.id) {
     const imageId = g.puzzle.info.image.id
 
@@ -55,7 +55,7 @@ function fixOne(gameId: string) {
 
     log.log(g.puzzle.info.image.title, imageId)
 
-    GameStorage.persistGame(gameId)
+    GameStorage.persistGameToDb(db, gameId)
   }
 
   // fix log
@@ -81,7 +81,7 @@ function fixOne(gameId: string) {
 }
 
 function fix() {
-  GameStorage.loadGames()
+  GameStorage.loadGamesFromDisk()
   GameCommon.getAllGames().forEach((game: Game) => {
     fixOne(game.id)
   })

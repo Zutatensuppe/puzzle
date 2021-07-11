@@ -58,10 +58,7 @@ const storage = multer.diskStorage({
 const upload = multer({storage}).single('file');
 
 app.get('/api/me', (req, res): void => {
-  let user = db.get('users', {
-    'client_id': req.headers['client-id'],
-    'client_secret': req.headers['client-secret'],
-  })
+  let user = getUser(db, req)
   res.send({
     id: user ? user.id : null,
     created: user ? user.created : null,
@@ -103,6 +100,7 @@ app.get('/api/replay-data', async (req, res): Promise<void> => {
       log[0][5],
       log[0][6],
       log[0][7],
+      log[0][8], // creatorUserId
     )
   }
   res.send({ log, game: game ? Util.encodeGame(game) : null })
@@ -144,6 +142,30 @@ interface SaveImageRequestData {
   tags: string[]
 }
 
+const getOrCreateUser = (db: Db, req: any): any => {
+  let user = getUser(db, req)
+  if (!user) {
+    db.insert('users', {
+      'client_id': req.headers['client-id'],
+      'client_secret': req.headers['client-secret'],
+      'created': Time.timestamp(),
+    })
+    user = getUser(db, req)
+  }
+  return user
+}
+
+const getUser = (db: Db, req: any): any => {
+  let user = db.get('users', {
+    'client_id': req.headers['client-id'],
+    'client_secret': req.headers['client-secret'],
+  })
+  if (user) {
+    user.id = parseInt(user.id, 10)
+  }
+  return user
+}
+
 const setImageTags = (db: Db, imageId: number, tags: string[]): void => {
   tags.forEach((tag: string) => {
     const slug = Util.slug(tag)
@@ -158,21 +180,15 @@ const setImageTags = (db: Db, imageId: number, tags: string[]): void => {
 }
 
 app.post('/api/save-image', express.json(), (req, res): void => {
-  let user = db.get('users', {
-    'client_id': req.headers['client-id'],
-    'client_secret': req.headers['client-secret'],
-  })
-  let userId: number|null = null
-  if (user) {
-    userId = parseInt(user.id, 10)
-  } else {
+  let user = getUser(db, req)
+  if (!user || !user.id) {
     res.status(403).send({ ok: false, error: 'forbidden' })
     return
   }
 
   const data = req.body as SaveImageRequestData
   let image = db.get('images', {id: data.id})
-  if (parseInt(image.uploader_user_id, 10) !== userId) {
+  if (parseInt(image.uploader_user_id, 10) !== user.id) {
     res.status(403).send({ ok: false, error: 'forbidden' })
     return
   }
@@ -205,26 +221,13 @@ app.post('/api/upload', (req, res): void => {
       res.status(400).send("Something went wrong!");
     }
 
-    let user = db.get('users', {
-      'client_id': req.headers['client-id'],
-      'client_secret': req.headers['client-secret'],
-    })
-    let userId: number|null = null
-    if (user) {
-      userId = user.id
-    } else {
-      userId = db.insert('users', {
-        'client_id': req.headers['client-id'],
-        'client_secret': req.headers['client-secret'],
-        'created': Time.timestamp(),
-      }) as number
-    }
+    const user = getOrCreateUser(db, req)
 
     const dim = await Images.getDimensions(
       `${UPLOAD_DIR}/${req.file.filename}`
     )
     const imageId = db.insert('images', {
-      uploader_user_id: userId,
+      uploader_user_id: user.id,
       filename: req.file.filename,
       filename_original: req.file.originalname,
       title: req.body.title || '',
@@ -243,6 +246,12 @@ app.post('/api/upload', (req, res): void => {
 })
 
 app.post('/api/newgame', express.json(), async (req, res): Promise<void> => {
+  let user = getOrCreateUser(db, req)
+  if (!user || !user.id) {
+    res.status(403).send({ ok: false, error: 'forbidden' })
+    return
+  }
+
   const gameSettings = req.body as GameSettings
   log.log(gameSettings)
   const gameId = Util.uniqId()
@@ -256,6 +265,7 @@ app.post('/api/newgame', express.json(), async (req, res): Promise<void> => {
       gameSettings.scoreMode,
       gameSettings.shapeMode,
       gameSettings.snapMode,
+      user.id,
     )
   }
   res.send({ id: gameId })
@@ -355,7 +365,7 @@ wss.on('message', async (
   }
 })
 
-GameStorage.loadGames()
+GameStorage.loadGamesFromDb(db)
 const server = app.listen(
   port,
   hostname,
@@ -378,7 +388,7 @@ memoryUsageHuman()
 // persist games in fixed interval
 const persistInterval = setInterval(() => {
   log.log('Persisting games...')
-  GameStorage.persistGames()
+  GameStorage.persistGamesToDb(db)
 
   memoryUsageHuman()
 }, config.persistence.interval)
@@ -390,7 +400,7 @@ const gracefulShutdown = (signal: string): void => {
   clearInterval(persistInterval)
 
   log.log('persisting games...')
-  GameStorage.persistGames()
+  GameStorage.persistGamesToDb(db)
 
   log.log('shutting down webserver...')
   server.close()

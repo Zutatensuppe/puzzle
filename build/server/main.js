@@ -155,6 +155,7 @@ function encodeGame(data) {
         data.scoreMode,
         data.shapeMode,
         data.snapMode,
+        data.creatorUserId,
     ];
 }
 function decodeGame(data) {
@@ -170,6 +171,7 @@ function decodeGame(data) {
         scoreMode: data[6],
         shapeMode: data[7],
         snapMode: data[8],
+        creatorUserId: data[9],
     };
 }
 function coordByPieceIdx(info, pieceIdx) {
@@ -1358,6 +1360,7 @@ const get = (gameId, offset = 0) => {
         log[0][5] = DefaultScoreMode(log[0][5]);
         log[0][6] = DefaultShapeMode(log[0][6]);
         log[0][7] = DefaultSnapMode(log[0][7]);
+        log[0][8] = log[0][8] || null;
     }
     return log;
 };
@@ -1753,7 +1756,63 @@ function setDirty(gameId) {
 function setClean(gameId) {
     delete dirtyGames[gameId];
 }
-function loadGames() {
+function loadGamesFromDb(db) {
+    const gameRows = db.getMany('games');
+    for (const gameRow of gameRows) {
+        loadGameFromDb(db, gameRow.id);
+    }
+}
+function loadGameFromDb(db, gameId) {
+    const gameRow = db.get('games', { id: gameId });
+    let game;
+    try {
+        game = JSON.parse(gameRow.data);
+    }
+    catch {
+        log$3.log(`[ERR] unable to load game from db ${gameId}`);
+    }
+    if (typeof game.puzzle.data.started === 'undefined') {
+        game.puzzle.data.started = gameRow.created;
+    }
+    if (typeof game.puzzle.data.finished === 'undefined') {
+        game.puzzle.data.finished = gameRow.finished;
+    }
+    if (!Array.isArray(game.players)) {
+        game.players = Object.values(game.players);
+    }
+    const gameObject = storeDataToGame(game, game.creator_user_id);
+    GameCommon.setGame(gameObject.id, gameObject);
+}
+function persistGamesToDb(db) {
+    for (const gameId of Object.keys(dirtyGames)) {
+        persistGameToDb(db, gameId);
+    }
+}
+function persistGameToDb(db, gameId) {
+    const game = GameCommon.get(gameId);
+    if (!game) {
+        log$3.error(`[ERROR] unable to persist non existing game ${gameId}`);
+        return;
+    }
+    if (game.id in dirtyGames) {
+        setClean(game.id);
+    }
+    db.upsert('games', {
+        id: game.id,
+        creator_user_id: game.creatorUserId,
+        image_id: game.puzzle.info.image?.id,
+        created: game.puzzle.data.started,
+        finished: game.puzzle.data.finished,
+        data: gameToStoreData(game)
+    }, {
+        id: game.id,
+    });
+    log$3.info(`[INFO] persisted game ${game.id}`);
+}
+/**
+ * @deprecated
+ */
+function loadGamesFromDisk() {
     const files = fs.readdirSync(DATA_DIR);
     for (const f of files) {
         const m = f.match(/^([a-z0-9]+)\.json$/);
@@ -1761,10 +1820,13 @@ function loadGames() {
             continue;
         }
         const gameId = m[1];
-        loadGame(gameId);
+        loadGameFromDisk(gameId);
     }
 }
-function loadGame(gameId) {
+/**
+ * @deprecated
+ */
+function loadGameFromDisk(gameId) {
     const file = `${DATA_DIR}/${gameId}.json`;
     const contents = fs.readFileSync(file, 'utf-8');
     let game;
@@ -1786,27 +1848,21 @@ function loadGame(gameId) {
     if (!Array.isArray(game.players)) {
         game.players = Object.values(game.players);
     }
-    const gameObject = {
-        id: game.id,
-        rng: {
-            type: game.rng ? game.rng.type : '_fake_',
-            obj: game.rng ? Rng.unserialize(game.rng.obj) : new Rng(0),
-        },
-        puzzle: game.puzzle,
-        players: game.players,
-        evtInfos: {},
-        scoreMode: DefaultScoreMode(game.scoreMode),
-        shapeMode: DefaultShapeMode(game.shapeMode),
-        snapMode: DefaultSnapMode(game.snapMode),
-    };
+    const gameObject = storeDataToGame(game, null);
     GameCommon.setGame(gameObject.id, gameObject);
 }
-function persistGames() {
+/**
+ * @deprecated
+ */
+function persistGamesToDisk() {
     for (const gameId of Object.keys(dirtyGames)) {
-        persistGame(gameId);
+        persistGameToDisk(gameId);
     }
 }
-function persistGame(gameId) {
+/**
+ * @deprecated
+ */
+function persistGameToDisk(gameId) {
     const game = GameCommon.get(gameId);
     if (!game) {
         log$3.error(`[ERROR] unable to persist non existing game ${gameId}`);
@@ -1815,7 +1871,27 @@ function persistGame(gameId) {
     if (game.id in dirtyGames) {
         setClean(game.id);
     }
-    fs.writeFileSync(`${DATA_DIR}/${game.id}.json`, JSON.stringify({
+    fs.writeFileSync(`${DATA_DIR}/${game.id}.json`, gameToStoreData(game));
+    log$3.info(`[INFO] persisted game ${game.id}`);
+}
+function storeDataToGame(storeData, creatorUserId) {
+    return {
+        id: storeData.id,
+        creatorUserId,
+        rng: {
+            type: storeData.rng ? storeData.rng.type : '_fake_',
+            obj: storeData.rng ? Rng.unserialize(storeData.rng.obj) : new Rng(0),
+        },
+        puzzle: storeData.puzzle,
+        players: storeData.players,
+        evtInfos: {},
+        scoreMode: DefaultScoreMode(storeData.scoreMode),
+        shapeMode: DefaultShapeMode(storeData.shapeMode),
+        snapMode: DefaultSnapMode(storeData.snapMode),
+    };
+}
+function gameToStoreData(game) {
+    return JSON.stringify({
         id: game.id,
         rng: {
             type: game.rng.type,
@@ -1826,22 +1902,27 @@ function persistGame(gameId) {
         scoreMode: game.scoreMode,
         shapeMode: game.shapeMode,
         snapMode: game.snapMode,
-    }));
-    log$3.info(`[INFO] persisted game ${game.id}`);
+    });
 }
 var GameStorage = {
-    loadGames,
-    loadGame,
-    persistGames,
-    persistGame,
+    // disk functions are deprecated 
+    loadGamesFromDisk,
+    loadGameFromDisk,
+    persistGamesToDisk,
+    persistGameToDisk,
+    loadGamesFromDb,
+    loadGameFromDb,
+    persistGamesToDb,
+    persistGameToDb,
     setDirty,
 };
 
-async function createGameObject(gameId, targetTiles, image, ts, scoreMode, shapeMode, snapMode) {
+async function createGameObject(gameId, targetTiles, image, ts, scoreMode, shapeMode, snapMode, creatorUserId) {
     const seed = Util.hash(gameId + ' ' + ts);
     const rng = new Rng(seed);
     return {
         id: gameId,
+        creatorUserId,
         rng: { type: 'Rng', obj: rng },
         puzzle: await createPuzzle(rng, targetTiles, image, ts, shapeMode),
         players: [],
@@ -1851,10 +1932,10 @@ async function createGameObject(gameId, targetTiles, image, ts, scoreMode, shape
         snapMode,
     };
 }
-async function createGame(gameId, targetTiles, image, ts, scoreMode, shapeMode, snapMode) {
-    const gameObject = await createGameObject(gameId, targetTiles, image, ts, scoreMode, shapeMode, snapMode);
+async function createGame(gameId, targetTiles, image, ts, scoreMode, shapeMode, snapMode, creatorUserId) {
+    const gameObject = await createGameObject(gameId, targetTiles, image, ts, scoreMode, shapeMode, snapMode, creatorUserId);
     GameLog.create(gameId, ts);
-    GameLog.log(gameId, Protocol.LOG_HEADER, 1, targetTiles, image, ts, scoreMode, shapeMode, snapMode);
+    GameLog.log(gameId, Protocol.LOG_HEADER, 1, targetTiles, image, ts, scoreMode, shapeMode, snapMode, gameObject.creatorUserId);
     GameCommon.setGame(gameObject.id, gameObject);
     GameStorage.setDirty(gameId);
 }
@@ -2101,10 +2182,7 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ storage }).single('file');
 app.get('/api/me', (req, res) => {
-    let user = db.get('users', {
-        'client_id': req.headers['client-id'],
-        'client_secret': req.headers['client-secret'],
-    });
+    let user = getUser(db, req);
     res.send({
         id: user ? user.id : null,
         created: user ? user.created : null,
@@ -2137,7 +2215,7 @@ app.get('/api/replay-data', async (req, res) => {
     if (offset === 0) {
         // also need the game
         game = await Game.createGameObject(gameId, log[0][2], log[0][3], // must be ImageInfo
-        log[0][4], log[0][5], log[0][6], log[0][7]);
+        log[0][4], log[0][5], log[0][6], log[0][7], log[0][8]);
     }
     res.send({ log, game: game ? Util.encodeGame(game) : null });
 });
@@ -2168,6 +2246,28 @@ app.get('/api/index-data', (req, res) => {
         gamesFinished: games.filter(g => !!g.finished),
     });
 });
+const getOrCreateUser = (db, req) => {
+    let user = getUser(db, req);
+    if (!user) {
+        db.insert('users', {
+            'client_id': req.headers['client-id'],
+            'client_secret': req.headers['client-secret'],
+            'created': Time.timestamp(),
+        });
+        user = getUser(db, req);
+    }
+    return user;
+};
+const getUser = (db, req) => {
+    let user = db.get('users', {
+        'client_id': req.headers['client-id'],
+        'client_secret': req.headers['client-secret'],
+    });
+    if (user) {
+        user.id = parseInt(user.id, 10);
+    }
+    return user;
+};
 const setImageTags = (db, imageId, tags) => {
     tags.forEach((tag) => {
         const slug = Util.slug(tag);
@@ -2181,21 +2281,14 @@ const setImageTags = (db, imageId, tags) => {
     });
 };
 app.post('/api/save-image', express.json(), (req, res) => {
-    let user = db.get('users', {
-        'client_id': req.headers['client-id'],
-        'client_secret': req.headers['client-secret'],
-    });
-    let userId = null;
-    if (user) {
-        userId = parseInt(user.id, 10);
-    }
-    else {
+    let user = getUser(db, req);
+    if (!user || !user.id) {
         res.status(403).send({ ok: false, error: 'forbidden' });
         return;
     }
     const data = req.body;
     let image = db.get('images', { id: data.id });
-    if (parseInt(image.uploader_user_id, 10) !== userId) {
+    if (parseInt(image.uploader_user_id, 10) !== user.id) {
         res.status(403).send({ ok: false, error: 'forbidden' });
         return;
     }
@@ -2223,24 +2316,10 @@ app.post('/api/upload', (req, res) => {
             log.log(err);
             res.status(400).send("Something went wrong!");
         }
-        let user = db.get('users', {
-            'client_id': req.headers['client-id'],
-            'client_secret': req.headers['client-secret'],
-        });
-        let userId = null;
-        if (user) {
-            userId = user.id;
-        }
-        else {
-            userId = db.insert('users', {
-                'client_id': req.headers['client-id'],
-                'client_secret': req.headers['client-secret'],
-                'created': Time.timestamp(),
-            });
-        }
+        const user = getOrCreateUser(db, req);
         const dim = await Images.getDimensions(`${UPLOAD_DIR}/${req.file.filename}`);
         const imageId = db.insert('images', {
-            uploader_user_id: userId,
+            uploader_user_id: user.id,
             filename: req.file.filename,
             filename_original: req.file.originalname,
             title: req.body.title || '',
@@ -2256,12 +2335,17 @@ app.post('/api/upload', (req, res) => {
     });
 });
 app.post('/api/newgame', express.json(), async (req, res) => {
+    let user = getOrCreateUser(db, req);
+    if (!user || !user.id) {
+        res.status(403).send({ ok: false, error: 'forbidden' });
+        return;
+    }
     const gameSettings = req.body;
     log.log(gameSettings);
     const gameId = Util.uniqId();
     if (!GameCommon.exists(gameId)) {
         const ts = Time.timestamp();
-        await Game.createGame(gameId, gameSettings.tiles, gameSettings.image, ts, gameSettings.scoreMode, gameSettings.shapeMode, gameSettings.snapMode);
+        await Game.createGame(gameId, gameSettings.tiles, gameSettings.image, ts, gameSettings.scoreMode, gameSettings.shapeMode, gameSettings.snapMode, user.id);
     }
     res.send({ id: gameId });
 });
@@ -2343,7 +2427,7 @@ wss.on('message', async ({ socket, data }) => {
         log.error(e);
     }
 });
-GameStorage.loadGames();
+GameStorage.loadGamesFromDb(db);
 const server = app.listen(port, hostname, () => log.log(`server running on http://${hostname}:${port}`));
 wss.listen();
 const memoryUsageHuman = () => {
@@ -2357,7 +2441,7 @@ memoryUsageHuman();
 // persist games in fixed interval
 const persistInterval = setInterval(() => {
     log.log('Persisting games...');
-    GameStorage.persistGames();
+    GameStorage.persistGamesToDb(db);
     memoryUsageHuman();
 }, config.persistence.interval);
 const gracefulShutdown = (signal) => {
@@ -2365,7 +2449,7 @@ const gracefulShutdown = (signal) => {
     log.log('clearing persist interval...');
     clearInterval(persistInterval);
     log.log('persisting games...');
-    GameStorage.persistGames();
+    GameStorage.persistGamesToDb(db);
     log.log('shutting down webserver...');
     server.close();
     log.log('shutting down websocketserver...');

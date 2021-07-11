@@ -90,6 +90,7 @@ const get = (
     log[0][5] = DefaultScoreMode(log[0][5])
     log[0][6] = DefaultShapeMode(log[0][6])
     log[0][7] = DefaultSnapMode(log[0][7])
+    log[0][8] = log[0][8] || null
   }
   return log
 }

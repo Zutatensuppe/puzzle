@@ -16,12 +16,14 @@ async function createGameObject(
   ts: Timestamp,
   scoreMode: ScoreMode,
   shapeMode: ShapeMode,
-  snapMode: SnapMode
+  snapMode: SnapMode,
+  creatorUserId: number|null
 ): Promise<Game> {
   const seed = Util.hash(gameId + ' ' + ts)
   const rng = new Rng(seed)
   return {
     id: gameId,
+    creatorUserId,
     rng: { type: 'Rng', obj: rng },
     puzzle: await createPuzzle(rng, targetTiles, image, ts, shapeMode),
     players: [],
@@ -39,7 +41,8 @@ async function createGame(
   ts: Timestamp,
   scoreMode: ScoreMode,
   shapeMode: ShapeMode,
-  snapMode: SnapMode
+  snapMode: SnapMode,
+  creatorUserId: number
 ): Promise<void> {
   const gameObject = await createGameObject(
     gameId,
@@ -48,7 +51,8 @@ async function createGame(
     ts,
     scoreMode,
     shapeMode,
-    snapMode
+    snapMode,
+    creatorUserId
   )
 
   GameLog.create(gameId, ts)
@@ -61,7 +65,8 @@ async function createGame(
     ts,
     scoreMode,
     shapeMode,
-    snapMode
+    snapMode,
+    gameObject.creatorUserId
   )
 
   GameCommon.setGame(gameObject.id, gameObject)

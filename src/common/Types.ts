@@ -51,6 +51,7 @@ export type EncodedGame = FixedLengthArray<[
   ScoreMode,
   ShapeMode,
   SnapMode,
+  number|null,
 ]>
 
 export interface ReplayData {
@@ -72,6 +73,7 @@ interface GameRng {
 
 export interface Game {
   id: string
+  creatorUserId: number|null
   players: Array<EncodedPlayer>
   puzzle: Puzzle
   evtInfos: Record<string, EvtInfo>

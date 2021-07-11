@@ -1,11 +1,16 @@
 import GameCommon from '../src/common/GameCommon'
 import { logger } from '../src/common/Util'
+import Db from '../src/server/Db'
+import { DB_FILE, DB_PATCHES_DIR } from '../src/server/Dirs'
 import GameStorage from '../src/server/GameStorage'
 
 const log = logger('fix_tiles.js')
 
+const db = new Db(DB_FILE, DB_PATCHES_DIR)
+db.patch(true)
+
 function fix_tiles(gameId) {
-  GameStorage.loadGame(gameId)
+  GameStorage.loadGameFromDb(db, gameId)
   let changed = false
   const tiles = GameCommon.getPiecesSortedByZIndex(gameId)
   for (let tile of tiles) {
@@ -27,7 +32,7 @@ function fix_tiles(gameId) {
     }
   }
   if (changed) {
-    GameStorage.persistGame(gameId)
+    GameStorage.persistGameToDb(db, gameId)
   }
 }
 
