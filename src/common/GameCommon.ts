@@ -162,11 +162,12 @@ function getPieceCount(gameId: string): number {
 }
 
 function getImageUrl(gameId: string): string {
-  return GAMES[gameId].puzzle.info.imageUrl
-}
-
-function setImageUrl(gameId: string, imageUrl: string): void {
-  GAMES[gameId].puzzle.info.imageUrl = imageUrl
+  const imageUrl = GAMES[gameId].puzzle.info.image?.url
+    || GAMES[gameId].puzzle.info.imageUrl
+  if (!imageUrl) {
+    throw new Error('[2021-07-11] no image url set')
+  }
+  return imageUrl
 }
 
 function getScoreMode(gameId: string): ScoreMode {
@@ -895,7 +896,6 @@ export default {
   getFinishedPiecesCount,
   getPieceCount,
   getImageUrl,
-  setImageUrl,
   get,
   getAllGames,
   getPlayerBgColor,

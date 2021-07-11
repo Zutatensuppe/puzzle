@@ -7,29 +7,9 @@ import {UPLOAD_DIR, UPLOAD_URL} from './Dirs'
 import Db, { OrderBy, WhereRaw } from './Db'
 import { Dim } from '../common/Geometry'
 import { logger } from '../common/Util'
-import { Timestamp } from '../common/Types'
+import { Tag, ImageInfo } from '../common/Types'
 
 const log = logger('Images.ts')
-
-interface Tag
-{
-  id: number
-  slug: string
-  title: string
-}
-
-interface ImageInfo
-{
-  id: number
-  filename: string
-  file: string
-  url: string
-  title: string
-  tags: Tag[]
-  created: Timestamp
-  width: number
-  height: number
-}
 
 const resizeImage = async (filename: string): Promise<void> => {
   if (!filename.toLowerCase().match(/\.(jpe?g|webp|png)$/)) {
@@ -106,7 +86,6 @@ const imageFromDb = (db: Db, imageId: number): ImageInfo => {
   return {
     id: i.id,
     filename: i.filename,
-    file: `${UPLOAD_DIR}/${i.filename}`,
     url: `${UPLOAD_URL}/${encodeURIComponent(i.filename)}`,
     title: i.title,
     tags: getTags(db, i.id),
@@ -152,7 +131,6 @@ inner join images i on i.id = ixc.image_id ${where.sql};
   return images.map(i => ({
     id: i.id as number,
     filename: i.filename,
-    file: `${UPLOAD_DIR}/${i.filename}`,
     url: `${UPLOAD_URL}/${encodeURIComponent(i.filename)}`,
     title: i.title,
     tags: getTags(db, i.id),
@@ -174,7 +152,6 @@ const allImagesFromDisk = (
     .map(f => ({
       id: 0,
       filename: f,
-      file: `${UPLOAD_DIR}/${f}`,
       url: `${UPLOAD_URL}/${encodeURIComponent(f)}`,
       title: f.replace(/\.[a-z]+$/, ''),
       tags: [] as Tag[],
@@ -186,13 +163,13 @@ const allImagesFromDisk = (
   switch (sort) {
     case 'alpha_asc':
       images = images.sort((a, b) => {
-        return a.file > b.file ? 1 : -1
+        return a.filename > b.filename ? 1 : -1
       })
       break;
 
     case 'alpha_desc':
       images = images.sort((a, b) => {
-        return a.file < b.file ? 1 : -1
+        return a.filename < b.filename ? 1 : -1
       })
       break;
 

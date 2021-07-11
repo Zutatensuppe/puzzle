@@ -626,10 +626,12 @@ function getPieceCount(gameId) {
     return GAMES[gameId].puzzle.tiles.length;
 }
 function getImageUrl(gameId) {
-    return GAMES[gameId].puzzle.info.imageUrl;
-}
-function setImageUrl(gameId, imageUrl) {
-    GAMES[gameId].puzzle.info.imageUrl = imageUrl;
+    const imageUrl = GAMES[gameId].puzzle.info.image?.url
+        || GAMES[gameId].puzzle.info.imageUrl;
+    if (!imageUrl) {
+        throw new Error('[2021-07-11] no image url set');
+    }
+    return imageUrl;
 }
 function getScoreMode(gameId) {
     return GAMES[gameId].scoreMode;
@@ -1243,7 +1245,6 @@ var GameCommon = {
     getFinishedPiecesCount,
     getPieceCount,
     getImageUrl,
-    setImageUrl,
     get: get$1,
     getAllGames,
     getPlayerBgColor,
@@ -1358,6 +1359,8 @@ var GameLog = {
     exists,
     log: _log,
     get,
+    filename,
+    idxname,
 };
 
 const log$4 = logger('Images.ts');
@@ -1433,7 +1436,6 @@ const imageFromDb = (db, imageId) => {
     return {
         id: i.id,
         filename: i.filename,
-        file: `${UPLOAD_DIR}/${i.filename}`,
         url: `${UPLOAD_URL}/${encodeURIComponent(i.filename)}`,
         title: i.title,
         tags: getTags(db, i.id),
@@ -1472,7 +1474,6 @@ inner join images i on i.id = ixc.image_id ${where.sql};
     return images.map(i => ({
         id: i.id,
         filename: i.filename,
-        file: `${UPLOAD_DIR}/${i.filename}`,
         url: `${UPLOAD_URL}/${encodeURIComponent(i.filename)}`,
         title: i.title,
         tags: getTags(db, i.id),
@@ -1490,7 +1491,6 @@ const allImagesFromDisk = (tags, sort) => {
         .map(f => ({
         id: 0,
         filename: f,
-        file: `${UPLOAD_DIR}/${f}`,
         url: `${UPLOAD_URL}/${encodeURIComponent(f)}`,
         title: f.replace(/\.[a-z]+$/, ''),
         tags: [],
@@ -1501,12 +1501,12 @@ const allImagesFromDisk = (tags, sort) => {
     switch (sort) {
         case 'alpha_asc':
             images = images.sort((a, b) => {
-                return a.file > b.file ? 1 : -1;
+                return a.filename > b.filename ? 1 : -1;
             });
             break;
         case 'alpha_desc':
             images = images.sort((a, b) => {
-                return a.file < b.file ? 1 : -1;
+                return a.filename < b.filename ? 1 : -1;
             });
             break;
         case 'date_asc':
@@ -1552,7 +1552,7 @@ var Images = {
 // final resized version of the puzzle image
 const TILE_SIZE = 64;
 async function createPuzzle(rng, targetTiles, image, ts, shapeMode) {
-    const imagePath = image.file;
+    const imagePath = `${UPLOAD_DIR}/${image.filename}`;
     const imageUrl = image.url;
     // determine puzzle information from the image dimensions
     const dim = await Images.getDimensions(imagePath);
@@ -1651,6 +1651,7 @@ async function createPuzzle(rng, targetTiles, image, ts, shapeMode) {
             // information that was used to create the puzzle
             targetTiles: targetTiles,
             imageUrl,
+            image: image,
             width: info.width,
             height: info.height,
             tileSize: info.tileSize,
@@ -2114,7 +2115,8 @@ app.get('/api/replay-data', async (req, res) => {
     let game = null;
     if (offset === 0) {
         // also need the game
-        game = await Game.createGameObject(gameId, log[0][2], log[0][3], log[0][4], log[0][5], log[0][6], log[0][7]);
+        game = await Game.createGameObject(gameId, log[0][2], log[0][3], // must be ImageInfo
+        log[0][4], log[0][5], log[0][6], log[0][7]);
     }
     res.send({ log, game: game ? Util.encodeGame(game) : null });
 });

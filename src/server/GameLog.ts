@@ -100,4 +100,6 @@ export default {
   exists,
   log: _log,
   get,
+  filename,
+  idxname,
 }

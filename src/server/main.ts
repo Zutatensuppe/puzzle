@@ -19,7 +19,7 @@ import {
   UPLOAD_DIR,
 } from './Dirs'
 import GameCommon from '../common/GameCommon'
-import { ServerEvent, Game as GameType, GameSettings, ScoreMode, ShapeMode, SnapMode } from '../common/Types'
+import { ServerEvent, Game as GameType, GameSettings } from '../common/Types'
 import GameStorage from './GameStorage'
 import Db from './Db'
 
@@ -87,7 +87,7 @@ app.get('/api/replay-data', async (req, res): Promise<void> => {
     game = await Game.createGameObject(
       gameId,
       log[0][2],
-      log[0][3],
+      log[0][3], // must be ImageInfo
       log[0][4],
       log[0][5],
       log[0][6],

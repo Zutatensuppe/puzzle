@@ -6,19 +6,19 @@
       </tr>
       <tr>
         <td>Image Title: </td>
-        <td>{{game.puzzle.info.imageTitle}}</td>
+        <td>{{game.puzzle.info.image.title}}</td>
       </tr>
       <tr>
         <td>Snap Mode: </td>
-        <td>{{scoreMode[0]}}</td>
+        <td><span :title="snapMode[1]">{{scoreMode[0]}}</span></td>
       </tr>
       <tr>
         <td>Shape Mode: </td>
-        <td>{{shapeMode[0]}}</td>
+        <td><span :title="snapMode[1]">{{shapeMode[0]}}</span></td>
       </tr>
       <tr>
         <td>Score Mode: </td>
-        <td>{{snapMode[0]}}</td>
+        <td><span :title="snapMode[1]">{{snapMode[0]}}</span></td>
       </tr>
     </table>
   </div>

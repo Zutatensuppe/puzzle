@@ -93,7 +93,7 @@ export interface Image {
 
 export interface GameSettings {
   tiles: number
-  image: Image
+  image: ImageInfo
   scoreMode: ScoreMode
   shapeMode: ShapeMode
   snapMode: SnapMode
@@ -152,11 +152,23 @@ export interface PieceChange {
   group?: number
 }
 
+export interface ImageInfo
+{
+  id: number
+  filename: string
+  url: string
+  title: string
+  tags: Tag[]
+  created: Timestamp
+  width: number
+  height: number
+}
+
 export interface PuzzleInfo {
   table: PuzzleTable
   targetTiles: number
-  imageUrl: string
-  imageTitle: string
+  imageUrl?: string // deprecated, use image.url instead
+  image?: ImageInfo
 
   width: number
   height: number

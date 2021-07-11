@@ -1,9 +1,9 @@
 import GameCommon from './../common/GameCommon'
-import { Change, Game, Input, ScoreMode, ShapeMode, SnapMode, Timestamp } from './../common/Types'
+import { Change, Game, Input, ScoreMode, ShapeMode, SnapMode,ImageInfo, Timestamp } from './../common/Types'
 import Util, { logger } from './../common/Util'
 import { Rng } from './../common/Rng'
 import GameLog from './GameLog'
-import { createPuzzle, PuzzleCreationImageInfo } from './Puzzle'
+import { createPuzzle } from './Puzzle'
 import Protocol from './../common/Protocol'
 import GameStorage from './GameStorage'
 
@@ -12,7 +12,7 @@ const log = logger('Game.ts')
 async function createGameObject(
   gameId: string,
   targetTiles: number,
-  image: PuzzleCreationImageInfo,
+  image: ImageInfo,
   ts: Timestamp,
   scoreMode: ScoreMode,
   shapeMode: ShapeMode,
@@ -35,7 +35,7 @@ async function createGameObject(
 async function createGame(
   gameId: string,
   targetTiles: number,
-  image: PuzzleCreationImageInfo,
+  image: ImageInfo,
   ts: Timestamp,
   scoreMode: ScoreMode,
   shapeMode: ShapeMode,

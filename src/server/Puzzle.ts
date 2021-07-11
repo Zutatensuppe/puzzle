@@ -1,14 +1,9 @@
 import Util from './../common/Util'
 import { Rng } from './../common/Rng'
 import Images from './Images'
-import { EncodedPiece, EncodedPieceShape, PieceShape, Puzzle, ShapeMode } from '../common/Types'
+import { EncodedPiece, EncodedPieceShape, PieceShape, Puzzle, ShapeMode, ImageInfo } from '../common/Types'
 import { Dim, Point } from '../common/Geometry'
-
-export interface PuzzleCreationImageInfo {
-  file: string
-  url: string
-  title: string
-}
+import { UPLOAD_DIR } from './Dirs'
 
 export interface PuzzleCreationInfo {
   width: number
@@ -28,11 +23,11 @@ const TILE_SIZE = 64
 async function createPuzzle(
   rng: Rng,
   targetTiles: number,
-  image: PuzzleCreationImageInfo,
+  image: ImageInfo,
   ts: number,
   shapeMode: ShapeMode
 ): Promise<Puzzle> {
-  const imagePath = image.file
+  const imagePath = `${UPLOAD_DIR}/${image.filename}`
   const imageUrl = image.url
 
   // determine puzzle information from the image dimensions
@@ -140,8 +135,8 @@ async function createPuzzle(
       },
       // information that was used to create the puzzle
       targetTiles: targetTiles,
-      imageUrl,
-      imageTitle: image.title || '',
+      imageUrl, // todo: remove
+      image: image,
 
       width: info.width, // actual puzzle width (same as bitmap.width)
       height: info.height, // actual puzzle height (same as bitmap.height)
