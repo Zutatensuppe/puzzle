@@ -138,12 +138,16 @@ function setEvtInfo(
 
 function getAllGames(): Array<Game> {
   return Object.values(GAMES).sort((a: Game, b: Game) => {
+    const finished = isFinished(a.id)
     // when both have same finished state, sort by started
-    if (isFinished(a.id) === isFinished(b.id)) {
+    if (finished === isFinished(b.id)) {
+      if (finished) {
+        return  b.puzzle.data.finished - a.puzzle.data.finished
+      }
       return b.puzzle.data.started - a.puzzle.data.started
     }
     // otherwise, sort: unfinished, finished
-    return isFinished(a.id) ? 1 : -1
+    return finished ? 1 : -1
   })
 }
 
