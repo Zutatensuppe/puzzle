@@ -11,6 +11,14 @@ import settings from './settings'
 import xhr from './xhr'
 
 (async () => {
+  function initClientSecret() {
+    let SECRET = settings.getStr('SECRET', '')
+    if (!SECRET) {
+      SECRET = Util.uniqId()
+      settings.setStr('SECRET', SECRET)
+    }
+    return SECRET
+  }
   function initClientId() {
     let ID = settings.getStr('ID', '')
     if (!ID) {
@@ -20,7 +28,9 @@ import xhr from './xhr'
     return ID
   }
   const clientId = initClientId()
+  const clientSecret = initClientSecret()
   xhr.setClientId(clientId)
+  xhr.setClientSecret(clientSecret)
 
   const res = await xhr.get(`/api/conf`, {})
   const conf = await res.json()

@@ -11,6 +11,7 @@ export interface Options {
 }
 
 let xhrClientId: string = ''
+let xhrClientSecret: string = ''
 const request = async (
   method: string,
   url: string,
@@ -25,6 +26,7 @@ const request = async (
     }
 
     xhr.setRequestHeader('Client-Id', xhrClientId)
+    xhr.setRequestHeader('Client-Secret', xhrClientSecret)
 
     xhr.addEventListener('load', function (ev: ProgressEvent<XMLHttpRequestEventTarget>
       ) {
@@ -59,5 +61,8 @@ export default {
   },
   setClientId: (clientId: string): void => {
     xhrClientId = clientId
+  },
+  setClientSecret: (clientSecret: string): void => {
+    xhrClientSecret = clientSecret
   },
 }
