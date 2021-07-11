@@ -85,6 +85,7 @@ const imageFromDb = (db: Db, imageId: number): ImageInfo => {
   const i = db.get('images', { id: imageId })
   return {
     id: i.id,
+    uploaderUserId: i.uploader_user_id,
     filename: i.filename,
     url: `${UPLOAD_URL}/${encodeURIComponent(i.filename)}`,
     title: i.title,
@@ -130,6 +131,7 @@ inner join images i on i.id = ixc.image_id ${where.sql};
 
   return images.map(i => ({
     id: i.id as number,
+    uploaderUserId: i.uploader_user_id,
     filename: i.filename,
     url: `${UPLOAD_URL}/${encodeURIComponent(i.filename)}`,
     title: i.title,
@@ -151,6 +153,7 @@ const allImagesFromDisk = (
     .filter(f => f.toLowerCase().match(/\.(jpe?g|webp|png)$/))
     .map(f => ({
       id: 0,
+      uploaderUserId: null,
       filename: f,
       url: `${UPLOAD_URL}/${encodeURIComponent(f)}`,
       title: f.replace(/\.[a-z]+$/, ''),

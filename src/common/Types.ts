@@ -155,6 +155,7 @@ export interface PieceChange {
 export interface ImageInfo
 {
   id: number
+  uploaderUserId: number|null
   filename: string
   url: string
   title: string

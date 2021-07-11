@@ -3,7 +3,7 @@
     class="imageteaser"
     :style="style"
     @click="onClick">
-    <div class="btn edit" @click.stop="onEditClick">✏️</div>
+    <div class="btn edit" v-if="canEdit" @click.stop="onEditClick">✏️</div>
   </div>
 </template>
 <script lang="ts">
@@ -18,11 +18,17 @@ export default defineComponent({
     },
   },
   computed: {
-    style (): object {
+    style(): object {
       const url = this.image.url.replace('uploads/', 'uploads/r/') + '-150x100.webp'
       return {
         'backgroundImage': `url("${url}")`,
       }
+    },
+    canEdit(): boolean {
+      if (!this.$me.id) {
+        return false
+      }
+      return this.$me.id === this.image.uploaderUserId
     },
   },
   emits: {

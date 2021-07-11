@@ -32,8 +32,11 @@ import xhr from './xhr'
   xhr.setClientId(clientId)
   xhr.setClientSecret(clientSecret)
 
-  const res = await xhr.get(`/api/conf`, {})
-  const conf = await res.json()
+  const meRes = await xhr.get(`/api/me`, {})
+  const me = await meRes.json()
+
+  const confRes = await xhr.get(`/api/conf`, {})
+  const conf = await confRes.json()
 
   const router = VueRouter.createRouter({
     history: VueRouter.createWebHashHistory(),
@@ -53,6 +56,7 @@ import xhr from './xhr'
   })
 
   const app = Vue.createApp(App)
+  app.config.globalProperties.$me = me
   app.config.globalProperties.$config = conf
   app.config.globalProperties.$clientId = clientId
   app.use(router)

@@ -179,9 +179,13 @@ export default defineComponent({
       return await res.json()
     },
     async onSaveImageClick(data: any) {
-      await this.saveImage(data)
-      this.dialog = ''
-      await this.loadImages()
+      const res = await this.saveImage(data)
+      if (res.ok) {
+        this.dialog = ''
+        await this.loadImages()
+      } else {
+        alert(res.error)
+      }
     },
     async postToGalleryClick(data: any) {
       this.uploading = 'postToGallery'

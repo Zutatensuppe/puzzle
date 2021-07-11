@@ -57,6 +57,17 @@ const storage = multer.diskStorage({
 })
 const upload = multer({storage}).single('file');
 
+app.get('/api/me', (req, res): void => {
+  let user = db.get('users', {
+    'client_id': req.headers['client-id'],
+    'client_secret': req.headers['client-secret'],
+  })
+  res.send({
+    id: user ? user.id : null,
+    created: user ? user.created : null,
+  })
+})
+
 app.get('/api/conf', (req, res): void => {
   res.send({
     WS_ADDRESS: config.ws.connectstring,
@@ -147,7 +158,25 @@ const setImageTags = (db: Db, imageId: number, tags: string[]): void => {
 }
 
 app.post('/api/save-image', express.json(), (req, res): void => {
+  let user = db.get('users', {
+    'client_id': req.headers['client-id'],
+    'client_secret': req.headers['client-secret'],
+  })
+  let userId: number|null = null
+  if (user) {
+    userId = parseInt(user.id, 10)
+  } else {
+    res.status(403).send({ ok: false, error: 'forbidden' })
+    return
+  }
+
   const data = req.body as SaveImageRequestData
+  let image = db.get('images', {id: data.id})
+  if (parseInt(image.uploader_user_id, 10) !== userId) {
+    res.status(403).send({ ok: false, error: 'forbidden' })
+    return
+  }
+
   db.update('images', {
     title: data.title,
   }, {
@@ -176,10 +205,26 @@ app.post('/api/upload', (req, res): void => {
       res.status(400).send("Something went wrong!");
     }
 
+    let user = db.get('users', {
+      'client_id': req.headers['client-id'],
+      'client_secret': req.headers['client-secret'],
+    })
+    let userId: number|null = null
+    if (user) {
+      userId = user.id
+    } else {
+      userId = db.insert('users', {
+        'client_id': req.headers['client-id'],
+        'client_secret': req.headers['client-secret'],
+        'created': Time.timestamp(),
+      }) as number
+    }
+
     const dim = await Images.getDimensions(
       `${UPLOAD_DIR}/${req.file.filename}`
     )
     const imageId = db.insert('images', {
+      uploader_user_id: userId,
       filename: req.file.filename,
       filename_original: req.file.originalname,
       title: req.body.title || '',
