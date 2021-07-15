@@ -35,20 +35,20 @@
               Normal</label>
               <br />
               <label><input type="radio" v-model="shapeMode" value="1" />
-              Any (flat pieces can occur anywhere)</label>
+              Any (Flat pieces can occur anywhere)</label>
               <br />
               <label><input type="radio" v-model="shapeMode" value="2" />
-              Flat (all pieces flat on all sides)</label>
+              Flat (All pieces flat on all sides)</label>
             </td>
           </tr>
           <tr>
             <td><label>Snapping: </label></td>
             <td>
               <label><input type="radio" v-model="snapMode" value="0" />
-              Normal (pieces snap to final destination and to each other)</label>
+              Normal (Pieces snap to final destination and to each other)</label>
               <br />
               <label><input type="radio" v-model="snapMode" value="1" />
-              Real (pieces snap only to corners, already snapped pieces and to each other)</label>
+              Real (Pieces snap only to corners, already snapped pieces and to each other)</label>
             </td>
           </tr>
         </table>
