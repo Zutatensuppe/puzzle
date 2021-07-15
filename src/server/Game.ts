@@ -1,5 +1,5 @@
 import GameCommon from './../common/GameCommon'
-import { Change, Game, Input, ScoreMode, ShapeMode, SnapMode,ImageInfo, Timestamp } from './../common/Types'
+import { Change, Game, Input, ScoreMode, ShapeMode, SnapMode,ImageInfo, Timestamp, GameSettings } from './../common/Types'
 import Util, { logger } from './../common/Util'
 import { Rng } from './../common/Rng'
 import GameLog from './GameLog'
@@ -34,24 +34,24 @@ async function createGameObject(
   }
 }
 
-async function createGame(
-  gameId: string,
-  targetTiles: number,
-  image: ImageInfo,
+async function createNewGame(
+  gameSettings: GameSettings,
   ts: Timestamp,
-  scoreMode: ScoreMode,
-  shapeMode: ShapeMode,
-  snapMode: SnapMode,
   creatorUserId: number
-): Promise<void> {
+): Promise<string> {
+  let gameId;
+  do {
+    gameId = Util.uniqId()
+  } while (GameCommon.exists(gameId))
+
   const gameObject = await createGameObject(
     gameId,
-    targetTiles,
-    image,
+    gameSettings.tiles,
+    gameSettings.image,
     ts,
-    scoreMode,
-    shapeMode,
-    snapMode,
+    gameSettings.scoreMode,
+    gameSettings.shapeMode,
+    gameSettings.snapMode,
     creatorUserId
   )
 
@@ -60,17 +60,19 @@ async function createGame(
     gameId,
     Protocol.LOG_HEADER,
     1,
-    targetTiles,
-    image,
+    gameSettings.tiles,
+    gameSettings.image,
     ts,
-    scoreMode,
-    shapeMode,
-    snapMode,
+    gameSettings.scoreMode,
+    gameSettings.shapeMode,
+    gameSettings.snapMode,
     gameObject.creatorUserId
   )
 
   GameCommon.setGame(gameObject.id, gameObject)
   GameStorage.setDirty(gameId)
+
+  return gameId
 }
 
 function addPlayer(gameId: string, playerId: string, ts: Timestamp): void {
@@ -105,7 +107,7 @@ function handleInput(
 
 export default {
   createGameObject,
-  createGame,
+  createNewGame,
   addPlayer,
   handleInput,
 }

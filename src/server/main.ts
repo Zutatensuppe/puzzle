@@ -22,6 +22,7 @@ import GameCommon from '../common/GameCommon'
 import { ServerEvent, Game as GameType, GameSettings } from '../common/Types'
 import GameStorage from './GameStorage'
 import Db from './Db'
+import Users from './Users'
 
 const db = new Db(DB_FILE, DB_PATCHES_DIR)
 db.patch()
@@ -58,7 +59,7 @@ const storage = multer.diskStorage({
 const upload = multer({storage}).single('file');
 
 app.get('/api/me', (req, res): void => {
-  let user = getUser(db, req)
+  let user = Users.getUser(db, req)
   res.send({
     id: user ? user.id : null,
     created: user ? user.created : null,
@@ -142,52 +143,15 @@ interface SaveImageRequestData {
   tags: string[]
 }
 
-const getOrCreateUser = (db: Db, req: any): any => {
-  let user = getUser(db, req)
-  if (!user) {
-    db.insert('users', {
-      'client_id': req.headers['client-id'],
-      'client_secret': req.headers['client-secret'],
-      'created': Time.timestamp(),
-    })
-    user = getUser(db, req)
-  }
-  return user
-}
-
-const getUser = (db: Db, req: any): any => {
-  let user = db.get('users', {
-    'client_id': req.headers['client-id'],
-    'client_secret': req.headers['client-secret'],
-  })
-  if (user) {
-    user.id = parseInt(user.id, 10)
-  }
-  return user
-}
-
-const setImageTags = (db: Db, imageId: number, tags: string[]): void => {
-  tags.forEach((tag: string) => {
-    const slug = Util.slug(tag)
-    const id = db.upsert('categories', { slug, title: tag }, { slug }, 'id')
-    if (id) {
-      db.insert('image_x_category', {
-        image_id: imageId,
-        category_id: id,
-      })
-    }
-  })
-}
-
 app.post('/api/save-image', express.json(), (req, res): void => {
-  let user = getUser(db, req)
+  const user = Users.getUser(db, req)
   if (!user || !user.id) {
     res.status(403).send({ ok: false, error: 'forbidden' })
     return
   }
 
   const data = req.body as SaveImageRequestData
-  let image = db.get('images', {id: data.id})
+  const image = db.get('images', {id: data.id})
   if (parseInt(image.uploader_user_id, 10) !== user.id) {
     res.status(403).send({ ok: false, error: 'forbidden' })
     return
@@ -199,11 +163,7 @@ app.post('/api/save-image', express.json(), (req, res): void => {
     id: data.id,
   })
 
-  db.delete('image_x_category', { image_id: data.id })
-
-  if (data.tags) {
-    setImageTags(db, data.id, data.tags)
-  }
+  Images.setTags(db, data.id, data.tags || [])
 
   res.send({ ok: true })
 })
@@ -211,17 +171,19 @@ app.post('/api/upload', (req, res): void => {
   upload(req, res, async (err: any): Promise<void> => {
     if (err) {
       log.log(err)
-      res.status(400).send("Something went wrong!");
+      res.status(400).send("Something went wrong!")
+      return
     }
 
     try {
       await Images.resizeImage(req.file.filename)
     } catch (err) {
       log.log(err)
-      res.status(400).send("Something went wrong!");
+      res.status(400).send("Something went wrong!")
+      return
     }
 
-    const user = getOrCreateUser(db, req)
+    const user = Users.getOrCreateUser(db, req)
 
     const dim = await Images.getDimensions(
       `${UPLOAD_DIR}/${req.file.filename}`
@@ -238,7 +200,7 @@ app.post('/api/upload', (req, res): void => {
 
     if (req.body.tags) {
       const tags = req.body.tags.split(',').filter((tag: string) => !!tag)
-      setImageTags(db, imageId as number, tags)
+      Images.setTags(db, imageId as number, tags)
     }
 
     res.send(Images.imageFromDb(db, imageId as number))
@@ -246,28 +208,12 @@ app.post('/api/upload', (req, res): void => {
 })
 
 app.post('/api/newgame', express.json(), async (req, res): Promise<void> => {
-  let user = getOrCreateUser(db, req)
-  if (!user || !user.id) {
-    res.status(403).send({ ok: false, error: 'forbidden' })
-    return
-  }
-
-  const gameSettings = req.body as GameSettings
-  log.log(gameSettings)
-  const gameId = Util.uniqId()
-  if (!GameCommon.exists(gameId)) {
-    const ts = Time.timestamp()
-    await Game.createGame(
-      gameId,
-      gameSettings.tiles,
-      gameSettings.image,
-      ts,
-      gameSettings.scoreMode,
-      gameSettings.shapeMode,
-      gameSettings.snapMode,
-      user.id,
-    )
-  }
+  const user = Users.getOrCreateUser(db, req)
+  const gameId = await Game.createNewGame(
+    req.body as GameSettings,
+    Time.timestamp(),
+    user.id
+  )
   res.send({ id: gameId })
 })
 

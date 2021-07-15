@@ -41,7 +41,7 @@ function loadGameFromDb(db: Db, gameId: string): void {
   if (!Array.isArray(game.players)) {
     game.players = Object.values(game.players)
   }
-  
+
   const gameObject: Game = storeDataToGame(game, game.creator_user_id)
   GameCommon.setGame(gameObject.id, gameObject)
 }
@@ -122,32 +122,6 @@ function loadGameFromDisk(gameId: string): void {
   GameCommon.setGame(gameObject.id, gameObject)
 }
 
-/**
- * @deprecated
- */
-function persistGamesToDisk(): void {
-  for (const gameId of Object.keys(dirtyGames)) {
-    persistGameToDisk(gameId)
-  }
-}
-
-/**
- * @deprecated
- */
-function persistGameToDisk(gameId: string): void {
-  const game = GameCommon.get(gameId)
-  if (!game) {
-    log.error(`[ERROR] unable to persist non existing game ${gameId}`)
-    return
-  }
-
-  if (game.id in dirtyGames) {
-    setClean(game.id)
-  }
-  fs.writeFileSync(`${DATA_DIR}/${game.id}.json`, gameToStoreData(game))
-  log.info(`[INFO] persisted game ${game.id}`)
-}
-
 function storeDataToGame(storeData: any, creatorUserId: number|null): Game {
   return {
     id: storeData.id,
@@ -181,16 +155,14 @@ function gameToStoreData(game: Game): string {
 }
 
 export default {
-  // disk functions are deprecated 
+  // disk functions are deprecated
   loadGamesFromDisk,
   loadGameFromDisk,
-  persistGamesToDisk,
-  persistGameToDisk,
 
   loadGamesFromDb,
   loadGameFromDb,
   persistGamesToDb,
   persistGameToDb,
-  
+
   setDirty,
 }

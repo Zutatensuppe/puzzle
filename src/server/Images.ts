@@ -6,7 +6,7 @@ import sharp from 'sharp'
 import {UPLOAD_DIR, UPLOAD_URL} from './Dirs'
 import Db, { OrderBy, WhereRaw } from './Db'
 import { Dim } from '../common/Geometry'
-import { logger } from '../common/Util'
+import Util, { logger } from '../common/Util'
 import { Tag, ImageInfo } from '../common/Types'
 
 const log = logger('Images.ts')
@@ -209,6 +209,20 @@ async function getDimensions(imagePath: string): Promise<Dim> {
   }
 }
 
+const setTags = (db: Db, imageId: number, tags: string[]): void => {
+  db.delete('image_x_category', { image_id: imageId })
+  tags.forEach((tag: string) => {
+    const slug = Util.slug(tag)
+    const id = db.upsert('categories', { slug, title: tag }, { slug }, 'id')
+    if (id) {
+      db.insert('image_x_category', {
+        image_id: imageId,
+        category_id: id,
+      })
+    }
+  })
+}
+
 export default {
   allImagesFromDisk,
   imageFromDb,
@@ -216,4 +230,5 @@ export default {
   getAllTags,
   resizeImage,
   getDimensions,
+  setTags,
 }
