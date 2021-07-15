@@ -49,7 +49,7 @@ import InfoOverlay from './../components/InfoOverlay.vue'
 import HelpOverlay from './../components/HelpOverlay.vue'
 
 import { main, MODE_REPLAY } from './../game'
-import { Player } from '../../common/Types'
+import { Game, Player } from '../../common/Types'
 
 export default defineComponent({
   name: 'replay',
