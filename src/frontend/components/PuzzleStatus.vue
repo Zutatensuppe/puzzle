@@ -14,7 +14,6 @@ import { defineComponent } from 'vue'
 import Time from './../../common/Time'
 
 export default defineComponent({
-  name: 'puzzle-status',
   props: {
     finished: {
       type: Boolean,

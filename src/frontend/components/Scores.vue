@@ -19,7 +19,6 @@
 import { defineComponent } from 'vue'
 
 export default defineComponent({
-  name: "scores",
   props: {
     activePlayers: {
       type: Array,

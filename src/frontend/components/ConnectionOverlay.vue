@@ -15,7 +15,6 @@ import { defineComponent } from 'vue'
 import Communication from './../Communication'
 
 export default defineComponent({
-  name: 'connection-overlay',
   emits: {
     reconnect: null,
   },

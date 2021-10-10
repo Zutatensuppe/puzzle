@@ -40,15 +40,7 @@
 import { defineComponent, PropType } from 'vue'
 import { Image, Tag } from '../../common/Types'
 
-import ResponsiveImage from './ResponsiveImage.vue'
-import TagsInput from './TagsInput.vue'
-
 export default defineComponent({
-  name: 'edit-image-dialog',
-  components: {
-    ResponsiveImage,
-    TagsInput,
-  },
   props: {
     image: {
       type: Object as PropType<Image>,

@@ -25,10 +25,8 @@
 </template>
 <script lang="ts">
 import { defineComponent, PropType } from 'vue'
-import { Tag } from '../../common/Types'
 
 export default defineComponent({
-  name: 'tags-input',
   props: {
     modelValue: {
       type: Array as PropType<string[]>,

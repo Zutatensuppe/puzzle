@@ -17,7 +17,6 @@ import { defineComponent } from 'vue'
 import Time from './../../common/Time'
 
 export default defineComponent({
-  name: 'game-teaser',
   props: {
     game: {
       type: Object,

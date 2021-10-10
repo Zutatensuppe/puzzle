@@ -3,7 +3,6 @@
 </template>
 <script>
 export default {
-  name: 'responsive-image',
   props: {
     src: String,
     title: {

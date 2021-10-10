@@ -42,7 +42,6 @@
 import { defineComponent } from 'vue'
 
 export default defineComponent({
-  name: 'settings-overlay',
   emits: {
     'update:modelValue': null,
   },

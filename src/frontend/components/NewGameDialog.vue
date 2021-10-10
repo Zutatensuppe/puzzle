@@ -66,13 +66,8 @@
 import { defineComponent } from 'vue'
 
 import { GameSettings, ScoreMode, ShapeMode, SnapMode } from './../../common/Types'
-import ResponsiveImage from './ResponsiveImage.vue'
 
 export default defineComponent({
-  name: 'new-game-dialog',
-  components: {
-    ResponsiveImage,
-  },
   props: {
     image: {
       type: Object,

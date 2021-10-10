@@ -28,7 +28,6 @@ import { defineComponent, PropType } from 'vue'
 import { Game, ScoreMode, ShapeMode, SnapMode } from '../../common/Types'
 
 export default defineComponent({
-  name: 'help-overlay',
   props: {
     game: {
       type: Object as PropType<Game>,

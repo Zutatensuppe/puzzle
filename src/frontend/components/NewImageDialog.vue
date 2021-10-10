@@ -71,17 +71,9 @@ gallery", if possible!
 import { defineComponent } from 'vue'
 import { logger } from '../../common/Util'
 
-import ResponsiveImage from './ResponsiveImage.vue'
-import TagsInput from './TagsInput.vue'
-
 const log = logger('NewImageDialog.vue')
 
 export default defineComponent({
-  name: 'new-image-dialog',
-  components: {
-    ResponsiveImage,
-    TagsInput,
-  },
   props: {
     autocompleteTags: {
       type: Function,

@@ -9,7 +9,6 @@ import { defineComponent } from 'vue'
 import xhr from '../xhr'
 
 export default defineComponent({
-  name: 'upload',
   props: {
     accept: String,
     label: String,

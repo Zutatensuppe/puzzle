@@ -10,8 +10,23 @@ import Util from './../common/Util'
 import settings from './settings'
 import xhr from './xhr'
 
-
+import ConnectionOverlay from './components/ConnectionOverlay.vue'
+import EditImageDialog from './components/EditImageDialog.vue'
+import GameTeaser from './components/GameTeaser.vue'
+import HelpOverlay from './components/HelpOverlay.vue'
+import ImageLibrary from './components/ImageLibrary.vue'
+import ImageTeaser from './components/ImageTeaser.vue'
+import InfoOverlay from './components/InfoOverlay.vue'
+import NewGameDialog from './components/NewGameDialog.vue'
+import NewImageDialog from './components/NewImageDialog.vue'
 import Overlay from './components/Overlay.vue'
+import PreviewOverlay from './components/PreviewOverlay.vue'
+import PuzzleStatus from './components/PuzzleStatus.vue'
+import ResponsiveImage from './components/ResponsiveImage.vue'
+import Scores from './components/Scores.vue'
+import SettingsOverlay from './components/SettingsOverlay.vue'
+import TagsInput from './components/TagsInput.vue'
+import Upload from './components/Upload.vue'
 
 (async () => {
   function initClientSecret() {
@@ -63,6 +78,22 @@ import Overlay from './components/Overlay.vue'
   app.config.globalProperties.$config = conf
   app.config.globalProperties.$clientId = clientId
   app.use(router)
+  app.component('connection-overlay', ConnectionOverlay)
+  app.component('edit-image-dialog', EditImageDialog)
+  app.component('game-teaser', GameTeaser)
+  app.component('help-overlay', HelpOverlay)
+  app.component('image-library', ImageLibrary)
+  app.component('image-teaser', ImageTeaser)
+  app.component('info-overlay', InfoOverlay)
+  app.component('new-game-dialog', NewGameDialog)
+  app.component('new-image-dialog', NewImageDialog)
   app.component('overlay', Overlay)
+  app.component('preview-overlay', PreviewOverlay)
+  app.component('puzzle-status', PuzzleStatus)
+  app.component('responsive-image', ResponsiveImage)
+  app.component('scores', Scores)
+  app.component('settings-overlay', SettingsOverlay)
+  app.component('tags-input', TagsInput)
+  app.component('upload', Upload)
   app.mount('#app')
 })()

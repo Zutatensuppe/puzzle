@@ -7,13 +7,7 @@
 import { defineComponent } from 'vue'
 import { Image } from '../../common/Types'
 
-import ImageTeaser from './ImageTeaser.vue'
-
 export default defineComponent({
-  name: 'image-library',
-  components: {
-    ImageTeaser,
-  },
   props: {
     images: {
       type: Array,
