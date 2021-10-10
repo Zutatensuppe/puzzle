@@ -1,5 +1,5 @@
 <template>
-  <div class="overlay transparent" @click="$emit('bgclick')">
+  <overlay class="transparent">
     <table class="overlay-content help" @click.stop="">
       <tr><td>⬆️ Move up:</td><td><div><kbd>W</kbd>/<kbd>↑</kbd>/🖱️</div></td></tr>
       <tr><td>⬇️ Move down:</td><td><div><kbd>S</kbd>/<kbd>↓</kbd>/🖱️</div></td></tr>
@@ -22,15 +22,12 @@
       <tr><td>⏬ Speed down (replay):</td><td><div><kbd>O</kbd></div></td></tr>
       <tr><td>⏸️ Pause (replay):</td><td><div><kbd>P</kbd></div></td></tr>
     </table>
-  </div>
+  </overlay>
 </template>
 <script lang="ts">
 import { defineComponent } from 'vue'
 
 export default defineComponent({
   name: 'help-overlay',
-  emits: {
-    bgclick: null,
-  },
 })
 </script>

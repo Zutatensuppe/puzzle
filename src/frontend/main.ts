@@ -10,6 +10,9 @@ import Util from './../common/Util'
 import settings from './settings'
 import xhr from './xhr'
 
+
+import Overlay from './components/Overlay.vue'
+
 (async () => {
   function initClientSecret() {
     let SECRET = settings.getStr('SECRET', '')
@@ -60,5 +63,6 @@ import xhr from './xhr'
   app.config.globalProperties.$config = conf
   app.config.globalProperties.$clientId = clientId
   app.use(router)
+  app.component('overlay', Overlay)
   app.mount('#app')
 })()

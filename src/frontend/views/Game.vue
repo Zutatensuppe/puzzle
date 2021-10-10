@@ -1,9 +1,9 @@
 <template>
   <div id="game">
-    <settings-overlay v-show="overlay === 'settings'" @bgclick="toggle('settings', true)" v-model="g.player" />
-    <preview-overlay v-show="overlay === 'preview'" @bgclick="toggle('preview', false)" :img="g.previewImageUrl" />
-    <info-overlay v-if="g.game" v-show="overlay === 'info'" @bgclick="toggle('info', true)" :game="g.game" />
-    <help-overlay v-show="overlay === 'help'" @bgclick="toggle('help', true)" />
+    <settings-overlay v-show="overlay === 'settings'" @close="toggle('settings', true)" @bgclick="toggle('settings', true)" v-model="g.player" />
+    <preview-overlay v-show="overlay === 'preview'" @close="toggle('preview', false)" @bgclick="toggle('preview', false)" :img="g.previewImageUrl" />
+    <info-overlay v-if="g.game" v-show="overlay === 'info'" @close="toggle('info', true)" @bgclick="toggle('info', true)" :game="g.game" />
+    <help-overlay v-show="overlay === 'help'" @close="toggle('help', true)" @bgclick="toggle('help', true)" />
 
     <div class="overlay" v-if="cuttingPuzzle">
       <div class="overlay-content">

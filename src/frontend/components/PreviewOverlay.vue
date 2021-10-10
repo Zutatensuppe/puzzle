@@ -1,9 +1,9 @@
 <template>
-  <div class="overlay" @click="$emit('bgclick')">
+  <overlay>
     <div class="preview">
       <div class="img" :style="previewStyle"></div>
     </div>
-  </div>
+  </overlay>
 </template>
 <script lang="ts">
 import { defineComponent } from 'vue'
@@ -12,9 +12,6 @@ export default defineComponent({
   name: 'preview-overlay',
   props: {
     img: String,
-  },
-  emits: {
-    bgclick: null,
   },
   computed: {
     previewStyle (): object {

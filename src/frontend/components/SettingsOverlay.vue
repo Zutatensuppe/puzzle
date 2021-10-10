@@ -1,5 +1,5 @@
 <template>
-  <div class="overlay transparent" @click="$emit('bgclick')">
+  <overlay class="transparent">
     <table class="overlay-content settings" @click.stop="">
       <tr>
         <td><label>Background: </label></td>
@@ -36,7 +36,7 @@
         <td><input type="checkbox" v-model="modelValue.showPlayerNames" /></td>
       </tr>
     </table>
-  </div>
+  </overlay>
 </template>
 <script lang="ts">
 import { defineComponent } from 'vue'
@@ -44,7 +44,6 @@ import { defineComponent } from 'vue'
 export default defineComponent({
   name: 'settings-overlay',
   emits: {
-    bgclick: null,
     'update:modelValue': null,
   },
   props: {

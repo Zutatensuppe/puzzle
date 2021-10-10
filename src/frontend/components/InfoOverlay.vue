@@ -1,5 +1,5 @@
 <template>
-  <div class="overlay transparent" @click="$emit('bgclick')">
+  <overlay class="transparent">
     <table class="overlay-content help" @click.stop="">
       <tr>
         <td colspan="2">Info about this puzzle</td>
@@ -21,7 +21,7 @@
         <td><span :title="snapMode[1]">{{snapMode[0]}}</span></td>
       </tr>
     </table>
-  </div>
+  </overlay>
 </template>
 <script lang="ts">
 import { defineComponent, PropType } from 'vue'
@@ -29,9 +29,6 @@ import { Game, ScoreMode, ShapeMode, SnapMode } from '../../common/Types'
 
 export default defineComponent({
   name: 'help-overlay',
-  emits: {
-    bgclick: null,
-  },
   props: {
     game: {
       type: Object as PropType<Game>,
