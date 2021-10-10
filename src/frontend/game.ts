@@ -244,6 +244,7 @@ export async function main(
   canvas.classList.add('loaded')
   HUD.setPuzzleCut()
 
+  let viewportToggleSlot: string = '';
   const viewportSnapshots: Record<string, Snapshot> = {}
   // initialize some view data
   // this global data will change according to input events
@@ -273,8 +274,19 @@ export async function main(
       })
     }
   }
+  const handleViewportSnapshot = (slot: string): void => {
+    if (viewportSnapshots['last'] && viewportToggleSlot === slot) {
+      viewport.fromSnapshot(viewportSnapshots['last'])
+      delete viewportSnapshots['last']
+    } else if (viewportSnapshots[slot]) {
+      viewportSnapshots['last'] = viewport.snapshot()
+      viewportToggleSlot = slot
+      viewport.fromSnapshot(viewportSnapshots[slot])
+    }
+  }
 
   centerPuzzle()
+  viewportSnapshots['center'] = viewport.snapshot()
 
   const evts = EventAdapter(canvas, window, viewport, MODE)
 
@@ -576,13 +588,7 @@ export async function main(
         } else if (type === Protocol.INPUT_EV_TOGGLE_PLAYER_NAMES) {
           HUD.togglePlayerNames()
         } else if (type === Protocol.INPUT_EV_CENTER_FIT_PUZZLE) {
-          if (viewportSnapshots['last']) {
-            viewport.fromSnapshot(viewportSnapshots['last'])
-            delete viewportSnapshots['last']
-          } else {
-            viewportSnapshots['last'] = viewport.snapshot()
-            centerPuzzle()
-          }
+          handleViewportSnapshot('center')
         } else if (type === Protocol.INPUT_EV_TOGGLE_FIXED_PIECES) {
           PIECE_VIEW_FIXED = !PIECE_VIEW_FIXED
           RERENDER = true
@@ -593,16 +599,8 @@ export async function main(
           const slot: string = `${evt[1]}`
           viewportSnapshots[slot] = viewport.snapshot()
         } else if (type === Protocol.INPUT_EV_RESTORE_POS) {
-          if (viewportSnapshots['last']) {
-            viewport.fromSnapshot(viewportSnapshots['last'])
-            delete viewportSnapshots['last']
-          } else {
-            const slot: string = `${evt[1]}`
-            if (viewportSnapshots[slot]) {
-              viewportSnapshots['last'] = viewport.snapshot()
-              viewport.fromSnapshot(viewportSnapshots[slot])
-            }
-          }
+          const slot: string = `${evt[1]}`
+          handleViewportSnapshot(slot)
         }
 
         // LOCAL + SERVER CHANGES
@@ -674,13 +672,19 @@ export async function main(
         } else if (type === Protocol.INPUT_EV_TOGGLE_PLAYER_NAMES) {
           HUD.togglePlayerNames()
         } else if (type === Protocol.INPUT_EV_CENTER_FIT_PUZZLE) {
-          centerPuzzle()
+          handleViewportSnapshot('center')
         } else if (type === Protocol.INPUT_EV_TOGGLE_FIXED_PIECES) {
           PIECE_VIEW_FIXED = !PIECE_VIEW_FIXED
           RERENDER = true
         } else if (type === Protocol.INPUT_EV_TOGGLE_LOOSE_PIECES) {
           PIECE_VIEW_LOOSE = !PIECE_VIEW_LOOSE
           RERENDER = true
+        } else if (type === Protocol.INPUT_EV_STORE_POS) {
+          const slot: string = `${evt[1]}`
+          viewportSnapshots[slot] = viewport.snapshot()
+        } else if (type === Protocol.INPUT_EV_RESTORE_POS) {
+          const slot: string = `${evt[1]}`
+          handleViewportSnapshot(slot)
         }
       }
     }
