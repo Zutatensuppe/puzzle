@@ -1,13 +1,11 @@
 <template>
-  <div class="overlay connection-lost" v-if="show">
-    <div class="overlay-content" v-if="lostConnection">
-      <div>⁉️ LOST CONNECTION ⁉️</div>
-      <span class="btn" @click="$emit('reconnect')">Reconnect</span>
-    </div>
-    <div class="overlay-content" v-if="connecting">
-      <div>Connecting...</div>
-    </div>
-  </div>
+  <overlay class="connection-lost" v-if="show">
+    <template v-slot:default>
+      <div v-if="lostConnection">⁉️ LOST CONNECTION ⁉️</div>
+      <span v-if="lostConnection" class="btn" @click="$emit('reconnect')">Reconnect</span>
+      <div v-if="connecting">Connecting...</div>
+    </template>
+  </overlay>
 </template>
 <script lang="ts">
 import { defineComponent } from 'vue'

@@ -133,11 +133,47 @@ input:focus {
   right: 0;
   bottom: 0;
   z-index: 10;
-  background: var(--bg-color);
+}
+
+.overlay-background {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: var(--bg-color);
+}
+
+.overlay .overlay-background-enter-active,
+.overlay .overlay-background-leave-active {
+  transition: background-color 0.3s;
+}
+.overlay .overlay-background-enter-from,
+.overlay .overlay-background-leave-to {
+  background-color: transparent;
+}
+
+.overlay .overlay-content-enter-active {
+  animation: bounce-in 0.3s;
+}
+.overlay .overlay-content-leave-active {
+  animation: bounce-in 0.3s reverse;
+}
+
+@keyframes bounce-in {
+  0% {
+    transform: translate(-50%,-50%) scale(0);
+  }
+  75% {
+    transform: translate(-50%,-50%) scale(1.1);
+  }
+  100% {
+    transform: translate(-50%,-50%) scale(1);
+  }
 }
 
 .overlay.transparent {
-  background: transparent;
+  background: rgba(0,0,0,.1);
 }
 
 .overlay-content {
@@ -157,15 +193,46 @@ input:focus {
   text-align: center;
 }
 
-.preview {
+
+.preview-overlay .overlay-content-enter-active {
+  animation: 0;
+}
+.preview-overlay .overlay-content-leave-active {
+  animation: 0;
+}
+
+@keyframes bounce-in-no-translate {
+  0% {
+    transform: scale(0);
+  }
+  75% {
+    transform: scale(1.1);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+.preview-overlay .overlay-content {
   position: absolute;
+  top: 0px;
+  left: 0px;
+  bottom: 0px;
+  right: 0px;
+  transform: none;
+  padding: 0;
+  border: 0;
+  background: none;
+}
+
+.preview-overlay .overlay-content .preview {
   top: 20px;
   left: 20px;
   bottom: 20px;
   right: 20px;
+  position: absolute;
 }
 
-.preview .img {
+.preview-overlay .overlay-content .preview .img {
   height: 100%;
   width: 100%;
   position: absolute;

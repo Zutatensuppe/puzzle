@@ -1,7 +1,6 @@
 <template>
-  <div class="overlay edit-image-dialog" @click="$emit('bgclick')">
-    <div class="overlay-content" @click.stop="">
-
+  <overlay class="edit-image-dialog">
+    <template v-slot:default>
       <div class="area-image">
         <div class="has-image">
           <responsive-image :src="image.url" :title="image.title" />
@@ -32,9 +31,8 @@
       <div class="area-buttons">
         <button class="btn" @click="saveImage">🖼️ Save image</button>
       </div>
-
-    </div>
-  </div>
+    </template>
+  </overlay>
 </template>
 <script lang="ts">
 import { defineComponent, PropType } from 'vue'
@@ -51,7 +49,6 @@ export default defineComponent({
     },
   },
   emits: {
-    bgclick: null,
     saveClick: null,
   },
   data () {

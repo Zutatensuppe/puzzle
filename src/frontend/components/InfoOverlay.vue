@@ -1,26 +1,28 @@
 <template>
   <overlay class="transparent">
-    <table class="overlay-content help" @click.stop="">
-      <tr>
-        <td colspan="2">Info about this puzzle</td>
-      </tr>
-      <tr>
-        <td>Image Title: </td>
-        <td>{{game.puzzle.info.image.title}}</td>
-      </tr>
-      <tr>
-        <td>Scoring: </td>
-        <td><span :title="snapMode[1]">{{scoreMode[0]}}</span></td>
-      </tr>
-      <tr>
-        <td>Shapes: </td>
-        <td><span :title="snapMode[1]">{{shapeMode[0]}}</span></td>
-      </tr>
-      <tr>
-        <td>Snapping: </td>
-        <td><span :title="snapMode[1]">{{snapMode[0]}}</span></td>
-      </tr>
-    </table>
+    <template v-slot:default>
+      <table class="help">
+        <tr>
+          <td colspan="2">Info about this puzzle</td>
+        </tr>
+        <tr>
+          <td>Image Title: </td>
+          <td>{{game.puzzle.info.image.title}}</td>
+        </tr>
+        <tr>
+          <td>Scoring: </td>
+          <td><span :title="snapMode[1]">{{scoreMode[0]}}</span></td>
+        </tr>
+        <tr>
+          <td>Shapes: </td>
+          <td><span :title="snapMode[1]">{{shapeMode[0]}}</span></td>
+        </tr>
+        <tr>
+          <td>Snapping: </td>
+          <td><span :title="snapMode[1]">{{snapMode[0]}}</span></td>
+        </tr>
+      </table>
+    </template>
   </overlay>
 </template>
 <script lang="ts">

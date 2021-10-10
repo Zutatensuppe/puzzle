@@ -1,8 +1,10 @@
 <template>
-  <overlay>
-    <div class="preview">
-      <div class="img" :style="previewStyle"></div>
-    </div>
+  <overlay class="preview-overlay" :animate="false">
+    <template v-slot:default>
+      <div class="preview">
+        <div class="img" :style="previewStyle"></div>
+      </div>
+    </template>
   </overlay>
 </template>
 <script lang="ts">

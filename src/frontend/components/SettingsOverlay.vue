@@ -1,41 +1,43 @@
 <template>
   <overlay class="transparent">
-    <table class="overlay-content settings" @click.stop="">
-      <tr>
-        <td><label>Background: </label></td>
-        <td><input type="color" v-model="modelValue.background" /></td>
-      </tr>
-      <tr>
-        <td><label>Color: </label></td>
-        <td><input type="color" v-model="modelValue.color" /></td>
-      </tr>
-      <tr>
-        <td><label>Name: </label></td>
-        <td><input type="text" maxLength="16" v-model="modelValue.name" /></td>
-      </tr>
-      <tr>
-        <td><label>Sounds: </label></td>
-        <td><input type="checkbox" v-model="modelValue.soundsEnabled" /></td>
-      </tr>
-      <tr>
-        <td><label>Sounds Volume: </label></td>
-        <td class="sound-volume">
-          <span @click="decreaseVolume">🔉</span>
-          <input
-            type="range"
-            min="0"
-            max="100"
-            :value="modelValue.soundsVolume"
-            @change="updateVolume"
-            />
-          <span @click="increaseVolume">🔊</span>
-        </td>
-      </tr>
-      <tr>
-        <td><label>Show player names: </label></td>
-        <td><input type="checkbox" v-model="modelValue.showPlayerNames" /></td>
-      </tr>
-    </table>
+    <template v-slot:default>
+      <table class="settings">
+        <tr>
+          <td><label>Background: </label></td>
+          <td><input type="color" v-model="modelValue.background" /></td>
+        </tr>
+        <tr>
+          <td><label>Color: </label></td>
+          <td><input type="color" v-model="modelValue.color" /></td>
+        </tr>
+        <tr>
+          <td><label>Name: </label></td>
+          <td><input type="text" maxLength="16" v-model="modelValue.name" /></td>
+        </tr>
+        <tr>
+          <td><label>Sounds: </label></td>
+          <td><input type="checkbox" v-model="modelValue.soundsEnabled" /></td>
+        </tr>
+        <tr>
+          <td><label>Sounds Volume: </label></td>
+          <td class="sound-volume">
+            <span @click="decreaseVolume">🔉</span>
+            <input
+              type="range"
+              min="0"
+              max="100"
+              :value="modelValue.soundsVolume"
+              @change="updateVolume"
+              />
+            <span @click="increaseVolume">🔊</span>
+          </td>
+        </tr>
+        <tr>
+          <td><label>Show player names: </label></td>
+          <td><input type="checkbox" v-model="modelValue.showPlayerNames" /></td>
+        </tr>
+      </table>
+    </template>
   </overlay>
 </template>
 <script lang="ts">

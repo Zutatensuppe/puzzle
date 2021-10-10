@@ -1,7 +1,6 @@
 <template>
-  <div class="overlay new-game-dialog" @click="$emit('bgclick')">
-    <div class="overlay-content" @click.stop="">
-
+  <overlay class="new-game-dialog">
+    <template v-slot:default>
       <div class="area-image">
         <div class="has-image">
           <responsive-image :src="image.url" :title="image.title" />
@@ -59,8 +58,8 @@
           🧩 Generate Puzzle
         </button>
       </div>
-    </div>
-  </div>
+    </template>
+  </overlay>
 </template>
 <script lang="ts">
 import { defineComponent } from 'vue'
@@ -76,7 +75,6 @@ export default defineComponent({
   },
   emits: {
     newGame: null,
-    bgclick: null,
   },
   data() {
     return {

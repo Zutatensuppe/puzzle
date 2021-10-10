@@ -4,9 +4,8 @@ user to remove the image if a wrong one was selected. The image should
 be uploaded to the actual gallery only when the user presses "post to
 gallery", if possible!
 <template>
-  <div class="overlay new-image-dialog" @click="$emit('bgclick')">
-    <div class="overlay-content" @click.stop="">
-
+  <overlay class="new-image-dialog">
+    <template v-slot:default>
       <div
         class="area-image"
         :class="{'has-image': !!previewUrl, 'no-image': !previewUrl, droppable: droppable}"
@@ -64,8 +63,8 @@ gallery", if possible!
           <template v-else>🧩 Post to gallery <br /> + set up game</template>
         </button>
       </div>
-    </div>
-  </div>
+    </template>
+  </overlay>
 </template>
 <script lang="ts">
 import { defineComponent } from 'vue'
@@ -86,7 +85,6 @@ export default defineComponent({
     },
   },
   emits: {
-    bgclick: null,
     setupGameClick: null,
     postToGalleryClick: null,
   },
