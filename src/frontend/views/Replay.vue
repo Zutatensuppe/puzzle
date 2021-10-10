@@ -81,7 +81,7 @@ export default defineComponent({
           background: '',
           color: '',
           name: '',
-          soundsEnabled: false,
+          soundsEnabled: true,
           soundsVolume: 100,
           showPlayerNames: true,
         },

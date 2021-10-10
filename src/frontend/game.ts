@@ -12,7 +12,7 @@ import fireworksController from './Fireworks'
 import Protocol from '../common/Protocol'
 import Time from '../common/Time'
 import settings from './settings'
-import { SETTINGS } from './settings'
+import { SETTINGS, DEFAULTS } from './settings'
 import { Dim, Point } from '../common/Geometry'
 import {
   FixedLengthArray,
@@ -313,13 +313,13 @@ export async function main(
   const justFinished = () => finished && !longFinished
 
   const playerSoundVolume = (): number => {
-    return settings.getInt(SETTINGS.SOUND_VOLUME, 100)
+    return settings.getInt(SETTINGS.SOUND_VOLUME, DEFAULTS.SOUND_VOLUME)
   }
   const playerSoundEnabled = (): boolean => {
-    return settings.getBool(SETTINGS.SOUND_ENABLED, false)
+    return settings.getBool(SETTINGS.SOUND_ENABLED, DEFAULTS.SOUND_ENABLED)
   }
   const showPlayerNames = (): boolean => {
-    return settings.getBool(SETTINGS.SHOW_PLAYER_NAMES, true)
+    return settings.getBool(SETTINGS.SHOW_PLAYER_NAMES, DEFAULTS.SHOW_PLAYER_NAMES)
   }
 
   const playClick = () => {
@@ -330,24 +330,24 @@ export async function main(
 
   const playerBgColor = () => {
     if (MODE === MODE_REPLAY) {
-      return settings.getStr(SETTINGS.COLOR_BACKGROUND, '#222222')
+      return settings.getStr(SETTINGS.COLOR_BACKGROUND, DEFAULTS.COLOR_BACKGROUND)
     }
     return Game.getPlayerBgColor(gameId, clientId)
-        || settings.getStr(SETTINGS.COLOR_BACKGROUND, '#222222')
+        || settings.getStr(SETTINGS.COLOR_BACKGROUND, DEFAULTS.COLOR_BACKGROUND)
   }
   const playerColor = () => {
     if (MODE === MODE_REPLAY) {
-      return settings.getStr(SETTINGS.PLAYER_COLOR, '#ffffff')
+      return settings.getStr(SETTINGS.PLAYER_COLOR, DEFAULTS.PLAYER_COLOR)
     }
     return Game.getPlayerColor(gameId, clientId)
-        || settings.getStr(SETTINGS.PLAYER_COLOR, '#ffffff')
+        || settings.getStr(SETTINGS.PLAYER_COLOR, DEFAULTS.PLAYER_COLOR)
   }
   const playerName = () => {
     if (MODE === MODE_REPLAY) {
-      return settings.getStr(SETTINGS.PLAYER_NAME, 'anon')
+      return settings.getStr(SETTINGS.PLAYER_NAME, SETTINGS.PLAYER_NAME)
     }
     return Game.getPlayerName(gameId, clientId)
-        || settings.getStr(SETTINGS.PLAYER_NAME, 'anon')
+        || settings.getStr(SETTINGS.PLAYER_NAME, SETTINGS.PLAYER_NAME)
   }
 
   let cursorDown: string = ''

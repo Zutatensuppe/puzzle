@@ -11,6 +11,15 @@ export const SETTINGS = {
   SHOW_PLAYER_NAMES: 'show_player_names',
 }
 
+export const DEFAULTS = {
+  SOUND_VOLUME: 100,
+  SOUND_ENABLED: true,
+  COLOR_BACKGROUND: '#222222',
+  PLAYER_COLOR: '#ffffff',
+  PLAYER_NAME: 'anon',
+  SHOW_PLAYER_NAMES: true,
+}
+
 const set = (setting: string, value: string): void => {
   localStorage.setItem(setting, value)
 }
