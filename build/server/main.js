@@ -344,6 +344,8 @@ const INPUT_EV_TOGGLE_PLAYER_NAMES = 15;
 const INPUT_EV_CENTER_FIT_PUZZLE = 16;
 const INPUT_EV_TOGGLE_FIXED_PIECES = 17;
 const INPUT_EV_TOGGLE_LOOSE_PIECES = 18;
+const INPUT_EV_STORE_POS = 19;
+const INPUT_EV_RESTORE_POS = 20;
 const CHANGE_DATA = 1;
 const CHANGE_TILE = 2;
 const CHANGE_PLAYER = 3;
@@ -374,6 +376,8 @@ var Protocol = {
     INPUT_EV_CENTER_FIT_PUZZLE,
     INPUT_EV_TOGGLE_FIXED_PIECES,
     INPUT_EV_TOGGLE_LOOSE_PIECES,
+    INPUT_EV_STORE_POS,
+    INPUT_EV_RESTORE_POS,
     CHANGE_DATA,
     CHANGE_TILE,
     CHANGE_PLAYER,
@@ -1360,7 +1364,7 @@ const get = (gameId, offset = 0) => {
         log[0][5] = DefaultScoreMode(log[0][5]);
         log[0][6] = DefaultShapeMode(log[0][6]);
         log[0][7] = DefaultSnapMode(log[0][7]);
-        log[0][8] = log[0][8] || null;
+        log[0][8] = log[0][8] || null; // creatorUserId
     }
     return log;
 };
@@ -1553,6 +1557,19 @@ async function getDimensions(imagePath) {
         h: dimensions.height || 0,
     };
 }
+const setTags = (db, imageId, tags) => {
+    db.delete('image_x_category', { image_id: imageId });
+    tags.forEach((tag) => {
+        const slug = Util.slug(tag);
+        const id = db.upsert('categories', { slug, title: tag }, { slug }, 'id');
+        if (id) {
+            db.insert('image_x_category', {
+                image_id: imageId,
+                category_id: id,
+            });
+        }
+    });
+};
 var Images = {
     allImagesFromDisk,
     imageFromDb,
@@ -1560,6 +1577,7 @@ var Images = {
     getAllTags,
     resizeImage,
     getDimensions,
+    setTags,
 };
 
 // cut size of each puzzle tile in the
@@ -1851,29 +1869,6 @@ function loadGameFromDisk(gameId) {
     const gameObject = storeDataToGame(game, null);
     GameCommon.setGame(gameObject.id, gameObject);
 }
-/**
- * @deprecated
- */
-function persistGamesToDisk() {
-    for (const gameId of Object.keys(dirtyGames)) {
-        persistGameToDisk(gameId);
-    }
-}
-/**
- * @deprecated
- */
-function persistGameToDisk(gameId) {
-    const game = GameCommon.get(gameId);
-    if (!game) {
-        log$3.error(`[ERROR] unable to persist non existing game ${gameId}`);
-        return;
-    }
-    if (game.id in dirtyGames) {
-        setClean(game.id);
-    }
-    fs.writeFileSync(`${DATA_DIR}/${game.id}.json`, gameToStoreData(game));
-    log$3.info(`[INFO] persisted game ${game.id}`);
-}
 function storeDataToGame(storeData, creatorUserId) {
     return {
         id: storeData.id,
@@ -1905,11 +1900,9 @@ function gameToStoreData(game) {
     });
 }
 var GameStorage = {
-    // disk functions are deprecated 
+    // disk functions are deprecated
     loadGamesFromDisk,
     loadGameFromDisk,
-    persistGamesToDisk,
-    persistGameToDisk,
     loadGamesFromDb,
     loadGameFromDb,
     persistGamesToDb,
@@ -1932,12 +1925,17 @@ async function createGameObject(gameId, targetTiles, image, ts, scoreMode, shape
         snapMode,
     };
 }
-async function createGame(gameId, targetTiles, image, ts, scoreMode, shapeMode, snapMode, creatorUserId) {
-    const gameObject = await createGameObject(gameId, targetTiles, image, ts, scoreMode, shapeMode, snapMode, creatorUserId);
+async function createNewGame(gameSettings, ts, creatorUserId) {
+    let gameId;
+    do {
+        gameId = Util.uniqId();
+    } while (GameCommon.exists(gameId));
+    const gameObject = await createGameObject(gameId, gameSettings.tiles, gameSettings.image, ts, gameSettings.scoreMode, gameSettings.shapeMode, gameSettings.snapMode, creatorUserId);
     GameLog.create(gameId, ts);
-    GameLog.log(gameId, Protocol.LOG_HEADER, 1, targetTiles, image, ts, scoreMode, shapeMode, snapMode, gameObject.creatorUserId);
+    GameLog.log(gameId, Protocol.LOG_HEADER, 1, gameSettings.tiles, gameSettings.image, ts, gameSettings.scoreMode, gameSettings.shapeMode, gameSettings.snapMode, gameObject.creatorUserId);
     GameCommon.setGame(gameObject.id, gameObject);
     GameStorage.setDirty(gameId);
+    return gameId;
 }
 function addPlayer(gameId, playerId, ts) {
     if (GameLog.shouldLog(GameCommon.getFinishTs(gameId), ts)) {
@@ -1963,7 +1961,7 @@ function handleInput(gameId, playerId, input, ts) {
 }
 var Game = {
     createGameObject,
-    createGame,
+    createNewGame,
     addPlayer,
     handleInput,
 };
@@ -2155,6 +2153,36 @@ class Db {
     }
 }
 
+const TABLE = 'users';
+const HEADER_CLIENT_ID = 'client-id';
+const HEADER_CLIENT_SECRET = 'client-secret';
+const getOrCreateUser = (db, req) => {
+    let user = getUser(db, req);
+    if (!user) {
+        db.insert(TABLE, {
+            'client_id': req.headers[HEADER_CLIENT_ID],
+            'client_secret': req.headers[HEADER_CLIENT_SECRET],
+            'created': Time.timestamp(),
+        });
+        user = getUser(db, req);
+    }
+    return user;
+};
+const getUser = (db, req) => {
+    const user = db.get(TABLE, {
+        'client_id': req.headers[HEADER_CLIENT_ID],
+        'client_secret': req.headers[HEADER_CLIENT_SECRET],
+    });
+    if (user) {
+        user.id = parseInt(user.id, 10);
+    }
+    return user;
+};
+var Users = {
+    getOrCreateUser,
+    getUser,
+};
+
 const db = new Db(DB_FILE, DB_PATCHES_DIR);
 db.patch();
 let configFile = '';
@@ -2182,7 +2210,7 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ storage }).single('file');
 app.get('/api/me', (req, res) => {
-    let user = getUser(db, req);
+    let user = Users.getUser(db, req);
     res.send({
         id: user ? user.id : null,
         created: user ? user.created : null,
@@ -2246,48 +2274,14 @@ app.get('/api/index-data', (req, res) => {
         gamesFinished: games.filter(g => !!g.finished),
     });
 });
-const getOrCreateUser = (db, req) => {
-    let user = getUser(db, req);
-    if (!user) {
-        db.insert('users', {
-            'client_id': req.headers['client-id'],
-            'client_secret': req.headers['client-secret'],
-            'created': Time.timestamp(),
-        });
-        user = getUser(db, req);
-    }
-    return user;
-};
-const getUser = (db, req) => {
-    let user = db.get('users', {
-        'client_id': req.headers['client-id'],
-        'client_secret': req.headers['client-secret'],
-    });
-    if (user) {
-        user.id = parseInt(user.id, 10);
-    }
-    return user;
-};
-const setImageTags = (db, imageId, tags) => {
-    tags.forEach((tag) => {
-        const slug = Util.slug(tag);
-        const id = db.upsert('categories', { slug, title: tag }, { slug }, 'id');
-        if (id) {
-            db.insert('image_x_category', {
-                image_id: imageId,
-                category_id: id,
-            });
-        }
-    });
-};
 app.post('/api/save-image', express.json(), (req, res) => {
-    let user = getUser(db, req);
+    const user = Users.getUser(db, req);
     if (!user || !user.id) {
         res.status(403).send({ ok: false, error: 'forbidden' });
         return;
     }
     const data = req.body;
-    let image = db.get('images', { id: data.id });
+    const image = db.get('images', { id: data.id });
     if (parseInt(image.uploader_user_id, 10) !== user.id) {
         res.status(403).send({ ok: false, error: 'forbidden' });
         return;
@@ -2297,10 +2291,7 @@ app.post('/api/save-image', express.json(), (req, res) => {
     }, {
         id: data.id,
     });
-    db.delete('image_x_category', { image_id: data.id });
-    if (data.tags) {
-        setImageTags(db, data.id, data.tags);
-    }
+    Images.setTags(db, data.id, data.tags || []);
     res.send({ ok: true });
 });
 app.post('/api/upload', (req, res) => {
@@ -2308,6 +2299,7 @@ app.post('/api/upload', (req, res) => {
         if (err) {
             log.log(err);
             res.status(400).send("Something went wrong!");
+            return;
         }
         try {
             await Images.resizeImage(req.file.filename);
@@ -2315,8 +2307,9 @@ app.post('/api/upload', (req, res) => {
         catch (err) {
             log.log(err);
             res.status(400).send("Something went wrong!");
+            return;
         }
-        const user = getOrCreateUser(db, req);
+        const user = Users.getOrCreateUser(db, req);
         const dim = await Images.getDimensions(`${UPLOAD_DIR}/${req.file.filename}`);
         const imageId = db.insert('images', {
             uploader_user_id: user.id,
@@ -2329,24 +2322,14 @@ app.post('/api/upload', (req, res) => {
         });
         if (req.body.tags) {
             const tags = req.body.tags.split(',').filter((tag) => !!tag);
-            setImageTags(db, imageId, tags);
+            Images.setTags(db, imageId, tags);
         }
         res.send(Images.imageFromDb(db, imageId));
     });
 });
 app.post('/api/newgame', express.json(), async (req, res) => {
-    let user = getOrCreateUser(db, req);
-    if (!user || !user.id) {
-        res.status(403).send({ ok: false, error: 'forbidden' });
-        return;
-    }
-    const gameSettings = req.body;
-    log.log(gameSettings);
-    const gameId = Util.uniqId();
-    if (!GameCommon.exists(gameId)) {
-        const ts = Time.timestamp();
-        await Game.createGame(gameId, gameSettings.tiles, gameSettings.image, ts, gameSettings.scoreMode, gameSettings.shapeMode, gameSettings.snapMode, user.id);
-    }
+    const user = Users.getOrCreateUser(db, req);
+    const gameId = await Game.createNewGame(req.body, Time.timestamp(), user.id);
     res.send({ id: gameId });
 });
 app.use('/uploads/', express.static(UPLOAD_DIR));

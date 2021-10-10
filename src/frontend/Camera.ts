@@ -6,10 +6,24 @@ const ZOOM_STEP = .05
 
 type ZOOM_DIR = 'in'|'out'
 
+export interface Snapshot {
+  x: number
+  y: number
+  curZoom: number
+}
+
 export default function Camera () {
   let x = 0
   let y = 0
   let curZoom = 1
+
+  const snapshot = (): Snapshot => ({ x, y, curZoom })
+
+  const fromSnapshot = (snapshot: Snapshot) => {
+    x = snapshot.x
+    y = snapshot.y
+    curZoom = snapshot.curZoom
+  }
 
   const reset = () => {
     x = 0
@@ -149,5 +163,7 @@ export default function Camera () {
     viewportToWorldRaw, // not used outside
     viewportDimToWorld,
     viewportDimToWorldRaw,
+    snapshot,
+    fromSnapshot,
   }
 }

@@ -1,7 +1,7 @@
 "use strict"
 
 import { GameLoopInstance, run } from './gameloop'
-import Camera from './Camera'
+import Camera, { Snapshot } from './Camera'
 import Graphics from './Graphics'
 import Debug from './Debug'
 import Communication from './Communication'
@@ -244,6 +244,7 @@ export async function main(
   canvas.classList.add('loaded')
   HUD.setPuzzleCut()
 
+  const viewportSnapshots: Record<string, Snapshot> = {}
   // initialize some view data
   // this global data will change according to input events
   const viewport = Camera()
@@ -535,6 +536,7 @@ export async function main(
           const dim = viewport.worldDimToViewport({w, h})
           RERENDER = true
           viewport.move(dim.w, dim.h)
+          delete viewportSnapshots['last']
         } else if (type === Protocol.INPUT_EV_MOUSE_MOVE) {
           if (_last_mouse_down && !Game.getFirstOwnedPiece(gameId, clientId)) {
             // move the cam
@@ -546,6 +548,7 @@ export async function main(
             viewport.move(diffX, diffY)
 
             _last_mouse_down = mouse
+            delete viewportSnapshots['last']
           }
         } else if (type === Protocol.INPUT_EV_PLAYER_COLOR) {
           updatePlayerCursorColor(evt[1])
@@ -560,10 +563,12 @@ export async function main(
           const pos = { x: evt[1], y: evt[2] }
           RERENDER = true
           viewport.zoom('in', viewport.worldToViewport(pos))
+          delete viewportSnapshots['last']
         } else if (type === Protocol.INPUT_EV_ZOOM_OUT) {
           const pos = { x: evt[1], y: evt[2] }
           RERENDER = true
           viewport.zoom('out', viewport.worldToViewport(pos))
+          delete viewportSnapshots['last']
         } else if (type === Protocol.INPUT_EV_TOGGLE_PREVIEW) {
           HUD.togglePreview()
         } else if (type === Protocol.INPUT_EV_TOGGLE_SOUNDS) {
@@ -571,13 +576,33 @@ export async function main(
         } else if (type === Protocol.INPUT_EV_TOGGLE_PLAYER_NAMES) {
           HUD.togglePlayerNames()
         } else if (type === Protocol.INPUT_EV_CENTER_FIT_PUZZLE) {
-          centerPuzzle()
+          if (viewportSnapshots['last']) {
+            viewport.fromSnapshot(viewportSnapshots['last'])
+            delete viewportSnapshots['last']
+          } else {
+            viewportSnapshots['last'] = viewport.snapshot()
+            centerPuzzle()
+          }
         } else if (type === Protocol.INPUT_EV_TOGGLE_FIXED_PIECES) {
           PIECE_VIEW_FIXED = !PIECE_VIEW_FIXED
           RERENDER = true
         } else if (type === Protocol.INPUT_EV_TOGGLE_LOOSE_PIECES) {
           PIECE_VIEW_LOOSE = !PIECE_VIEW_LOOSE
           RERENDER = true
+        } else if (type === Protocol.INPUT_EV_STORE_POS) {
+          const slot: string = `${evt[1]}`
+          viewportSnapshots[slot] = viewport.snapshot()
+        } else if (type === Protocol.INPUT_EV_RESTORE_POS) {
+          if (viewportSnapshots['last']) {
+            viewport.fromSnapshot(viewportSnapshots['last'])
+            delete viewportSnapshots['last']
+          } else {
+            const slot: string = `${evt[1]}`
+            if (viewportSnapshots[slot]) {
+              viewportSnapshots['last'] = viewport.snapshot()
+              viewport.fromSnapshot(viewportSnapshots[slot])
+            }
+          }
         }
 
         // LOCAL + SERVER CHANGES

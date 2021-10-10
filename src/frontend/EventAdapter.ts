@@ -87,37 +87,41 @@ function EventAdapter (
     if (!KEYS_ON) {
       return
     }
-    if (ev.code === 'Space') {
-      addEvent([Protocol.INPUT_EV_TOGGLE_PREVIEW])
-    }
 
     if (MODE === MODE_REPLAY) {
       if (ev.code === 'KeyI') {
         addEvent([Protocol.INPUT_EV_REPLAY_SPEED_UP])
-      }
-
-      if (ev.code === 'KeyO') {
+      } else if (ev.code === 'KeyO') {
         addEvent([Protocol.INPUT_EV_REPLAY_SPEED_DOWN])
-      }
-
-      if (ev.code === 'KeyP') {
+      } else if (ev.code === 'KeyP') {
         addEvent([Protocol.INPUT_EV_REPLAY_TOGGLE_PAUSE])
       }
     }
-    if (ev.code === 'KeyF') {
+
+    if (ev.code === 'Space') {
+      addEvent([Protocol.INPUT_EV_TOGGLE_PREVIEW])
+    } else if (ev.code === 'KeyF') {
       addEvent([Protocol.INPUT_EV_TOGGLE_FIXED_PIECES])
-    }
-    if (ev.code === 'KeyG') {
+    } else if (ev.code === 'KeyG') {
       addEvent([Protocol.INPUT_EV_TOGGLE_LOOSE_PIECES])
-    }
-    if (ev.code === 'KeyM') {
+    } else if (ev.code === 'KeyM') {
       addEvent([Protocol.INPUT_EV_TOGGLE_SOUNDS])
-    }
-    if (ev.code === 'KeyN') {
+    } else if (ev.code === 'KeyN') {
       addEvent([Protocol.INPUT_EV_TOGGLE_PLAYER_NAMES])
-    }
-    if (ev.code === 'KeyC') {
+    } else if (ev.code === 'KeyC') {
       addEvent([Protocol.INPUT_EV_CENTER_FIT_PUZZLE])
+    } else if (ev.code === 'Digit1') {
+      // store or restore pos+zoom in slot 1
+      const evt = ev.shiftKey ? Protocol.INPUT_EV_STORE_POS : Protocol.INPUT_EV_RESTORE_POS
+      addEvent([evt, 1])
+    } else if (ev.code === 'Digit2') {
+      // store or restore pos+zoom in slot 2
+      const evt = ev.shiftKey ? Protocol.INPUT_EV_STORE_POS : Protocol.INPUT_EV_RESTORE_POS
+      addEvent([evt, 2])
+    } else if (ev.code === 'Digit3') {
+      // store or restore pos+zoom in slot 3
+      const evt = ev.shiftKey ? Protocol.INPUT_EV_STORE_POS : Protocol.INPUT_EV_RESTORE_POS
+      addEvent([evt, 3])
     }
   })
 
