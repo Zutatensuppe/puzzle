@@ -5,11 +5,11 @@
     <info-overlay v-if="g.game" v-show="overlay === 'info'" @close="toggle('info', true)" @bgclick="toggle('info', true)" :game="g.game" />
     <help-overlay v-show="overlay === 'help'" @close="toggle('help', true)" @bgclick="toggle('help', true)" />
 
-    <div class="overlay" v-if="cuttingPuzzle">
-      <div class="overlay-content">
+    <overlay v-show="cuttingPuzzle">
+      <template v-slot:default>
         <div>⏳ Cutting puzzle, please wait... ⏳</div>
-      </div>
-    </div>
+      </template>
+    </overlay>
 
     <connection-overlay
       :connectionState="connectionState"
