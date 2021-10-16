@@ -344,10 +344,10 @@ export async function main(
   }
   const playerName = () => {
     if (MODE === MODE_REPLAY) {
-      return settings.getStr(SETTINGS.PLAYER_NAME, SETTINGS.PLAYER_NAME)
+      return settings.getStr(SETTINGS.PLAYER_NAME, DEFAULTS.PLAYER_NAME)
     }
     return Game.getPlayerName(gameId, clientId)
-        || settings.getStr(SETTINGS.PLAYER_NAME, SETTINGS.PLAYER_NAME)
+        || settings.getStr(SETTINGS.PLAYER_NAME, DEFAULTS.PLAYER_NAME)
   }
 
   let cursorDown: string = ''
