@@ -9,7 +9,7 @@ const log = logger('fix_tiles.js')
 const db = new Db(DB_FILE, DB_PATCHES_DIR)
 db.patch(true)
 
-function fix_tiles(gameId) {
+function fix_tiles(gameId: string) {
   GameStorage.loadGameFromDb(db, gameId)
   let changed = false
   const tiles = GameCommon.getPiecesSortedByZIndex(gameId)
