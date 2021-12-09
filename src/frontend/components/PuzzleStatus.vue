@@ -1,7 +1,7 @@
 <template>
   <div class="timer">
     <div>
-      🧩 {{piecesDone}}/{{piecesTotal}}
+      🧩 {{status.piecesDone}}/{{status.piecesTotal}}
     </div>
     <div>
       {{icon}} {{durationStr}}
@@ -10,34 +10,23 @@
   </div>
 </template>
 <script lang="ts">
-import { defineComponent } from 'vue'
+import { defineComponent, PropType } from 'vue'
+import { PuzzleStatus } from '../../common/Types'
 import Time from './../../common/Time'
 
 export default defineComponent({
   props: {
-    finished: {
-      type: Boolean,
-      required: true,
-    },
-    duration: {
-      type: Number,
-      required: true,
-    },
-    piecesDone: {
-      type: Number,
-      required: true,
-    },
-    piecesTotal: {
-      type: Number,
+    status: {
+      type: Object as PropType<PuzzleStatus>,
       required: true,
     },
   },
   computed: {
     icon (): string {
-      return this.finished ? '🏁' : '⏳'
+      return this.status.finished ? '🏁' : '⏳'
     },
     durationStr (): string {
-      return Time.durationStr(this.duration)
+      return Time.durationStr(this.status.duration)
     },
   }
 })

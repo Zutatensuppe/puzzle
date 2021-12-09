@@ -23,6 +23,7 @@ import {
   ReplayData,
   Timestamp,
   ServerEvent,
+  PuzzleStatus,
 } from '../common/Types'
 import EventAdapter from './EventAdapter'
 declare global {
@@ -48,10 +49,7 @@ let PIECE_VIEW_LOOSE = true
 interface Hud {
   setPuzzleCut: () => void
   setPlayers: (active: Player[], idle: Player[]) => void
-  setFinished: (v: boolean) => void
-  setDuration: (v: number) => void
-  setPiecesDone: (v: number) => void
-  setPiecesTotal: (v: number) => void
+  setStatus: (status: PuzzleStatus) => void
   setConnectionState: (v: number) => void
   togglePreview: () => void
   toggleSoundsEnabled: () => void
@@ -291,23 +289,23 @@ export async function main(
 
   const previewImageUrl = Game.getImageUrl(gameId)
 
-  const updateTimerElements = () => {
+  const updateStatus = (ts: number) => {
     const startTs = Game.getStartTs(gameId)
     const finishTs = Game.getFinishTs(gameId)
-    const ts = TIME()
 
-    HUD.setFinished(!!(finishTs))
-    HUD.setDuration((finishTs || ts) - startTs)
+    HUD.setStatus({
+      finished: !!(finishTs),
+      duration: (finishTs || ts) - startTs,
+      piecesDone: Game.getFinishedPiecesCount(gameId),
+      piecesTotal: Game.getPieceCount(gameId),
+    })
+    HUD.setPlayers(
+      Game.getActivePlayers(gameId, ts),
+      Game.getIdlePlayers(gameId, ts),
+    )
   }
 
-  updateTimerElements()
-  HUD.setPiecesDone(Game.getFinishedPiecesCount(gameId))
-  HUD.setPiecesTotal(Game.getPieceCount(gameId))
-  const ts = TIME()
-  HUD.setPlayers(
-    Game.getActivePlayers(gameId, ts),
-    Game.getIdlePlayers(gameId, ts),
-  )
+  updateStatus(TIME())
 
   const longFinished = !! Game.getFinishTs(gameId)
   let finished = longFinished
@@ -413,7 +411,7 @@ export async function main(
 
   if (MODE === MODE_PLAY) {
     intervals.push(setInterval(() => {
-      updateTimerElements()
+      updateStatus(TIME())
     }, 1000))
   } else if (MODE === MODE_REPLAY) {
     doSetSpeedStatus()
@@ -521,7 +519,7 @@ export async function main(
       } while (true)
       REPLAY.lastRealTs = realTs
       REPLAY.lastGameTs = maxGameTs
-      updateTimerElements()
+      updateStatus(TIME())
 
       if (!REPLAY.final) {
         to = setTimeout(next, 50)
@@ -781,11 +779,7 @@ export async function main(
 
     // propagate HUD changes
     // ---------------------------------------------------------------
-    HUD.setPlayers(
-      Game.getActivePlayers(gameId, ts),
-      Game.getIdlePlayers(gameId, ts),
-    )
-    HUD.setPiecesDone(Game.getFinishedPiecesCount(gameId))
+    updateStatus(ts)
     if (window.DEBUG) Debug.checkpoint('HUD done')
     // ---------------------------------------------------------------
 

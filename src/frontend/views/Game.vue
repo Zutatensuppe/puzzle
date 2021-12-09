@@ -32,12 +32,7 @@
       @reconnect="reconnect"
       />
 
-    <puzzle-status
-      :finished="finished"
-      :duration="duration"
-      :piecesDone="piecesDone"
-      :piecesTotal="piecesTotal"
-    />
+    <puzzle-status :status="status" />
 
     <div class="menu">
       <div class="tabs">
@@ -56,7 +51,7 @@
 import { defineComponent } from 'vue'
 
 import Scores from './../components/Scores.vue'
-import PuzzleStatus from './../components/PuzzleStatus.vue'
+import PuzzleStatusComponent from './../components/PuzzleStatus.vue'
 import SettingsOverlay from './../components/SettingsOverlay.vue'
 import PreviewOverlay from './../components/PreviewOverlay.vue'
 import InfoOverlay from './../components/InfoOverlay.vue'
@@ -64,12 +59,12 @@ import ConnectionOverlay from './../components/ConnectionOverlay.vue'
 import HelpOverlay from './../components/HelpOverlay.vue'
 
 import { main, MODE_PLAY } from './../game'
-import { Game, Player } from '../../common/Types'
+import { Game, Player, PuzzleStatus } from '../../common/Types'
 
 export default defineComponent({
   name: 'game',
   components: {
-    PuzzleStatus,
+    PuzzleStatusComponent,
     Scores,
     SettingsOverlay,
     PreviewOverlay,
@@ -84,10 +79,12 @@ export default defineComponent({
         idle: [] as Player[],
       },
 
-      finished: false,
-      duration: 0,
-      piecesDone: 0,
-      piecesTotal: 0,
+      status: {
+        finished: false,
+        duration: 0,
+        piecesDone: 0,
+        piecesTotal: 0,
+      } as PuzzleStatus,
 
       overlay: '',
 
@@ -151,10 +148,7 @@ export default defineComponent({
       {
         setPuzzleCut: () => { this.cuttingPuzzle = false },
         setPlayers: (active: Player[], idle: Player[]) => { this.players = { active, idle } },
-        setFinished: (v: boolean) => { this.finished = v },
-        setDuration: (v: number) => { this.duration = v },
-        setPiecesDone: (v: number) => { this.piecesDone = v },
-        setPiecesTotal: (v: number) => { this.piecesTotal = v },
+        setStatus: (status: PuzzleStatus) => { this.status = status},
         togglePreview: () => { this.toggle('preview', false) },
         setConnectionState: (v: number) => { this.connectionState = v },
         toggleSoundsEnabled: () => { this.g.player.soundsEnabled = !this.g.player.soundsEnabled },

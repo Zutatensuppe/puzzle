@@ -200,6 +200,13 @@ export interface Player {
   ts: Timestamp
 }
 
+export interface PuzzleStatus {
+  finished: boolean
+  duration: number
+  piecesDone: number
+  piecesTotal: number
+}
+
 export interface PlayerChange {
   id?: string
   x?: number
