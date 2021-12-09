@@ -233,9 +233,18 @@ wss.on('close', async (
 ): Promise<void> => {
   try {
     const proto = socket.protocol.split('|')
-    // const clientId = proto[0]
+    const clientId = proto[0]
     const gameId = proto[1]
     GameSockets.removeSocket(gameId, socket)
+
+    const ts = Time.timestamp()
+    const clientSeq = -1 // client lost connection, so clientSeq doesn't matter
+    const clientEvtData = [ Protocol.INPUT_EV_CONNECTION_CLOSE ]
+    const changes = Game.handleInput(gameId, clientId, clientEvtData, ts)
+    notify(
+      [Protocol.EV_SERVER_EVENT, clientId, clientSeq, changes],
+      GameSockets.getSockets(gameId)
+    )
   } catch (e) {
     log.error(e)
   }

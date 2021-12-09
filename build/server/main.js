@@ -346,6 +346,7 @@ const INPUT_EV_TOGGLE_FIXED_PIECES = 17;
 const INPUT_EV_TOGGLE_LOOSE_PIECES = 18;
 const INPUT_EV_STORE_POS = 19;
 const INPUT_EV_RESTORE_POS = 20;
+const INPUT_EV_CONNECTION_CLOSE = 21;
 const CHANGE_DATA = 1;
 const CHANGE_TILE = 2;
 const CHANGE_PLAYER = 3;
@@ -378,6 +379,7 @@ var Protocol = {
     INPUT_EV_TOGGLE_LOOSE_PIECES,
     INPUT_EV_STORE_POS,
     INPUT_EV_RESTORE_POS,
+    INPUT_EV_CONNECTION_CLOSE,
     CHANGE_DATA,
     CHANGE_TILE,
     CHANGE_PLAYER,
@@ -1016,7 +1018,16 @@ function handleInput$1(gameId, playerId, input, ts, onSnap) {
         }
     };
     const type = input[0];
-    if (type === Protocol.INPUT_EV_BG_COLOR) {
+    if (type === Protocol.INPUT_EV_CONNECTION_CLOSE) {
+        // player lost connection, so un-own all their pieces
+        const pieceIdx = getFirstOwnedPieceIdx(gameId, playerId);
+        if (pieceIdx >= 0) {
+            const pieceIdxs = getGroupedPieceIdxs(gameId, pieceIdx);
+            setTilesOwner(gameId, pieceIdxs, 0);
+            _pieceChanges(pieceIdxs);
+        }
+    }
+    else if (type === Protocol.INPUT_EV_BG_COLOR) {
         const bgcolor = input[1];
         changePlayer(gameId, playerId, { bgcolor, ts });
         _playerChange();
@@ -2343,9 +2354,14 @@ const notify = (data, sockets) => {
 wss.on('close', async ({ socket }) => {
     try {
         const proto = socket.protocol.split('|');
-        // const clientId = proto[0]
+        const clientId = proto[0];
         const gameId = proto[1];
         GameSockets.removeSocket(gameId, socket);
+        const ts = Time.timestamp();
+        const clientSeq = -1; // client lost connection, so clientSeq doesn't matter
+        const clientEvtData = [Protocol.INPUT_EV_CONNECTION_CLOSE];
+        const changes = Game.handleInput(gameId, clientId, clientEvtData, ts);
+        notify([Protocol.EV_SERVER_EVENT, clientId, clientSeq, changes], GameSockets.getSockets(gameId));
     }
     catch (e) {
         log.error(e);

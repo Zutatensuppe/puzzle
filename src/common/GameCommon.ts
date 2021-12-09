@@ -641,7 +641,15 @@ function handleInput(
   }
 
   const type = input[0]
-  if (type === Protocol.INPUT_EV_BG_COLOR) {
+  if (type === Protocol.INPUT_EV_CONNECTION_CLOSE) {
+    // player lost connection, so un-own all their pieces
+    const pieceIdx = getFirstOwnedPieceIdx(gameId, playerId)
+    if (pieceIdx >= 0) {
+      const pieceIdxs = getGroupedPieceIdxs(gameId, pieceIdx)
+      setTilesOwner(gameId, pieceIdxs, 0)
+      _pieceChanges(pieceIdxs)
+    }
+  } else if (type === Protocol.INPUT_EV_BG_COLOR) {
     const bgcolor = input[1]
     changePlayer(gameId, playerId, { bgcolor, ts })
     _playerChange()
