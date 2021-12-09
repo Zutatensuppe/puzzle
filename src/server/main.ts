@@ -167,7 +167,7 @@ app.post('/api/save-image', express.json(), (req, res): void => {
 
   res.send({ ok: true })
 })
-app.post('/api/upload', (req, res): void => {
+app.post('/api/upload', (req: any, res): void => {
   upload(req, res, async (err: any): Promise<void> => {
     if (err) {
       log.log(err)
