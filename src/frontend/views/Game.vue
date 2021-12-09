@@ -49,7 +49,7 @@
       </div>
     </div>
 
-    <scores :activePlayers="activePlayers" :idlePlayers="idlePlayers" />
+    <scores :players="players" />
   </div>
 </template>
 <script lang="ts">
@@ -79,8 +79,10 @@ export default defineComponent({
   },
   data() {
     return {
-      activePlayers: [] as Array<Player>,
-      idlePlayers: [] as Array<Player>,
+      players: {
+        active: [] as Player[],
+        idle: [] as Player[],
+      },
 
       finished: false,
       duration: 0,
@@ -148,8 +150,7 @@ export default defineComponent({
       this.$el,
       {
         setPuzzleCut: () => { this.cuttingPuzzle = false },
-        setActivePlayers: (v: Array<Player>) => { this.activePlayers = v },
-        setIdlePlayers: (v: Array<Player>) => { this.idlePlayers = v },
+        setPlayers: (active: Player[], idle: Player[]) => { this.players = { active, idle } },
         setFinished: (v: boolean) => { this.finished = v },
         setDuration: (v: number) => { this.duration = v },
         setPiecesDone: (v: number) => { this.piecesDone = v },

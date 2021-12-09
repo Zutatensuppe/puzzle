@@ -47,8 +47,7 @@ let PIECE_VIEW_LOOSE = true
 
 interface Hud {
   setPuzzleCut: () => void
-  setActivePlayers: (v: Array<any>) => void
-  setIdlePlayers: (v: Array<any>) => void
+  setPlayers: (active: Player[], idle: Player[]) => void
   setFinished: (v: boolean) => void
   setDuration: (v: number) => void
   setPiecesDone: (v: number) => void
@@ -305,8 +304,10 @@ export async function main(
   HUD.setPiecesDone(Game.getFinishedPiecesCount(gameId))
   HUD.setPiecesTotal(Game.getPieceCount(gameId))
   const ts = TIME()
-  HUD.setActivePlayers(Game.getActivePlayers(gameId, ts))
-  HUD.setIdlePlayers(Game.getIdlePlayers(gameId, ts))
+  HUD.setPlayers(
+    Game.getActivePlayers(gameId, ts),
+    Game.getIdlePlayers(gameId, ts),
+  )
 
   const longFinished = !! Game.getFinishTs(gameId)
   let finished = longFinished
@@ -780,8 +781,10 @@ export async function main(
 
     // propagate HUD changes
     // ---------------------------------------------------------------
-    HUD.setActivePlayers(Game.getActivePlayers(gameId, ts))
-    HUD.setIdlePlayers(Game.getIdlePlayers(gameId, ts))
+    HUD.setPlayers(
+      Game.getActivePlayers(gameId, ts),
+      Game.getIdlePlayers(gameId, ts),
+    )
     HUD.setPiecesDone(Game.getFinishedPiecesCount(gameId))
     if (window.DEBUG) Debug.checkpoint('HUD done')
     // ---------------------------------------------------------------

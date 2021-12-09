@@ -20,25 +20,21 @@ import { defineComponent } from 'vue'
 
 export default defineComponent({
   props: {
-    activePlayers: {
-      type: Array,
-      required: true,
-    },
-    idlePlayers: {
-      type: Array,
+    players: {
+      type: Object,
       required: true,
     },
   },
   computed: {
     actives (): Array<any> {
       // TODO: dont sort in place
-      this.activePlayers.sort((a: any, b: any) => b.points - a.points)
-      return this.activePlayers
+      this.players.active.sort((a: any, b: any) => b.points - a.points)
+      return this.players.active
     },
     idles (): Array<any> {
       // TODO: dont sort in place
-      this.idlePlayers.sort((a: any, b: any) => b.points - a.points)
-      return this.idlePlayers
+      this.players.idle.sort((a: any, b: any) => b.points - a.points)
+      return this.players.idle
     },
   },
 })
