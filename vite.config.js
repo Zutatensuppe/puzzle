@@ -10,6 +10,7 @@ export default vite.defineConfig({
   build: {
     outDir: '../../build/public',
     emptyOutDir: true,
+    sourcemap: true,
   },
   server: {
     proxy: {
