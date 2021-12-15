@@ -32,7 +32,9 @@
       @reconnect="reconnect"
       />
 
-    <puzzle-status :status="status" />
+    <div class="menu-left">
+      <puzzle-status :status="status" />
+    </div>
 
     <div class="menu">
       <div class="tabs">
@@ -44,7 +46,9 @@
       </div>
     </div>
 
-    <scores :players="players" />
+    <div class="menu-right">
+      <scores :players="players" />
+    </div>
   </div>
 </template>
 <script lang="ts">

@@ -87,7 +87,7 @@ input:focus {
 
 /* ingame */
 
-.scores {
+.menu-right {
   position: absolute;
   right: 0;
   top: 0;
@@ -98,7 +98,7 @@ input:focus {
   box-shadow: 0 0 10px 0 rgba(0,0,0,.7);
 }
 
-.timer {
+.menu-left {
   position: absolute;
   left: 0;
   top: 0;

@@ -27,14 +27,15 @@
       </div>
     </div>
 
-    <puzzle-status :status="status">
-      <div>
+    <div class="menu-left">
+      <puzzle-status :status="status" />
+      <div class="playback-control">
         <div>{{replayText}}</div>
         <button class="btn" @click="g.replayOnSpeedUp()">⏫</button>
         <button class="btn" @click="g.replayOnSpeedDown()">⏬</button>
         <button class="btn" @click="g.replayOnPauseToggle()">⏸️</button>
       </div>
-    </puzzle-status>
+    </div>
 
     <div class="menu">
       <div class="tabs">
@@ -46,7 +47,9 @@
       </div>
     </div>
 
-    <scores :players="players" />
+    <div class="menu-right">
+      <scores :players="players" />
+    </div>
   </div>
 </template>
 <script lang="ts">

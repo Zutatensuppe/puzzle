@@ -1,12 +1,11 @@
 <template>
-  <div class="timer">
+  <div class="puzzle-status">
     <div>
       🧩 {{status.piecesDone}}/{{status.piecesTotal}}
     </div>
     <div>
       {{icon}} {{durationStr}}
     </div>
-    <slot />
   </div>
 </template>
 <script lang="ts">
