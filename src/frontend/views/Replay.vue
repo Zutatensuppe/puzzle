@@ -158,10 +158,8 @@ export default defineComponent({
       this.$el,
       {
         setPuzzleCut: () => { this.cuttingPuzzle = false },
-        setPlayers: (active: Player[], idle: Player[]) => { this.players = { active, idle } },
-        setStatus: (status: PuzzleStatus) => {
-          this.setStatus(status)
-        },
+        setPlayers: this.setPlayers,
+        setStatus: this.setStatus,
         togglePreview: () => { this.toggle('preview', false) },
         setConnectionState: (v: number) => { this.connectionState = v },
         setReplaySpeed: (v: number) => { this.replay.speed = v },
@@ -176,6 +174,16 @@ export default defineComponent({
     this.g.disconnect()
   },
   methods: {
+    setPlayers(active: Player[], idle: Player[]) {
+      try {
+        this.$nextTick(() => {
+          this.players = { active, idle }
+        })
+      } catch (e) {
+        console.log('[2021-12-18] effort to avoid "too much recursion" error')
+        console.error(e)
+      }
+    },
     setStatus(status: PuzzleStatus): void {
       try {
         this.$nextTick(() => {
