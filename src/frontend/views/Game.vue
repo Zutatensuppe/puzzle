@@ -153,12 +153,7 @@ export default defineComponent({
         setPuzzleCut: () => { this.cuttingPuzzle = false },
         setPlayers: (active: Player[], idle: Player[]) => { this.players = { active, idle } },
         setStatus: (status: PuzzleStatus) => {
-          try {
-            this.status = status
-          } catch (e) {
-            console.log('[2021-12-17] effort to avoid "too much recursion" error')
-            console.error(e)
-          }
+          this.setStatus(status)
         },
         togglePreview: () => { this.toggle('preview', false) },
         setConnectionState: (v: number) => { this.connectionState = v },
@@ -174,6 +169,16 @@ export default defineComponent({
   methods: {
     reconnect(): void {
       this.g.connect()
+    },
+    setStatus(status: PuzzleStatus): void {
+      try {
+        this.$nextTick(() => {
+          this.status = status
+        })
+      } catch (e) {
+        console.log('[2021-12-17] effort to avoid "too much recursion" error')
+        console.error(e)
+      }
     },
     toggle(overlay: string, affectsHotkeys: boolean): void {
       if (this.overlay === '') {
