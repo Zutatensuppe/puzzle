@@ -152,7 +152,14 @@ export default defineComponent({
       {
         setPuzzleCut: () => { this.cuttingPuzzle = false },
         setPlayers: (active: Player[], idle: Player[]) => { this.players = { active, idle } },
-        setStatus: (status: PuzzleStatus) => { this.status = status},
+        setStatus: (status: PuzzleStatus) => {
+          try {
+            this.status = status
+          } catch (e) {
+            console.log('[2021-12-17] effort to avoid "too much recursion" error')
+            console.error(e)
+          }
+        },
         togglePreview: () => { this.toggle('preview', false) },
         setConnectionState: (v: number) => { this.connectionState = v },
         toggleSoundsEnabled: () => { this.g.player.soundsEnabled = !this.g.player.soundsEnabled },
