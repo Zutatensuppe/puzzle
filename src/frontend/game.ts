@@ -1,5 +1,6 @@
 "use strict"
 
+import { Emitter, EventType } from 'mitt'
 import { GameLoopInstance, run } from './gameloop'
 import Camera, { Snapshot } from './Camera'
 import Graphics from './Graphics'
@@ -46,17 +47,6 @@ export const MODE_REPLAY = 'replay'
 let PIECE_VIEW_FIXED = true
 let PIECE_VIEW_LOOSE = true
 
-interface Hud {
-  setPuzzleCut: () => void
-  setPlayers: (active: Player[], idle: Player[]) => void
-  setStatus: (status: PuzzleStatus) => void
-  setConnectionState: (v: number) => void
-  togglePreview: () => void
-  toggleSoundsEnabled: () => void
-  togglePlayerNames: () => void
-  setReplaySpeed?: (v: number) => void
-  setReplayPaused?: (v: boolean) => void
-}
 interface Replay {
   final: boolean
   log: Array<any> // current log entries
@@ -99,7 +89,7 @@ export async function main(
   wsAddress: string,
   MODE: string,
   TARGET_EL: HTMLElement,
-  HUD: Hud
+  eventBus: Emitter<Record<EventType, unknown>>,
 ) {
   if (typeof window.DEBUG === 'undefined') window.DEBUG = false
 
@@ -158,7 +148,7 @@ export async function main(
   }
 
   Communication.onConnectionStateChange((state) => {
-    HUD.setConnectionState(state)
+    eventBus.emit('connectionState', state)
   })
 
   const queryNextReplayBatch = async (
@@ -239,7 +229,7 @@ export async function main(
 
   const ctx = canvas.getContext('2d') as CanvasRenderingContext2D
   canvas.classList.add('loaded')
-  HUD.setPuzzleCut()
+  eventBus.emit('puzzleCut')
 
   let viewportToggleSlot: string = '';
   const viewportSnapshots: Record<string, Snapshot> = {}
@@ -293,16 +283,16 @@ export async function main(
     const startTs = Game.getStartTs(gameId)
     const finishTs = Game.getFinishTs(gameId)
 
-    HUD.setStatus({
+    eventBus.emit('status', {
       finished: !!(finishTs),
       duration: (finishTs || ts) - startTs,
       piecesDone: Game.getFinishedPiecesCount(gameId),
       piecesTotal: Game.getPieceCount(gameId),
     })
-    HUD.setPlayers(
-      Game.getActivePlayers(gameId, ts),
-      Game.getIdlePlayers(gameId, ts),
-    )
+    eventBus.emit('players', {
+      active: Game.getActivePlayers(gameId, ts),
+      idle: Game.getIdlePlayers(gameId, ts),
+    })
   }
 
   updateStatus(TIME())
@@ -365,12 +355,8 @@ export async function main(
   updatePlayerCursorColor(playerColor())
 
   const doSetSpeedStatus = () => {
-    if (HUD.setReplaySpeed) {
-      HUD.setReplaySpeed(REPLAY.speeds[REPLAY.speedIdx])
-    }
-    if (HUD.setReplayPaused) {
-      HUD.setReplayPaused(REPLAY.paused)
-    }
+    eventBus.emit('replaySpeed', REPLAY.speeds[REPLAY.speedIdx])
+    eventBus.emit('replayPaused', REPLAY.paused)
   }
 
   const replayOnSpeedUp = () => {
@@ -581,11 +567,11 @@ export async function main(
           viewport.zoom('out', viewport.worldToViewport(pos))
           delete viewportSnapshots['last']
         } else if (type === Protocol.INPUT_EV_TOGGLE_PREVIEW) {
-          HUD.togglePreview()
+          eventBus.emit('togglePreview')
         } else if (type === Protocol.INPUT_EV_TOGGLE_SOUNDS) {
-          HUD.toggleSoundsEnabled()
+          eventBus.emit('toggleSoundsEnabled')
         } else if (type === Protocol.INPUT_EV_TOGGLE_PLAYER_NAMES) {
-          HUD.togglePlayerNames()
+          eventBus.emit('togglePlayerNames')
         } else if (type === Protocol.INPUT_EV_CENTER_FIT_PUZZLE) {
           handleViewportSnapshot('center')
         } else if (type === Protocol.INPUT_EV_TOGGLE_FIXED_PIECES) {
@@ -665,11 +651,11 @@ export async function main(
           RERENDER = true
           viewport.zoom('out', viewport.worldToViewport(pos))
         } else if (type === Protocol.INPUT_EV_TOGGLE_PREVIEW) {
-          HUD.togglePreview()
+          eventBus.emit('togglePreview')
         } else if (type === Protocol.INPUT_EV_TOGGLE_SOUNDS) {
-          HUD.toggleSoundsEnabled()
+          eventBus.emit('toggleSoundsEnabled')
         } else if (type === Protocol.INPUT_EV_TOGGLE_PLAYER_NAMES) {
-          HUD.togglePlayerNames()
+          eventBus.emit('togglePlayerNames')
         } else if (type === Protocol.INPUT_EV_CENTER_FIT_PUZZLE) {
           handleViewportSnapshot('center')
         } else if (type === Protocol.INPUT_EV_TOGGLE_FIXED_PIECES) {

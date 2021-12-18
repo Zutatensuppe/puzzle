@@ -54,6 +54,7 @@
 </template>
 <script lang="ts">
 import { defineComponent } from 'vue'
+import mitt from 'mitt'
 
 import Scores from './../components/Scores.vue'
 import PuzzleStatusComponent from './../components/PuzzleStatus.vue'
@@ -94,6 +95,7 @@ export default defineComponent({
       connectionState: 0,
       cuttingPuzzle: true,
 
+      eventBus: mitt(),
       g: {
         player: {
           background: '',
@@ -148,6 +150,35 @@ export default defineComponent({
     this.$watch(() => this.g.player.showPlayerNames, (value: boolean) => {
       this.g.onShowPlayerNamesChange(value)
     })
+
+    this.eventBus.on('puzzleCut', () => {
+      this.cuttingPuzzle = false
+    })
+    this.eventBus.on('players', (players: any) => {
+      this.players = players
+    })
+    this.eventBus.on('status', (status: any) => {
+      this.status = status
+    })
+    this.eventBus.on('togglePreview', () => {
+      this.toggle('preview', false)
+    })
+    this.eventBus.on('connectionState', (v: any) => {
+      this.connectionState = v
+    })
+    this.eventBus.on('toggleSoundsEnabled', () => {
+      this.g.player.soundsEnabled = !this.g.player.soundsEnabled
+    })
+    this.eventBus.on('togglePlayerNames', () => {
+      this.g.player.showPlayerNames = !this.g.player.showPlayerNames
+    })
+    this.eventBus.on('replaySpeed', (v: any) => {
+      this.replay.speed = v
+    })
+    this.eventBus.on('replayPaused', (v: any) => {
+      this.replay.paused = v
+    })
+
     this.g = await main(
       `${this.$route.params.id}`,
       // @ts-ignore
@@ -156,17 +187,7 @@ export default defineComponent({
       this.$config.WS_ADDRESS,
       MODE_REPLAY,
       this.$el,
-      {
-        setPuzzleCut: () => { this.cuttingPuzzle = false },
-        setPlayers: this.setPlayers,
-        setStatus: this.setStatus,
-        togglePreview: () => { this.toggle('preview', false) },
-        setConnectionState: (v: number) => { this.connectionState = v },
-        setReplaySpeed: (v: number) => { this.replay.speed = v },
-        setReplayPaused: (v: boolean) => { this.replay.paused = v },
-        toggleSoundsEnabled: () => { this.g.player.soundsEnabled = !this.g.player.soundsEnabled },
-        togglePlayerNames: () => { this.g.player.showPlayerNames = !this.g.player.showPlayerNames },
-      }
+      this.eventBus,
     )
   },
   unmounted () {
@@ -174,26 +195,6 @@ export default defineComponent({
     this.g.disconnect()
   },
   methods: {
-    setPlayers(active: Player[], idle: Player[]) {
-      try {
-        this.$nextTick(() => {
-          this.players = { active, idle }
-        })
-      } catch (e) {
-        console.log('[2021-12-18] effort to avoid "too much recursion" error')
-        console.error(e)
-      }
-    },
-    setStatus(status: PuzzleStatus): void {
-      try {
-        this.$nextTick(() => {
-          this.status = status
-        })
-      } catch (e) {
-        console.log('[2021-12-17] effort to avoid "too much recursion" error')
-        console.error(e)
-      }
-    },
     toggle(overlay: string, affectsHotkeys: boolean): void {
       if (this.overlay === '') {
         this.overlay = overlay
