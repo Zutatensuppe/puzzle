@@ -144,34 +144,6 @@ input:focus {
   background-color: var(--bg-color);
 }
 
-.overlay .overlay-background-enter-active,
-.overlay .overlay-background-leave-active {
-  transition: background-color 0.3s;
-}
-.overlay .overlay-background-enter-from,
-.overlay .overlay-background-leave-to {
-  background-color: transparent;
-}
-
-.overlay .overlay-content-enter-active {
-  animation: bounce-in 0.3s;
-}
-.overlay .overlay-content-leave-active {
-  animation: bounce-in 0.3s reverse;
-}
-
-@keyframes bounce-in {
-  0% {
-    transform: translate(-50%,-50%) scale(0);
-  }
-  75% {
-    transform: translate(-50%,-50%) scale(1.1);
-  }
-  100% {
-    transform: translate(-50%,-50%) scale(1);
-  }
-}
-
 .overlay.transparent {
   background: rgba(0,0,0,.1);
 }
@@ -201,17 +173,6 @@ input:focus {
   animation: 0;
 }
 
-@keyframes bounce-in-no-translate {
-  0% {
-    transform: scale(0);
-  }
-  75% {
-    transform: scale(1.1);
-  }
-  100% {
-    transform: scale(1);
-  }
-}
 .preview-overlay .overlay-content {
   position: absolute;
   top: 0px;
