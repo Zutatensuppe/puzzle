@@ -174,11 +174,7 @@ export default defineComponent({
     const canvasEl = this.$refs.canvas as HTMLCanvasElement
     canvasEl.width = window.innerWidth
     canvasEl.height = window.innerHeight
-    window.addEventListener('resize', () => {
-      canvasEl.width = window.innerWidth
-      canvasEl.height = window.innerHeight
-      this.eventBus.emit('requireRerender')
-    })
+    window.addEventListener('resize', this.onResize)
 
     this.g = await main(
       `${this.$route.params.id}`,
@@ -194,8 +190,15 @@ export default defineComponent({
   unmounted () {
     this.g.unload()
     this.g.disconnect()
+    window.removeEventListener('resize', this.onResize)
   },
   methods: {
+    onResize(): void {
+      const canvasEl = this.$refs.canvas as HTMLCanvasElement
+      canvasEl.width = window.innerWidth
+      canvasEl.height = window.innerHeight
+      this.eventBus.emit('requireRerender')
+    },
     toggle(overlay: string, affectsHotkeys: boolean): void {
       if (this.overlay === '') {
         this.overlay = overlay
