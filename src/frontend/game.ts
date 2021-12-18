@@ -24,7 +24,6 @@ import {
   ReplayData,
   Timestamp,
   ServerEvent,
-  PuzzleStatus,
 } from '../common/Types'
 import EventAdapter from './EventAdapter'
 declare global {
@@ -71,24 +70,12 @@ const shouldDrawPiece = (piece: Piece) => {
 
 let RERENDER = true
 
-function addCanvasToDom(TARGET_EL: HTMLElement, canvas: HTMLCanvasElement) {
-  canvas.width = window.innerWidth
-  canvas.height = window.innerHeight
-  TARGET_EL.appendChild(canvas)
-  window.addEventListener('resize', () => {
-    canvas.width = window.innerWidth
-    canvas.height = window.innerHeight
-    RERENDER = true
-  })
-  return canvas
-}
-
 export async function main(
   gameId: string,
   clientId: string,
   wsAddress: string,
   MODE: string,
-  TARGET_EL: HTMLElement,
+  TARGET_EL: HTMLCanvasElement,
   eventBus: Emitter<Record<EventType, unknown>>,
 ) {
   if (typeof window.DEBUG === 'undefined') window.DEBUG = false
@@ -128,8 +115,7 @@ export async function main(
     return cursors[key]
   }
 
-  // Create a canvas and attach adapters to it so we can work with it
-  const canvas = addCanvasToDom(TARGET_EL, Graphics.createCanvas())
+  const canvas = TARGET_EL
 
   // stuff only available in replay mode...
   // TODO: refactor
@@ -375,6 +361,44 @@ export async function main(
     REPLAY.paused = !REPLAY.paused
     doSetSpeedStatus()
   }
+
+  eventBus.on('replayOnSpeedUp', () => {
+    replayOnSpeedUp()
+  })
+  eventBus.on('replayOnSpeedDown', () => {
+    replayOnSpeedDown()
+  })
+  eventBus.on('replayOnPauseToggle', () => {
+    replayOnPauseToggle()
+  })
+  eventBus.on('onBgChange', (value: any) => {
+    settings.setStr(SETTINGS.COLOR_BACKGROUND, value)
+    evts.addEvent([Protocol.INPUT_EV_BG_COLOR, value])
+  })
+  eventBus.on('onColorChange', (value: any) => {
+    settings.setStr(SETTINGS.PLAYER_COLOR, value)
+    evts.addEvent([Protocol.INPUT_EV_PLAYER_COLOR, value])
+  })
+  eventBus.on('onNameChange', (value: any) => {
+    settings.setStr(SETTINGS.PLAYER_NAME, value)
+    evts.addEvent([Protocol.INPUT_EV_PLAYER_NAME, value])
+  })
+  eventBus.on('onSoundsEnabledChange', (value: any) => {
+    settings.setBool(SETTINGS.SOUND_ENABLED, value)
+  })
+  eventBus.on('onSoundsVolumeChange', (value: any) => {
+    settings.setInt(SETTINGS.SOUND_VOLUME, value)
+    playClick()
+  })
+  eventBus.on('onShowPlayerNamesChange', (value: any) => {
+    settings.setBool(SETTINGS.SHOW_PLAYER_NAMES, value)
+  })
+  eventBus.on('setHotkeys', (state: any) => {
+    evts.setHotkeys(state)
+  })
+  eventBus.on('requireRerender', () => {
+    RERENDER = true
+  })
 
   const intervals: NodeJS.Timeout[] = []
   let to: NodeJS.Timeout
@@ -782,34 +806,6 @@ export async function main(
   })
 
   return {
-    setHotkeys: (state: boolean) => {
-      evts.setHotkeys(state)
-    },
-    onBgChange: (value: string) => {
-      settings.setStr(SETTINGS.COLOR_BACKGROUND, value)
-      evts.addEvent([Protocol.INPUT_EV_BG_COLOR, value])
-    },
-    onColorChange: (value: string) => {
-      settings.setStr(SETTINGS.PLAYER_COLOR, value)
-      evts.addEvent([Protocol.INPUT_EV_PLAYER_COLOR, value])
-    },
-    onNameChange: (value: string) => {
-      settings.setStr(SETTINGS.PLAYER_NAME, value)
-      evts.addEvent([Protocol.INPUT_EV_PLAYER_NAME, value])
-    },
-    onSoundsEnabledChange: (value: boolean) => {
-      settings.setBool(SETTINGS.SOUND_ENABLED, value)
-    },
-    onSoundsVolumeChange: (value: number) => {
-      settings.setInt(SETTINGS.SOUND_VOLUME, value)
-      playClick()
-    },
-    onShowPlayerNamesChange: (value: boolean) => {
-      settings.setBool(SETTINGS.SHOW_PLAYER_NAMES, value)
-    },
-    replayOnSpeedUp,
-    replayOnSpeedDown,
-    replayOnPauseToggle,
     previewImageUrl,
     player: {
       background: playerBgColor(),

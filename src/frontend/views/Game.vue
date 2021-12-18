@@ -49,6 +49,8 @@
     <div class="menu-right">
       <scores :players="players" />
     </div>
+
+    <canvas ref="canvas"></canvas>
   </div>
 </template>
 <script lang="ts">
@@ -108,13 +110,6 @@ export default defineComponent({
         },
         game: null as Game|null,
         previewImageUrl: '',
-        setHotkeys: (v: boolean) => {},
-        onBgChange: (v: string) => {},
-        onColorChange: (v: string) => {},
-        onNameChange: (v: string) => {},
-        onSoundsEnabledChange: (v: boolean) => {},
-        onSoundsVolumeChange: (v: number) => {},
-        onShowPlayerNamesChange: (v: boolean) => {},
         connect: () => {},
         disconnect: () => {},
         unload: () => {},
@@ -126,22 +121,22 @@ export default defineComponent({
       return
     }
     this.$watch(() => this.g.player.background, (value: string) => {
-      this.g.onBgChange(value)
+      this.eventBus.emit('onBgChange', value)
     })
     this.$watch(() => this.g.player.color, (value: string) => {
-      this.g.onColorChange(value)
+      this.eventBus.emit('onColorChange', value)
     })
     this.$watch(() => this.g.player.name, (value: string) => {
-      this.g.onNameChange(value)
+      this.eventBus.emit('onNameChange', value)
     })
     this.$watch(() => this.g.player.soundsEnabled, (value: boolean) => {
-      this.g.onSoundsEnabledChange(value)
+      this.eventBus.emit('onSoundsEnabledChange', value)
     })
     this.$watch(() => this.g.player.soundsVolume, (value: number) => {
-      this.g.onSoundsVolumeChange(value)
+      this.eventBus.emit('onSoundsVolumeChange', value)
     })
     this.$watch(() => this.g.player.showPlayerNames, (value: boolean) => {
-      this.g.onShowPlayerNamesChange(value)
+      this.eventBus.emit('onShowPlayerNamesChange', value)
     })
 
     this.eventBus.on('puzzleCut', () => {
@@ -166,6 +161,15 @@ export default defineComponent({
       this.g.player.showPlayerNames = !this.g.player.showPlayerNames
     })
 
+    const canvasEl = this.$refs.canvas as HTMLCanvasElement
+    canvasEl.width = window.innerWidth
+    canvasEl.height = window.innerHeight
+    window.addEventListener('resize', () => {
+      canvasEl.width = window.innerWidth
+      canvasEl.height = window.innerHeight
+      this.eventBus.emit('requireRerender')
+    })
+
     this.g = await main(
       `${this.$route.params.id}`,
       // @ts-ignore
@@ -173,7 +177,7 @@ export default defineComponent({
       // @ts-ignore
       this.$config.WS_ADDRESS,
       MODE_PLAY,
-      this.$el,
+      canvasEl,
       this.eventBus,
     )
   },
@@ -189,13 +193,13 @@ export default defineComponent({
       if (this.overlay === '') {
         this.overlay = overlay
         if (affectsHotkeys) {
-          this.g.setHotkeys(false)
+          this.eventBus.emit('setHotkeys', false)
         }
       } else {
         // could check if overlay was the provided one
         this.overlay = ''
         if (affectsHotkeys) {
-          this.g.setHotkeys(true)
+          this.eventBus.emit('setHotkeys', true)
         }
       }
     },
