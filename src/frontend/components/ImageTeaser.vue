@@ -8,6 +8,7 @@
 </template>
 <script lang="ts">
 import { defineComponent } from 'vue'
+import user from '../user'
 
 export default defineComponent({
   props: {
@@ -15,6 +16,11 @@ export default defineComponent({
       type: Object,
       required: true,
     },
+  },
+  data: () => {
+    return {
+      me: user.getMe(),
+    }
   },
   computed: {
     style(): object {
@@ -24,10 +30,10 @@ export default defineComponent({
       }
     },
     canEdit(): boolean {
-      if (!this.$me.id) {
+      if (!this.me.id) {
         return false
       }
-      return this.$me.id === this.image.uploaderUserId
+      return this.me.id === this.image.uploaderUserId
     },
   },
   emits: {

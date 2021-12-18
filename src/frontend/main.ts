@@ -6,8 +6,6 @@ import Index from './views/Index.vue'
 import NewGame from './views/NewGame.vue'
 import Game from './views/Game.vue'
 import Replay from './views/Replay.vue'
-import Util from './../common/Util'
-import settings from './settings'
 import xhr from './xhr'
 
 import ConnectionOverlay from './components/ConnectionOverlay.vue'
@@ -27,31 +25,12 @@ import Scores from './components/Scores.vue'
 import SettingsOverlay from './components/SettingsOverlay.vue'
 import TagsInput from './components/TagsInput.vue'
 import Upload from './components/Upload.vue'
+import user from './user'
 
 (async () => {
-  function initClientSecret() {
-    let SECRET = settings.getStr('SECRET', '')
-    if (!SECRET) {
-      SECRET = Util.uniqId()
-      settings.setStr('SECRET', SECRET)
-    }
-    return SECRET
-  }
-  function initClientId() {
-    let ID = settings.getStr('ID', '')
-    if (!ID) {
-      ID = Util.uniqId()
-      settings.setStr('ID', ID)
-    }
-    return ID
-  }
-  const clientId = initClientId()
-  const clientSecret = initClientSecret()
-  xhr.setClientId(clientId)
-  xhr.setClientSecret(clientSecret)
+  xhr.init()
 
-  const meRes = await xhr.get(`/api/me`, {})
-  const me = await meRes.json()
+  await user.init()
 
   const confRes = await xhr.get(`/api/conf`, {})
   const conf = await confRes.json()
@@ -74,9 +53,7 @@ import Upload from './components/Upload.vue'
   })
 
   const app = Vue.createApp(App)
-  app.config.globalProperties.$me = me
   app.config.globalProperties.$config = conf
-  app.config.globalProperties.$clientId = clientId
   app.use(router)
   app.component('connection-overlay', ConnectionOverlay)
   app.component('edit-image-dialog', EditImageDialog)

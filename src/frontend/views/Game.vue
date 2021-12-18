@@ -67,6 +67,7 @@ import HelpOverlay from './../components/HelpOverlay.vue'
 
 import { main, MODE_PLAY } from './../game'
 import { Game, Player, PuzzleStatus } from '../../common/Types'
+import xhr from '../xhr'
 
 export default defineComponent({
   name: 'game',
@@ -169,7 +170,7 @@ export default defineComponent({
     this.g = await main(
       `${this.$route.params.id}`,
       // @ts-ignore
-      this.$clientId,
+      xhr.clientId(),
       // @ts-ignore
       this.$config.WS_ADDRESS,
       MODE_PLAY,

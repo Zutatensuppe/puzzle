@@ -1,3 +1,6 @@
+import Util from "../common/Util"
+import settings from "./settings"
+
 export interface Response {
   status: number,
   text: string,
@@ -51,7 +54,20 @@ const request = async (
   })
 }
 
+const uniq = (str: string) => {
+  let val = settings.getStr(str, '')
+  if (!val) {
+    val = Util.uniqId()
+    settings.setStr(str, val)
+  }
+  return val
+}
+
 export default {
+  init: () => {
+    xhrClientId = uniq('ID')
+    xhrClientSecret = uniq('SECRET')
+  },
   request,
   get: (url: string, options: any): Promise<Response> => {
     return request('get', url, options)
@@ -59,10 +75,5 @@ export default {
   post: (url: string, options: any): Promise<Response> => {
     return request('post', url, options)
   },
-  setClientId: (clientId: string): void => {
-    xhrClientId = clientId
-  },
-  setClientSecret: (clientSecret: string): void => {
-    xhrClientSecret = clientSecret
-  },
+  clientId: () => xhrClientId
 }
