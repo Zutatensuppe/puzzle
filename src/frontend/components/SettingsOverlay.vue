@@ -4,19 +4,19 @@
       <table class="settings">
         <tr>
           <td><label>Background: </label></td>
-          <td><input type="color" v-model="modelValue.background" /></td>
+          <td><input type="color" v-model="background" /></td>
         </tr>
         <tr>
           <td><label>Color: </label></td>
-          <td><input type="color" v-model="modelValue.color" /></td>
+          <td><input type="color" v-model="color" /></td>
         </tr>
         <tr>
           <td><label>Name: </label></td>
-          <td><input type="text" maxLength="16" v-model="modelValue.name" /></td>
+          <td><input type="text" maxLength="16" v-model="name" /></td>
         </tr>
         <tr>
           <td><label>Sounds: </label></td>
-          <td><input type="checkbox" v-model="modelValue.soundsEnabled" /></td>
+          <td><input type="checkbox" v-model="soundsEnabled" /></td>
         </tr>
         <tr>
           <td><label>Sounds Volume: </label></td>
@@ -26,7 +26,7 @@
               type="range"
               min="0"
               max="100"
-              :value="modelValue.soundsVolume"
+              :value="soundsVolume"
               @change="updateVolume"
               />
             <span @click="increaseVolume">🔊</span>
@@ -34,14 +34,14 @@
         </tr>
         <tr>
           <td><label>Show player names: </label></td>
-          <td><input type="checkbox" v-model="modelValue.showPlayerNames" /></td>
+          <td><input type="checkbox" v-model="showPlayerNames" /></td>
         </tr>
       </table>
     </template>
   </overlay>
 </template>
 <script lang="ts">
-import { defineComponent } from 'vue'
+import { defineComponent, WatchStopHandle } from 'vue'
 
 export default defineComponent({
   emits: {
@@ -53,24 +53,69 @@ export default defineComponent({
       required: true,
     },
   },
+  data: () => {
+    return {
+      background: '',
+      color: '',
+      name: '',
+      soundsEnabled: true,
+      soundsVolume: 100,
+      showPlayerNames: true,
+
+      watches: [] as WatchStopHandle[],
+    }
+  },
   methods: {
     updateVolume (ev: Event): void {
-      (this.modelValue as any).soundsVolume = (ev.target as HTMLInputElement).value
+      const vol = parseInt((ev.target as HTMLInputElement).value)
+      this.soundsVolume = vol
     },
     decreaseVolume (): void {
-      const vol = parseInt(this.modelValue.soundsVolume, 10) - 5
-      this.modelValue.soundsVolume = Math.max(0, vol)
+      this.soundsVolume = Math.max(0, this.soundsVolume - 5)
     },
     increaseVolume (): void {
-      const vol = parseInt(this.modelValue.soundsVolume, 10) + 5
-      this.modelValue.soundsVolume = Math.min(100, vol)
+      this.soundsVolume = Math.min(100, this.soundsVolume + 5)
+    },
+    apply (modelValue: any): void {
+      this.disableWatches()
+      this.background = `${modelValue.background}`
+      this.color = `${modelValue.color}`
+      this.name = `${modelValue.name}`
+      this.soundsEnabled = !!modelValue.soundsEnabled
+      this.soundsVolume = parseInt(`${modelValue.soundsVolume}`, 10)
+      this.showPlayerNames = !!modelValue.showPlayerNames
+      this.enableWatches()
+    },
+    emitChanges (): void {
+      this.$emit('update:modelValue', {
+        background: this.background,
+        color: this.color,
+        name: this.name,
+        soundsEnabled: this.soundsEnabled,
+        soundsVolume: this.soundsVolume,
+        showPlayerNames: this.showPlayerNames,
+      })
+    },
+    enableWatches (): void {
+      this.watches.push(this.$watch('background', this.emitChanges))
+      this.watches.push(this.$watch('color', this.emitChanges))
+      this.watches.push(this.$watch('name', this.emitChanges))
+      this.watches.push(this.$watch('soundsEnabled', this.emitChanges))
+      this.watches.push(this.$watch('soundsVolume', this.emitChanges))
+      this.watches.push(this.$watch('showPlayerNames', this.emitChanges))
+    },
+    disableWatches (): void {
+      const w = this.watches
+      this.watches = []
+      w.forEach(stop => stop())
     },
   },
   created () {
+    this.apply(this.modelValue)
     // TODO: ts type PlayerSettings
     this.$watch('modelValue', (val: any) => {
-      this.$emit('update:modelValue', val)
-    }, { deep: true })
+      this.apply(val)
+    })
   },
 })
 </script>
