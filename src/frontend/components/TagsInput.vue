@@ -20,7 +20,7 @@
           >{{val}}</li>
       </ul>
     </div>
-    <span v-for="(tag,idx) in values" :key="idx" class="bit" @click="rm(tag)">{{tag}} ✖</span>
+    <span v-for="(tag,idx) in values" :key="idx" class="bit is-clickable" @click="rm(tag)">{{tag}} ✖</span>
   </div>
 </template>
 <script lang="ts">

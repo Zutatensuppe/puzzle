@@ -16,7 +16,7 @@ in jigsawpuzzles.io
       <label v-if="tags.length > 0">
         Tags:
         <span
-          class="bit"
+          class="bit is-clickable"
           v-for="(t,idx) in relevantTags"
           :key="idx"
           @click="toggleTag(t)"

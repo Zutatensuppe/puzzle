@@ -237,13 +237,16 @@ kbd {
   color: var(--main-darker-color);
 }
 
+.is-clickable {
+  cursor: pointer;
+}
+
 .bit {
   background: rgb(59, 55, 55);
   border-radius: .5em;
   padding: .25em .5em;
   display: inline-block;
   margin: 0 .25em .25em 0;
-  cursor: pointer;
 }
 .bit.on {
   color: var(--positive-color);

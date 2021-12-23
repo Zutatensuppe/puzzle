@@ -50,6 +50,12 @@
               Real (Pieces snap only to corners, already snapped pieces and to each other)</label>
             </td>
           </tr>
+          <tr v-if="image.tags.length">
+            <td><label>Tags: </label></td>
+            <td>
+              <span v-for="(tag,idx) in image.tags" :key="idx" class="bit">{{ tag.title }}</span>
+            </td>
+          </tr>
         </table>
       </div>
 
