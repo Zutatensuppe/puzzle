@@ -340,3 +340,9 @@ html.view-game body { overflow: hidden; }
 html.view-replay { overflow: hidden; }
 html.view-replay body { overflow: hidden; }
 
+.playback-control {
+  margin-top: .5em;
+}
+.switch-game-replay {
+  margin-top: .5em;
+}

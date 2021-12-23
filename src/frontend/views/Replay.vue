@@ -35,6 +35,9 @@
         <button class="btn" @click="eventBus.emit('replayOnSpeedDown')">⏬</button>
         <button class="btn" @click="eventBus.emit('replayOnPauseToggle')">⏸️</button>
       </div>
+      <div class="switch-game-replay" v-if="g.game">
+        <router-link :to="{ name: 'game', params: { id: g.game.id } }">🧩 To the game</router-link>
+      </div>
     </div>
 
     <div class="menu">
