@@ -34,7 +34,7 @@
 
     <div class="menu-left">
       <puzzle-status :status="status" />
-      <div class="switch-game-replay" v-if="g.game">
+      <div class="switch-game-replay" v-if="g.game && g.game.hasReplay">
         <router-link :to="{ name: 'replay', params: { id: g.game.id } }">↪️ Watch replay</router-link>
       </div>
     </div>

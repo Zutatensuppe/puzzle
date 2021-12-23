@@ -52,6 +52,7 @@ export type EncodedGame = FixedLengthArray<[
   ShapeMode,
   SnapMode,
   number|null,
+  boolean, // has replay
 ]>
 
 export interface ReplayData {
@@ -81,6 +82,7 @@ export interface Game {
   shapeMode: ShapeMode
   snapMode: SnapMode
   rng: GameRng
+  hasReplay: boolean
 }
 
 export interface Image {

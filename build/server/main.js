@@ -156,6 +156,7 @@ function encodeGame(data) {
         data.shapeMode,
         data.snapMode,
         data.creatorUserId,
+        data.hasReplay,
     ];
 }
 function decodeGame(data) {
@@ -172,6 +173,7 @@ function decodeGame(data) {
         shapeMode: data[7],
         snapMode: data[8],
         creatorUserId: data[9],
+        hasReplay: data[10],
     };
 }
 function coordByPieceIdx(info, pieceIdx) {
@@ -1810,6 +1812,7 @@ function loadGameFromDb(db, gameId) {
         game.players = Object.values(game.players);
     }
     const gameObject = storeDataToGame(game, game.creator_user_id);
+    gameObject.hasReplay = GameLog.exists(gameObject.id);
     GameCommon.setGame(gameObject.id, gameObject);
 }
 function persistGamesToDb(db) {
@@ -1894,6 +1897,7 @@ function storeDataToGame(storeData, creatorUserId) {
         scoreMode: DefaultScoreMode(storeData.scoreMode),
         shapeMode: DefaultShapeMode(storeData.shapeMode),
         snapMode: DefaultSnapMode(storeData.snapMode),
+        hasReplay: !!storeData.hasReplay,
     };
 }
 function gameToStoreData(game) {
@@ -1908,6 +1912,7 @@ function gameToStoreData(game) {
         scoreMode: game.scoreMode,
         shapeMode: game.shapeMode,
         snapMode: game.snapMode,
+        hasReplay: game.hasReplay,
     });
 }
 var GameStorage = {
@@ -1921,7 +1926,7 @@ var GameStorage = {
     setDirty,
 };
 
-async function createGameObject(gameId, targetTiles, image, ts, scoreMode, shapeMode, snapMode, creatorUserId) {
+async function createGameObject(gameId, targetTiles, image, ts, scoreMode, shapeMode, snapMode, creatorUserId, hasReplay) {
     const seed = Util.hash(gameId + ' ' + ts);
     const rng = new Rng(seed);
     return {
@@ -1934,6 +1939,7 @@ async function createGameObject(gameId, targetTiles, image, ts, scoreMode, shape
         scoreMode,
         shapeMode,
         snapMode,
+        hasReplay,
     };
 }
 async function createNewGame(gameSettings, ts, creatorUserId) {
@@ -1941,7 +1947,7 @@ async function createNewGame(gameSettings, ts, creatorUserId) {
     do {
         gameId = Util.uniqId();
     } while (GameCommon.exists(gameId));
-    const gameObject = await createGameObject(gameId, gameSettings.tiles, gameSettings.image, ts, gameSettings.scoreMode, gameSettings.shapeMode, gameSettings.snapMode, creatorUserId);
+    const gameObject = await createGameObject(gameId, gameSettings.tiles, gameSettings.image, ts, gameSettings.scoreMode, gameSettings.shapeMode, gameSettings.snapMode, creatorUserId, true);
     GameLog.create(gameId, ts);
     GameLog.log(gameId, Protocol.LOG_HEADER, 1, gameSettings.tiles, gameSettings.image, ts, gameSettings.scoreMode, gameSettings.shapeMode, gameSettings.snapMode, gameObject.creatorUserId);
     GameCommon.setGame(gameObject.id, gameObject);
@@ -2254,7 +2260,8 @@ app.get('/api/replay-data', async (req, res) => {
     if (offset === 0) {
         // also need the game
         game = await Game.createGameObject(gameId, log[0][2], log[0][3], // must be ImageInfo
-        log[0][4], log[0][5], log[0][6], log[0][7], log[0][8]);
+        log[0][4], log[0][5], log[0][6], log[0][7], log[0][8], // creatorUserId
+        true);
     }
     res.send({ log, game: game ? Util.encodeGame(game) : null });
 });

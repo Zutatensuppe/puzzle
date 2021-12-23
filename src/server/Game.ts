@@ -17,7 +17,8 @@ async function createGameObject(
   scoreMode: ScoreMode,
   shapeMode: ShapeMode,
   snapMode: SnapMode,
-  creatorUserId: number|null
+  creatorUserId: number|null,
+  hasReplay: boolean,
 ): Promise<Game> {
   const seed = Util.hash(gameId + ' ' + ts)
   const rng = new Rng(seed)
@@ -31,6 +32,7 @@ async function createGameObject(
     scoreMode,
     shapeMode,
     snapMode,
+    hasReplay,
   }
 }
 
@@ -52,7 +54,8 @@ async function createNewGame(
     gameSettings.scoreMode,
     gameSettings.shapeMode,
     gameSettings.snapMode,
-    creatorUserId
+    creatorUserId,
+    true,
   )
 
   GameLog.create(gameId, ts)

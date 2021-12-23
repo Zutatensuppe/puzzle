@@ -6,6 +6,7 @@ import { Rng } from './../common/Rng'
 import { DATA_DIR } from './Dirs'
 import Time from './../common/Time'
 import Db from './Db'
+import GameLog from './GameLog'
 
 const log = logger('GameStorage.js')
 
@@ -43,6 +44,7 @@ function loadGameFromDb(db: Db, gameId: string): void {
   }
 
   const gameObject: Game = storeDataToGame(game, game.creator_user_id)
+  gameObject.hasReplay = GameLog.exists(gameObject.id)
   GameCommon.setGame(gameObject.id, gameObject)
 }
 
@@ -136,6 +138,7 @@ function storeDataToGame(storeData: any, creatorUserId: number|null): Game {
     scoreMode: DefaultScoreMode(storeData.scoreMode),
     shapeMode: DefaultShapeMode(storeData.shapeMode),
     snapMode: DefaultSnapMode(storeData.snapMode),
+    hasReplay: !!storeData.hasReplay,
   }
 }
 
@@ -151,6 +154,7 @@ function gameToStoreData(game: Game): string {
     scoreMode: game.scoreMode,
     shapeMode: game.shapeMode,
     snapMode: game.snapMode,
+    hasReplay: game.hasReplay,
   });
 }
 

@@ -102,6 +102,7 @@ app.get('/api/replay-data', async (req, res): Promise<void> => {
       log[0][6],
       log[0][7],
       log[0][8], // creatorUserId
+      true,
     )
   }
   res.send({ log, game: game ? Util.encodeGame(game) : null })

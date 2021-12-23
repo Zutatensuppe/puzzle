@@ -134,6 +134,7 @@ function encodeGame(data: Game): EncodedGame {
     data.shapeMode,
     data.snapMode,
     data.creatorUserId,
+    data.hasReplay,
   ]
 }
 
@@ -151,6 +152,7 @@ function decodeGame(data: EncodedGame): Game {
     shapeMode: data[7],
     snapMode: data[8],
     creatorUserId: data[9],
+    hasReplay: data[10],
   }
 }
 
