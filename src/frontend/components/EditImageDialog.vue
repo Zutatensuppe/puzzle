@@ -57,11 +57,19 @@ export default defineComponent({
       tags: [] as string[],
     }
   },
+  watch: {
+    image(newValue, oldValue) {
+      this.init(newValue)
+    },
+  },
   created () {
-    this.title = this.image.title
-    this.tags = this.image.tags.map((t: Tag) => t.title)
+    this.init(this.image)
   },
   methods: {
+    init(image: Image) {
+      this.title = image.title
+      this.tags = image.tags.map((t: Tag) => t.title)
+    },
     saveImage () {
       this.$emit('saveClick', {
         id: this.image.id,
