@@ -49,6 +49,11 @@ export default defineComponent({
       },
     }
   },
+  watch: {
+    modelValue(newValue, oldValue) {
+      this.values = newValue
+    },
+  },
   created () {
     this.values = this.modelValue
   },

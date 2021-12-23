@@ -115,6 +115,13 @@ export default defineComponent({
     },
   },
   methods: {
+    reset(): void {
+      this.previewUrl = ''
+      this.file = null
+      this.title = ''
+      this.tags = []
+      this.droppable = false
+    },
     imageFromDragEvt (evt: DragEvent): DataTransferItem|null {
       const items = evt.dataTransfer?.items
       if (!items || items.length === 0) {
@@ -148,6 +155,7 @@ export default defineComponent({
         title: this.title,
         tags: this.tags,
       })
+      this.reset()
     },
     setupGameClick () {
       this.$emit('setupGameClick', {
@@ -155,6 +163,7 @@ export default defineComponent({
         title: this.title,
         tags: this.tags,
       })
+      this.reset()
     },
     onDrop (evt: DragEvent): boolean {
       this.droppable = false
@@ -181,7 +190,6 @@ export default defineComponent({
       return false
     },
     onDragleave () {
-      log.info('onDragleave')
       this.droppable = false
     },
   },
