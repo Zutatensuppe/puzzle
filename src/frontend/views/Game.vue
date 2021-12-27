@@ -124,24 +124,6 @@ export default defineComponent({
     if (!this.$route.params.id) {
       return
     }
-    this.$watch(() => this.g.player.background, (value: string) => {
-      this.eventBus.emit('onBgChange', value)
-    })
-    this.$watch(() => this.g.player.color, (value: string) => {
-      this.eventBus.emit('onColorChange', value)
-    })
-    this.$watch(() => this.g.player.name, (value: string) => {
-      this.eventBus.emit('onNameChange', value)
-    })
-    this.$watch(() => this.g.player.soundsEnabled, (value: boolean) => {
-      this.eventBus.emit('onSoundsEnabledChange', value)
-    })
-    this.$watch(() => this.g.player.soundsVolume, (value: number) => {
-      this.eventBus.emit('onSoundsVolumeChange', value)
-    })
-    this.$watch(() => this.g.player.showPlayerNames, (value: boolean) => {
-      this.eventBus.emit('onShowPlayerNamesChange', value)
-    })
 
     this.eventBus.on('puzzleCut', () => {
       this.cuttingPuzzle = false
@@ -180,6 +162,25 @@ export default defineComponent({
       canvasEl,
       this.eventBus,
     )
+
+    this.$watch(() => this.g.player.background, (value: string) => {
+      this.eventBus.emit('onBgChange', value)
+    })
+    this.$watch(() => this.g.player.color, (value: string) => {
+      this.eventBus.emit('onColorChange', value)
+    })
+    this.$watch(() => this.g.player.name, (value: string) => {
+      this.eventBus.emit('onNameChange', value)
+    })
+    this.$watch(() => this.g.player.soundsEnabled, (value: boolean) => {
+      this.eventBus.emit('onSoundsEnabledChange', value)
+    })
+    this.$watch(() => this.g.player.soundsVolume, (value: number) => {
+      this.eventBus.emit('onSoundsVolumeChange', value)
+    })
+    this.$watch(() => this.g.player.showPlayerNames, (value: boolean) => {
+      this.eventBus.emit('onShowPlayerNamesChange', value)
+    })
   },
   unmounted () {
     this.g.unload()
