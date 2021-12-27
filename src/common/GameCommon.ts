@@ -5,7 +5,6 @@ import Time from './Time'
 import {
   Change,
   EncodedPiece,
-  EvtInfo,
   Game,
   Input,
   Piece,
@@ -116,24 +115,6 @@ function addPlayer(gameId: string, playerId: string, ts: Timestamp): void {
   } else {
     changePlayer(gameId, playerId, { ts })
   }
-}
-
-function getEvtInfo(gameId: string, playerId: string): EvtInfo {
-  if (playerId in GAMES[gameId].evtInfos) {
-    return GAMES[gameId].evtInfos[playerId]
-  }
-  return {
-    _last_mouse: null,
-    _last_mouse_down: null,
-  }
-}
-
-function setEvtInfo(
-  gameId: string,
-  playerId: string,
-  evtInfo: EvtInfo
-): void {
-  GAMES[gameId].evtInfos[playerId] = evtInfo
 }
 
 function getAllGames(): Array<Game> {
@@ -402,7 +383,7 @@ const movePiecesDiff = (
   gameId: string,
   pieceIdxs: Array<number>,
   diff: Point
-): void => {
+): boolean => {
   const drawSize = getPieceDrawSize(gameId)
   const bounds = getBounds(gameId)
   const cappedDiff = diff
@@ -420,10 +401,14 @@ const movePiecesDiff = (
       cappedDiff.y = Math.min(bounds.y + bounds.h - t.pos.y + drawSize, cappedDiff.y)
     }
   }
+  if (!cappedDiff.x && !cappedDiff.y) {
+    return false
+  }
 
   for (const pieceIdx of pieceIdxs) {
     moveTileDiff(gameId, pieceIdx, cappedDiff)
   }
+  return true
 }
 
 const isFinishedPiece = (gameId: string, pieceIdx: number): boolean => {
@@ -554,6 +539,22 @@ const getPuzzleHeight = (gameId: string): number => {
   return GAMES[gameId].puzzle.info.height
 }
 
+const maySnapToFinal = (gameId: string, pieceIdxs: number[]): boolean => {
+  if (getSnapMode(gameId) === SnapMode.REAL) {
+    // only can snap to final if any of the grouped pieces are
+    // corner pieces
+    for (const pieceIdx of pieceIdxs) {
+      if (isCornerPiece(gameId, pieceIdx)) {
+        return true
+      }
+    }
+    return false
+  }
+
+  // in other modes can always snap
+  return true
+}
+
 function handleInput(
   gameId: string,
   playerId: string,
@@ -562,7 +563,6 @@ function handleInput(
   onSnap?: (playerId: string) => void
 ): Array<Change> {
   const puzzle = GAMES[gameId].puzzle
-  const evtInfo = getEvtInfo(gameId, playerId)
 
   const changes: Array<Change> = []
 
@@ -662,14 +662,24 @@ function handleInput(
     changePlayer(gameId, playerId, { name, ts })
     _playerChange()
   } else if (type === Protocol.INPUT_EV_MOVE) {
-    const w = input[1]
-    const h = input[2]
+    const diffX = input[1]
+    const diffY = input[2]
     const player = getPlayer(gameId, playerId)
     if (player) {
-      const x = player.x - w
-      const y = player.y - h
+      const x = player.x - diffX
+      const y = player.y - diffY
       changePlayer(gameId, playerId, { ts, x, y })
       _playerChange()
+      const pieceIdx = getFirstOwnedPieceIdx(gameId, playerId)
+      if (pieceIdx >= 0) {
+        // check if pos is on the tile, otherwise dont move
+        // (mouse could be out of table, but tile stays on it)
+        const pieceIdxs = getGroupedPieceIdxs(gameId, pieceIdx)
+        const diff = { x: -diffX, y: -diffY }
+        if (movePiecesDiff(gameId, pieceIdxs, diff)) {
+          _pieceChanges(pieceIdxs)
+        }
+      }
     }
   } else if (type === Protocol.INPUT_EV_MOUSE_DOWN) {
     const x = input[1]
@@ -678,7 +688,6 @@ function handleInput(
 
     changePlayer(gameId, playerId, { d: 1, ts })
     _playerChange()
-    evtInfo._last_mouse_down = pos
 
     const tileIdxAtPos = freePieceIdxByPos(gameId, pos)
     if (tileIdxAtPos >= 0) {
@@ -690,20 +699,27 @@ function handleInput(
       setTilesOwner(gameId, tileIdxs, playerId)
       _pieceChanges(tileIdxs)
     }
-    evtInfo._last_mouse = pos
-
   } else if (type === Protocol.INPUT_EV_MOUSE_MOVE) {
     const x = input[1]
     const y = input[2]
-    const pos = {x, y}
+    const down = input[5]
 
-    if (evtInfo._last_mouse_down === null) {
+    if (!down) {
       // player is just moving the hand
       changePlayer(gameId, playerId, {x, y, ts})
       _playerChange()
     } else {
       const pieceIdx = getFirstOwnedPieceIdx(gameId, playerId)
-      if (pieceIdx >= 0) {
+      if (pieceIdx < 0) {
+        // player is just moving map, so no change in position!
+        changePlayer(gameId, playerId, {ts})
+        _playerChange()
+      } else {
+        const x = input[1]
+        const y = input[2]
+        const diffX = input[3]
+        const diffY = input[4]
+
         // player is moving a tile (and hand)
         changePlayer(gameId, playerId, {x, y, ts})
         _playerChange()
@@ -711,41 +727,14 @@ function handleInput(
         // check if pos is on the tile, otherwise dont move
         // (mouse could be out of table, but tile stays on it)
         const pieceIdxs = getGroupedPieceIdxs(gameId, pieceIdx)
-        let anyOk = Geometry.pointInBounds(pos, getBounds(gameId))
-          && Geometry.pointInBounds(evtInfo._last_mouse_down, getBounds(gameId))
-        for (const idx of pieceIdxs) {
-          const bounds = getPieceBounds(gameId, idx)
-          if (Geometry.pointInBounds(pos, bounds)) {
-            anyOk = true
-            break
-          }
-        }
-        if (anyOk) {
-          const diffX = x - evtInfo._last_mouse_down.x
-          const diffY = y - evtInfo._last_mouse_down.y
-
-          const diff = { x: diffX, y: diffY }
-          movePiecesDiff(gameId, pieceIdxs, diff)
-
+        const diff = { x: diffX, y: diffY }
+        if (movePiecesDiff(gameId, pieceIdxs, diff)) {
           _pieceChanges(pieceIdxs)
         }
-      } else {
-        // player is just moving map, so no change in position!
-        changePlayer(gameId, playerId, {ts})
-        _playerChange()
       }
-
-      evtInfo._last_mouse_down = pos
     }
-    evtInfo._last_mouse = pos
-
   } else if (type === Protocol.INPUT_EV_MOUSE_UP) {
-    const x = input[1]
-    const y = input[2]
-    const pos = {x, y}
-    const d = 0
-
-    evtInfo._last_mouse_down = null
+    const d = 0 // mouse down = false
 
     const pieceIdx = getFirstOwnedPieceIdx(gameId, playerId)
     if (pieceIdx >= 0) {
@@ -758,22 +747,8 @@ function handleInput(
       const tilePos = getPiecePos(gameId, pieceIdx)
       const finalPos = getFinalPiecePos(gameId, pieceIdx)
 
-      let canSnapToFinal = false
-      if (getSnapMode(gameId) === SnapMode.REAL) {
-        // only can snap to final if any of the grouped pieces are
-        // corner pieces
-        for (const pieceIdxTmp of pieceIdxs) {
-          if (isCornerPiece(gameId, pieceIdxTmp)) {
-            canSnapToFinal = true
-            break
-          }
-        }
-      } else {
-        canSnapToFinal = true
-      }
-
       if (
-        canSnapToFinal
+        maySnapToFinal(gameId, pieceIdxs)
         && Geometry.pointDistance(finalPos, tilePos) < puzzle.info.snapDistance
       ) {
         const diff = Geometry.pointSub(finalPos, tilePos)
@@ -876,25 +851,21 @@ function handleInput(
       changePlayer(gameId, playerId, { d, ts })
       _playerChange()
     }
-    evtInfo._last_mouse = pos
   } else if (type === Protocol.INPUT_EV_ZOOM_IN) {
     const x = input[1]
     const y = input[2]
     changePlayer(gameId, playerId, { x, y, ts })
     _playerChange()
-    evtInfo._last_mouse = { x, y }
   } else if (type === Protocol.INPUT_EV_ZOOM_OUT) {
     const x = input[1]
     const y = input[2]
     changePlayer(gameId, playerId, { x, y, ts })
     _playerChange()
-    evtInfo._last_mouse = { x, y }
   } else {
     changePlayer(gameId, playerId, { ts })
     _playerChange()
   }
 
-  setEvtInfo(gameId, playerId, evtInfo)
   return changes
 }
 

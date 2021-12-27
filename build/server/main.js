@@ -151,12 +151,12 @@ function encodeGame(data) {
         Rng.serialize(data.rng.obj),
         data.puzzle,
         data.players,
-        data.evtInfos,
         data.scoreMode,
         data.shapeMode,
         data.snapMode,
         data.creatorUserId,
         data.hasReplay,
+        data.gameVersion,
     ];
 }
 function decodeGame(data) {
@@ -168,12 +168,12 @@ function decodeGame(data) {
         },
         puzzle: data[3],
         players: data[4],
-        evtInfos: data[5],
-        scoreMode: data[6],
-        shapeMode: data[7],
-        snapMode: data[8],
-        creatorUserId: data[9],
-        hasReplay: data[10],
+        scoreMode: data[5],
+        shapeMode: data[6],
+        snapMode: data[7],
+        creatorUserId: data[8],
+        hasReplay: data[9],
+        gameVersion: data[10],
     };
 }
 function coordByPieceIdx(info, pieceIdx) {
@@ -320,6 +320,7 @@ EV_SERVER_INIT: event sent to one client after that client
         // client to build client side of the game
 ]
 */
+const GAME_VERSION = 2; // must be increased whenever there is an incompatible change
 const EV_SERVER_EVENT = 1;
 const EV_SERVER_INIT = 4;
 const EV_CLIENT_EVENT = 2;
@@ -357,6 +358,7 @@ var Protocol = {
     EV_SERVER_INIT,
     EV_CLIENT_EVENT,
     EV_CLIENT_INIT,
+    GAME_VERSION,
     LOG_HEADER,
     LOG_ADD_PLAYER,
     LOG_UPDATE_PLAYER,
@@ -606,18 +608,6 @@ function addPlayer$1(gameId, playerId, ts) {
         changePlayer(gameId, playerId, { ts });
     }
 }
-function getEvtInfo(gameId, playerId) {
-    if (playerId in GAMES[gameId].evtInfos) {
-        return GAMES[gameId].evtInfos[playerId];
-    }
-    return {
-        _last_mouse: null,
-        _last_mouse_down: null,
-    };
-}
-function setEvtInfo(gameId, playerId, evtInfo) {
-    GAMES[gameId].evtInfos[playerId] = evtInfo;
-}
 function getAllGames() {
     return Object.values(GAMES).sort((a, b) => {
         const finished = isFinished(a.id);
@@ -739,16 +729,6 @@ const getBounds = (gameId) => {
         h: th + 2 * overY,
     };
 };
-const getPieceBounds = (gameId, tileIdx) => {
-    const s = getPieceSize(gameId);
-    const tile = getPiece(gameId, tileIdx);
-    return {
-        x: tile.pos.x,
-        y: tile.pos.y,
-        w: s,
-        h: s,
-    };
-};
 const getPieceZIndex = (gameId, pieceIdx) => {
     return getPiece(gameId, pieceIdx).z;
 };
@@ -770,9 +750,6 @@ const getPieceDrawOffset = (gameId) => {
 };
 const getPieceDrawSize = (gameId) => {
     return GAMES[gameId].puzzle.info.tileDrawSize;
-};
-const getPieceSize = (gameId) => {
-    return GAMES[gameId].puzzle.info.tileSize;
 };
 const getStartTs = (gameId) => {
     return GAMES[gameId].puzzle.data.started;
@@ -846,9 +823,13 @@ const movePiecesDiff = (gameId, pieceIdxs, diff) => {
             cappedDiff.y = Math.min(bounds.y + bounds.h - t.pos.y + drawSize, cappedDiff.y);
         }
     }
+    if (!cappedDiff.x && !cappedDiff.y) {
+        return false;
+    }
     for (const pieceIdx of pieceIdxs) {
         moveTileDiff(gameId, pieceIdx, cappedDiff);
     }
+    return true;
 };
 const isFinishedPiece = (gameId, pieceIdx) => {
     return getPieceOwner(gameId, pieceIdx) === -1;
@@ -951,9 +932,22 @@ const getPuzzleWidth = (gameId) => {
 const getPuzzleHeight = (gameId) => {
     return GAMES[gameId].puzzle.info.height;
 };
+const maySnapToFinal = (gameId, pieceIdxs) => {
+    if (getSnapMode(gameId) === SnapMode.REAL) {
+        // only can snap to final if any of the grouped pieces are
+        // corner pieces
+        for (const pieceIdx of pieceIdxs) {
+            if (isCornerPiece(gameId, pieceIdx)) {
+                return true;
+            }
+        }
+        return false;
+    }
+    // in other modes can always snap
+    return true;
+};
 function handleInput$1(gameId, playerId, input, ts, onSnap) {
     const puzzle = GAMES[gameId].puzzle;
-    const evtInfo = getEvtInfo(gameId, playerId);
     const changes = [];
     const _dataChange = () => {
         changes.push([Protocol.CHANGE_DATA, puzzle.data]);
@@ -1045,14 +1039,24 @@ function handleInput$1(gameId, playerId, input, ts, onSnap) {
         _playerChange();
     }
     else if (type === Protocol.INPUT_EV_MOVE) {
-        const w = input[1];
-        const h = input[2];
+        const diffX = input[1];
+        const diffY = input[2];
         const player = getPlayer(gameId, playerId);
         if (player) {
-            const x = player.x - w;
-            const y = player.y - h;
+            const x = player.x - diffX;
+            const y = player.y - diffY;
             changePlayer(gameId, playerId, { ts, x, y });
             _playerChange();
+            const pieceIdx = getFirstOwnedPieceIdx(gameId, playerId);
+            if (pieceIdx >= 0) {
+                // check if pos is on the tile, otherwise dont move
+                // (mouse could be out of table, but tile stays on it)
+                const pieceIdxs = getGroupedPieceIdxs(gameId, pieceIdx);
+                const diff = { x: -diffX, y: -diffY };
+                if (movePiecesDiff(gameId, pieceIdxs, diff)) {
+                    _pieceChanges(pieceIdxs);
+                }
+            }
         }
     }
     else if (type === Protocol.INPUT_EV_MOUSE_DOWN) {
@@ -1061,7 +1065,6 @@ function handleInput$1(gameId, playerId, input, ts, onSnap) {
         const pos = { x, y };
         changePlayer(gameId, playerId, { d: 1, ts });
         _playerChange();
-        evtInfo._last_mouse_down = pos;
         const tileIdxAtPos = freePieceIdxByPos(gameId, pos);
         if (tileIdxAtPos >= 0) {
             const maxZ = getMaxZIndex(gameId) + 1;
@@ -1072,58 +1075,43 @@ function handleInput$1(gameId, playerId, input, ts, onSnap) {
             setTilesOwner(gameId, tileIdxs, playerId);
             _pieceChanges(tileIdxs);
         }
-        evtInfo._last_mouse = pos;
     }
     else if (type === Protocol.INPUT_EV_MOUSE_MOVE) {
         const x = input[1];
         const y = input[2];
-        const pos = { x, y };
-        if (evtInfo._last_mouse_down === null) {
+        const down = input[5];
+        if (!down) {
             // player is just moving the hand
             changePlayer(gameId, playerId, { x, y, ts });
             _playerChange();
         }
         else {
             const pieceIdx = getFirstOwnedPieceIdx(gameId, playerId);
-            if (pieceIdx >= 0) {
+            if (pieceIdx < 0) {
+                // player is just moving map, so no change in position!
+                changePlayer(gameId, playerId, { ts });
+                _playerChange();
+            }
+            else {
+                const x = input[1];
+                const y = input[2];
+                const diffX = input[3];
+                const diffY = input[4];
                 // player is moving a tile (and hand)
                 changePlayer(gameId, playerId, { x, y, ts });
                 _playerChange();
                 // check if pos is on the tile, otherwise dont move
                 // (mouse could be out of table, but tile stays on it)
                 const pieceIdxs = getGroupedPieceIdxs(gameId, pieceIdx);
-                let anyOk = Geometry.pointInBounds(pos, getBounds(gameId))
-                    && Geometry.pointInBounds(evtInfo._last_mouse_down, getBounds(gameId));
-                for (const idx of pieceIdxs) {
-                    const bounds = getPieceBounds(gameId, idx);
-                    if (Geometry.pointInBounds(pos, bounds)) {
-                        anyOk = true;
-                        break;
-                    }
-                }
-                if (anyOk) {
-                    const diffX = x - evtInfo._last_mouse_down.x;
-                    const diffY = y - evtInfo._last_mouse_down.y;
-                    const diff = { x: diffX, y: diffY };
-                    movePiecesDiff(gameId, pieceIdxs, diff);
+                const diff = { x: diffX, y: diffY };
+                if (movePiecesDiff(gameId, pieceIdxs, diff)) {
                     _pieceChanges(pieceIdxs);
                 }
             }
-            else {
-                // player is just moving map, so no change in position!
-                changePlayer(gameId, playerId, { ts });
-                _playerChange();
-            }
-            evtInfo._last_mouse_down = pos;
         }
-        evtInfo._last_mouse = pos;
     }
     else if (type === Protocol.INPUT_EV_MOUSE_UP) {
-        const x = input[1];
-        const y = input[2];
-        const pos = { x, y };
-        const d = 0;
-        evtInfo._last_mouse_down = null;
+        const d = 0; // mouse down = false
         const pieceIdx = getFirstOwnedPieceIdx(gameId, playerId);
         if (pieceIdx >= 0) {
             // drop the tile(s)
@@ -1133,21 +1121,7 @@ function handleInput$1(gameId, playerId, input, ts, onSnap) {
             // Check if the tile was dropped near the final location
             const tilePos = getPiecePos(gameId, pieceIdx);
             const finalPos = getFinalPiecePos(gameId, pieceIdx);
-            let canSnapToFinal = false;
-            if (getSnapMode(gameId) === SnapMode.REAL) {
-                // only can snap to final if any of the grouped pieces are
-                // corner pieces
-                for (const pieceIdxTmp of pieceIdxs) {
-                    if (isCornerPiece(gameId, pieceIdxTmp)) {
-                        canSnapToFinal = true;
-                        break;
-                    }
-                }
-            }
-            else {
-                canSnapToFinal = true;
-            }
-            if (canSnapToFinal
+            if (maySnapToFinal(gameId, pieceIdxs)
                 && Geometry.pointDistance(finalPos, tilePos) < puzzle.info.snapDistance) {
                 const diff = Geometry.pointSub(finalPos, tilePos);
                 // Snap the tile to the final destination
@@ -1239,27 +1213,23 @@ function handleInput$1(gameId, playerId, input, ts, onSnap) {
             changePlayer(gameId, playerId, { d, ts });
             _playerChange();
         }
-        evtInfo._last_mouse = pos;
     }
     else if (type === Protocol.INPUT_EV_ZOOM_IN) {
         const x = input[1];
         const y = input[2];
         changePlayer(gameId, playerId, { x, y, ts });
         _playerChange();
-        evtInfo._last_mouse = { x, y };
     }
     else if (type === Protocol.INPUT_EV_ZOOM_OUT) {
         const x = input[1];
         const y = input[2];
         changePlayer(gameId, playerId, { x, y, ts });
         _playerChange();
-        evtInfo._last_mouse = { x, y };
     }
     else {
         changePlayer(gameId, playerId, { ts });
         _playerChange();
     }
-    setEvtInfo(gameId, playerId, evtInfo);
     return changes;
 }
 var GameCommon = {
@@ -1339,6 +1309,9 @@ const exists = (gameId) => {
     const idxfile = idxname(gameId);
     return fs.existsSync(idxfile);
 };
+function hasReplay(game) {
+    return exists(game.id) && game.gameVersion === Protocol.GAME_VERSION;
+}
 const _log = (gameId, type, ...args) => {
     const idxfile = idxname(gameId);
     if (!fs.existsSync(idxfile)) {
@@ -1385,6 +1358,7 @@ var GameLog = {
     shouldLog,
     create,
     exists,
+    hasReplay,
     log: _log,
     get,
     filename,
@@ -1812,7 +1786,7 @@ function loadGameFromDb(db, gameId) {
         game.players = Object.values(game.players);
     }
     const gameObject = storeDataToGame(game, game.creator_user_id);
-    gameObject.hasReplay = GameLog.exists(gameObject.id);
+    gameObject.hasReplay = GameLog.hasReplay(gameObject);
     GameCommon.setGame(gameObject.id, gameObject);
 }
 function persistGamesToDb(db) {
@@ -1886,6 +1860,7 @@ function loadGameFromDisk(gameId) {
 function storeDataToGame(storeData, creatorUserId) {
     return {
         id: storeData.id,
+        gameVersion: storeData.gameVersion || 1,
         creatorUserId,
         rng: {
             type: storeData.rng ? storeData.rng.type : '_fake_',
@@ -1893,7 +1868,6 @@ function storeDataToGame(storeData, creatorUserId) {
         },
         puzzle: storeData.puzzle,
         players: storeData.players,
-        evtInfos: {},
         scoreMode: DefaultScoreMode(storeData.scoreMode),
         shapeMode: DefaultShapeMode(storeData.shapeMode),
         snapMode: DefaultSnapMode(storeData.snapMode),
@@ -1903,6 +1877,7 @@ function storeDataToGame(storeData, creatorUserId) {
 function gameToStoreData(game) {
     return JSON.stringify({
         id: game.id,
+        gameVersion: game.gameVersion,
         rng: {
             type: game.rng.type,
             obj: Rng.serialize(game.rng.obj),
@@ -1926,16 +1901,16 @@ var GameStorage = {
     setDirty,
 };
 
-async function createGameObject(gameId, targetTiles, image, ts, scoreMode, shapeMode, snapMode, creatorUserId, hasReplay) {
+async function createGameObject(gameId, gameVersion, targetTiles, image, ts, scoreMode, shapeMode, snapMode, creatorUserId, hasReplay) {
     const seed = Util.hash(gameId + ' ' + ts);
     const rng = new Rng(seed);
     return {
         id: gameId,
+        gameVersion: gameVersion,
         creatorUserId,
         rng: { type: 'Rng', obj: rng },
         puzzle: await createPuzzle(rng, targetTiles, image, ts, shapeMode),
         players: [],
-        evtInfos: {},
         scoreMode,
         shapeMode,
         snapMode,
@@ -1947,12 +1922,12 @@ async function createNewGame(gameSettings, ts, creatorUserId) {
     do {
         gameId = Util.uniqId();
     } while (GameCommon.exists(gameId));
-    const gameObject = await createGameObject(gameId, gameSettings.tiles, gameSettings.image, ts, gameSettings.scoreMode, gameSettings.shapeMode, gameSettings.snapMode, creatorUserId, true);
+    const gameObject = await createGameObject(gameId, Protocol.GAME_VERSION, gameSettings.tiles, gameSettings.image, ts, gameSettings.scoreMode, gameSettings.shapeMode, gameSettings.snapMode, creatorUserId, true);
     GameLog.create(gameId, ts);
-    GameLog.log(gameId, Protocol.LOG_HEADER, 1, gameSettings.tiles, gameSettings.image, ts, gameSettings.scoreMode, gameSettings.shapeMode, gameSettings.snapMode, gameObject.creatorUserId);
+    GameLog.log(gameObject.id, Protocol.LOG_HEADER, gameObject.gameVersion, gameSettings.tiles, gameSettings.image, ts, gameObject.scoreMode, gameObject.shapeMode, gameObject.snapMode, gameObject.creatorUserId);
     GameCommon.setGame(gameObject.id, gameObject);
-    GameStorage.setDirty(gameId);
-    return gameId;
+    GameStorage.setDirty(gameObject.id);
+    return gameObject.id;
 }
 function addPlayer(gameId, playerId, ts) {
     if (GameLog.shouldLog(GameCommon.getFinishTs(gameId), ts)) {
@@ -2259,8 +2234,14 @@ app.get('/api/replay-data', async (req, res) => {
     let game = null;
     if (offset === 0) {
         // also need the game
-        game = await Game.createGameObject(gameId, log[0][2], log[0][3], // must be ImageInfo
-        log[0][4], log[0][5], log[0][6], log[0][7], log[0][8], // creatorUserId
+        game = await Game.createGameObject(gameId, log[0][1], // gameVersion
+        log[0][2], // targetTiles
+        log[0][3], // must be ImageInfo
+        log[0][4], // ts (of game creation)
+        log[0][5], // scoreMode
+        log[0][6], // shapeMode
+        log[0][7], // snapMode
+        log[0][8], // creatorUserId
         true);
     }
     res.send({ log, game: game ? Util.encodeGame(game) : null });
@@ -2278,7 +2259,7 @@ app.get('/api/index-data', (req, res) => {
     const games = [
         ...GameCommon.getAllGames().map((game) => ({
             id: game.id,
-            hasReplay: GameLog.exists(game.id),
+            hasReplay: GameLog.hasReplay(game),
             started: GameCommon.getStartTs(game.id),
             finished: GameCommon.getFinishTs(game.id),
             tilesFinished: GameCommon.getFinishedPiecesCount(game.id),

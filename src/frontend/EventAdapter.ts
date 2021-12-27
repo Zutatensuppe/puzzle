@@ -24,6 +24,10 @@ function EventAdapter (
     const pos = viewport.viewportToWorld({x, y})
     return [pos.x, pos.y]
   }
+  const toWorldDim = (w: number, h: number): [number, number] => {
+    const dim = viewport.viewportDimToWorld({ w, h })
+    return [ dim.w, dim.h ]
+  }
 
   const mousePos = (ev: MouseEvent) => toWorldPoint(ev.offsetX, ev.offsetY)
   const canvasCenter = () => toWorldPoint(canvas.width / 2, canvas.height / 2)
@@ -50,33 +54,47 @@ function EventAdapter (
     }
   }
 
-  let lastMouse: [number, number]|null = null
+  let mouseDown: boolean = false
+  let lastMouseRaw: [number, number]|null = null
+  let lastMouseWorld: [number, number]|null = null
   canvas.addEventListener('mousedown', (ev) => {
-    lastMouse = mousePos(ev)
+    lastMouseWorld = mousePos(ev)
+    lastMouseRaw = [ev.offsetX, ev.offsetY]
     if (ev.button === 0) {
-      addEvent([Protocol.INPUT_EV_MOUSE_DOWN, ...lastMouse])
+      mouseDown = true
+      addEvent([Protocol.INPUT_EV_MOUSE_DOWN, ...lastMouseWorld])
     }
   })
 
   canvas.addEventListener('mouseup', (ev) => {
-    lastMouse = mousePos(ev)
+    lastMouseWorld = mousePos(ev)
+    lastMouseRaw = [ev.offsetX, ev.offsetY]
     if (ev.button === 0) {
-      addEvent([Protocol.INPUT_EV_MOUSE_UP, ...lastMouse])
+      mouseDown = false
+      addEvent([Protocol.INPUT_EV_MOUSE_UP, ...lastMouseWorld])
     }
   })
 
   canvas.addEventListener('mousemove', (ev) => {
-    lastMouse = mousePos(ev)
-    addEvent([Protocol.INPUT_EV_MOUSE_MOVE, ...lastMouse])
+    if (!lastMouseRaw) {
+      return
+    }
+    lastMouseWorld = mousePos(ev)
+    const diffWorld = toWorldDim(
+      -(lastMouseRaw[0] - ev.offsetX),
+      -(lastMouseRaw[1] - ev.offsetY),
+    )
+    addEvent([Protocol.INPUT_EV_MOUSE_MOVE, ...lastMouseWorld, ...diffWorld, mouseDown ? 1 : 0])
+    lastMouseRaw = [ev.offsetX, ev.offsetY]
   })
 
   canvas.addEventListener('wheel', (ev) => {
-    lastMouse = mousePos(ev)
+    lastMouseWorld = mousePos(ev)
     if (viewport.canZoom(ev.deltaY < 0 ? 'in' : 'out')) {
       const evt = ev.deltaY < 0
         ? Protocol.INPUT_EV_ZOOM_IN
         : Protocol.INPUT_EV_ZOOM_OUT
-      addEvent([evt, ...lastMouse])
+      addEvent([evt, ...lastMouseWorld])
     }
   })
 
@@ -145,9 +163,9 @@ function EventAdapter (
       const amount = (SHIFT ? 24 : 12) * Math.sqrt(viewport.getCurrentZoom())
       const pos = viewport.viewportDimToWorld({w: w * amount, h: h * amount})
       addEvent([Protocol.INPUT_EV_MOVE, pos.w, pos.h])
-      if (lastMouse) {
-        lastMouse[0] -= pos.w
-        lastMouse[1] -= pos.h
+      if (lastMouseWorld) {
+        lastMouseWorld[0] -= pos.w
+        lastMouseWorld[1] -= pos.h
       }
     }
 
@@ -155,12 +173,12 @@ function EventAdapter (
       // cancel each other out
     } else if (ZOOM_IN) {
       if (viewport.canZoom('in')) {
-        const target = lastMouse || canvasCenter()
+        const target = lastMouseWorld || canvasCenter()
         addEvent([Protocol.INPUT_EV_ZOOM_IN, ...target])
       }
     } else if (ZOOM_OUT) {
       if (viewport.canZoom('out')) {
-        const target = lastMouse || canvasCenter()
+        const target = lastMouseWorld || canvasCenter()
         addEvent([Protocol.INPUT_EV_ZOOM_OUT, ...target])
       }
     }

@@ -38,6 +38,8 @@ EV_SERVER_INIT: event sent to one client after that client
         // client to build client side of the game
 ]
 */
+const GAME_VERSION = 2; // must be increased whenever there is an incompatible change
+
 const EV_SERVER_EVENT = 1
 const EV_SERVER_INIT = 4
 const EV_CLIENT_EVENT = 2
@@ -84,6 +86,8 @@ export default {
   EV_SERVER_INIT,
   EV_CLIENT_EVENT,
   EV_CLIENT_INIT,
+
+  GAME_VERSION,
 
   LOG_HEADER,
   LOG_ADD_PLAYER,

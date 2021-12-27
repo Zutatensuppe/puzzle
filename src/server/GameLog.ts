@@ -1,7 +1,7 @@
 import fs from 'fs'
 import Protocol from '../common/Protocol'
 import Time from '../common/Time'
-import { DefaultScoreMode, DefaultShapeMode, DefaultSnapMode, Timestamp } from '../common/Types'
+import { DefaultScoreMode, DefaultShapeMode, DefaultSnapMode, Game, Timestamp } from '../common/Types'
 import { logger } from './../common/Util'
 import { DATA_DIR } from './../server/Dirs'
 
@@ -41,6 +41,10 @@ const create = (gameId: string, ts: Timestamp): void => {
 const exists = (gameId: string): boolean => {
   const idxfile = idxname(gameId)
   return fs.existsSync(idxfile)
+}
+
+function hasReplay(game: Game): boolean {
+  return exists(game.id) && game.gameVersion === Protocol.GAME_VERSION
 }
 
 const _log = (gameId: string, type: number, ...args: Array<any>): void => {
@@ -99,6 +103,7 @@ export default {
   shouldLog,
   create,
   exists,
+  hasReplay,
   log: _log,
   get,
   filename,

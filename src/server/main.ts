@@ -95,14 +95,15 @@ app.get('/api/replay-data', async (req, res): Promise<void> => {
     // also need the game
     game = await Game.createGameObject(
       gameId,
-      log[0][2],
+      log[0][1], // gameVersion
+      log[0][2], // targetTiles
       log[0][3], // must be ImageInfo
-      log[0][4],
-      log[0][5],
-      log[0][6],
-      log[0][7],
+      log[0][4], // ts (of game creation)
+      log[0][5], // scoreMode
+      log[0][6], // shapeMode
+      log[0][7], // snapMode
       log[0][8], // creatorUserId
-      true,
+      true,      // hasReplay
     )
   }
   res.send({ log, game: game ? Util.encodeGame(game) : null })
@@ -122,7 +123,7 @@ app.get('/api/index-data', (req, res): void => {
   const games = [
     ...GameCommon.getAllGames().map((game: GameType) => ({
       id: game.id,
-      hasReplay: GameLog.exists(game.id),
+      hasReplay: GameLog.hasReplay(game),
       started: GameCommon.getStartTs(game.id),
       finished: GameCommon.getFinishTs(game.id),
       tilesFinished: GameCommon.getFinishedPiecesCount(game.id),

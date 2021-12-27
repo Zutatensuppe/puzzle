@@ -44,7 +44,7 @@ function loadGameFromDb(db: Db, gameId: string): void {
   }
 
   const gameObject: Game = storeDataToGame(game, game.creator_user_id)
-  gameObject.hasReplay = GameLog.exists(gameObject.id)
+  gameObject.hasReplay = GameLog.hasReplay(gameObject)
   GameCommon.setGame(gameObject.id, gameObject)
 }
 
@@ -127,6 +127,7 @@ function loadGameFromDisk(gameId: string): void {
 function storeDataToGame(storeData: any, creatorUserId: number|null): Game {
   return {
     id: storeData.id,
+    gameVersion: storeData.gameVersion || 1, // old games didnt have this stored
     creatorUserId,
     rng: {
       type: storeData.rng ? storeData.rng.type : '_fake_',
@@ -134,7 +135,6 @@ function storeDataToGame(storeData: any, creatorUserId: number|null): Game {
     },
     puzzle: storeData.puzzle,
     players: storeData.players,
-    evtInfos: {},
     scoreMode: DefaultScoreMode(storeData.scoreMode),
     shapeMode: DefaultShapeMode(storeData.shapeMode),
     snapMode: DefaultSnapMode(storeData.snapMode),
@@ -145,6 +145,7 @@ function storeDataToGame(storeData: any, creatorUserId: number|null): Game {
 function gameToStoreData(game: Game): string {
   return JSON.stringify({
     id: game.id,
+    gameVersion: game.gameVersion,
     rng: {
       type: game.rng.type,
       obj: Rng.serialize(game.rng.obj),

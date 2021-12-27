@@ -47,12 +47,12 @@ export type EncodedGame = FixedLengthArray<[
   RngSerialized,
   Puzzle,
   Array<EncodedPlayer>,
-  Record<string, EvtInfo>,
   ScoreMode,
   ShapeMode,
   SnapMode,
   number|null,
   boolean, // has replay
+  number, // gameVersion
 ]>
 
 export interface ReplayData {
@@ -74,10 +74,10 @@ interface GameRng {
 
 export interface Game {
   id: string
+  gameVersion: number
   creatorUserId: number|null
   players: Array<EncodedPlayer>
   puzzle: Puzzle
-  evtInfos: Record<string, EvtInfo>
   scoreMode: ScoreMode
   shapeMode: ShapeMode
   snapMode: SnapMode
@@ -219,11 +219,6 @@ export interface PlayerChange {
   bgcolor?: string|null
   points?: number
   ts?: Timestamp
-}
-
-export interface EvtInfo {
-  _last_mouse: Point|null
-  _last_mouse_down: Point|null
 }
 
 export enum ScoreMode {

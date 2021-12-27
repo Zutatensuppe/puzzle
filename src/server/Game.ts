@@ -11,6 +11,7 @@ const log = logger('Game.ts')
 
 async function createGameObject(
   gameId: string,
+  gameVersion: number,
   targetTiles: number,
   image: ImageInfo,
   ts: Timestamp,
@@ -24,11 +25,11 @@ async function createGameObject(
   const rng = new Rng(seed)
   return {
     id: gameId,
+    gameVersion: gameVersion,
     creatorUserId,
     rng: { type: 'Rng', obj: rng },
     puzzle: await createPuzzle(rng, targetTiles, image, ts, shapeMode),
     players: [],
-    evtInfos: {},
     scoreMode,
     shapeMode,
     snapMode,
@@ -48,6 +49,7 @@ async function createNewGame(
 
   const gameObject = await createGameObject(
     gameId,
+    Protocol.GAME_VERSION,
     gameSettings.tiles,
     gameSettings.image,
     ts,
@@ -60,22 +62,22 @@ async function createNewGame(
 
   GameLog.create(gameId, ts)
   GameLog.log(
-    gameId,
+    gameObject.id,
     Protocol.LOG_HEADER,
-    1,
+    gameObject.gameVersion,
     gameSettings.tiles,
     gameSettings.image,
     ts,
-    gameSettings.scoreMode,
-    gameSettings.shapeMode,
-    gameSettings.snapMode,
+    gameObject.scoreMode,
+    gameObject.shapeMode,
+    gameObject.snapMode,
     gameObject.creatorUserId
   )
 
   GameCommon.setGame(gameObject.id, gameObject)
-  GameStorage.setDirty(gameId)
+  GameStorage.setDirty(gameObject.id)
 
-  return gameId
+  return gameObject.id
 }
 
 function addPlayer(gameId: string, playerId: string, ts: Timestamp): void {

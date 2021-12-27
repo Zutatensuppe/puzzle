@@ -129,12 +129,12 @@ function encodeGame(data: Game): EncodedGame {
     Rng.serialize(data.rng.obj),
     data.puzzle,
     data.players,
-    data.evtInfos,
     data.scoreMode,
     data.shapeMode,
     data.snapMode,
     data.creatorUserId,
     data.hasReplay,
+    data.gameVersion,
   ]
 }
 
@@ -147,12 +147,12 @@ function decodeGame(data: EncodedGame): Game {
     },
     puzzle: data[3],
     players: data[4],
-    evtInfos: data[5],
-    scoreMode: data[6],
-    shapeMode: data[7],
-    snapMode: data[8],
-    creatorUserId: data[9],
-    hasReplay: data[10],
+    scoreMode: data[5],
+    shapeMode: data[6],
+    snapMode: data[7],
+    creatorUserId: data[8],
+    hasReplay: data[9],
+    gameVersion: data[10],
   }
 }
 

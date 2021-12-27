@@ -1,0 +1,22 @@
+{
+  "preset": "ts-jest",
+  "verbose": true,
+  "extensionsToTreatAsEsm": [
+    ".ts"
+  ],
+  "globals": {
+    "ts-jest": {
+      "useESM": true
+    }
+  },
+  "testEnvironment": "jsdom",
+  "moduleFileExtensions": [
+    "vue",
+    "js",
+    "json",
+    "jsx",
+    "ts",
+    "tsx",
+    "node"
+  ]
+}

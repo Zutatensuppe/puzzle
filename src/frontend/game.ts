@@ -232,7 +232,7 @@ export async function main(
     )
 
     // zoom viewport to fit whole puzzle in
-    const x = viewport.worldDimToViewport(BOARD_DIM)
+    const x = viewport.worldDimToViewportRaw(BOARD_DIM)
     const border = 20
     const targetW = canvas.width - (border * 2)
     const targetH = canvas.height - (border * 2)
@@ -241,10 +241,8 @@ export async function main(
       || (x.w < targetW && x.h < targetH)
     ) {
       const zoom = Math.min(targetW / x.w, targetH / x.h)
-      viewport.setZoom(zoom, {
-        x: canvas.width / 2,
-        y: canvas.height / 2,
-      })
+      const center = { x: canvas.width / 2, y: canvas.height / 2 }
+      viewport.setZoom(zoom, center)
     }
   }
   const handleViewportSnapshot = (slot: string): void => {
@@ -539,7 +537,6 @@ export async function main(
     next()
   }
 
-  let _last_mouse_down: Point|null = null
   const onUpdate = (): void => {
     // handle key downs once per onUpdate
     // this will create Protocol.INPUT_EV_MOVE events if something
@@ -552,43 +549,34 @@ export async function main(
         // -------------------------------------------------------------
         const type = evt[0]
         if (type === Protocol.INPUT_EV_MOVE) {
-          const w = evt[1]
-          const h = evt[2]
-          const dim = viewport.worldDimToViewport({w, h})
+          const dim = viewport.worldDimToViewportRaw({ w: evt[1], h: evt[2] })
           RERENDER = true
           viewport.move(dim.w, dim.h)
           delete viewportSnapshots['last']
         } else if (type === Protocol.INPUT_EV_MOUSE_MOVE) {
-          if (_last_mouse_down && !Game.getFirstOwnedPiece(gameId, clientId)) {
+          const down = evt[5]
+          if (down && !Game.getFirstOwnedPiece(gameId, clientId)) {
             // move the cam
-            const pos = { x: evt[1], y: evt[2] }
-            const mouse = viewport.worldToViewport(pos)
-            const diffX = Math.round(mouse.x - _last_mouse_down.x)
-            const diffY = Math.round(mouse.y - _last_mouse_down.y)
+            const diff = viewport.worldDimToViewportRaw({ w: evt[3], h: evt[4] })
             RERENDER = true
-            viewport.move(diffX, diffY)
-
-            _last_mouse_down = mouse
+            viewport.move(diff.w, diff.h)
             delete viewportSnapshots['last']
           }
         } else if (type === Protocol.INPUT_EV_PLAYER_COLOR) {
           updatePlayerCursorColor(evt[1])
         } else if (type === Protocol.INPUT_EV_MOUSE_DOWN) {
-          const pos = { x: evt[1], y: evt[2] }
-          _last_mouse_down = viewport.worldToViewport(pos)
           updatePlayerCursorState(true)
         } else if (type === Protocol.INPUT_EV_MOUSE_UP) {
-          _last_mouse_down = null
           updatePlayerCursorState(false)
         } else if (type === Protocol.INPUT_EV_ZOOM_IN) {
           const pos = { x: evt[1], y: evt[2] }
           RERENDER = true
-          viewport.zoom('in', viewport.worldToViewport(pos))
+          viewport.zoom('in', viewport.worldToViewportRaw(pos))
           delete viewportSnapshots['last']
         } else if (type === Protocol.INPUT_EV_ZOOM_OUT) {
           const pos = { x: evt[1], y: evt[2] }
           RERENDER = true
-          viewport.zoom('out', viewport.worldToViewport(pos))
+          viewport.zoom('out', viewport.worldToViewportRaw(pos))
           delete viewportSnapshots['last']
         } else if (type === Protocol.INPUT_EV_TOGGLE_PREVIEW) {
           eventBus.emit('togglePreview')
@@ -641,39 +629,30 @@ export async function main(
         } else if (type === Protocol.INPUT_EV_REPLAY_SPEED_UP) {
           replayOnSpeedUp()
         } else if (type === Protocol.INPUT_EV_MOVE) {
-          const diffX = evt[1]
-          const diffY = evt[2]
+          const dim = viewport.worldDimToViewportRaw({ w: evt[1], h: evt[2] })
           RERENDER = true
-          viewport.move(diffX, diffY)
+          viewport.move(dim.w, dim.h)
         } else if (type === Protocol.INPUT_EV_MOUSE_MOVE) {
-          if (_last_mouse_down) {
-            // move the cam
-            const pos = { x: evt[1], y: evt[2] }
-            const mouse = viewport.worldToViewport(pos)
-            const diffX = Math.round(mouse.x - _last_mouse_down.x)
-            const diffY = Math.round(mouse.y - _last_mouse_down.y)
+          const down = evt[5]
+          if (down) {
+            const diff = viewport.worldDimToViewportRaw({ w: evt[3], h: evt[4] })
             RERENDER = true
-            viewport.move(diffX, diffY)
-
-            _last_mouse_down = mouse
+            viewport.move(diff.w, diff.h)
           }
         } else if (type === Protocol.INPUT_EV_PLAYER_COLOR) {
           updatePlayerCursorColor(evt[1])
         } else if (type === Protocol.INPUT_EV_MOUSE_DOWN) {
-          const pos = { x: evt[1], y: evt[2] }
-          _last_mouse_down = viewport.worldToViewport(pos)
           updatePlayerCursorState(true)
         } else if (type === Protocol.INPUT_EV_MOUSE_UP) {
-          _last_mouse_down = null
           updatePlayerCursorState(false)
         } else if (type === Protocol.INPUT_EV_ZOOM_IN) {
           const pos = { x: evt[1], y: evt[2] }
           RERENDER = true
-          viewport.zoom('in', viewport.worldToViewport(pos))
+          viewport.zoom('in', viewport.worldToViewportRaw(pos))
         } else if (type === Protocol.INPUT_EV_ZOOM_OUT) {
           const pos = { x: evt[1], y: evt[2] }
           RERENDER = true
-          viewport.zoom('out', viewport.worldToViewport(pos))
+          viewport.zoom('out', viewport.worldToViewportRaw(pos))
         } else if (type === Protocol.INPUT_EV_TOGGLE_PREVIEW) {
           eventBus.emit('togglePreview')
         } else if (type === Protocol.INPUT_EV_TOGGLE_SOUNDS) {
