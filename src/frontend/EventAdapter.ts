@@ -1,11 +1,12 @@
 import Protocol from "../common/Protocol"
 import { GameEvent } from "../common/Types"
+import { Camera } from "./Camera"
 import { MODE_REPLAY } from "./game"
 
 function EventAdapter (
   canvas: HTMLCanvasElement,
   window: any,
-  viewport: any,
+  viewport: Camera,
   MODE: string
 ) {
   let events: Array<GameEvent> = []

@@ -147,22 +147,6 @@ export default defineComponent({
       this.g.player.showPlayerNames = !this.g.player.showPlayerNames
     })
 
-    const canvasEl = this.$refs.canvas as HTMLCanvasElement
-    canvasEl.width = window.innerWidth
-    canvasEl.height = window.innerHeight
-    window.addEventListener('resize', this.onResize)
-
-    this.g = await main(
-      `${this.$route.params.id}`,
-      // @ts-ignore
-      xhr.clientId(),
-      // @ts-ignore
-      this.$config.WS_ADDRESS,
-      MODE_PLAY,
-      canvasEl,
-      this.eventBus,
-    )
-
     this.$watch(() => this.g.player.background, (value: string) => {
       this.eventBus.emit('onBgChange', value)
     })
@@ -181,6 +165,22 @@ export default defineComponent({
     this.$watch(() => this.g.player.showPlayerNames, (value: boolean) => {
       this.eventBus.emit('onShowPlayerNamesChange', value)
     })
+
+    const canvasEl = this.$refs.canvas as HTMLCanvasElement
+    canvasEl.width = window.innerWidth
+    canvasEl.height = window.innerHeight
+    window.addEventListener('resize', this.onResize)
+
+    this.g = await main(
+      `${this.$route.params.id}`,
+      // @ts-ignore
+      xhr.clientId(),
+      // @ts-ignore
+      this.$config.WS_ADDRESS,
+      MODE_PLAY,
+      canvasEl,
+      this.eventBus,
+    )
   },
   unmounted () {
     this.g.unload()

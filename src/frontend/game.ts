@@ -2,7 +2,7 @@
 
 import { Emitter, EventType } from 'mitt'
 import { GameLoopInstance, run } from './gameloop'
-import Camera, { Snapshot } from './Camera'
+import { Camera, Snapshot } from './Camera'
 import Graphics from './Graphics'
 import Debug from './Debug'
 import Communication from './Communication'
@@ -221,7 +221,7 @@ export async function main(
   const viewportSnapshots: Record<string, Snapshot> = {}
   // initialize some view data
   // this global data will change according to input events
-  const viewport = Camera()
+  const viewport = new Camera()
 
   const centerPuzzle = () => {
     // center on the puzzle

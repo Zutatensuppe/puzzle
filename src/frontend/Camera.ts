@@ -12,52 +12,58 @@ export interface Snapshot {
   curZoom: number
 }
 
-export default function Camera () {
-  let x = 0
-  let y = 0
-  let curZoom = 1
+export class Camera {
+  private x: number = 0
+  private y: number = 0
+  private curZoom: number = 1
 
-  const snapshot = (): Snapshot => ({ x, y, curZoom })
-
-  const fromSnapshot = (snapshot: Snapshot) => {
-    x = snapshot.x
-    y = snapshot.y
-    curZoom = snapshot.curZoom
+  snapshot(): Snapshot {
+    return { x: this.x, y: this.y, curZoom: this.curZoom }
   }
 
-  const reset = () => {
-    x = 0
-    y = 0
-    curZoom = 1
+  getCurrentZoom() {
+    return this.curZoom
   }
 
-  const move = (byX: number, byY: number) => {
-    x += byX / curZoom
-    y += byY / curZoom
+  fromSnapshot(snapshot: Snapshot) {
+    this.x = snapshot.x
+    this.y = snapshot.y
+    this.curZoom = snapshot.curZoom
   }
 
-  const calculateNewZoom = (inout: ZOOM_DIR): number => {
+  reset() {
+    this.x = 0
+    this.y = 0
+    this.curZoom = 1
+  }
+
+  move(byX: number, byY: number) {
+    this.x += byX / this.curZoom
+    this.y += byY / this.curZoom
+  }
+
+  calculateNewZoom(inout: ZOOM_DIR): number {
     const factor = inout === 'in' ? 1 : -1
-    const newzoom = curZoom + ZOOM_STEP * curZoom * factor
+    const newzoom = this.curZoom + ZOOM_STEP * this.curZoom * factor
     const capped = Math.min(Math.max(newzoom, MIN_ZOOM), MAX_ZOOM)
     return capped
   }
 
-  const canZoom = (inout: ZOOM_DIR): boolean => {
-    return curZoom != calculateNewZoom(inout)
+  canZoom(inout: ZOOM_DIR): boolean {
+    return this.curZoom != this.calculateNewZoom(inout)
   }
 
-  const setZoom = (newzoom: number, viewportCoordCenter: Point): boolean => {
-    if (curZoom == newzoom) {
+  setZoom(newzoom: number, viewportCoordCenter: Point): boolean {
+    if (this.curZoom == newzoom) {
       return false
     }
 
-    const zoomFactor = 1 - (curZoom / newzoom)
-    move(
+    const zoomFactor = 1 - (this.curZoom / newzoom)
+    this.move(
       -viewportCoordCenter.x * zoomFactor,
       -viewportCoordCenter.y * zoomFactor,
     )
-    curZoom = newzoom
+    this.curZoom = newzoom
     return true
   }
 
@@ -65,8 +71,8 @@ export default function Camera () {
    * Zooms towards/away from the provided coordinate, if possible.
    * If at max or min zoom respectively, no zooming is performed.
    */
-  const zoom = (inout: ZOOM_DIR, viewportCoordCenter: Point): boolean => {
-    return setZoom(calculateNewZoom(inout), viewportCoordCenter)
+  zoom(inout: ZOOM_DIR, viewportCoordCenter: Point): boolean {
+    return this.setZoom(this.calculateNewZoom(inout), viewportCoordCenter)
   }
 
   /**
@@ -74,8 +80,8 @@ export default function Camera () {
    * coordinate in the world, rounded
    * @param {x, y} viewportCoord
    */
-  const viewportToWorld = (viewportCoord: Point): Point => {
-    const { x, y } = viewportToWorldRaw(viewportCoord)
+  viewportToWorld(viewportCoord: Point): Point {
+    const { x, y } = this.viewportToWorldRaw(viewportCoord)
     return { x: Math.round(x), y: Math.round(y) }
   }
 
@@ -84,10 +90,10 @@ export default function Camera () {
    * coordinate in the world, not rounded
    * @param {x, y} viewportCoord
    */
-  const viewportToWorldRaw = (viewportCoord: Point): Point => {
+  viewportToWorldRaw(viewportCoord: Point): Point {
     return {
-      x: (viewportCoord.x / curZoom) - x,
-      y: (viewportCoord.y / curZoom) - y,
+      x: (viewportCoord.x / this.curZoom) - this.x,
+      y: (viewportCoord.y / this.curZoom) - this.y,
     }
   }
 
@@ -96,8 +102,8 @@ export default function Camera () {
    * coordinate in the viewport, rounded
    * @param {x, y} worldCoord
    */
-  const worldToViewport = (worldCoord: Point): Point => {
-    const { x, y } = worldToViewportRaw(worldCoord)
+  worldToViewport(worldCoord: Point): Point {
+    const { x, y } = this.worldToViewportRaw(worldCoord)
     return { x: Math.round(x), y: Math.round(y) }
   }
 
@@ -106,10 +112,10 @@ export default function Camera () {
    * coordinate in the viewport, not rounded
    * @param {x, y} worldCoord
    */
-  const worldToViewportRaw = (worldCoord: Point): Point => {
+  worldToViewportRaw(worldCoord: Point): Point {
     return {
-      x: (worldCoord.x + x) * curZoom,
-      y: (worldCoord.y + y) * curZoom,
+      x: (worldCoord.x + this.x) * this.curZoom,
+      y: (worldCoord.y + this.y) * this.curZoom,
     }
   }
 
@@ -118,8 +124,8 @@ export default function Camera () {
    * one in the viewport, rounded
    * @param {w, h} worldDim
    */
-  const worldDimToViewport = (worldDim: Dim): Dim => {
-    const { w, h } = worldDimToViewportRaw(worldDim)
+  worldDimToViewport(worldDim: Dim): Dim {
+    const { w, h } = this.worldDimToViewportRaw(worldDim)
     return { w: Math.round(w), h: Math.round(h) }
   }
 
@@ -129,41 +135,22 @@ export default function Camera () {
    * one in the viewport, not rounded
    * @param {w, h} worldDim
    */
-  const worldDimToViewportRaw = (worldDim: Dim): Dim => {
+  worldDimToViewportRaw(worldDim: Dim): Dim {
     return {
-      w: worldDim.w * curZoom,
-      h: worldDim.h * curZoom,
+      w: worldDim.w * this.curZoom,
+      h: worldDim.h * this.curZoom,
     }
   }
 
-  const viewportDimToWorld = (viewportDim: Dim): Dim => {
-    const { w, h } = viewportDimToWorldRaw(viewportDim)
+  viewportDimToWorld(viewportDim: Dim): Dim {
+    const { w, h } = this.viewportDimToWorldRaw(viewportDim)
     return { w: Math.round(w), h: Math.round(h) }
   }
 
-  const viewportDimToWorldRaw = (viewportDim: Dim): Dim => {
+  viewportDimToWorldRaw(viewportDim: Dim): Dim {
     return {
-      w: viewportDim.w / curZoom,
-      h: viewportDim.h / curZoom,
+      w: viewportDim.w / this.curZoom,
+      h: viewportDim.h / this.curZoom,
     }
-  }
-
-  return {
-    getCurrentZoom: () => curZoom,
-    reset,
-    move,
-    canZoom,
-    zoom,
-    setZoom,
-    worldToViewport,
-    worldToViewportRaw,
-    worldDimToViewport, // not used outside
-    worldDimToViewportRaw,
-    viewportToWorld,
-    viewportToWorldRaw, // not used outside
-    viewportDimToWorld,
-    viewportDimToWorldRaw,
-    snapshot,
-    fromSnapshot,
   }
 }
