@@ -294,6 +294,27 @@ export async function main(
   const showPlayerNames = (): boolean => {
     return settings.getBool(SETTINGS.SHOW_PLAYER_NAMES, DEFAULTS.SHOW_PLAYER_NAMES)
   }
+  const playerBgColor = (): string => {
+    if (MODE === MODE_REPLAY) {
+      return settings.getStr(SETTINGS.COLOR_BACKGROUND, DEFAULTS.COLOR_BACKGROUND)
+    }
+    return Game.getPlayerBgColor(gameId, clientId)
+        || settings.getStr(SETTINGS.COLOR_BACKGROUND, DEFAULTS.COLOR_BACKGROUND)
+  }
+  const playerColor = (): string => {
+    if (MODE === MODE_REPLAY) {
+      return settings.getStr(SETTINGS.PLAYER_COLOR, DEFAULTS.PLAYER_COLOR)
+    }
+    return Game.getPlayerColor(gameId, clientId)
+        || settings.getStr(SETTINGS.PLAYER_COLOR, DEFAULTS.PLAYER_COLOR)
+  }
+  const playerName = (): string => {
+    if (MODE === MODE_REPLAY) {
+      return settings.getStr(SETTINGS.PLAYER_NAME, DEFAULTS.PLAYER_NAME)
+    }
+    return Game.getPlayerName(gameId, clientId)
+        || settings.getStr(SETTINGS.PLAYER_NAME, DEFAULTS.PLAYER_NAME)
+  }
 
   const playClick = () => {
     const vol = playerSoundVolume()
@@ -301,27 +322,17 @@ export async function main(
     clickAudio.play()
   }
 
-  const playerBgColor = () => {
-    if (MODE === MODE_REPLAY) {
-      return settings.getStr(SETTINGS.COLOR_BACKGROUND, DEFAULTS.COLOR_BACKGROUND)
-    }
-    return Game.getPlayerBgColor(gameId, clientId)
-        || settings.getStr(SETTINGS.COLOR_BACKGROUND, DEFAULTS.COLOR_BACKGROUND)
+  const player = {
+    background: playerBgColor(),
+    color: playerColor(),
+    name: playerName(),
+    soundsEnabled: playerSoundEnabled(),
+    soundsVolume: playerSoundVolume(),
+    showPlayerNames: showPlayerNames(),
   }
-  const playerColor = () => {
-    if (MODE === MODE_REPLAY) {
-      return settings.getStr(SETTINGS.PLAYER_COLOR, DEFAULTS.PLAYER_COLOR)
-    }
-    return Game.getPlayerColor(gameId, clientId)
-        || settings.getStr(SETTINGS.PLAYER_COLOR, DEFAULTS.PLAYER_COLOR)
-  }
-  const playerName = () => {
-    if (MODE === MODE_REPLAY) {
-      return settings.getStr(SETTINGS.PLAYER_NAME, DEFAULTS.PLAYER_NAME)
-    }
-    return Game.getPlayerName(gameId, clientId)
-        || settings.getStr(SETTINGS.PLAYER_NAME, DEFAULTS.PLAYER_NAME)
-  }
+  evts.addEvent([Protocol.INPUT_EV_BG_COLOR, player.background])
+  evts.addEvent([Protocol.INPUT_EV_PLAYER_COLOR, player.color])
+  evts.addEvent([Protocol.INPUT_EV_PLAYER_NAME, player.name])
 
   let cursorDown: string = ''
   let cursor: string = ''
@@ -370,26 +381,44 @@ export async function main(
     replayOnPauseToggle()
   })
   eventBus.on('onBgChange', (value: any) => {
-    settings.setStr(SETTINGS.COLOR_BACKGROUND, value)
-    evts.addEvent([Protocol.INPUT_EV_BG_COLOR, value])
+    if (player.background !== value) {
+      player.background = value
+      settings.setStr(SETTINGS.COLOR_BACKGROUND, value)
+      evts.addEvent([Protocol.INPUT_EV_BG_COLOR, value])
+    }
   })
   eventBus.on('onColorChange', (value: any) => {
-    settings.setStr(SETTINGS.PLAYER_COLOR, value)
-    evts.addEvent([Protocol.INPUT_EV_PLAYER_COLOR, value])
+    if (player.color !== value) {
+      player.color = value
+      settings.setStr(SETTINGS.PLAYER_COLOR, value)
+      evts.addEvent([Protocol.INPUT_EV_PLAYER_COLOR, value])
+    }
   })
   eventBus.on('onNameChange', (value: any) => {
-    settings.setStr(SETTINGS.PLAYER_NAME, value)
-    evts.addEvent([Protocol.INPUT_EV_PLAYER_NAME, value])
+    if (player.name !== value) {
+      player.name = value
+      settings.setStr(SETTINGS.PLAYER_NAME, value)
+      evts.addEvent([Protocol.INPUT_EV_PLAYER_NAME, value])
+    }
   })
   eventBus.on('onSoundsEnabledChange', (value: any) => {
-    settings.setBool(SETTINGS.SOUND_ENABLED, value)
+    if (player.soundsEnabled !== value) {
+      player.soundsEnabled = value
+      settings.setBool(SETTINGS.SOUND_ENABLED, value)
+    }
   })
   eventBus.on('onSoundsVolumeChange', (value: any) => {
-    settings.setInt(SETTINGS.SOUND_VOLUME, value)
-    playClick()
+    if (player.soundsVolume !== value) {
+      player.soundsVolume = value
+      settings.setInt(SETTINGS.SOUND_VOLUME, value)
+      playClick()
+    }
   })
   eventBus.on('onShowPlayerNamesChange', (value: any) => {
-    settings.setBool(SETTINGS.SHOW_PLAYER_NAMES, value)
+    if (player.showPlayerNames !== value) {
+      player.showPlayerNames = value
+      settings.setBool(SETTINGS.SHOW_PLAYER_NAMES, value)
+    }
   })
   eventBus.on('setHotkeys', (state: any) => {
     evts.setHotkeys(state)
@@ -786,14 +815,7 @@ export async function main(
 
   return {
     previewImageUrl,
-    player: {
-      background: playerBgColor(),
-      color: playerColor(),
-      name: playerName(),
-      soundsEnabled: playerSoundEnabled(),
-      soundsVolume: playerSoundVolume(),
-      showPlayerNames: showPlayerNames(),
-    },
+    player: player,
     game: Game.get(gameId),
     disconnect: Communication.disconnect,
     connect: connect,
