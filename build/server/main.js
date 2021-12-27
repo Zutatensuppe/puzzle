@@ -2356,6 +2356,10 @@ wss.on('close', async ({ socket }) => {
     }
 });
 wss.on('message', async ({ socket, data }) => {
+    if (!data) {
+        // no data (maybe ping :3)
+        return;
+    }
     try {
         const proto = socket.protocol.split('|');
         const clientId = proto[0];
@@ -2412,6 +2416,7 @@ wss.on('message', async ({ socket, data }) => {
     }
     catch (e) {
         log.error(e);
+        log.error('data:', data);
     }
 });
 GameStorage.loadGamesFromDb(db);

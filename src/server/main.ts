@@ -255,6 +255,10 @@ wss.on('close', async (
 wss.on('message', async (
   {socket, data} : { socket: WebSocket, data: WebSocket.Data }
 ): Promise<void> => {
+  if (!data) {
+    // no data (maybe ping :3)
+    return;
+  }
   try {
     const proto = socket.protocol.split('|')
     const clientId = proto[0]
@@ -319,6 +323,7 @@ wss.on('message', async (
     }
   } catch (e) {
     log.error(e)
+    log.error('data:', data)
   }
 })
 

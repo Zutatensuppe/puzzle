@@ -64,6 +64,21 @@ function send(message: ClientEvent): void {
 let clientSeq: number
 let events: Record<number, GameEvent>
 
+let timerId: any = 0;
+
+function keepAlive(timeout = 20000) {
+    if (ws.readyState == ws.OPEN) {
+        ws.send('');
+    }
+    timerId = setTimeout(keepAlive, timeout);
+}
+
+function cancelKeepAlive() {
+    if (timerId) {
+        clearTimeout(timerId);
+    }
+}
+
 function connect(
   address: string,
   gameId: string,
@@ -77,6 +92,7 @@ function connect(
     ws.onopen = () => {
       setConnectionState(CONN_STATE_CONNECTED)
       send([Protocol.EV_CLIENT_INIT])
+      keepAlive()
     }
     ws.onmessage = (e: MessageEvent) => {
       const msg: ServerEvent = JSON.parse(e.data)
@@ -99,11 +115,13 @@ function connect(
     }
 
     ws.onerror = () => {
+      cancelKeepAlive()
       setConnectionState(CONN_STATE_DISCONNECTED)
       throw `[ 2021-05-15 onerror ]`
     }
 
     ws.onclose = (e: CloseEvent) => {
+      cancelKeepAlive()
       if (e.code === CODE_CUSTOM_DISCONNECT || e.code === CODE_GOING_AWAY) {
         setConnectionState(CONN_STATE_CLOSED)
       } else {
