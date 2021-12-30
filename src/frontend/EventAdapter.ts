@@ -1,6 +1,6 @@
 import Protocol from "../common/Protocol"
 import { GameEvent } from "../common/Types"
-import { Camera } from "./Camera"
+import { Camera, Snapshot } from "./Camera"
 import { MODE_REPLAY } from "./game"
 
 function EventAdapter (
@@ -21,19 +21,19 @@ function EventAdapter (
   let ZOOM_OUT = false
   let SHIFT = false
 
-  const toWorldPoint = (x: number, y: number): [number, number] => {
+  const _toWorldPoint = (x: number, y: number): [number, number] => {
     const pos = viewport.viewportToWorld({x, y})
     return [pos.x, pos.y]
   }
-  const toWorldDim = (w: number, h: number): [number, number] => {
+  const _toWorldDim = (w: number, h: number): [number, number] => {
     const dim = viewport.viewportDimToWorld({ w, h })
     return [ dim.w, dim.h ]
   }
 
-  const mousePos = (ev: MouseEvent) => toWorldPoint(ev.offsetX, ev.offsetY)
-  const canvasCenter = () => toWorldPoint(canvas.width / 2, canvas.height / 2)
+  const _mousePos = (ev: MouseEvent) => _toWorldPoint(ev.offsetX, ev.offsetY)
+  const _canvasCenter = () => _toWorldPoint(canvas.width / 2, canvas.height / 2)
 
-  const key = (state: boolean, ev: KeyboardEvent) => {
+  const _key = (state: boolean, ev: KeyboardEvent) => {
     if (!KEYS_ON) {
       return
     }
@@ -58,51 +58,51 @@ function EventAdapter (
   let mouseDown: boolean = false
   let lastMouseRaw: [number, number]|null = null
   let lastMouseWorld: [number, number]|null = null
-  canvas.addEventListener('mousedown', (ev) => {
-    lastMouseWorld = mousePos(ev)
+
+  const _onMouseDown = (ev: MouseEvent) => {
+    lastMouseWorld = _mousePos(ev)
     lastMouseRaw = [ev.offsetX, ev.offsetY]
     if (ev.button === 0) {
       mouseDown = true
       addEvent([Protocol.INPUT_EV_MOUSE_DOWN, ...lastMouseWorld])
     }
-  })
+  }
 
-  canvas.addEventListener('mouseup', (ev) => {
-    lastMouseWorld = mousePos(ev)
+  const _onMouseUp = (ev: MouseEvent) => {
+    lastMouseWorld = _mousePos(ev)
     lastMouseRaw = [ev.offsetX, ev.offsetY]
     if (ev.button === 0) {
       mouseDown = false
       addEvent([Protocol.INPUT_EV_MOUSE_UP, ...lastMouseWorld])
     }
-  })
+  }
 
-  canvas.addEventListener('mousemove', (ev) => {
+  const _onMouseMove = (ev: MouseEvent) => {
     if (!lastMouseRaw) {
       return
     }
-    lastMouseWorld = mousePos(ev)
-    const diffWorld = toWorldDim(
+    lastMouseWorld = _mousePos(ev)
+    const diffWorld = _toWorldDim(
       -(lastMouseRaw[0] - ev.offsetX),
       -(lastMouseRaw[1] - ev.offsetY),
     )
     addEvent([Protocol.INPUT_EV_MOUSE_MOVE, ...lastMouseWorld, ...diffWorld, mouseDown ? 1 : 0])
     lastMouseRaw = [ev.offsetX, ev.offsetY]
-  })
+  }
 
-  canvas.addEventListener('wheel', (ev) => {
-    lastMouseWorld = mousePos(ev)
+  const _onWheel = (ev: WheelEvent) => {
+    lastMouseWorld = _mousePos(ev)
     if (viewport.canZoom(ev.deltaY < 0 ? 'in' : 'out')) {
       const evt = ev.deltaY < 0
         ? Protocol.INPUT_EV_ZOOM_IN
         : Protocol.INPUT_EV_ZOOM_OUT
       addEvent([evt, ...lastMouseWorld])
     }
-  })
+  }
 
-  window.addEventListener('keydown', (ev: KeyboardEvent) => key(true, ev))
-  window.addEventListener('keyup', (ev: KeyboardEvent) => key(false, ev))
-
-  window.addEventListener('keypress', (ev: KeyboardEvent) => {
+  const _onKeyUp = (ev: KeyboardEvent) => _key(true, ev)
+  const _onKeyDown = (ev: KeyboardEvent) => _key(false, ev)
+  const _onKeyPress = (ev: KeyboardEvent) => {
     if (!KEYS_ON) {
       return
     }
@@ -142,7 +142,40 @@ function EventAdapter (
       const evt = ev.shiftKey ? Protocol.INPUT_EV_STORE_POS : Protocol.INPUT_EV_RESTORE_POS
       addEvent([evt, 3])
     }
-  })
+  }
+
+  const registerEvents = () => {
+    canvas.addEventListener('mousedown', _onMouseDown)
+    canvas.addEventListener('mouseup', _onMouseUp)
+    canvas.addEventListener('mousemove', _onMouseMove)
+    canvas.addEventListener('wheel', _onWheel)
+    window.addEventListener('keydown', _onKeyUp)
+    window.addEventListener('keyup', _onKeyDown)
+    window.addEventListener('keypress', _onKeyPress)
+  }
+  const unregisterEvents = () => {
+    canvas.removeEventListener('mousedown', _onMouseDown)
+    canvas.removeEventListener('mouseup', _onMouseUp)
+    canvas.removeEventListener('mousemove', _onMouseMove)
+    canvas.removeEventListener('wheel', _onWheel)
+    window.removeEventListener('keydown', _onKeyUp)
+    window.removeEventListener('keyup', _onKeyDown)
+    window.removeEventListener('keypress', _onKeyPress)
+  }
+
+  const createSnapshotEvents = (prev: Snapshot, curr: Snapshot) => {
+    if (!lastMouseRaw || !lastMouseWorld) {
+      return
+    }
+
+    const prevWorld = new Camera(prev).viewportToWorld({x: lastMouseRaw[0], y: lastMouseRaw[1]})
+    const currWorld = new Camera(curr).viewportToWorld({x: lastMouseRaw[0], y: lastMouseRaw[1]})
+    const diffWorld = [
+      -(prevWorld.x - currWorld.x),
+      -(prevWorld.y - currWorld.y),
+    ]
+    addEvent([Protocol.INPUT_EV_MOUSE_MOVE, ...lastMouseWorld, ...diffWorld, mouseDown ? 1 : 0])
+  }
 
   const addEvent = (event: GameEvent) => {
     events.push(event)
@@ -174,12 +207,12 @@ function EventAdapter (
       // cancel each other out
     } else if (ZOOM_IN) {
       if (viewport.canZoom('in')) {
-        const target = lastMouseWorld || canvasCenter()
+        const target = lastMouseWorld || _canvasCenter()
         addEvent([Protocol.INPUT_EV_ZOOM_IN, ...target])
       }
     } else if (ZOOM_OUT) {
       if (viewport.canZoom('out')) {
-        const target = lastMouseWorld || canvasCenter()
+        const target = lastMouseWorld || _canvasCenter()
         addEvent([Protocol.INPUT_EV_ZOOM_OUT, ...target])
       }
     }
@@ -190,9 +223,12 @@ function EventAdapter (
   }
 
   return {
+    registerEvents,
+    unregisterEvents,
     addEvent,
     consumeAll,
     createKeyEvents,
+    createSnapshotEvents,
     setHotkeys,
   }
 }

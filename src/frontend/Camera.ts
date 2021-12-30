@@ -17,6 +17,12 @@ export class Camera {
   private y: number = 0
   private curZoom: number = 1
 
+  constructor(snapshot: Snapshot|null = null) {
+    if (snapshot) {
+      this.fromSnapshot(snapshot)
+    }
+  }
+
   snapshot(): Snapshot {
     return { x: this.x, y: this.y, curZoom: this.curZoom }
   }

@@ -245,21 +245,28 @@ export async function main(
       viewport.setZoom(zoom, center)
     }
   }
+  const evts = EventAdapter(canvas, window, viewport, MODE)
+  evts.registerEvents()
+
   const handleViewportSnapshot = (slot: string): void => {
     if (viewportSnapshots['last'] && viewportToggleSlot === slot) {
-      viewport.fromSnapshot(viewportSnapshots['last'])
+      const prev = viewport.snapshot()
+      const curr = viewportSnapshots['last']
+      viewport.fromSnapshot(curr)
+      evts.createSnapshotEvents(prev, curr)
       delete viewportSnapshots['last']
     } else if (viewportSnapshots[slot]) {
-      viewportSnapshots['last'] = viewport.snapshot()
+      const curr = viewportSnapshots[slot]
+      const prev = viewport.snapshot()
+      viewportSnapshots['last'] = prev
       viewportToggleSlot = slot
-      viewport.fromSnapshot(viewportSnapshots[slot])
+      viewport.fromSnapshot(curr)
+      evts.createSnapshotEvents(prev, curr)
     }
   }
 
   centerPuzzle()
   viewportSnapshots['center'] = viewport.snapshot()
-
-  const evts = EventAdapter(canvas, window, viewport, MODE)
 
   const previewImageUrl = Game.getImageUrl(gameId)
 
@@ -443,6 +450,9 @@ export async function main(
     clearIntervals()
     if (gameLoopInstance) {
       gameLoopInstance.stop()
+    }
+    if (evts) {
+      evts.unregisterEvents()
     }
   }
 
