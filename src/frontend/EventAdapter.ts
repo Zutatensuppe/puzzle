@@ -129,18 +129,15 @@ function EventAdapter (
       addEvent([Protocol.INPUT_EV_TOGGLE_PLAYER_NAMES])
     } else if (ev.code === 'KeyC') {
       addEvent([Protocol.INPUT_EV_CENTER_FIT_PUZZLE])
-    } else if (ev.code === 'Digit1') {
-      // store or restore pos+zoom in slot 1
-      const evt = ev.shiftKey ? Protocol.INPUT_EV_STORE_POS : Protocol.INPUT_EV_RESTORE_POS
-      addEvent([evt, 1])
-    } else if (ev.code === 'Digit2') {
-      // store or restore pos+zoom in slot 2
-      const evt = ev.shiftKey ? Protocol.INPUT_EV_STORE_POS : Protocol.INPUT_EV_RESTORE_POS
-      addEvent([evt, 2])
-    } else if (ev.code === 'Digit3') {
-      // store or restore pos+zoom in slot 3
-      const evt = ev.shiftKey ? Protocol.INPUT_EV_STORE_POS : Protocol.INPUT_EV_RESTORE_POS
-      addEvent([evt, 3])
+    } else {
+      for (let i = 0; i <= 9; i++) {
+        if (ev.code === `Digit${i}`) {
+          // store or restore pos+zoom in slot i
+          const evt = ev.shiftKey ? Protocol.INPUT_EV_STORE_POS : Protocol.INPUT_EV_RESTORE_POS
+          addEvent([evt, i])
+          break;
+        }
+      }
     }
   }
 

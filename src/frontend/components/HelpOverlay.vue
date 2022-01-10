@@ -19,6 +19,9 @@
         <tr><td>👤 Toggle player names:</td><td><div><kbd>N</kbd></div></td></tr>
         <tr><td>🔉 Toggle sounds:</td><td><div><kbd>M</kbd></div></td></tr>
 
+        <tr><td>🎯 Store position [0-9]:</td><td><div><kbd>Shift</kbd> + <kbd>0</kbd>-<kbd>9</kbd></div></td></tr>
+        <tr><td>🎯 Restore position [0-9]:</td><td><div><kbd>0</kbd>-<kbd>9</kbd></div></td></tr>
+
         <tr><td>⏫ Speed up (replay):</td><td><div><kbd>I</kbd></div></td></tr>
         <tr><td>⏬ Speed down (replay):</td><td><div><kbd>O</kbd></div></td></tr>
         <tr><td>⏸️ Pause (replay):</td><td><div><kbd>P</kbd></div></td></tr>
