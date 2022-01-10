@@ -24,11 +24,11 @@ const resizeImage = async (filename: string): Promise<void> => {
   // when image is rotated to the left or right, switch width/height
   // https://jdhao.github.io/2019/07/31/image_rotation_exif_info/
   if (orientation === 6) {
-    sharpImg = sharpImg.rotate()
+    sharpImg = sharpImg.rotate(90)
   } else if (orientation === 3) {
-    sharpImg = sharpImg.rotate().rotate()
+    sharpImg = sharpImg.rotate(180)
   } else if (orientation === 8) {
-    sharpImg = sharpImg.rotate().rotate().rotate()
+    sharpImg = sharpImg.rotate(270)
   }
   const sizes = [
     [150, 100],
