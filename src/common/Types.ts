@@ -53,6 +53,7 @@ export type EncodedGame = FixedLengthArray<[
   number|null,
   boolean, // has replay
   number, // gameVersion
+  boolean, // private
 ]>
 
 export interface ReplayData {
@@ -82,6 +83,7 @@ export interface Game {
   shapeMode: ShapeMode
   snapMode: SnapMode
   rng: GameRng
+  private: boolean
   hasReplay: boolean
 }
 
@@ -97,6 +99,7 @@ export interface Image {
 
 export interface GameSettings {
   tiles: number
+  private: boolean
   image: ImageInfo
   scoreMode: ScoreMode
   shapeMode: ShapeMode

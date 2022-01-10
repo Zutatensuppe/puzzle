@@ -50,6 +50,10 @@
               Real (Pieces snap only to corners, already snapped pieces and to each other)</label>
             </td>
           </tr>
+          <tr>
+            <td><label>Private Game</label></td>
+            <td><input :disabled="forcePrivate" type="checkbox" v-model="isPrivate" /></td>
+          </tr>
           <tr v-if="image.tags.length">
             <td><label>Tags: </label></td>
             <td>
@@ -78,6 +82,10 @@ export default defineComponent({
       type: Object,
       required: true,
     },
+    forcePrivate: {
+      type: Boolean,
+      default: false,
+    },
   },
   emits: {
     newGame: null,
@@ -85,15 +93,20 @@ export default defineComponent({
   data() {
     return {
       tiles: 1000,
+      isPrivate: false,
       scoreMode: ScoreMode.ANY,
       shapeMode: ShapeMode.NORMAL,
       snapMode: SnapMode.NORMAL,
     }
   },
+  mounted() {
+    this.isPrivate = this.forcePrivate
+  },
   methods: {
     onNewGameClick () {
       this.$emit('newGame', {
         tiles: this.tilesInt,
+        private: this.isPrivate,
         image: this.image,
         scoreMode: this.scoreModeInt,
         shapeMode: this.shapeModeInt,
@@ -167,6 +180,9 @@ export default defineComponent({
 }
 .new-game-dialog .area-settings {
   grid-area: settings;
+}
+.new-game-dialog .area-settings td:first-child {
+  white-space: nowrap;
 }
 .new-game-dialog .area-settings table input[type="text"] {
   width: 100%;

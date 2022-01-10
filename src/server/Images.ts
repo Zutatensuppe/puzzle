@@ -99,7 +99,8 @@ const imageFromDb = (db: Db, imageId: number): ImageInfo => {
 const allImagesFromDb = (
   db: Db,
   tagSlugs: string[],
-  orderBy: string
+  orderBy: string,
+  isPrivate: boolean,
 ): ImageInfo[] => {
   const orderByMap = {
     alpha_asc: [{filename: 1}],
@@ -110,6 +111,7 @@ const allImagesFromDb = (
 
   // TODO: .... clean up
   const wheresRaw: WhereRaw = {}
+  wheresRaw['private'] = isPrivate ? 1 : 0
   if (tagSlugs.length > 0) {
     const c = db.getMany('categories', {slug: {'$in': tagSlugs}})
     if (!c) {
@@ -139,6 +141,7 @@ inner join images i on i.id = ixc.image_id ${where.sql};
     created: i.created * 1000,
     width: i.width,
     height: i.height,
+    private: !!i.private,
   }))
 }
 

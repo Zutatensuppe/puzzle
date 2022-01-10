@@ -104,6 +104,7 @@ app.get('/api/replay-data', async (req, res): Promise<void> => {
       log[0][7], // snapMode
       log[0][8], // creatorUserId
       true,      // hasReplay
+      !!log[0][9], // private
     )
   }
   res.send({ log, game: game ? Util.encodeGame(game) : null })
@@ -113,7 +114,7 @@ app.get('/api/newgame-data', (req, res): void => {
   const q: Record<string, any> = req.query
   const tagSlugs: string[] = q.tags ? q.tags.split(',') : []
   res.send({
-    images: Images.allImagesFromDb(db, tagSlugs, q.sort),
+    images: Images.allImagesFromDb(db, tagSlugs, q.sort, false),
     tags: Images.getAllTags(db),
   })
 })
@@ -121,7 +122,7 @@ app.get('/api/newgame-data', (req, res): void => {
 app.get('/api/index-data', (req, res): void => {
   const ts = Time.timestamp()
   const games = [
-    ...GameCommon.getAllGames().map((game: GameType) => ({
+    ...GameCommon.getAllPublicGames().map((game: GameType) => ({
       id: game.id,
       hasReplay: GameLog.hasReplay(game),
       started: GameCommon.getStartTs(game.id),
@@ -198,6 +199,7 @@ app.post('/api/upload', (req: any, res): void => {
       created: Time.timestamp(),
       width: dim.w,
       height: dim.h,
+      private: req.body.private ? 1 : 0,
     })
 
     if (req.body.tags) {

@@ -56,10 +56,11 @@ in jigsawpuzzles.io
       @saveClick="onSaveImageClick"
       :image="image" />
     <new-game-dialog
-      v-show="image && dialog==='new-game'"
+      v-if="image && dialog==='new-game'"
       @bgclick="dialog=''"
       @newGame="onNewGame"
-      :image="image" />
+      :image="image"
+      :forcePrivate="newGameForcePrivate" />
   </div>
 </template>
 
@@ -102,6 +103,8 @@ export default defineComponent({
 
       dialog: '',
 
+      newGameForcePrivate: false,
+
       uploading: '',
       uploadProgress: 0,
     }
@@ -143,6 +146,7 @@ export default defineComponent({
     },
     onImageClicked (image: Image) {
       this.image = image
+      this.newGameForcePrivate = false
       this.dialog = 'new-game'
     },
     onImageEditClicked (image: Image) {
@@ -155,6 +159,7 @@ export default defineComponent({
       formData.append('file', data.file, data.file.name);
       formData.append('title', data.title)
       formData.append('tags', data.tags)
+      formData.append('private', data.isPrivate)
       const res = await xhr.post('/api/upload', {
         body: formData,
         onUploadProgress: (evt: ProgressEvent<XMLHttpRequestEventTarget>): void => {
@@ -200,6 +205,7 @@ export default defineComponent({
       this.uploading = ''
       this.loadImages() // load images in background
       this.image = image
+      this.newGameForcePrivate = data.isPrivate
       this.dialog = 'new-game'
     },
     async onNewGame(gameSettings: GameSettings) {

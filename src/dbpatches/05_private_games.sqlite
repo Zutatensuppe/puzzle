@@ -1,0 +1,38 @@
+-- This patch adds `private` fields to images and games table, so that
+-- those can be private to not show up in the public overview.
+
+CREATE TABLE _images (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  uploader_user_id INTEGER,
+  created TIMESTAMP NOT NULL,
+  filename TEXT NOT NULL UNIQUE,
+  filename_original TEXT NOT NULL,
+  title TEXT NOT NULL,
+  width INTEGER NOT NULL,
+  height INTEGER NOT NULL,
+  private INTEGER NOT NULL
+);
+
+CREATE TABLE _games (
+  id TEXT PRIMARY KEY,
+  creator_user_id INTEGER,
+  image_id INTEGER NOT NULL,
+  created TIMESTAMP NOT NULL,
+  finished TIMESTAMP NOT NULL,
+  data TEXT NOT NULL,
+  private INTEGER NOT NULL
+);
+
+INSERT INTO _games
+SELECT id, creator_user_id, image_id, created, finished, data, 0
+FROM games;
+
+INSERT INTO _images
+SELECT id, uploader_user_id, created, filename, filename_original, title, width, height, 0
+FROM images;
+
+DROP TABLE games;
+DROP TABLE images;
+
+ALTER TABLE _games RENAME TO games;
+ALTER TABLE _images RENAME TO images;

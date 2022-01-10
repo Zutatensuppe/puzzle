@@ -104,7 +104,7 @@ function getActivePlayers(gameId: string, ts: number): Array<Player> {
   return getAllPlayers(gameId).filter((p: Player) => p.ts >= minTs)
 }
 
-function getIdlePlayers(gameId: string, ts: number): Array<Player> {
+function getIdlePlayers(gameId: string, ts: number): Player[] {
   const minTs = ts - IDLE_TIMEOUT_SEC * Time.SEC
   return getAllPlayers(gameId).filter((p: Player) => p.ts < minTs && p.points > 0)
 }
@@ -117,7 +117,11 @@ function addPlayer(gameId: string, playerId: string, ts: Timestamp): void {
   }
 }
 
-function getAllGames(): Array<Game> {
+function getAllPublicGames(): Game[] {
+  return getAllGames().filter(game => !game.private)
+}
+
+function getAllGames(): Game[] {
   return Object.values(GAMES).sort((a: Game, b: Game) => {
     const finished = isFinished(a.id)
     // when both have same finished state, sort by started
@@ -891,6 +895,7 @@ export default {
   getPiece,
   getGroupedPieceCount,
   getAllGames,
+  getAllPublicGames,
   getPlayerBgColor,
   getPlayerColor,
   getPlayerName,

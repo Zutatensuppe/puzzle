@@ -38,6 +38,12 @@ gallery", if possible!
             </td>
           </tr>
           <tr>
+            <td><label>Private Image</label></td>
+            <td>
+              <input type="checkbox" v-model="isPrivate" />
+            </td>
+          </tr>
+          <tr>
             <!-- TODO: autocomplete tags -->
             <td><label>Tags</label></td>
             <td>
@@ -49,6 +55,7 @@ gallery", if possible!
 
       <div class="area-buttons">
         <button class="btn"
+          v-if="!isPrivate"
           :disabled="!canPostToGallery"
           @click="postToGallery"
         >
@@ -60,6 +67,7 @@ gallery", if possible!
           @click="setupGameClick"
         >
           <template v-if="uploading === 'setupGame'">Uploading ({{uploadProgressPercent}}%)</template>
+          <template v-else-if="isPrivate">🧩 Set up game</template>
           <template v-else>🧩 Post to gallery <br /> + set up game</template>
         </button>
       </div>
@@ -94,6 +102,7 @@ export default defineComponent({
       file: null as File|null,
       title: '',
       tags: [] as string[],
+      isPrivate: false,
       droppable: false,
     }
   },
@@ -120,6 +129,7 @@ export default defineComponent({
       this.file = null
       this.title = ''
       this.tags = []
+      this.isPrivate = false
       this.droppable = false
     },
     imageFromDragEvt (evt: DragEvent): DataTransferItem|null {
@@ -154,6 +164,7 @@ export default defineComponent({
         file: this.file,
         title: this.title,
         tags: this.tags,
+        isPrivate: this.isPrivate,
       })
       this.reset()
     },
@@ -162,6 +173,7 @@ export default defineComponent({
         file: this.file,
         title: this.title,
         tags: this.tags,
+        isPrivate: this.isPrivate,
       })
       this.reset()
     },
@@ -252,7 +264,9 @@ export default defineComponent({
 .new-image-dialog .area-settings {
   grid-area: settings;
 }
-
+.new-game-dialog .area-settings td:first-child {
+  white-space: nowrap;
+}
 .new-image-dialog .area-settings table input[type="text"] {
   width: 100%;
   box-sizing: border-box;

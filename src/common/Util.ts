@@ -9,9 +9,6 @@ import {
   PieceShape,
   Player,
   PuzzleInfo,
-  ScoreMode,
-  ShapeMode,
-  SnapMode
 } from './Types'
 import { Point } from './Geometry'
 import { Rng } from './Rng'
@@ -135,6 +132,7 @@ function encodeGame(data: Game): EncodedGame {
     data.creatorUserId,
     data.hasReplay,
     data.gameVersion,
+    data.private,
   ]
 }
 
@@ -153,6 +151,7 @@ function decodeGame(data: EncodedGame): Game {
     creatorUserId: data[8],
     hasReplay: data[9],
     gameVersion: data[10],
+    private: data[11],
   }
 }
 

@@ -43,7 +43,7 @@ function loadGameFromDb(db: Db, gameId: string): void {
     game.players = Object.values(game.players)
   }
 
-  const gameObject: Game = storeDataToGame(game, game.creator_user_id)
+  const gameObject: Game = storeDataToGame(game, game.creator_user_id, !!game.private)
   gameObject.hasReplay = GameLog.hasReplay(gameObject)
   GameCommon.setGame(gameObject.id, gameObject)
 }
@@ -74,7 +74,9 @@ function persistGameToDb(db: Db, gameId: string): void {
     created: game.puzzle.data.started,
     finished: game.puzzle.data.finished,
 
-    data: gameToStoreData(game)
+    data: gameToStoreData(game),
+
+    private: game.private ? 1 : 0,
   }, {
     id: game.id,
   })
@@ -120,11 +122,11 @@ function loadGameFromDisk(gameId: string): void {
   if (!Array.isArray(game.players)) {
     game.players = Object.values(game.players)
   }
-  const gameObject: Game = storeDataToGame(game, null)
+  const gameObject: Game = storeDataToGame(game, null, false)
   GameCommon.setGame(gameObject.id, gameObject)
 }
 
-function storeDataToGame(storeData: any, creatorUserId: number|null): Game {
+function storeDataToGame(storeData: any, creatorUserId: number|null, isPrivate: boolean): Game {
   return {
     id: storeData.id,
     gameVersion: storeData.gameVersion || 1, // old games didnt have this stored
@@ -139,6 +141,7 @@ function storeDataToGame(storeData: any, creatorUserId: number|null): Game {
     shapeMode: DefaultShapeMode(storeData.shapeMode),
     snapMode: DefaultSnapMode(storeData.snapMode),
     hasReplay: !!storeData.hasReplay,
+    private: isPrivate,
   }
 }
 

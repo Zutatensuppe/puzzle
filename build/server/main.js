@@ -157,6 +157,7 @@ function encodeGame(data) {
         data.creatorUserId,
         data.hasReplay,
         data.gameVersion,
+        data.private,
     ];
 }
 function decodeGame(data) {
@@ -174,6 +175,7 @@ function decodeGame(data) {
         creatorUserId: data[8],
         hasReplay: data[9],
         gameVersion: data[10],
+        private: data[11],
     };
 }
 function coordByPieceIdx(info, pieceIdx) {
@@ -607,6 +609,9 @@ function addPlayer$1(gameId, playerId, ts) {
     else {
         changePlayer(gameId, playerId, { ts });
     }
+}
+function getAllPublicGames() {
+    return getAllGames().filter(game => !game.private);
 }
 function getAllGames() {
     return Object.values(GAMES).sort((a, b) => {
@@ -1252,6 +1257,7 @@ var GameCommon = {
     getPiece,
     getGroupedPieceCount,
     getAllGames,
+    getAllPublicGames,
     getPlayerBgColor,
     getPlayerColor,
     getPlayerName,
@@ -1361,6 +1367,7 @@ const get = (gameId, offset = 0) => {
         log[0][6] = DefaultShapeMode(log[0][6]);
         log[0][7] = DefaultSnapMode(log[0][7]);
         log[0][8] = log[0][8] || null; // creatorUserId
+        log[0][9] = log[0][9] || 0; // private
     }
     return log;
 };
@@ -1457,7 +1464,7 @@ const imageFromDb = (db, imageId) => {
         height: i.height,
     };
 };
-const allImagesFromDb = (db, tagSlugs, orderBy) => {
+const allImagesFromDb = (db, tagSlugs, orderBy, isPrivate) => {
     const orderByMap = {
         alpha_asc: [{ filename: 1 }],
         alpha_desc: [{ filename: -1 }],
@@ -1466,6 +1473,7 @@ const allImagesFromDb = (db, tagSlugs, orderBy) => {
     };
     // TODO: .... clean up
     const wheresRaw = {};
+    wheresRaw['private'] = isPrivate ? 1 : 0;
     if (tagSlugs.length > 0) {
         const c = db.getMany('categories', { slug: { '$in': tagSlugs } });
         if (!c) {
@@ -1494,6 +1502,7 @@ inner join images i on i.id = ixc.image_id ${where.sql};
         created: i.created * 1000,
         width: i.width,
         height: i.height,
+        private: !!i.private,
     }));
 };
 /**
@@ -1795,7 +1804,7 @@ function loadGameFromDb(db, gameId) {
     if (!Array.isArray(game.players)) {
         game.players = Object.values(game.players);
     }
-    const gameObject = storeDataToGame(game, game.creator_user_id);
+    const gameObject = storeDataToGame(game, game.creator_user_id, !!game.private);
     gameObject.hasReplay = GameLog.hasReplay(gameObject);
     GameCommon.setGame(gameObject.id, gameObject);
 }
@@ -1819,7 +1828,8 @@ function persistGameToDb(db, gameId) {
         image_id: game.puzzle.info.image?.id,
         created: game.puzzle.data.started,
         finished: game.puzzle.data.finished,
-        data: gameToStoreData(game)
+        data: gameToStoreData(game),
+        private: game.private ? 1 : 0,
     }, {
         id: game.id,
     });
@@ -1864,10 +1874,10 @@ function loadGameFromDisk(gameId) {
     if (!Array.isArray(game.players)) {
         game.players = Object.values(game.players);
     }
-    const gameObject = storeDataToGame(game, null);
+    const gameObject = storeDataToGame(game, null, false);
     GameCommon.setGame(gameObject.id, gameObject);
 }
-function storeDataToGame(storeData, creatorUserId) {
+function storeDataToGame(storeData, creatorUserId, isPrivate) {
     return {
         id: storeData.id,
         gameVersion: storeData.gameVersion || 1,
@@ -1882,6 +1892,7 @@ function storeDataToGame(storeData, creatorUserId) {
         shapeMode: DefaultShapeMode(storeData.shapeMode),
         snapMode: DefaultSnapMode(storeData.snapMode),
         hasReplay: !!storeData.hasReplay,
+        private: isPrivate,
     };
 }
 function gameToStoreData(game) {
@@ -1911,7 +1922,7 @@ var GameStorage = {
     setDirty,
 };
 
-async function createGameObject(gameId, gameVersion, targetTiles, image, ts, scoreMode, shapeMode, snapMode, creatorUserId, hasReplay) {
+async function createGameObject(gameId, gameVersion, targetTiles, image, ts, scoreMode, shapeMode, snapMode, creatorUserId, hasReplay, isPrivate) {
     const seed = Util.hash(gameId + ' ' + ts);
     const rng = new Rng(seed);
     return {
@@ -1925,6 +1936,7 @@ async function createGameObject(gameId, gameVersion, targetTiles, image, ts, sco
         shapeMode,
         snapMode,
         hasReplay,
+        private: isPrivate,
     };
 }
 async function createNewGame(gameSettings, ts, creatorUserId) {
@@ -1932,9 +1944,10 @@ async function createNewGame(gameSettings, ts, creatorUserId) {
     do {
         gameId = Util.uniqId();
     } while (GameCommon.exists(gameId));
-    const gameObject = await createGameObject(gameId, Protocol.GAME_VERSION, gameSettings.tiles, gameSettings.image, ts, gameSettings.scoreMode, gameSettings.shapeMode, gameSettings.snapMode, creatorUserId, true);
+    const gameObject = await createGameObject(gameId, Protocol.GAME_VERSION, gameSettings.tiles, gameSettings.image, ts, gameSettings.scoreMode, gameSettings.shapeMode, gameSettings.snapMode, creatorUserId, true, // hasReplay
+    gameSettings.private);
     GameLog.create(gameId, ts);
-    GameLog.log(gameObject.id, Protocol.LOG_HEADER, gameObject.gameVersion, gameSettings.tiles, gameSettings.image, ts, gameObject.scoreMode, gameObject.shapeMode, gameObject.snapMode, gameObject.creatorUserId);
+    GameLog.log(gameObject.id, Protocol.LOG_HEADER, gameObject.gameVersion, gameSettings.tiles, gameSettings.image, ts, gameObject.scoreMode, gameObject.shapeMode, gameObject.snapMode, gameObject.creatorUserId, gameObject.private ? 1 : 0);
     GameCommon.setGame(gameObject.id, gameObject);
     GameStorage.setDirty(gameObject.id);
     return gameObject.id;
@@ -2252,7 +2265,8 @@ app.get('/api/replay-data', async (req, res) => {
         log[0][6], // shapeMode
         log[0][7], // snapMode
         log[0][8], // creatorUserId
-        true);
+        true, // hasReplay
+        !!log[0][9]);
     }
     res.send({ log, game: game ? Util.encodeGame(game) : null });
 });
@@ -2260,14 +2274,14 @@ app.get('/api/newgame-data', (req, res) => {
     const q = req.query;
     const tagSlugs = q.tags ? q.tags.split(',') : [];
     res.send({
-        images: Images.allImagesFromDb(db, tagSlugs, q.sort),
+        images: Images.allImagesFromDb(db, tagSlugs, q.sort, false),
         tags: Images.getAllTags(db),
     });
 });
 app.get('/api/index-data', (req, res) => {
     const ts = Time.timestamp();
     const games = [
-        ...GameCommon.getAllGames().map((game) => ({
+        ...GameCommon.getAllPublicGames().map((game) => ({
             id: game.id,
             hasReplay: GameLog.hasReplay(game),
             started: GameCommon.getStartTs(game.id),
@@ -2328,6 +2342,7 @@ app.post('/api/upload', (req, res) => {
             created: Time.timestamp(),
             width: dim.w,
             height: dim.h,
+            private: req.body.private ? 1 : 0,
         });
         if (req.body.tags) {
             const tags = req.body.tags.split(',').filter((tag) => !!tag);
