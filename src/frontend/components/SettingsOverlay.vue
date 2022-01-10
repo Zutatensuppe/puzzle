@@ -19,10 +19,15 @@
           <td><input type="checkbox" v-model="soundsEnabled" /></td>
         </tr>
         <tr>
+          <td><label>Piece connect sounds of others: </label></td>
+          <td><input type="checkbox" :disabled="!soundsEnabled" v-model="otherPlayerClickSoundEnabled" /></td>
+        </tr>
+        <tr>
           <td><label>Sounds Volume: </label></td>
           <td class="sound-volume">
             <span @click="decreaseVolume">🔉</span>
             <input
+              :disabled="!soundsEnabled"
               type="range"
               min="0"
               max="100"
@@ -59,6 +64,7 @@ export default defineComponent({
       color: '',
       name: '',
       soundsEnabled: true,
+      otherPlayerClickSoundEnabled: true,
       soundsVolume: 100,
       showPlayerNames: true,
 
@@ -82,6 +88,7 @@ export default defineComponent({
       this.color = `${modelValue.color}`
       this.name = `${modelValue.name}`
       this.soundsEnabled = !!modelValue.soundsEnabled
+      this.otherPlayerClickSoundEnabled = !!modelValue.otherPlayerClickSoundEnabled
       this.soundsVolume = parseInt(`${modelValue.soundsVolume}`, 10)
       this.showPlayerNames = !!modelValue.showPlayerNames
       this.enableWatches()
@@ -92,17 +99,19 @@ export default defineComponent({
         color: this.color,
         name: this.name,
         soundsEnabled: this.soundsEnabled,
+        otherPlayerClickSoundEnabled: this.otherPlayerClickSoundEnabled,
         soundsVolume: this.soundsVolume,
         showPlayerNames: this.showPlayerNames,
       })
     },
     enableWatches (): void {
-      this.watches.push(this.$watch('background', this.emitChanges))
-      this.watches.push(this.$watch('color', this.emitChanges))
-      this.watches.push(this.$watch('name', this.emitChanges))
-      this.watches.push(this.$watch('soundsEnabled', this.emitChanges))
-      this.watches.push(this.$watch('soundsVolume', this.emitChanges))
-      this.watches.push(this.$watch('showPlayerNames', this.emitChanges))
+      this.watches.push(this.$watch(() => this.background, this.emitChanges))
+      this.watches.push(this.$watch(() => this.color, this.emitChanges))
+      this.watches.push(this.$watch(() => this.name, this.emitChanges))
+      this.watches.push(this.$watch(() => this.soundsEnabled, this.emitChanges))
+      this.watches.push(this.$watch(() => this.otherPlayerClickSoundEnabled, this.emitChanges))
+      this.watches.push(this.$watch(() => this.soundsVolume, this.emitChanges))
+      this.watches.push(this.$watch(() => this.showPlayerNames, this.emitChanges))
     },
     disableWatches (): void {
       const w = this.watches
@@ -113,9 +122,9 @@ export default defineComponent({
   created () {
     this.apply(this.modelValue)
     // TODO: ts type PlayerSettings
-    this.$watch('modelValue', (val: any) => {
+    this.$watch(() => this.modelValue, (val: any) => {
       this.apply(val)
-    })
+    }, { deep: true })
   },
 })
 </script>

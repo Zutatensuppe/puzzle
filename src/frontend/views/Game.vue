@@ -68,9 +68,10 @@ import InfoOverlay from './../components/InfoOverlay.vue'
 import ConnectionOverlay from './../components/ConnectionOverlay.vue'
 import HelpOverlay from './../components/HelpOverlay.vue'
 
-import { main, MODE_PLAY } from './../game'
+import { main, MODE_PLAY } from '../game'
 import { Game, Player, PuzzleStatus } from '../../common/Types'
 import xhr from '../xhr'
+import { defaultPlayerSettings } from '../settings'
 
 export default defineComponent({
   name: 'game',
@@ -104,14 +105,7 @@ export default defineComponent({
 
       eventBus: mitt(),
       g: {
-        player: {
-          background: '',
-          color: '',
-          name: '',
-          soundsEnabled: true,
-          soundsVolume: 100,
-          showPlayerNames: true,
-        },
+        player: defaultPlayerSettings(),
         game: null as Game|null,
         previewImageUrl: '',
         connect: () => {},
@@ -158,6 +152,9 @@ export default defineComponent({
     })
     this.$watch(() => this.g.player.soundsEnabled, (value: boolean) => {
       this.eventBus.emit('onSoundsEnabledChange', value)
+    })
+    this.$watch(() => this.g.player.otherPlayerClickSoundEnabled, (value: boolean) => {
+      this.eventBus.emit('onOtherPlayerClickSoundEnabledChange', value)
     })
     this.$watch(() => this.g.player.soundsVolume, (value: number) => {
       this.eventBus.emit('onSoundsVolumeChange', value)

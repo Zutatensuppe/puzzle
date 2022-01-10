@@ -411,6 +411,8 @@ const movePiecesDiff = (
   return true
 }
 
+const PieceIsFinished = (piece: Piece): boolean => piece.owner === -1
+
 const isFinishedPiece = (gameId: string, pieceIdx: number): boolean => {
   return getPieceOwner(gameId, pieceIdx) === -1
 }
@@ -433,6 +435,12 @@ const setTilesOwner = (
   for (const pieceIdx of pieceIdxs) {
     changePiece(gameId, pieceIdx, { owner })
   }
+}
+
+// returns the count of pieces in the same group as
+// the piece identified by pieceIdx
+function getGroupedPieceCount(gameId: string, pieceIdx: number): number {
+  return getGroupedPieceIdxs(gameId, pieceIdx).length
 }
 
 // get all grouped tiles for a tile
@@ -880,6 +888,8 @@ export default {
   getPieceCount,
   getImageUrl,
   get,
+  getPiece,
+  getGroupedPieceCount,
   getAllGames,
   getPlayerBgColor,
   getPlayerColor,
@@ -904,4 +914,6 @@ export default {
   getStartTs,
   getFinishTs,
   handleInput,
+  // functions that dont operate on a game
+  PieceIsFinished,
 }

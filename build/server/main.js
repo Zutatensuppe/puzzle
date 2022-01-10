@@ -831,6 +831,7 @@ const movePiecesDiff = (gameId, pieceIdxs, diff) => {
     }
     return true;
 };
+const PieceIsFinished = (piece) => piece.owner === -1;
 const isFinishedPiece = (gameId, pieceIdx) => {
     return getPieceOwner(gameId, pieceIdx) === -1;
 };
@@ -847,6 +848,11 @@ const setTilesOwner = (gameId, pieceIdxs, owner) => {
         changePiece(gameId, pieceIdx, { owner });
     }
 };
+// returns the count of pieces in the same group as
+// the piece identified by pieceIdx
+function getGroupedPieceCount(gameId, pieceIdx) {
+    return getGroupedPieceIdxs(gameId, pieceIdx).length;
+}
 // get all grouped tiles for a tile
 function getGroupedPieceIdxs(gameId, pieceIdx) {
     const pieces = GAMES[gameId].puzzle.tiles;
@@ -1243,6 +1249,8 @@ var GameCommon = {
     getPieceCount,
     getImageUrl,
     get: get$1,
+    getPiece,
+    getGroupedPieceCount,
     getAllGames,
     getPlayerBgColor,
     getPlayerColor,
@@ -1267,6 +1275,8 @@ var GameCommon = {
     getStartTs,
     getFinishTs,
     handleInput: handleInput$1,
+    // functions that dont operate on a game
+    PieceIsFinished,
 };
 
 const __filename = fileURLToPath(import.meta.url);

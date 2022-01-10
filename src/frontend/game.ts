@@ -295,6 +295,9 @@ export async function main(
   const playerSoundVolume = (): number => {
     return settings.getInt(SETTINGS.SOUND_VOLUME, DEFAULTS.SOUND_VOLUME)
   }
+  const otherPlayerClickSoundEnabled = (): boolean => {
+    return settings.getBool(SETTINGS.OTHER_PLAYER_CLICK_SOUND_ENABLED, DEFAULTS.OTHER_PLAYER_CLICK_SOUND_ENABLED)
+  }
   const playerSoundEnabled = (): boolean => {
     return settings.getBool(SETTINGS.SOUND_ENABLED, DEFAULTS.SOUND_ENABLED)
   }
@@ -334,6 +337,7 @@ export async function main(
     color: playerColor(),
     name: playerName(),
     soundsEnabled: playerSoundEnabled(),
+    otherPlayerClickSoundEnabled: otherPlayerClickSoundEnabled(),
     soundsVolume: playerSoundVolume(),
     showPlayerNames: showPlayerNames(),
   }
@@ -408,6 +412,12 @@ export async function main(
       evts.addEvent([Protocol.INPUT_EV_PLAYER_NAME, value])
     }
   })
+  eventBus.on('onOtherPlayerClickSoundEnabledChange', (value: any) => {
+    if (player.otherPlayerClickSoundEnabled !== value) {
+      player.otherPlayerClickSoundEnabled = value
+      settings.setBool(SETTINGS.OTHER_PLAYER_CLICK_SOUND_ENABLED, value)
+    }
+  })
   eventBus.on('onSoundsEnabledChange', (value: any) => {
     if (player.soundsEnabled !== value) {
       player.soundsEnabled = value
@@ -470,6 +480,30 @@ export async function main(
       const evClientId = msg[1]
       const evClientSeq = msg[2]
       const evChanges = msg[3]
+
+      let piecesConnected: boolean = false;
+      const handlePieceChange = (changeData: any): boolean => {
+        // check if the piece connected with some other pieces
+        const piece = Util.decodePiece(changeData)
+        if (piecesConnected) {
+          Game.setPiece(gameId, piece.idx, piece)
+          return true
+        }
+
+        const oldPiece = Game.getPiece(gameId, piece.idx)
+        if (!Game.PieceIsFinished(oldPiece) && Game.PieceIsFinished(piece)) {
+          // piece will be connected to finished position
+          Game.setPiece(gameId, piece.idx, piece)
+          return true
+        }
+
+        const wasGroupCount = Game.getGroupedPieceCount(gameId, piece.idx)
+        Game.setPiece(gameId, piece.idx, piece)
+        const isGroupCount = Game.getGroupedPieceCount(gameId, piece.idx)
+        // piece was connected to other piece, now the group got bigger
+        return isGroupCount > wasGroupCount
+      }
+
       for (const [changeType, changeData] of evChanges) {
         switch (changeType) {
           case Protocol.CHANGE_PLAYER: {
@@ -480,8 +514,9 @@ export async function main(
             }
           } break;
           case Protocol.CHANGE_TILE: {
-            const t = Util.decodePiece(changeData)
-            Game.setPiece(gameId, t.idx, t)
+            if (handlePieceChange(changeData)) {
+              piecesConnected = true
+            }
             RERENDER = true
           } break;
           case Protocol.CHANGE_DATA: {
@@ -489,6 +524,9 @@ export async function main(
             RERENDER = true
           } break;
         }
+      }
+      if (piecesConnected && playerSoundEnabled() && otherPlayerClickSoundEnabled()) {
+        playClick()
       }
       finished = !! Game.getFinishTs(gameId)
     })
