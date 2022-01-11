@@ -24,7 +24,6 @@ import ResponsiveImage from './components/ResponsiveImage.vue'
 import Scores from './components/Scores.vue'
 import SettingsOverlay from './components/SettingsOverlay.vue'
 import TagsInput from './components/TagsInput.vue'
-import Upload from './components/Upload.vue'
 import user from './user'
 
 (async () => {
@@ -71,6 +70,5 @@ import user from './user'
   app.component('scores', Scores)
   app.component('settings-overlay', SettingsOverlay)
   app.component('tags-input', TagsInput)
-  app.component('upload', Upload)
   app.mount('#app')
 })()

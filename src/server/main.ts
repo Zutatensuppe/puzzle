@@ -191,6 +191,8 @@ app.post('/api/upload', (req: any, res): void => {
     const dim = await Images.getDimensions(
       `${UPLOAD_DIR}/${req.file.filename}`
     )
+    // post form, so booleans are submitted as 'true' | 'false'
+    const isPrivate = req.body.private === 'false' ? 0 : 1;
     const imageId = db.insert('images', {
       uploader_user_id: user.id,
       filename: req.file.filename,
@@ -199,8 +201,9 @@ app.post('/api/upload', (req: any, res): void => {
       created: Time.timestamp(),
       width: dim.w,
       height: dim.h,
-      private: req.body.private ? 1 : 0,
+      private: isPrivate,
     })
+    console.log(imageId)
 
     if (req.body.tags) {
       const tags = req.body.tags.split(',').filter((tag: string) => !!tag)
