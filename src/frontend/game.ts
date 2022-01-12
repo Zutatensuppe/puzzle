@@ -481,28 +481,8 @@ export async function main(
       const evClientSeq = msg[2]
       const evChanges = msg[3]
 
-      let piecesConnected: boolean = false;
-      const handlePieceChange = (changeData: any): boolean => {
-        // check if the piece connected with some other pieces
-        const piece = Util.decodePiece(changeData)
-        if (piecesConnected) {
-          Game.setPiece(gameId, piece.idx, piece)
-          return true
-        }
-
-        const oldPiece = Game.getPiece(gameId, piece.idx)
-        if (!Game.PieceIsFinished(oldPiece) && Game.PieceIsFinished(piece)) {
-          // piece will be connected to finished position
-          Game.setPiece(gameId, piece.idx, piece)
-          return true
-        }
-
-        const wasGroupCount = Game.getGroupedPieceCount(gameId, piece.idx)
-        Game.setPiece(gameId, piece.idx, piece)
-        const isGroupCount = Game.getGroupedPieceCount(gameId, piece.idx)
-        // piece was connected to other piece, now the group got bigger
-        return isGroupCount > wasGroupCount
-      }
+      let rerender: boolean = false;
+      let otherPlayerPiecesConnected: boolean = false;
 
       for (const [changeType, changeData] of evChanges) {
         switch (changeType) {
@@ -510,23 +490,31 @@ export async function main(
             const p = Util.decodePlayer(changeData)
             if (p.id !== clientId) {
               Game.setPlayer(gameId, p.id, p)
-              RERENDER = true
+              rerender = true
             }
           } break;
           case Protocol.CHANGE_TILE: {
-            if (handlePieceChange(changeData)) {
-              piecesConnected = true
-            }
-            RERENDER = true
+            const piece = Util.decodePiece(changeData)
+            Game.setPiece(gameId, piece.idx, piece)
+            rerender = true
           } break;
           case Protocol.CHANGE_DATA: {
             Game.setPuzzleData(gameId, changeData)
-            RERENDER = true
+            rerender = true
+          } break;
+          case Protocol.PLAYER_SNAP: {
+            const snapPlayerId = changeData
+            if (snapPlayerId !== clientId) {
+              otherPlayerPiecesConnected = true
+            }
           } break;
         }
       }
-      if (piecesConnected && playerSoundEnabled() && otherPlayerClickSoundEnabled()) {
+      if (otherPlayerPiecesConnected && playerSoundEnabled() && otherPlayerClickSoundEnabled()) {
         playClick()
+      }
+      if (rerender) {
+        RERENDER = true
       }
       finished = !! Game.getFinishTs(gameId)
     })
@@ -680,17 +668,12 @@ export async function main(
         // LOCAL + SERVER CHANGES
         // -------------------------------------------------------------
         const ts = TIME()
-        const changes = Game.handleInput(
-          gameId,
-          clientId,
-          evt,
-          ts,
-          (playerId: string) => {
-            if (playerSoundEnabled()) {
-              playClick()
-            }
+        const changes = Game.handleInput(gameId, clientId, evt, ts)
+        if (playerSoundEnabled()) {
+          if (changes.find(change => change[0] === Protocol.PLAYER_SNAP)) {
+            playClick()
           }
-        )
+        }
         if (changes.length > 0) {
           RERENDER = true
         }

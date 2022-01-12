@@ -355,6 +355,7 @@ const INPUT_EV_CONNECTION_CLOSE = 21;
 const CHANGE_DATA = 1;
 const CHANGE_TILE = 2;
 const CHANGE_PLAYER = 3;
+const PLAYER_SNAP = 4;
 var Protocol = {
     EV_SERVER_EVENT,
     EV_SERVER_INIT,
@@ -389,6 +390,7 @@ var Protocol = {
     CHANGE_DATA,
     CHANGE_TILE,
     CHANGE_PLAYER,
+    PLAYER_SNAP,
 };
 
 function pointSub(a, b) {
@@ -836,7 +838,6 @@ const movePiecesDiff = (gameId, pieceIdxs, diff) => {
     }
     return true;
 };
-const PieceIsFinished = (piece) => piece.owner === -1;
 const isFinishedPiece = (gameId, pieceIdx) => {
     return getPieceOwner(gameId, pieceIdx) === -1;
 };
@@ -957,7 +958,7 @@ const maySnapToFinal = (gameId, pieceIdxs) => {
     // in other modes can always snap
     return true;
 };
-function handleInput$1(gameId, playerId, input, ts, onSnap) {
+function handleInput$1(gameId, playerId, input, ts) {
     const puzzle = GAMES[gameId].puzzle;
     const changes = [];
     const _dataChange = () => {
@@ -984,6 +985,7 @@ function handleInput$1(gameId, playerId, input, ts, onSnap) {
             Util.encodePlayer(player),
         ]);
     };
+    let anySnapped = false;
     // put both tiles (and their grouped tiles) in the same group
     const groupTiles = (gameId, pieceIdx1, pieceIdx2) => {
         const pieces = GAMES[gameId].puzzle.tiles;
@@ -1154,9 +1156,7 @@ function handleInput$1(gameId, playerId, input, ts, onSnap) {
                     changeData(gameId, { finished: ts });
                     _dataChange();
                 }
-                if (onSnap) {
-                    onSnap(playerId);
-                }
+                anySnapped = true;
             }
             else {
                 // Snap to other tiles
@@ -1215,8 +1215,8 @@ function handleInput$1(gameId, playerId, input, ts, onSnap) {
                         _dataChange();
                     }
                 }
-                if (snapped && onSnap) {
-                    onSnap(playerId);
+                if (snapped) {
+                    anySnapped = true;
                 }
             }
         }
@@ -1241,6 +1241,12 @@ function handleInput$1(gameId, playerId, input, ts, onSnap) {
         changePlayer(gameId, playerId, { ts });
         _playerChange();
     }
+    if (anySnapped) {
+        changes.push([
+            Protocol.PLAYER_SNAP,
+            playerId,
+        ]);
+    }
     return changes;
 }
 var GameCommon = {
@@ -1254,7 +1260,6 @@ var GameCommon = {
     getPieceCount,
     getImageUrl,
     get: get$1,
-    getPiece,
     getGroupedPieceCount,
     getAllGames,
     getAllPublicGames,
@@ -1281,8 +1286,6 @@ var GameCommon = {
     getStartTs,
     getFinishTs,
     handleInput: handleInput$1,
-    // functions that dont operate on a game
-    PieceIsFinished,
 };
 
 const __filename = fileURLToPath(import.meta.url);

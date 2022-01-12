@@ -80,6 +80,7 @@ const INPUT_EV_CONNECTION_CLOSE = 21
 const CHANGE_DATA = 1
 const CHANGE_TILE = 2
 const CHANGE_PLAYER = 3
+const PLAYER_SNAP = 4
 
 export default {
   EV_SERVER_EVENT,
@@ -127,4 +128,5 @@ export default {
   CHANGE_DATA,
   CHANGE_TILE,
   CHANGE_PLAYER,
+  PLAYER_SNAP,
 }

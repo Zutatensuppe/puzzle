@@ -415,8 +415,6 @@ const movePiecesDiff = (
   return true
 }
 
-const PieceIsFinished = (piece: Piece): boolean => piece.owner === -1
-
 const isFinishedPiece = (gameId: string, pieceIdx: number): boolean => {
   return getPieceOwner(gameId, pieceIdx) === -1
 }
@@ -572,7 +570,6 @@ function handleInput(
   playerId: string,
   input: Input,
   ts: Timestamp,
-  onSnap?: (playerId: string) => void
 ): Array<Change> {
   const puzzle = GAMES[gameId].puzzle
 
@@ -605,6 +602,8 @@ function handleInput(
       Util.encodePlayer(player),
     ])
   }
+
+  let anySnapped: boolean = false
 
   // put both tiles (and their grouped tiles) in the same group
   const groupTiles = (
@@ -786,9 +785,8 @@ function handleInput(
           changeData(gameId, { finished: ts })
           _dataChange()
         }
-        if (onSnap) {
-          onSnap(playerId)
-        }
+
+        anySnapped = true
       } else {
         // Snap to other tiles
         const check = (
@@ -855,8 +853,8 @@ function handleInput(
             _dataChange()
           }
         }
-        if (snapped && onSnap) {
-          onSnap(playerId)
+        if (snapped) {
+          anySnapped = true
         }
       }
     } else {
@@ -878,6 +876,12 @@ function handleInput(
     _playerChange()
   }
 
+  if (anySnapped) {
+    changes.push([
+      Protocol.PLAYER_SNAP,
+      playerId,
+    ])
+  }
   return changes
 }
 
@@ -892,7 +896,6 @@ export default {
   getPieceCount,
   getImageUrl,
   get,
-  getPiece,
   getGroupedPieceCount,
   getAllGames,
   getAllPublicGames,
@@ -919,6 +922,4 @@ export default {
   getStartTs,
   getFinishTs,
   handleInput,
-  // functions that dont operate on a game
-  PieceIsFinished,
 }
