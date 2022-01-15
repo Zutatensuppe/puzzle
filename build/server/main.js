@@ -1252,6 +1252,9 @@ function Game_getImageUrl(game) {
     }
     return imageUrl;
 }
+function Game_isFinished(game) {
+    return Game_getFinishedPiecesCount(game) === Game_getPieceCount(game);
+}
 var GameCommon = {
     setGame,
     unsetGame,
@@ -1295,6 +1298,7 @@ var GameCommon = {
     Game_getPieceCount,
     Game_getActivePlayers,
     Game_getImageUrl,
+    Game_isFinished,
 };
 
 const __filename = fileURLToPath(import.meta.url);
@@ -2266,7 +2270,18 @@ app.get('/api/newgame-data', (req, res) => {
 app.get('/api/index-data', (req, res) => {
     const ts = Time.timestamp();
     const games = [
-        ...GameStorage.getAllPublicGames(db).map((game) => ({
+        ...GameStorage.getAllPublicGames(db).sort((a, b) => {
+            const finished = GameCommon.Game_isFinished(a);
+            // when both have same finished state, sort by started
+            if (finished === GameCommon.Game_isFinished(b)) {
+                if (finished) {
+                    return b.puzzle.data.finished - a.puzzle.data.finished;
+                }
+                return b.puzzle.data.started - a.puzzle.data.started;
+            }
+            // otherwise, sort: unfinished, finished
+            return finished ? 1 : -1;
+        }).map((game) => ({
             id: game.id,
             hasReplay: GameLog.hasReplay(game),
             started: GameCommon.Game_getStartTs(game),

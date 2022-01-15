@@ -122,7 +122,18 @@ app.get('/api/newgame-data', (req, res): void => {
 app.get('/api/index-data', (req, res): void => {
   const ts = Time.timestamp()
   const games = [
-    ...GameStorage.getAllPublicGames(db).map((game: GameType) => ({
+    ...GameStorage.getAllPublicGames(db).sort((a: GameType, b: GameType) => {
+      const finished = GameCommon.Game_isFinished(a)
+      // when both have same finished state, sort by started
+      if (finished === GameCommon.Game_isFinished(b)) {
+        if (finished) {
+          return  b.puzzle.data.finished - a.puzzle.data.finished
+        }
+        return b.puzzle.data.started - a.puzzle.data.started
+      }
+      // otherwise, sort: unfinished, finished
+      return finished ? 1 : -1
+    }).map((game: GameType) => ({
       id: game.id,
       hasReplay: GameLog.hasReplay(game),
       started: GameCommon.Game_getStartTs(game),

@@ -139,10 +139,6 @@ function getSnapMode(gameId: string): SnapMode {
   return GAMES[gameId].snapMode
 }
 
-function isFinished(gameId: string): boolean {
-  return getFinishedPiecesCount(gameId) === getPieceCount(gameId)
-}
-
 function getFinishedPiecesCount(gameId: string): number {
   return Game_getFinishedPiecesCount(GAMES[gameId])
 }
@@ -898,6 +894,10 @@ function Game_getImageUrl(game: Game): string {
   return imageUrl
 }
 
+function Game_isFinished(game: Game): boolean {
+  return Game_getFinishedPiecesCount(game) === Game_getPieceCount(game)
+}
+
 
 export default {
   setGame,
@@ -943,4 +943,5 @@ export default {
   Game_getPieceCount,
   Game_getActivePlayers,
   Game_getImageUrl,
+  Game_isFinished,
 }
