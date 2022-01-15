@@ -6,6 +6,7 @@ import GameLog from './GameLog'
 import { createPuzzle } from './Puzzle'
 import Protocol from './../common/Protocol'
 import GameStorage from './GameStorage'
+import Db from './Db'
 
 const log = logger('Game.ts')
 
@@ -40,6 +41,7 @@ async function createGameObject(
 }
 
 async function createNewGame(
+  db: Db,
   gameSettings: GameSettings,
   ts: Timestamp,
   creatorUserId: number
@@ -47,7 +49,7 @@ async function createNewGame(
   let gameId;
   do {
     gameId = Util.uniqId()
-  } while (GameCommon.exists(gameId))
+  } while (GameStorage.exists(db, gameId))
 
   const gameObject = await createGameObject(
     gameId,

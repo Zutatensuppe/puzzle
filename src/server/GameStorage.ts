@@ -1,10 +1,7 @@
-import fs from 'fs'
 import GameCommon from './../common/GameCommon'
-import { DefaultScoreMode, DefaultShapeMode, DefaultSnapMode, Game, Piece } from './../common/Types'
-import Util, { logger } from './../common/Util'
+import { DefaultScoreMode, DefaultShapeMode, DefaultSnapMode, Game } from './../common/Types'
+import { logger } from './../common/Util'
 import { Rng } from './../common/Rng'
-import { DATA_DIR } from './Dirs'
-import Time from './../common/Time'
 import Db from './Db'
 import GameLog from './GameLog'
 
@@ -17,21 +14,13 @@ function setDirty(gameId: string): void {
 function setClean(gameId: string): void {
   delete dirtyGames[gameId]
 }
-function loadGamesFromDb(db: Db): void {
-  const gameRows = db.getMany('games')
-  for (const gameRow of gameRows) {
-    loadGameFromDb(db, gameRow.id)
-  }
-}
 
-function loadGameFromDb(db: Db, gameId: string): void {
-  const gameRow = db.get('games', {id: gameId})
-
+function gameRowToGameObject(gameRow: any): Game | null {
   let game
   try {
     game = JSON.parse(gameRow.data)
   } catch {
-    log.log(`[ERR] unable to load game from db ${gameId}`);
+    return null
   }
   if (typeof game.puzzle.data.started === 'undefined') {
     game.puzzle.data.started = gameRow.created
@@ -45,7 +34,49 @@ function loadGameFromDb(db: Db, gameId: string): void {
 
   const gameObject: Game = storeDataToGame(game, game.creator_user_id, !!game.private)
   gameObject.hasReplay = GameLog.hasReplay(gameObject)
+  return gameObject
+}
+
+function loadGameFromDb(db: Db, gameId: string): boolean {
+  log.info(`[INFO] loading game from db: ${gameId}`);
+  const gameRow = db.get('games', {id: gameId})
+  if (!gameRow) {
+    log.info(`[INFO] game not found in db: ${gameId}`);
+    return false
+  }
+
+  const gameObject = gameRowToGameObject(gameRow)
+  if (!gameObject) {
+    log.error(`[ERR] unable to turn game row into game object: ${gameRow.id}`);
+    return false
+  }
+
   GameCommon.setGame(gameObject.id, gameObject)
+  return true
+}
+
+function getAllPublicGames(db: Db): Game[] {
+  const gameRows = db.getMany('games', { private: 0 })
+  const games: Game[] = []
+  for (const gameRow of gameRows) {
+    const gameObject = gameRowToGameObject(gameRow)
+    if (!gameObject) {
+      log.error(`[ERR] unable to turn game row into game object: ${gameRow.id}`);
+      continue
+    }
+    games.push(gameObject)
+  }
+  return games
+}
+
+function unloadGame(gameId: string): void {
+  log.info(`[INFO] unloading game: ${gameId}`);
+  GameCommon.unsetGame(gameId)
+}
+
+function exists(db: Db, gameId: string): boolean {
+  const gameRow = db.get('games', {id: gameId})
+  return !!gameRow
 }
 
 function persistGamesToDb(db: Db): void {
@@ -81,49 +112,6 @@ function persistGameToDb(db: Db, gameId: string): void {
     id: game.id,
   })
   log.info(`[INFO] persisted game ${game.id}`)
-}
-
-/**
- * @deprecated
- */
-function loadGamesFromDisk(): void {
-  const files = fs.readdirSync(DATA_DIR)
-  for (const f of files) {
-    const m = f.match(/^([a-z0-9]+)\.json$/)
-    if (!m) {
-      continue
-    }
-    const gameId = m[1]
-    loadGameFromDisk(gameId)
-  }
-}
-
-/**
- * @deprecated
- */
-function loadGameFromDisk(gameId: string): void {
-  const file = `${DATA_DIR}/${gameId}.json`
-  const contents = fs.readFileSync(file, 'utf-8')
-  let game
-  try {
-    game = JSON.parse(contents)
-  } catch {
-    log.log(`[ERR] unable to load game from file ${file}`);
-  }
-  if (typeof game.puzzle.data.started === 'undefined') {
-    game.puzzle.data.started = Math.round(fs.statSync(file).ctimeMs)
-  }
-  if (typeof game.puzzle.data.finished === 'undefined') {
-    const unfinished = game.puzzle.tiles
-      .map(Util.decodePiece)
-      .find((t: Piece) => t.owner !== -1)
-    game.puzzle.data.finished = unfinished ? 0 : Time.timestamp()
-  }
-  if (!Array.isArray(game.players)) {
-    game.players = Object.values(game.players)
-  }
-  const gameObject: Game = storeDataToGame(game, null, false)
-  GameCommon.setGame(gameObject.id, gameObject)
 }
 
 function storeDataToGame(storeData: any, creatorUserId: number|null, isPrivate: boolean): Game {
@@ -163,14 +151,14 @@ function gameToStoreData(game: Game): string {
 }
 
 export default {
-  // disk functions are deprecated
-  loadGamesFromDisk,
-  loadGameFromDisk,
-
-  loadGamesFromDb,
   loadGameFromDb,
   persistGamesToDb,
   persistGameToDb,
+
+  getAllPublicGames,
+  unloadGame,
+
+  exists,
 
   setDirty,
 }

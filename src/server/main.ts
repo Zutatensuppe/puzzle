@@ -122,15 +122,15 @@ app.get('/api/newgame-data', (req, res): void => {
 app.get('/api/index-data', (req, res): void => {
   const ts = Time.timestamp()
   const games = [
-    ...GameCommon.getAllPublicGames().map((game: GameType) => ({
+    ...GameStorage.getAllPublicGames(db).map((game: GameType) => ({
       id: game.id,
       hasReplay: GameLog.hasReplay(game),
-      started: GameCommon.getStartTs(game.id),
-      finished: GameCommon.getFinishTs(game.id),
-      tilesFinished: GameCommon.getFinishedPiecesCount(game.id),
-      tilesTotal: GameCommon.getPieceCount(game.id),
-      players: GameCommon.getActivePlayers(game.id, ts).length,
-      imageUrl: GameCommon.getImageUrl(game.id),
+      started: GameCommon.Game_getStartTs(game),
+      finished: GameCommon.Game_getFinishTs(game),
+      tilesFinished: GameCommon.Game_getFinishedPiecesCount(game),
+      tilesTotal: GameCommon.Game_getPieceCount(game),
+      players: GameCommon.Game_getActivePlayers(game, ts).length,
+      imageUrl: GameCommon.Game_getImageUrl(game),
     })),
   ]
 
@@ -217,6 +217,7 @@ app.post('/api/upload', (req: any, res): void => {
 app.post('/api/newgame', express.json(), async (req, res): Promise<void> => {
   const user = Users.getOrCreateUser(db, req)
   const gameId = await Game.createNewGame(
+    db,
     req.body as GameSettings,
     Time.timestamp(),
     user.id
@@ -248,10 +249,17 @@ wss.on('close', async (
     const clientSeq = -1 // client lost connection, so clientSeq doesn't matter
     const clientEvtData = [ Protocol.INPUT_EV_CONNECTION_CLOSE ]
     const changes = Game.handleInput(gameId, clientId, clientEvtData, ts)
-    notify(
-      [Protocol.EV_SERVER_EVENT, clientId, clientSeq, changes],
-      GameSockets.getSockets(gameId)
-    )
+    const sockets = GameSockets.getSockets(gameId)
+    if (sockets.length) {
+      notify(
+        [Protocol.EV_SERVER_EVENT, clientId, clientSeq, changes],
+        sockets
+      )
+    } else {
+      GameStorage.persistGameToDb(db, gameId)
+      GameStorage.unloadGame(gameId)
+    }
+
   } catch (e) {
     log.error(e)
   }
@@ -274,8 +282,10 @@ wss.on('message', async (
     const msgType = msg[0]
     switch (msgType) {
       case Protocol.EV_CLIENT_INIT: {
-        if (!GameCommon.exists(gameId)) {
-          throw `[game ${gameId} does not exist... ]`
+        if (!GameCommon.loaded(gameId)) {
+          if (!GameStorage.loadGameFromDb(db, gameId)) {
+            throw `[game ${gameId} does not exist... ]`
+          }
         }
         const ts = Time.timestamp()
         Game.addPlayer(gameId, clientId, ts)
@@ -292,8 +302,10 @@ wss.on('message', async (
       } break
 
       case Protocol.EV_CLIENT_EVENT: {
-        if (!GameCommon.exists(gameId)) {
-          throw `[game ${gameId} does not exist... ]`
+        if (!GameCommon.loaded(gameId)) {
+          if (!GameStorage.loadGameFromDb(db, gameId)) {
+            throw `[game ${gameId} does not exist... ]`
+          }
         }
         const clientSeq = msg[1]
         const clientEvtData = msg[2]
@@ -332,7 +344,6 @@ wss.on('message', async (
   }
 })
 
-GameStorage.loadGamesFromDb(db)
 const server = app.listen(
   port,
   hostname,

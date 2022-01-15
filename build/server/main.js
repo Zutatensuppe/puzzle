@@ -535,7 +535,7 @@ const DefaultSnapMode = (v) => {
 const IDLE_TIMEOUT_SEC = 30;
 // Map<gameId, Game>
 const GAMES = {};
-function exists$1(gameId) {
+function loaded(gameId) {
     return (!!GAMES[gameId]) || false;
 }
 function __createPlayerObject(id, ts) {
@@ -553,6 +553,9 @@ function __createPlayerObject(id, ts) {
 }
 function setGame(gameId, game) {
     GAMES[gameId] = game;
+}
+function unsetGame(gameId) {
+    delete GAMES[gameId];
 }
 function getPlayerIndexById(gameId, playerId) {
     let i = 0;
@@ -597,12 +600,10 @@ function playerExists(gameId, playerId) {
     return idx !== -1;
 }
 function getActivePlayers(gameId, ts) {
-    const minTs = ts - IDLE_TIMEOUT_SEC * Time.SEC;
-    return getAllPlayers(gameId).filter((p) => p.ts >= minTs);
+    return Game_getActivePlayers(GAMES[gameId], ts);
 }
 function getIdlePlayers(gameId, ts) {
-    const minTs = ts - IDLE_TIMEOUT_SEC * Time.SEC;
-    return getAllPlayers(gameId).filter((p) => p.ts < minTs && p.points > 0);
+    return Game_getIdlePlayers(GAMES[gameId], ts);
 }
 function addPlayer$1(gameId, playerId, ts) {
     if (!playerExists(gameId, playerId)) {
@@ -612,7 +613,7 @@ function addPlayer$1(gameId, playerId, ts) {
         changePlayer(gameId, playerId, { ts });
     }
 }
-function getAllPublicGames() {
+function getAllPublicGames$1() {
     return getAllGames().filter(game => !game.private);
 }
 function getAllGames() {
@@ -629,24 +630,14 @@ function getAllGames() {
         return finished ? 1 : -1;
     });
 }
-function getAllPlayers(gameId) {
-    return GAMES[gameId]
-        ? GAMES[gameId].players.map(Util.decodePlayer)
-        : [];
-}
 function get$1(gameId) {
     return GAMES[gameId] || null;
 }
 function getPieceCount(gameId) {
-    return GAMES[gameId].puzzle.tiles.length;
+    return Game_getPieceCount(GAMES[gameId]);
 }
 function getImageUrl(gameId) {
-    const imageUrl = GAMES[gameId].puzzle.info.image?.url
-        || GAMES[gameId].puzzle.info.imageUrl;
-    if (!imageUrl) {
-        throw new Error('[2021-07-11] no image url set');
-    }
-    return imageUrl;
+    return Game_getImageUrl(GAMES[gameId]);
 }
 function getScoreMode(gameId) {
     return GAMES[gameId].scoreMode;
@@ -658,13 +649,7 @@ function isFinished(gameId) {
     return getFinishedPiecesCount(gameId) === getPieceCount(gameId);
 }
 function getFinishedPiecesCount(gameId) {
-    let count = 0;
-    for (const t of GAMES[gameId].puzzle.tiles) {
-        if (Util.decodePiece(t).owner === -1) {
-            count++;
-        }
-    }
-    return count;
+    return Game_getFinishedPiecesCount(GAMES[gameId]);
 }
 function getPiecesSortedByZIndex(gameId) {
     const pieces = GAMES[gameId].puzzle.tiles.map(Util.decodePiece);
@@ -759,10 +744,10 @@ const getPieceDrawSize = (gameId) => {
     return GAMES[gameId].puzzle.info.tileDrawSize;
 };
 const getStartTs = (gameId) => {
-    return GAMES[gameId].puzzle.data.started;
+    return Game_getStartTs(GAMES[gameId]);
 };
 const getFinishTs = (gameId) => {
-    return GAMES[gameId].puzzle.data.finished;
+    return Game_getFinishTs(GAMES[gameId]);
 };
 const getMaxGroup = (gameId) => {
     return GAMES[gameId].puzzle.data.maxGroup;
@@ -1249,9 +1234,48 @@ function handleInput$1(gameId, playerId, input, ts) {
     }
     return changes;
 }
+// functions that operate on given game instance instead of global one
+// -------------------------------------------------------------------
+function Game_getStartTs(game) {
+    return game.puzzle.data.started;
+}
+function Game_getFinishTs(game) {
+    return game.puzzle.data.finished;
+}
+function Game_getFinishedPiecesCount(game) {
+    let count = 0;
+    for (const t of game.puzzle.tiles) {
+        if (Util.decodePiece(t).owner === -1) {
+            count++;
+        }
+    }
+    return count;
+}
+function Game_getPieceCount(game) {
+    return game.puzzle.tiles.length;
+}
+function Game_getAllPlayers(game) {
+    return game.players.map(Util.decodePlayer);
+}
+function Game_getActivePlayers(game, ts) {
+    const minTs = ts - IDLE_TIMEOUT_SEC * Time.SEC;
+    return Game_getAllPlayers(game).filter((p) => p.ts >= minTs);
+}
+function Game_getIdlePlayers(game, ts) {
+    const minTs = ts - IDLE_TIMEOUT_SEC * Time.SEC;
+    return Game_getAllPlayers(game).filter((p) => p.ts < minTs && p.points > 0);
+}
+function Game_getImageUrl(game) {
+    const imageUrl = game.puzzle.info.image?.url || game.puzzle.info.imageUrl;
+    if (!imageUrl) {
+        throw new Error('[2021-07-11] no image url set');
+    }
+    return imageUrl;
+}
 var GameCommon = {
     setGame,
-    exists: exists$1,
+    unsetGame,
+    loaded,
     playerExists,
     getActivePlayers,
     getIdlePlayers,
@@ -1262,7 +1286,7 @@ var GameCommon = {
     get: get$1,
     getGroupedPieceCount,
     getAllGames,
-    getAllPublicGames,
+    getAllPublicGames: getAllPublicGames$1,
     getPlayerBgColor,
     getPlayerColor,
     getPlayerName,
@@ -1286,6 +1310,13 @@ var GameCommon = {
     getStartTs,
     getFinishTs,
     handleInput: handleInput$1,
+    /// operate directly on the game object given
+    Game_getStartTs,
+    Game_getFinishTs,
+    Game_getFinishedPiecesCount,
+    Game_getPieceCount,
+    Game_getActivePlayers,
+    Game_getImageUrl,
 };
 
 const __filename = fileURLToPath(import.meta.url);
@@ -1324,12 +1355,12 @@ const create = (gameId, ts) => {
         }));
     }
 };
-const exists = (gameId) => {
+const exists$1 = (gameId) => {
     const idxfile = idxname(gameId);
     return fs.existsSync(idxfile);
 };
 function hasReplay(game) {
-    return exists(game.id) && game.gameVersion === Protocol.GAME_VERSION;
+    return exists$1(game.id) && game.gameVersion === Protocol.GAME_VERSION;
 }
 const _log = (gameId, type, ...args) => {
     const idxfile = idxname(gameId);
@@ -1377,7 +1408,7 @@ const get = (gameId, offset = 0) => {
 var GameLog = {
     shouldLog,
     create,
-    exists,
+    exists: exists$1,
     hasReplay,
     log: _log,
     get,
@@ -1783,20 +1814,13 @@ function setDirty(gameId) {
 function setClean(gameId) {
     delete dirtyGames[gameId];
 }
-function loadGamesFromDb(db) {
-    const gameRows = db.getMany('games');
-    for (const gameRow of gameRows) {
-        loadGameFromDb(db, gameRow.id);
-    }
-}
-function loadGameFromDb(db, gameId) {
-    const gameRow = db.get('games', { id: gameId });
+function gameRowToGameObject(gameRow) {
     let game;
     try {
         game = JSON.parse(gameRow.data);
     }
     catch {
-        log$3.log(`[ERR] unable to load game from db ${gameId}`);
+        return null;
     }
     if (typeof game.puzzle.data.started === 'undefined') {
         game.puzzle.data.started = gameRow.created;
@@ -1809,7 +1833,43 @@ function loadGameFromDb(db, gameId) {
     }
     const gameObject = storeDataToGame(game, game.creator_user_id, !!game.private);
     gameObject.hasReplay = GameLog.hasReplay(gameObject);
+    return gameObject;
+}
+function loadGameFromDb(db, gameId) {
+    log$3.info(`[INFO] loading game from db: ${gameId}`);
+    const gameRow = db.get('games', { id: gameId });
+    if (!gameRow) {
+        log$3.info(`[INFO] game not found in db: ${gameId}`);
+        return false;
+    }
+    const gameObject = gameRowToGameObject(gameRow);
+    if (!gameObject) {
+        log$3.error(`[ERR] unable to turn game row into game object: ${gameRow.id}`);
+        return false;
+    }
     GameCommon.setGame(gameObject.id, gameObject);
+    return true;
+}
+function getAllPublicGames(db) {
+    const gameRows = db.getMany('games', { private: 0 });
+    const games = [];
+    for (const gameRow of gameRows) {
+        const gameObject = gameRowToGameObject(gameRow);
+        if (!gameObject) {
+            log$3.error(`[ERR] unable to turn game row into game object: ${gameRow.id}`);
+            continue;
+        }
+        games.push(gameObject);
+    }
+    return games;
+}
+function unloadGame(gameId) {
+    log$3.info(`[INFO] unloading game: ${gameId}`);
+    GameCommon.unsetGame(gameId);
+}
+function exists(db, gameId) {
+    const gameRow = db.get('games', { id: gameId });
+    return !!gameRow;
 }
 function persistGamesToDb(db) {
     for (const gameId of Object.keys(dirtyGames)) {
@@ -1837,48 +1897,6 @@ function persistGameToDb(db, gameId) {
         id: game.id,
     });
     log$3.info(`[INFO] persisted game ${game.id}`);
-}
-/**
- * @deprecated
- */
-function loadGamesFromDisk() {
-    const files = fs.readdirSync(DATA_DIR);
-    for (const f of files) {
-        const m = f.match(/^([a-z0-9]+)\.json$/);
-        if (!m) {
-            continue;
-        }
-        const gameId = m[1];
-        loadGameFromDisk(gameId);
-    }
-}
-/**
- * @deprecated
- */
-function loadGameFromDisk(gameId) {
-    const file = `${DATA_DIR}/${gameId}.json`;
-    const contents = fs.readFileSync(file, 'utf-8');
-    let game;
-    try {
-        game = JSON.parse(contents);
-    }
-    catch {
-        log$3.log(`[ERR] unable to load game from file ${file}`);
-    }
-    if (typeof game.puzzle.data.started === 'undefined') {
-        game.puzzle.data.started = Math.round(fs.statSync(file).ctimeMs);
-    }
-    if (typeof game.puzzle.data.finished === 'undefined') {
-        const unfinished = game.puzzle.tiles
-            .map(Util.decodePiece)
-            .find((t) => t.owner !== -1);
-        game.puzzle.data.finished = unfinished ? 0 : Time.timestamp();
-    }
-    if (!Array.isArray(game.players)) {
-        game.players = Object.values(game.players);
-    }
-    const gameObject = storeDataToGame(game, null, false);
-    GameCommon.setGame(gameObject.id, gameObject);
 }
 function storeDataToGame(storeData, creatorUserId, isPrivate) {
     return {
@@ -1915,13 +1933,12 @@ function gameToStoreData(game) {
     });
 }
 var GameStorage = {
-    // disk functions are deprecated
-    loadGamesFromDisk,
-    loadGameFromDisk,
-    loadGamesFromDb,
     loadGameFromDb,
     persistGamesToDb,
     persistGameToDb,
+    getAllPublicGames,
+    unloadGame,
+    exists,
     setDirty,
 };
 
@@ -1942,11 +1959,11 @@ async function createGameObject(gameId, gameVersion, targetTiles, image, ts, sco
         private: isPrivate,
     };
 }
-async function createNewGame(gameSettings, ts, creatorUserId) {
+async function createNewGame(db, gameSettings, ts, creatorUserId) {
     let gameId;
     do {
         gameId = Util.uniqId();
-    } while (GameCommon.exists(gameId));
+    } while (GameStorage.exists(db, gameId));
     const gameObject = await createGameObject(gameId, Protocol.GAME_VERSION, gameSettings.tiles, gameSettings.image, ts, gameSettings.scoreMode, gameSettings.shapeMode, gameSettings.snapMode, creatorUserId, true, // hasReplay
     gameSettings.private);
     GameLog.create(gameId, ts);
@@ -2284,15 +2301,15 @@ app.get('/api/newgame-data', (req, res) => {
 app.get('/api/index-data', (req, res) => {
     const ts = Time.timestamp();
     const games = [
-        ...GameCommon.getAllPublicGames().map((game) => ({
+        ...GameStorage.getAllPublicGames(db).map((game) => ({
             id: game.id,
             hasReplay: GameLog.hasReplay(game),
-            started: GameCommon.getStartTs(game.id),
-            finished: GameCommon.getFinishTs(game.id),
-            tilesFinished: GameCommon.getFinishedPiecesCount(game.id),
-            tilesTotal: GameCommon.getPieceCount(game.id),
-            players: GameCommon.getActivePlayers(game.id, ts).length,
-            imageUrl: GameCommon.getImageUrl(game.id),
+            started: GameCommon.Game_getStartTs(game),
+            finished: GameCommon.Game_getFinishTs(game),
+            tilesFinished: GameCommon.Game_getFinishedPiecesCount(game),
+            tilesTotal: GameCommon.Game_getPieceCount(game),
+            players: GameCommon.Game_getActivePlayers(game, ts).length,
+            imageUrl: GameCommon.Game_getImageUrl(game),
         })),
     ];
     res.send({
@@ -2359,7 +2376,7 @@ app.post('/api/upload', (req, res) => {
 });
 app.post('/api/newgame', express.json(), async (req, res) => {
     const user = Users.getOrCreateUser(db, req);
-    const gameId = await Game.createNewGame(req.body, Time.timestamp(), user.id);
+    const gameId = await Game.createNewGame(db, req.body, Time.timestamp(), user.id);
     res.send({ id: gameId });
 });
 app.use('/uploads/', express.static(UPLOAD_DIR));
@@ -2380,7 +2397,14 @@ wss.on('close', async ({ socket }) => {
         const clientSeq = -1; // client lost connection, so clientSeq doesn't matter
         const clientEvtData = [Protocol.INPUT_EV_CONNECTION_CLOSE];
         const changes = Game.handleInput(gameId, clientId, clientEvtData, ts);
-        notify([Protocol.EV_SERVER_EVENT, clientId, clientSeq, changes], GameSockets.getSockets(gameId));
+        const sockets = GameSockets.getSockets(gameId);
+        if (sockets.length) {
+            notify([Protocol.EV_SERVER_EVENT, clientId, clientSeq, changes], sockets);
+        }
+        else {
+            GameStorage.persistGameToDb(db, gameId);
+            GameStorage.unloadGame(gameId);
+        }
     }
     catch (e) {
         log.error(e);
@@ -2402,8 +2426,10 @@ wss.on('message', async ({ socket, data }) => {
         switch (msgType) {
             case Protocol.EV_CLIENT_INIT:
                 {
-                    if (!GameCommon.exists(gameId)) {
-                        throw `[game ${gameId} does not exist... ]`;
+                    if (!GameCommon.loaded(gameId)) {
+                        if (!GameStorage.loadGameFromDb(db, gameId)) {
+                            throw `[game ${gameId} does not exist... ]`;
+                        }
                     }
                     const ts = Time.timestamp();
                     Game.addPlayer(gameId, clientId, ts);
@@ -2417,8 +2443,10 @@ wss.on('message', async ({ socket, data }) => {
                 break;
             case Protocol.EV_CLIENT_EVENT:
                 {
-                    if (!GameCommon.exists(gameId)) {
-                        throw `[game ${gameId} does not exist... ]`;
+                    if (!GameCommon.loaded(gameId)) {
+                        if (!GameStorage.loadGameFromDb(db, gameId)) {
+                            throw `[game ${gameId} does not exist... ]`;
+                        }
                     }
                     const clientSeq = msg[1];
                     const clientEvtData = msg[2];
@@ -2450,7 +2478,6 @@ wss.on('message', async ({ socket, data }) => {
         log.error('data:', data);
     }
 });
-GameStorage.loadGamesFromDb(db);
 const server = app.listen(port, hostname, () => log.log(`server running on http://${hostname}:${port}`));
 wss.listen();
 const memoryUsageHuman = () => {

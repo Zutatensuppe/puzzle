@@ -25,7 +25,7 @@ const IDLE_TIMEOUT_SEC = 30
 // Map<gameId, Game>
 const GAMES: Record<string, Game> = {}
 
-function exists(gameId: string): boolean {
+function loaded(gameId: string): boolean {
   return (!!GAMES[gameId]) || false
 }
 
@@ -45,6 +45,10 @@ function __createPlayerObject(id: string, ts: Timestamp): Player {
 
 function setGame(gameId: string, game: Game): void {
   GAMES[gameId] = game
+}
+
+function unsetGame(gameId: string): void {
+  delete GAMES[gameId]
 }
 
 function getPlayerIndexById(gameId: string, playerId: string): number {
@@ -100,13 +104,11 @@ function playerExists(gameId: string, playerId: string): boolean {
 }
 
 function getActivePlayers(gameId: string, ts: number): Array<Player> {
-  const minTs = ts - IDLE_TIMEOUT_SEC * Time.SEC
-  return getAllPlayers(gameId).filter((p: Player) => p.ts >= minTs)
+  return Game_getActivePlayers(GAMES[gameId], ts)
 }
 
 function getIdlePlayers(gameId: string, ts: number): Player[] {
-  const minTs = ts - IDLE_TIMEOUT_SEC * Time.SEC
-  return getAllPlayers(gameId).filter((p: Player) => p.ts < minTs && p.points > 0)
+  return Game_getIdlePlayers(GAMES[gameId], ts)
 }
 
 function addPlayer(gameId: string, playerId: string, ts: Timestamp): void {
@@ -136,27 +138,16 @@ function getAllGames(): Game[] {
   })
 }
 
-function getAllPlayers(gameId: string): Array<Player> {
-  return GAMES[gameId]
-    ? GAMES[gameId].players.map(Util.decodePlayer)
-    : []
-}
-
 function get(gameId: string): Game|null {
   return GAMES[gameId] || null
 }
 
 function getPieceCount(gameId: string): number {
-  return GAMES[gameId].puzzle.tiles.length
+  return Game_getPieceCount(GAMES[gameId])
 }
 
 function getImageUrl(gameId: string): string {
-  const imageUrl = GAMES[gameId].puzzle.info.image?.url
-    || GAMES[gameId].puzzle.info.imageUrl
-  if (!imageUrl) {
-    throw new Error('[2021-07-11] no image url set')
-  }
-  return imageUrl
+  return Game_getImageUrl(GAMES[gameId])
 }
 
 function getScoreMode(gameId: string): ScoreMode {
@@ -172,13 +163,7 @@ function isFinished(gameId: string): boolean {
 }
 
 function getFinishedPiecesCount(gameId: string): number {
-  let count = 0
-  for (const t of GAMES[gameId].puzzle.tiles) {
-    if (Util.decodePiece(t).owner === -1) {
-      count++
-    }
-  }
-  return count
+  return Game_getFinishedPiecesCount(GAMES[gameId])
 }
 
 function getPiecesSortedByZIndex(gameId: string): Piece[] {
@@ -318,11 +303,11 @@ const getPieceSize = (gameId: string): number => {
 }
 
 const getStartTs = (gameId: string): Timestamp => {
-  return GAMES[gameId].puzzle.data.started
+  return Game_getStartTs(GAMES[gameId])
 }
 
 const getFinishTs = (gameId: string): Timestamp => {
-  return GAMES[gameId].puzzle.data.finished
+  return Game_getFinishTs(GAMES[gameId])
 }
 
 const getMaxGroup = (gameId: string): number => {
@@ -885,9 +870,58 @@ function handleInput(
   return changes
 }
 
+// functions that operate on given game instance instead of global one
+// -------------------------------------------------------------------
+
+function Game_getStartTs(game: Game): number {
+  return game.puzzle.data.started
+}
+
+function Game_getFinishTs(game: Game): number {
+  return game.puzzle.data.finished
+}
+
+function Game_getFinishedPiecesCount(game: Game): number {
+  let count = 0
+  for (const t of game.puzzle.tiles) {
+    if (Util.decodePiece(t).owner === -1) {
+      count++
+    }
+  }
+  return count
+}
+
+function Game_getPieceCount(game: Game): number {
+  return game.puzzle.tiles.length
+}
+
+function Game_getAllPlayers(game: Game): Array<Player> {
+  return game.players.map(Util.decodePlayer)
+}
+
+function Game_getActivePlayers(game: Game, ts: number): Array<Player> {
+  const minTs = ts - IDLE_TIMEOUT_SEC * Time.SEC
+  return Game_getAllPlayers(game).filter((p: Player) => p.ts >= minTs)
+}
+
+function Game_getIdlePlayers(game: Game, ts: number): Player[] {
+  const minTs = ts - IDLE_TIMEOUT_SEC * Time.SEC
+  return Game_getAllPlayers(game).filter((p: Player) => p.ts < minTs && p.points > 0)
+}
+
+function Game_getImageUrl(game: Game): string {
+  const imageUrl = game.puzzle.info.image?.url || game.puzzle.info.imageUrl
+  if (!imageUrl) {
+    throw new Error('[2021-07-11] no image url set')
+  }
+  return imageUrl
+}
+
+
 export default {
   setGame,
-  exists,
+  unsetGame,
+  loaded,
   playerExists,
   getActivePlayers,
   getIdlePlayers,
@@ -922,4 +956,12 @@ export default {
   getStartTs,
   getFinishTs,
   handleInput,
+
+  /// operate directly on the game object given
+  Game_getStartTs,
+  Game_getFinishTs,
+  Game_getFinishedPiecesCount,
+  Game_getPieceCount,
+  Game_getActivePlayers,
+  Game_getImageUrl,
 }
