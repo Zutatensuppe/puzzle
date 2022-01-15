@@ -1,23 +1,22 @@
 <template>
   <div id="game">
     <settings-overlay
-      v-show="overlay === 'settings'"
+      v-if="overlay === 'settings'"
       @close="toggle('settings', true)"
       @bgclick="toggle('settings', true)"
       v-model="g.player" />
     <preview-overlay
-      v-show="overlay === 'preview'"
+      v-if="overlay === 'preview'"
       @close="toggle('preview', false)"
       @click="toggle('preview', false)"
       :img="g.previewImageUrl" />
     <info-overlay
-      v-if="g.game"
-      v-show="overlay === 'info'"
+      v-if="g.game && overlay === 'info'"
       @close="toggle('info', true)"
       @bgclick="toggle('info', true)"
       :game="g.game" />
     <help-overlay
-      v-show="overlay === 'help'"
+      v-if="overlay === 'help'"
       @close="toggle('help', true)"
       @bgclick="toggle('help', true)" />
 
@@ -53,6 +52,12 @@
       <scores :players="players" />
     </div>
 
+    <div class="status-messages" v-if="statusMessages.length">
+      <div v-for="(msg,idx) in statusMessages" :key="idx">
+        {{msg}}
+      </div>
+    </div>
+
     <canvas ref="canvas"></canvas>
   </div>
 </template>
@@ -86,6 +91,7 @@ export default defineComponent({
   },
   data() {
     return {
+      statusMessages: [] as string[],
       players: {
         active: [] as Player[],
         idle: [] as Player[],
@@ -128,17 +134,17 @@ export default defineComponent({
     this.eventBus.on('status', (status: any) => {
       this.status = status
     })
-    this.eventBus.on('togglePreview', () => {
-      this.toggle('preview', false)
-    })
     this.eventBus.on('connectionState', (v: any) => {
       this.connectionState = v
     })
-    this.eventBus.on('toggleSoundsEnabled', () => {
-      this.g.player.soundsEnabled = !this.g.player.soundsEnabled
+    this.eventBus.on('togglePreview', (v: any) => {
+      this.toggleTo('preview', v, false)
     })
-    this.eventBus.on('togglePlayerNames', () => {
-      this.g.player.showPlayerNames = !this.g.player.showPlayerNames
+    this.eventBus.on('toggleSoundsEnabled', (v: any) => {
+      this.g.player.soundsEnabled = !!v
+    })
+    this.eventBus.on('togglePlayerNames', (v: any) => {
+      this.g.player.showPlayerNames = !!v
     })
 
     this.$watch(() => this.g.player.background, (value: string) => {
@@ -178,6 +184,10 @@ export default defineComponent({
       canvasEl,
       this.eventBus,
     )
+
+    this.eventBus.on('statusMessage', (data: any) => {
+      this.addStatusMessage(data.what, data.value)
+    })
   },
   unmounted () {
     this.g.unload()
@@ -185,6 +195,18 @@ export default defineComponent({
     window.removeEventListener('resize', this.onResize)
   },
   methods: {
+    addStatusMessage(what: string, value: any): void {
+      if (typeof value === 'undefined') {
+        this.statusMessages.push(`${what}`)
+      } else if (value === true || value === false) {
+        this.statusMessages.push(`${what} ${value ? 'enabled' : 'disabled'}`)
+      } else {
+        this.statusMessages.push(`${what} changed to ${value}`)
+      }
+      setTimeout(() => {
+        this.statusMessages.shift()
+      }, 3000)
+    },
     onResize(): void {
       const canvasEl = this.$refs.canvas as HTMLCanvasElement
       canvasEl.width = window.innerWidth
@@ -193,6 +215,21 @@ export default defineComponent({
     },
     reconnect(): void {
       this.g.connect()
+    },
+    toggleTo(overlay: string, onOff: boolean, affectsHotkeys: boolean): void {
+      if (onOff === false) {
+        // off
+        this.overlay = ''
+        if (affectsHotkeys) {
+          this.eventBus.emit('setHotkeys', true)
+        }
+      } else {
+        // on
+        this.overlay = overlay
+        if (affectsHotkeys) {
+          this.eventBus.emit('setHotkeys', false)
+        }
+      }
     },
     toggle(overlay: string, affectsHotkeys: boolean): void {
       if (this.overlay === '') {
@@ -206,6 +243,9 @@ export default defineComponent({
         if (affectsHotkeys) {
           this.eventBus.emit('setHotkeys', true)
         }
+      }
+      if (overlay === 'preview') {
+        this.eventBus.emit('onPreviewChange', this.overlay === 'preview')
       }
     },
   },

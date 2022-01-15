@@ -248,13 +248,14 @@ export async function main(
   const evts = EventAdapter(canvas, window, viewport, MODE)
   evts.registerEvents()
 
-  const handleViewportSnapshot = (slot: string): void => {
+  const handleViewportSnapshot = (slot: string): string | null => {
     if (viewportSnapshots['last'] && viewportToggleSlot === slot) {
       const prev = viewport.snapshot()
       const curr = viewportSnapshots['last']
       viewport.fromSnapshot(curr)
       evts.createSnapshotEvents(prev, curr)
       delete viewportSnapshots['last']
+      return 'last'
     } else if (viewportSnapshots[slot]) {
       const curr = viewportSnapshots[slot]
       const prev = viewport.snapshot()
@@ -262,6 +263,9 @@ export async function main(
       viewportToggleSlot = slot
       viewport.fromSnapshot(curr)
       evts.createSnapshotEvents(prev, curr)
+      return slot
+    } else {
+      return null
     }
   }
 
@@ -365,21 +369,48 @@ export async function main(
     eventBus.emit('replayPaused', REPLAY.paused)
   }
 
+  const showStatusMessage = (what: string, value: any = undefined) => {
+    eventBus.emit('statusMessage', { what, value })
+  }
+
   const replayOnSpeedUp = () => {
     if (REPLAY.speedIdx + 1 < REPLAY.speeds.length) {
       REPLAY.speedIdx++
       doSetSpeedStatus()
+      showStatusMessage('Speed Up')
     }
   }
   const replayOnSpeedDown = () => {
     if (REPLAY.speedIdx >= 1) {
       REPLAY.speedIdx--
       doSetSpeedStatus()
+      showStatusMessage('Speed Down')
     }
   }
   const replayOnPauseToggle = () => {
     REPLAY.paused = !REPLAY.paused
     doSetSpeedStatus()
+    showStatusMessage(REPLAY.paused ? 'Paused' : 'Playing')
+  }
+
+  let _preview = false
+  const togglePreview = () => {
+    _preview = !_preview
+    eventBus.emit('togglePreview', _preview)
+  }
+  const toggleSoundsEnabled = () => {
+    player.soundsEnabled = !player.soundsEnabled
+    const value = player.soundsEnabled
+    eventBus.emit('toggleSoundsEnabled', value)
+    settings.setBool(SETTINGS.SOUND_ENABLED, value)
+    showStatusMessage('Sounds', value)
+  }
+  const togglePlayerNames = () => {
+    player.showPlayerNames = !player.showPlayerNames
+    const value = player.showPlayerNames
+    eventBus.emit('togglePlayerNames', value)
+    settings.setBool(SETTINGS.SHOW_PLAYER_NAMES, value)
+    showStatusMessage('Player names', value)
   }
 
   eventBus.on('replayOnSpeedUp', () => {
@@ -391,11 +422,17 @@ export async function main(
   eventBus.on('replayOnPauseToggle', () => {
     replayOnPauseToggle()
   })
+  eventBus.on('onPreviewChange', (value: any) => {
+    if (_preview !== value) {
+      _preview = value
+    }
+  })
   eventBus.on('onBgChange', (value: any) => {
     if (player.background !== value) {
       player.background = value
       settings.setStr(SETTINGS.COLOR_BACKGROUND, value)
       evts.addEvent([Protocol.INPUT_EV_BG_COLOR, value])
+      showStatusMessage('Background', value)
     }
   })
   eventBus.on('onColorChange', (value: any) => {
@@ -403,6 +440,7 @@ export async function main(
       player.color = value
       settings.setStr(SETTINGS.PLAYER_COLOR, value)
       evts.addEvent([Protocol.INPUT_EV_PLAYER_COLOR, value])
+      showStatusMessage('Color', value)
     }
   })
   eventBus.on('onNameChange', (value: any) => {
@@ -410,18 +448,21 @@ export async function main(
       player.name = value
       settings.setStr(SETTINGS.PLAYER_NAME, value)
       evts.addEvent([Protocol.INPUT_EV_PLAYER_NAME, value])
+      showStatusMessage('Name', value)
     }
   })
   eventBus.on('onOtherPlayerClickSoundEnabledChange', (value: any) => {
     if (player.otherPlayerClickSoundEnabled !== value) {
       player.otherPlayerClickSoundEnabled = value
       settings.setBool(SETTINGS.OTHER_PLAYER_CLICK_SOUND_ENABLED, value)
+      showStatusMessage('Other player sounds', value)
     }
   })
   eventBus.on('onSoundsEnabledChange', (value: any) => {
     if (player.soundsEnabled !== value) {
       player.soundsEnabled = value
       settings.setBool(SETTINGS.SOUND_ENABLED, value)
+      showStatusMessage('Sounds', value)
     }
   })
   eventBus.on('onSoundsVolumeChange', (value: any) => {
@@ -429,12 +470,14 @@ export async function main(
       player.soundsVolume = value
       settings.setInt(SETTINGS.SOUND_VOLUME, value)
       playClick()
+      showStatusMessage('Volume', value)
     }
   })
   eventBus.on('onShowPlayerNamesChange', (value: any) => {
     if (player.showPlayerNames !== value) {
       player.showPlayerNames = value
       settings.setBool(SETTINGS.SHOW_PLAYER_NAMES, value)
+      showStatusMessage('Player names', value)
     }
   })
   eventBus.on('setHotkeys', (state: any) => {
@@ -644,25 +687,31 @@ export async function main(
           viewport.zoom('out', viewport.worldToViewportRaw(pos))
           delete viewportSnapshots['last']
         } else if (type === Protocol.INPUT_EV_TOGGLE_PREVIEW) {
-          eventBus.emit('togglePreview')
+          togglePreview()
         } else if (type === Protocol.INPUT_EV_TOGGLE_SOUNDS) {
-          eventBus.emit('toggleSoundsEnabled')
+          toggleSoundsEnabled()
         } else if (type === Protocol.INPUT_EV_TOGGLE_PLAYER_NAMES) {
-          eventBus.emit('togglePlayerNames')
+          togglePlayerNames()
         } else if (type === Protocol.INPUT_EV_CENTER_FIT_PUZZLE) {
-          handleViewportSnapshot('center')
+          const slot = 'center'
+          const handled = handleViewportSnapshot(slot)
+          showStatusMessage(handled ? `Restored position "${handled}"` : `Position "${slot}" not set`)
         } else if (type === Protocol.INPUT_EV_TOGGLE_FIXED_PIECES) {
           PIECE_VIEW_FIXED = !PIECE_VIEW_FIXED
+          showStatusMessage(`${PIECE_VIEW_FIXED ? 'Showing' : 'Hiding'} finished pieces`)
           RERENDER = true
         } else if (type === Protocol.INPUT_EV_TOGGLE_LOOSE_PIECES) {
           PIECE_VIEW_LOOSE = !PIECE_VIEW_LOOSE
+          showStatusMessage(`${PIECE_VIEW_LOOSE ? 'Showing' : 'Hiding'} unfinished pieces`)
           RERENDER = true
         } else if (type === Protocol.INPUT_EV_STORE_POS) {
           const slot: string = `${evt[1]}`
           viewportSnapshots[slot] = viewport.snapshot()
+          showStatusMessage(`Stored position ${slot}`)
         } else if (type === Protocol.INPUT_EV_RESTORE_POS) {
           const slot: string = `${evt[1]}`
-          handleViewportSnapshot(slot)
+          const handled = handleViewportSnapshot(slot)
+          showStatusMessage(handled ? `Restored position "${handled}"` : `Position "${slot}" not set`)
         }
 
         // LOCAL + SERVER CHANGES
@@ -714,25 +763,31 @@ export async function main(
           RERENDER = true
           viewport.zoom('out', viewport.worldToViewportRaw(pos))
         } else if (type === Protocol.INPUT_EV_TOGGLE_PREVIEW) {
-          eventBus.emit('togglePreview')
+          togglePreview()
         } else if (type === Protocol.INPUT_EV_TOGGLE_SOUNDS) {
-          eventBus.emit('toggleSoundsEnabled')
+          toggleSoundsEnabled()
         } else if (type === Protocol.INPUT_EV_TOGGLE_PLAYER_NAMES) {
-          eventBus.emit('togglePlayerNames')
+          togglePlayerNames()
         } else if (type === Protocol.INPUT_EV_CENTER_FIT_PUZZLE) {
-          handleViewportSnapshot('center')
+          const slot = 'center'
+          const handled = handleViewportSnapshot(slot)
+          showStatusMessage(handled ? `Restored position "${handled}"` : `Position "${slot}" not set`)
         } else if (type === Protocol.INPUT_EV_TOGGLE_FIXED_PIECES) {
           PIECE_VIEW_FIXED = !PIECE_VIEW_FIXED
+          showStatusMessage(`${PIECE_VIEW_FIXED ? 'Showing' : 'Hiding'} finished pieces`)
           RERENDER = true
         } else if (type === Protocol.INPUT_EV_TOGGLE_LOOSE_PIECES) {
           PIECE_VIEW_LOOSE = !PIECE_VIEW_LOOSE
+          showStatusMessage(`${PIECE_VIEW_LOOSE ? 'Showing' : 'Hiding'} unfinished pieces`)
           RERENDER = true
         } else if (type === Protocol.INPUT_EV_STORE_POS) {
           const slot: string = `${evt[1]}`
           viewportSnapshots[slot] = viewport.snapshot()
+          showStatusMessage(`Stored position ${slot}`)
         } else if (type === Protocol.INPUT_EV_RESTORE_POS) {
           const slot: string = `${evt[1]}`
-          handleViewportSnapshot(slot)
+          const handled = handleViewportSnapshot(slot)
+          showStatusMessage(handled ? `Restored position "${handled}"` : `Position "${slot}" not set`)
         }
       }
     }

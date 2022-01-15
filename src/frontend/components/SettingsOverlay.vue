@@ -121,10 +121,6 @@ export default defineComponent({
   },
   created () {
     this.apply(this.modelValue)
-    // TODO: ts type PlayerSettings
-    this.$watch(() => this.modelValue, (val: any) => {
-      this.apply(val)
-    }, { deep: true })
   },
 })
 </script>
