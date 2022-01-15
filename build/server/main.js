@@ -613,23 +613,6 @@ function addPlayer$1(gameId, playerId, ts) {
         changePlayer(gameId, playerId, { ts });
     }
 }
-function getAllPublicGames$1() {
-    return getAllGames().filter(game => !game.private);
-}
-function getAllGames() {
-    return Object.values(GAMES).sort((a, b) => {
-        const finished = isFinished(a.id);
-        // when both have same finished state, sort by started
-        if (finished === isFinished(b.id)) {
-            if (finished) {
-                return b.puzzle.data.finished - a.puzzle.data.finished;
-            }
-            return b.puzzle.data.started - a.puzzle.data.started;
-        }
-        // otherwise, sort: unfinished, finished
-        return finished ? 1 : -1;
-    });
-}
 function get$1(gameId) {
     return GAMES[gameId] || null;
 }
@@ -644,9 +627,6 @@ function getScoreMode(gameId) {
 }
 function getSnapMode(gameId) {
     return GAMES[gameId].snapMode;
-}
-function isFinished(gameId) {
-    return getFinishedPiecesCount(gameId) === getPieceCount(gameId);
 }
 function getFinishedPiecesCount(gameId) {
     return Game_getFinishedPiecesCount(GAMES[gameId]);
@@ -1285,8 +1265,6 @@ var GameCommon = {
     getImageUrl,
     get: get$1,
     getGroupedPieceCount,
-    getAllGames,
-    getAllPublicGames: getAllPublicGames$1,
     getPlayerBgColor,
     getPlayerColor,
     getPlayerName,
@@ -1812,7 +1790,9 @@ function setDirty(gameId) {
     dirtyGames[gameId] = true;
 }
 function setClean(gameId) {
-    delete dirtyGames[gameId];
+    if (gameId in dirtyGames) {
+        delete dirtyGames[gameId];
+    }
 }
 function gameRowToGameObject(gameRow) {
     let game;
@@ -1835,20 +1815,19 @@ function gameRowToGameObject(gameRow) {
     gameObject.hasReplay = GameLog.hasReplay(gameObject);
     return gameObject;
 }
-function loadGameFromDb(db, gameId) {
-    log$3.info(`[INFO] loading game from db: ${gameId}`);
+function loadGame(db, gameId) {
+    log$3.info(`[INFO] loading game: ${gameId}`);
     const gameRow = db.get('games', { id: gameId });
     if (!gameRow) {
-        log$3.info(`[INFO] game not found in db: ${gameId}`);
-        return false;
+        log$3.info(`[INFO] game not found: ${gameId}`);
+        return null;
     }
     const gameObject = gameRowToGameObject(gameRow);
     if (!gameObject) {
         log$3.error(`[ERR] unable to turn game row into game object: ${gameRow.id}`);
-        return false;
+        return null;
     }
-    GameCommon.setGame(gameObject.id, gameObject);
-    return true;
+    return gameObject;
 }
 function getAllPublicGames(db) {
     const gameRows = db.getMany('games', { private: 0 });
@@ -1863,28 +1842,15 @@ function getAllPublicGames(db) {
     }
     return games;
 }
-function unloadGame(gameId) {
-    log$3.info(`[INFO] unloading game: ${gameId}`);
-    GameCommon.unsetGame(gameId);
-}
 function exists(db, gameId) {
     const gameRow = db.get('games', { id: gameId });
     return !!gameRow;
 }
-function persistGamesToDb(db) {
-    for (const gameId of Object.keys(dirtyGames)) {
-        persistGameToDb(db, gameId);
-    }
+function dirtyGameIds() {
+    return Object.keys(dirtyGames);
 }
-function persistGameToDb(db, gameId) {
-    const game = GameCommon.get(gameId);
-    if (!game) {
-        log$3.error(`[ERROR] unable to persist non existing game ${gameId}`);
-        return;
-    }
-    if (game.id in dirtyGames) {
-        setClean(game.id);
-    }
+function persistGame$1(db, game) {
+    setClean(game.id);
     db.upsert('games', {
         id: game.id,
         creator_user_id: game.creatorUserId,
@@ -1933,13 +1899,12 @@ function gameToStoreData(game) {
     });
 }
 var GameStorage = {
-    loadGameFromDb,
-    persistGamesToDb,
-    persistGameToDb,
+    persistGame: persistGame$1,
+    loadGame,
     getAllPublicGames,
-    unloadGame,
     exists,
     setDirty,
+    dirtyGameIds,
 };
 
 async function createGameObject(gameId, gameVersion, targetTiles, image, ts, scoreMode, shapeMode, snapMode, creatorUserId, hasReplay, isPrivate) {
@@ -2387,6 +2352,19 @@ const notify = (data, sockets) => {
         wss.notifyOne(data, socket);
     }
 };
+const persistGame = (gameId) => {
+    const game = GameCommon.get(gameId);
+    if (!game) {
+        log.error(`[ERROR] unable to persist non existing game ${gameId}`);
+        return;
+    }
+    GameStorage.persistGame(db, game);
+};
+const persistGames = () => {
+    for (const gameId of GameStorage.dirtyGameIds()) {
+        persistGame(gameId);
+    }
+};
 wss.on('close', async ({ socket }) => {
     try {
         const proto = socket.protocol.split('|');
@@ -2402,8 +2380,9 @@ wss.on('close', async ({ socket }) => {
             notify([Protocol.EV_SERVER_EVENT, clientId, clientSeq, changes], sockets);
         }
         else {
-            GameStorage.persistGameToDb(db, gameId);
-            GameStorage.unloadGame(gameId);
+            persistGame(gameId);
+            log.info(`[INFO] unloading game: ${gameId}`);
+            GameCommon.unsetGame(gameId);
         }
     }
     catch (e) {
@@ -2427,9 +2406,11 @@ wss.on('message', async ({ socket, data }) => {
             case Protocol.EV_CLIENT_INIT:
                 {
                     if (!GameCommon.loaded(gameId)) {
-                        if (!GameStorage.loadGameFromDb(db, gameId)) {
+                        const gameObject = GameStorage.loadGame(db, gameId);
+                        if (!gameObject) {
                             throw `[game ${gameId} does not exist... ]`;
                         }
+                        GameCommon.setGame(gameObject.id, gameObject);
                     }
                     const ts = Time.timestamp();
                     Game.addPlayer(gameId, clientId, ts);
@@ -2444,9 +2425,11 @@ wss.on('message', async ({ socket, data }) => {
             case Protocol.EV_CLIENT_EVENT:
                 {
                     if (!GameCommon.loaded(gameId)) {
-                        if (!GameStorage.loadGameFromDb(db, gameId)) {
+                        const gameObject = GameStorage.loadGame(db, gameId);
+                        if (!gameObject) {
                             throw `[game ${gameId} does not exist... ]`;
                         }
+                        GameCommon.setGame(gameObject.id, gameObject);
                     }
                     const clientSeq = msg[1];
                     const clientEvtData = msg[2];
@@ -2491,15 +2474,15 @@ memoryUsageHuman();
 // persist games in fixed interval
 const persistInterval = setInterval(() => {
     log.log('Persisting games...');
-    GameStorage.persistGamesToDb(db);
+    persistGames();
     memoryUsageHuman();
 }, config.persistence.interval);
 const gracefulShutdown = (signal) => {
     log.log(`${signal} received...`);
     log.log('clearing persist interval...');
     clearInterval(persistInterval);
-    log.log('persisting games...');
-    GameStorage.persistGamesToDb(db);
+    log.log('Persisting games...');
+    persistGames();
     log.log('shutting down webserver...');
     server.close();
     log.log('shutting down websocketserver...');

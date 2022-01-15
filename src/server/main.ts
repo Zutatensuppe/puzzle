@@ -236,6 +236,21 @@ const notify = (data: ServerEvent, sockets: Array<WebSocket>): void => {
   }
 }
 
+const persistGame = (gameId: string): void => {
+  const game: GameType|null = GameCommon.get(gameId)
+  if (!game) {
+    log.error(`[ERROR] unable to persist non existing game ${gameId}`)
+    return
+  }
+  GameStorage.persistGame(db, game)
+}
+
+const persistGames = (): void => {
+  for (const gameId of GameStorage.dirtyGameIds()) {
+    persistGame(gameId)
+  }
+}
+
 wss.on('close', async (
   {socket} : { socket: WebSocket }
 ): Promise<void> => {
@@ -256,8 +271,9 @@ wss.on('close', async (
         sockets
       )
     } else {
-      GameStorage.persistGameToDb(db, gameId)
-      GameStorage.unloadGame(gameId)
+      persistGame(gameId)
+      log.info(`[INFO] unloading game: ${gameId}`);
+      GameCommon.unsetGame(gameId)
     }
 
   } catch (e) {
@@ -283,9 +299,11 @@ wss.on('message', async (
     switch (msgType) {
       case Protocol.EV_CLIENT_INIT: {
         if (!GameCommon.loaded(gameId)) {
-          if (!GameStorage.loadGameFromDb(db, gameId)) {
+          const gameObject = GameStorage.loadGame(db, gameId)
+          if (!gameObject) {
             throw `[game ${gameId} does not exist... ]`
           }
+          GameCommon.setGame(gameObject.id, gameObject)
         }
         const ts = Time.timestamp()
         Game.addPlayer(gameId, clientId, ts)
@@ -303,9 +321,11 @@ wss.on('message', async (
 
       case Protocol.EV_CLIENT_EVENT: {
         if (!GameCommon.loaded(gameId)) {
-          if (!GameStorage.loadGameFromDb(db, gameId)) {
+          const gameObject = GameStorage.loadGame(db, gameId)
+          if (!gameObject) {
             throw `[game ${gameId} does not exist... ]`
           }
+          GameCommon.setGame(gameObject.id, gameObject)
         }
         const clientSeq = msg[1]
         const clientEvtData = msg[2]
@@ -351,7 +371,6 @@ const server = app.listen(
 )
 wss.listen()
 
-
 const memoryUsageHuman = (): void => {
   const totalHeapSize = v8.getHeapStatistics().total_available_size
   const totalHeapSizeInGB = (totalHeapSize / 1024 / 1024 / 1024).toFixed(2)
@@ -366,8 +385,7 @@ memoryUsageHuman()
 // persist games in fixed interval
 const persistInterval = setInterval(() => {
   log.log('Persisting games...')
-  GameStorage.persistGamesToDb(db)
-
+  persistGames()
   memoryUsageHuman()
 }, config.persistence.interval)
 
@@ -377,8 +395,8 @@ const gracefulShutdown = (signal: string): void => {
   log.log('clearing persist interval...')
   clearInterval(persistInterval)
 
-  log.log('persisting games...')
-  GameStorage.persistGamesToDb(db)
+  log.log('Persisting games...')
+  persistGames()
 
   log.log('shutting down webserver...')
   server.close()

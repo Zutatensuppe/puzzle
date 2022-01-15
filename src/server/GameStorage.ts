@@ -1,4 +1,3 @@
-import GameCommon from './../common/GameCommon'
 import { DefaultScoreMode, DefaultShapeMode, DefaultSnapMode, Game } from './../common/Types'
 import { logger } from './../common/Util'
 import { Rng } from './../common/Rng'
@@ -12,7 +11,9 @@ function setDirty(gameId: string): void {
   dirtyGames[gameId] = true
 }
 function setClean(gameId: string): void {
-  delete dirtyGames[gameId]
+  if (gameId in dirtyGames) {
+    delete dirtyGames[gameId]
+  }
 }
 
 function gameRowToGameObject(gameRow: any): Game | null {
@@ -37,22 +38,21 @@ function gameRowToGameObject(gameRow: any): Game | null {
   return gameObject
 }
 
-function loadGameFromDb(db: Db, gameId: string): boolean {
-  log.info(`[INFO] loading game from db: ${gameId}`);
+function loadGame(db: Db, gameId: string): Game | null {
+  log.info(`[INFO] loading game: ${gameId}`);
   const gameRow = db.get('games', {id: gameId})
   if (!gameRow) {
-    log.info(`[INFO] game not found in db: ${gameId}`);
-    return false
+    log.info(`[INFO] game not found: ${gameId}`);
+    return null
   }
 
   const gameObject = gameRowToGameObject(gameRow)
   if (!gameObject) {
     log.error(`[ERR] unable to turn game row into game object: ${gameRow.id}`);
-    return false
+    return null
   }
 
-  GameCommon.setGame(gameObject.id, gameObject)
-  return true
+  return gameObject
 }
 
 function getAllPublicGames(db: Db): Game[] {
@@ -69,32 +69,17 @@ function getAllPublicGames(db: Db): Game[] {
   return games
 }
 
-function unloadGame(gameId: string): void {
-  log.info(`[INFO] unloading game: ${gameId}`);
-  GameCommon.unsetGame(gameId)
-}
-
 function exists(db: Db, gameId: string): boolean {
   const gameRow = db.get('games', {id: gameId})
   return !!gameRow
 }
 
-function persistGamesToDb(db: Db): void {
-  for (const gameId of Object.keys(dirtyGames)) {
-    persistGameToDb(db, gameId)
-  }
+function dirtyGameIds(): string[] {
+  return Object.keys(dirtyGames)
 }
 
-function persistGameToDb(db: Db, gameId: string): void {
-  const game: Game|null = GameCommon.get(gameId)
-  if (!game) {
-    log.error(`[ERROR] unable to persist non existing game ${gameId}`)
-    return
-  }
-
-  if (game.id in dirtyGames) {
-    setClean(game.id)
-  }
+function persistGame(db: Db, game: Game): void {
+  setClean(game.id)
 
   db.upsert('games', {
     id: game.id,
@@ -151,14 +136,13 @@ function gameToStoreData(game: Game): string {
 }
 
 export default {
-  loadGameFromDb,
-  persistGamesToDb,
-  persistGameToDb,
+  persistGame,
 
+  loadGame,
   getAllPublicGames,
-  unloadGame,
 
   exists,
 
   setDirty,
+  dirtyGameIds,
 }

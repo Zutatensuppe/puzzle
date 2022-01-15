@@ -10,7 +10,8 @@ const db = new Db(DB_FILE, DB_PATCHES_DIR)
 db.patch(true)
 
 function fix_tiles(gameId: string) {
-  GameStorage.loadGameFromDb(db, gameId)
+  const gameObject = GameStorage.loadGame(db, gameId)
+  GameCommon.setGame(gameObject.id, gameObject)
   let changed = false
   const tiles = GameCommon.getPiecesSortedByZIndex(gameId)
   for (let tile of tiles) {
@@ -32,7 +33,7 @@ function fix_tiles(gameId: string) {
     }
   }
   if (changed) {
-    GameStorage.persistGameToDb(db, gameId)
+    GameStorage.persistGame(db, gameId)
   }
 }
 

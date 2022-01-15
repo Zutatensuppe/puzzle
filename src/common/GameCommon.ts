@@ -119,25 +119,6 @@ function addPlayer(gameId: string, playerId: string, ts: Timestamp): void {
   }
 }
 
-function getAllPublicGames(): Game[] {
-  return getAllGames().filter(game => !game.private)
-}
-
-function getAllGames(): Game[] {
-  return Object.values(GAMES).sort((a: Game, b: Game) => {
-    const finished = isFinished(a.id)
-    // when both have same finished state, sort by started
-    if (finished === isFinished(b.id)) {
-      if (finished) {
-        return  b.puzzle.data.finished - a.puzzle.data.finished
-      }
-      return b.puzzle.data.started - a.puzzle.data.started
-    }
-    // otherwise, sort: unfinished, finished
-    return finished ? 1 : -1
-  })
-}
-
 function get(gameId: string): Game|null {
   return GAMES[gameId] || null
 }
@@ -931,8 +912,6 @@ export default {
   getImageUrl,
   get,
   getGroupedPieceCount,
-  getAllGames,
-  getAllPublicGames,
   getPlayerBgColor,
   getPlayerColor,
   getPlayerName,
