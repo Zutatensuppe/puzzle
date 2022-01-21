@@ -105,4 +105,11 @@ describe('Util', () => {
     expect(Util.coordByPieceIdx(puzzleInfo, 5)).toStrictEqual({"x": 1, "y": 2})
     expect(Util.coordByPieceIdx(puzzleInfo, 999)).toStrictEqual({"x": 1, "y": 499})
   })
+
+  test.each([
+    { str: 'some str', expected: 1503307013 },
+    { str: '', expected: 0 },
+  ])('hash $str', ({ str, expected }) => {
+    expect(Util.hash(str)).toBe(expected)
+  })
 })
