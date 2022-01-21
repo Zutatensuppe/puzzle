@@ -112,4 +112,12 @@ describe('Util', () => {
   ])('hash $str', ({ str, expected }) => {
     expect(Util.hash(str)).toBe(expected)
   })
+
+  test.each([
+    { data: { hell: 'yo' }, expected: '?hell=yo'},
+    { data: { a: 56, hell: 'y o' }, expected: '?a=56&hell=y%20o'},
+    { data: { 'b  la': '?^%123' }, expected: '?b%20%20la=%3F%5E%25123'},
+  ])('asQueryArgs $data', ({data, expected}) => {
+    expect(Util.asQueryArgs(data)).toBe(expected)
+  })
 })
