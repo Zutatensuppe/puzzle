@@ -29,7 +29,7 @@
     "eslint": "^8.5.0",
     "jest": "^27.0.0",
     "rollup": "^2.48.0",
-    "rollup-plugin-typescript2": "^0.30.0",
+    "rollup-plugin-typescript2": "^0.31.0",
     "rollup-plugin-vue": "^6.0.0",
     "ts-jest": "^27.1.2",
     "ts-node": "^10.4.0",
@@ -37,7 +37,7 @@
     "vite": "^2.7.7"
   },
   "engines": {
-    "node": "^16.13.0",
+    "node": "^16.13.0||^17.4.0",
     "npm": "^8.1.0"
   },
   "scripts": {
