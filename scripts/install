@@ -1,6 +1,6 @@
 #!/bin/sh
 
-npm install
+npm ci
 
 if [ ! -e "$RUN_DIR/config.json" ]; then
   cp "$RUN_DIR/config.example.json" "$RUN_DIR/config.json"
