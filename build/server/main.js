@@ -222,15 +222,6 @@ var Util = {
 };
 
 const log$5 = logger('WebSocketServer.js');
-/*
-Example config
-
-config = {
-  hostname: 'localhost',
-  port: 1338,
-  connectstring: `ws://localhost:1338/ws`,
-}
-*/
 class EvtBus {
     constructor() {
         this._on = {};
@@ -2214,7 +2205,7 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ storage }).single('file');
 app.get('/api/me', (req, res) => {
-    let user = Users.getUser(db, req);
+    const user = Users.getUser(db, req);
     res.send({
         id: user ? user.id : null,
         created: user ? user.created : null,
