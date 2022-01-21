@@ -1,4 +1,4 @@
-import { Camera } from '../src/frontend/Camera'
+import { Camera } from '../../src/frontend/Camera'
 
 test('test input stuff', () => {
   const viewport = new Camera()
@@ -20,8 +20,6 @@ test('test input stuff', () => {
   }
 
   let update = (evts: any[]) => {
-    let tmpDiffX = 0
-    let tmpDiffY = 0
     for (let evt of evts) {
       if (evt.type === 'mousedown') {
         _last_mouse_down = evt.pos
@@ -35,17 +33,11 @@ test('test input stuff', () => {
           })
           viewport.move(diff.w, diff.h)
           _last_mouse_down = evt.pos
-          tmpDiffX += diff.w
-          tmpDiffY += diff.h
           _last_mouse_down.x += diff.w
           _last_mouse_down.y += diff.h
         }
       }
-      console.log(evt.pos)
-      console.log(_last_mouse_down)
     }
-    // _last_mouse_down.x -= tmpDiffX
-    // _last_mouse_down.y -= tmpDiffY
   }
 
   set_events([
