@@ -1,4 +1,4 @@
-import { Rng } from '../src/common/Rng'
+import { Rng } from '../../src/common/Rng'
 
 test('random should give same results', () => {
   const rng = new Rng(1337)

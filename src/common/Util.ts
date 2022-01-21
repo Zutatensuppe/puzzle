@@ -189,6 +189,7 @@ function asQueryArgs(data: Record<string, any>): string {
 export default {
   hash,
   slug,
+  pad,
   uniqId,
 
   encodeShape,
