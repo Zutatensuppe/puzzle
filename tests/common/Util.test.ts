@@ -1,4 +1,4 @@
-import { EncodedPiece, EncodedPlayer, Piece, Player } from '../../src/common/Types'
+import { EncodedGame, EncodedPiece, EncodedPlayer, Game, Piece, Player, Puzzle } from '../../src/common/Types'
 import Util from '../../src/common/Util'
 
 describe('Util', () => {
@@ -49,5 +49,53 @@ describe('Util', () => {
   ])('de/encodePlayer $player', ({player, encoded}) => {
     expect(Util.encodePlayer(player)).toEqual(encoded)
     expect(Util.decodePlayer(encoded)).toEqual(player)
+  })
+
+  const rng = {
+    rand_high: 1,
+    rand_low: 1,
+    random: (min: number, max: number): number => 0,
+    choice: <T> (array: Array<T>): T => array[0],
+    shuffle: <T> (array: Array<T>): Array<T> => array,
+  }
+  const puzzle: Puzzle = {
+    tiles: [],
+    data: {
+      started: 0,
+      finished: 0,
+      maxGroup: 0,
+      maxZ: 0,
+    },
+    info: {
+      table: {width: 0, height: 0},
+      targetTiles: 0,
+      width: 0,
+      height: 0,
+      tileSize: 0,
+      tileDrawSize: 0,
+      tileMarginWidth: 0,
+      tileDrawOffset: 0,
+      snapDistance: 0,
+      tiles: 0,
+      tilesX: 0,
+      tilesY: 0,
+      shapes: [],
+    },
+  }
+  test.each([
+    {
+      game: {id: 'id', rng: { type: 'asd', obj: rng}, puzzle: puzzle, players: [], scoreMode: 1, shapeMode: 1, snapMode: 1, creatorUserId: 1, hasReplay: true, gameVersion: 1, private: true} as Game,
+      encoded: ['id', 'asd', {rand_high: 1, rand_low: 1}, puzzle, [], 1, 1, 1, 1, true, 1, true] as EncodedGame,
+    },
+  ])('de/encodeGame $game', ({game, encoded}) => {
+    expect(Util.encodeGame(game)).toEqual(encoded)
+
+    const decoded = Util.decodeGame(encoded)
+    // check relevant properties of rng object separately
+    // because new object is never equal to original one
+    expect(decoded.rng.obj.rand_high).toEqual(encoded[2].rand_high)
+    expect(decoded.rng.obj.rand_low).toEqual(encoded[2].rand_low)
+    decoded.rng.obj = rng
+    expect(decoded).toEqual(game)
   })
 })
