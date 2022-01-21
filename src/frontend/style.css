@@ -8,7 +8,7 @@
   --highlight-color: #dd7e7e;
   --positive-color: #64a756;
   --input-bg-color: #262523;
-  --bg-color: rgba(0,0,0,.7);
+  --bg-color: rgba(0 0 0 / 70%);
 }
 
 html,
@@ -18,11 +18,16 @@ body {
   color: var(--main-color);
   height: 100%;
 }
+
 * {
   font-family: monospace;
   font-size: 15px;
 }
-h1, h2, h3, h4 {
+
+h1,
+h2,
+h3,
+h4 {
   font-size: 20px;
 }
 
@@ -35,7 +40,8 @@ a:hover {
   color: var(--link-hover-color);
 }
 
-td, th {
+td,
+th {
   vertical-align: top;
 }
 
@@ -45,7 +51,7 @@ td, th {
   color: var(--link-color);
   border: solid 1px black;
   padding: 5px 10px;
-  box-shadow: 1px 1px 2px rgba(0,0,0,.5), 0 0 1px rgba(150,150,150,.4) inset;
+  box-shadow: 1px 1px 2px rgba(0 0 0 / 50%), 0 0 1px rgba(150 150 150 / 40%) inset;
   border-radius: 4px;
   user-select: none;
 }
@@ -59,7 +65,7 @@ td, th {
   background: #2f2e2c;
   color: var(--link-hover-color);
   border: solid 1px #111;
-  box-shadow: 0 0 1px rgba(150,150,150,.4) inset;
+  box-shadow: 0 0 1px rgba(150 150 150 / 40%) inset;
   cursor: pointer;
 }
 
@@ -67,7 +73,7 @@ td, th {
   background: #2f2e2c;
   color: #8c4747 !important;
   border: solid 1px #111;
-  box-shadow: 0 0 1px rgba(150,150,150,.4) inset;
+  box-shadow: 0 0 1px rgba(150 150 150 / 40%) inset;
   cursor: not-allowed;
 }
 
@@ -77,7 +83,7 @@ input {
   color: var(--main-color);
   padding: 6px 10px;
   border: solid 1px black;
-  box-shadow: 0 0 3px rgba(0, 0,0,0.3) inset;
+  box-shadow: 0 0 3px rgba(0 0 0 / 30%) inset;
 }
 
 input:focus {
@@ -91,45 +97,41 @@ input:focus {
   position: absolute;
   bottom: 0;
   left: 0;
-
   background: var(--bg-color);
   padding: 5px;
   border: solid 1px black;
-  box-shadow: 0 0 10px 0 rgba(0,0,0,.7);
+  box-shadow: 0 0 10px 0 rgba(0 0 0 / 70%);
 }
 
 .menu-right {
   position: absolute;
   right: 0;
   top: 0;
-
   background: var(--bg-color);
   padding: 5px;
   border: solid 1px black;
-  box-shadow: 0 0 10px 0 rgba(0,0,0,.7);
+  box-shadow: 0 0 10px 0 rgba(0 0 0 / 70%);
 }
 
 .menu-left {
   position: absolute;
   left: 0;
   top: 0;
-
   background: var(--bg-color);
   padding: 5px;
   border: solid 1px black;
-  box-shadow: 0 0 10px 0 rgba(0,0,0,.7);
+  box-shadow: 0 0 10px 0 rgba(0 0 0 / 70%);
 }
 
 .menu {
   position: absolute;
   top: 0;
-
   left: 50%;
   transform: translateX(-50%);
   background: var(--bg-color);
   padding: 5px;
   border: solid 1px black;
-  box-shadow: 0 0 10px 0 rgba(0,0,0,.7);
+  box-shadow: 0 0 10px 0 rgba(0 0 0 / 70%);
   z-index: 2;
 }
 
@@ -156,18 +158,18 @@ input:focus {
 }
 
 .overlay.transparent {
-  background: rgba(0,0,0,.1);
+  background: rgba(0 0 0 / 10%);
 }
 
 .overlay-content {
   position: absolute;
   left: 50%;
   top: 50%;
-  transform: translate(-50%,-50%);
+  transform: translate(-50%, -50%);
   background: var(--bg-color);
   padding: 5px;
   border: solid 1px black;
-  box-shadow: 0 0 10px 0 rgba(0,0,0,.7);
+  box-shadow: 0 0 10px 0 rgba(0 0 0 / 70%);
   z-index: 1;
 }
 
@@ -176,20 +178,20 @@ input:focus {
   text-align: center;
 }
 
-
 .preview-overlay .overlay-content-enter-active {
   animation: 0;
 }
+
 .preview-overlay .overlay-content-leave-active {
   animation: 0;
 }
 
 .preview-overlay .overlay-content {
   position: absolute;
-  top: 0px;
-  left: 0px;
-  bottom: 0px;
-  right: 0px;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  right: 0;
   transform: none;
   padding: 0;
   border: 0;
@@ -232,10 +234,10 @@ kbd {
   background-color: #eee;
   border-radius: 3px;
   border: 1px solid #b4b4b4;
-  box-shadow: 0 1px 1px rgba(0, 0, 0, .2), 0 2px 0 0 rgba(255, 255, 255, .7) inset;
+  box-shadow: 0 1px 1px rgba(0 0 0 / 20%), 0 2px 0 0 rgba(255 255 255 / 70%) inset;
   color: #333;
   display: inline-block;
-  font-size: .85em;
+  font-size: 0.85em;
   font-weight: 700;
   line-height: 1;
   padding: 2px 4px;
@@ -253,12 +255,13 @@ kbd {
 }
 
 .bit {
-  background: rgb(59, 55, 55);
-  border-radius: .5em;
-  padding: .25em .5em;
+  background: rgb(59 55 55);
+  border-radius: 0.5em;
+  padding: 0.25em 0.5em;
   display: inline-block;
-  margin: 0 .25em .25em 0;
+  margin: 0 0.25em 0.25em 0;
 }
+
 .bit.on {
   color: var(--positive-color);
 }
@@ -268,7 +271,7 @@ kbd {
 }
 
 .upload-image-teaser .btn {
-  margin-bottom: .5em;
+  margin-bottom: 0.5em;
 }
 
 table label {
@@ -288,6 +291,7 @@ table label {
 .image-list {
   overflow: scroll;
 }
+
 .image-list-inner {
   white-space: nowrap;
 }
@@ -319,7 +323,7 @@ table label {
   position: relative;
   padding-top: 56.25%;
   width: 100%;
-  background-color: #222222;
+  background-color: #222;
 }
 
 .game-info {
@@ -346,14 +350,17 @@ table label {
 }
 
 html.view-game { overflow: hidden; }
+
 html.view-game body { overflow: hidden; }
 
 html.view-replay { overflow: hidden; }
+
 html.view-replay body { overflow: hidden; }
 
 .playback-control {
-  margin-top: .5em;
+  margin-top: 0.5em;
 }
+
 .switch-game-replay {
-  margin-top: .5em;
+  margin-top: 0.5em;
 }
