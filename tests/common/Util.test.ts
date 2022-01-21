@@ -1,4 +1,4 @@
-import { EncodedGame, EncodedPiece, EncodedPlayer, Game, Piece, Player, Puzzle } from '../../src/common/Types'
+import { EncodedGame, EncodedPiece, EncodedPlayer, Game, Piece, Player, Puzzle, PuzzleInfo } from '../../src/common/Types'
 import Util from '../../src/common/Util'
 
 describe('Util', () => {
@@ -58,6 +58,22 @@ describe('Util', () => {
     choice: <T> (array: Array<T>): T => array[0],
     shuffle: <T> (array: Array<T>): Array<T> => array,
   }
+
+  const puzzleInfo: PuzzleInfo = {
+    table: {width: 0, height: 0},
+    targetTiles: 0,
+    width: 10,
+    height: 10,
+    tileSize: 5,
+    tileDrawSize: 0,
+    tileMarginWidth: 0,
+    tileDrawOffset: 0,
+    snapDistance: 0,
+    tiles: 0,
+    tilesX: 0,
+    tilesY: 0,
+    shapes: [],
+  }
   const puzzle: Puzzle = {
     tiles: [],
     data: {
@@ -66,21 +82,7 @@ describe('Util', () => {
       maxGroup: 0,
       maxZ: 0,
     },
-    info: {
-      table: {width: 0, height: 0},
-      targetTiles: 0,
-      width: 0,
-      height: 0,
-      tileSize: 0,
-      tileDrawSize: 0,
-      tileMarginWidth: 0,
-      tileDrawOffset: 0,
-      snapDistance: 0,
-      tiles: 0,
-      tilesX: 0,
-      tilesY: 0,
-      shapes: [],
-    },
+    info: puzzleInfo,
   }
   test.each([
     {
@@ -97,5 +99,10 @@ describe('Util', () => {
     expect(decoded.rng.obj.rand_low).toEqual(encoded[2].rand_low)
     decoded.rng.obj = rng
     expect(decoded).toEqual(game)
+  })
+
+  test('coordByPieceIdx', () => {
+    expect(Util.coordByPieceIdx(puzzleInfo, 5)).toEqual({"x": 1, "y": 2})
+    expect(Util.coordByPieceIdx(puzzleInfo, 999)).toEqual({"x": 1, "y": 499})
   })
 })
