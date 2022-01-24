@@ -1,5 +1,7 @@
 #!/bin/sh
 
+cd "$RUN_DIR"
+
 npm ci
 
 if [ ! -e "$RUN_DIR/config.json" ]; then
