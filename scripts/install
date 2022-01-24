@@ -1,4 +1,6 @@
-#!/bin/sh
+#!/bin/sh -eu
+
+cd "$RUN_DIR"
 
 npm ci
 
