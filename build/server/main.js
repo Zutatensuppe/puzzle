@@ -208,6 +208,7 @@ function asQueryArgs(data) {
 var Util = {
     hash,
     slug,
+    pad,
     uniqId,
     encodeShape,
     decodeShape,
