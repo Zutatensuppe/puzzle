@@ -13,19 +13,21 @@ config = {
 }
 */
 
+type CallbackFunc = (...args: any[]) => void
+
 class EvtBus {
-  private _on: Record<string, Function[]>
+  private _on: Record<string, CallbackFunc[]>
   constructor() {
     this._on = {}
   }
 
-  on (type: string, callback: Function): void {
+  on (type: string, callback: CallbackFunc): void {
     this._on[type] = this._on[type] || []
     this._on[type].push(callback)
   }
 
   dispatch (type: string, ...args: Array<any>): void {
-    (this._on[type] || []).forEach((cb: Function) => {
+    (this._on[type] || []).forEach((cb: CallbackFunc) => {
       cb(...args)
     })
   }
@@ -43,7 +45,7 @@ class WebSocketServer {
     this.evt = new EvtBus()
   }
 
-  on (type: string, callback: Function): void {
+  on (type: string, callback: CallbackFunc): void {
     this.evt.on(type, callback)
   }
 

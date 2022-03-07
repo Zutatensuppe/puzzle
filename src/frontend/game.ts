@@ -34,10 +34,10 @@ declare global {
 
 const log = logger('game.ts')
 
-// @ts-ignore
+// @ts-ignore We can ignore typescript for for binary file includes
 const images = import.meta.globEager('./*.png')
 
-// @ts-ignore
+// @ts-ignore We can ignore typescript for for binary file includes
 const sounds = import.meta.globEager('./*.mp3')
 
 export const MODE_PLAY = 'play'
@@ -498,17 +498,6 @@ export async function main(
     }
   }
 
-  let gameLoopInstance: GameLoopInstance
-  const unload = () => {
-    clearIntervals()
-    if (gameLoopInstance) {
-      gameLoopInstance.stop()
-    }
-    if (evts) {
-      evts.unregisterEvents()
-    }
-  }
-
   if (MODE === MODE_PLAY) {
     intervals.push(setInterval(() => {
       updateStatus(TIME())
@@ -604,35 +593,39 @@ export async function main(
       const timePassedReal = realTs - REPLAY.lastRealTs
       const timePassedGame = timePassedReal * REPLAY.speeds[REPLAY.speedIdx]
       let maxGameTs = REPLAY.lastGameTs + timePassedGame
+
+      let continueLoop: boolean = true
       do {
         if (REPLAY.paused) {
-          break
-        }
-        const nextIdx = REPLAY.logPointer + 1
-        if (nextIdx >= REPLAY.log.length) {
-          break
-        }
+          continueLoop = false
+        } else {
+          const nextIdx = REPLAY.logPointer + 1
+          if (nextIdx >= REPLAY.log.length) {
+            continueLoop = false
+          } else {
 
-        const currLogEntry = REPLAY.log[REPLAY.logPointer]
-        const currTs: Timestamp = GAME_TS + currLogEntry[currLogEntry.length - 1]
+            const currLogEntry = REPLAY.log[REPLAY.logPointer]
+            const currTs: Timestamp = GAME_TS + currLogEntry[currLogEntry.length - 1]
 
-        const nextLogEntry = REPLAY.log[nextIdx]
-        const diffToNext = nextLogEntry[nextLogEntry.length - 1]
-        const nextTs: Timestamp = currTs + diffToNext
-        if (nextTs > maxGameTs) {
-          // next log entry is too far into the future
-          if (REPLAY.skipNonActionPhases && (maxGameTs + 500 * Time.MS < nextTs)) {
-            maxGameTs += diffToNext
+            const nextLogEntry = REPLAY.log[nextIdx]
+            const diffToNext = nextLogEntry[nextLogEntry.length - 1]
+            const nextTs: Timestamp = currTs + diffToNext
+            if (nextTs > maxGameTs) {
+              // next log entry is too far into the future
+              if (REPLAY.skipNonActionPhases && (maxGameTs + 500 * Time.MS < nextTs)) {
+                maxGameTs += diffToNext
+              }
+              continueLoop = false
+            } else {
+              GAME_TS = currTs
+              if (handleLogEntry(nextLogEntry, nextTs)) {
+                RERENDER = true
+              }
+              REPLAY.logPointer = nextIdx
+            }
           }
-          break
         }
-
-        GAME_TS = currTs
-        if (handleLogEntry(nextLogEntry, nextTs)) {
-          RERENDER = true
-        }
-        REPLAY.logPointer = nextIdx
-      } while (true)
+      } while (continueLoop)
       REPLAY.lastRealTs = realTs
       REPLAY.lastGameTs = maxGameTs
       updateStatus(TIME())
@@ -894,10 +887,17 @@ export async function main(
     RERENDER = false
   }
 
-  gameLoopInstance = run({
+  const gameLoopInstance: GameLoopInstance = run({
     update: onUpdate,
     render: onRender,
   })
+  const unload = () => {
+    clearIntervals()
+    gameLoopInstance.stop()
+    if (evts) {
+      evts.unregisterEvents()
+    }
+  }
 
   return {
     previewImageUrl,

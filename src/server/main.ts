@@ -59,7 +59,7 @@ const storage = multer.diskStorage({
 const upload = multer({storage}).single('file');
 
 app.get('/api/me', (req, res): void => {
-  let user = Users.getUser(db, req)
+  const user = Users.getUser(db, req)
   res.send({
     id: user ? user.id : null,
     created: user ? user.created : null,

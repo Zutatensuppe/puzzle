@@ -1,6 +1,5 @@
 import fs from 'fs'
 import bsqlite from 'better-sqlite3'
-import Integer from 'integer'
 import { logger } from '../common/Util'
 
 const log = logger('Db.ts')
@@ -187,7 +186,7 @@ class Db {
     return this.get(table, check)[idcol] // get id manually
   }
 
-  insert (table: string, data: Data): Integer.IntLike {
+  insert (table: string, data: Data): number | bigint {
     const keys = Object.keys(data)
     const values = keys.map(k => data[k])
     const sql = 'INSERT INTO '+ table
