@@ -256,8 +256,9 @@ class WebSocketServer {
                 return;
             }
             socket.on('message', (data) => {
-                log$5.log(`ws`, socket.protocol, data);
-                this.evt.dispatch('message', { socket, data });
+                const strData = String(data);
+                log$5.log(`ws`, socket.protocol, strData);
+                this.evt.dispatch('message', { socket, data: strData });
             });
             socket.on('close', () => {
                 this.evt.dispatch('close', { socket });
@@ -2405,8 +2406,6 @@ wss.on('message', async ({ socket, data }) => {
         const proto = socket.protocol.split('|');
         const clientId = proto[0];
         const gameId = proto[1];
-        // TODO: maybe handle different types of data
-        // (but atm only string comes through)
         const msg = JSON.parse(data);
         const msgType = msg[0];
         switch (msgType) {
