@@ -5,7 +5,7 @@ See a live version at [jigsaw.hyottoko.club].
 
 # Get Started
 
-Note: node `^14.17.0` and npm `^7.14.0` are required. You can try with
+Note: node `^17.4.0` and npm `^8.1.0` are required. You can try with
 lower versions, but it may not work.
 
 ## Quick start
