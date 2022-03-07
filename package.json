@@ -1,4 +1,22 @@
 {
+  "name": "puzzle",
+  "version": "1.0.0",
+  "description": "This is a multiplayer puzzle game running in the browser. See a live version at [jigsaw.hyottoko.club].",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Zutatensuppe/puzzle.git"
+  },
+  "scripts": {
+    "rollup": "rollup",
+    "vite": "vite",
+    "eslint": "eslint"
+  },
+  "author": "Zutatensuppe",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Zutatensuppe/puzzle/issues"
+  },
+  "homepage": "https://github.com/Zutatensuppe/puzzle#readme",
   "type": "module",
   "dependencies": {
     "better-sqlite3": "^7.5.0",
@@ -37,14 +55,5 @@
     "ts-node": "^10.7.0",
     "typescript": "^4.6.2",
     "vite": "^2.8.6"
-  },
-  "engines": {
-    "node": "^17.4.0",
-    "npm": "^8.1.0"
-  },
-  "scripts": {
-    "rollup": "rollup",
-    "vite": "vite",
-    "eslint": "eslint"
   }
 }
