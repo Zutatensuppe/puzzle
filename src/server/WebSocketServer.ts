@@ -59,8 +59,9 @@ class WebSocketServer {
         return
       }
       socket.on('message', (data: WebSocket.Data) => {
-        log.log(`ws`, socket.protocol, data)
-        this.evt.dispatch('message', {socket, data})
+        const strData = String(data)
+        log.log(`ws`, socket.protocol, strData)
+        this.evt.dispatch('message', {socket, data: strData})
       })
       socket.on('close', () => {
         this.evt.dispatch('close', {socket})

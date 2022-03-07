@@ -293,7 +293,7 @@ wss.on('close', async (
 })
 
 wss.on('message', async (
-  {socket, data} : { socket: WebSocket, data: WebSocket.Data }
+  {socket, data} : { socket: WebSocket, data: string }
 ): Promise<void> => {
   if (!data) {
     // no data (maybe ping :3)
@@ -303,9 +303,7 @@ wss.on('message', async (
     const proto = socket.protocol.split('|')
     const clientId = proto[0]
     const gameId = proto[1]
-    // TODO: maybe handle different types of data
-    // (but atm only string comes through)
-    const msg = JSON.parse(data as string)
+    const msg = JSON.parse(data)
     const msgType = msg[0]
     switch (msgType) {
       case Protocol.EV_CLIENT_INIT: {
