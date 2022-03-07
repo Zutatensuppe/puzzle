@@ -1,4 +1,4 @@
-import WebSocket from 'ws'
+import WebSocket, { WebSocketServer as WsServer } from 'ws'
 import { logger } from './../common/Util'
 
 const log = logger('WebSocketServer.js')
@@ -35,7 +35,7 @@ class EvtBus {
 
 class WebSocketServer {
   evt: EvtBus
-  private _websocketserver: WebSocket.Server|null
+  private _websocketserver: WsServer|null
   config: any
 
   constructor(config: any) {
@@ -50,7 +50,7 @@ class WebSocketServer {
   }
 
   listen (): void {
-    this._websocketserver = new WebSocket.Server(this.config)
+    this._websocketserver = new WsServer(this.config)
     this._websocketserver.on('connection', (socket: WebSocket, request: Request): void => {
       const pathname = new URL(this.config.connectstring).pathname
       if (request.url.indexOf(pathname) !== 0) {
