@@ -1,4 +1,4 @@
-import WebSocket from 'ws';
+import { WebSocketServer as WebSocketServer$1 } from 'ws';
 import express from 'express';
 import compression from 'compression';
 import multer from 'multer';
@@ -247,7 +247,7 @@ class WebSocketServer {
         this.evt.on(type, callback);
     }
     listen() {
-        this._websocketserver = new WebSocket.Server(this.config);
+        this._websocketserver = new WebSocketServer$1(this.config);
         this._websocketserver.on('connection', (socket, request) => {
             const pathname = new URL(this.config.connectstring).pathname;
             if (request.url.indexOf(pathname) !== 0) {
