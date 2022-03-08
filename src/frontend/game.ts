@@ -85,7 +85,9 @@ export async function main(
   }
 
   const click = sounds['./click.mp3'].default
+  const clickOther = sounds['./click2.mp3'].default
   const clickAudio = new Audio(click)
+  const clickOtherAudio = new Audio(clickOther)
 
   const cursorGrab = await Graphics.loadImageToBitmap(images['./grab.png'].default)
   const cursorHand = await Graphics.loadImageToBitmap(images['./hand.png'].default)
@@ -336,6 +338,12 @@ export async function main(
     clickAudio.play()
   }
 
+  const playOtherClick = () => {
+    const vol = playerSoundVolume()
+    clickOtherAudio.volume = vol / 100
+    clickOtherAudio.play()
+  }
+
   const player = {
     background: playerBgColor(),
     color: playerColor(),
@@ -543,7 +551,7 @@ export async function main(
         }
       }
       if (otherPlayerPiecesConnected && playerSoundEnabled() && otherPlayerClickSoundEnabled()) {
-        playClick()
+        playOtherClick()
       }
       if (rerender) {
         RERENDER = true
