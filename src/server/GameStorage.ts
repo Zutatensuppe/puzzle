@@ -24,10 +24,10 @@ function gameRowToGameObject(gameRow: any): Game | null {
     return null
   }
   if (typeof game.puzzle.data.started === 'undefined') {
-    game.puzzle.data.started = gameRow.created
+    game.puzzle.data.started = gameRow.created.getTime()
   }
   if (typeof game.puzzle.data.finished === 'undefined') {
-    game.puzzle.data.finished = gameRow.finished
+    game.puzzle.data.finished = gameRow.finished.getTime()
   }
   if (!Array.isArray(game.players)) {
     game.players = Object.values(game.players)
@@ -38,9 +38,9 @@ function gameRowToGameObject(gameRow: any): Game | null {
   return gameObject
 }
 
-function loadGame(db: Db, gameId: string): Game | null {
+async function loadGame(db: Db, gameId: string): Promise<Game | null> {
   log.info(`[INFO] loading game: ${gameId}`);
-  const gameRow = db.get('games', {id: gameId})
+  const gameRow = await db.get('games', {id: gameId})
   if (!gameRow) {
     log.info(`[INFO] game not found: ${gameId}`);
     return null
@@ -55,8 +55,8 @@ function loadGame(db: Db, gameId: string): Game | null {
   return gameObject
 }
 
-function getAllPublicGames(db: Db): Game[] {
-  const gameRows = db.getMany('games', { private: 0 })
+async function getAllPublicGames(db: Db): Promise<Game[]> {
+  const gameRows = await db.getMany('games', { private: 0 })
   const games: Game[] = []
   for (const gameRow of gameRows) {
     const gameObject = gameRowToGameObject(gameRow)
@@ -69,8 +69,8 @@ function getAllPublicGames(db: Db): Game[] {
   return games
 }
 
-function exists(db: Db, gameId: string): boolean {
-  const gameRow = db.get('games', {id: gameId})
+async function exists(db: Db, gameId: string): Promise<boolean> {
+  const gameRow = await db.get('games', {id: gameId})
   return !!gameRow
 }
 
@@ -78,17 +78,17 @@ function dirtyGameIds(): string[] {
   return Object.keys(dirtyGames)
 }
 
-function persistGame(db: Db, game: Game): void {
+async function persistGame(db: Db, game: Game): Promise<void> {
   setClean(game.id)
 
-  db.upsert('games', {
+  await db.upsert('games', {
     id: game.id,
 
     creator_user_id: game.creatorUserId,
     image_id: game.puzzle.info.image?.id,
 
-    created: game.puzzle.data.started,
-    finished: game.puzzle.data.finished,
+    created: new Date(game.puzzle.data.started),
+    finished: game.puzzle.data.finished ? new Date(game.puzzle.data.finished) : null,
 
     data: gameToStoreData(game),
 

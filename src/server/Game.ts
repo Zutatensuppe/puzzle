@@ -49,7 +49,7 @@ async function createNewGame(
   let gameId;
   do {
     gameId = Util.uniqId()
-  } while (GameStorage.exists(db, gameId))
+  } while (await GameStorage.exists(db, gameId))
 
   const gameObject = await createGameObject(
     gameId,

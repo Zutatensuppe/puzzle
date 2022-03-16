@@ -9,12 +9,12 @@ const log = logger('fix_tiles.js')
 const db = new Db(DB_FILE, DB_PATCHES_DIR)
 db.patch(true)
 
-function fix_tiles(gameId: string) {
-  const gameObject = GameStorage.loadGame(db, gameId)
+async function fix_tiles(gameId: string) {
+  const gameObject = await GameStorage.loadGame(db, gameId)
   GameCommon.setGame(gameObject.id, gameObject)
   let changed = false
   const tiles = GameCommon.getPiecesSortedByZIndex(gameId)
-  for (let tile of tiles) {
+  for (const tile of tiles) {
     if (tile.owner === -1) {
       const p = GameCommon.getFinalPiecePos(gameId, tile.idx)
       if (p.x === tile.pos.x && p.y === tile.pos.y) {
@@ -33,7 +33,7 @@ function fix_tiles(gameId: string) {
     }
   }
   if (changed) {
-    GameStorage.persistGame(db, gameId)
+    await GameStorage.persistGame(db, GameCommon.get(gameId))
   }
 }
 

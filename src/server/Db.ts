@@ -1,5 +1,7 @@
 import fs from 'fs'
-import bsqlite from 'better-sqlite3'
+import * as pg from 'pg'
+// @ts-ignore
+const { Client } = pg.default
 import { logger } from '../common/Util'
 
 const log = logger('Db.ts')
@@ -21,30 +23,31 @@ export type OrderBy = Array<Record<string, 1|-1>>
 interface Where {
   sql: string
   values: Array<any>
+  $i: number
 }
 
 class Db {
-  file: string
   patchesDir: string
-  dbh: bsqlite.Database
+  dbh: pg.Client
 
-  constructor(file: string, patchesDir: string) {
-    this.file = file
+  constructor(connectStr: string, patchesDir: string) {
     this.patchesDir = patchesDir
-    this.dbh = bsqlite(this.file)
+    this.dbh = new Client(connectStr)
   }
 
-  close(): void {
-    this.dbh.close()
+  async connect(): Promise<void> {
+    await this.dbh.connect()
   }
 
-  patch (verbose: boolean =true): void {
-    if (!this.get('sqlite_master', {type: 'table', name: 'db_patches'})) {
-      this.run('CREATE TABLE db_patches ( id TEXT PRIMARY KEY);', [])
-    }
+  async close(): Promise<void> {
+    await this.dbh.end()
+  }
+
+  async patch (verbose: boolean =true): Promise<void> {
+    await this.run('CREATE TABLE IF NOT EXISTS db_patches ( id TEXT PRIMARY KEY);', [])
 
     const files = fs.readdirSync(this.patchesDir)
-    const patches = (this.getMany('db_patches')).map(row => row.id)
+    const patches = (await this.getMany('db_patches')).map(row => row.id)
 
     for (const f of files) {
       if (patches.includes(f)) {
@@ -57,16 +60,17 @@ class Db {
 
       const all = contents.split(';').map(s => s.trim()).filter(s => !!s)
       try {
-        this.dbh.transaction((all) => {
+        try {
+          await this.run('BEGIN')
           for (const q of all) {
-            if (verbose) {
-              log.info(`Running: ${q}`)
-            }
-            this.run(q)
+            await this.run(q)
           }
-          this.insert('db_patches', {id: f})
-        })(all)
-
+          await this.run('COMMIT')
+        } catch (e) {
+          await this.run('ROLLBACK')
+          throw e
+        }
+        await this.insert('db_patches', {id: f})
         log.info(`✓ applied db patch: ${f}`)
       } catch (e) {
         log.error(`✖ unable to apply patch: ${f} ${e}`)
@@ -75,7 +79,7 @@ class Db {
     }
   }
 
-  _buildWhere (where: WhereRaw): Where {
+  _buildWhere (where: WhereRaw, $i: number = 1): Where {
     const wheres = []
     const values = []
     for (const k of Object.keys(where)) {
@@ -88,7 +92,7 @@ class Db {
         let prop = '$nin'
         if (where[k][prop]) {
           if (where[k][prop].length > 0) {
-            wheres.push(k + ' NOT IN (' + where[k][prop].map(() => '?') + ')')
+            wheres.push(k + ' NOT IN (' + where[k][prop].map(() => `$${$i++}`) + ')')
             values.push(...where[k][prop])
           }
           continue
@@ -96,7 +100,7 @@ class Db {
         prop = '$in'
         if (where[k][prop]) {
           if (where[k][prop].length > 0) {
-            wheres.push(k + ' IN (' + where[k][prop].map(() => '?') + ')')
+            wheres.push(k + ' IN (' + where[k][prop].map(() => `$${$i++}`) + ')')
             values.push(...where[k][prop])
           }
           continue
@@ -106,13 +110,14 @@ class Db {
         throw new Error('not implemented: ' + JSON.stringify(where[k]))
       }
 
-      wheres.push(k + ' = ?')
+      wheres.push(k + ` = $${$i++}`)
       values.push(where[k])
     }
 
     return {
       sql: wheres.length > 0 ? ' WHERE ' + wheres.join(' AND ') : '',
       values,
+      $i,
     }
   }
 
@@ -120,92 +125,120 @@ class Db {
     const sorts = []
     for (const s of orderBy) {
       const k = Object.keys(s)[0]
-      sorts.push(k + ' COLLATE NOCASE ' + (s[k] > 0 ? 'ASC' : 'DESC'))
+      sorts.push(k + ' ' + (s[k] > 0 ? 'ASC' : 'DESC'))
     }
     return sorts.length > 0 ? ' ORDER BY ' + sorts.join(', ') : ''
   }
 
-  _get (query: string, params: Params = []): any {
-    return this.dbh.prepare(query).get(...params)
+  async _get (query: string, params: Params = []): Promise<any> {
+    try {
+      return (await this.dbh.query(query, params)).rows[0] || null
+    } catch (e) {
+      log.info('_get', query, params)
+      console.error(e)
+      throw e
+    }
   }
 
-  run (query: string, params: Params = []): bsqlite.RunResult {
-    return this.dbh.prepare(query).run(...params)
+  async run (query: string, params: Params = []): Promise<pg.QueryResult> {
+    try {
+      return await this.dbh.query(query, params)
+    } catch (e) {
+      log.info('run', query, params)
+      console.error(e)
+      throw e
+    }
   }
 
-  _getMany (query: string, params: Params = []): Array<any> {
-    return this.dbh.prepare(query).all(...params)
+  async _getMany (query: string, params: Params = []): Promise<any[]> {
+    try {
+      return (await this.dbh.query(query, params)).rows || []
+    } catch (e) {
+      log.info('_getMany', query, params)
+      console.error(e)
+      throw e
+    }
   }
 
-  get (
+  async get (
     table: string,
     whereRaw: WhereRaw = {},
     orderBy: OrderBy = []
-  ): any {
+  ): Promise<any> {
     const where = this._buildWhere(whereRaw)
     const orderBySql = this._buildOrderBy(orderBy)
     const sql = 'SELECT * FROM ' + table + where.sql + orderBySql
-    return this._get(sql, where.values)
+    return await this._get(sql, where.values)
   }
 
-  getMany (
+  async getMany (
     table: string,
     whereRaw: WhereRaw = {},
     orderBy: OrderBy = []
-  ): Array<any> {
+  ): Promise<any[]> {
     const where = this._buildWhere(whereRaw)
     const orderBySql = this._buildOrderBy(orderBy)
     const sql = 'SELECT * FROM ' + table + where.sql + orderBySql
-    return this._getMany(sql, where.values)
+    return await this._getMany(sql, where.values)
   }
 
-  delete (table: string, whereRaw: WhereRaw = {}): bsqlite.RunResult {
+  async delete (table: string, whereRaw: WhereRaw = {}): Promise<pg.QueryResult> {
     const where = this._buildWhere(whereRaw)
     const sql = 'DELETE FROM ' + table + where.sql
-    return this.run(sql, where.values)
+    return await this.run(sql, where.values)
   }
 
-  exists (table: string, whereRaw: WhereRaw): boolean {
-    return !!this.get(table, whereRaw)
+  async exists (table: string, whereRaw: WhereRaw): Promise<boolean> {
+    return !!await this.get(table, whereRaw)
   }
 
-  upsert (
+  async upsert (
     table: string,
     data: Data,
     check: WhereRaw,
     idcol: string|null = null
-  ): any {
-    if (!this.exists(table, check)) {
-      return this.insert(table, data)
+  ): Promise<any> {
+    if (!await this.exists(table, check)) {
+      return await this.insert(table, data, idcol)
     }
-    this.update(table, data, check)
+    await this.update(table, data, check)
     if (idcol === null) {
       return 0 // dont care about id
     }
 
-    return this.get(table, check)[idcol] // get id manually
+    return (await this.get(table, check))[idcol] // get id manually
   }
 
-  insert (table: string, data: Data): number | bigint {
+  async insert (table: string, data: Data, idcol: string|null = null): Promise<number | bigint> {
     const keys = Object.keys(data)
     const values = keys.map(k => data[k])
-    const sql = 'INSERT INTO '+ table
+
+    let $i = 1
+    let sql = 'INSERT INTO '+ table
       + ' (' + keys.join(',') + ')'
-      + ' VALUES (' + keys.map(() => '?').join(',') + ')'
-    return this.run(sql, values).lastInsertRowid
+      + ' VALUES (' + keys.map(() => `$${$i++}`).join(',') + ')'
+    if (idcol) {
+      sql += ` RETURNING ${idcol}`
+      return (await this.run(sql, values)).rows[0][idcol]
+    }
+    await this.run(sql, values)
+    return 0
   }
 
-  update (table: string, data: Data, whereRaw: WhereRaw = {}): void {
+  async update (table: string, data: Data, whereRaw: WhereRaw = {}): Promise<void> {
     const keys = Object.keys(data)
     if (keys.length === 0) {
       return
     }
+
+    let $i = 1
+
     const values = keys.map(k => data[k])
-    const setSql = ' SET ' + keys.join(' = ?,') + ' = ?'
-    const where = this._buildWhere(whereRaw)
+    const setSql = ' SET ' + keys.map((k) => `${k} = $${$i++}`).join(',')
+    const where = this._buildWhere(whereRaw, $i)
 
     const sql = 'UPDATE ' + table + setSql + where.sql
-    this.run(sql, [...values, ...where.values])
+    await this.run(sql, [...values, ...where.values])
   }
 }
 

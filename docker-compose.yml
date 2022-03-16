@@ -1,0 +1,16 @@
+version: '3'
+
+services:
+  postgres:
+    image: 'postgres:14.0'
+    ports:
+      - "${POSTGRES_PORT:?}:5432"
+    environment:
+      POSTGRES_PASSWORD: hyottoko
+      POSTGRES_USER: hyottoko
+      POSTGRES_DB: hyottoko
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    restart: unless-stopped
+volumes:
+  pgdata:
