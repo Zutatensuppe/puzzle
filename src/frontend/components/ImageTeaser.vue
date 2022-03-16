@@ -3,7 +3,9 @@
     class="imageteaser"
     :style="style"
     @click="onClick">
-    <div class="btn edit" v-if="canEdit" @click.stop="onEditClick">✏️</div>
+    <div class="btn edit" v-if="canEdit" @click.stop="onEditClick">
+      <i class="icon icon-edit" />
+    </div>
   </div>
 </template>
 <script lang="ts">

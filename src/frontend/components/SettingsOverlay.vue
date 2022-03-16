@@ -25,7 +25,7 @@
         <tr>
           <td><label>Sounds Volume: </label></td>
           <td class="sound-volume">
-            <span @click="decreaseVolume">🔉</span>
+            <span @click="decreaseVolume"><i class="icon icon-volume-down" /></span>
             <input
               :disabled="!soundsEnabled"
               type="range"
@@ -34,7 +34,7 @@
               :value="soundsVolume"
               @change="updateVolume"
               />
-            <span @click="increaseVolume">🔊</span>
+            <span @click="increaseVolume"><i class="icon icon-volume-up" /></span>
           </td>
         </tr>
         <tr>

@@ -22,7 +22,7 @@
 
     <overlay v-show="cuttingPuzzle">
       <template v-slot:default>
-        <div>⏳ Cutting puzzle, please wait... ⏳</div>
+        <div><i class="icon icon-hourglass" /> Cutting puzzle, please wait... <i class="icon icon-hourglass" /></div>
       </template>
     </overlay>
 
@@ -34,17 +34,17 @@
     <div class="menu-left">
       <puzzle-status :status="status" />
       <div class="switch-game-replay" v-if="g.game && g.game.hasReplay">
-        <router-link :to="{ name: 'replay', params: { id: g.game.id } }">↪️ Watch replay</router-link>
+        <router-link :to="{ name: 'replay', params: { id: g.game.id } }"><i class="icon icon-replay" /> Watch replay</router-link>
       </div>
     </div>
 
     <div class="menu">
       <div class="tabs">
-        <router-link class="opener" :to="{name: 'index'}" target="_blank">🧩 Puzzles</router-link>
-        <div class="opener" @click="toggle('preview', false)">🖼️ Preview</div>
-        <div class="opener" @click="toggle('settings', true)">🛠️ Settings</div>
-        <div class="opener" @click="toggle('info', true)">ℹ️ Info</div>
-        <div class="opener" @click="toggle('help', true)">⌨️ Hotkeys</div>
+        <router-link class="opener" :to="{name: 'index'}" target="_blank"><i class="icon icon-puzzle-piece" /> Puzzles</router-link>
+        <div class="opener" @click="toggle('preview', false)"><i class="icon icon-preview" /> Preview</div>
+        <div class="opener" @click="toggle('settings', true)"><i class="icon icon-settings" /> Settings</div>
+        <div class="opener" @click="toggle('info', true)"><i class="icon icon-info" /> Info</div>
+        <div class="opener" @click="toggle('help', true)"><i class="icon icon-hotkey" /> Hotkeys</div>
       </div>
     </div>
 

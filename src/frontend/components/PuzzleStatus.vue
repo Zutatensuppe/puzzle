@@ -1,10 +1,12 @@
 <template>
   <div class="puzzle-status">
     <div>
-      🧩 {{status.piecesDone}}/{{status.piecesTotal}}
+      <i class="icon icon-puzzle-piece" /> {{status.piecesDone}}/{{status.piecesTotal}}
     </div>
     <div>
-      {{icon}} {{durationStr}}
+      <i class="icon icon-clock" v-if="!this.status.finished" />
+      <i class="icon icon-flag" v-else />
+      {{durationStr}}
     </div>
   </div>
 </template>
@@ -21,9 +23,6 @@ export default defineComponent({
     },
   },
   computed: {
-    icon (): string {
-      return this.status.finished ? '🏁' : '⏳'
-    },
     durationStr (): string {
       return Time.durationStr(this.status.duration)
     },

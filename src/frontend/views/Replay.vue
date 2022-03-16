@@ -22,7 +22,7 @@
 
     <div class="overlay" v-if="cuttingPuzzle">
       <div class="overlay-content">
-        <div>⏳ Cutting puzzle, please wait... ⏳</div>
+        <div><i class="icon icon-hourglass" /> Cutting puzzle, please wait... <i class="icon icon-hourglass" /></div>
       </div>
     </div>
 
@@ -41,11 +41,11 @@
 
     <div class="menu">
       <div class="tabs">
-        <router-link class="opener" :to="{name: 'index'}" target="_blank">🧩 Puzzles</router-link>
-        <div class="opener" @click="toggle('preview', false)">🖼️ Preview</div>
-        <div class="opener" @click="toggle('settings', true)">🛠️ Settings</div>
-        <div class="opener" @click="toggle('info', true)">ℹ️ Info</div>
-        <div class="opener" @click="toggle('help', true)">⌨️ Hotkeys</div>
+        <router-link class="opener" :to="{name: 'index'}" target="_blank"><i class="icon icon-puzzle-piece" /> Puzzles</router-link>
+        <div class="opener" @click="toggle('preview', false)"><i class="icon icon-preview" /> Preview</div>
+        <div class="opener" @click="toggle('settings', true)"><i class="icon icon-settings" /> Settings</div>
+        <div class="opener" @click="toggle('info', true)"><i class="icon icon-info" /> Info</div>
+        <div class="opener" @click="toggle('help', true)"><i class="icon icon-hotkey" /> Hotkeys</div>
       </div>
     </div>
 
