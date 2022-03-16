@@ -9,7 +9,7 @@ import sizeOf from 'image-size';
 import exif from 'exif';
 import sharp from 'sharp';
 import v8 from 'v8';
-import bsqlite from 'better-sqlite3';
+import * as pg from 'pg';
 
 class Rng {
     constructor(seed) {
@@ -222,7 +222,7 @@ var Util = {
     asQueryArgs,
 };
 
-const log$5 = logger('WebSocketServer.js');
+const log$4 = logger('WebSocketServer.js');
 class EvtBus {
     constructor() {
         this._on = {};
@@ -251,13 +251,13 @@ class WebSocketServer {
         this._websocketserver.on('connection', (socket, request) => {
             const pathname = new URL(this.config.connectstring).pathname;
             if (request.url.indexOf(pathname) !== 0) {
-                log$5.log('bad request url: ', request.url);
+                log$4.log('bad request url: ', request.url);
                 socket.close();
                 return;
             }
             socket.on('message', (data) => {
                 const strData = String(data);
-                log$5.log(`ws`, socket.protocol, strData);
+                log$4.log(`ws`, socket.protocol, strData);
                 this.evt.dispatch('message', { socket, data: strData });
             });
             socket.on('close', () => {
@@ -1302,7 +1302,6 @@ const UPLOAD_DIR = `${BASE_DIR}/data/uploads`;
 const UPLOAD_URL = `/uploads`;
 const PUBLIC_DIR = `${BASE_DIR}/build/public/`;
 const DB_PATCHES_DIR = `${BASE_DIR}/src/dbpatches`;
-const DB_FILE = `${BASE_DIR}/data/db.sqlite`;
 
 const LINES_PER_LOG_FILE = 10000;
 const POST_GAME_LOG_DURATION = 5 * Time.MIN;
@@ -1391,7 +1390,7 @@ var GameLog = {
     idxname,
 };
 
-const log$4 = logger('Images.ts');
+const log$3 = logger('Images.ts');
 const resizeImage = async (filename) => {
     if (!filename.toLowerCase().match(/\.(jpe?g|webp|png)$/)) {
         return;
@@ -1416,7 +1415,7 @@ const resizeImage = async (filename) => {
         [375, 210],
     ];
     for (const [w, h] of sizes) {
-        log$4.info(w, h, imagePath);
+        log$3.info(w, h, imagePath);
         await sharpImg
             .resize(w, h, { fit: 'contain' })
             .toFile(`${imageOutPath}-${w}x${h}.webp`);
@@ -1434,46 +1433,46 @@ async function getExifOrientation(imagePath) {
         });
     });
 }
-const getAllTags = (db) => {
+const getAllTags = async (db) => {
     const query = `
 select c.id, c.slug, c.title, count(*) as total from categories c
 inner join image_x_category ixc on c.id = ixc.category_id
 inner join images i on i.id = ixc.image_id
 group by c.id order by total desc;`;
-    return db._getMany(query).map(row => ({
+    return (await db._getMany(query)).map(row => ({
         id: parseInt(row.id, 10) || 0,
         slug: row.slug,
         title: row.title,
         total: parseInt(row.total, 10) || 0,
     }));
 };
-const getTags = (db, imageId) => {
+const getTags = async (db, imageId) => {
     const query = `
 select * from categories c
 inner join image_x_category ixc on c.id = ixc.category_id
-where ixc.image_id = ?`;
-    return db._getMany(query, [imageId]).map(row => ({
+where ixc.image_id = $1`;
+    return (await db._getMany(query, [imageId])).map(row => ({
         id: parseInt(row.id, 10) || 0,
         slug: row.slug,
         title: row.title,
         total: 0,
     }));
 };
-const imageFromDb = (db, imageId) => {
-    const i = db.get('images', { id: imageId });
+const imageFromDb = async (db, imageId) => {
+    const i = await db.get('images', { id: imageId });
     return {
         id: i.id,
         uploaderUserId: i.uploader_user_id,
         filename: i.filename,
         url: `${UPLOAD_URL}/${encodeURIComponent(i.filename)}`,
         title: i.title,
-        tags: getTags(db, i.id),
+        tags: await getTags(db, i.id),
         created: i.created * 1000,
         width: i.width,
         height: i.height,
     };
 };
-const allImagesFromDb = (db, tagSlugs, orderBy, isPrivate) => {
+const allImagesFromDb = async (db, tagSlugs, orderBy, isPrivate) => {
     const orderByMap = {
         alpha_asc: [{ filename: 1 }],
         alpha_desc: [{ filename: -1 }],
@@ -1484,35 +1483,39 @@ const allImagesFromDb = (db, tagSlugs, orderBy, isPrivate) => {
     const wheresRaw = {};
     wheresRaw['private'] = isPrivate ? 1 : 0;
     if (tagSlugs.length > 0) {
-        const c = db.getMany('categories', { slug: { '$in': tagSlugs } });
+        const c = await db.getMany('categories', { slug: { '$in': tagSlugs } });
         if (!c) {
             return [];
         }
         const where = db._buildWhere({
             'category_id': { '$in': c.map(x => x.id) }
         });
-        const ids = db._getMany(`
+        const ids = (await db._getMany(`
 select i.id from image_x_category ixc
 inner join images i on i.id = ixc.image_id ${where.sql};
-`, where.values).map(img => img.id);
+`, where.values)).map(img => img.id);
         if (ids.length === 0) {
             return [];
         }
         wheresRaw['id'] = { '$in': ids };
     }
-    const images = db.getMany('images', wheresRaw, orderByMap[orderBy]);
-    return images.map(i => ({
-        id: i.id,
-        uploaderUserId: i.uploader_user_id,
-        filename: i.filename,
-        url: `${UPLOAD_URL}/${encodeURIComponent(i.filename)}`,
-        title: i.title,
-        tags: getTags(db, i.id),
-        created: i.created * 1000,
-        width: i.width,
-        height: i.height,
-        private: !!i.private,
-    }));
+    const tmpImages = await db.getMany('images', wheresRaw, orderByMap[orderBy]);
+    const images = [];
+    for (const i of tmpImages) {
+        images.push({
+            id: i.id,
+            uploaderUserId: i.uploader_user_id,
+            filename: i.filename,
+            url: `${UPLOAD_URL}/${encodeURIComponent(i.filename)}`,
+            title: i.title,
+            tags: await getTags(db, i.id),
+            created: i.created * 1000,
+            width: i.width,
+            height: i.height,
+            private: !!i.private,
+        });
+    }
+    return images;
 };
 /**
  * @deprecated old function, now database is used
@@ -1572,18 +1575,18 @@ async function getDimensions(imagePath) {
         h: dimensions.height || 0,
     };
 }
-const setTags = (db, imageId, tags) => {
-    db.delete('image_x_category', { image_id: imageId });
-    tags.forEach((tag) => {
+const setTags = async (db, imageId, tags) => {
+    await db.delete('image_x_category', { image_id: imageId });
+    for (const tag of tags) {
         const slug = Util.slug(tag);
-        const id = db.upsert('categories', { slug, title: tag }, { slug }, 'id');
+        const id = await db.upsert('categories', { slug, title: tag }, { slug }, 'id');
         if (id) {
-            db.insert('image_x_category', {
+            await db.insert('image_x_category', {
                 image_id: imageId,
                 category_id: id,
             });
         }
-    });
+    }
 };
 var Images = {
     allImagesFromDisk,
@@ -1781,7 +1784,7 @@ const determinePuzzleInfo = (dim, targetTiles) => {
     };
 };
 
-const log$3 = logger('GameStorage.js');
+const log$2 = logger('GameStorage.js');
 const dirtyGames = {};
 function setDirty(gameId) {
     dirtyGames[gameId] = true;
@@ -1800,10 +1803,10 @@ function gameRowToGameObject(gameRow) {
         return null;
     }
     if (typeof game.puzzle.data.started === 'undefined') {
-        game.puzzle.data.started = gameRow.created;
+        game.puzzle.data.started = gameRow.created.getTime();
     }
     if (typeof game.puzzle.data.finished === 'undefined') {
-        game.puzzle.data.finished = gameRow.finished;
+        game.puzzle.data.finished = gameRow.finished.getTime();
     }
     if (!Array.isArray(game.players)) {
         game.players = Object.values(game.players);
@@ -1812,54 +1815,54 @@ function gameRowToGameObject(gameRow) {
     gameObject.hasReplay = GameLog.hasReplay(gameObject);
     return gameObject;
 }
-function loadGame(db, gameId) {
-    log$3.info(`[INFO] loading game: ${gameId}`);
-    const gameRow = db.get('games', { id: gameId });
+async function loadGame(db, gameId) {
+    log$2.info(`[INFO] loading game: ${gameId}`);
+    const gameRow = await db.get('games', { id: gameId });
     if (!gameRow) {
-        log$3.info(`[INFO] game not found: ${gameId}`);
+        log$2.info(`[INFO] game not found: ${gameId}`);
         return null;
     }
     const gameObject = gameRowToGameObject(gameRow);
     if (!gameObject) {
-        log$3.error(`[ERR] unable to turn game row into game object: ${gameRow.id}`);
+        log$2.error(`[ERR] unable to turn game row into game object: ${gameRow.id}`);
         return null;
     }
     return gameObject;
 }
-function getAllPublicGames(db) {
-    const gameRows = db.getMany('games', { private: 0 });
+async function getAllPublicGames(db) {
+    const gameRows = await db.getMany('games', { private: 0 });
     const games = [];
     for (const gameRow of gameRows) {
         const gameObject = gameRowToGameObject(gameRow);
         if (!gameObject) {
-            log$3.error(`[ERR] unable to turn game row into game object: ${gameRow.id}`);
+            log$2.error(`[ERR] unable to turn game row into game object: ${gameRow.id}`);
             continue;
         }
         games.push(gameObject);
     }
     return games;
 }
-function exists(db, gameId) {
-    const gameRow = db.get('games', { id: gameId });
+async function exists(db, gameId) {
+    const gameRow = await db.get('games', { id: gameId });
     return !!gameRow;
 }
 function dirtyGameIds() {
     return Object.keys(dirtyGames);
 }
-function persistGame$1(db, game) {
+async function persistGame(db, game) {
     setClean(game.id);
-    db.upsert('games', {
+    await db.upsert('games', {
         id: game.id,
         creator_user_id: game.creatorUserId,
         image_id: game.puzzle.info.image?.id,
-        created: game.puzzle.data.started,
-        finished: game.puzzle.data.finished,
+        created: new Date(game.puzzle.data.started),
+        finished: game.puzzle.data.finished ? new Date(game.puzzle.data.finished) : null,
         data: gameToStoreData(game),
         private: game.private ? 1 : 0,
     }, {
         id: game.id,
     });
-    log$3.info(`[INFO] persisted game ${game.id}`);
+    log$2.info(`[INFO] persisted game ${game.id}`);
 }
 function storeDataToGame(storeData, creatorUserId, isPrivate) {
     return {
@@ -1896,7 +1899,7 @@ function gameToStoreData(game) {
     });
 }
 var GameStorage = {
-    persistGame: persistGame$1,
+    persistGame,
     loadGame,
     getAllPublicGames,
     exists,
@@ -1925,7 +1928,7 @@ async function createNewGame(db, gameSettings, ts, creatorUserId) {
     let gameId;
     do {
         gameId = Util.uniqId();
-    } while (GameStorage.exists(db, gameId));
+    } while (await GameStorage.exists(db, gameId));
     const gameObject = await createGameObject(gameId, Protocol.GAME_VERSION, gameSettings.tiles, gameSettings.image, ts, gameSettings.scoreMode, gameSettings.shapeMode, gameSettings.snapMode, creatorUserId, true, // hasReplay
     gameSettings.private);
     GameLog.create(gameId, ts);
@@ -1963,7 +1966,7 @@ var Game = {
     handleInput,
 };
 
-const log$2 = logger('GameSocket.js');
+const log$1 = logger('GameSocket.js');
 // Map<gameId, Socket[]>
 const SOCKETS = {};
 function socketExists(gameId, socket) {
@@ -1977,8 +1980,8 @@ function removeSocket(gameId, socket) {
         return;
     }
     SOCKETS[gameId] = SOCKETS[gameId].filter((s) => s !== socket);
-    log$2.log('removed socket: ', gameId, socket.protocol);
-    log$2.log('socket count: ', Object.keys(SOCKETS[gameId]).length);
+    log$1.log('removed socket: ', gameId, socket.protocol);
+    log$1.log('socket count: ', Object.keys(SOCKETS[gameId]).length);
 }
 function addSocket(gameId, socket) {
     if (!(gameId in SOCKETS)) {
@@ -1986,8 +1989,8 @@ function addSocket(gameId, socket) {
     }
     if (!SOCKETS[gameId].includes(socket)) {
         SOCKETS[gameId].push(socket);
-        log$2.log('added socket: ', gameId, socket.protocol);
-        log$2.log('socket count: ', Object.keys(SOCKETS[gameId]).length);
+        log$1.log('added socket: ', gameId, socket.protocol);
+        log$1.log('socket count: ', Object.keys(SOCKETS[gameId]).length);
     }
 }
 function getSockets(gameId) {
@@ -2003,50 +2006,55 @@ var GameSockets = {
     getSockets,
 };
 
-const log$1 = logger('Db.ts');
+// @ts-ignore
+const { Client } = pg.default;
+const log = logger('Db.ts');
 class Db {
-    constructor(file, patchesDir) {
-        this.file = file;
+    constructor(connectStr, patchesDir) {
         this.patchesDir = patchesDir;
-        this.dbh = bsqlite(this.file);
+        this.dbh = new Client(connectStr);
     }
-    close() {
-        this.dbh.close();
+    async connect() {
+        await this.dbh.connect();
     }
-    patch(verbose = true) {
-        if (!this.get('sqlite_master', { type: 'table', name: 'db_patches' })) {
-            this.run('CREATE TABLE db_patches ( id TEXT PRIMARY KEY);', []);
-        }
+    async close() {
+        await this.dbh.end();
+    }
+    async patch(verbose = true) {
+        await this.run('CREATE TABLE IF NOT EXISTS db_patches ( id TEXT PRIMARY KEY);', []);
         const files = fs.readdirSync(this.patchesDir);
-        const patches = (this.getMany('db_patches')).map(row => row.id);
+        const patches = (await this.getMany('db_patches')).map(row => row.id);
         for (const f of files) {
             if (patches.includes(f)) {
                 if (verbose) {
-                    log$1.info(`➡ skipping already applied db patch: ${f}`);
+                    log.info(`➡ skipping already applied db patch: ${f}`);
                 }
                 continue;
             }
             const contents = fs.readFileSync(`${this.patchesDir}/${f}`, 'utf-8');
             const all = contents.split(';').map(s => s.trim()).filter(s => !!s);
             try {
-                this.dbh.transaction((all) => {
+                try {
+                    await this.run('BEGIN');
                     for (const q of all) {
-                        if (verbose) {
-                            log$1.info(`Running: ${q}`);
-                        }
-                        this.run(q);
+                        await this.run(q);
                     }
-                    this.insert('db_patches', { id: f });
-                })(all);
-                log$1.info(`✓ applied db patch: ${f}`);
+                    await this.run('COMMIT');
+                }
+                catch (e) {
+                    await this.run('ROLLBACK');
+                    throw e;
+                }
+                await this.insert('db_patches', { id: f });
+                log.info(`✓ applied db patch: ${f}`);
             }
             catch (e) {
-                log$1.error(`✖ unable to apply patch: ${f} ${e}`);
+                log.error(`✖ unable to apply patch: ${f} ${e}`);
                 return;
             }
         }
     }
-    _buildWhere(where) {
+    _buildWhere(where, $i = 1) {
         const wheres = [];
         const values = [];
         for (const k of Object.keys(where)) {
@@ -2058,7 +2066,7 @@ class Db {
                 let prop = '$nin';
                 if (where[k][prop]) {
                     if (where[k][prop].length > 0) {
-                        wheres.push(k + ' NOT IN (' + where[k][prop].map(() => '?') + ')');
+                        wheres.push(k + ' NOT IN (' + where[k][prop].map(() => `$${$i++}`) + ')');
                         values.push(...where[k][prop]);
                     }
                     continue;
@@ -2066,7 +2074,7 @@ class Db {
                 prop = '$in';
                 if (where[k][prop]) {
                     if (where[k][prop].length > 0) {
-                        wheres.push(k + ' IN (' + where[k][prop].map(() => '?') + ')');
+                        wheres.push(k + ' IN (' + where[k][prop].map(() => `$${$i++}`) + ')');
                         values.push(...where[k][prop]);
                     }
                     continue;
@@ -2074,99 +2082,128 @@ class Db {
                 // TODO: implement rest of mongo like query args ($eq, $lte, $in...)
                 throw new Error('not implemented: ' + JSON.stringify(where[k]));
             }
-            wheres.push(k + ' = ?');
+            wheres.push(k + ` = $${$i++}`);
             values.push(where[k]);
         }
         return {
             sql: wheres.length > 0 ? ' WHERE ' + wheres.join(' AND ') : '',
             values,
+            $i,
         };
     }
     _buildOrderBy(orderBy) {
         const sorts = [];
         for (const s of orderBy) {
             const k = Object.keys(s)[0];
-            sorts.push(k + ' COLLATE NOCASE ' + (s[k] > 0 ? 'ASC' : 'DESC'));
+            sorts.push(k + ' ' + (s[k] > 0 ? 'ASC' : 'DESC'));
         }
         return sorts.length > 0 ? ' ORDER BY ' + sorts.join(', ') : '';
     }
-    _get(query, params = []) {
-        return this.dbh.prepare(query).get(...params);
+    async _get(query, params = []) {
+        try {
+            return (await this.dbh.query(query, params)).rows[0] || null;
+        }
+        catch (e) {
+            log.info('_get', query, params);
+            console.error(e);
+            throw e;
+        }
     }
-    run(query, params = []) {
-        return this.dbh.prepare(query).run(...params);
+    async run(query, params = []) {
+        try {
+            return await this.dbh.query(query, params);
+        }
+        catch (e) {
+            log.info('run', query, params);
+            console.error(e);
+            throw e;
+        }
     }
-    _getMany(query, params = []) {
-        return this.dbh.prepare(query).all(...params);
+    async _getMany(query, params = []) {
+        try {
+            return (await this.dbh.query(query, params)).rows || [];
+        }
+        catch (e) {
+            log.info('_getMany', query, params);
+            console.error(e);
+            throw e;
+        }
     }
-    get(table, whereRaw = {}, orderBy = []) {
+    async get(table, whereRaw = {}, orderBy = []) {
         const where = this._buildWhere(whereRaw);
         const orderBySql = this._buildOrderBy(orderBy);
         const sql = 'SELECT * FROM ' + table + where.sql + orderBySql;
-        return this._get(sql, where.values);
+        return await this._get(sql, where.values);
     }
-    getMany(table, whereRaw = {}, orderBy = []) {
+    async getMany(table, whereRaw = {}, orderBy = []) {
         const where = this._buildWhere(whereRaw);
         const orderBySql = this._buildOrderBy(orderBy);
         const sql = 'SELECT * FROM ' + table + where.sql + orderBySql;
-        return this._getMany(sql, where.values);
+        return await this._getMany(sql, where.values);
     }
-    delete(table, whereRaw = {}) {
+    async delete(table, whereRaw = {}) {
         const where = this._buildWhere(whereRaw);
         const sql = 'DELETE FROM ' + table + where.sql;
-        return this.run(sql, where.values);
+        return await this.run(sql, where.values);
     }
-    exists(table, whereRaw) {
-        return !!this.get(table, whereRaw);
+    async exists(table, whereRaw) {
+        return !!await this.get(table, whereRaw);
     }
-    upsert(table, data, check, idcol = null) {
-        if (!this.exists(table, check)) {
-            return this.insert(table, data);
+    async upsert(table, data, check, idcol = null) {
+        if (!await this.exists(table, check)) {
+            return await this.insert(table, data, idcol);
         }
-        this.update(table, data, check);
+        await this.update(table, data, check);
         if (idcol === null) {
             return 0; // dont care about id
         }
-        return this.get(table, check)[idcol]; // get id manually
+        return (await this.get(table, check))[idcol]; // get id manually
     }
-    insert(table, data) {
+    async insert(table, data, idcol = null) {
         const keys = Object.keys(data);
         const values = keys.map(k => data[k]);
-        const sql = 'INSERT INTO ' + table
+        let $i = 1;
+        let sql = 'INSERT INTO ' + table
             + ' (' + keys.join(',') + ')'
-            + ' VALUES (' + keys.map(() => '?').join(',') + ')';
-        return this.run(sql, values).lastInsertRowid;
+            + ' VALUES (' + keys.map(() => `$${$i++}`).join(',') + ')';
+        if (idcol) {
+            sql += ` RETURNING ${idcol}`;
+            return (await this.run(sql, values)).rows[0][idcol];
+        }
+        await this.run(sql, values);
+        return 0;
     }
-    update(table, data, whereRaw = {}) {
+    async update(table, data, whereRaw = {}) {
         const keys = Object.keys(data);
         if (keys.length === 0) {
             return;
         }
+        let $i = 1;
         const values = keys.map(k => data[k]);
-        const setSql = ' SET ' + keys.join(' = ?,') + ' = ?';
-        const where = this._buildWhere(whereRaw);
+        const setSql = ' SET ' + keys.map((k) => `${k} = $${$i++}`).join(',');
+        const where = this._buildWhere(whereRaw, $i);
         const sql = 'UPDATE ' + table + setSql + where.sql;
-        this.run(sql, [...values, ...where.values]);
+        await this.run(sql, [...values, ...where.values]);
     }
 }
 
 const TABLE = 'users';
 const HEADER_CLIENT_ID = 'client-id';
 const HEADER_CLIENT_SECRET = 'client-secret';
-const getOrCreateUser = (db, req) => {
-    let user = getUser(db, req);
+const getOrCreateUser = async (db, req) => {
+    let user = await getUser(db, req);
     if (!user) {
-        db.insert(TABLE, {
+        await db.insert(TABLE, {
             'client_id': req.headers[HEADER_CLIENT_ID],
             'client_secret': req.headers[HEADER_CLIENT_SECRET],
-            'created': Time.timestamp(),
+            'created': new Date(),
         });
-        user = getUser(db, req);
+        user = await getUser(db, req);
     }
     return user;
 };
-const getUser = (db, req) => {
-    const user = db.get(TABLE, {
+const getUser = async (db, req) => {
+    const user = await db.get(TABLE, {
         'client_id': req.headers[HEADER_CLIENT_ID],
         'client_secret': req.headers[HEADER_CLIENT_SECRET],
     });
@@ -2180,329 +2217,338 @@ var Users = {
     getUser,
 };
 
-const db = new Db(DB_FILE, DB_PATCHES_DIR);
-db.patch();
-let configFile = '';
-let last = '';
-for (const val of process.argv) {
-    if (last === '-c') {
-        configFile = val;
+const run = async () => {
+    let configFile = '';
+    let last = '';
+    for (const val of process.argv) {
+        if (last === '-c') {
+            configFile = val;
+        }
+        last = val;
     }
-    last = val;
-}
-if (configFile === '') {
-    process.exit(2);
-}
-const config = JSON.parse(String(fs.readFileSync(configFile)));
-const log = logger('main.js');
-const port = config.http.port;
-const hostname = config.http.hostname;
-const app = express();
-app.use(compression());
-const storage = multer.diskStorage({
-    destination: UPLOAD_DIR,
-    filename: function (req, file, cb) {
-        cb(null, `${Util.uniqId()}-${file.originalname}`);
+    if (configFile === '') {
+        console.log('no config file given');
+        process.exit(2);
     }
-});
-const upload = multer({ storage }).single('file');
-app.get('/api/me', (req, res) => {
-    const user = Users.getUser(db, req);
-    res.send({
-        id: user ? user.id : null,
-        created: user ? user.created : null,
+    const config = JSON.parse(String(fs.readFileSync(configFile)));
+    const db = new Db(config.db.connectStr, DB_PATCHES_DIR);
+    await db.connect();
+    await db.patch();
+    const log = logger('main.js');
+    const port = config.http.port;
+    const hostname = config.http.hostname;
+    const app = express();
+    app.use(compression());
+    const storage = multer.diskStorage({
+        destination: UPLOAD_DIR,
+        filename: function (req, file, cb) {
+            cb(null, `${Util.uniqId()}-${file.originalname}`);
+        }
     });
-});
-app.get('/api/conf', (req, res) => {
-    res.send({
-        WS_ADDRESS: config.ws.connectstring,
+    const upload = multer({ storage }).single('file');
+    app.get('/api/me', async (req, res) => {
+        const user = await Users.getUser(db, req);
+        res.send({
+            id: user ? user.id : null,
+            created: user ? user.created : null,
+        });
     });
-});
-app.get('/api/replay-data', async (req, res) => {
-    const q = req.query;
-    const offset = parseInt(q.offset, 10) || 0;
-    if (offset < 0) {
-        res.status(400).send({ reason: 'bad offset' });
-        return;
-    }
-    const size = parseInt(q.size, 10) || 10000;
-    if (size < 0 || size > 10000) {
-        res.status(400).send({ reason: 'bad size' });
-        return;
-    }
-    const gameId = q.gameId || '';
-    if (!GameLog.exists(q.gameId)) {
-        res.status(404).send({ reason: 'no log found' });
-        return;
-    }
-    const log = GameLog.get(gameId, offset);
-    let game = null;
-    if (offset === 0) {
-        // also need the game
-        game = await Game.createGameObject(gameId, log[0][1], // gameVersion
-        log[0][2], // targetTiles
-        log[0][3], // must be ImageInfo
-        log[0][4], // ts (of game creation)
-        log[0][5], // scoreMode
-        log[0][6], // shapeMode
-        log[0][7], // snapMode
-        log[0][8], // creatorUserId
-        true, // hasReplay
-        !!log[0][9]);
-    }
-    res.send({ log, game: game ? Util.encodeGame(game) : null });
-});
-app.get('/api/newgame-data', (req, res) => {
-    const q = req.query;
-    const tagSlugs = q.tags ? q.tags.split(',') : [];
-    res.send({
-        images: Images.allImagesFromDb(db, tagSlugs, q.sort, false),
-        tags: Images.getAllTags(db),
+    app.get('/api/conf', (req, res) => {
+        res.send({
+            WS_ADDRESS: config.ws.connectstring,
+        });
     });
-});
-app.get('/api/index-data', (req, res) => {
-    const ts = Time.timestamp();
-    const games = [
-        ...GameStorage.getAllPublicGames(db).sort((a, b) => {
-            const finished = GameCommon.Game_isFinished(a);
-            // when both have same finished state, sort by started
-            if (finished === GameCommon.Game_isFinished(b)) {
-                if (finished) {
-                    return b.puzzle.data.finished - a.puzzle.data.finished;
+    app.get('/api/replay-data', async (req, res) => {
+        const q = req.query;
+        const offset = parseInt(q.offset, 10) || 0;
+        if (offset < 0) {
+            res.status(400).send({ reason: 'bad offset' });
+            return;
+        }
+        const size = parseInt(q.size, 10) || 10000;
+        if (size < 0 || size > 10000) {
+            res.status(400).send({ reason: 'bad size' });
+            return;
+        }
+        const gameId = q.gameId || '';
+        if (!GameLog.exists(q.gameId)) {
+            res.status(404).send({ reason: 'no log found' });
+            return;
+        }
+        const log = GameLog.get(gameId, offset);
+        let game = null;
+        if (offset === 0) {
+            // also need the game
+            game = await Game.createGameObject(gameId, log[0][1], // gameVersion
+            log[0][2], // targetTiles
+            log[0][3], // must be ImageInfo
+            log[0][4], // ts (of game creation)
+            log[0][5], // scoreMode
+            log[0][6], // shapeMode
+            log[0][7], // snapMode
+            log[0][8], // creatorUserId
+            true, // hasReplay
+            !!log[0][9]);
+        }
+        res.send({ log, game: game ? Util.encodeGame(game) : null });
+    });
+    app.get('/api/newgame-data', async (req, res) => {
+        const q = req.query;
+        const tagSlugs = q.tags ? q.tags.split(',') : [];
+        res.send({
+            images: await Images.allImagesFromDb(db, tagSlugs, q.sort, false),
+            tags: await Images.getAllTags(db),
+        });
+    });
+    app.get('/api/index-data', async (req, res) => {
+        const ts = Time.timestamp();
+        const rows = await GameStorage.getAllPublicGames(db);
+        const games = [
+            ...rows.sort((a, b) => {
+                const finished = GameCommon.Game_isFinished(a);
+                // when both have same finished state, sort by started
+                if (finished === GameCommon.Game_isFinished(b)) {
+                    if (finished) {
+                        return b.puzzle.data.finished - a.puzzle.data.finished;
+                    }
+                    return b.puzzle.data.started - a.puzzle.data.started;
                 }
-                return b.puzzle.data.started - a.puzzle.data.started;
+                // otherwise, sort: unfinished, finished
+                return finished ? 1 : -1;
+            }).map((game) => ({
+                id: game.id,
+                hasReplay: GameLog.hasReplay(game),
+                started: GameCommon.Game_getStartTs(game),
+                finished: GameCommon.Game_getFinishTs(game),
+                tilesFinished: GameCommon.Game_getFinishedPiecesCount(game),
+                tilesTotal: GameCommon.Game_getPieceCount(game),
+                players: GameCommon.Game_getActivePlayers(game, ts).length,
+                imageUrl: GameCommon.Game_getImageUrl(game),
+            })),
+        ];
+        res.send({
+            gamesRunning: games.filter(g => !g.finished),
+            gamesFinished: games.filter(g => !!g.finished),
+        });
+    });
+    app.post('/api/save-image', express.json(), async (req, res) => {
+        const user = await Users.getUser(db, req);
+        if (!user || !user.id) {
+            res.status(403).send({ ok: false, error: 'forbidden' });
+            return;
+        }
+        const data = req.body;
+        const image = await db.get('images', { id: data.id });
+        if (parseInt(image.uploader_user_id, 10) !== user.id) {
+            res.status(403).send({ ok: false, error: 'forbidden' });
+            return;
+        }
+        await db.update('images', {
+            title: data.title,
+        }, {
+            id: data.id,
+        });
+        await Images.setTags(db, data.id, data.tags || []);
+        res.send({ ok: true });
+    });
+    app.post('/api/upload', (req, res) => {
+        upload(req, res, async (err) => {
+            if (err) {
+                log.log(err);
+                res.status(400).send("Something went wrong!");
+                return;
             }
-            // otherwise, sort: unfinished, finished
-            return finished ? 1 : -1;
-        }).map((game) => ({
-            id: game.id,
-            hasReplay: GameLog.hasReplay(game),
-            started: GameCommon.Game_getStartTs(game),
-            finished: GameCommon.Game_getFinishTs(game),
-            tilesFinished: GameCommon.Game_getFinishedPiecesCount(game),
-            tilesTotal: GameCommon.Game_getPieceCount(game),
-            players: GameCommon.Game_getActivePlayers(game, ts).length,
-            imageUrl: GameCommon.Game_getImageUrl(game),
-        })),
-    ];
-    res.send({
-        gamesRunning: games.filter(g => !g.finished),
-        gamesFinished: games.filter(g => !!g.finished),
+            try {
+                await Images.resizeImage(req.file.filename);
+            }
+            catch (err) {
+                log.log(err);
+                res.status(400).send("Something went wrong!");
+                return;
+            }
+            const user = await Users.getOrCreateUser(db, req);
+            const dim = await Images.getDimensions(`${UPLOAD_DIR}/${req.file.filename}`);
+            // post form, so booleans are submitted as 'true' | 'false'
+            const isPrivate = req.body.private === 'false' ? 0 : 1;
+            const imageId = await db.insert('images', {
+                uploader_user_id: user.id,
+                filename: req.file.filename,
+                filename_original: req.file.originalname,
+                title: req.body.title || '',
+                created: new Date(),
+                width: dim.w,
+                height: dim.h,
+                private: isPrivate,
+            }, 'id');
+            console.log(imageId);
+            if (req.body.tags) {
+                const tags = req.body.tags.split(',').filter((tag) => !!tag);
+                await Images.setTags(db, imageId, tags);
+            }
+            res.send(await Images.imageFromDb(db, imageId));
+        });
     });
-});
-app.post('/api/save-image', express.json(), (req, res) => {
-    const user = Users.getUser(db, req);
-    if (!user || !user.id) {
-        res.status(403).send({ ok: false, error: 'forbidden' });
-        return;
-    }
-    const data = req.body;
-    const image = db.get('images', { id: data.id });
-    if (parseInt(image.uploader_user_id, 10) !== user.id) {
-        res.status(403).send({ ok: false, error: 'forbidden' });
-        return;
-    }
-    db.update('images', {
-        title: data.title,
-    }, {
-        id: data.id,
+    app.post('/api/newgame', express.json(), async (req, res) => {
+        const user = await Users.getOrCreateUser(db, req);
+        const gameId = await Game.createNewGame(db, req.body, Time.timestamp(), user.id);
+        res.send({ id: gameId });
     });
-    Images.setTags(db, data.id, data.tags || []);
-    res.send({ ok: true });
-});
-app.post('/api/upload', (req, res) => {
-    upload(req, res, async (err) => {
-        if (err) {
-            log.log(err);
-            res.status(400).send("Something went wrong!");
+    app.use('/uploads/', express.static(UPLOAD_DIR));
+    app.use('/', express.static(PUBLIC_DIR));
+    const wss = new WebSocketServer(config.ws);
+    const notify = (data, sockets) => {
+        for (const socket of sockets) {
+            wss.notifyOne(data, socket);
+        }
+    };
+    const persistGame = async (gameId) => {
+        const game = GameCommon.get(gameId);
+        if (!game) {
+            log.error(`[ERROR] unable to persist non existing game ${gameId}`);
+            return;
+        }
+        await GameStorage.persistGame(db, game);
+    };
+    const persistGames = async () => {
+        for (const gameId of GameStorage.dirtyGameIds()) {
+            await persistGame(gameId);
+        }
+    };
+    wss.on('close', async ({ socket }) => {
+        try {
+            const proto = socket.protocol.split('|');
+            const clientId = proto[0];
+            const gameId = proto[1];
+            GameSockets.removeSocket(gameId, socket);
+            const ts = Time.timestamp();
+            const clientSeq = -1; // client lost connection, so clientSeq doesn't matter
+            const clientEvtData = [Protocol.INPUT_EV_CONNECTION_CLOSE];
+            const changes = Game.handleInput(gameId, clientId, clientEvtData, ts);
+            const sockets = GameSockets.getSockets(gameId);
+            if (sockets.length) {
+                notify([Protocol.EV_SERVER_EVENT, clientId, clientSeq, changes], sockets);
+            }
+            else {
+                persistGame(gameId);
+                log.info(`[INFO] unloading game: ${gameId}`);
+                GameCommon.unsetGame(gameId);
+            }
+        }
+        catch (e) {
+            log.error(e);
+        }
+    });
+    wss.on('message', async ({ socket, data }) => {
+        if (!data) {
+            // no data (maybe ping :3)
             return;
         }
         try {
-            await Images.resizeImage(req.file.filename);
-        }
-        catch (err) {
-            log.log(err);
-            res.status(400).send("Something went wrong!");
-            return;
-        }
-        const user = Users.getOrCreateUser(db, req);
-        const dim = await Images.getDimensions(`${UPLOAD_DIR}/${req.file.filename}`);
-        // post form, so booleans are submitted as 'true' | 'false'
-        const isPrivate = req.body.private === 'false' ? 0 : 1;
-        const imageId = db.insert('images', {
-            uploader_user_id: user.id,
-            filename: req.file.filename,
-            filename_original: req.file.originalname,
-            title: req.body.title || '',
-            created: Time.timestamp(),
-            width: dim.w,
-            height: dim.h,
-            private: isPrivate,
-        });
-        console.log(imageId);
-        if (req.body.tags) {
-            const tags = req.body.tags.split(',').filter((tag) => !!tag);
-            Images.setTags(db, imageId, tags);
-        }
-        res.send(Images.imageFromDb(db, imageId));
-    });
-});
-app.post('/api/newgame', express.json(), async (req, res) => {
-    const user = Users.getOrCreateUser(db, req);
-    const gameId = await Game.createNewGame(db, req.body, Time.timestamp(), user.id);
-    res.send({ id: gameId });
-});
-app.use('/uploads/', express.static(UPLOAD_DIR));
-app.use('/', express.static(PUBLIC_DIR));
-const wss = new WebSocketServer(config.ws);
-const notify = (data, sockets) => {
-    for (const socket of sockets) {
-        wss.notifyOne(data, socket);
-    }
-};
-const persistGame = (gameId) => {
-    const game = GameCommon.get(gameId);
-    if (!game) {
-        log.error(`[ERROR] unable to persist non existing game ${gameId}`);
-        return;
-    }
-    GameStorage.persistGame(db, game);
-};
-const persistGames = () => {
-    for (const gameId of GameStorage.dirtyGameIds()) {
-        persistGame(gameId);
-    }
-};
-wss.on('close', async ({ socket }) => {
-    try {
-        const proto = socket.protocol.split('|');
-        const clientId = proto[0];
-        const gameId = proto[1];
-        GameSockets.removeSocket(gameId, socket);
-        const ts = Time.timestamp();
-        const clientSeq = -1; // client lost connection, so clientSeq doesn't matter
-        const clientEvtData = [Protocol.INPUT_EV_CONNECTION_CLOSE];
-        const changes = Game.handleInput(gameId, clientId, clientEvtData, ts);
-        const sockets = GameSockets.getSockets(gameId);
-        if (sockets.length) {
-            notify([Protocol.EV_SERVER_EVENT, clientId, clientSeq, changes], sockets);
-        }
-        else {
-            persistGame(gameId);
-            log.info(`[INFO] unloading game: ${gameId}`);
-            GameCommon.unsetGame(gameId);
-        }
-    }
-    catch (e) {
-        log.error(e);
-    }
-});
-wss.on('message', async ({ socket, data }) => {
-    if (!data) {
-        // no data (maybe ping :3)
-        return;
-    }
-    try {
-        const proto = socket.protocol.split('|');
-        const clientId = proto[0];
-        const gameId = proto[1];
-        const msg = JSON.parse(data);
-        const msgType = msg[0];
-        switch (msgType) {
-            case Protocol.EV_CLIENT_INIT:
-                {
-                    if (!GameCommon.loaded(gameId)) {
-                        const gameObject = GameStorage.loadGame(db, gameId);
-                        if (!gameObject) {
-                            throw `[game ${gameId} does not exist... ]`;
+            const proto = socket.protocol.split('|');
+            const clientId = proto[0];
+            const gameId = proto[1];
+            const msg = JSON.parse(data);
+            const msgType = msg[0];
+            switch (msgType) {
+                case Protocol.EV_CLIENT_INIT:
+                    {
+                        if (!GameCommon.loaded(gameId)) {
+                            const gameObject = await GameStorage.loadGame(db, gameId);
+                            if (!gameObject) {
+                                throw `[game ${gameId} does not exist... ]`;
+                            }
+                            GameCommon.setGame(gameObject.id, gameObject);
                         }
-                        GameCommon.setGame(gameObject.id, gameObject);
-                    }
-                    const ts = Time.timestamp();
-                    Game.addPlayer(gameId, clientId, ts);
-                    GameSockets.addSocket(gameId, socket);
-                    const game = GameCommon.get(gameId);
-                    if (!game) {
-                        throw `[game ${gameId} does not exist (anymore)... ]`;
-                    }
-                    notify([Protocol.EV_SERVER_INIT, Util.encodeGame(game)], [socket]);
-                }
-                break;
-            case Protocol.EV_CLIENT_EVENT:
-                {
-                    if (!GameCommon.loaded(gameId)) {
-                        const gameObject = GameStorage.loadGame(db, gameId);
-                        if (!gameObject) {
-                            throw `[game ${gameId} does not exist... ]`;
-                        }
-                        GameCommon.setGame(gameObject.id, gameObject);
-                    }
-                    const clientSeq = msg[1];
-                    const clientEvtData = msg[2];
-                    const ts = Time.timestamp();
-                    let sendGame = false;
-                    if (!GameCommon.playerExists(gameId, clientId)) {
+                        const ts = Time.timestamp();
                         Game.addPlayer(gameId, clientId, ts);
-                        sendGame = true;
-                    }
-                    if (!GameSockets.socketExists(gameId, socket)) {
                         GameSockets.addSocket(gameId, socket);
-                        sendGame = true;
-                    }
-                    if (sendGame) {
                         const game = GameCommon.get(gameId);
                         if (!game) {
                             throw `[game ${gameId} does not exist (anymore)... ]`;
                         }
                         notify([Protocol.EV_SERVER_INIT, Util.encodeGame(game)], [socket]);
                     }
-                    const changes = Game.handleInput(gameId, clientId, clientEvtData, ts);
-                    notify([Protocol.EV_SERVER_EVENT, clientId, clientSeq, changes], GameSockets.getSockets(gameId));
-                }
-                break;
+                    break;
+                case Protocol.EV_CLIENT_EVENT:
+                    {
+                        if (!GameCommon.loaded(gameId)) {
+                            const gameObject = await GameStorage.loadGame(db, gameId);
+                            if (!gameObject) {
+                                throw `[game ${gameId} does not exist... ]`;
+                            }
+                            GameCommon.setGame(gameObject.id, gameObject);
+                        }
+                        const clientSeq = msg[1];
+                        const clientEvtData = msg[2];
+                        const ts = Time.timestamp();
+                        let sendGame = false;
+                        if (!GameCommon.playerExists(gameId, clientId)) {
+                            Game.addPlayer(gameId, clientId, ts);
+                            sendGame = true;
+                        }
+                        if (!GameSockets.socketExists(gameId, socket)) {
+                            GameSockets.addSocket(gameId, socket);
+                            sendGame = true;
+                        }
+                        if (sendGame) {
+                            const game = GameCommon.get(gameId);
+                            if (!game) {
+                                throw `[game ${gameId} does not exist (anymore)... ]`;
+                            }
+                            notify([Protocol.EV_SERVER_INIT, Util.encodeGame(game)], [socket]);
+                        }
+                        const changes = Game.handleInput(gameId, clientId, clientEvtData, ts);
+                        notify([Protocol.EV_SERVER_EVENT, clientId, clientSeq, changes], GameSockets.getSockets(gameId));
+                    }
+                    break;
+            }
         }
-    }
-    catch (e) {
-        log.error(e);
-        log.error('data:', data);
-    }
-});
-const server = app.listen(port, hostname, () => log.log(`server running on http://${hostname}:${port}`));
-wss.listen();
-const memoryUsageHuman = () => {
-    const totalHeapSize = v8.getHeapStatistics().total_available_size;
-    const totalHeapSizeInGB = (totalHeapSize / 1024 / 1024 / 1024).toFixed(2);
-    log.log(`Total heap size (bytes) ${totalHeapSize}, (GB ~${totalHeapSizeInGB})`);
-    const used = process.memoryUsage().heapUsed / 1024 / 1024;
-    log.log(`Mem: ${Math.round(used * 100) / 100}M`);
-};
-memoryUsageHuman();
-// persist games in fixed interval
-const persistInterval = setInterval(() => {
-    log.log('Persisting games...');
-    persistGames();
+        catch (e) {
+            log.error(e);
+            log.error('data:', data);
+        }
+    });
+    const server = app.listen(port, hostname, () => log.log(`server running on http://${hostname}:${port}`));
+    wss.listen();
+    const memoryUsageHuman = () => {
+        const totalHeapSize = v8.getHeapStatistics().total_available_size;
+        const totalHeapSizeInGB = (totalHeapSize / 1024 / 1024 / 1024).toFixed(2);
+        log.log(`Total heap size (bytes) ${totalHeapSize}, (GB ~${totalHeapSizeInGB})`);
+        const used = process.memoryUsage().heapUsed / 1024 / 1024;
+        log.log(`Mem: ${Math.round(used * 100) / 100}M`);
+    };
     memoryUsageHuman();
-}, config.persistence.interval);
-const gracefulShutdown = (signal) => {
-    log.log(`${signal} received...`);
-    log.log('clearing persist interval...');
-    clearInterval(persistInterval);
-    log.log('Persisting games...');
-    persistGames();
-    log.log('shutting down webserver...');
-    server.close();
-    log.log('shutting down websocketserver...');
-    wss.close();
-    log.log('shutting down...');
-    process.exit();
+    // persist games in fixed interval
+    let persistInterval = null;
+    const doPersist = async () => {
+        log.log('Persisting games...');
+        await persistGames();
+        memoryUsageHuman();
+        persistInterval = setTimeout(doPersist, config.persistence.interval);
+    };
+    persistInterval = setTimeout(doPersist, config.persistence.interval);
+    const gracefulShutdown = async (signal) => {
+        log.log(`${signal} received...`);
+        log.log('clearing persist interval...');
+        clearInterval(persistInterval);
+        log.log('Persisting games...');
+        await persistGames();
+        log.log('shutting down webserver...');
+        server.close();
+        log.log('shutting down websocketserver...');
+        wss.close();
+        log.log('shutting down...');
+        process.exit();
+    };
+    // used by nodemon
+    process.once('SIGUSR2', async () => {
+        await gracefulShutdown('SIGUSR2');
+    });
+    process.once('SIGINT', async () => {
+        await gracefulShutdown('SIGINT');
+    });
+    process.once('SIGTERM', async () => {
+        await gracefulShutdown('SIGTERM');
+    });
 };
-// used by nodemon
-process.once('SIGUSR2', () => {
-    gracefulShutdown('SIGUSR2');
-});
-process.once('SIGINT', () => {
-    gracefulShutdown('SIGINT');
-});
-process.once('SIGTERM', () => {
-    gracefulShutdown('SIGTERM');
-});
+run();
