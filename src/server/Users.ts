@@ -5,7 +5,14 @@ const TABLE = 'users'
 const HEADER_CLIENT_ID = 'client-id'
 const HEADER_CLIENT_SECRET = 'client-secret'
 
-const getOrCreateUser = async (db: Db, req: any): Promise<any> => {
+interface User {
+  id: number
+  created: Date
+  client_id: string
+  client_secret: string
+}
+
+const getOrCreateUser = async (db: Db, req: any): Promise<User> => {
   let user = await getUser(db, req)
   if (!user) {
     await db.insert(TABLE, {
@@ -13,12 +20,12 @@ const getOrCreateUser = async (db: Db, req: any): Promise<any> => {
       'client_secret': req.headers[HEADER_CLIENT_SECRET],
       'created': new Date(),
     })
-    user = await getUser(db, req)
+    user = await getUser(db, req) as User
   }
   return user
 }
 
-const getUser = async (db: Db, req: any): Promise<any> => {
+const getUser = async (db: Db, req: any): Promise<User | null> => {
   const user = await db.get(TABLE, {
     'client_id': req.headers[HEADER_CLIENT_ID],
     'client_secret': req.headers[HEADER_CLIENT_SECRET],
