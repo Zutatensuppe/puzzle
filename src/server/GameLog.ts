@@ -3,7 +3,7 @@ import Protocol from '../common/Protocol'
 import Time from '../common/Time'
 import { DefaultScoreMode, DefaultShapeMode, DefaultSnapMode, Game, Timestamp } from '../common/Types'
 import { logger } from './../common/Util'
-import { DATA_DIR } from './../server/Dirs'
+import config from './../server/Config'
 
 const log = logger('GameLog.js')
 
@@ -22,8 +22,8 @@ const shouldLog = (finishTs: Timestamp, currentTs: Timestamp): boolean => {
   return timeSinceGameEnd <= POST_GAME_LOG_DURATION
 }
 
-export const filename = (gameId: string, offset: number) => `${DATA_DIR}/log_${gameId}-${offset}.log`
-export const idxname = (gameId: string) => `${DATA_DIR}/log_${gameId}.idx.log`
+export const filename = (gameId: string, offset: number) => `${config.dir.DATA_DIR}/log_${gameId}-${offset}.log`
+export const idxname = (gameId: string) => `${config.dir.DATA_DIR}/log_${gameId}.idx.log`
 
 const create = (gameId: string, ts: Timestamp): void => {
   const idxfile = idxname(gameId)

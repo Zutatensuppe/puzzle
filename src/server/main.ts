@@ -12,11 +12,7 @@ import GameLog from './GameLog'
 import GameSockets from './GameSockets'
 import Time from './../common/Time'
 import Images from './Images'
-import {
-  DB_PATCHES_DIR,
-  PUBLIC_DIR,
-  UPLOAD_DIR,
-} from './Dirs'
+import config from './Config'
 import GameCommon from '../common/GameCommon'
 import { ServerEvent, Game as GameType, GameSettings } from '../common/Types'
 import GameStorage from './GameStorage'
@@ -30,23 +26,7 @@ interface SaveImageRequestData {
 }
 
 const run = async () => {
-  let configFile = ''
-  let last = ''
-  for (const val of process.argv) {
-    if (last === '-c') {
-      configFile = val
-    }
-    last = val
-  }
-
-  if (configFile === '') {
-    console.log('no config file given')
-    process.exit(2)
-  }
-
-  const config = JSON.parse(String(fs.readFileSync(configFile)))
-
-  const db = new Db(config.db.connectStr, DB_PATCHES_DIR)
+  const db = new Db(config.db.connectStr, config.dir.DB_PATCHES_DIR)
   await db.connect()
   await db.patch()
 
@@ -59,7 +39,7 @@ const run = async () => {
   app.use(compression())
 
   const storage = multer.diskStorage({
-    destination: UPLOAD_DIR,
+    destination: config.dir.UPLOAD_DIR,
     filename: function (req, file, cb) {
       cb(null , `${Util.uniqId()}-${file.originalname}`);
     }
@@ -203,7 +183,7 @@ const run = async () => {
       const user = await Users.getOrCreateUser(db, req)
 
       const dim = await Images.getDimensions(
-        `${UPLOAD_DIR}/${req.file.filename}`
+        `${config.dir.UPLOAD_DIR}/${req.file.filename}`
       )
       // post form, so booleans are submitted as 'true' | 'false'
       const isPrivate = req.body.private === 'false' ? 0 : 1;
@@ -239,8 +219,8 @@ const run = async () => {
     res.send({ id: gameId })
   })
 
-  app.use('/uploads/', express.static(UPLOAD_DIR))
-  app.use('/', express.static(PUBLIC_DIR))
+  app.use('/uploads/', express.static(config.dir.UPLOAD_DIR))
+  app.use('/', express.static(config.dir.PUBLIC_DIR))
 
   const wss = new WebSocketServer(config.ws);
 

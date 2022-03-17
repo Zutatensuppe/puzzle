@@ -3,7 +3,7 @@ import { Rng } from './../common/Rng'
 import Images from './Images'
 import { EncodedPiece, EncodedPieceShape, PieceShape, Puzzle, ShapeMode, ImageInfo } from '../common/Types'
 import { Dim, Point } from '../common/Geometry'
-import { UPLOAD_DIR } from './Dirs'
+import config from './Config'
 
 export interface PuzzleCreationInfo {
   width: number
@@ -27,7 +27,7 @@ async function createPuzzle(
   ts: number,
   shapeMode: ShapeMode
 ): Promise<Puzzle> {
-  const imagePath = `${UPLOAD_DIR}/${image.filename}`
+  const imagePath = `${config.dir.UPLOAD_DIR}/${image.filename}`
   const imageUrl = image.url
 
   // determine puzzle information from the image dimensions
