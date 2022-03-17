@@ -1,6 +1,9 @@
 import { readFileSync } from 'fs'
 import { fileURLToPath } from 'url'
 import { dirname } from 'path'
+import { logger } from '../common/Util'
+
+const log = logger('Config.ts')
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
@@ -41,12 +44,10 @@ export interface Config {
 const init = (): Config => {
   const configFile = process.env.APP_CONFIG || ''
   if (configFile === '') {
+    log.error('APP_CONFIG environment variable not set or empty')
     process.exit(2)
   }
   const config: Config = JSON.parse(String(readFileSync(configFile)))
-
-  config.db.connectStr = config.db.connectStr || 'postgres://hyottoko:hyottoko@localhost:5434/hyottoko'
-
   config.dir = { DATA_DIR, UPLOAD_DIR, UPLOAD_URL, PUBLIC_DIR, DB_PATCHES_DIR }
   return config
 }
