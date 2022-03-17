@@ -1,5 +1,4 @@
 import sizeOf from 'image-size'
-import fs from 'fs'
 import exif from 'exif'
 import sharp from 'sharp'
 
@@ -148,56 +147,6 @@ inner join images i on i.id = ixc.image_id ${where.sql};
   return images
 }
 
-/**
- * @deprecated old function, now database is used
- */
-const allImagesFromDisk = (
-  tags: string[],
-  sort: string
-): ImageInfo[] => {
-  let images = fs.readdirSync(config.dir.UPLOAD_DIR)
-    .filter(f => f.toLowerCase().match(/\.(jpe?g|webp|png)$/))
-    .map(f => ({
-      id: 0,
-      uploaderUserId: null,
-      filename: f,
-      url: `${config.dir.UPLOAD_URL}/${encodeURIComponent(f)}`,
-      title: f.replace(/\.[a-z]+$/, ''),
-      tags: [] as Tag[],
-      created: fs.statSync(`${config.dir.UPLOAD_DIR}/${f}`).mtime.getTime(),
-      width: 0, // may have to fill when the function is used again
-      height: 0, // may have to fill when the function is used again
-    }))
-
-  switch (sort) {
-    case 'alpha_asc':
-      images = images.sort((a, b) => {
-        return a.filename > b.filename ? 1 : -1
-      })
-      break;
-
-    case 'alpha_desc':
-      images = images.sort((a, b) => {
-        return a.filename < b.filename ? 1 : -1
-      })
-      break;
-
-    case 'date_asc':
-      images = images.sort((a, b) => {
-        return a.created > b.created ? 1 : -1
-      })
-      break;
-
-    case 'date_desc':
-    default:
-      images = images.sort((a, b) => {
-        return a.created < b.created ? 1 : -1
-      })
-      break;
-  }
-  return images
-}
-
 async function getDimensions(imagePath: string): Promise<Dim> {
   const dimensions = sizeOf(imagePath)
   const orientation = await getExifOrientation(imagePath)
@@ -230,7 +179,6 @@ const setTags = async (db: Db, imageId: number, tags: string[]): Promise<void> =
 }
 
 export default {
-  allImagesFromDisk,
   imageFromDb,
   allImagesFromDb,
   getAllTags,
