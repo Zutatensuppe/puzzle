@@ -8,21 +8,21 @@ import config from './Config'
 export interface PuzzleCreationInfo {
   width: number
   height: number
-  tileSize: number
-  tileMarginWidth: number
-  tileDrawSize: number
-  tiles: number
-  tilesX: number
-  tilesY: number
+  pieceSize: number
+  pieceMarginWidth: number
+  pieceDrawSize: number
+  pieceCount: number
+  pieceCountHorizontal: number
+  pieceCountVertical: number
 }
 
-// cut size of each puzzle tile in the
+// cut size of each puzzle piece in the
 // final resized version of the puzzle image
-const TILE_SIZE = 64
+const PIECE_SIZE = 64
 
 async function createPuzzle(
   rng: Rng,
-  targetTiles: number,
+  targetPieceCount: number,
   image: ImageInfo,
   ts: number,
   shapeMode: ShapeMode
@@ -35,29 +35,30 @@ async function createPuzzle(
   if (!dim.w || !dim.h) {
     throw `[ 2021-05-16 invalid dimension for path ${imagePath} ]`
   }
-  const info: PuzzleCreationInfo = determinePuzzleInfo(dim, targetTiles)
+  const info: PuzzleCreationInfo = determinePuzzleInfo(dim, targetPieceCount)
 
-  const rawPieces = new Array(info.tiles)
+  const rawPieces = new Array(info.pieceCount)
   for (let i = 0; i < rawPieces.length; i++) {
     rawPieces[i] = { idx: i }
   }
-  const shapes = determinePuzzleTileShapes(rng, info, shapeMode)
+  const shapes = determinePuzzlePieceShapes(rng, info, shapeMode)
 
-  let positions: Point[] = new Array(info.tiles)
+  let positions: Point[] = new Array(info.pieceCount)
   for (const piece of rawPieces) {
     const coord = Util.coordByPieceIdx(info, piece.idx)
     positions[piece.idx] = {
-      // instead of info.tileSize, we use info.tileDrawSize
-      // to spread the tiles a bit
-      x: coord.x * info.tileSize * 1.5,
-      y: coord.y * info.tileSize * 1.5,
+      // TODO: cant we just use info.pieceDrawSize?
+      // instead of info.pieceSize, we multiply it by 1.5
+      // to spread the pieces a bit
+      x: coord.x * info.pieceSize * 1.5,
+      y: coord.y * info.pieceSize * 1.5,
     }
   }
 
   const tableWidth = info.width * 3
   const tableHeight = info.height * 3
 
-  const off = info.tileSize * 1.5
+  const off = info.pieceSize * 1.5
   const last: Point = {
     x: info.width - (1 * off),
     y: info.height - (2 * off),
@@ -97,26 +98,26 @@ async function createPuzzle(
 
   const pieces: Array<EncodedPiece> = rawPieces.map(piece => {
     return Util.encodePiece({
-      idx: piece.idx, // index of tile in the array
-      group: 0, // if grouped with other tiles
-      z: 0, // z index of the tile
+      idx: piece.idx, // index of piece in the array
+      group: 0, // if grouped with other pieces
+      z: 0, // z index of the piece
 
-      // who owns the tile
+      // who owns the piece
       // 0 = free for taking
       // -1 = finished
-      // other values: id of player who has the tile
+      // other values: id of player who has the piece
       owner: 0,
 
-      // physical current position of the tile (x/y in pixels)
+      // physical current position of the piece (x/y in pixels)
       // this position is the initial position only and is the
-      // value that changes when moving a tile
+      // value that changes when moving a piece
       pos: positions[piece.idx],
     })
   })
 
   // Complete puzzle object
   return {
-    // tiles array
+    // pieces array
     tiles: pieces,
     // game data for puzzle, data changes during the game
     data: {
@@ -134,29 +135,29 @@ async function createPuzzle(
         height: tableHeight,
       },
       // information that was used to create the puzzle
-      targetTiles: targetTiles,
+      targetTiles: targetPieceCount,
       imageUrl, // todo: remove
       image: image,
 
       width: info.width, // actual puzzle width (same as bitmap.width)
       height: info.height, // actual puzzle height (same as bitmap.height)
-      tileSize: info.tileSize, // width/height of each tile (without tabs)
-      tileDrawSize: info.tileDrawSize, // width/height of each tile (with tabs)
-      tileMarginWidth: info.tileMarginWidth,
+      tileSize: info.pieceSize, // width/height of each piece (without tabs)
+      tileDrawSize: info.pieceDrawSize, // width/height of each piece (with tabs)
+      tileMarginWidth: info.pieceMarginWidth,
       // offset in x and y when drawing tiles, so that they appear to be at pos
-      tileDrawOffset: (info.tileDrawSize - info.tileSize) / -2,
+      tileDrawOffset: (info.pieceDrawSize - info.pieceSize) / -2,
       // max distance between tile and destination that
       // makes the tile snap to destination
-      snapDistance: info.tileSize / 2,
-      tiles: info.tiles, // the final number of tiles in the puzzle
-      tilesX: info.tilesX, // number of tiles each row
-      tilesY: info.tilesY, // number of tiles each col
+      snapDistance: info.pieceSize / 2,
+      tiles: info.pieceCount, // the final number of pieces in the puzzle
+      tilesX: info.pieceCountHorizontal, // number of pieces each row
+      tilesY: info.pieceCountVertical, // number of pieces each col
       // ( index => {x, y} )
       // this is not the physical coordinate, but
-      // the tile_coordinate
+      // the piece_coordinate
       // this can be used to determine where the
-      // final destination of a tile is
-      shapes: shapes, // tile shapes
+      // final destination of a piece is
+      shapes: shapes, // piece shapes
     },
   }
 }
@@ -172,66 +173,67 @@ function determineTabs (shapeMode: ShapeMode): number[] {
   }
 }
 
-function determinePuzzleTileShapes(
+function determinePuzzlePieceShapes(
   rng: Rng,
   info: PuzzleCreationInfo,
   shapeMode: ShapeMode
 ): Array<EncodedPieceShape> {
   const tabs: number[] = determineTabs(shapeMode)
-  const shapes: Array<PieceShape> = new Array(info.tiles)
-  for (let i = 0; i < info.tiles; i++) {
+  const shapes: Array<PieceShape> = new Array(info.pieceCount)
+  for (let i = 0; i < info.pieceCount; i++) {
     const coord = Util.coordByPieceIdx(info, i)
     shapes[i] = {
-      top: coord.y === 0 ? 0 : shapes[i - info.tilesX].bottom * -1,
-      right: coord.x === info.tilesX - 1 ? 0 : rng.choice(tabs),
+      top: coord.y === 0 ? 0 : shapes[i - info.pieceCountHorizontal].bottom * -1,
+      right: coord.x === info.pieceCountHorizontal - 1 ? 0 : rng.choice(tabs),
       left: coord.x === 0 ? 0 : shapes[i - 1].right * -1,
-      bottom: coord.y === info.tilesY - 1 ? 0 : rng.choice(tabs),
+      bottom: coord.y === info.pieceCountVertical - 1 ? 0 : rng.choice(tabs),
     }
   }
+
   return shapes.map(Util.encodeShape)
 }
 
-const determineTilesXY = (
+const determinePiecesXY = (
   dim: Dim,
-  targetTiles: number
-): { tilesX: number, tilesY: number } => {
+  targetPiecesCount: number
+): { countHorizontal: number, countVertical: number } => {
   const w_ = dim.w < dim.h ? (dim.w * dim.h) : (dim.w * dim.w)
   const h_ = dim.w < dim.h ? (dim.h * dim.h) : (dim.w * dim.h)
   let size = 0
-  let tiles = 0
+  let pieces = 0
   do {
     size++
-    tiles = Math.floor(w_ / size) * Math.floor(h_ / size)
-  } while (tiles >= targetTiles)
+    pieces = Math.floor(w_ / size) * Math.floor(h_ / size)
+  } while (pieces >= targetPiecesCount)
   size--
   return {
-    tilesX: Math.round(w_ / size),
-    tilesY: Math.round(h_ / size),
+    countHorizontal: Math.round(w_ / size),
+    countVertical: Math.round(h_ / size),
   }
 }
 
 const determinePuzzleInfo = (
   dim: Dim,
-  targetTiles: number
+  targetPieceCount: number
 ): PuzzleCreationInfo => {
-  const {tilesX, tilesY} = determineTilesXY(dim, targetTiles)
-  const tiles = tilesX * tilesY
-  const tileSize = TILE_SIZE
-  const width = tilesX * tileSize
-  const height = tilesY * tileSize
+  const { countHorizontal, countVertical } = determinePiecesXY(dim, targetPieceCount)
+  const pieceCount = countHorizontal * countVertical
+  const pieceSize = PIECE_SIZE
+  const width = countHorizontal * pieceSize
+  const height = countVertical * pieceSize
 
-  const tileMarginWidth = tileSize * .5;
-  const tileDrawSize = Math.round(tileSize + tileMarginWidth * 2)
+  const pieceMarginWidth = pieceSize * .5;
+  const pieceDrawSize = Math.round(pieceSize + pieceMarginWidth * 2)
 
   return {
     width,
     height,
-    tileSize,
-    tileMarginWidth,
-    tileDrawSize,
-    tiles,
-    tilesX,
-    tilesY,
+    pieceSize: pieceSize,
+    pieceMarginWidth: pieceMarginWidth,
+    pieceDrawSize: pieceDrawSize,
+    pieceCount: pieceCount,
+    pieceCountHorizontal: countHorizontal,
+    pieceCountVertical: countVertical,
   }
 }
 

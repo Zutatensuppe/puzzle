@@ -13,7 +13,7 @@ const log = logger('Game.ts')
 async function createGameObject(
   gameId: string,
   gameVersion: number,
-  targetTiles: number,
+  targetPieceCount: number,
   image: ImageInfo,
   ts: Timestamp,
   scoreMode: ScoreMode,
@@ -30,7 +30,7 @@ async function createGameObject(
     gameVersion: gameVersion,
     creatorUserId,
     rng: { type: 'Rng', obj: rng },
-    puzzle: await createPuzzle(rng, targetTiles, image, ts, shapeMode),
+    puzzle: await createPuzzle(rng, targetPieceCount, image, ts, shapeMode),
     players: [],
     scoreMode,
     shapeMode,

@@ -4,33 +4,33 @@ import Db from '../src/server/Db'
 import config from '../src/server/Config'
 import GameStorage from '../src/server/GameStorage'
 
-const log = logger('fix_tiles.js')
+const log = logger('fix_pieces.js')
 
 const db = new Db(config.db.connectStr, config.dir.DB_PATCHES_DIR)
 
-async function fix_tiles(gameId: string) {
+async function fix_pieces(gameId: string) {
   await db.connect()
   await db.patch(true)
 
   const gameObject = await GameStorage.loadGame(db, gameId)
   GameCommon.setGame(gameObject.id, gameObject)
   let changed = false
-  const tiles = GameCommon.getPiecesSortedByZIndex(gameId)
-  for (const tile of tiles) {
-    if (tile.owner === -1) {
-      const p = GameCommon.getFinalPiecePos(gameId, tile.idx)
-      if (p.x === tile.pos.x && p.y === tile.pos.y) {
+  const pieces = GameCommon.getPiecesSortedByZIndex(gameId)
+  for (const piece of pieces) {
+    if (piece.owner === -1) {
+      const p = GameCommon.getFinalPiecePos(gameId, piece.idx)
+      if (p.x === piece.pos.x && p.y === piece.pos.y) {
         // log.log('all good', tile.pos)
       } else {
-        log.log('bad tile pos', tile.pos, 'should be: ', p)
-        tile.pos = p
-        GameCommon.setPiece(gameId, tile.idx, tile)
+        log.log('bad piece pos', piece.pos, 'should be: ', p)
+        piece.pos = p
+        GameCommon.setPiece(gameId, piece.idx, piece)
         changed = true
       }
-    } else if (tile.owner !== 0) {
-      tile.owner = 0
-      log.log('unowning tile', tile.idx)
-      GameCommon.setPiece(gameId, tile.idx, tile)
+    } else if (piece.owner !== 0) {
+      piece.owner = 0
+      log.log('unowning piece', piece.idx)
+      GameCommon.setPiece(gameId, piece.idx, piece)
       changed = true
     }
   }
@@ -40,4 +40,4 @@ async function fix_tiles(gameId: string) {
   await db.close()
 }
 
-fix_tiles(process.argv[2])
+fix_pieces(process.argv[2])

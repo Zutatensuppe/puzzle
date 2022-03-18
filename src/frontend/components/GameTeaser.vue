@@ -2,7 +2,7 @@
   <div class="game-teaser" :style="style">
     <router-link class="game-info" :to="{ name: 'game', params: { id: game.id } }">
       <span class="game-info-text">
-        🧩 {{game.tilesFinished}}/{{game.tilesTotal}}<br />
+        🧩 {{game.piecesFinished}}/{{game.piecesTotal}}<br />
         👥 {{game.players}}<br />
         {{time(game.started, game.finished)}}<br />
       </span>

@@ -203,7 +203,7 @@ async function createPuzzleTileBitmaps(
 }
 
 function srcRectByIdx(puzzleInfo: PuzzleInfo, idx: number): Rect {
-  const c = Util.coordByPieceIdx(puzzleInfo, idx)
+  const c = Util.coordByPieceIdxDeprecated(puzzleInfo, idx)
   return {
     x: c.x * puzzleInfo.tileSize,
     y: c.y * puzzleInfo.tileSize,

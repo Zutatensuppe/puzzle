@@ -2,7 +2,7 @@ import { WebSocketServer as WebSocketServer$1 } from 'ws';
 import express from 'express';
 import compression from 'compression';
 import multer from 'multer';
-import fs from 'fs';
+import fs, { readFileSync } from 'fs';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
 import sizeOf from 'image-size';
@@ -178,11 +178,21 @@ function decodeGame(data) {
         private: data[11],
     };
 }
-function coordByPieceIdx(info, pieceIdx) {
-    const wTiles = info.width / info.tileSize;
+/**
+ * @deprecated Uses PuzzleInfo with 'tileSize' prop :(
+ */
+function coordByPieceIdxDeprecated(info, pieceIdx) {
+    const wPieces = info.width / info.tileSize;
     return {
-        x: pieceIdx % wTiles,
-        y: Math.floor(pieceIdx / wTiles),
+        x: pieceIdx % wPieces,
+        y: Math.floor(pieceIdx / wPieces),
+    };
+}
+function coordByPieceIdx(info, pieceIdx) {
+    const wPieces = info.width / info.pieceSize;
+    return {
+        x: pieceIdx % wPieces,
+        y: Math.floor(pieceIdx / wPieces),
     };
 }
 const hash = (str) => {
@@ -218,11 +228,12 @@ var Util = {
     decodePlayer,
     encodeGame,
     decodeGame,
+    coordByPieceIdxDeprecated,
     coordByPieceIdx,
     asQueryArgs,
 };
 
-const log$4 = logger('WebSocketServer.js');
+const log$5 = logger('WebSocketServer.js');
 class EvtBus {
     constructor() {
         this._on = {};
@@ -251,13 +262,13 @@ class WebSocketServer {
         this._websocketserver.on('connection', (socket, request) => {
             const pathname = new URL(this.config.connectstring).pathname;
             if (request.url.indexOf(pathname) !== 0) {
-                log$4.log('bad request url: ', request.url);
+                log$5.log('bad request url: ', request.url);
                 socket.close();
                 return;
             }
             socket.on('message', (data) => {
                 const strData = String(data);
-                log$4.log(`ws`, socket.protocol, strData);
+                log$5.log(`ws`, socket.protocol, strData);
                 this.evt.dispatch('message', { socket, data: strData });
             });
             socket.on('close', () => {
@@ -346,7 +357,7 @@ const INPUT_EV_STORE_POS = 19;
 const INPUT_EV_RESTORE_POS = 20;
 const INPUT_EV_CONNECTION_CLOSE = 21;
 const CHANGE_DATA = 1;
-const CHANGE_TILE = 2;
+const CHANGE_PIECE = 2;
 const CHANGE_PLAYER = 3;
 const PLAYER_SNAP = 4;
 var Protocol = {
@@ -381,7 +392,7 @@ var Protocol = {
     INPUT_EV_RESTORE_POS,
     INPUT_EV_CONNECTION_CLOSE,
     CHANGE_DATA,
-    CHANGE_TILE,
+    CHANGE_PIECE,
     CHANGE_PLAYER,
     PLAYER_SNAP,
 };
@@ -656,30 +667,30 @@ function changePiece(gameId, pieceIdx, change) {
 const getPiece = (gameId, pieceIdx) => {
     return Util.decodePiece(GAMES[gameId].puzzle.tiles[pieceIdx]);
 };
-const getPieceGroup = (gameId, tileIdx) => {
-    const tile = getPiece(gameId, tileIdx);
-    return tile.group;
+const getPieceGroup = (gameId, pieceIdx) => {
+    const piece = getPiece(gameId, pieceIdx);
+    return piece.group;
 };
-const isCornerPiece = (gameId, tileIdx) => {
+const isCornerPiece = (gameId, pieceIdx) => {
     const info = GAMES[gameId].puzzle.info;
-    return (tileIdx === 0 // top left corner
-        || tileIdx === (info.tilesX - 1) // top right corner
-        || tileIdx === (info.tiles - info.tilesX) // bottom left corner
-        || tileIdx === (info.tiles - 1) // bottom right corner
+    return (pieceIdx === 0 // top left corner
+        || pieceIdx === (info.tilesX - 1) // top right corner
+        || pieceIdx === (info.tiles - info.tilesX) // bottom left corner
+        || pieceIdx === (info.tiles - 1) // bottom right corner
     );
 };
-const getFinalPiecePos = (gameId, tileIdx) => {
+const getFinalPiecePos = (gameId, pieceIdx) => {
     const info = GAMES[gameId].puzzle.info;
     const boardPos = {
         x: (info.table.width - info.width) / 2,
         y: (info.table.height - info.height) / 2
     };
-    const srcPos = srcPosByTileIdx(gameId, tileIdx);
+    const srcPos = srcPosByPieceIdx(gameId, pieceIdx);
     return Geometry.pointAdd(boardPos, srcPos);
 };
-const getPiecePos = (gameId, tileIdx) => {
-    const tile = getPiece(gameId, tileIdx);
-    return tile.pos;
+const getPiecePos = (gameId, pieceIdx) => {
+    const piece = getPiece(gameId, pieceIdx);
+    return piece.pos;
 };
 // todo: instead, just make the table bigger and use that :)
 const getBounds = (gameId) => {
@@ -699,9 +710,9 @@ const getPieceZIndex = (gameId, pieceIdx) => {
 };
 const getFirstOwnedPieceIdx = (gameId, playerId) => {
     for (const t of GAMES[gameId].puzzle.tiles) {
-        const tile = Util.decodePiece(t);
-        if (tile.owner === playerId) {
-            return tile.idx;
+        const piece = Util.decodePiece(t);
+        if (piece.owner === playerId) {
+            return piece.idx;
         }
     }
     return -1;
@@ -738,36 +749,36 @@ const getMaxZIndexByPieceIdxs = (gameId, pieceIdxs) => {
     }
     return maxZ;
 };
-function srcPosByTileIdx(gameId, tileIdx) {
+function srcPosByPieceIdx(gameId, pieceIdx) {
     const info = GAMES[gameId].puzzle.info;
-    const c = Util.coordByPieceIdx(info, tileIdx);
+    const c = Util.coordByPieceIdxDeprecated(info, pieceIdx);
     const cx = c.x * info.tileSize;
     const cy = c.y * info.tileSize;
     return { x: cx, y: cy };
 }
-function getSurroundingTilesByIdx(gameId, tileIdx) {
+function getSurroundingPiecesByIdx(gameId, pieceIdx) {
     const info = GAMES[gameId].puzzle.info;
-    const c = Util.coordByPieceIdx(info, tileIdx);
+    const c = Util.coordByPieceIdxDeprecated(info, pieceIdx);
     return [
         // top
-        (c.y > 0) ? (tileIdx - info.tilesX) : -1,
+        (c.y > 0) ? (pieceIdx - info.tilesX) : -1,
         // right
-        (c.x < info.tilesX - 1) ? (tileIdx + 1) : -1,
+        (c.x < info.tilesX - 1) ? (pieceIdx + 1) : -1,
         // bottom
-        (c.y < info.tilesY - 1) ? (tileIdx + info.tilesX) : -1,
+        (c.y < info.tilesY - 1) ? (pieceIdx + info.tilesX) : -1,
         // left
-        (c.x > 0) ? (tileIdx - 1) : -1,
+        (c.x > 0) ? (pieceIdx - 1) : -1,
     ];
 }
-const setPiecesZIndex = (gameId, tileIdxs, zIndex) => {
-    for (const tilesIdx of tileIdxs) {
-        changePiece(gameId, tilesIdx, { z: zIndex });
+const setPiecesZIndex = (gameId, pieceIdxs, zIndex) => {
+    for (const pieceIdx of pieceIdxs) {
+        changePiece(gameId, pieceIdx, { z: zIndex });
     }
 };
-const moveTileDiff = (gameId, tileIdx, diff) => {
-    const oldPos = getPiecePos(gameId, tileIdx);
+const movePieceDiff = (gameId, pieceIdx, diff) => {
+    const oldPos = getPiecePos(gameId, pieceIdx);
     const pos = Geometry.pointAdd(oldPos, diff);
-    changePiece(gameId, tileIdx, { pos });
+    changePiece(gameId, pieceIdx, { pos });
 };
 const movePiecesDiff = (gameId, pieceIdxs, diff) => {
     const drawSize = getPieceDrawSize(gameId);
@@ -792,7 +803,7 @@ const movePiecesDiff = (gameId, pieceIdxs, diff) => {
         return false;
     }
     for (const pieceIdx of pieceIdxs) {
-        moveTileDiff(gameId, pieceIdx, cappedDiff);
+        movePieceDiff(gameId, pieceIdx, cappedDiff);
     }
     return true;
 };
@@ -807,7 +818,7 @@ const finishPieces = (gameId, pieceIdxs) => {
         changePiece(gameId, pieceIdx, { owner: -1, z: 1 });
     }
 };
-const setTilesOwner = (gameId, pieceIdxs, owner) => {
+const setPiecesOwner = (gameId, pieceIdxs, owner) => {
     for (const pieceIdx of pieceIdxs) {
         changePiece(gameId, pieceIdx, { owner });
     }
@@ -817,7 +828,7 @@ const setTilesOwner = (gameId, pieceIdxs, owner) => {
 function getGroupedPieceCount(gameId, pieceIdx) {
     return getGroupedPieceIdxs(gameId, pieceIdx).length;
 }
-// get all grouped tiles for a tile
+// get all grouped pieces for a piece
 function getGroupedPieceIdxs(gameId, pieceIdx) {
     const pieces = GAMES[gameId].puzzle.tiles;
     const piece = Util.decodePiece(pieces[pieceIdx]);
@@ -835,7 +846,7 @@ function getGroupedPieceIdxs(gameId, pieceIdx) {
     }
     return grouped;
 }
-// Returns the index of the puzzle tile with the highest z index
+// Returns the index of the puzzle piece with the highest z index
 // that is not finished yet and that matches the position
 const freePieceIdxByPos = (gameId, pos) => {
     const info = GAMES[gameId].puzzle.info;
@@ -878,10 +889,10 @@ const getPlayerPoints = (gameId, playerId) => {
     const p = getPlayer(gameId, playerId);
     return p ? p.points : 0;
 };
-// determine if two tiles are grouped together
-const areGrouped = (gameId, tileIdx1, tileIdx2) => {
-    const g1 = getPieceGroup(gameId, tileIdx1);
-    const g2 = getPieceGroup(gameId, tileIdx2);
+// determine if two pieces are grouped together
+const areGrouped = (gameId, pieceIdx1, pieceIdx2) => {
+    const g1 = getPieceGroup(gameId, pieceIdx1);
+    const g2 = getPieceGroup(gameId, pieceIdx2);
     return !!(g1 && g1 === g2);
 };
 const getTableWidth = (gameId) => {
@@ -924,7 +935,7 @@ function handleInput$1(gameId, playerId, input, ts) {
     };
     const _pieceChange = (pieceIdx) => {
         changes.push([
-            Protocol.CHANGE_TILE,
+            Protocol.CHANGE_PIECE,
             Util.encodePiece(getPiece(gameId, pieceIdx)),
         ]);
     };
@@ -944,8 +955,8 @@ function handleInput$1(gameId, playerId, input, ts) {
         ]);
     };
     let anySnapped = false;
-    // put both tiles (and their grouped tiles) in the same group
-    const groupTiles = (gameId, pieceIdx1, pieceIdx2) => {
+    // put both pieces (and their grouped pieces) in the same group
+    const groupPieces = (gameId, pieceIdx1, pieceIdx2) => {
         const pieces = GAMES[gameId].puzzle.tiles;
         const group1 = getPieceGroup(gameId, pieceIdx1);
         const group2 = getPieceGroup(gameId, pieceIdx2);
@@ -990,7 +1001,7 @@ function handleInput$1(gameId, playerId, input, ts) {
         const pieceIdx = getFirstOwnedPieceIdx(gameId, playerId);
         if (pieceIdx >= 0) {
             const pieceIdxs = getGroupedPieceIdxs(gameId, pieceIdx);
-            setTilesOwner(gameId, pieceIdxs, 0);
+            setPiecesOwner(gameId, pieceIdxs, 0);
             _pieceChanges(pieceIdxs);
         }
     }
@@ -1020,8 +1031,8 @@ function handleInput$1(gameId, playerId, input, ts) {
             _playerChange();
             const pieceIdx = getFirstOwnedPieceIdx(gameId, playerId);
             if (pieceIdx >= 0) {
-                // check if pos is on the tile, otherwise dont move
-                // (mouse could be out of table, but tile stays on it)
+                // check if pos is on the piece, otherwise dont move
+                // (mouse could be out of table, but piece stays on it)
                 const pieceIdxs = getGroupedPieceIdxs(gameId, pieceIdx);
                 const diff = { x: -diffX, y: -diffY };
                 if (movePiecesDiff(gameId, pieceIdxs, diff)) {
@@ -1043,7 +1054,7 @@ function handleInput$1(gameId, playerId, input, ts) {
             _dataChange();
             const tileIdxs = getGroupedPieceIdxs(gameId, tileIdxAtPos);
             setPiecesZIndex(gameId, tileIdxs, getMaxZIndex(gameId));
-            setTilesOwner(gameId, tileIdxs, playerId);
+            setPiecesOwner(gameId, tileIdxs, playerId);
             _pieceChanges(tileIdxs);
         }
     }
@@ -1068,11 +1079,11 @@ function handleInput$1(gameId, playerId, input, ts) {
                 const y = input[2];
                 const diffX = input[3];
                 const diffY = input[4];
-                // player is moving a tile (and hand)
+                // player is moving a piece (and hand)
                 changePlayer(gameId, playerId, { x, y, ts });
                 _playerChange();
-                // check if pos is on the tile, otherwise dont move
-                // (mouse could be out of table, but tile stays on it)
+                // check if pos is on the piece, otherwise dont move
+                // (mouse could be out of table, but piece stays on it)
                 const pieceIdxs = getGroupedPieceIdxs(gameId, pieceIdx);
                 const diff = { x: diffX, y: diffY };
                 if (movePiecesDiff(gameId, pieceIdxs, diff)) {
@@ -1085,17 +1096,17 @@ function handleInput$1(gameId, playerId, input, ts) {
         const d = 0; // mouse down = false
         const pieceIdx = getFirstOwnedPieceIdx(gameId, playerId);
         if (pieceIdx >= 0) {
-            // drop the tile(s)
+            // drop the piece(s)
             const pieceIdxs = getGroupedPieceIdxs(gameId, pieceIdx);
-            setTilesOwner(gameId, pieceIdxs, 0);
+            setPiecesOwner(gameId, pieceIdxs, 0);
             _pieceChanges(pieceIdxs);
-            // Check if the tile was dropped near the final location
-            const tilePos = getPiecePos(gameId, pieceIdx);
-            const finalPos = getFinalPiecePos(gameId, pieceIdx);
+            // Check if the piece was dropped near the final location
+            const piecePos = getPiecePos(gameId, pieceIdx);
+            const finalPiecePos = getFinalPiecePos(gameId, pieceIdx);
             if (maySnapToFinal(gameId, pieceIdxs)
-                && Geometry.pointDistance(finalPos, tilePos) < puzzle.info.snapDistance) {
-                const diff = Geometry.pointSub(finalPos, tilePos);
-                // Snap the tile to the final destination
+                && Geometry.pointDistance(finalPiecePos, piecePos) < puzzle.info.snapDistance) {
+                const diff = Geometry.pointSub(finalPiecePos, piecePos);
+                // Snap the piece to the final destination
                 movePiecesDiff(gameId, pieceIdxs, diff);
                 finishPieces(gameId, pieceIdxs);
                 _pieceChanges(pieceIdxs);
@@ -1117,24 +1128,24 @@ function handleInput$1(gameId, playerId, input, ts) {
                 anySnapped = true;
             }
             else {
-                // Snap to other tiles
-                const check = (gameId, tileIdx, otherTileIdx, off) => {
+                // Snap to other pieces
+                const check = (gameId, pieceIdx, otherPieceIdx, off) => {
                     const info = GAMES[gameId].puzzle.info;
-                    if (otherTileIdx < 0) {
+                    if (otherPieceIdx < 0) {
                         return false;
                     }
-                    if (areGrouped(gameId, tileIdx, otherTileIdx)) {
+                    if (areGrouped(gameId, pieceIdx, otherPieceIdx)) {
                         return false;
                     }
-                    const tilePos = getPiecePos(gameId, tileIdx);
-                    const dstPos = Geometry.pointAdd(getPiecePos(gameId, otherTileIdx), { x: off[0] * info.tileSize, y: off[1] * info.tileSize });
-                    if (Geometry.pointDistance(tilePos, dstPos) < info.snapDistance) {
-                        const diff = Geometry.pointSub(dstPos, tilePos);
-                        let pieceIdxs = getGroupedPieceIdxs(gameId, tileIdx);
+                    const piecePos = getPiecePos(gameId, pieceIdx);
+                    const dstPos = Geometry.pointAdd(getPiecePos(gameId, otherPieceIdx), { x: off[0] * info.tileSize, y: off[1] * info.tileSize });
+                    if (Geometry.pointDistance(piecePos, dstPos) < info.snapDistance) {
+                        const diff = Geometry.pointSub(dstPos, piecePos);
+                        let pieceIdxs = getGroupedPieceIdxs(gameId, pieceIdx);
                         movePiecesDiff(gameId, pieceIdxs, diff);
-                        groupTiles(gameId, tileIdx, otherTileIdx);
-                        pieceIdxs = getGroupedPieceIdxs(gameId, tileIdx);
-                        if (isFinishedPiece(gameId, otherTileIdx)) {
+                        groupPieces(gameId, pieceIdx, otherPieceIdx);
+                        pieceIdxs = getGroupedPieceIdxs(gameId, pieceIdx);
+                        if (isFinishedPiece(gameId, otherPieceIdx)) {
                             finishPieces(gameId, pieceIdxs);
                         }
                         else {
@@ -1148,7 +1159,7 @@ function handleInput$1(gameId, playerId, input, ts) {
                 };
                 let snapped = false;
                 for (const pieceIdxTmp of getGroupedPieceIdxs(gameId, pieceIdx)) {
-                    const othersIdxs = getSurroundingTilesByIdx(gameId, pieceIdxTmp);
+                    const othersIdxs = getSurroundingPiecesByIdx(gameId, pieceIdxTmp);
                     if (check(gameId, pieceIdxTmp, othersIdxs[0], [0, 1]) // top
                         || check(gameId, pieceIdxTmp, othersIdxs[1], [-1, 0]) // right
                         || check(gameId, pieceIdxTmp, othersIdxs[2], [0, -1]) // bottom
@@ -1294,6 +1305,7 @@ var GameCommon = {
     Game_isFinished,
 };
 
+const log$4 = logger('Config.ts');
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const BASE_DIR = `${__dirname}/../..`;
@@ -1302,6 +1314,17 @@ const UPLOAD_DIR = `${BASE_DIR}/data/uploads`;
 const UPLOAD_URL = `/uploads`;
 const PUBLIC_DIR = `${BASE_DIR}/build/public/`;
 const DB_PATCHES_DIR = `${BASE_DIR}/src/dbpatches`;
+const init = () => {
+    const configFile = process.env.APP_CONFIG || '';
+    if (configFile === '') {
+        log$4.error('APP_CONFIG environment variable not set or empty');
+        process.exit(2);
+    }
+    const config = JSON.parse(String(readFileSync(configFile)));
+    config.dir = { DATA_DIR, UPLOAD_DIR, UPLOAD_URL, PUBLIC_DIR, DB_PATCHES_DIR };
+    return config;
+};
+const config = init();
 
 const LINES_PER_LOG_FILE = 10000;
 const POST_GAME_LOG_DURATION = 5 * Time.MIN;
@@ -1315,8 +1338,8 @@ const shouldLog = (finishTs, currentTs) => {
     const timeSinceGameEnd = currentTs - finishTs;
     return timeSinceGameEnd <= POST_GAME_LOG_DURATION;
 };
-const filename = (gameId, offset) => `${DATA_DIR}/log_${gameId}-${offset}.log`;
-const idxname = (gameId) => `${DATA_DIR}/log_${gameId}.idx.log`;
+const filename = (gameId, offset) => `${config.dir.DATA_DIR}/log_${gameId}-${offset}.log`;
+const idxname = (gameId) => `${config.dir.DATA_DIR}/log_${gameId}.idx.log`;
 const create = (gameId, ts) => {
     const idxfile = idxname(gameId);
     if (!fs.existsSync(idxfile)) {
@@ -1395,8 +1418,8 @@ const resizeImage = async (filename) => {
     if (!filename.toLowerCase().match(/\.(jpe?g|webp|png)$/)) {
         return;
     }
-    const imagePath = `${UPLOAD_DIR}/${filename}`;
-    const imageOutPath = `${UPLOAD_DIR}/r/${filename}`;
+    const imagePath = `${config.dir.UPLOAD_DIR}/${filename}`;
+    const imageOutPath = `${config.dir.UPLOAD_DIR}/r/${filename}`;
     const orientation = await getExifOrientation(imagePath);
     let sharpImg = sharp(imagePath, { failOnError: false });
     // when image is rotated to the left or right, switch width/height
@@ -1464,7 +1487,7 @@ const imageFromDb = async (db, imageId) => {
         id: i.id,
         uploaderUserId: i.uploader_user_id,
         filename: i.filename,
-        url: `${UPLOAD_URL}/${encodeURIComponent(i.filename)}`,
+        url: `${config.dir.UPLOAD_URL}/${encodeURIComponent(i.filename)}`,
         title: i.title,
         tags: await getTags(db, i.id),
         created: i.created * 1000,
@@ -1506,7 +1529,7 @@ inner join images i on i.id = ixc.image_id ${where.sql};
             id: i.id,
             uploaderUserId: i.uploader_user_id,
             filename: i.filename,
-            url: `${UPLOAD_URL}/${encodeURIComponent(i.filename)}`,
+            url: `${config.dir.UPLOAD_URL}/${encodeURIComponent(i.filename)}`,
             title: i.title,
             tags: await getTags(db, i.id),
             created: i.created * 1000,
@@ -1514,48 +1537,6 @@ inner join images i on i.id = ixc.image_id ${where.sql};
             height: i.height,
             private: !!i.private,
         });
-    }
-    return images;
-};
-/**
- * @deprecated old function, now database is used
- */
-const allImagesFromDisk = (tags, sort) => {
-    let images = fs.readdirSync(UPLOAD_DIR)
-        .filter(f => f.toLowerCase().match(/\.(jpe?g|webp|png)$/))
-        .map(f => ({
-        id: 0,
-        uploaderUserId: null,
-        filename: f,
-        url: `${UPLOAD_URL}/${encodeURIComponent(f)}`,
-        title: f.replace(/\.[a-z]+$/, ''),
-        tags: [],
-        created: fs.statSync(`${UPLOAD_DIR}/${f}`).mtime.getTime(),
-        width: 0,
-        height: 0, // may have to fill when the function is used again
-    }));
-    switch (sort) {
-        case 'alpha_asc':
-            images = images.sort((a, b) => {
-                return a.filename > b.filename ? 1 : -1;
-            });
-            break;
-        case 'alpha_desc':
-            images = images.sort((a, b) => {
-                return a.filename < b.filename ? 1 : -1;
-            });
-            break;
-        case 'date_asc':
-            images = images.sort((a, b) => {
-                return a.created > b.created ? 1 : -1;
-            });
-            break;
-        case 'date_desc':
-        default:
-            images = images.sort((a, b) => {
-                return a.created < b.created ? 1 : -1;
-            });
-            break;
     }
     return images;
 };
@@ -1589,7 +1570,6 @@ const setTags = async (db, imageId, tags) => {
     }
 };
 var Images = {
-    allImagesFromDisk,
     imageFromDb,
     allImagesFromDb,
     getAllTags,
@@ -1598,36 +1578,37 @@ var Images = {
     setTags,
 };
 
-// cut size of each puzzle tile in the
+// cut size of each puzzle piece in the
 // final resized version of the puzzle image
-const TILE_SIZE = 64;
-async function createPuzzle(rng, targetTiles, image, ts, shapeMode) {
-    const imagePath = `${UPLOAD_DIR}/${image.filename}`;
+const PIECE_SIZE = 64;
+async function createPuzzle(rng, targetPieceCount, image, ts, shapeMode) {
+    const imagePath = `${config.dir.UPLOAD_DIR}/${image.filename}`;
     const imageUrl = image.url;
     // determine puzzle information from the image dimensions
     const dim = await Images.getDimensions(imagePath);
     if (!dim.w || !dim.h) {
         throw `[ 2021-05-16 invalid dimension for path ${imagePath} ]`;
     }
-    const info = determinePuzzleInfo(dim, targetTiles);
-    const rawPieces = new Array(info.tiles);
+    const info = determinePuzzleInfo(dim, targetPieceCount);
+    const rawPieces = new Array(info.pieceCount);
     for (let i = 0; i < rawPieces.length; i++) {
         rawPieces[i] = { idx: i };
     }
-    const shapes = determinePuzzleTileShapes(rng, info, shapeMode);
-    let positions = new Array(info.tiles);
+    const shapes = determinePuzzlePieceShapes(rng, info, shapeMode);
+    let positions = new Array(info.pieceCount);
     for (const piece of rawPieces) {
         const coord = Util.coordByPieceIdx(info, piece.idx);
         positions[piece.idx] = {
-            // instead of info.tileSize, we use info.tileDrawSize
-            // to spread the tiles a bit
-            x: coord.x * info.tileSize * 1.5,
-            y: coord.y * info.tileSize * 1.5,
+            // TODO: cant we just use info.pieceDrawSize?
+            // instead of info.pieceSize, we multiply it by 1.5
+            // to spread the pieces a bit
+            x: coord.x * info.pieceSize * 1.5,
+            y: coord.y * info.pieceSize * 1.5,
         };
     }
     const tableWidth = info.width * 3;
     const tableHeight = info.height * 3;
-    const off = info.tileSize * 1.5;
+    const off = info.pieceSize * 1.5;
     const last = {
         x: info.width - (1 * off),
         y: info.height - (2 * off),
@@ -1668,20 +1649,20 @@ async function createPuzzle(rng, targetTiles, image, ts, shapeMode) {
             idx: piece.idx,
             group: 0,
             z: 0,
-            // who owns the tile
+            // who owns the piece
             // 0 = free for taking
             // -1 = finished
-            // other values: id of player who has the tile
+            // other values: id of player who has the piece
             owner: 0,
-            // physical current position of the tile (x/y in pixels)
+            // physical current position of the piece (x/y in pixels)
             // this position is the initial position only and is the
-            // value that changes when moving a tile
+            // value that changes when moving a piece
             pos: positions[piece.idx],
         });
     });
     // Complete puzzle object
     return {
-        // tiles array
+        // pieces array
         tiles: pieces,
         // game data for puzzle, data changes during the game
         data: {
@@ -1699,28 +1680,28 @@ async function createPuzzle(rng, targetTiles, image, ts, shapeMode) {
                 height: tableHeight,
             },
             // information that was used to create the puzzle
-            targetTiles: targetTiles,
+            targetTiles: targetPieceCount,
             imageUrl,
             image: image,
             width: info.width,
             height: info.height,
-            tileSize: info.tileSize,
-            tileDrawSize: info.tileDrawSize,
-            tileMarginWidth: info.tileMarginWidth,
+            tileSize: info.pieceSize,
+            tileDrawSize: info.pieceDrawSize,
+            tileMarginWidth: info.pieceMarginWidth,
             // offset in x and y when drawing tiles, so that they appear to be at pos
-            tileDrawOffset: (info.tileDrawSize - info.tileSize) / -2,
+            tileDrawOffset: (info.pieceDrawSize - info.pieceSize) / -2,
             // max distance between tile and destination that
             // makes the tile snap to destination
-            snapDistance: info.tileSize / 2,
-            tiles: info.tiles,
-            tilesX: info.tilesX,
-            tilesY: info.tilesY,
+            snapDistance: info.pieceSize / 2,
+            tiles: info.pieceCount,
+            tilesX: info.pieceCountHorizontal,
+            tilesY: info.pieceCountVertical,
             // ( index => {x, y} )
             // this is not the physical coordinate, but
-            // the tile_coordinate
+            // the piece_coordinate
             // this can be used to determine where the
-            // final destination of a tile is
-            shapes: shapes, // tile shapes
+            // final destination of a piece is
+            shapes: shapes, // piece shapes
         },
     };
 }
@@ -1735,52 +1716,52 @@ function determineTabs(shapeMode) {
             return [-1, 1];
     }
 }
-function determinePuzzleTileShapes(rng, info, shapeMode) {
+function determinePuzzlePieceShapes(rng, info, shapeMode) {
     const tabs = determineTabs(shapeMode);
-    const shapes = new Array(info.tiles);
-    for (let i = 0; i < info.tiles; i++) {
+    const shapes = new Array(info.pieceCount);
+    for (let i = 0; i < info.pieceCount; i++) {
         const coord = Util.coordByPieceIdx(info, i);
         shapes[i] = {
-            top: coord.y === 0 ? 0 : shapes[i - info.tilesX].bottom * -1,
-            right: coord.x === info.tilesX - 1 ? 0 : rng.choice(tabs),
+            top: coord.y === 0 ? 0 : shapes[i - info.pieceCountHorizontal].bottom * -1,
+            right: coord.x === info.pieceCountHorizontal - 1 ? 0 : rng.choice(tabs),
             left: coord.x === 0 ? 0 : shapes[i - 1].right * -1,
-            bottom: coord.y === info.tilesY - 1 ? 0 : rng.choice(tabs),
+            bottom: coord.y === info.pieceCountVertical - 1 ? 0 : rng.choice(tabs),
         };
     }
     return shapes.map(Util.encodeShape);
 }
-const determineTilesXY = (dim, targetTiles) => {
+const determinePiecesXY = (dim, targetPiecesCount) => {
     const w_ = dim.w < dim.h ? (dim.w * dim.h) : (dim.w * dim.w);
     const h_ = dim.w < dim.h ? (dim.h * dim.h) : (dim.w * dim.h);
     let size = 0;
-    let tiles = 0;
+    let pieces = 0;
     do {
         size++;
-        tiles = Math.floor(w_ / size) * Math.floor(h_ / size);
-    } while (tiles >= targetTiles);
+        pieces = Math.floor(w_ / size) * Math.floor(h_ / size);
+    } while (pieces >= targetPiecesCount);
     size--;
     return {
-        tilesX: Math.round(w_ / size),
-        tilesY: Math.round(h_ / size),
+        countHorizontal: Math.round(w_ / size),
+        countVertical: Math.round(h_ / size),
     };
 };
-const determinePuzzleInfo = (dim, targetTiles) => {
-    const { tilesX, tilesY } = determineTilesXY(dim, targetTiles);
-    const tiles = tilesX * tilesY;
-    const tileSize = TILE_SIZE;
-    const width = tilesX * tileSize;
-    const height = tilesY * tileSize;
-    const tileMarginWidth = tileSize * .5;
-    const tileDrawSize = Math.round(tileSize + tileMarginWidth * 2);
+const determinePuzzleInfo = (dim, targetPieceCount) => {
+    const { countHorizontal, countVertical } = determinePiecesXY(dim, targetPieceCount);
+    const pieceCount = countHorizontal * countVertical;
+    const pieceSize = PIECE_SIZE;
+    const width = countHorizontal * pieceSize;
+    const height = countVertical * pieceSize;
+    const pieceMarginWidth = pieceSize * .5;
+    const pieceDrawSize = Math.round(pieceSize + pieceMarginWidth * 2);
     return {
         width,
         height,
-        tileSize,
-        tileMarginWidth,
-        tileDrawSize,
-        tiles,
-        tilesX,
-        tilesY,
+        pieceSize: pieceSize,
+        pieceMarginWidth: pieceMarginWidth,
+        pieceDrawSize: pieceDrawSize,
+        pieceCount: pieceCount,
+        pieceCountHorizontal: countHorizontal,
+        pieceCountVertical: countVertical,
     };
 };
 
@@ -1907,7 +1888,7 @@ var GameStorage = {
     dirtyGameIds,
 };
 
-async function createGameObject(gameId, gameVersion, targetTiles, image, ts, scoreMode, shapeMode, snapMode, creatorUserId, hasReplay, isPrivate) {
+async function createGameObject(gameId, gameVersion, targetPieceCount, image, ts, scoreMode, shapeMode, snapMode, creatorUserId, hasReplay, isPrivate) {
     const seed = Util.hash(gameId + ' ' + ts);
     const rng = new Rng(seed);
     return {
@@ -1915,7 +1896,7 @@ async function createGameObject(gameId, gameVersion, targetTiles, image, ts, sco
         gameVersion: gameVersion,
         creatorUserId,
         rng: { type: 'Rng', obj: rng },
-        puzzle: await createPuzzle(rng, targetTiles, image, ts, shapeMode),
+        puzzle: await createPuzzle(rng, targetPieceCount, image, ts, shapeMode),
         players: [],
         scoreMode,
         shapeMode,
@@ -2218,20 +2199,7 @@ var Users = {
 };
 
 const run = async () => {
-    let configFile = '';
-    let last = '';
-    for (const val of process.argv) {
-        if (last === '-c') {
-            configFile = val;
-        }
-        last = val;
-    }
-    if (configFile === '') {
-        console.log('no config file given');
-        process.exit(2);
-    }
-    const config = JSON.parse(String(fs.readFileSync(configFile)));
-    const db = new Db(config.db.connectStr, DB_PATCHES_DIR);
+    const db = new Db(config.db.connectStr, config.dir.DB_PATCHES_DIR);
     await db.connect();
     await db.patch();
     const log = logger('main.js');
@@ -2240,7 +2208,7 @@ const run = async () => {
     const app = express();
     app.use(compression());
     const storage = multer.diskStorage({
-        destination: UPLOAD_DIR,
+        destination: config.dir.UPLOAD_DIR,
         filename: function (req, file, cb) {
             cb(null, `${Util.uniqId()}-${file.originalname}`);
         }
@@ -2280,7 +2248,7 @@ const run = async () => {
         if (offset === 0) {
             // also need the game
             game = await Game.createGameObject(gameId, log[0][1], // gameVersion
-            log[0][2], // targetTiles
+            log[0][2], // targetPieceCount
             log[0][3], // must be ImageInfo
             log[0][4], // ts (of game creation)
             log[0][5], // scoreMode
@@ -2320,8 +2288,8 @@ const run = async () => {
                 hasReplay: GameLog.hasReplay(game),
                 started: GameCommon.Game_getStartTs(game),
                 finished: GameCommon.Game_getFinishTs(game),
-                tilesFinished: GameCommon.Game_getFinishedPiecesCount(game),
-                tilesTotal: GameCommon.Game_getPieceCount(game),
+                piecesFinished: GameCommon.Game_getFinishedPiecesCount(game),
+                piecesTotal: GameCommon.Game_getPieceCount(game),
                 players: GameCommon.Game_getActivePlayers(game, ts).length,
                 imageUrl: GameCommon.Game_getImageUrl(game),
             })),
@@ -2367,7 +2335,7 @@ const run = async () => {
                 return;
             }
             const user = await Users.getOrCreateUser(db, req);
-            const dim = await Images.getDimensions(`${UPLOAD_DIR}/${req.file.filename}`);
+            const dim = await Images.getDimensions(`${config.dir.UPLOAD_DIR}/${req.file.filename}`);
             // post form, so booleans are submitted as 'true' | 'false'
             const isPrivate = req.body.private === 'false' ? 0 : 1;
             const imageId = await db.insert('images', {
@@ -2393,8 +2361,8 @@ const run = async () => {
         const gameId = await Game.createNewGame(db, req.body, Time.timestamp(), user.id);
         res.send({ id: gameId });
     });
-    app.use('/uploads/', express.static(UPLOAD_DIR));
-    app.use('/', express.static(PUBLIC_DIR));
+    app.use('/uploads/', express.static(config.dir.UPLOAD_DIR));
+    app.use('/', express.static(config.dir.PUBLIC_DIR));
     const wss = new WebSocketServer(config.ws);
     const notify = (data, sockets) => {
         for (const socket of sockets) {
