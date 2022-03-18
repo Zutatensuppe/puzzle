@@ -5,7 +5,7 @@ import { MODE_REPLAY } from "./game"
 
 function EventAdapter (
   canvas: HTMLCanvasElement,
-  window: any,
+  window: Window,
   viewport: Camera,
   MODE: string
 ) {

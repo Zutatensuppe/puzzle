@@ -2,7 +2,7 @@
   <div class="game-teaser" :style="style">
     <router-link class="game-info" :to="{ name: 'game', params: { id: game.id } }">
       <span class="game-info-text">
-        <i class="icon icon-puzzle-piece" /> {{game.tilesFinished}}/{{game.tilesTotal}}<br />
+        <i class="icon icon-puzzle-piece" /> {{game.piecesFinished}}/{{game.piecesTotal}}<br />
         <i class="icon icon-sillouette" /> {{game.players}}<br />
         <i class="icon icon-clock" v-if="!game.finished" />
         <i class="icon icon-flag" v-else /> {{time(game.started, game.finished)}}<br />

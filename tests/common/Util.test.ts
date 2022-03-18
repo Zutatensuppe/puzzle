@@ -101,9 +101,9 @@ describe('Util', () => {
     expect(decoded).toStrictEqual(game)
   })
 
-  test('coordByPieceIdx', () => {
-    expect(Util.coordByPieceIdx(puzzleInfo, 5)).toStrictEqual({"x": 1, "y": 2})
-    expect(Util.coordByPieceIdx(puzzleInfo, 999)).toStrictEqual({"x": 1, "y": 499})
+  test('coordByPieceIdxDeprecated', () => {
+    expect(Util.coordByPieceIdxDeprecated(puzzleInfo, 5)).toStrictEqual({"x": 1, "y": 2})
+    expect(Util.coordByPieceIdxDeprecated(puzzleInfo, 999)).toStrictEqual({"x": 1, "y": 499})
   })
 
   test.each([

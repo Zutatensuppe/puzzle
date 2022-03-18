@@ -533,7 +533,7 @@ export async function main(
               rerender = true
             }
           } break;
-          case Protocol.CHANGE_TILE: {
+          case Protocol.CHANGE_PIECE: {
             const piece = Util.decodePiece(changeData)
             Game.setPiece(gameId, piece.idx, piece)
             rerender = true
@@ -831,27 +831,27 @@ export async function main(
     // ---------------------------------------------------------------
 
 
-    // DRAW TILES
+    // DRAW PIECES
     // ---------------------------------------------------------------
-    const tiles = Game.getPiecesSortedByZIndex(gameId)
-    if (window.DEBUG) Debug.checkpoint('get tiles done')
+    const pieces = Game.getPiecesSortedByZIndex(gameId)
+    if (window.DEBUG) Debug.checkpoint('get pieces done')
 
     dim = viewport.worldDimToViewportRaw(PIECE_DIM)
-    for (const tile of tiles) {
-      if (!shouldDrawPiece(tile)) {
+    for (const piece of pieces) {
+      if (!shouldDrawPiece(piece)) {
         continue
       }
-      bmp = bitmaps[tile.idx]
+      bmp = bitmaps[piece.idx]
       pos = viewport.worldToViewportRaw({
-        x: PIECE_DRAW_OFFSET + tile.pos.x,
-        y: PIECE_DRAW_OFFSET + tile.pos.y,
+        x: PIECE_DRAW_OFFSET + piece.pos.x,
+        y: PIECE_DRAW_OFFSET + piece.pos.y,
       })
       ctx.drawImage(bmp,
         0, 0, bmp.width, bmp.height,
         pos.x, pos.y, dim.w, dim.h
       )
     }
-    if (window.DEBUG) Debug.checkpoint('tiles done')
+    if (window.DEBUG) Debug.checkpoint('pieces done')
     // ---------------------------------------------------------------
 
 

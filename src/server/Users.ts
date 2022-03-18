@@ -1,4 +1,3 @@
-import Time from '../common/Time'
 import Db from './Db'
 
 const TABLE = 'users'
@@ -6,21 +5,28 @@ const TABLE = 'users'
 const HEADER_CLIENT_ID = 'client-id'
 const HEADER_CLIENT_SECRET = 'client-secret'
 
-const getOrCreateUser = (db: Db, req: any): any => {
-  let user = getUser(db, req)
+interface User {
+  id: number
+  created: Date
+  client_id: string
+  client_secret: string
+}
+
+const getOrCreateUser = async (db: Db, req: any): Promise<User> => {
+  let user = await getUser(db, req)
   if (!user) {
-    db.insert(TABLE, {
+    await db.insert(TABLE, {
       'client_id': req.headers[HEADER_CLIENT_ID],
       'client_secret': req.headers[HEADER_CLIENT_SECRET],
-      'created': Time.timestamp(),
+      'created': new Date(),
     })
-    user = getUser(db, req)
+    user = await getUser(db, req) as User
   }
   return user
 }
 
-const getUser = (db: Db, req: any): any => {
-  const user = db.get(TABLE, {
+const getUser = async (db: Db, req: any): Promise<User | null> => {
+  const user = await db.get(TABLE, {
     'client_id': req.headers[HEADER_CLIENT_ID],
     'client_secret': req.headers[HEADER_CLIENT_SECRET],
   })

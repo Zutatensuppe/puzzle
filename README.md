@@ -32,6 +32,11 @@ command              | explanation
 
 ## Dev
 
+Start the dev database (postgres) via:
+```
+docker-compose up
+```
+
 For development it makes sense to run both `dev-server` and `dev-frontend`
 in separate shells.
 
@@ -64,10 +69,6 @@ update without running an extra command.
 The server will restart when a change is made on the server code.
 
 Then open the url output by the dev-frontend command, eg. http://localhost:3000.
-
-## Database
-
-The database will automatically created in `data/db.sqlite`.
 
 
 [jigsaw.hyottoko.club]: https://jigsaw.hyottoko.club
