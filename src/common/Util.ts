@@ -155,11 +155,22 @@ function decodeGame(data: EncodedGame): Game {
   }
 }
 
-function coordByPieceIdx(info: PuzzleInfo|PuzzleCreationInfo, pieceIdx: number): Point {
-  const wTiles = info.width / info.tileSize
+/**
+ * @deprecated Uses PuzzleInfo with 'tileSize' prop :(
+ */
+function coordByPieceIdxDeprecated(info: PuzzleInfo, pieceIdx: number): Point {
+  const wPieces = info.width / info.tileSize
   return {
-    x: pieceIdx % wTiles,
-    y: Math.floor(pieceIdx / wTiles),
+    x: pieceIdx % wPieces,
+    y: Math.floor(pieceIdx / wPieces),
+  }
+}
+
+function coordByPieceIdx(info: PuzzleCreationInfo, pieceIdx: number): Point {
+  const wPieces = info.width / info.pieceSize
+  return {
+    x: pieceIdx % wPieces,
+    y: Math.floor(pieceIdx / wPieces),
   }
 }
 
@@ -204,6 +215,7 @@ export default {
   encodeGame,
   decodeGame,
 
+  coordByPieceIdxDeprecated,
   coordByPieceIdx,
 
   asQueryArgs,

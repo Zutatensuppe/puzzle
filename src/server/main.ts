@@ -84,7 +84,7 @@ const run = async () => {
       game = await Game.createGameObject(
         gameId,
         log[0][1], // gameVersion
-        log[0][2], // targetTiles
+        log[0][2], // targetPieceCount
         log[0][3], // must be ImageInfo
         log[0][4], // ts (of game creation)
         log[0][5], // scoreMode
@@ -127,8 +127,8 @@ const run = async () => {
         hasReplay: GameLog.hasReplay(game),
         started: GameCommon.Game_getStartTs(game),
         finished: GameCommon.Game_getFinishTs(game),
-        tilesFinished: GameCommon.Game_getFinishedPiecesCount(game),
-        tilesTotal: GameCommon.Game_getPieceCount(game),
+        piecesFinished: GameCommon.Game_getFinishedPiecesCount(game),
+        piecesTotal: GameCommon.Game_getPieceCount(game),
         players: GameCommon.Game_getActivePlayers(game, ts).length,
         imageUrl: GameCommon.Game_getImageUrl(game),
       })),
