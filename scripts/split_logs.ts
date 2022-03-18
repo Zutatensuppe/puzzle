@@ -1,6 +1,6 @@
 import fs from 'fs'
 import { logger } from '../src/common/Util'
-import { DATA_DIR } from '../src/server/Dirs'
+import config from '../src/server/Config'
 import { filename } from '../src/server/GameLog'
 
 const log = logger('rewrite_logs')
@@ -20,7 +20,7 @@ interface Idx {
 }
 const doit = (idxfile: string): void => {
   const gameId: string = (idxfile.match(/^log_([a-z0-9]+)\.idx\.log$/) as any[])[1]
-  const idxOld: IdxOld = JSON.parse(fs.readFileSync(DATA_DIR + '/' + idxfile, 'utf-8'))
+  const idxOld: IdxOld = JSON.parse(fs.readFileSync(config.dir.DATA_DIR + '/' + idxfile, 'utf-8'))
 
   let currentFile = filename(gameId, 0)
   const idxNew: Idx = {
@@ -58,11 +58,11 @@ const doit = (idxfile: string): void => {
     currentFile = filename(gameId, idxNew.total)
   }
 
-  fs.writeFileSync(DATA_DIR + '/' + idxfile, JSON.stringify(idxNew))
+  fs.writeFileSync(config.dir.DATA_DIR + '/' + idxfile, JSON.stringify(idxNew))
   console.log('done: ' + gameId)
 }
 
-let indexfiles = fs.readdirSync(DATA_DIR)
+let indexfiles = fs.readdirSync(config.dir.DATA_DIR)
   .filter(f => f.toLowerCase().match(/^log_[a-z0-9]+\.idx\.log$/))
 
 

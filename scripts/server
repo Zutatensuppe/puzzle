@@ -1,4 +1,5 @@
 #!/bin/sh
 
 # server for built files
-nodemon --watch build --max-old-space-size=64 -e js build/server/main.js -c config.json
+export APP_CONFIG=config.json
+nodemon --watch build --max-old-space-size=64 -e js build/server/main.js

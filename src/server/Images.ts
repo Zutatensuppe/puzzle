@@ -1,9 +1,8 @@
 import sizeOf from 'image-size'
-import fs from 'fs'
 import exif from 'exif'
 import sharp from 'sharp'
 
-import {UPLOAD_DIR, UPLOAD_URL} from './Dirs'
+import config from './Config'
 import Db, { OrderBy, WhereRaw } from './Db'
 import { Dim } from '../common/Geometry'
 import Util, { logger } from '../common/Util'
@@ -16,8 +15,8 @@ const resizeImage = async (filename: string): Promise<void> => {
     return
   }
 
-  const imagePath = `${UPLOAD_DIR}/${filename}`
-  const imageOutPath = `${UPLOAD_DIR}/r/${filename}`
+  const imagePath = `${config.dir.UPLOAD_DIR}/${filename}`
+  const imageOutPath = `${config.dir.UPLOAD_DIR}/r/${filename}`
   const orientation = await getExifOrientation(imagePath)
 
   let sharpImg = sharp(imagePath, { failOnError: false })
@@ -87,7 +86,7 @@ const imageFromDb = async (db: Db, imageId: number): Promise<ImageInfo> => {
     id: i.id,
     uploaderUserId: i.uploader_user_id,
     filename: i.filename,
-    url: `${UPLOAD_URL}/${encodeURIComponent(i.filename)}`,
+    url: `${config.dir.UPLOAD_URL}/${encodeURIComponent(i.filename)}`,
     title: i.title,
     tags: await getTags(db, i.id),
     created: i.created * 1000,
@@ -136,7 +135,7 @@ inner join images i on i.id = ixc.image_id ${where.sql};
       id: i.id as number,
       uploaderUserId: i.uploader_user_id,
       filename: i.filename,
-      url: `${UPLOAD_URL}/${encodeURIComponent(i.filename)}`,
+      url: `${config.dir.UPLOAD_URL}/${encodeURIComponent(i.filename)}`,
       title: i.title,
       tags: await getTags(db, i.id),
       created: i.created * 1000,
@@ -144,56 +143,6 @@ inner join images i on i.id = ixc.image_id ${where.sql};
       height: i.height,
       private: !!i.private,
     })
-  }
-  return images
-}
-
-/**
- * @deprecated old function, now database is used
- */
-const allImagesFromDisk = (
-  tags: string[],
-  sort: string
-): ImageInfo[] => {
-  let images = fs.readdirSync(UPLOAD_DIR)
-    .filter(f => f.toLowerCase().match(/\.(jpe?g|webp|png)$/))
-    .map(f => ({
-      id: 0,
-      uploaderUserId: null,
-      filename: f,
-      url: `${UPLOAD_URL}/${encodeURIComponent(f)}`,
-      title: f.replace(/\.[a-z]+$/, ''),
-      tags: [] as Tag[],
-      created: fs.statSync(`${UPLOAD_DIR}/${f}`).mtime.getTime(),
-      width: 0, // may have to fill when the function is used again
-      height: 0, // may have to fill when the function is used again
-    }))
-
-  switch (sort) {
-    case 'alpha_asc':
-      images = images.sort((a, b) => {
-        return a.filename > b.filename ? 1 : -1
-      })
-      break;
-
-    case 'alpha_desc':
-      images = images.sort((a, b) => {
-        return a.filename < b.filename ? 1 : -1
-      })
-      break;
-
-    case 'date_asc':
-      images = images.sort((a, b) => {
-        return a.created > b.created ? 1 : -1
-      })
-      break;
-
-    case 'date_desc':
-    default:
-      images = images.sort((a, b) => {
-        return a.created < b.created ? 1 : -1
-      })
-      break;
   }
   return images
 }
@@ -230,7 +179,6 @@ const setTags = async (db: Db, imageId: number, tags: string[]): Promise<void> =
 }
 
 export default {
-  allImagesFromDisk,
   imageFromDb,
   allImagesFromDb,
   getAllTags,

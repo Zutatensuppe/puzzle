@@ -19,7 +19,6 @@
   "homepage": "https://github.com/Zutatensuppe/puzzle#readme",
   "type": "module",
   "dependencies": {
-    "better-sqlite3": "^7.5.0",
     "exif": "^0.6.0",
     "express": "^4.17.3",
     "image-size": "^1.0.1",
@@ -32,7 +31,6 @@
     "ws": "^8.5.0"
   },
   "devDependencies": {
-    "@types/better-sqlite3": "^7.5.0",
     "@types/compression": "^1.7.2",
     "@types/exif": "^0.6.3",
     "@types/express": "^4.17.13",

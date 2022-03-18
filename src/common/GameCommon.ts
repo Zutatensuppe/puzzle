@@ -189,33 +189,33 @@ const getPiece = (gameId: string, pieceIdx: number): Piece => {
   return Util.decodePiece(GAMES[gameId].puzzle.tiles[pieceIdx])
 }
 
-const getPieceGroup = (gameId: string, tileIdx: number): number => {
-  const tile = getPiece(gameId, tileIdx)
+const getPieceGroup = (gameId: string, pieceIdx: number): number => {
+  const tile = getPiece(gameId, pieceIdx)
   return tile.group
 }
 
-const isCornerPiece = (gameId: string, tileIdx: number): boolean => {
+const isCornerPiece = (gameId: string, pieceIdx: number): boolean => {
   const info = GAMES[gameId].puzzle.info
   return (
-    tileIdx === 0 // top left corner
-    || tileIdx === (info.tilesX - 1) // top right corner
-    || tileIdx === (info.tiles - info.tilesX) // bottom left corner
-    || tileIdx === (info.tiles - 1) // bottom right corner
+    pieceIdx === 0 // top left corner
+    || pieceIdx === (info.tilesX - 1) // top right corner
+    || pieceIdx === (info.tiles - info.tilesX) // bottom left corner
+    || pieceIdx === (info.tiles - 1) // bottom right corner
   )
 }
 
-const getFinalPiecePos = (gameId: string, tileIdx: number): Point => {
+const getFinalPiecePos = (gameId: string, pieceIdx: number): Point => {
   const info = GAMES[gameId].puzzle.info
   const boardPos = {
     x: (info.table.width - info.width) / 2,
     y: (info.table.height - info.height) / 2
   }
-  const srcPos = srcPosByTileIdx(gameId, tileIdx)
+  const srcPos = srcPosByPieceIdx(gameId, pieceIdx)
   return Geometry.pointAdd(boardPos, srcPos)
 }
 
-const getPiecePos = (gameId: string, tileIdx: number): Point => {
-  const tile = getPiece(gameId, tileIdx)
+const getPiecePos = (gameId: string, pieceIdx: number): Point => {
+  const tile = getPiece(gameId, pieceIdx)
   return tile.pos
 }
 
@@ -234,26 +234,15 @@ const getBounds = (gameId: string): Rect => {
   }
 }
 
-const getPieceBounds = (gameId: string, tileIdx: number): Rect => {
-  const s = getPieceSize(gameId)
-  const tile = getPiece(gameId, tileIdx)
-  return {
-    x: tile.pos.x,
-    y: tile.pos.y,
-    w: s,
-    h: s,
-  }
-}
-
 const getPieceZIndex = (gameId: string, pieceIdx: number): number => {
   return getPiece(gameId, pieceIdx).z
 }
 
 const getFirstOwnedPieceIdx = (gameId: string, playerId: string): number => {
   for (const t of GAMES[gameId].puzzle.tiles) {
-    const tile = Util.decodePiece(t)
-    if (tile.owner === playerId) {
-      return tile.idx
+    const piece = Util.decodePiece(t)
+    if (piece.owner === playerId) {
+      return piece.idx
     }
   }
   return -1
@@ -273,10 +262,6 @@ const getPieceDrawOffset = (gameId: string): number => {
 
 const getPieceDrawSize = (gameId: string): number => {
   return GAMES[gameId].puzzle.info.tileDrawSize
-}
-
-const getPieceSize = (gameId: string): number => {
-  return GAMES[gameId].puzzle.info.tileSize
 }
 
 const getStartTs = (gameId: string): Timestamp => {
@@ -306,43 +291,43 @@ const getMaxZIndexByPieceIdxs = (gameId: string, pieceIdxs: Array<number>): numb
   return maxZ
 }
 
-function srcPosByTileIdx(gameId: string, tileIdx: number): Point {
+function srcPosByPieceIdx(gameId: string, pieceIdx: number): Point {
   const info = GAMES[gameId].puzzle.info
 
-  const c = Util.coordByPieceIdx(info, tileIdx)
+  const c = Util.coordByPieceIdx(info, pieceIdx)
   const cx = c.x * info.tileSize
   const cy = c.y * info.tileSize
 
   return { x: cx, y: cy }
 }
 
-function getSurroundingTilesByIdx(gameId: string, tileIdx: number) {
+function getSurroundingPiecesByIdx(gameId: string, pieceIdx: number) {
   const info = GAMES[gameId].puzzle.info
 
-  const c = Util.coordByPieceIdx(info, tileIdx)
+  const c = Util.coordByPieceIdx(info, pieceIdx)
 
   return [
     // top
-    (c.y > 0) ?               (tileIdx - info.tilesX) : -1,
+    (c.y > 0) ?               (pieceIdx - info.tilesX) : -1,
     // right
-    (c.x < info.tilesX - 1) ? (tileIdx + 1)           : -1,
+    (c.x < info.tilesX - 1) ? (pieceIdx + 1)           : -1,
     // bottom
-    (c.y < info.tilesY - 1) ? (tileIdx + info.tilesX) : -1,
+    (c.y < info.tilesY - 1) ? (pieceIdx + info.tilesX) : -1,
     // left
-    (c.x > 0) ?               (tileIdx - 1)           : -1,
+    (c.x > 0) ?               (pieceIdx - 1)           : -1,
   ]
 }
 
-const setPiecesZIndex = (gameId: string, tileIdxs: Array<number>, zIndex: number): void => {
-  for (const tilesIdx of tileIdxs) {
-    changePiece(gameId, tilesIdx, { z: zIndex })
+const setPiecesZIndex = (gameId: string, pieceIdxs: Array<number>, zIndex: number): void => {
+  for (const pieceIdx of pieceIdxs) {
+    changePiece(gameId, pieceIdx, { z: zIndex })
   }
 }
 
-const moveTileDiff = (gameId: string, tileIdx: number, diff: Point): void => {
-  const oldPos = getPiecePos(gameId, tileIdx)
+const movePieceDiff = (gameId: string, pieceIdx: number, diff: Point): void => {
+  const oldPos = getPiecePos(gameId, pieceIdx)
   const pos = Geometry.pointAdd(oldPos, diff)
-  changePiece(gameId, tileIdx, { pos })
+  changePiece(gameId, pieceIdx, { pos })
 }
 
 const movePiecesDiff = (
@@ -372,7 +357,7 @@ const movePiecesDiff = (
   }
 
   for (const pieceIdx of pieceIdxs) {
-    moveTileDiff(gameId, pieceIdx, cappedDiff)
+    movePieceDiff(gameId, pieceIdx, cappedDiff)
   }
   return true
 }
@@ -407,7 +392,7 @@ function getGroupedPieceCount(gameId: string, pieceIdx: number): number {
   return getGroupedPieceIdxs(gameId, pieceIdx).length
 }
 
-// get all grouped tiles for a tile
+// get all grouped pieces for a piece
 function getGroupedPieceIdxs(gameId: string, pieceIdx: number): number[] {
   const pieces = GAMES[gameId].puzzle.tiles
   const piece = Util.decodePiece(pieces[pieceIdx])
@@ -426,7 +411,7 @@ function getGroupedPieceIdxs(gameId: string, pieceIdx: number): number[] {
   return grouped
 }
 
-// Returns the index of the puzzle tile with the highest z index
+// Returns the index of the puzzle piece with the highest z index
 // that is not finished yet and that matches the position
 const freePieceIdxByPos = (gameId: string, pos: Point): number => {
   const info = GAMES[gameId].puzzle.info
@@ -476,14 +461,14 @@ const getPlayerPoints = (gameId: string, playerId: string): number => {
   return p ? p.points : 0
 }
 
-// determine if two tiles are grouped together
+// determine if two pieces are grouped together
 const areGrouped = (
   gameId: string,
-  tileIdx1: number,
-  tileIdx2: number
+  pieceIdx1: number,
+  pieceIdx2: number
 ): boolean => {
-  const g1 = getPieceGroup(gameId, tileIdx1)
-  const g2 = getPieceGroup(gameId, tileIdx2)
+  const g1 = getPieceGroup(gameId, pieceIdx1)
+  const g2 = getPieceGroup(gameId, pieceIdx2)
   return !!(g1 && g1 === g2)
 }
 
@@ -543,7 +528,7 @@ function handleInput(
 
   const _pieceChange = (pieceIdx: number): void => {
     changes.push([
-      Protocol.CHANGE_TILE,
+      Protocol.CHANGE_PIECE,
       Util.encodePiece(getPiece(gameId, pieceIdx)),
     ])
   }
@@ -567,8 +552,8 @@ function handleInput(
 
   let anySnapped: boolean = false
 
-  // put both tiles (and their grouped tiles) in the same group
-  const groupTiles = (
+  // put both pieces (and their grouped pieces) in the same group
+  const groupPieces = (
     gameId: string,
     pieceIdx1: number,
     pieceIdx2: number
@@ -773,7 +758,7 @@ function handleInput(
             const diff = Geometry.pointSub(dstPos, tilePos)
             let pieceIdxs = getGroupedPieceIdxs(gameId, tileIdx)
             movePiecesDiff(gameId, pieceIdxs, diff)
-            groupTiles(gameId, tileIdx, otherTileIdx)
+            groupPieces(gameId, tileIdx, otherTileIdx)
             pieceIdxs = getGroupedPieceIdxs(gameId, tileIdx)
             if (isFinishedPiece(gameId, otherTileIdx)) {
               finishPieces(gameId, pieceIdxs)
@@ -789,7 +774,7 @@ function handleInput(
 
         let snapped = false
         for (const pieceIdxTmp of getGroupedPieceIdxs(gameId, pieceIdx)) {
-          const othersIdxs = getSurroundingTilesByIdx(gameId, pieceIdxTmp)
+          const othersIdxs = getSurroundingPiecesByIdx(gameId, pieceIdxTmp)
           if (
             check(gameId, pieceIdxTmp, othersIdxs[0], [0, 1]) // top
             || check(gameId, pieceIdxTmp, othersIdxs[1], [-1, 0]) // right

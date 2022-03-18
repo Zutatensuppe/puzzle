@@ -1,18 +1,20 @@
-import { DB_FILE, DB_PATCHES_DIR, UPLOAD_DIR } from '../src/server/Dirs'
+import config from '../src/server/Config'
 import Db from '../src/server/Db'
 import Images from '../src/server/Images'
 
-const db = new Db(DB_FILE, DB_PATCHES_DIR)
-db.patch(true)
+const db = new Db(config.db.connectStr, config.dir.DB_PATCHES_DIR)
 
 ;(async () => {
-  let images = db.getMany('images')
-  for (let image of images) {
+  await db.connect()
+  await db.patch(true)
+  const images = await db.getMany('images')
+  for (const image of images) {
     console.log(image.filename)
-    let dim = await Images.getDimensions(`${UPLOAD_DIR}/${image.filename}`)
-    console.log(await Images.getDimensions(`${UPLOAD_DIR}/${image.filename}`))
+    const dim = await Images.getDimensions(`${config.dir.UPLOAD_DIR}/${image.filename}`)
+    console.log(await Images.getDimensions(`${config.dir.UPLOAD_DIR}/${image.filename}`))
     image.width = dim.w
     image.height = dim.h
-    db.upsert('images', image, { id: image.id })
+    await db.upsert('images', image, { id: image.id })
   }
+  await db.close()
 })()
