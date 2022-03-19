@@ -30,12 +30,12 @@
       <puzzle-status :status="status" />
       <div class="playback-control">
         <div>{{replayText}}</div>
-        <button class="btn" @click="eventBus.emit('replayOnSpeedUp')">⏫</button>
-        <button class="btn" @click="eventBus.emit('replayOnSpeedDown')">⏬</button>
-        <button class="btn" @click="eventBus.emit('replayOnPauseToggle')">⏸️</button>
+        <button class="btn" @click="eventBus.emit('replayOnSpeedUp')"><i class="icon icon-speed-up" /></button>
+        <button class="btn" @click="eventBus.emit('replayOnSpeedDown')"><i class="icon icon-speed-down" /></button>
+        <button class="btn" @click="eventBus.emit('replayOnPauseToggle')"><i class="icon icon-pause" /></button>
       </div>
       <div class="switch-game-replay" v-if="g.game">
-        <router-link :to="{ name: 'game', params: { id: g.game.id } }">🧩 To the game</router-link>
+        <router-link :to="{ name: 'game', params: { id: g.game.id } }"><i class="icon icon-puzzle-piece" /> To the game</router-link>
       </div>
     </div>
 
