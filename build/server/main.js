@@ -1471,7 +1471,7 @@ group by c.id order by total desc;`;
 };
 const getTags = async (db, imageId) => {
     const query = `
-select * from categories c
+select c.id, c.slug, c.title from categories c
 inner join image_x_category ixc on c.id = ixc.category_id
 where ixc.image_id = $1`;
     return (await db._getMany(query, [imageId])).map(row => ({
@@ -1482,18 +1482,25 @@ where ixc.image_id = $1`;
     }));
 };
 const imageFromDb = async (db, imageId) => {
-    const i = await db.get('images', { id: imageId });
+    const imageRow = await db.get('images', { id: imageId });
+    if (!imageRow) {
+        return null;
+    }
     return {
-        id: i.id,
-        uploaderUserId: i.uploader_user_id,
-        filename: i.filename,
-        url: `${config.dir.UPLOAD_URL}/${encodeURIComponent(i.filename)}`,
-        title: i.title,
-        tags: await getTags(db, i.id),
-        created: i.created * 1000,
-        width: i.width,
-        height: i.height,
+        id: imageRow.id,
+        uploaderUserId: imageRow.uploader_user_id,
+        filename: imageRow.filename,
+        url: `${config.dir.UPLOAD_URL}/${encodeURIComponent(imageRow.filename)}`,
+        title: imageRow.title,
+        tags: await getTags(db, imageRow.id),
+        created: imageRow.created.getTime(),
+        width: imageRow.width,
+        height: imageRow.height,
     };
+};
+const getCategoryRowsBySlugs = async (db, slugs) => {
+    const c = await db.getMany('categories', { slug: { '$in': slugs } });
+    return c;
 };
 const allImagesFromDb = async (db, tagSlugs, orderBy, isPrivate) => {
     const orderByMap = {
@@ -1506,7 +1513,7 @@ const allImagesFromDb = async (db, tagSlugs, orderBy, isPrivate) => {
     const wheresRaw = {};
     wheresRaw['private'] = isPrivate ? 1 : 0;
     if (tagSlugs.length > 0) {
-        const c = await db.getMany('categories', { slug: { '$in': tagSlugs } });
+        const c = await getCategoryRowsBySlugs(db, tagSlugs);
         if (!c) {
             return [];
         }
@@ -1532,7 +1539,7 @@ inner join images i on i.id = ixc.image_id ${where.sql};
             url: `${config.dir.UPLOAD_URL}/${encodeURIComponent(i.filename)}`,
             title: i.title,
             tags: await getTags(db, i.id),
-            created: i.created * 1000,
+            created: i.created.getTime(),
             width: i.width,
             height: i.height,
             private: !!i.private,
@@ -1831,7 +1838,7 @@ async function getAllPublicGames(db) {
     return games;
 }
 async function exists(db, gameId) {
-    const gameRow = await db.get('games', { id: gameId });
+    const gameRow = await getGameRowById(db, gameId);
     return !!gameRow;
 }
 function dirtyGameIds() {

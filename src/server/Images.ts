@@ -10,6 +10,18 @@ import { Tag, ImageInfo } from '../common/Types'
 
 const log = logger('Images.ts')
 
+interface ImageRow {
+  id: number
+  uploader_user_id: number
+  created: Date
+  filename: string
+  filename_original: string
+  title: string
+  width: number
+  height: number
+  private: number
+}
+
 const resizeImage = async (filename: string): Promise<void> => {
   if (!filename.toLowerCase().match(/\.(jpe?g|webp|png)$/)) {
     return
@@ -69,7 +81,7 @@ group by c.id order by total desc;`
 
 const getTags = async (db: Db, imageId: number): Promise<Tag[]> => {
   const query = `
-select * from categories c
+select c.id, c.slug, c.title from categories c
 inner join image_x_category ixc on c.id = ixc.category_id
 where ixc.image_id = $1`
   return (await db._getMany(query, [imageId])).map(row => ({
@@ -80,19 +92,33 @@ where ixc.image_id = $1`
   }))
 }
 
-const imageFromDb = async (db: Db, imageId: number): Promise<ImageInfo> => {
-  const i = await db.get('images', { id: imageId })
-  return {
-    id: i.id,
-    uploaderUserId: i.uploader_user_id,
-    filename: i.filename,
-    url: `${config.dir.UPLOAD_URL}/${encodeURIComponent(i.filename)}`,
-    title: i.title,
-    tags: await getTags(db, i.id),
-    created: i.created * 1000,
-    width: i.width,
-    height: i.height,
+const imageFromDb = async (db: Db, imageId: number): Promise<ImageInfo | null> => {
+  const imageRow: ImageRow | null = await db.get('images', { id: imageId })
+  if (!imageRow) {
+    return null
   }
+  return {
+    id: imageRow.id,
+    uploaderUserId: imageRow.uploader_user_id,
+    filename: imageRow.filename,
+    url: `${config.dir.UPLOAD_URL}/${encodeURIComponent(imageRow.filename)}`,
+    title: imageRow.title,
+    tags: await getTags(db, imageRow.id),
+    created: imageRow.created.getTime(),
+    width: imageRow.width,
+    height: imageRow.height,
+  }
+}
+
+interface CategoryRow {
+  id: number
+  slug: string
+  title: string
+}
+
+const getCategoryRowsBySlugs = async (db: Db, slugs: string[]): Promise<CategoryRow[]> => {
+  const c = await db.getMany('categories', {slug: {'$in': slugs}})
+  return c as CategoryRow[]
 }
 
 const allImagesFromDb = async (
@@ -112,14 +138,14 @@ const allImagesFromDb = async (
   const wheresRaw: WhereRaw = {}
   wheresRaw['private'] = isPrivate ? 1 : 0
   if (tagSlugs.length > 0) {
-    const c = await db.getMany('categories', {slug: {'$in': tagSlugs}})
+    const c = await getCategoryRowsBySlugs(db, tagSlugs)
     if (!c) {
       return []
     }
     const where = db._buildWhere({
       'category_id': {'$in': c.map(x => x.id)}
     })
-    const ids = (await db._getMany(`
+    const ids: number[] = (await db._getMany(`
 select i.id from image_x_category ixc
 inner join images i on i.id = ixc.image_id ${where.sql};
 `, where.values)).map(img => img.id)
@@ -128,7 +154,7 @@ inner join images i on i.id = ixc.image_id ${where.sql};
     }
     wheresRaw['id'] = {'$in': ids}
   }
-  const tmpImages = await db.getMany('images', wheresRaw, orderByMap[orderBy])
+  const tmpImages: ImageRow[] = await db.getMany('images', wheresRaw, orderByMap[orderBy])
   const images = []
   for (const i of tmpImages) {
     images.push({
@@ -138,7 +164,7 @@ inner join images i on i.id = ixc.image_id ${where.sql};
       url: `${config.dir.UPLOAD_URL}/${encodeURIComponent(i.filename)}`,
       title: i.title,
       tags: await getTags(db, i.id),
-      created: i.created * 1000,
+      created: i.created.getTime(),
       width: i.width,
       height: i.height,
       private: !!i.private,
