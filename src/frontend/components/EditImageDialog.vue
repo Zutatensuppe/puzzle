@@ -29,7 +29,7 @@
       </div>
 
       <div class="area-buttons">
-        <button class="btn" @click="saveImage">🖼️ Save image</button>
+        <button class="btn" @click="saveImage"><i class="icon icon-preview" /> Save image</button>
       </div>
     </template>
   </overlay>

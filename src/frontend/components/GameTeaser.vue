@@ -2,13 +2,14 @@
   <div class="game-teaser" :style="style">
     <router-link class="game-info" :to="{ name: 'game', params: { id: game.id } }">
       <span class="game-info-text">
-        🧩 {{game.piecesFinished}}/{{game.piecesTotal}}<br />
-        👥 {{game.players}}<br />
-        {{time(game.started, game.finished)}}<br />
+        <i class="icon icon-puzzle-piece" /> {{game.piecesFinished}}/{{game.piecesTotal}}<br />
+        <i class="icon icon-sillouette" /> {{game.players}}<br />
+        <i class="icon icon-clock" v-if="!game.finished" />
+        <i class="icon icon-flag" v-else /> {{time(game.started, game.finished)}}<br />
       </span>
     </router-link>
     <router-link v-if="game.hasReplay" class="game-replay" :to="{ name: 'replay', params: { id: game.id } }">
-      ↪️ Watch replay
+      <i class="icon icon-replay" /> Watch replay
     </router-link>
   </div>
 </template>
@@ -33,11 +34,10 @@ export default defineComponent({
   },
   methods: {
     time(start: number, end: number) {
-      const icon = end ? '🏁' : '⏳'
       const from = start;
       const to = end || Time.timestamp()
       const timeDiffStr = Time.timeDiffStr(from, to)
-      return `${icon} ${timeDiffStr}`
+      return `${timeDiffStr}`
     },
   },
 })

@@ -65,7 +65,7 @@
 
       <div class="area-buttons">
         <button class="btn" :disabled="!canStartNewGame" @click="onNewGameClick">
-          🧩 Generate Puzzle
+          <i class="icon icon-puzzle-piece" /> Generate Puzzle
         </button>
       </div>
     </template>
