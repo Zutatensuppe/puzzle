@@ -1,10 +1,38 @@
-import { DefaultScoreMode, DefaultShapeMode, DefaultSnapMode, Game } from './../common/Types'
+import {
+  DefaultScoreMode, DefaultShapeMode, DefaultSnapMode, Game, Puzzle,
+  EncodedPlayer, ScoreMode, ShapeMode, SnapMode
+} from './../common/Types'
 import { logger } from './../common/Util'
-import { Rng } from './../common/Rng'
+import { Rng, RngSerialized } from './../common/Rng'
 import Db from './Db'
 import GameLog from './GameLog'
 
 const log = logger('GameStorage.js')
+
+interface GameRow {
+  id: string
+  creator_user_id: number
+  image_id: number
+  created: Date
+  finished: Date | null
+  data: string
+  private: number
+}
+
+interface GameStoreData {
+  id: string
+  gameVersion: number
+  rng: {
+    type?: string
+    obj: RngSerialized
+  }
+  puzzle: Puzzle
+  players: EncodedPlayer[]
+  scoreMode: ScoreMode
+  shapeMode: ShapeMode
+  snapMode: SnapMode
+  hasReplay: boolean
+}
 
 const dirtyGames: Record<string, boolean> = {}
 function setDirty(gameId: string): void {
@@ -16,8 +44,8 @@ function setClean(gameId: string): void {
   }
 }
 
-function gameRowToGameObject(gameRow: any): Game | null {
-  let game
+function gameRowToGameObject(gameRow: GameRow): Game | null {
+  let game: GameStoreData
   try {
     game = JSON.parse(gameRow.data)
   } catch {
@@ -27,20 +55,33 @@ function gameRowToGameObject(gameRow: any): Game | null {
     game.puzzle.data.started = gameRow.created.getTime()
   }
   if (typeof game.puzzle.data.finished === 'undefined') {
-    game.puzzle.data.finished = gameRow.finished.getTime()
+    game.puzzle.data.finished = gameRow.finished ? gameRow.finished.getTime() : 0
   }
   if (!Array.isArray(game.players)) {
     game.players = Object.values(game.players)
   }
 
-  const gameObject: Game = storeDataToGame(game, game.creator_user_id, !!game.private)
+  const gameObject: Game = storeDataToGame(
+    game,
+    gameRow.creator_user_id,
+    !!gameRow.private
+  )
   gameObject.hasReplay = GameLog.hasReplay(gameObject)
   return gameObject
 }
 
+async function getGameRowById(db: Db, gameId: string): Promise<GameRow | null> {
+  const gameRow = await db.get('games', {id: gameId})
+  return (gameRow as GameRow) || null
+}
+
+async function getPublicGameRows(db: Db): Promise<GameRow[]> {
+  return await db.getMany('games', { private: 0 }) as GameRow[]
+}
+
 async function loadGame(db: Db, gameId: string): Promise<Game | null> {
   log.info(`[INFO] loading game: ${gameId}`);
-  const gameRow = await db.get('games', {id: gameId})
+  const gameRow = await getGameRowById(db, gameId)
   if (!gameRow) {
     log.info(`[INFO] game not found: ${gameId}`);
     return null
@@ -56,7 +97,7 @@ async function loadGame(db: Db, gameId: string): Promise<Game | null> {
 }
 
 async function getAllPublicGames(db: Db): Promise<Game[]> {
-  const gameRows = await db.getMany('games', { private: 0 })
+  const gameRows = await getPublicGameRows(db)
   const games: Game[] = []
   for (const gameRow of gameRows) {
     const gameObject = gameRowToGameObject(gameRow)
@@ -70,7 +111,7 @@ async function getAllPublicGames(db: Db): Promise<Game[]> {
 }
 
 async function exists(db: Db, gameId: string): Promise<boolean> {
-  const gameRow = await db.get('games', {id: gameId})
+  const gameRow = await getGameRowById(db, gameId)
   return !!gameRow
 }
 
@@ -83,15 +124,11 @@ async function persistGame(db: Db, game: Game): Promise<void> {
 
   await db.upsert('games', {
     id: game.id,
-
     creator_user_id: game.creatorUserId,
     image_id: game.puzzle.info.image?.id,
-
     created: new Date(game.puzzle.data.started),
     finished: game.puzzle.data.finished ? new Date(game.puzzle.data.finished) : null,
-
-    data: gameToStoreData(game),
-
+    data: JSON.stringify(gameToStoreData(game)),
     private: game.private ? 1 : 0,
   }, {
     id: game.id,
@@ -99,7 +136,11 @@ async function persistGame(db: Db, game: Game): Promise<void> {
   log.info(`[INFO] persisted game ${game.id}`)
 }
 
-function storeDataToGame(storeData: any, creatorUserId: number|null, isPrivate: boolean): Game {
+function storeDataToGame(
+  storeData: GameStoreData,
+  creatorUserId: number|null,
+  isPrivate: boolean,
+): Game {
   return {
     id: storeData.id,
     gameVersion: storeData.gameVersion || 1, // old games didnt have this stored
@@ -118,8 +159,8 @@ function storeDataToGame(storeData: any, creatorUserId: number|null, isPrivate: 
   }
 }
 
-function gameToStoreData(game: Game): string {
-  return JSON.stringify({
+function gameToStoreData(game: Game): GameStoreData {
+  return {
     id: game.id,
     gameVersion: game.gameVersion,
     rng: {
@@ -132,7 +173,7 @@ function gameToStoreData(game: Game): string {
     shapeMode: game.shapeMode,
     snapMode: game.snapMode,
     hasReplay: game.hasReplay,
-  });
+  };
 }
 
 export default {
