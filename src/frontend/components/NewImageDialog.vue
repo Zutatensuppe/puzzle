@@ -60,15 +60,15 @@ gallery", if possible!
           @click="postToGallery"
         >
           <template v-if="uploading === 'postToGallery'">Uploading ({{uploadProgressPercent}}%)</template>
-          <template v-else>🖼️ Post to gallery</template>
+          <template v-else><i class="icon icon-preview" /> Post to gallery</template>
         </button>
         <button class="btn"
           :disabled="!canSetupGameClick"
           @click="setupGameClick"
         >
           <template v-if="uploading === 'setupGame'">Uploading ({{uploadProgressPercent}}%)</template>
-          <template v-else-if="isPrivate">🧩 Set up game</template>
-          <template v-else>🧩 Post to gallery <br /> + set up game</template>
+          <template v-else-if="isPrivate"><i class="icon icon-puzzle-piece" /> Set up game</template>
+          <template v-else><i class="icon icon-puzzle-piece" /> Post to gallery <br /> + set up game</template>
         </button>
       </div>
     </template>
