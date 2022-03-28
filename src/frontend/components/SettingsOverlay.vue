@@ -8,7 +8,10 @@
         </tr>
         <tr>
           <td><label>Color: </label></td>
-          <td><input type="color" v-model="color" /></td>
+          <td>
+            <input type="color" v-model="color" v-if="!isUkraineColor" />
+            <label><input type="checkbox" v-model="isUkraineColor"><i class="icon icon-ukraine-heart" /></label>
+          </td>
         </tr>
         <tr>
           <td><label>Name: </label></td>
@@ -62,6 +65,7 @@ export default defineComponent({
     return {
       background: '',
       color: '',
+      isUkraineColor: false,
       name: '',
       soundsEnabled: true,
       otherPlayerClickSoundEnabled: true,
@@ -86,6 +90,7 @@ export default defineComponent({
       this.disableWatches()
       this.background = `${modelValue.background}`
       this.color = `${modelValue.color}`
+      this.isUkraineColor = this.color === 'ukraine'
       this.name = `${modelValue.name}`
       this.soundsEnabled = !!modelValue.soundsEnabled
       this.otherPlayerClickSoundEnabled = !!modelValue.otherPlayerClickSoundEnabled
@@ -96,7 +101,7 @@ export default defineComponent({
     emitChanges (): void {
       this.$emit('update:modelValue', {
         background: this.background,
-        color: this.color,
+        color: this.isUkraineColor ? 'ukraine' : this.color,
         name: this.name,
         soundsEnabled: this.soundsEnabled,
         otherPlayerClickSoundEnabled: this.otherPlayerClickSoundEnabled,
@@ -105,6 +110,7 @@ export default defineComponent({
       })
     },
     enableWatches (): void {
+      this.watches.push(this.$watch(() => this.isUkraineColor, this.emitChanges))
       this.watches.push(this.$watch(() => this.background, this.emitChanges))
       this.watches.push(this.$watch(() => this.color, this.emitChanges))
       this.watches.push(this.$watch(() => this.name, this.emitChanges))

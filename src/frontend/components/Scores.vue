@@ -2,12 +2,12 @@
   <div class="scores">
     <div>Scores</div>
     <table>
-      <tr v-for="(p, idx) in actives" :key="idx" :style="{color: p.color}">
+      <tr v-for="(p, idx) in actives" :key="idx" :style="playerStyle(p)">
         <td><i class="icon icon-lightning" /></td>
         <td>{{p.name}}</td>
         <td>{{p.points}}</td>
       </tr>
-      <tr v-for="(p, idx) in idles" :key="idx" :style="{color: p.color}">
+      <tr v-for="(p, idx) in idles" :key="idx" :style="playerStyle(p)">
         <td><i class="icon icon-zzz" /></td>
         <td>{{p.name}}</td>
         <td>{{p.points}}</td>
@@ -23,6 +23,19 @@ export default defineComponent({
     players: {
       type: Object,
       required: true,
+    },
+  },
+  methods: {
+    playerStyle(p: any) {
+      if (p.color === 'ukraine') {
+        return {
+          'backgroundImage': 'linear-gradient(180deg, rgba(0,87,183,1) 0%, rgba(0,87,183,1) 50%, rgba(255,221,0,1) 50%)',
+          '-webkit-background-clip': 'text',
+          '-webkit-text-fill-color': 'transparent',
+        }
+      } else {
+        return {color: p.color}
+      }
     },
   },
   computed: {

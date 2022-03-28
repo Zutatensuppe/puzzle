@@ -3,6 +3,12 @@
     <ul class="nav" v-if="showNav">
       <li><router-link class="btn" :to="{name: 'index'}">Games overview</router-link></li>
       <li><router-link class="btn" :to="{name: 'new-game'}">New game</router-link></li>
+      <li><a
+        href="https://ec.europa.eu/info/strategy/priorities-2019-2024/stronger-europe-world/eu-solidarity-ukraine/eu-assistance-ukraine/eu-stands-ukraine_en"
+        class="btn btn-ukraine"
+        target="_blank"
+        >
+        <i class="icon icon-ukraine-heart" /> Stand with Ukraine <i class="icon icon-ukraine-heart" /></a></li>
     </ul>
 
     <router-view />
