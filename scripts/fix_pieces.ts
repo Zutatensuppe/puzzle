@@ -8,12 +8,25 @@ const log = logger('fix_pieces.js')
 
 const db = new Db(config.db.connectStr, config.dir.DB_PATCHES_DIR)
 
-async function fix_pieces(gameId: string) {
-  await db.connect()
-  await db.patch(true)
-
+async function load(gameId: string) {
   const gameObject = await GameStorage.loadGame(db, gameId)
+  if (!gameObject) {
+    log.error(`Game not found: ${gameId}`)
+    return
+  }
   GameCommon.setGame(gameObject.id, gameObject)
+}
+
+async function persist(gameId: string) {
+  const gameObject = GameCommon.get(gameId)
+  if (!gameObject) {
+    log.error(`Game not found: ${gameId}`)
+    return
+  }
+  await GameStorage.persistGame(db, gameObject)
+}
+
+function fixPieces(gameId: string): boolean {
   let changed = false
   const pieces = GameCommon.getPiecesSortedByZIndex(gameId)
   for (const piece of pieces) {
@@ -28,16 +41,23 @@ async function fix_pieces(gameId: string) {
         changed = true
       }
     } else if (piece.owner !== 0) {
-      piece.owner = 0
       log.log('unowning piece', piece.idx)
+      piece.owner = 0
       GameCommon.setPiece(gameId, piece.idx, piece)
       changed = true
     }
   }
-  if (changed) {
-    await GameStorage.persistGame(db, GameCommon.get(gameId))
+  return changed
+}
+
+async function run(gameId: string) {
+  await db.connect()
+  await db.patch(true)
+  await load(gameId)
+  if (fixPieces(gameId)) {
+    await persist(gameId)
   }
   await db.close()
 }
 
-fix_pieces(process.argv[2])
+run(process.argv[2])
