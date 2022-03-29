@@ -8,7 +8,6 @@ export default {
     format: 'es',
   },
   external: [
-    "better-sqlite3",
     "compression",
     "exif",
     "express",
@@ -16,6 +15,7 @@ export default {
     "image-size",
     "multer",
     "path",
+    "pg",
     "sharp",
     "url",
     "v8",
