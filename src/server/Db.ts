@@ -1,3 +1,4 @@
+import { Mutex } from 'async-mutex'
 import fs from 'fs'
 import * as pg from 'pg'
 // @ts-ignore
@@ -5,6 +6,8 @@ const { Client } = pg.default
 import { logger } from '../common/Util'
 
 const log = logger('Db.ts')
+
+const mutex = new Mutex();
 
 /**
  * TODO: create a more specific type for OrderBy.
@@ -18,7 +21,7 @@ type Data = Record<string, any>
 type Params = Array<any>
 
 export type WhereRaw = Record<string, any>
-export type OrderBy = Array<Record<string, 1|-1>>
+export type OrderBy = Array<Record<string, 1 | -1>>
 
 interface Where {
   sql: string
@@ -43,11 +46,11 @@ class Db {
     await this.dbh.end()
   }
 
-  async patch (verbose: boolean =true): Promise<void> {
-    await this.run('CREATE TABLE IF NOT EXISTS db_patches ( id TEXT PRIMARY KEY);', [])
+  async patch(verbose: boolean = true): Promise<void> {
+    await this.run('CREATE TABLE IF NOT EXISTS public.db_patches ( id TEXT PRIMARY KEY);', [])
 
     const files = fs.readdirSync(this.patchesDir)
-    const patches = (await this.getMany('db_patches')).map(row => row.id)
+    const patches = (await this.getMany('public.db_patches')).map(row => row.id)
 
     for (const f of files) {
       if (patches.includes(f)) {
@@ -70,7 +73,7 @@ class Db {
           await this.run('ROLLBACK')
           throw e
         }
-        await this.insert('db_patches', {id: f})
+        await this.insert('public.db_patches', { id: f })
         log.info(`✓ applied db patch: ${f}`)
       } catch (e) {
         log.error(`✖ unable to apply patch: ${f} ${e}`)
@@ -79,7 +82,7 @@ class Db {
     }
   }
 
-  _buildWhere (where: WhereRaw, $i: number = 1): Where {
+  _buildWhere(where: WhereRaw, $i: number = 1): Where {
     const wheres = []
     const values = []
     for (const k of Object.keys(where)) {
@@ -106,6 +109,48 @@ class Db {
           continue
         }
 
+        prop = "$gte"
+        if (where[k][prop]) {
+          wheres.push(k + ` >= $${$i++}`)
+          values.push(where[k][prop])
+          continue
+        }
+
+        prop = "$lte"
+        if (where[k][prop]) {
+          wheres.push(k + ` <= $${$i++}`)
+          values.push(where[k][prop])
+          continue
+        }
+
+        prop = "$lte"
+        if (where[k][prop]) {
+          wheres.push(k + ` <= $${$i++}`)
+          values.push(where[k][prop])
+          continue
+        }
+
+        prop = '$gt'
+        if (where[k][prop]) {
+          wheres.push(k + ` > $${$i++}`)
+          values.push(where[k][prop])
+          continue
+        }
+
+        prop = '$lt'
+        if (where[k][prop]) {
+          wheres.push(k + ` < $${$i++}`)
+          values.push(where[k][prop])
+          continue
+        }
+
+        prop = '$ne'
+        if (where[k][prop]) {
+          wheres.push(k + ` != $${$i++}`)
+          values.push(where[k][prop])
+          continue
+        }
+
         // TODO: implement rest of mongo like query args ($eq, $lte, $in...)
         throw new Error('not implemented: ' + JSON.stringify(where[k]))
       }
@@ -121,7 +166,7 @@ class Db {
     }
   }
 
-  _buildOrderBy (orderBy: OrderBy): string {
+  _buildOrderBy(orderBy: OrderBy): string {
     const sorts = []
     for (const s of orderBy) {
       const k = Object.keys(s)[0]
@@ -130,7 +175,7 @@ class Db {
     return sorts.length > 0 ? ' ORDER BY ' + sorts.join(', ') : ''
   }
 
-  async _get (query: string, params: Params = []): Promise<any> {
+  async _get(query: string, params: Params = []): Promise<any> {
     try {
       return (await this.dbh.query(query, params)).rows[0] || null
     } catch (e) {
@@ -140,7 +185,7 @@ class Db {
     }
   }
 
-  async run (query: string, params: Params = []): Promise<pg.QueryResult> {
+  async run(query: string, params: Params = []): Promise<pg.QueryResult> {
     try {
       return await this.dbh.query(query, params)
     } catch (e) {
@@ -150,7 +195,7 @@ class Db {
     }
   }
 
-  async _getMany (query: string, params: Params = []): Promise<any[]> {
+  async _getMany(query: string, params: Params = []): Promise<any[]> {
     try {
       return (await this.dbh.query(query, params)).rows || []
     } catch (e) {
@@ -160,7 +205,7 @@ class Db {
     }
   }
 
-  async get (
+  async get(
     table: string,
     whereRaw: WhereRaw = {},
     orderBy: OrderBy = []
@@ -171,7 +216,7 @@ class Db {
     return await this._get(sql, where.values)
   }
 
-  async getMany (
+  async getMany(
     table: string,
     whereRaw: WhereRaw = {},
     orderBy: OrderBy = []
@@ -182,39 +227,40 @@ class Db {
     return await this._getMany(sql, where.values)
   }
 
-  async delete (table: string, whereRaw: WhereRaw = {}): Promise<pg.QueryResult> {
+  async delete(table: string, whereRaw: WhereRaw = {}): Promise<pg.QueryResult> {
     const where = this._buildWhere(whereRaw)
     const sql = 'DELETE FROM ' + table + where.sql
     return await this.run(sql, where.values)
   }
 
-  async exists (table: string, whereRaw: WhereRaw): Promise<boolean> {
+  async exists(table: string, whereRaw: WhereRaw): Promise<boolean> {
     return !!await this.get(table, whereRaw)
   }
 
-  async upsert (
+  async upsert(
     table: string,
     data: Data,
     check: WhereRaw,
-    idcol: string|null = null
+    idcol: string | null = null
   ): Promise<any> {
-    if (!await this.exists(table, check)) {
-      return await this.insert(table, data, idcol)
-    }
-    await this.update(table, data, check)
-    if (idcol === null) {
-      return 0 // dont care about id
-    }
-
-    return (await this.get(table, check))[idcol] // get id manually
+    return mutex.runExclusive(async () => {
+      if (!await this.exists(table, check)) {
+        return await this.insert(table, data, idcol)
+      }
+      await this.update(table, data, check)
+      if (idcol === null) {
+        return 0 // dont care about id
+      }
+      return (await this.get(table, check))[idcol] // get id manually
+    })
   }
 
-  async insert (table: string, data: Data, idcol: string|null = null): Promise<number | bigint> {
+  async insert(table: string, data: Data, idcol: string | null = null): Promise<number | bigint> {
     const keys = Object.keys(data)
     const values = keys.map(k => data[k])
 
     let $i = 1
-    let sql = 'INSERT INTO '+ table
+    let sql = 'INSERT INTO ' + table
       + ' (' + keys.join(',') + ')'
       + ' VALUES (' + keys.map(() => `$${$i++}`).join(',') + ')'
     if (idcol) {
@@ -225,7 +271,7 @@ class Db {
     return 0
   }
 
-  async update (table: string, data: Data, whereRaw: WhereRaw = {}): Promise<void> {
+  async update(table: string, data: Data, whereRaw: WhereRaw = {}): Promise<void> {
     const keys = Object.keys(data)
     if (keys.length === 0) {
       return
