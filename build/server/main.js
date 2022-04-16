@@ -9,6 +9,7 @@ import sizeOf from 'image-size';
 import exif from 'exif';
 import sharp from 'sharp';
 import v8 from 'v8';
+import { Mutex } from 'async-mutex';
 import * as pg from 'pg';
 
 class Rng {
@@ -2004,6 +2005,7 @@ var GameSockets = {
 // @ts-ignore
 const { Client } = pg.default;
 const log = logger('Db.ts');
+const mutex = new Mutex();
 class Db {
     constructor(connectStr, patchesDir) {
         this.patchesDir = patchesDir;
@@ -2016,9 +2018,9 @@ class Db {
         await this.dbh.end();
     }
     async patch(verbose = true) {
-        await this.run('CREATE TABLE IF NOT EXISTS db_patches ( id TEXT PRIMARY KEY);', []);
+        await this.run('CREATE TABLE IF NOT EXISTS public.db_patches ( id TEXT PRIMARY KEY);', []);
         const files = fs.readdirSync(this.patchesDir);
-        const patches = (await this.getMany('db_patches')).map(row => row.id);
+        const patches = (await this.getMany('public.db_patches')).map(row => row.id);
         for (const f of files) {
             if (patches.includes(f)) {
                 if (verbose) {
@@ -2040,7 +2042,7 @@ class Db {
                     await this.run('ROLLBACK');
                     throw e;
                 }
-                await this.insert('db_patches', { id: f });
+                await this.insert('public.db_patches', { id: f });
                 log.info(`✓ applied db patch: ${f}`);
             }
             catch (e) {
@@ -2072,6 +2074,42 @@ class Db {
                         wheres.push(k + ' IN (' + where[k][prop].map(() => `$${$i++}`) + ')');
                         values.push(...where[k][prop]);
                     }
+                    continue;
+                }
+                prop = "$gte";
+                if (where[k][prop]) {
+                    wheres.push(k + ` >= $${$i++}`);
+                    values.push(where[k][prop]);
+                    continue;
+                }
+                prop = "$lte";
+                if (where[k][prop]) {
+                    wheres.push(k + ` <= $${$i++}`);
+                    values.push(where[k][prop]);
+                    continue;
+                }
+                prop = "$lte";
+                if (where[k][prop]) {
+                    wheres.push(k + ` <= $${$i++}`);
+                    values.push(where[k][prop]);
+                    continue;
+                }
+                prop = '$gt';
+                if (where[k][prop]) {
+                    wheres.push(k + ` > $${$i++}`);
+                    values.push(where[k][prop]);
+                    continue;
+                }
+                prop = '$lt';
+                if (where[k][prop]) {
+                    wheres.push(k + ` < $${$i++}`);
+                    values.push(where[k][prop]);
+                    continue;
+                }
+                prop = '$ne';
+                if (where[k][prop]) {
+                    wheres.push(k + ` != $${$i++}`);
+                    values.push(where[k][prop]);
                     continue;
                 }
                 // TODO: implement rest of mongo like query args ($eq, $lte, $in...)
@@ -2145,14 +2183,16 @@ class Db {
         return !!await this.get(table, whereRaw);
     }
     async upsert(table, data, check, idcol = null) {
-        if (!await this.exists(table, check)) {
-            return await this.insert(table, data, idcol);
-        }
-        await this.update(table, data, check);
-        if (idcol === null) {
-            return 0; // dont care about id
-        }
-        return (await this.get(table, check))[idcol]; // get id manually
+        return mutex.runExclusive(async () => {
+            if (!await this.exists(table, check)) {
+                return await this.insert(table, data, idcol);
+            }
+            await this.update(table, data, check);
+            if (idcol === null) {
+                return 0; // dont care about id
+            }
+            return (await this.get(table, check))[idcol]; // get id manually
+        });
     }
     async insert(table, data, idcol = null) {
         const keys = Object.keys(data);

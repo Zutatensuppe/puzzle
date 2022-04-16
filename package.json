@@ -19,6 +19,7 @@
   "homepage": "https://github.com/Zutatensuppe/puzzle#readme",
   "type": "module",
   "dependencies": {
+    "async-mutex": "^0.3.2",
     "exif": "^0.6.0",
     "express": "^4.17.3",
     "image-size": "^1.0.1",
