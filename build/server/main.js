@@ -328,7 +328,7 @@ EV_SERVER_INIT: event sent to one client after that client
         // client to build client side of the game
 ]
 */
-const GAME_VERSION = 2; // must be increased whenever there is an incompatible change
+const GAME_VERSION = 3; // must be increased whenever there is an incompatible change
 const EV_SERVER_EVENT = 1;
 const EV_SERVER_INIT = 4;
 const EV_CLIENT_EVENT = 2;
@@ -358,6 +358,7 @@ const INPUT_EV_TOGGLE_LOOSE_PIECES = 18;
 const INPUT_EV_STORE_POS = 19;
 const INPUT_EV_RESTORE_POS = 20;
 const INPUT_EV_CONNECTION_CLOSE = 21;
+const INPUT_EV_TOGGLE_TABLE = 22;
 const CHANGE_DATA = 1;
 const CHANGE_PIECE = 2;
 const CHANGE_PLAYER = 3;
@@ -390,6 +391,7 @@ var Protocol = {
     INPUT_EV_CENTER_FIT_PUZZLE,
     INPUT_EV_TOGGLE_FIXED_PIECES,
     INPUT_EV_TOGGLE_LOOSE_PIECES,
+    INPUT_EV_TOGGLE_TABLE,
     INPUT_EV_STORE_POS,
     INPUT_EV_RESTORE_POS,
     INPUT_EV_CONNECTION_CLOSE,
@@ -634,6 +636,9 @@ function getScoreMode(gameId) {
 function getSnapMode(gameId) {
     return GAMES[gameId].snapMode;
 }
+function getVersion(gameId) {
+    return GAMES[gameId].gameVersion;
+}
 function getFinishedPiecesCount(gameId) {
     return Game_getFinishedPiecesCount(GAMES[gameId]);
 }
@@ -694,7 +699,7 @@ const getPiecePos = (gameId, pieceIdx) => {
     const piece = getPiece(gameId, pieceIdx);
     return piece.pos;
 };
-// todo: instead, just make the table bigger and use that :)
+// TODO: instead, just make the table bigger and use that :)
 const getBounds = (gameId) => {
     const tw = getTableWidth(gameId);
     const th = getTableHeight(gameId);
@@ -783,6 +788,13 @@ const movePieceDiff = (gameId, pieceIdx, diff) => {
     changePiece(gameId, pieceIdx, { pos });
 };
 const movePiecesDiff = (gameId, pieceIdxs, diff) => {
+    const gameVersion = getVersion(gameId);
+    if (gameVersion >= 3) {
+        return movePiecesDiff_v3(gameId, pieceIdxs, diff);
+    }
+    return movePiecesDiff_v2(gameId, pieceIdxs, diff);
+};
+const movePiecesDiff_v2 = (gameId, pieceIdxs, diff) => {
     const drawSize = getPieceDrawSize(gameId);
     const bounds = getBounds(gameId);
     const cappedDiff = diff;
@@ -799,6 +811,37 @@ const movePiecesDiff = (gameId, pieceIdxs, diff) => {
         }
         else if (t.pos.y + drawSize + diff.y > bounds.y + bounds.h) {
             cappedDiff.y = Math.min(bounds.y + bounds.h - t.pos.y + drawSize, cappedDiff.y);
+        }
+    }
+    if (!cappedDiff.x && !cappedDiff.y) {
+        return false;
+    }
+    for (const pieceIdx of pieceIdxs) {
+        movePieceDiff(gameId, pieceIdx, cappedDiff);
+    }
+    return true;
+};
+const movePiecesDiff_v3 = (gameId, pieceIdxs, diff) => {
+    const bounds = getBounds(gameId);
+    const off = getPieceDrawSize(gameId) + (2 * getPieceDrawOffset(gameId));
+    const minX = bounds.x;
+    const minY = bounds.y;
+    const maxX = minX + bounds.w - off;
+    const maxY = minY + bounds.h - off;
+    const cappedDiff = diff;
+    for (const pieceIdx of pieceIdxs) {
+        const t = getPiece(gameId, pieceIdx);
+        if (diff.x < 0) {
+            cappedDiff.x = Math.max(minX - t.pos.x, cappedDiff.x);
+        }
+        else {
+            cappedDiff.x = Math.min(maxX - t.pos.x, cappedDiff.x);
+        }
+        if (diff.y < 0) {
+            cappedDiff.y = Math.max(minY - t.pos.y, cappedDiff.y);
+        }
+        else {
+            cappedDiff.y = Math.min(maxY - t.pos.y, cappedDiff.y);
         }
     }
     if (!cappedDiff.x && !cappedDiff.y) {
@@ -1283,6 +1326,7 @@ var GameCommon = {
     setPlayer,
     setPiece,
     setPuzzleData,
+    getBounds,
     getTableWidth,
     getTableHeight,
     getPuzzle,
@@ -1359,7 +1403,16 @@ const exists$1 = (gameId) => {
     return fs.existsSync(idxfile);
 };
 function hasReplay(game) {
-    return exists$1(game.id) && game.gameVersion === Protocol.GAME_VERSION;
+    if (!exists$1(game.id)) {
+        return false;
+    }
+    if (game.gameVersion < 2) {
+        // replays before gameVersion 2 are incompatible with current code
+        return false;
+    }
+    // from 2 onwards we try to stay compatible by keeping behavior same in
+    // old functions and instead just add new functions for new versions
+    return true;
 }
 const _log = (gameId, type, ...args) => {
     const idxfile = idxname(gameId);

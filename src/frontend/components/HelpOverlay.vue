@@ -15,6 +15,7 @@
 
         <tr><td><i class="icon icon-puzzle-piece-locked" /> Toggle fixed pieces:</td><td><div><kbd>F</kbd></div></td></tr>
         <tr><td><i class="icon icon-puzzle-piece-free" /> Toggle loose pieces:</td><td><div><kbd>G</kbd></div></td></tr>
+        <tr><td><i class="icon icon-table" /> Toggle table:</td><td><div><kbd>T</kbd></div></td></tr>
 
         <tr><td><i class="icon icon-player-name" /> Toggle player names:</td><td><div><kbd>N</kbd></div></td></tr>
         <tr><td><i class="icon icon-volume-up" /> Toggle sounds:</td><td><div><kbd>M</kbd></div></td></tr>

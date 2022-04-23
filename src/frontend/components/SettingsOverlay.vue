@@ -7,6 +7,14 @@
           <td><input type="color" v-model="background" /></td>
         </tr>
         <tr>
+          <td><label>Table: </label></td>
+          <td>
+            <label><input type="checkbox" v-model="showTable">Show</label>
+            <label v-if="showTable"><input type="radio" v-model="tableTexture" value="dark" /> Dark</label>
+            <label v-if="showTable"><input type="radio" v-model="tableTexture" value="light" /> Light</label>
+          </td>
+        </tr>
+        <tr>
           <td><label>Color: </label></td>
           <td>
             <input type="color" v-model="color" v-if="!isUkraineColor" />
@@ -63,6 +71,8 @@ export default defineComponent({
   },
   data: () => {
     return {
+      showTable: false,
+      tableTexture: 'dark', // dark | light
       background: '',
       color: '',
       isUkraineColor: false,
@@ -88,6 +98,8 @@ export default defineComponent({
     },
     apply (modelValue: any): void {
       this.disableWatches()
+      this.showTable = !!modelValue.showTable
+      this.tableTexture = modelValue.tableTexture
       this.background = `${modelValue.background}`
       this.color = `${modelValue.color}`
       this.isUkraineColor = this.color === 'ukraine'
@@ -100,6 +112,8 @@ export default defineComponent({
     },
     emitChanges (): void {
       this.$emit('update:modelValue', {
+        showTable: this.showTable,
+        tableTexture: this.tableTexture,
         background: this.background,
         color: this.isUkraineColor ? 'ukraine' : this.color,
         name: this.name,
@@ -112,6 +126,8 @@ export default defineComponent({
     enableWatches (): void {
       this.watches.push(this.$watch(() => this.isUkraineColor, this.emitChanges))
       this.watches.push(this.$watch(() => this.background, this.emitChanges))
+      this.watches.push(this.$watch(() => this.showTable, this.emitChanges))
+      this.watches.push(this.$watch(() => this.tableTexture, this.emitChanges))
       this.watches.push(this.$watch(() => this.color, this.emitChanges))
       this.watches.push(this.$watch(() => this.name, this.emitChanges))
       this.watches.push(this.$watch(() => this.soundsEnabled, this.emitChanges))

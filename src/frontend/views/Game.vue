@@ -153,9 +153,18 @@ export default defineComponent({
     this.eventBus.on('togglePlayerNames', (v: any) => {
       this.g.player.showPlayerNames = !!v
     })
+    this.eventBus.on('toggleShowTable', (v: any) => {
+      this.g.player.showTable = !!v
+    })
 
     this.$watch(() => this.g.player.background, (value: string) => {
       this.eventBus.emit('onBgChange', value)
+    })
+    this.$watch(() => this.g.player.showTable, (value: boolean) => {
+      this.eventBus.emit('onShowTableChange', value)
+    })
+    this.$watch(() => this.g.player.tableTexture, (value: string) => {
+      this.eventBus.emit('onTableTextureChange', value)
     })
     this.$watch(() => this.g.player.color, (value: string) => {
       this.eventBus.emit('onColorChange', value)

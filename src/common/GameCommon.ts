@@ -139,6 +139,10 @@ function getSnapMode(gameId: string): SnapMode {
   return GAMES[gameId].snapMode
 }
 
+function getVersion(gameId: string): number {
+  return GAMES[gameId].gameVersion
+}
+
 function getFinishedPiecesCount(gameId: string): number {
   return Game_getFinishedPiecesCount(GAMES[gameId])
 }
@@ -219,7 +223,7 @@ const getPiecePos = (gameId: string, pieceIdx: number): Point => {
   return piece.pos
 }
 
-// todo: instead, just make the table bigger and use that :)
+// TODO: instead, just make the table bigger and use that :)
 const getBounds = (gameId: string): Rect => {
   const tw = getTableWidth(gameId)
   const th = getTableHeight(gameId)
@@ -335,6 +339,18 @@ const movePiecesDiff = (
   pieceIdxs: Array<number>,
   diff: Point
 ): boolean => {
+  const gameVersion = getVersion(gameId)
+  if (gameVersion >= 3) {
+    return movePiecesDiff_v3(gameId, pieceIdxs, diff)
+  }
+  return movePiecesDiff_v2(gameId, pieceIdxs, diff)
+}
+
+const movePiecesDiff_v2 = (
+  gameId: string,
+  pieceIdxs: Array<number>,
+  diff: Point
+): boolean => {
   const drawSize = getPieceDrawSize(gameId)
   const bounds = getBounds(gameId)
   const cappedDiff = diff
@@ -350,6 +366,42 @@ const movePiecesDiff = (
       cappedDiff.y = Math.max(bounds.y - t.pos.y, cappedDiff.y)
     } else if (t.pos.y + drawSize + diff.y > bounds.y + bounds.h) {
       cappedDiff.y = Math.min(bounds.y + bounds.h - t.pos.y + drawSize, cappedDiff.y)
+    }
+  }
+  if (!cappedDiff.x && !cappedDiff.y) {
+    return false
+  }
+
+  for (const pieceIdx of pieceIdxs) {
+    movePieceDiff(gameId, pieceIdx, cappedDiff)
+  }
+  return true
+}
+
+const movePiecesDiff_v3 = (
+  gameId: string,
+  pieceIdxs: Array<number>,
+  diff: Point
+): boolean => {
+  const bounds = getBounds(gameId)
+  const off = getPieceDrawSize(gameId) + (2 * getPieceDrawOffset(gameId))
+  const minX = bounds.x
+  const minY = bounds.y
+  const maxX = minX + bounds.w - off
+  const maxY = minY + bounds.h - off
+
+  const cappedDiff = diff
+  for (const pieceIdx of pieceIdxs) {
+    const t = getPiece(gameId, pieceIdx)
+    if (diff.x < 0) {
+      cappedDiff.x = Math.max(minX - t.pos.x, cappedDiff.x)
+    } else {
+      cappedDiff.x = Math.min(maxX - t.pos.x, cappedDiff.x)
+    }
+    if (diff.y < 0) {
+      cappedDiff.y = Math.max(minY - t.pos.y, cappedDiff.y)
+    } else {
+      cappedDiff.y = Math.min(maxY - t.pos.y, cappedDiff.y)
     }
   }
   if (!cappedDiff.x && !cappedDiff.y) {
@@ -906,6 +958,7 @@ export default {
   setPlayer,
   setPiece,
   setPuzzleData,
+  getBounds,
   getTableWidth,
   getTableHeight,
   getPuzzle,

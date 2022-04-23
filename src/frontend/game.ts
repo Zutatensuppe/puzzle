@@ -38,6 +38,9 @@ const log = logger('game.ts')
 const images = import.meta.globEager('./*.png')
 
 // @ts-ignore We can ignore typescript for for binary file includes
+const textures = import.meta.globEager('./assets/textures/*.jpg')
+
+// @ts-ignore We can ignore typescript for for binary file includes
 const sounds = import.meta.globEager('./*.mp3')
 
 export const MODE_PLAY = 'play'
@@ -310,6 +313,12 @@ export async function main(
   const showPlayerNames = (): boolean => {
     return settings.getBool(SETTINGS.SHOW_PLAYER_NAMES, DEFAULTS.SHOW_PLAYER_NAMES)
   }
+  const playerShowTable = (): boolean => {
+    return settings.getBool(SETTINGS.SHOW_TABLE, DEFAULTS.SHOW_TABLE)
+  }
+  const playerTableTexture = (): string => {
+    return settings.getStr(SETTINGS.TABLE_TEXTURE, DEFAULTS.TABLE_TEXTURE)
+  }
   const playerBgColor = (): string => {
     if (MODE === MODE_REPLAY) {
       return settings.getStr(SETTINGS.COLOR_BACKGROUND, DEFAULTS.COLOR_BACKGROUND)
@@ -346,6 +355,8 @@ export async function main(
 
   const player = {
     background: playerBgColor(),
+    showTable: playerShowTable(),
+    tableTexture: playerTableTexture(),
     color: playerColor(),
     name: playerName(),
     soundsEnabled: playerSoundEnabled(),
@@ -420,6 +431,13 @@ export async function main(
     settings.setBool(SETTINGS.SHOW_PLAYER_NAMES, value)
     showStatusMessage('Player names', value)
   }
+  const toggleShowTable = () => {
+    player.showTable = !player.showTable
+    const value = player.showTable
+    eventBus.emit('toggleShowTable', value)
+    settings.setBool(SETTINGS.SHOW_TABLE, value)
+    showStatusMessage('Table', value)
+  }
 
   eventBus.on('replayOnSpeedUp', () => {
     replayOnSpeedUp()
@@ -441,6 +459,22 @@ export async function main(
       settings.setStr(SETTINGS.COLOR_BACKGROUND, value)
       evts.addEvent([Protocol.INPUT_EV_BG_COLOR, value])
       showStatusMessage('Background', value)
+    }
+  })
+  eventBus.on('onTableTextureChange', (value: any) => {
+    if (player.tableTexture !== value) {
+      player.tableTexture = value
+      settings.setStr(SETTINGS.TABLE_TEXTURE, value)
+      showStatusMessage('Table texture', value)
+      RERENDER = true
+    }
+  })
+  eventBus.on('onShowTableChange', (value: any) => {
+    if (player.showTable !== value) {
+      player.showTable = value
+      settings.setStr(SETTINGS.SHOW_TABLE, value)
+      showStatusMessage('Table', value)
+      RERENDER = true
     }
   })
   eventBus.on('onColorChange', (value: any) => {
@@ -705,6 +739,8 @@ export async function main(
           PIECE_VIEW_LOOSE = !PIECE_VIEW_LOOSE
           showStatusMessage(`${PIECE_VIEW_LOOSE ? 'Showing' : 'Hiding'} unfinished pieces`)
           RERENDER = true
+        } else if (type === Protocol.INPUT_EV_TOGGLE_TABLE) {
+          toggleShowTable()
         } else if (type === Protocol.INPUT_EV_STORE_POS) {
           const slot: string = `${evt[1]}`
           viewportSnapshots[slot] = viewport.snapshot()
@@ -781,6 +817,8 @@ export async function main(
           PIECE_VIEW_LOOSE = !PIECE_VIEW_LOOSE
           showStatusMessage(`${PIECE_VIEW_LOOSE ? 'Showing' : 'Hiding'} unfinished pieces`)
           RERENDER = true
+        } else if (type === Protocol.INPUT_EV_TOGGLE_TABLE) {
+          toggleShowTable()
         } else if (type === Protocol.INPUT_EV_STORE_POS) {
           const slot: string = `${evt[1]}`
           viewportSnapshots[slot] = viewport.snapshot()
@@ -800,6 +838,13 @@ export async function main(
     }
   }
 
+  const matrix = new DOMMatrix([1, 0, 0, 1, 0, 0])
+
+  const tableImgs: Record<string, CanvasImageSource> = {
+    dark: await Graphics.loadImageToBitmap(textures['./assets/textures/wood-dark.jpg'].default),
+    light: await Graphics.loadImageToBitmap(textures['./assets/textures/wood-light.jpg'].default),
+  }
+
   const onRender = async (): Promise<void> => {
     if (!RERENDER) {
       return
@@ -817,6 +862,20 @@ export async function main(
     // ---------------------------------------------------------------
     ctx.fillStyle = playerBgColor()
     ctx.fillRect(0, 0, canvas.width, canvas.height)
+
+    if (player.showTable) {
+      const tableImg = tableImgs[player.tableTexture]
+      if (tableImg) {
+        const pat = ctx.createPattern(tableImg, 'repeat') as CanvasPattern
+        const bounds = Game.getBounds(gameId)
+        const point = viewport.worldToViewportRaw(bounds)
+        const dim = viewport.worldDimToViewportRaw(bounds)
+        pat.setTransform(matrix.translate(point.x, point.y).scale(viewport.getCurrentZoom()*3))
+        ctx.fillStyle = pat
+        ctx.fillRect(point.x, point.y, dim.w, dim.h)
+      }
+    }
+
     if (window.DEBUG) Debug.checkpoint('clear done')
     // ---------------------------------------------------------------
 
@@ -825,7 +884,11 @@ export async function main(
     // ---------------------------------------------------------------
     pos = viewport.worldToViewportRaw(BOARD_POS)
     dim = viewport.worldDimToViewportRaw(BOARD_DIM)
-    ctx.fillStyle = 'rgba(255, 255, 255, .3)'
+    if (player.showTable && player.tableTexture === 'dark') {
+      ctx.fillStyle = 'rgba(0, 0, 0, .3)'
+    } else {
+      ctx.fillStyle = 'rgba(255, 255, 255, .3)'
+    }
     ctx.fillRect(pos.x, pos.y, dim.w, dim.h)
     if (window.DEBUG) Debug.checkpoint('board done')
     // ---------------------------------------------------------------

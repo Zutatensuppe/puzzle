@@ -127,6 +127,8 @@ function EventAdapter (
       addEvent([Protocol.INPUT_EV_TOGGLE_SOUNDS])
     } else if (ev.code === 'KeyN') {
       addEvent([Protocol.INPUT_EV_TOGGLE_PLAYER_NAMES])
+    } else if (ev.code === 'KeyT') {
+      addEvent([Protocol.INPUT_EV_TOGGLE_TABLE])
     } else if (ev.code === 'KeyC') {
       addEvent([Protocol.INPUT_EV_CENTER_FIT_PUZZLE])
     } else {
