@@ -54,6 +54,11 @@
             <td><label>Private Game</label></td>
             <td><input :disabled="forcePrivate" type="checkbox" v-model="isPrivate" /></td>
           </tr>
+          <tr>
+            <td colspan="2">
+              <div class="hint">Private games won't show up in the game overview.</div>
+            </td>
+          </tr>
           <tr v-if="image.tags.length">
             <td><label>Tags: </label></td>
             <td>
