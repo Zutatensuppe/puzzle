@@ -19,7 +19,6 @@
             </td>
           </tr>
           <tr>
-            <!-- TODO: autocomplete tags -->
             <td><label>Tags</label></td>
             <td>
               <tags-input v-model="tags" :autocompleteTags="autocompleteTags" />
