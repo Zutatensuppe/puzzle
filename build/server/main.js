@@ -328,7 +328,7 @@ EV_SERVER_INIT: event sent to one client after that client
         // client to build client side of the game
 ]
 */
-const GAME_VERSION = 3; // must be increased whenever there is an incompatible change
+const GAME_VERSION = 4; // must be increased whenever there is an incompatible change
 const EV_SERVER_EVENT = 1;
 const EV_SERVER_INIT = 4;
 const EV_CLIENT_EVENT = 2;
@@ -701,6 +701,16 @@ const getPiecePos = (gameId, pieceIdx) => {
 };
 // TODO: instead, just make the table bigger and use that :)
 const getBounds = (gameId) => {
+    const gameVersion = getVersion(gameId);
+    if (gameVersion <= 3) {
+        return getBounds_v3(gameId);
+    }
+    return getBounds_v4(gameId);
+};
+const getBounds_v4 = (gameId) => {
+    return { x: 0, y: 0, w: getTableWidth(gameId), h: getTableHeight(gameId) };
+};
+const getBounds_v3 = (gameId) => {
     const tw = getTableWidth(gameId);
     const th = getTableHeight(gameId);
     const overX = Math.round(tw / 4);
@@ -1645,7 +1655,7 @@ var Images = {
 // cut size of each puzzle piece in the
 // final resized version of the puzzle image
 const PIECE_SIZE = 64;
-async function createPuzzle(rng, targetPieceCount, image, ts, shapeMode) {
+async function createPuzzle(rng, targetPieceCount, image, ts, shapeMode, gameVersion) {
     const imagePath = `${config.dir.UPLOAD_DIR}/${image.filename}`;
     const imageUrl = image.url;
     // determine puzzle information from the image dimensions
@@ -1670,12 +1680,11 @@ async function createPuzzle(rng, targetPieceCount, image, ts, shapeMode) {
             y: coord.y * info.pieceSize * 1.5,
         };
     }
-    const tableWidth = info.width * 3;
-    const tableHeight = info.height * 3;
+    const tableDim = determineTableDim(info, gameVersion);
     const off = info.pieceSize * 1.5;
     const last = {
-        x: info.width - (1 * off),
-        y: info.height - (2 * off),
+        x: (tableDim.w - info.width) / 2 - (1 * off),
+        y: (tableDim.h - info.height) / 2 - (2 * off),
     };
     let countX = Math.ceil(info.width / off) + 2;
     let countY = Math.ceil(info.height / off) + 2;
@@ -1740,8 +1749,8 @@ async function createPuzzle(rng, targetPieceCount, image, ts, shapeMode) {
         // the game
         info: {
             table: {
-                width: tableWidth,
-                height: tableHeight,
+                width: tableDim.w,
+                height: tableDim.h,
             },
             // information that was used to create the puzzle
             targetTiles: targetPieceCount,
@@ -1768,6 +1777,13 @@ async function createPuzzle(rng, targetPieceCount, image, ts, shapeMode) {
             shapes: shapes, // piece shapes
         },
     };
+}
+function determineTableDim(info, gameVersion) {
+    if (gameVersion <= 3) {
+        return { w: info.width * 3, h: info.height * 3 };
+    }
+    const tableSize = Math.max(info.width, info.height) * 6;
+    return { w: tableSize, h: tableSize };
 }
 function determineTabs(shapeMode) {
     switch (shapeMode) {
@@ -1967,7 +1983,7 @@ async function createGameObject(gameId, gameVersion, targetPieceCount, image, ts
         gameVersion: gameVersion,
         creatorUserId,
         rng: { type: 'Rng', obj: rng },
-        puzzle: await createPuzzle(rng, targetPieceCount, image, ts, shapeMode),
+        puzzle: await createPuzzle(rng, targetPieceCount, image, ts, shapeMode, gameVersion),
         players: [],
         scoreMode,
         shapeMode,

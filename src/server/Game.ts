@@ -30,7 +30,7 @@ async function createGameObject(
     gameVersion: gameVersion,
     creatorUserId,
     rng: { type: 'Rng', obj: rng },
-    puzzle: await createPuzzle(rng, targetPieceCount, image, ts, shapeMode),
+    puzzle: await createPuzzle(rng, targetPieceCount, image, ts, shapeMode, gameVersion),
     players: [],
     scoreMode,
     shapeMode,

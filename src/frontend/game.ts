@@ -228,6 +228,15 @@ export async function main(
   // this global data will change according to input events
   const viewport = new Camera()
 
+  // theoretically we need to recalculate this when window resizes
+  // but it probably doesnt matter so much
+  viewport.calculateZoomCapping(
+    window.innerWidth,
+    window.innerHeight,
+    TABLE_WIDTH,
+    TABLE_HEIGHT,
+  )
+
   const centerPuzzle = () => {
     // center on the puzzle
     viewport.reset()
@@ -866,13 +875,22 @@ export async function main(
     if (player.showTable) {
       const tableImg = tableImgs[player.tableTexture]
       if (tableImg) {
-        const pat = ctx.createPattern(tableImg, 'repeat') as CanvasPattern
         const bounds = Game.getBounds(gameId)
-        const point = viewport.worldToViewportRaw(bounds)
-        const dim = viewport.worldDimToViewportRaw(bounds)
-        pat.setTransform(matrix.translate(point.x, point.y).scale(viewport.getCurrentZoom()*3))
+        pos = viewport.worldToViewportRaw(bounds)
+        dim = viewport.worldDimToViewportRaw(bounds)
+
+        const pat = ctx.createPattern(tableImg, 'repeat') as CanvasPattern
+        pat.setTransform(matrix.translate(pos.x, pos.y).scale(viewport.getCurrentZoom()*3))
         ctx.fillStyle = pat
-        ctx.fillRect(point.x, point.y, dim.w, dim.h)
+        ctx.fillRect(pos.x, pos.y, dim.w, dim.h)
+
+        // darken the outer edges of the table a bit
+        const border = viewport.worldDimToViewportRaw({w: 16, h: 16})
+        ctx.fillStyle = 'rgba(0, 0, 0, .5)'
+        ctx.fillRect(pos.x, pos.y, dim.w, border.h)
+        ctx.fillRect(pos.x, pos.y + border.h, border.w, dim.h - 2 * border.h)
+        ctx.fillRect(pos.x + dim.w - border.w, pos.y + border.h, border.w, dim.h - 2 * border.h)
+        ctx.fillRect(pos.x, pos.y + dim.h - border.h, dim.w, border.w)
       }
     }
 
@@ -884,6 +902,15 @@ export async function main(
     // ---------------------------------------------------------------
     pos = viewport.worldToViewportRaw(BOARD_POS)
     dim = viewport.worldDimToViewportRaw(BOARD_DIM)
+    if (player.showTable) {
+      // darken the place where the puzzle should be at the end a bit
+      const border = viewport.worldDimToViewportRaw({w: 8, h: 8})
+      ctx.fillStyle = 'rgba(0, 0, 0, .5)'
+      ctx.fillRect(pos.x - border.w, pos.y - border.h, dim.w + 2 * border.w, border.h)
+      ctx.fillRect(pos.x - border.w, pos.y, border.h, dim.h)
+      ctx.fillRect(pos.x + dim.w, pos.y, border.w, dim.h)
+      ctx.fillRect(pos.x - border.w, pos.y + dim.h, dim.w + 2 * border.w, border.h)
+    }
     if (player.showTable && player.tableTexture === 'dark') {
       ctx.fillStyle = 'rgba(0, 0, 0, .3)'
     } else {

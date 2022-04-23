@@ -225,6 +225,18 @@ const getPiecePos = (gameId: string, pieceIdx: number): Point => {
 
 // TODO: instead, just make the table bigger and use that :)
 const getBounds = (gameId: string): Rect => {
+  const gameVersion = getVersion(gameId)
+  if (gameVersion <= 3) {
+    return getBounds_v3(gameId)
+  }
+  return getBounds_v4(gameId)
+}
+
+const getBounds_v4 = (gameId: string): Rect => {
+  return { x: 0, y: 0, w: getTableWidth(gameId), h: getTableHeight(gameId) }
+}
+
+const getBounds_v3 = (gameId: string): Rect => {
   const tw = getTableWidth(gameId)
   const th = getTableHeight(gameId)
 
