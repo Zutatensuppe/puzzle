@@ -38,7 +38,7 @@ EV_SERVER_INIT: event sent to one client after that client
         // client to build client side of the game
 ]
 */
-const GAME_VERSION = 2; // must be increased whenever there is an incompatible change
+const GAME_VERSION = 3; // must be increased whenever there is an incompatible change
 
 const EV_SERVER_EVENT = 1
 const EV_SERVER_INIT = 4
@@ -76,6 +76,8 @@ const INPUT_EV_STORE_POS = 19
 const INPUT_EV_RESTORE_POS = 20
 
 const INPUT_EV_CONNECTION_CLOSE = 21
+
+const INPUT_EV_TOGGLE_TABLE = 22
 
 const CHANGE_DATA = 1
 const CHANGE_PIECE = 2
@@ -119,6 +121,8 @@ export default {
 
   INPUT_EV_TOGGLE_FIXED_PIECES,
   INPUT_EV_TOGGLE_LOOSE_PIECES,
+
+  INPUT_EV_TOGGLE_TABLE,
 
   INPUT_EV_STORE_POS,
   INPUT_EV_RESTORE_POS,

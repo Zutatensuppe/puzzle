@@ -44,7 +44,16 @@ const exists = (gameId: string): boolean => {
 }
 
 function hasReplay(game: Game): boolean {
-  return exists(game.id) && game.gameVersion === Protocol.GAME_VERSION
+  if (!exists(game.id)) {
+    return false
+  }
+  if (game.gameVersion < 2) {
+    // replays before gameVersion 2 are incompatible with current code
+    return false
+  }
+  // from 2 onwards we try to stay compatible by keeping behavior same in
+  // old functions and instead just add new functions for new versions
+  return true
 }
 
 const _log = (gameId: string, type: number, ...args: Array<any>): void => {

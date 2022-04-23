@@ -8,6 +8,7 @@ export default {
     format: 'es',
   },
   external: [
+    "async-mutex",
     "compression",
     "exif",
     "express",
@@ -16,6 +17,7 @@ export default {
     "multer",
     "path",
     "pg",
+    "request",
     "sharp",
     "url",
     "v8",

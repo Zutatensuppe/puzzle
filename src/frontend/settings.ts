@@ -7,6 +7,8 @@ export const SETTINGS = {
   SOUND_ENABLED: 'sound_enabled',
   OTHER_PLAYER_CLICK_SOUND_ENABLED: 'other_player_click_sound_enabled',
   COLOR_BACKGROUND: 'bg_color',
+  SHOW_TABLE: 'show_table',
+  TABLE_TEXTURE: 'table_texture',
   PLAYER_COLOR: 'player_color',
   PLAYER_NAME: 'player_name',
   SHOW_PLAYER_NAMES: 'show_player_names',
@@ -17,6 +19,8 @@ export const DEFAULTS = {
   SOUND_ENABLED: true,
   OTHER_PLAYER_CLICK_SOUND_ENABLED: true,
   COLOR_BACKGROUND: '#222222',
+  SHOW_TABLE: true,
+  TABLE_TEXTURE: 'dark',
   PLAYER_COLOR: '#ffffff',
   PLAYER_NAME: 'anon',
   SHOW_PLAYER_NAMES: true,
@@ -24,6 +28,8 @@ export const DEFAULTS = {
 
 export const defaultPlayerSettings = () => ({
   background: '',
+  showTable: true,
+  tableTexture: 'dark',
   color: '',
   name: '',
   soundsEnabled: true,
