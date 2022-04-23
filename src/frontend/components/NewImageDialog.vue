@@ -21,7 +21,19 @@ gallery", if possible!
         <div v-else>
           <label class="upload">
             <input type="file" style="display: none" @change="onFileSelect" accept="image/*" />
-            <span class="btn">Upload File</span>
+            <div class="upload-content">
+              How to upload an image? Choose any of the following methods:
+              <ul>
+                <li>Click this area to select an image for upload </li>
+                <li>Drag and drop an image into the area</li>
+                <li>Paste an image URL</li>
+                <li>Paste an image</li>
+              </ul>
+              <div class="hint">
+                Don't worry, the image will not show up in the gallery
+                unless "Post to gallery" was clicked.
+              </div>
+            </div>
           </label>
         </div>
       </div>
@@ -30,7 +42,7 @@ gallery", if possible!
         <table>
           <tr>
             <td><label>Title</label></td>
-            <td><input type="text" v-model="title" placeholder="Flower by @artist" /></td>
+            <td><input type="text" v-model="title" placeholder="Flower by @artist" @focus="inputFocused = true" @blur="inputFocused=false" /></td>
           </tr>
           <tr>
             <td colspan="2">
@@ -80,6 +92,44 @@ import { logger } from '../../common/Util'
 
 const log = logger('NewImageDialog.vue')
 
+const imageUrlToBlob = async (imageUrl: string): Promise<Blob> => {
+  const imageElement = await imageUrlToImageElement(imageUrl)
+  const canvasElement = await imageElementToCanvas(imageElement)
+  return dataURLtoBlob(canvasElement.toDataURL())
+}
+
+const imageElementToCanvas = async (imageElement: HTMLImageElement): Promise<HTMLCanvasElement> => {
+  const canvas = document.createElement('canvas')
+  const ctx = canvas.getContext('2d')
+  canvas.width = imageElement.width
+  canvas.height = imageElement.height
+  ctx.drawImage(imageElement, 0, 0)
+  return canvas
+}
+
+const imageUrlToImageElement = async (src: string): Promise<HTMLImageElement> => {
+  return new Promise ((resolve, reject) => {
+    const tmpImg = new Image();
+    tmpImg.crossOrigin = "anonymous";
+    tmpImg.onload = () => {
+      resolve(tmpImg)
+    }
+    tmpImg.onerror = (e) => {
+      reject(e)
+    }
+    tmpImg.src = src
+  })
+}
+
+function dataURLtoBlob(dataurl: string): Blob {
+  var arr = dataurl.split(','), mime = arr[0].match(/:(.*?);/)[1],
+      bstr = atob(arr[1]), n = bstr.length, u8arr = new Uint8Array(n);
+  while(n--){
+      u8arr[n] = bstr.charCodeAt(n);
+  }
+  return new Blob([u8arr], {type:mime});
+}
+
 export default defineComponent({
   props: {
     autocompleteTags: {
@@ -101,6 +151,7 @@ export default defineComponent({
       tags: [] as string[],
       isPrivate: false,
       droppable: false,
+      inputFocused: false,
     }
   },
   computed: {
@@ -119,6 +170,12 @@ export default defineComponent({
       }
       return !!(this.previewUrl && this.file)
     },
+  },
+  mounted () {
+    window.addEventListener('paste', this.onPaste)
+  },
+  unmounted () {
+    window.removeEventListener('paste', this.onPaste)
   },
   methods: {
     reset(): void {
@@ -140,6 +197,34 @@ export default defineComponent({
       }
       return item
     },
+    async onPaste (evt: ClipboardEvent) {
+      // check if a url was pasted
+      const imageUrl = evt.clipboardData.getData('text')
+      if (imageUrl) {
+        if (this.inputFocused) {
+          return;
+        }
+        if (imageUrl.match(/^https?:\/\//)) {
+          // need to proxy because of X-Origin
+          const proxiedUrl = '/api/proxy?' + new URLSearchParams({url: imageUrl})
+          try {
+            const imgBlob = await imageUrlToBlob(proxiedUrl)
+            this.preview(imgBlob)
+          } catch (e1) {
+            // url could not be transformed into a blob.
+            console.error('unable to transform image url into blob', e1)
+          }
+        } else {
+          // something else was pasted, ignore for now
+          return
+        }
+      }
+
+      // check if an image was pasted
+      const file = evt.clipboardData.files[0]
+      if (!file) return;
+      this.preview(file)
+    },
     onFileSelect (evt: Event) {
       const target = (evt.target as HTMLInputElement)
       if (!target.files) return;
@@ -148,7 +233,11 @@ export default defineComponent({
 
       this.preview(file)
     },
-    preview (file: File) {
+    preview (file: File | Blob) {
+      if (!file.type.startsWith('image/')) {
+        console.error('file type is not supported', file.type)
+        return
+      }
       const r = new FileReader()
       r.readAsDataURL(file)
       r.onload = (ev: any) => {
@@ -304,11 +393,16 @@ export default defineComponent({
     bottom: 0;
     cursor: pointer;
 
-    .btn {
+    .upload-content {
       position: absolute;
       top: 50%;
+      left: 50%;
       transform: translate(-50%,-50%);
     }
+  }
+
+  ul {
+    text-align: left;
   }
 }
 </style>

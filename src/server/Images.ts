@@ -23,33 +23,33 @@ interface ImageRow {
 }
 
 const resizeImage = async (filename: string): Promise<void> => {
-  if (!filename.toLowerCase().match(/\.(jpe?g|webp|png)$/)) {
-    return
-  }
+  try {
+    const imagePath = `${config.dir.UPLOAD_DIR}/${filename}`
+    const imageOutPath = `${config.dir.UPLOAD_DIR}/r/${filename}`
+    const orientation = await getExifOrientation(imagePath)
 
-  const imagePath = `${config.dir.UPLOAD_DIR}/${filename}`
-  const imageOutPath = `${config.dir.UPLOAD_DIR}/r/${filename}`
-  const orientation = await getExifOrientation(imagePath)
-
-  let sharpImg = sharp(imagePath, { failOnError: false })
-  // when image is rotated to the left or right, switch width/height
-  // https://jdhao.github.io/2019/07/31/image_rotation_exif_info/
-  if (orientation === 6) {
-    sharpImg = sharpImg.rotate(90)
-  } else if (orientation === 3) {
-    sharpImg = sharpImg.rotate(180)
-  } else if (orientation === 8) {
-    sharpImg = sharpImg.rotate(270)
-  }
-  const sizes = [
-    [150, 100],
-    [375, 210],
-  ]
-  for (const [w,h] of sizes) {
-    log.info(w, h, imagePath)
-    await sharpImg
-      .resize(w, h, { fit: 'contain' })
-      .toFile(`${imageOutPath}-${w}x${h}.webp`)
+    let sharpImg = sharp(imagePath, { failOnError: false })
+    // when image is rotated to the left or right, switch width/height
+    // https://jdhao.github.io/2019/07/31/image_rotation_exif_info/
+    if (orientation === 6) {
+      sharpImg = sharpImg.rotate(90)
+    } else if (orientation === 3) {
+      sharpImg = sharpImg.rotate(180)
+    } else if (orientation === 8) {
+      sharpImg = sharpImg.rotate(270)
+    }
+    const sizes = [
+      [150, 100],
+      [375, 210],
+    ]
+    for (const [w,h] of sizes) {
+      log.info(w, h, imagePath)
+      await sharpImg
+        .resize(w, h, { fit: 'contain' })
+        .toFile(`${imageOutPath}-${w}x${h}.webp`)
+    }
+  } catch (e) {
+    log.error('error when resizing image', filename, e)
   }
 }
 

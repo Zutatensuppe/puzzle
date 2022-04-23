@@ -1,5 +1,6 @@
 import WebSocketServer from './WebSocketServer'
 import WebSocket from 'ws'
+import request from 'request'
 import express from 'express'
 import compression from 'compression'
 import multer from 'multer'
@@ -7,7 +8,6 @@ import Protocol from './../common/Protocol'
 import Util, { logger } from './../common/Util'
 import Game from './Game'
 import v8 from 'v8'
-import fs from 'fs'
 import GameLog from './GameLog'
 import GameSockets from './GameSockets'
 import Time from './../common/Time'
@@ -164,18 +164,25 @@ const run = async () => {
 
     res.send({ ok: true })
   })
+
+  app.get('/api/proxy', (req: any, res): void => {
+    log.info('proxy request for url:', req.query.url)
+    request(req.query.url).pipe(res);
+  })
+
   app.post('/api/upload', (req: any, res): void => {
     upload(req, res, async (err: any): Promise<void> => {
       if (err) {
-        log.log(err)
+        log.log('/api/upload/', 'error', err)
         res.status(400).send("Something went wrong!")
         return
       }
 
+      log.info('req.file.filename', req.file.filename)
       try {
         await Images.resizeImage(req.file.filename)
       } catch (err) {
-        log.log(err)
+        log.log('/api/upload/', 'resize error', err)
         res.status(400).send("Something went wrong!")
         return
       }
