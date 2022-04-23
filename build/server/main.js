@@ -1,4 +1,5 @@
 import { WebSocketServer as WebSocketServer$1 } from 'ws';
+import request from 'request';
 import express from 'express';
 import compression from 'compression';
 import multer from 'multer';
@@ -1416,33 +1417,35 @@ var GameLog = {
 
 const log$3 = logger('Images.ts');
 const resizeImage = async (filename) => {
-    if (!filename.toLowerCase().match(/\.(jpe?g|webp|png)$/)) {
-        return;
+    try {
+        const imagePath = `${config.dir.UPLOAD_DIR}/${filename}`;
+        const imageOutPath = `${config.dir.UPLOAD_DIR}/r/${filename}`;
+        const orientation = await getExifOrientation(imagePath);
+        let sharpImg = sharp(imagePath, { failOnError: false });
+        // when image is rotated to the left or right, switch width/height
+        // https://jdhao.github.io/2019/07/31/image_rotation_exif_info/
+        if (orientation === 6) {
+            sharpImg = sharpImg.rotate(90);
+        }
+        else if (orientation === 3) {
+            sharpImg = sharpImg.rotate(180);
+        }
+        else if (orientation === 8) {
+            sharpImg = sharpImg.rotate(270);
+        }
+        const sizes = [
+            [150, 100],
+            [375, 210],
+        ];
+        for (const [w, h] of sizes) {
+            log$3.info(w, h, imagePath);
+            await sharpImg
+                .resize(w, h, { fit: 'contain' })
+                .toFile(`${imageOutPath}-${w}x${h}.webp`);
+        }
     }
-    const imagePath = `${config.dir.UPLOAD_DIR}/${filename}`;
-    const imageOutPath = `${config.dir.UPLOAD_DIR}/r/${filename}`;
-    const orientation = await getExifOrientation(imagePath);
-    let sharpImg = sharp(imagePath, { failOnError: false });
-    // when image is rotated to the left or right, switch width/height
-    // https://jdhao.github.io/2019/07/31/image_rotation_exif_info/
-    if (orientation === 6) {
-        sharpImg = sharpImg.rotate(90);
-    }
-    else if (orientation === 3) {
-        sharpImg = sharpImg.rotate(180);
-    }
-    else if (orientation === 8) {
-        sharpImg = sharpImg.rotate(270);
-    }
-    const sizes = [
-        [150, 100],
-        [375, 210],
-    ];
-    for (const [w, h] of sizes) {
-        log$3.info(w, h, imagePath);
-        await sharpImg
-            .resize(w, h, { fit: 'contain' })
-            .toFile(`${imageOutPath}-${w}x${h}.webp`);
+    catch (e) {
+        log$3.error('error when resizing image', filename, e);
     }
 };
 async function getExifOrientation(imagePath) {
@@ -2373,18 +2376,23 @@ const run = async () => {
         await Images.setTags(db, data.id, data.tags || []);
         res.send({ ok: true });
     });
+    app.get('/api/proxy', (req, res) => {
+        log.info('proxy request for url:', req.query.url);
+        request(req.query.url).pipe(res);
+    });
     app.post('/api/upload', (req, res) => {
         upload(req, res, async (err) => {
             if (err) {
-                log.log(err);
+                log.log('/api/upload/', 'error', err);
                 res.status(400).send("Something went wrong!");
                 return;
             }
+            log.info('req.file.filename', req.file.filename);
             try {
                 await Images.resizeImage(req.file.filename);
             }
             catch (err) {
-                log.log(err);
+                log.log('/api/upload/', 'resize error', err);
                 res.status(400).send("Something went wrong!");
                 return;
             }

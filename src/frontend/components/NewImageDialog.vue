@@ -21,7 +21,19 @@ gallery", if possible!
         <div v-else>
           <label class="upload">
             <input type="file" style="display: none" @change="onFileSelect" accept="image/*" />
-            <span class="btn">Upload File</span>
+            <div class="upload-content">
+              How to upload an image? Choose any of the following methods:
+              <ul>
+                <li>Click this area to select an image for upload </li>
+                <li>Drag and drop an image into the area</li>
+                <li>Paste an image URL</li>
+                <li>Paste an image</li>
+              </ul>
+              <div class="hint">
+                Don't worry, the image will not show up in the gallery
+                unless "Post to gallery" was clicked.
+              </div>
+            </div>
           </label>
         </div>
       </div>
@@ -30,7 +42,7 @@ gallery", if possible!
         <table>
           <tr>
             <td><label>Title</label></td>
-            <td><input type="text" v-model="title" placeholder="Flower by @artist" /></td>
+            <td><input type="text" v-model="title" placeholder="Flower by @artist" @focus="inputFocused = true" @blur="inputFocused=false" /></td>
           </tr>
           <tr>
             <td colspan="2">
@@ -44,7 +56,6 @@ gallery", if possible!
             </td>
           </tr>
           <tr>
-            <!-- TODO: autocomplete tags -->
             <td><label>Tags</label></td>
             <td>
               <tags-input v-model="tags" :autocompleteTags="autocompleteTags" />
@@ -70,6 +81,7 @@ gallery", if possible!
           <template v-else-if="isPrivate"><i class="icon icon-puzzle-piece" /> Set up game</template>
           <template v-else><i class="icon icon-puzzle-piece" /> Post to gallery <br /> + set up game</template>
         </button>
+        <button class="btn" @click="$emit('close')">Cancel</button>
       </div>
     </template>
   </overlay>
@@ -79,6 +91,44 @@ import { defineComponent } from 'vue'
 import { logger } from '../../common/Util'
 
 const log = logger('NewImageDialog.vue')
+
+const imageUrlToBlob = async (imageUrl: string): Promise<Blob> => {
+  const imageElement = await imageUrlToImageElement(imageUrl)
+  const canvasElement = await imageElementToCanvas(imageElement)
+  return dataURLtoBlob(canvasElement.toDataURL())
+}
+
+const imageElementToCanvas = async (imageElement: HTMLImageElement): Promise<HTMLCanvasElement> => {
+  const canvas = document.createElement('canvas')
+  const ctx = canvas.getContext('2d')
+  canvas.width = imageElement.width
+  canvas.height = imageElement.height
+  ctx.drawImage(imageElement, 0, 0)
+  return canvas
+}
+
+const imageUrlToImageElement = async (src: string): Promise<HTMLImageElement> => {
+  return new Promise ((resolve, reject) => {
+    const tmpImg = new Image();
+    tmpImg.crossOrigin = "anonymous";
+    tmpImg.onload = () => {
+      resolve(tmpImg)
+    }
+    tmpImg.onerror = (e) => {
+      reject(e)
+    }
+    tmpImg.src = src
+  })
+}
+
+function dataURLtoBlob(dataurl: string): Blob {
+  var arr = dataurl.split(','), mime = arr[0].match(/:(.*?);/)[1],
+      bstr = atob(arr[1]), n = bstr.length, u8arr = new Uint8Array(n);
+  while(n--){
+      u8arr[n] = bstr.charCodeAt(n);
+  }
+  return new Blob([u8arr], {type:mime});
+}
 
 export default defineComponent({
   props: {
@@ -92,10 +142,7 @@ export default defineComponent({
       type: String,
     },
   },
-  emits: {
-    setupGameClick: null,
-    postToGalleryClick: null,
-  },
+  emits: ['setupGameClick', 'postToGalleryClick', 'close'],
   data () {
     return {
       previewUrl: '',
@@ -104,6 +151,7 @@ export default defineComponent({
       tags: [] as string[],
       isPrivate: false,
       droppable: false,
+      inputFocused: false,
     }
   },
   computed: {
@@ -122,6 +170,12 @@ export default defineComponent({
       }
       return !!(this.previewUrl && this.file)
     },
+  },
+  mounted () {
+    window.addEventListener('paste', this.onPaste)
+  },
+  unmounted () {
+    window.removeEventListener('paste', this.onPaste)
   },
   methods: {
     reset(): void {
@@ -143,6 +197,34 @@ export default defineComponent({
       }
       return item
     },
+    async onPaste (evt: ClipboardEvent) {
+      // check if a url was pasted
+      const imageUrl = evt.clipboardData.getData('text')
+      if (imageUrl) {
+        if (this.inputFocused) {
+          return;
+        }
+        if (imageUrl.match(/^https?:\/\//)) {
+          // need to proxy because of X-Origin
+          const proxiedUrl = '/api/proxy?' + new URLSearchParams({url: imageUrl})
+          try {
+            const imgBlob = await imageUrlToBlob(proxiedUrl)
+            this.preview(imgBlob)
+          } catch (e1) {
+            // url could not be transformed into a blob.
+            console.error('unable to transform image url into blob', e1)
+          }
+        } else {
+          // something else was pasted, ignore for now
+          return
+        }
+      }
+
+      // check if an image was pasted
+      const file = evt.clipboardData.files[0]
+      if (!file) return;
+      this.preview(file)
+    },
     onFileSelect (evt: Event) {
       const target = (evt.target as HTMLInputElement)
       if (!target.files) return;
@@ -151,7 +233,11 @@ export default defineComponent({
 
       this.preview(file)
     },
-    preview (file: File) {
+    preview (file: File | Blob) {
+      if (!file.type.startsWith('image/')) {
+        console.error('file type is not supported', file.type)
+        return
+      }
       const r = new FileReader()
       r.readAsDataURL(file)
       r.onload = (ev: any) => {
@@ -209,100 +295,114 @@ export default defineComponent({
 </script>
 
 // TODO: scoped vs .new-image-dialog
-<style>
-.new-image-dialog .overlay-content {
-  display: grid;
-  grid-template-columns: auto 450px;
-  grid-template-rows: auto;
-  grid-template-areas:
-    "image settings"
-    "image buttons";
-  height: 90%;
-  width: 80%;
-}
-@media (max-width: 1400px) and (min-height: 720px),
-       (max-width: 1000px) {
-  .new-image-dialog .overlay-content {
-    grid-template-columns: auto;
-    grid-template-rows: 1fr min-content min-content;
+<style lang="scss">
+.new-image-dialog {
+  .overlay-content {
+    display: grid;
+    grid-template-columns: auto 450px;
+    grid-template-rows: auto;
     grid-template-areas:
-      "image"
-      "settings"
-      "buttons";
+      "image settings"
+      "image buttons";
+    height: 90%;
+    width: 80%;
   }
-  .new-image-dialog .overlay-content .area-buttons .btn br {
-    display: none;
+  @media (max-width: 1400px) and (min-height: 720px),
+        (max-width: 1000px) {
+    .overlay-content {
+      grid-template-columns: auto;
+      grid-template-rows: 1fr min-content min-content;
+      grid-template-areas:
+        "image"
+        "settings"
+        "buttons";
+    }
+    .overlay-content .area-buttons .btn br {
+      display: none;
+    }
   }
-}
 
-.new-image-dialog .area-image {
-  grid-area: image;
-  margin: .5em;
-  border: solid 6px transparent;
-}
-.new-image-dialog .area-image.no-image {
-  align-content: center;
-  display: grid;
-  text-align: center;
-  border: solid 6px;
-  position: relative;
-}
-.new-image-dialog .area-image.droppable {
-  border: dashed 6px;
-}
-.new-image-dialog .area-image .has-image {
-  position: relative;
-  width: 100%;
-  height: 100%;
-}
-.new-image-dialog .area-image .has-image .remove {
-  position: absolute;
-  top: .5em;
-  left: .5em;
-}
+  .area-image {
+    grid-area: image;
+    margin: .5em;
+    border: solid 6px transparent;
 
-.new-image-dialog .area-settings {
-  grid-area: settings;
-}
-.new-game-dialog .area-settings td:first-child {
-  white-space: nowrap;
-}
-.new-image-dialog .area-settings table input[type="text"] {
-  width: 100%;
-  box-sizing: border-box;
-}
+    &.no-image {
+      align-content: center;
+      display: grid;
+      text-align: center;
+      border: solid 6px;
+      position: relative;
+    }
+    .drop-target {
+      display: none;
+    }
 
-.new-image-dialog .area-buttons {
-  align-self: end;
-  grid-area: buttons;
-}
-.new-image-dialog .area-buttons button {
-  width: 100%;
-  margin-top: .5em;
-}
-.new-image-dialog .upload {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  cursor: pointer;
-}
-.new-image-dialog .upload .btn {
-  position: absolute;
-  top: 50%;
-  transform: translate(-50%,-50%);
-}
-.area-image .drop-target {
-  display: none;
-}
-.area-image.droppable .drop-target {
-  pointer-events: none;
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  z-index: 3;
+    &.droppable {
+      border: dashed 6px;
+
+      .drop-target {
+        pointer-events: none;
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        z-index: 3;
+      }
+    }
+    .has-image {
+      position: relative;
+      width: 100%;
+      height: 100%;
+    }
+    .has-image .remove {
+      position: absolute;
+      top: .5em;
+      left: .5em;
+    }
+  }
+
+  .area-settings {
+    grid-area: settings;
+
+    td:first-child {
+      white-space: nowrap;
+    }
+    table input[type="text"] {
+      width: 100%;
+      box-sizing: border-box;
+    }
+  }
+
+  .area-buttons {
+    align-self: end;
+    grid-area: buttons;
+
+    button {
+      width: 100%;
+      margin-top: .5em;
+    }
+  }
+
+  .upload {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    cursor: pointer;
+
+    .upload-content {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%,-50%);
+    }
+  }
+
+  ul {
+    text-align: left;
+  }
 }
 </style>

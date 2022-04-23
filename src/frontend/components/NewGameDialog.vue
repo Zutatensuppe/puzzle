@@ -67,6 +67,7 @@
         <button class="btn" :disabled="!canStartNewGame" @click="onNewGameClick">
           <i class="icon icon-puzzle-piece" /> Generate Puzzle
         </button>
+        <button class="btn" @click="$emit('close')">Cancel</button>
       </div>
     </template>
   </overlay>
@@ -87,9 +88,7 @@ export default defineComponent({
       default: false,
     },
   },
-  emits: {
-    newGame: null,
-  },
+  emits: ['newGame', 'close'],
   data() {
     return {
       tiles: 1000,
@@ -144,82 +143,89 @@ export default defineComponent({
 
 
 // TODO: scoped vs .new-game-dialog
-<style>
-.new-game-dialog .overlay-content {
-  display: grid;
-  grid-template-columns: auto 450px;
-  grid-template-rows: auto;
-  grid-template-areas:
-    "image settings"
-    "image buttons";
-  height: 90%;
-  width: 80%;
-}
-.new-game-dialog .area-image {
-  grid-area: image;
-  display: grid;
-  grid-template-rows: 1fr min-content;
-  grid-template-areas:
-    "image"
-    "image-title";
-  margin-right: 1em;
-}
-@media (max-width: 1400px) and (min-height: 720px),
-       (max-width: 1000px) {
-  .new-game-dialog .overlay-content {
-    grid-template-columns: auto;
-    grid-template-rows: 1fr min-content min-content;
+<style lang="scss">
+.new-game-dialog {
+  .overlay-content {
+    display: grid;
+    grid-template-columns: auto 450px;
+    grid-template-rows: auto;
+    grid-template-areas:
+      "image settings"
+      "image buttons";
+    height: 90%;
+    width: 80%;
+  }
+  .area-image {
+    grid-area: image;
+    display: grid;
+    grid-template-rows: 1fr min-content;
     grid-template-areas:
       "image"
-      "settings"
-      "buttons";
+      "image-title";
+    margin-right: 1em;
   }
-  .new-game-dialog .area-image {
-    margin-right: 0;
+  @media (max-width: 1400px) and (min-height: 720px),
+        (max-width: 1000px) {
+    .overlay-content {
+      grid-template-columns: auto;
+      grid-template-rows: 1fr min-content min-content;
+      grid-template-areas:
+        "image"
+        "settings"
+        "buttons";
+    }
+    .area-image {
+      margin-right: 0;
+    }
   }
-}
-.new-game-dialog .area-settings {
-  grid-area: settings;
-}
-.new-game-dialog .area-settings td:first-child {
-  white-space: nowrap;
-}
-.new-game-dialog .area-settings table input[type="text"] {
-  width: 100%;
-  box-sizing: border-box;
-}
+  .area-settings {
+    grid-area: settings;
 
-.new-game-dialog .area-buttons {
-  align-self: end;
-  grid-area: buttons;
-}
-.new-game-dialog .area-buttons button {
-  width: 100%;
-}
-.new-game-dialog .has-image {
-  box-sizing: border-box;
-  grid-area: image;
-  position: relative;
-  width: 100%;
-  height: 100%;
-  border: solid 1px;
-}
+    td:first-child {
+      white-space: nowrap;
+    }
 
-.new-game-dialog .image-title {
-  grid-area: image-title;
-  text-align: center;
-  padding: .5em 0;
-  background: var(--main-color);
-  color: #262523;
-}
+    table input[type="text"] {
+      width: 100%;
+      box-sizing: border-box;
+    }
+  }
 
-.new-game-dialog .has-image .remove {
-  position: absolute;
-  top: .5em;
-  left: .5em;
-}
+  .area-buttons {
+    align-self: end;
+    grid-area: buttons;
 
-.new-game-dialog .image-title > span { margin-right: .5em; }
-.new-game-dialog .image-title > span:last-child { margin-right: 0; }
-.image-title-dim { display: inline-block; white-space: no-wrap; }
+    button {
+      width: 100%;
+      margin-top: .5em;
+    }
+  }
+
+  .has-image {
+    box-sizing: border-box;
+    grid-area: image;
+    position: relative;
+    width: 100%;
+    height: 100%;
+    border: solid 1px;
+  }
+
+  .image-title {
+    grid-area: image-title;
+    text-align: center;
+    padding: .5em 0;
+    background: var(--main-color);
+    color: #262523;
+  }
+
+  .has-image .remove {
+    position: absolute;
+    top: .5em;
+    left: .5em;
+  }
+
+  .image-title > span { margin-right: .5em; }
+  .image-title > span:last-child { margin-right: 0; }
+  .image-title-dim { display: inline-block; white-space: no-wrap; }
+}
 </style>
