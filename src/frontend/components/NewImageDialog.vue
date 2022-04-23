@@ -56,6 +56,11 @@ gallery", if possible!
             </td>
           </tr>
           <tr>
+            <td colspan="2">
+              <div class="hint">Private images won't show up in the gallery.</div>
+            </td>
+          </tr>
+          <tr>
             <td><label>Tags</label></td>
             <td>
               <tags-input v-model="tags" :autocompleteTags="autocompleteTags" />
