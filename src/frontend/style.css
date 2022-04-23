@@ -262,6 +262,7 @@ kbd {
 .is-clickable {
   cursor: pointer;
 }
+
 .color-highlight {
   color: var(--highlight-color);
 }
