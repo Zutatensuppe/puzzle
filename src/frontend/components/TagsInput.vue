@@ -1,15 +1,18 @@
 <template>
   <div>
-    <input
-      ref="input"
-      class="input"
-      type="text"
-      v-model="input"
-      placeholder="Plants, People"
-      @change="onChange"
-      @keydown.enter="add"
-      @keyup="onKeyUp"
-      />
+    <div class="input-holder">
+      <input
+        ref="input"
+        class="input"
+        type="text"
+        v-model="input"
+        placeholder="Plants, People"
+        @keydown.enter.prevent="add"
+        @keydown.tab.prevent="add"
+        @keyup="onKeyUp"
+        />
+      <div class="enter-hint color-highlight" v-if="input">[Press ENTER/TAB to add]</div>
+    </div>
     <div v-if="autocomplete.values" class="autocomplete">
       <ul>
         <li
@@ -79,6 +82,13 @@ export default defineComponent({
         return false
       }
 
+      if (ev.code === 'Escape') {
+        this.autocomplete.values = []
+        this.autocomplete.idx = -1
+        ev.stopPropagation()
+        return false
+      }
+
       if (this.input && this.autocompleteTags) {
         this.autocomplete.values = this.autocompleteTags(
           this.input,
@@ -117,10 +127,7 @@ export default defineComponent({
   }
 })
 </script>
-<style scoped>
-.input {
-  margin-bottom: .5em;
-}
+<style scoped lang="scss">
 .autocomplete {
   position: relative;
 }
@@ -148,4 +155,16 @@ export default defineComponent({
   position: absolute;
   left: .5em;
 }
+.input-holder {
+  position: relative;
+  margin-bottom: .5em;
+
+  .enter-hint {
+    position: absolute;
+    right: .5em;
+    top: 50%;
+    transform: translateY(-50%);
+  }
+}
+
 </style>

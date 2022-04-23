@@ -262,6 +262,9 @@ kbd {
 .is-clickable {
   cursor: pointer;
 }
+.color-highlight {
+  color: var(--highlight-color);
+}
 
 .bit {
   background: rgb(59 55 55);
@@ -269,6 +272,7 @@ kbd {
   padding: 0.25em 0.5em;
   display: inline-block;
   margin: 0 0.25em 0.25em 0;
+  user-select: none;
 }
 
 .bit.on {

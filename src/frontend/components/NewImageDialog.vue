@@ -70,6 +70,7 @@ gallery", if possible!
           <template v-else-if="isPrivate"><i class="icon icon-puzzle-piece" /> Set up game</template>
           <template v-else><i class="icon icon-puzzle-piece" /> Post to gallery <br /> + set up game</template>
         </button>
+        <button class="btn" @click="$emit('close')">Cancel</button>
       </div>
     </template>
   </overlay>
@@ -92,10 +93,7 @@ export default defineComponent({
       type: String,
     },
   },
-  emits: {
-    setupGameClick: null,
-    postToGalleryClick: null,
-  },
+  emits: ['setupGameClick', 'postToGalleryClick', 'close'],
   data () {
     return {
       previewUrl: '',
@@ -209,100 +207,109 @@ export default defineComponent({
 </script>
 
 // TODO: scoped vs .new-image-dialog
-<style>
-.new-image-dialog .overlay-content {
-  display: grid;
-  grid-template-columns: auto 450px;
-  grid-template-rows: auto;
-  grid-template-areas:
-    "image settings"
-    "image buttons";
-  height: 90%;
-  width: 80%;
-}
-@media (max-width: 1400px) and (min-height: 720px),
-       (max-width: 1000px) {
-  .new-image-dialog .overlay-content {
-    grid-template-columns: auto;
-    grid-template-rows: 1fr min-content min-content;
+<style lang="scss">
+.new-image-dialog {
+  .overlay-content {
+    display: grid;
+    grid-template-columns: auto 450px;
+    grid-template-rows: auto;
     grid-template-areas:
-      "image"
-      "settings"
-      "buttons";
+      "image settings"
+      "image buttons";
+    height: 90%;
+    width: 80%;
   }
-  .new-image-dialog .overlay-content .area-buttons .btn br {
-    display: none;
+  @media (max-width: 1400px) and (min-height: 720px),
+        (max-width: 1000px) {
+    .overlay-content {
+      grid-template-columns: auto;
+      grid-template-rows: 1fr min-content min-content;
+      grid-template-areas:
+        "image"
+        "settings"
+        "buttons";
+    }
+    .overlay-content .area-buttons .btn br {
+      display: none;
+    }
   }
-}
 
-.new-image-dialog .area-image {
-  grid-area: image;
-  margin: .5em;
-  border: solid 6px transparent;
-}
-.new-image-dialog .area-image.no-image {
-  align-content: center;
-  display: grid;
-  text-align: center;
-  border: solid 6px;
-  position: relative;
-}
-.new-image-dialog .area-image.droppable {
-  border: dashed 6px;
-}
-.new-image-dialog .area-image .has-image {
-  position: relative;
-  width: 100%;
-  height: 100%;
-}
-.new-image-dialog .area-image .has-image .remove {
-  position: absolute;
-  top: .5em;
-  left: .5em;
-}
+  .area-image {
+    grid-area: image;
+    margin: .5em;
+    border: solid 6px transparent;
 
-.new-image-dialog .area-settings {
-  grid-area: settings;
-}
-.new-game-dialog .area-settings td:first-child {
-  white-space: nowrap;
-}
-.new-image-dialog .area-settings table input[type="text"] {
-  width: 100%;
-  box-sizing: border-box;
-}
+    &.no-image {
+      align-content: center;
+      display: grid;
+      text-align: center;
+      border: solid 6px;
+      position: relative;
+    }
+    .drop-target {
+      display: none;
+    }
 
-.new-image-dialog .area-buttons {
-  align-self: end;
-  grid-area: buttons;
-}
-.new-image-dialog .area-buttons button {
-  width: 100%;
-  margin-top: .5em;
-}
-.new-image-dialog .upload {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  cursor: pointer;
-}
-.new-image-dialog .upload .btn {
-  position: absolute;
-  top: 50%;
-  transform: translate(-50%,-50%);
-}
-.area-image .drop-target {
-  display: none;
-}
-.area-image.droppable .drop-target {
-  pointer-events: none;
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  z-index: 3;
+    &.droppable {
+      border: dashed 6px;
+
+      .drop-target {
+        pointer-events: none;
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        z-index: 3;
+      }
+    }
+    .has-image {
+      position: relative;
+      width: 100%;
+      height: 100%;
+    }
+    .has-image .remove {
+      position: absolute;
+      top: .5em;
+      left: .5em;
+    }
+  }
+
+  .area-settings {
+    grid-area: settings;
+
+    td:first-child {
+      white-space: nowrap;
+    }
+    table input[type="text"] {
+      width: 100%;
+      box-sizing: border-box;
+    }
+  }
+
+  .area-buttons {
+    align-self: end;
+    grid-area: buttons;
+
+    button {
+      width: 100%;
+      margin-top: .5em;
+    }
+  }
+
+  .upload {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    cursor: pointer;
+
+    .btn {
+      position: absolute;
+      top: 50%;
+      transform: translate(-50%,-50%);
+    }
+  }
 }
 </style>

@@ -30,6 +30,7 @@
 
       <div class="area-buttons">
         <button class="btn" @click="saveImage"><i class="icon icon-preview" /> Save image</button>
+        <button class="btn" @click="$emit('close')">Cancel</button>
       </div>
     </template>
   </overlay>
@@ -48,9 +49,7 @@ export default defineComponent({
       type: Function,
     },
   },
-  emits: {
-    saveClick: null,
-  },
+  emits: ['saveClick', 'close'],
   data () {
     return {
       title: '',
@@ -82,65 +81,57 @@ export default defineComponent({
 </script>
 
 // TODO: scoped vs .edit-image-dialog
-<style>
-.edit-image-dialog .overlay-content {
-  display: grid;
-  grid-template-columns: auto 450px;
-  grid-template-rows: auto;
-  grid-template-areas:
-    "image settings"
-    "image buttons";
-  height: 90%;
-  width: 80%;
-}
-@media (max-width: 1400px) and (min-height: 720px),
-       (max-width: 1000px) {
-  .edit-image-dialog .overlay-content {
-    grid-template-columns: auto;
-    grid-template-rows: 1fr min-content min-content;
+<style lang="scss">
+.edit-image-dialog {
+  .overlay-content {
+    display: grid;
+    grid-template-columns: auto 450px;
+    grid-template-rows: auto;
     grid-template-areas:
-      "image"
-      "settings"
-      "buttons";
+      "image settings"
+      "image buttons";
+    height: 90%;
+    width: 80%;
   }
-}
-.edit-image-dialog .area-image {
-  grid-area: image;
-  margin: 20px;
-}
-.edit-image-dialog .area-image.no-image {
-  align-content: center;
-  display: grid;
-  text-align: center;
-  border: dashed 6px;
-  position: relative;
-}
-.edit-image-dialog .area-image .has-image {
-  position: relative;
-  width: 100%;
-  height: 100%;
-}
-.edit-image-dialog .area-image .has-image .remove {
-  position: absolute;
-  top: .5em;
-  left: .5em;
-}
+  @media (max-width: 1400px) and (min-height: 720px),
+        (max-width: 1000px) {
+    .overlay-content {
+      grid-template-columns: auto;
+      grid-template-rows: 1fr min-content min-content;
+      grid-template-areas:
+        "image"
+        "settings"
+        "buttons";
+    }
+  }
+  .area-image {
+    grid-area: image;
+    margin: 20px;
 
-.edit-image-dialog .area-settings {
-  grid-area: settings;
-}
+    .has-image {
+      position: relative;
+      width: 100%;
+      height: 100%;
+    }
+  }
 
-.edit-image-dialog .area-settings table input[type="text"] {
-  width: 100%;
-  box-sizing: border-box;
-}
+  .area-settings {
+    grid-area: settings;
 
-.edit-image-dialog .area-buttons {
-  align-self: end;
-  grid-area: buttons;
-}
-.edit-image-dialog .area-buttons button {
-  width: 100%;
-  margin-top: .5em;
+    table input[type="text"] {
+      width: 100%;
+      box-sizing: border-box;
+    }
+  }
+
+  .area-buttons {
+    align-self: end;
+    grid-area: buttons;
+
+    button {
+      width: 100%;
+      margin-top: .5em;
+    }
+  }
 }
 </style>
