@@ -210,13 +210,21 @@ export default defineComponent({
           try {
             const imgBlob = await imageUrlToBlob(proxiedUrl)
             this.preview(imgBlob)
-          } catch (e1) {
+          } catch (e) {
             // url could not be transformed into a blob.
-            console.error('unable to transform image url into blob', e1)
+            console.error('unable to transform image http url into blob', e)
+          }
+        } else if (imageUrl.match(/^data:image\/([a-z]+);base64,/)) {
+          try {
+            const imgBlob = dataURLtoBlob(imageUrl)
+            this.preview(imgBlob)
+          } catch (e) {
+            // url could not be transformed into a blob.
+            console.error('unable to transform image data url into blob', e)
           }
         } else {
           // something else was pasted, ignore for now
-          return
+          console.log(imageUrl)
         }
       }
 
