@@ -25,7 +25,8 @@ async function createPuzzle(
   targetPieceCount: number,
   image: ImageInfo,
   ts: number,
-  shapeMode: ShapeMode
+  shapeMode: ShapeMode,
+  gameVersion: number,
 ): Promise<Puzzle> {
   const imagePath = `${config.dir.UPLOAD_DIR}/${image.filename}`
   const imageUrl = image.url
@@ -54,14 +55,12 @@ async function createPuzzle(
       y: coord.y * info.pieceSize * 1.5,
     }
   }
-
-  const tableWidth = info.width * 3
-  const tableHeight = info.height * 3
+  const tableDim = determineTableDim(info, gameVersion)
 
   const off = info.pieceSize * 1.5
   const last: Point = {
-    x: info.width - (1 * off),
-    y: info.height - (2 * off),
+    x: (tableDim.w - info.width) / 2 - (1 * off),
+    y: (tableDim.h - info.height) / 2 - (2 * off),
   }
   let countX = Math.ceil(info.width / off) + 2
   let countY = Math.ceil(info.height / off) + 2
@@ -131,8 +130,8 @@ async function createPuzzle(
     // the game
     info: {
       table: {
-        width: tableWidth,
-        height: tableHeight,
+        width: tableDim.w,
+        height: tableDim.h,
       },
       // information that was used to create the puzzle
       targetTiles: targetPieceCount,
@@ -161,6 +160,15 @@ async function createPuzzle(
     },
   }
 }
+
+function determineTableDim (info: PuzzleCreationInfo, gameVersion: number): Dim {
+  if (gameVersion <= 3) {
+    return { w: info.width * 3, h: info.height * 3 }
+  }
+  const tableSize = Math.max(info.width, info.height) * 6
+  return { w: tableSize, h: tableSize }
+}
+
 function determineTabs (shapeMode: ShapeMode): number[] {
   switch(shapeMode) {
     case ShapeMode.ANY:

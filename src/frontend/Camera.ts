@@ -1,6 +1,6 @@
 import { Dim, Point } from "../common/Geometry"
 
-const MIN_ZOOM = .1
+let MIN_ZOOM = .1
 const MAX_ZOOM = 6
 const ZOOM_STEP = .05
 
@@ -21,6 +21,11 @@ export class Camera {
     if (snapshot) {
       this.fromSnapshot(snapshot)
     }
+  }
+
+  calculateZoomCapping(windowWidth: number, windowHeight: number, tableWidth: number, tableHeight: number): void {
+    // min zoom still may never go below .1
+    MIN_ZOOM = Math.max(.1, windowWidth/tableWidth, windowHeight/tableHeight)
   }
 
   snapshot(): Snapshot {
