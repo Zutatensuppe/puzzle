@@ -11,6 +11,7 @@
           <td>
             <label><input type="checkbox" v-model="showTable">Show</label>
             <label v-if="showTable"><input type="radio" v-model="tableTexture" value="dark" /> Dark</label>
+            <label v-if="showTable"><input type="radio" v-model="tableTexture" value="brown" /> Brown</label>
             <label v-if="showTable"><input type="radio" v-model="tableTexture" value="light" /> Light</label>
           </td>
         </tr>

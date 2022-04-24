@@ -421,10 +421,17 @@ export async function main(
     showStatusMessage(REPLAY.paused ? 'Paused' : 'Playing')
   }
 
-  let _preview = false
+  let isInterfaceVisible = true
+  const toggleInterface = () => {
+    isInterfaceVisible = !isInterfaceVisible
+    eventBus.emit('toggleInterface', isInterfaceVisible)
+    showStatusMessage('Interface', isInterfaceVisible)
+  }
+
+  let isPreviewVisible = false
   const togglePreview = () => {
-    _preview = !_preview
-    eventBus.emit('togglePreview', _preview)
+    isPreviewVisible = !isPreviewVisible
+    eventBus.emit('togglePreview', isPreviewVisible)
   }
   const toggleSoundsEnabled = () => {
     player.soundsEnabled = !player.soundsEnabled
@@ -458,8 +465,8 @@ export async function main(
     replayOnPauseToggle()
   })
   eventBus.on('onPreviewChange', (value: any) => {
-    if (_preview !== value) {
-      _preview = value
+    if (isPreviewVisible !== value) {
+      isPreviewVisible = value
     }
   })
   eventBus.on('onBgChange', (value: any) => {
@@ -730,6 +737,8 @@ export async function main(
           RERENDER = true
           viewport.zoom('out', viewport.worldToViewportRaw(pos))
           delete viewportSnapshots['last']
+        } else if (type === Protocol.INPUT_EV_TOGGLE_INTERFACE) {
+          toggleInterface()
         } else if (type === Protocol.INPUT_EV_TOGGLE_PREVIEW) {
           togglePreview()
         } else if (type === Protocol.INPUT_EV_TOGGLE_SOUNDS) {
@@ -808,6 +817,8 @@ export async function main(
           const pos = { x: evt[1], y: evt[2] }
           RERENDER = true
           viewport.zoom('out', viewport.worldToViewportRaw(pos))
+        } else if (type === Protocol.INPUT_EV_TOGGLE_INTERFACE) {
+          toggleInterface()
         } else if (type === Protocol.INPUT_EV_TOGGLE_PREVIEW) {
           togglePreview()
         } else if (type === Protocol.INPUT_EV_TOGGLE_SOUNDS) {
@@ -852,6 +863,7 @@ export async function main(
   const tableImgs: Record<string, CanvasImageSource> = {
     dark: await Graphics.loadImageToBitmap(textures['./assets/textures/wood-dark.jpg'].default),
     light: await Graphics.loadImageToBitmap(textures['./assets/textures/wood-light.jpg'].default),
+    brown: await Graphics.loadImageToBitmap(textures['./assets/textures/Oak-none-3275x2565mm-Architextures.jpg'].default),
   }
 
   const onRender = async (): Promise<void> => {
@@ -911,7 +923,7 @@ export async function main(
       ctx.fillRect(pos.x + dim.w, pos.y, border.w, dim.h)
       ctx.fillRect(pos.x - border.w, pos.y + dim.h, dim.w + 2 * border.w, border.h)
     }
-    if (player.showTable && player.tableTexture === 'dark') {
+    if (player.showTable && ['dark', 'brown'].includes(player.tableTexture)) {
       ctx.fillStyle = 'rgba(0, 0, 0, .3)'
     } else {
       ctx.fillStyle = 'rgba(255, 255, 255, .3)'
