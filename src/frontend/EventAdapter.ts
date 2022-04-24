@@ -117,7 +117,9 @@ function EventAdapter (
       }
     }
 
-    if (ev.code === 'Space') {
+    if (ev.code === 'KeyH') {
+      addEvent([Protocol.INPUT_EV_TOGGLE_INTERFACE])
+    } else if (ev.code === 'Space') {
       addEvent([Protocol.INPUT_EV_TOGGLE_PREVIEW])
     } else if (ev.code === 'KeyF') {
       addEvent([Protocol.INPUT_EV_TOGGLE_FIXED_PIECES])

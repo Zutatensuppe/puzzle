@@ -26,7 +26,7 @@
       </div>
     </div>
 
-    <div class="menu-left">
+    <div class="menu-left" v-if="interface">
       <puzzle-status :status="status" />
       <div class="playback-control">
         <div>{{replayText}}</div>
@@ -39,24 +39,22 @@
       </div>
     </div>
 
-    <div class="menu">
-      <div class="tabs">
-        <router-link class="opener" :to="{name: 'index'}" target="_blank"><i class="icon icon-puzzle-piece" /> Puzzles</router-link>
-        <div class="opener" @click="toggle('preview', false)"><i class="icon icon-preview" /> Preview</div>
-        <div class="opener" @click="toggle('settings', true)"><i class="icon icon-settings" /> Settings</div>
-        <div class="opener" @click="toggle('info', true)"><i class="icon icon-info" /> Info</div>
-        <div class="opener" @click="toggle('help', true)"><i class="icon icon-hotkey" /> Hotkeys</div>
-        <a
-          class="opener"
-          href="https://ec.europa.eu/info/strategy/priorities-2019-2024/stronger-europe-world/eu-solidarity-ukraine/eu-assistance-ukraine/eu-stands-ukraine_en"
-          target="_blank"
-          >
-          <i class="icon icon-ukraine-heart" /> Stand with Ukraine
-        </a>
-      </div>
+    <div class="menu" v-if="interface">
+      <router-link class="opener" :to="{name: 'index'}" target="_blank"><i class="icon icon-puzzle-piece" /> Puzzles</router-link>
+      <div class="opener" @click="toggle('preview', false)"><i class="icon icon-preview" /> Preview</div>
+      <div class="opener" @click="toggle('settings', true)"><i class="icon icon-settings" /> Settings</div>
+      <div class="opener" @click="toggle('info', true)"><i class="icon icon-info" /> Info</div>
+      <div class="opener" @click="toggle('help', true)"><i class="icon icon-hotkey" /> Hotkeys</div>
+      <a
+        class="opener"
+        href="https://ec.europa.eu/info/strategy/priorities-2019-2024/stronger-europe-world/eu-solidarity-ukraine/eu-assistance-ukraine/eu-stands-ukraine_en"
+        target="_blank"
+        >
+        <i class="icon icon-ukraine-heart" /> Stand with Ukraine
+      </a>
     </div>
 
-    <div class="menu-right">
+    <div class="menu-right" v-if="interface">
       <scores :players="players" />
     </div>
 
@@ -115,6 +113,8 @@ export default defineComponent({
       connectionState: 0,
       cuttingPuzzle: true,
 
+      interface: true,
+
       eventBus: mitt(),
       g: {
         player: defaultPlayerSettings(),
@@ -150,6 +150,9 @@ export default defineComponent({
     })
     this.eventBus.on('togglePreview', (v: any) => {
       this.toggleTo('preview', v, false)
+    })
+    this.eventBus.on('toggleInterface', (v: any) => {
+      this.interface = !!v
     })
     this.eventBus.on('toggleSoundsEnabled', (v: any) => {
       this.g.player.soundsEnabled = !!v
