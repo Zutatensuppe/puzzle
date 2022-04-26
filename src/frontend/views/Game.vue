@@ -44,13 +44,7 @@
       <div class="opener" @click="toggle('settings', true)"><i class="icon icon-settings" /> Settings</div>
       <div class="opener" @click="toggle('info', true)"><i class="icon icon-info" /> Info</div>
       <div class="opener" @click="toggle('help', true)"><i class="icon icon-hotkey" /> Hotkeys</div>
-      <a
-        class="opener"
-        href="https://ec.europa.eu/info/strategy/priorities-2019-2024/stronger-europe-world/eu-solidarity-ukraine/eu-assistance-ukraine/eu-stands-ukraine_en"
-        target="_blank"
-        >
-        <i class="icon icon-ukraine-heart" /> Stand with Ukraine
-      </a>
+      <a class="opener" href="https://stand-with-ukraine.pp.ua/" target="_blank"><i class="icon icon-ukraine-heart" /> Stand with Ukraine </a>
     </div>
 
     <div class="menu-right" v-if="interface">
