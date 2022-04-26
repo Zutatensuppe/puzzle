@@ -1,4 +1,7 @@
-# puzzle
+![ci](https://github.com/Zutatensuppe/puzzle/actions/workflows/ci.yml/badge.svg)
+[![StandWithUkraine](https://raw.githubusercontent.com/vshymanskyy/StandWithUkraine/main/badges/StandWithUkraine.svg)](https://github.com/vshymanskyy/StandWithUkraine/blob/main/docs/README.md)
+
+# Puzzle
 
 This is a multiplayer puzzle game running in the browser.
 See a live version at [jigsaw.hyottoko.club].
