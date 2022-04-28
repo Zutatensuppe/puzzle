@@ -1,3 +1,4 @@
 #!/bin/sh -e
 
+export APP_CONFIG=config.example.json
 node --experimental-vm-modules node_modules/.bin/jest
