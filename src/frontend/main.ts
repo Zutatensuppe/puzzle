@@ -1,5 +1,6 @@
 import * as VueRouter from 'vue-router'
 import * as Vue from 'vue'
+import MasonryWall from '@yeger/vue-masonry-wall'
 
 import App from './App.vue'
 import Index from './views/Index.vue'
@@ -54,6 +55,7 @@ import user from './user'
   const app = Vue.createApp(App)
   app.config.globalProperties.$config = conf
   app.use(router)
+  app.use(MasonryWall)
   app.component('connection-overlay', ConnectionOverlay)
   app.component('edit-image-dialog', EditImageDialog)
   app.component('game-teaser', GameTeaser)

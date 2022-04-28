@@ -33,6 +33,8 @@ in jigsawpuzzles.io
           <option value="date_asc">Oldest first</option>
           <option value="alpha_asc">A-Z</option>
           <option value="alpha_desc">Z-A</option>
+          <option value="game_count_asc">Most plays first</option>
+          <option value="game_count_desc">Least plays first</option>
         </select>
       </label>
     </div>

@@ -1,10 +1,11 @@
 <template>
-  <div
-    class="imageteaser"
-    :style="style"
-    @click="onClick">
+  <div class="imageteaser" @click="onClick">
+    <img :src="url" />
     <div class="btn edit" v-if="canEdit" @click.stop="onEditClick">
       <i class="icon icon-edit" />
+    </div>
+    <div class="imageteaser-info">
+      {{ image.gameCount }}x plays
     </div>
   </div>
 </template>
@@ -25,11 +26,8 @@ export default defineComponent({
     }
   },
   computed: {
-    style(): object {
-      const url = this.image.url.replace('uploads/', 'uploads/r/') + '-150x100.webp'
-      return {
-        'backgroundImage': `url("${url}")`,
-      }
+    url(): string {
+      return this.image.url.replace('uploads/', 'uploads/r/') + '-375x0.webp'
     },
     canEdit(): boolean {
       if (!this.me.id) {
@@ -54,6 +52,6 @@ export default defineComponent({
 </script>
 <style type="css">
 .imageteaser { position: relative; }
-.imageteaser .edit { display: none; position: absolute; }
+.imageteaser .edit { display: none; position: absolute; left: 0; }
 .imageteaser:hover .edit { display: inline-block; }
 </style>
