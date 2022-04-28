@@ -1,7 +1,9 @@
 <template>
-  <div>
-    <image-teaser v-for="(i,idx) in images" :image="i" @click="imageClicked(i)" @editClick="imageEditClicked(i)" :key="idx" />
-  </div>
+  <masonry-wall :items="images" :ssr-columns="1" :column-width="300" :gap="16">
+    <template #default="{ item, index }">
+      <image-teaser :image="item" @click="imageClicked(item)" @editClick="imageEditClicked(item)" :key="index" />
+    </template>
+  </masonry-wall>
 </template>
 <script lang="ts">
 import { defineComponent } from 'vue'

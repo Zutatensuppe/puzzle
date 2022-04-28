@@ -39,15 +39,18 @@ const resizeImage = async (filename: string): Promise<void> => {
     } else if (orientation === 8) {
       sharpImg = sharpImg.rotate(270)
     }
-    const sizes = [
-      [150, 100],
-      [375, 210],
+    const sizes: [number, number | null, 'contain' | 'cover' | 'inside' | 'outside'][] = [
+      [150, 100, 'contain'],
+      [375, 210, 'contain'],
+      [375, null, 'cover'],
     ]
-    for (const [w,h] of sizes) {
-      log.info(w, h, imagePath)
-      await sharpImg
-        .resize(w, h, { fit: 'contain' })
-        .toFile(`${imageOutPath}-${w}x${h}.webp`)
+    for (const [w, h, fit] of sizes) {
+
+      const filename = `${imageOutPath}-${w}x${h || 0}.webp`
+      if (!fs.existsSync(filename)) {
+        log.info(w, h, filename)
+        await sharpImg.resize(w, h, { fit }).toFile(filename)
+      }
     }
   } catch (e) {
     log.error('error when resizing image', filename, e)
@@ -155,6 +158,14 @@ inner join images i on i.id = ixc.image_id ${where.sql};
     }
     wheresRaw['id'] = {'$in': ids}
   }
+  const imageCounts = await db._getMany(`
+select count(*) as count, image_id from games where private = $1 group by image_id
+`, [isPrivate ? 1 : 0])
+  const imageCountMap = new Map<number, number>()
+  for (const row of imageCounts) {
+    imageCountMap.set(row.image_id, row.count)
+  }
+
   const tmpImages: ImageRow[] = await db.getMany('images', wheresRaw, orderByMap[orderBy])
   const images = []
   for (const i of tmpImages) {
@@ -169,7 +180,13 @@ inner join images i on i.id = ixc.image_id ${where.sql};
       width: i.width,
       height: i.height,
       private: !!i.private,
+      gameCount: imageCountMap.get(i.id) || 0,
     })
+  }
+  if (orderBy === 'game_count_asc') {
+    images.sort((a: any, b: any) => a.gameCount === b.gameCount ? 0 : (a.gameCount > b.gameCount ? -1 : 1))
+  } else if (orderBy === 'game_count_desc') {
+    images.sort((a: any, b: any) => a.gameCount === b.gameCount ? 0 : (a.gameCount > b.gameCount ? 1 : -1))
   }
   return images
 }

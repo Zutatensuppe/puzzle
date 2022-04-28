@@ -311,8 +311,7 @@ table label {
 }
 
 .imageteaser {
-  width: 150px;
-  height: 100px;
+  width: 375px;
   display: inline-block;
   margin: 5px;
   background-size: contain;
@@ -320,6 +319,20 @@ table label {
   background-repeat: no-repeat;
   background-color: #222;
   cursor: pointer;
+}
+
+.imageteaser img {
+  width: 375px;
+  vertical-align: bottom;
+}
+
+.imageteaser-info {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: var(--bg-color);
+  padding: 5px;
 }
 
 .game-teaser-wrap {
