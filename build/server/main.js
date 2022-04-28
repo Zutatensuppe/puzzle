@@ -6,7 +6,7 @@ import multer from 'multer';
 import fs, { readFileSync } from 'fs';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
-import sizeOf from 'image-size';
+import probe from 'probe-image-size';
 import exif from 'exif';
 import sharp from 'sharp';
 import v8 from 'v8';
@@ -1617,7 +1617,7 @@ inner join images i on i.id = ixc.image_id ${where.sql};
     return images;
 };
 async function getDimensions(imagePath) {
-    const dimensions = sizeOf(imagePath);
+    const dimensions = await probe(fs.createReadStream(imagePath));
     const orientation = await getExifOrientation(imagePath);
     // when image is rotated to the left or right, switch width/height
     // https://jdhao.github.io/2019/07/31/image_rotation_exif_info/
