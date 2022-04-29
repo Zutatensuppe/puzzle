@@ -1,7 +1,7 @@
 <template>
   <overlay class="connection-lost" v-show="show">
     <template v-slot:default>
-      <div v-if="lostConnection"><i class="icon icon-disconnect" /> LOST CONNECTION <i class="icon icon-disconnect" /></div>
+      <div v-if="lostConnection"><icon icon="disconnect" /> LOST CONNECTION <icon icon="disconnect" /></div>
       <span v-if="lostConnection" class="btn" @click="$emit('reconnect')">Reconnect</span>
       <div v-if="connecting">Connecting...</div>
     </template>

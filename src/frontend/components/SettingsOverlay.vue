@@ -19,7 +19,7 @@
           <td><label>Color: </label></td>
           <td>
             <input type="color" v-model="color" v-if="!isUkraineColor" />
-            <label><input type="checkbox" v-model="isUkraineColor"><i class="icon icon-ukraine-heart" /></label>
+            <label><input type="checkbox" v-model="isUkraineColor"><icon icon="ukraine-heart" /></label>
           </td>
         </tr>
         <tr>
@@ -37,7 +37,7 @@
         <tr>
           <td><label>Sounds Volume: </label></td>
           <td class="sound-volume">
-            <span @click="decreaseVolume"><i class="icon icon-volume-down" /></span>
+            <span @click="decreaseVolume"><icon icon="volume-down" /></span>
             <input
               :disabled="!soundsEnabled"
               type="range"
@@ -46,7 +46,7 @@
               :value="soundsVolume"
               @change="updateVolume"
               />
-            <span @click="increaseVolume"><i class="icon icon-volume-up" /></span>
+            <span @click="increaseVolume"><icon icon="volume-up" /></span>
           </td>
         </tr>
         <tr>
@@ -147,7 +147,3 @@ export default defineComponent({
   },
 })
 </script>
-<style scoped>
-.sound-volume span { cursor: pointer; user-select: none; }
-.sound-volume input { vertical-align: middle; }
-</style>

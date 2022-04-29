@@ -22,7 +22,7 @@
 
     <div class="overlay" v-if="cuttingPuzzle">
       <div class="overlay-content">
-        <div><i class="icon icon-hourglass" /> Cutting puzzle, please wait... <i class="icon icon-hourglass" /></div>
+        <div><icon icon="hourglass" /> Cutting puzzle, please wait... <icon icon="hourglass" /></div>
       </div>
     </div>
 
@@ -30,22 +30,22 @@
       <puzzle-status :status="status" />
       <div class="playback-control">
         <div>{{replayText}}</div>
-        <button class="btn" @click="eventBus.emit('replayOnSpeedUp')"><i class="icon icon-speed-up" /></button>
-        <button class="btn" @click="eventBus.emit('replayOnSpeedDown')"><i class="icon icon-speed-down" /></button>
-        <button class="btn" @click="eventBus.emit('replayOnPauseToggle')"><i class="icon icon-pause" /></button>
+        <button class="btn" @click="eventBus.emit('replayOnSpeedUp')"><icon icon="speed-up" /></button>
+        <button class="btn" @click="eventBus.emit('replayOnSpeedDown')"><icon icon="speed-down" /></button>
+        <button class="btn" @click="eventBus.emit('replayOnPauseToggle')"><icon icon="pause" /></button>
       </div>
       <div class="switch-game-replay" v-if="g.game">
-        <router-link :to="{ name: 'game', params: { id: g.game.id } }"><i class="icon icon-puzzle-piece" /> To the game</router-link>
+        <router-link :to="{ name: 'game', params: { id: g.game.id } }"><icon icon="puzzle-piece" /> To the game</router-link>
       </div>
     </div>
 
     <div class="menu" v-if="interface">
-      <router-link class="opener" :to="{name: 'index'}" target="_blank"><i class="icon icon-puzzle-piece" /> Puzzles</router-link>
-      <div class="opener" @click="toggle('preview', false)"><i class="icon icon-preview" /> Preview</div>
-      <div class="opener" @click="toggle('settings', true)"><i class="icon icon-settings" /> Settings</div>
-      <div class="opener" @click="toggle('info', true)"><i class="icon icon-info" /> Info</div>
-      <div class="opener" @click="toggle('help', true)"><i class="icon icon-hotkey" /> Hotkeys</div>
-      <a class="opener" href="https://stand-with-ukraine.pp.ua/" target="_blank"><i class="icon icon-ukraine-heart" /> Stand with Ukraine </a>
+      <router-link class="opener" :to="{name: 'index'}" target="_blank"><icon icon="puzzle-piece" /> Puzzles</router-link>
+      <div class="opener" @click="toggle('preview', false)"><icon icon="preview" /> Preview</div>
+      <div class="opener" @click="toggle('settings', true)"><icon icon="settings" /> Settings</div>
+      <div class="opener" @click="toggle('info', true)"><icon icon="info" /> Info</div>
+      <div class="opener" @click="toggle('help', true)"><icon icon="hotkey" /> Hotkeys</div>
+      <a class="opener" href="https://stand-with-ukraine.pp.ua/" target="_blank"><icon icon="ukraine-heart" /> Stand with Ukraine </a>
     </div>
 
     <div class="menu-right" v-if="interface">

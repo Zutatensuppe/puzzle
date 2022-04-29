@@ -1,14 +1,10 @@
 <template>
   <div>
     <h1>Running games</h1>
-    <div class="game-teaser-wrap" v-for="(g, idx) in gamesRunning" :key="idx">
-      <game-teaser :game="g" />
-    </div>
+    <game-teaser v-for="(g, idx) in gamesRunning" :key="idx" :game="g" />
 
     <h1>Finished games</h1>
-    <div class="game-teaser-wrap" v-for="(g, idx) in gamesFinished" :key="idx">
-      <game-teaser :game="g" />
-    </div>
+    <game-teaser v-for="(g, idx) in gamesFinished" :key="idx" :game="g" />
   </div>
 </template>
 <script lang="ts">

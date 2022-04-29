@@ -3,12 +3,12 @@
     <div>Scores</div>
     <table>
       <tr v-for="(p, idx) in actives" :key="idx" :style="playerStyle(p)">
-        <td><i class="icon icon-lightning" /></td>
+        <td><icon icon="lightning" /></td>
         <td>{{p.name}}</td>
         <td>{{p.points}}</td>
       </tr>
       <tr v-for="(p, idx) in idles" :key="idx" :style="playerStyle(p)">
-        <td><i class="icon icon-zzz" /></td>
+        <td><icon icon="zzz" /></td>
         <td>{{p.name}}</td>
         <td>{{p.points}}</td>
       </tr>
