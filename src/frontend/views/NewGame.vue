@@ -7,12 +7,12 @@ in jigsawpuzzles.io
 
 <template>
   <div>
-    <div class="upload-image-teaser">
-      <div class="btn btn-big" @click="dialog='new-image'">Upload your image</div>
+    <div class="upload-image-teaser" :class="{blurred: dialog !== ''}">
+      <div class="btn is-big" @click="dialog='new-image'">Upload your image</div>
       <div class="hint">(The image you upload will be added to the public gallery.)</div>
     </div>
 
-    <div>
+    <div :class="{blurred: dialog !== ''}">
       <label v-if="tags.length > 0">
         Tags:
         <span
@@ -39,6 +39,7 @@ in jigsawpuzzles.io
       </label>
     </div>
     <image-library
+      :class="{blurred: dialog !== ''}"
       :images="images"
       @imageClicked="onImageClicked"
       @imageEditClicked="onImageEditClicked" />

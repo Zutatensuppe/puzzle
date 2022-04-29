@@ -1,5 +1,5 @@
 <template>
-  <overlay class="preview-overlay" :animate="false">
+  <overlay class="preview-overlay">
     <template v-slot:default>
       <div class="preview">
         <div class="img" :style="previewStyle"></div>

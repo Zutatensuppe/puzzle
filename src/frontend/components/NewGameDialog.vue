@@ -52,7 +52,7 @@
           </tr>
           <tr>
             <td><label>Private Game</label></td>
-            <td><input :disabled="forcePrivate" type="checkbox" v-model="isPrivate" /></td>
+            <td class="checkbox-only"><input :disabled="forcePrivate" type="checkbox" v-model="isPrivate" /></td>
           </tr>
           <tr>
             <td colspan="2">
@@ -70,7 +70,7 @@
 
       <div class="area-buttons">
         <button class="btn" :disabled="!canStartNewGame" @click="onNewGameClick">
-          <i class="icon icon-puzzle-piece" /> Generate Puzzle
+          <icon icon="puzzle-piece" /> Generate Puzzle
         </button>
         <button class="btn" @click="$emit('close')">Cancel</button>
       </div>
@@ -145,92 +145,3 @@ export default defineComponent({
   },
 })
 </script>
-
-
-// TODO: scoped vs .new-game-dialog
-<style lang="scss">
-.new-game-dialog {
-  .overlay-content {
-    display: grid;
-    grid-template-columns: auto 450px;
-    grid-template-rows: auto;
-    grid-template-areas:
-      "image settings"
-      "image buttons";
-    height: 90%;
-    width: 80%;
-  }
-  .area-image {
-    grid-area: image;
-    display: grid;
-    grid-template-rows: 1fr min-content;
-    grid-template-areas:
-      "image"
-      "image-title";
-    margin-right: 1em;
-  }
-  @media (max-width: 1400px) and (min-height: 720px),
-        (max-width: 1000px) {
-    .overlay-content {
-      grid-template-columns: auto;
-      grid-template-rows: 1fr min-content min-content;
-      grid-template-areas:
-        "image"
-        "settings"
-        "buttons";
-    }
-    .area-image {
-      margin-right: 0;
-    }
-  }
-  .area-settings {
-    grid-area: settings;
-
-    td:first-child {
-      white-space: nowrap;
-    }
-
-    table input[type="text"] {
-      width: 100%;
-      box-sizing: border-box;
-    }
-  }
-
-  .area-buttons {
-    align-self: end;
-    grid-area: buttons;
-
-    button {
-      width: 100%;
-      margin-top: .5em;
-    }
-  }
-
-  .has-image {
-    box-sizing: border-box;
-    grid-area: image;
-    position: relative;
-    width: 100%;
-    height: 100%;
-    border: solid 1px;
-  }
-
-  .image-title {
-    grid-area: image-title;
-    text-align: center;
-    padding: .5em 0;
-    background: var(--main-color);
-    color: #262523;
-  }
-
-  .has-image .remove {
-    position: absolute;
-    top: .5em;
-    left: .5em;
-  }
-
-  .image-title > span { margin-right: .5em; }
-  .image-title > span:last-child { margin-right: 0; }
-  .image-title-dim { display: inline-block; white-space: no-wrap; }
-}
-</style>

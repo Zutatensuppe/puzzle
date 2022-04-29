@@ -11,9 +11,9 @@
       :data-index="columnIndex"
       :style="{
         display: 'flex',
-        'flex-basis': 0,
-        'flex-direction': 'column',
-        'flex-grow': 1,
+        flexBasis: 0,
+        flexDirection: 'column',
+        flexGrow: 1,
         height: ['-webkit-max-content', '-moz-max-content', 'max-content'],
         gap: `${gap}px`,
       }"

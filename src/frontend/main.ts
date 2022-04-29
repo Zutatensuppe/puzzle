@@ -12,6 +12,7 @@ import ConnectionOverlay from './components/ConnectionOverlay.vue'
 import EditImageDialog from './components/EditImageDialog.vue'
 import GameTeaser from './components/GameTeaser.vue'
 import HelpOverlay from './components/HelpOverlay.vue'
+import Icon from './components/Icon.vue'
 import ImageLibrary from './components/ImageLibrary.vue'
 import ImageTeaser from './components/ImageTeaser.vue'
 import InfoOverlay from './components/InfoOverlay.vue'
@@ -55,14 +56,15 @@ import user from './user'
   const app = Vue.createApp(App)
   app.config.globalProperties.$config = conf
   app.use(router)
-  app.component('masonry-wall', MasonryWall)
   app.component('connection-overlay', ConnectionOverlay)
   app.component('edit-image-dialog', EditImageDialog)
   app.component('game-teaser', GameTeaser)
   app.component('help-overlay', HelpOverlay)
+  app.component('icon', Icon)
   app.component('image-library', ImageLibrary)
   app.component('image-teaser', ImageTeaser)
   app.component('info-overlay', InfoOverlay)
+  app.component('masonry-wall', MasonryWall)
   app.component('new-game-dialog', NewGameDialog)
   app.component('new-image-dialog', NewImageDialog)
   app.component('overlay', Overlay)

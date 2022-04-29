@@ -2,7 +2,7 @@
   <div class="imageteaser" @click="onClick">
     <img :src="url" />
     <div class="btn edit" v-if="canEdit" @click.stop="onEditClick">
-      <i class="icon icon-edit" />
+      <icon icon="edit" />
     </div>
     <div class="imageteaser-info">
       {{ image.gameCount }}x plays
@@ -50,8 +50,3 @@ export default defineComponent({
   },
 })
 </script>
-<style type="css">
-.imageteaser { position: relative; }
-.imageteaser .edit { display: none; position: absolute; left: 0; }
-.imageteaser:hover .edit { display: inline-block; }
-</style>
