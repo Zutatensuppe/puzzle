@@ -1,5 +1,5 @@
 <template>
-  <masonry-wall :items="images" :ssr-columns="1" :column-width="300" :gap="16">
+  <masonry-wall :items="images" :column-width="375" :gap="10">
     <template #default="{ item, index }">
       <image-teaser :image="item" @click="imageClicked(item)" @editClick="imageEditClicked(item)" :key="index" />
     </template>
