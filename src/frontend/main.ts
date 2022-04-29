@@ -1,6 +1,5 @@
 import * as VueRouter from 'vue-router'
 import * as Vue from 'vue'
-import MasonryWall from '@yeger/vue-masonry-wall'
 
 import App from './App.vue'
 import Index from './views/Index.vue'
@@ -25,6 +24,7 @@ import ResponsiveImage from './components/ResponsiveImage.vue'
 import Scores from './components/Scores.vue'
 import SettingsOverlay from './components/SettingsOverlay.vue'
 import TagsInput from './components/TagsInput.vue'
+import MasonryWall from './components/MasonryWall.vue'
 import user from './user'
 
 (async () => {
@@ -55,7 +55,7 @@ import user from './user'
   const app = Vue.createApp(App)
   app.config.globalProperties.$config = conf
   app.use(router)
-  app.use(MasonryWall)
+  app.component('masonry-wall', MasonryWall)
   app.component('connection-overlay', ConnectionOverlay)
   app.component('edit-image-dialog', EditImageDialog)
   app.component('game-teaser', GameTeaser)

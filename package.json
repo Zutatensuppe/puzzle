@@ -19,7 +19,6 @@
   "homepage": "https://github.com/Zutatensuppe/puzzle#readme",
   "type": "module",
   "dependencies": {
-    "@yeger/vue-masonry-wall": "^3.0.29",
     "async-mutex": "^0.3.2",
     "exif": "^0.6.0",
     "express": "^4.17.3",

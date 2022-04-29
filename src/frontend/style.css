@@ -311,9 +311,8 @@ table label {
 }
 
 .imageteaser {
-  width: 375px;
+  width: 100%;
   display: inline-block;
-  margin: 5px;
   background-size: contain;
   background-position: center;
   background-repeat: no-repeat;
@@ -322,7 +321,7 @@ table label {
 }
 
 .imageteaser img {
-  width: 375px;
+  width: 100%;
   vertical-align: bottom;
 }
 
