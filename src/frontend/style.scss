@@ -143,6 +143,21 @@ input {
   border: solid 1px black;
   box-shadow: 0 0 10px 0 rgba(0 0 0 / 70%);
   z-index: 2;
+
+  .opener {
+    display: inline-block;
+    margin-right: 10px;
+    color: $linkColor;
+
+    &:last-child {
+      margin-right: 0;
+    }
+
+    &:hover {
+      color: $linkColorHover;
+      cursor: pointer;
+    }
+  }
 }
 
 .closed {
@@ -219,23 +234,6 @@ input {
   }
 }
 
-.menu {
-  .opener {
-    display: inline-block;
-    margin-right: 10px;
-    color: $linkColor;
-
-    &:last-child {
-      margin-right: 0;
-    }
-
-    &:hover {
-      color: $linkColorHover;
-      cursor: pointer;
-    }
-  }
-}
-
 kbd {
   background-color: #eee;
   border-radius: 3px;
@@ -293,6 +291,7 @@ table label {
 table.settings {
   border-collapse: collapse;
   border-spacing: 0;
+
   td {
     vertical-align: middle;
   }
@@ -372,7 +371,6 @@ table.settings {
     background-color: #222;
   }
 }
-
 
 .game-info {
   position: absolute;
@@ -462,13 +460,24 @@ html.view-replay body { overflow: hidden; }
   &.icon-ukraine-heart { background-image: url("assets/icons/ukraine_heart.png"); }
 }
 
+.sound-volume {
+  span {
+    cursor: pointer;
+    user-select: none;
+  }
+
+  input {
+    vertical-align: middle;
+  }
+}
+
 .area-buttons {
   align-self: end;
   grid-area: buttons;
 
   button {
     width: 100%;
-    margin-top: .5em;
+    margin-top: 0.5em;
   }
 }
 
@@ -478,12 +487,15 @@ html.view-replay body { overflow: hidden; }
   td.checkbox-only {
     vertical-align: middle;
   }
+
   td:first-child {
     white-space: nowrap;
+
     &[colspan="2"] {
       white-space: normal;
     }
   }
+
   table {
     border-collapse: collapse;
     border-spacing: 0;
@@ -495,70 +507,44 @@ html.view-replay body { overflow: hidden; }
   }
 }
 
-.edit-image-dialog {
-  .overlay-content {
-    display: grid;
-    grid-template-columns: auto 450px;
-    grid-template-rows: auto;
-    grid-template-areas:
-      "image settings"
-      "image buttons";
-    height: 90%;
-    width: 80%;
-  }
-  @media (max-width: 1400px) and (min-height: 720px),
-        (max-width: 1000px) {
-    .overlay-content {
-      grid-template-columns: auto;
-      grid-template-rows: 1fr min-content min-content;
-      grid-template-areas:
-        "image"
-        "settings"
-        "buttons";
-    }
-  }
-  .area-image {
-    grid-area: image;
-    margin: 20px;
-
-    .has-image {
-      position: relative;
-      width: 100%;
-      height: 100%;
-    }
-  }
-}
-
 .new-game-dialog {
   .overlay-content {
     display: grid;
+    /* stylelint-disable */
     grid-template-columns: auto 450px;
     grid-template-rows: auto;
     grid-template-areas:
       "image settings"
       "image buttons";
+    /* stylelint-enable */
     height: 90%;
     width: 80%;
   }
+
   .area-image {
     grid-area: image;
     display: grid;
+    /* stylelint-disable */
     grid-template-rows: 1fr min-content;
     grid-template-areas:
       "image"
       "image-title";
+    /* stylelint-enable */
     margin-right: 1em;
   }
-  @media (max-width: 1400px) and (min-height: 720px),
-        (max-width: 1000px) {
+
+  @media (max-width: 1400px) and (min-height: 720px), (max-width: 1000px) {
     .overlay-content {
+      /* stylelint-disable */
       grid-template-columns: auto;
       grid-template-rows: 1fr min-content min-content;
       grid-template-areas:
         "image"
         "settings"
         "buttons";
+      /* stylelint-enable */
     }
+
     .area-image {
       margin-right: 0;
     }
@@ -576,44 +562,97 @@ html.view-replay body { overflow: hidden; }
   .image-title {
     grid-area: image-title;
     text-align: center;
-    padding: .5em 0;
+    padding: 0.5em 0;
     background: $mainColor;
     color: #262523;
   }
 
   .has-image .remove {
     position: absolute;
-    top: .5em;
-    left: .5em;
+    top: 0.5em;
+    left: 0.5em;
   }
 
-  .image-title > span { margin-right: .5em; }
-  .image-title > span:last-child { margin-right: 0; }
-  .image-title-dim { display: inline-block; white-space: no-wrap; }
+  .image-title > span {
+    margin-right: 0.5em;
+  }
+
+  .image-title > span:last-child {
+    margin-right: 0;
+  }
+
+  .image-title-dim {
+    display: inline-block;
+    white-space: no-wrap;
+  }
 }
 
-
-.new-image-dialog {
+.edit-image-dialog {
   .overlay-content {
     display: grid;
+    /* stylelint-disable */
     grid-template-columns: auto 450px;
     grid-template-rows: auto;
     grid-template-areas:
       "image settings"
       "image buttons";
+    /* stylelint-enable */
     height: 90%;
     width: 80%;
   }
+
   @media (max-width: 1400px) and (min-height: 720px),
-        (max-width: 1000px) {
+    (max-width: 1000px) {
     .overlay-content {
+      /* stylelint-disable */
       grid-template-columns: auto;
       grid-template-rows: 1fr min-content min-content;
       grid-template-areas:
         "image"
         "settings"
         "buttons";
+      /* stylelint-enable */
     }
+  }
+
+  .area-image {
+    grid-area: image;
+    margin: 20px;
+
+    .has-image {
+      position: relative;
+      width: 100%;
+      height: 100%;
+    }
+  }
+}
+
+.new-image-dialog {
+  .overlay-content {
+    display: grid;
+    /* stylelint-disable */
+    grid-template-columns: auto 450px;
+    grid-template-rows: auto;
+    grid-template-areas:
+      "image settings"
+      "image buttons";
+    /* stylelint-enable */
+    height: 90%;
+    width: 80%;
+  }
+
+  @media (max-width: 1400px) and (min-height: 720px), (max-width: 1000px) {
+    .overlay-content {
+      /* stylelint-disable */
+      grid-template-columns: auto;
+      grid-template-rows: 1fr min-content min-content;
+      grid-template-areas:
+        "image"
+        "settings"
+        "buttons";
+      /* stylelint-enable */
+    }
+
     .overlay-content .area-buttons .btn br {
       display: none;
     }
@@ -621,7 +660,7 @@ html.view-replay body { overflow: hidden; }
 
   .area-image {
     grid-area: image;
-    margin: .5em;
+    margin: 0.5em;
     border: solid 6px transparent;
 
     &.no-image {
@@ -631,6 +670,7 @@ html.view-replay body { overflow: hidden; }
       border: solid 6px;
       position: relative;
     }
+
     .drop-target {
       display: none;
     }
@@ -648,15 +688,17 @@ html.view-replay body { overflow: hidden; }
         z-index: 3;
       }
     }
+
     .has-image {
       position: relative;
       width: 100%;
       height: 100%;
     }
+
     .has-image .remove {
       position: absolute;
-      top: .5em;
-      left: .5em;
+      top: 0.5em;
+      left: 0.5em;
     }
   }
 
@@ -672,18 +714,13 @@ html.view-replay body { overflow: hidden; }
       position: absolute;
       top: 50%;
       left: 50%;
-      transform: translate(-50%,-50%);
+      transform: translate(-50%, -50%);
     }
   }
 
   ul {
     text-align: left;
   }
-}
-
-.sound-volume {
-  span { cursor: pointer; user-select: none; }
-  input { vertical-align: middle; }
 }
 
 .autocomplete {
@@ -697,11 +734,11 @@ html.view-replay body { overflow: hidden; }
     left: 0;
     right: 0;
     background: #333230;
-    top: -.5em;
+    top: -0.5em;
 
     li {
       position: relative;
-      padding: .5em .5em .5em 1.5em;
+      padding: 0.5em 0.5em 0.5em 1.5em;
       cursor: pointer;
 
       &.active {
@@ -709,11 +746,11 @@ html.view-replay body { overflow: hidden; }
         background: $inputBgColor;
       }
 
-      &.active:before {
-        content: '▶';
+      &.active::before {
+        content: "▶";
         display: block;
         position: absolute;
-        left: .5em;
+        left: 0.5em;
       }
     }
   }
@@ -721,11 +758,11 @@ html.view-replay body { overflow: hidden; }
 
 .input-holder {
   position: relative;
-  margin-bottom: .5em;
+  margin-bottom: 0.5em;
 
   .enter-hint {
     position: absolute;
-    right: .5em;
+    right: 0.5em;
     top: 50%;
     transform: translateY(-50%);
   }

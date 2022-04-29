@@ -6,4 +6,4 @@ cd "$RUN_DIR"
 npx eslint src
 
 # lint for css files
-npx stylelint "src/**/*.css"
+npx stylelint "src/**/*.scss"
