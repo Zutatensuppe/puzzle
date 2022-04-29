@@ -310,6 +310,9 @@ table label {
   white-space: nowrap;
 }
 
+.masonry-wall {
+  margin: 10px;
+}
 .imageteaser {
   width: 100%;
   display: inline-block;
