@@ -1,8 +1,6 @@
 import { WebSocketServer as WebSocketServer$1 } from 'ws';
-import request from 'request';
 import express from 'express';
 import compression from 'compression';
-import multer from 'multer';
 import fs, { readFileSync } from 'fs';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
@@ -12,6 +10,8 @@ import sharp from 'sharp';
 import v8 from 'v8';
 import { Mutex } from 'async-mutex';
 import * as pg from 'pg';
+import multer from 'multer';
+import request from 'request';
 
 class Rng {
     constructor(seed) {
@@ -235,7 +235,7 @@ var Util = {
     asQueryArgs,
 };
 
-const log$5 = logger('WebSocketServer.js');
+const log$6 = logger('WebSocketServer.js');
 class EvtBus {
     constructor() {
         this._on = {};
@@ -264,13 +264,13 @@ class WebSocketServer {
         this._websocketserver.on('connection', (socket, request) => {
             const pathname = new URL(this.config.connectstring).pathname;
             if (request.url.indexOf(pathname) !== 0) {
-                log$5.log('bad request url: ', request.url);
+                log$6.log('bad request url: ', request.url);
                 socket.close();
                 return;
             }
             socket.on('message', (data) => {
                 const strData = String(data);
-                log$5.log(`ws`, socket.protocol, strData);
+                log$6.log(`ws`, socket.protocol, strData);
                 this.evt.dispatch('message', { socket, data: strData });
             });
             socket.on('close', () => {
@@ -1363,7 +1363,7 @@ var GameCommon = {
     Game_isFinished,
 };
 
-const log$4 = logger('Config.ts');
+const log$5 = logger('Config.ts');
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const BASE_DIR = `${__dirname}/../..`;
@@ -1375,7 +1375,7 @@ const DB_PATCHES_DIR = `${BASE_DIR}/src/dbpatches`;
 const init = () => {
     const configFile = process.env.APP_CONFIG || '';
     if (configFile === '') {
-        log$4.error('APP_CONFIG environment variable not set or empty');
+        log$5.error('APP_CONFIG environment variable not set or empty');
         process.exit(2);
     }
     const config = JSON.parse(String(readFileSync(configFile)));
@@ -1480,7 +1480,7 @@ var GameLog = {
     idxname,
 };
 
-const log$3 = logger('Images.ts');
+const log$4 = logger('Images.ts');
 const resizeImage = async (filename) => {
     try {
         const imagePath = `${config.dir.UPLOAD_DIR}/${filename}`;
@@ -1506,13 +1506,13 @@ const resizeImage = async (filename) => {
         for (const [w, h, fit] of sizes) {
             const filename = `${imageOutPath}-${w}x${h || 0}.webp`;
             if (!fs.existsSync(filename)) {
-                log$3.info(w, h, filename);
+                log$4.info(w, h, filename);
                 await sharpImg.resize(w, h, { fit }).toFile(filename);
             }
         }
     }
     catch (e) {
-        log$3.error('error when resizing image', filename, e);
+        log$4.error('error when resizing image', filename, e);
     }
 };
 async function getExifOrientation(imagePath) {
@@ -1863,7 +1863,7 @@ const determinePuzzleInfo = (dim, targetPieceCount) => {
     };
 };
 
-const log$2 = logger('GameStorage.js');
+const log$3 = logger('GameStorage.js');
 const dirtyGames = {};
 function setDirty(gameId) {
     dirtyGames[gameId] = true;
@@ -1902,15 +1902,15 @@ async function getPublicGameRows(db) {
     return await db.getMany('games', { private: 0 });
 }
 async function loadGame(db, gameId) {
-    log$2.info(`[INFO] loading game: ${gameId}`);
+    log$3.info(`[INFO] loading game: ${gameId}`);
     const gameRow = await getGameRowById(db, gameId);
     if (!gameRow) {
-        log$2.info(`[INFO] game not found: ${gameId}`);
+        log$3.info(`[INFO] game not found: ${gameId}`);
         return null;
     }
     const gameObject = gameRowToGameObject(gameRow);
     if (!gameObject) {
-        log$2.error(`[ERR] unable to turn game row into game object: ${gameRow.id}`);
+        log$3.error(`[ERR] unable to turn game row into game object: ${gameRow.id}`);
         return null;
     }
     return gameObject;
@@ -1921,7 +1921,7 @@ async function getAllPublicGames(db) {
     for (const gameRow of gameRows) {
         const gameObject = gameRowToGameObject(gameRow);
         if (!gameObject) {
-            log$2.error(`[ERR] unable to turn game row into game object: ${gameRow.id}`);
+            log$3.error(`[ERR] unable to turn game row into game object: ${gameRow.id}`);
             continue;
         }
         games.push(gameObject);
@@ -1948,7 +1948,7 @@ async function persistGame(db, game) {
     }, {
         id: game.id,
     });
-    log$2.info(`[INFO] persisted game ${game.id}`);
+    log$3.info(`[INFO] persisted game ${game.id}`);
 }
 function storeDataToGame(storeData, creatorUserId, isPrivate) {
     return {
@@ -2052,7 +2052,7 @@ var Game = {
     handleInput,
 };
 
-const log$1 = logger('GameSocket.js');
+const log$2 = logger('GameSocket.js');
 // Map<gameId, Socket[]>
 const SOCKETS = {};
 function socketExists(gameId, socket) {
@@ -2066,8 +2066,8 @@ function removeSocket(gameId, socket) {
         return;
     }
     SOCKETS[gameId] = SOCKETS[gameId].filter((s) => s !== socket);
-    log$1.log('removed socket: ', gameId, socket.protocol);
-    log$1.log('socket count: ', Object.keys(SOCKETS[gameId]).length);
+    log$2.log('removed socket: ', gameId, socket.protocol);
+    log$2.log('socket count: ', Object.keys(SOCKETS[gameId]).length);
 }
 function addSocket(gameId, socket) {
     if (!(gameId in SOCKETS)) {
@@ -2075,8 +2075,8 @@ function addSocket(gameId, socket) {
     }
     if (!SOCKETS[gameId].includes(socket)) {
         SOCKETS[gameId].push(socket);
-        log$1.log('added socket: ', gameId, socket.protocol);
-        log$1.log('socket count: ', Object.keys(SOCKETS[gameId]).length);
+        log$2.log('added socket: ', gameId, socket.protocol);
+        log$2.log('socket count: ', Object.keys(SOCKETS[gameId]).length);
     }
 }
 function getSockets(gameId) {
@@ -2094,7 +2094,7 @@ var GameSockets = {
 
 // @ts-ignore
 const { Client } = pg.default;
-const log = logger('Db.ts');
+const log$1 = logger('Db.ts');
 const mutex = new Mutex();
 class Db {
     constructor(connectStr, patchesDir) {
@@ -2114,7 +2114,7 @@ class Db {
         for (const f of files) {
             if (patches.includes(f)) {
                 if (verbose) {
-                    log.info(`➡ skipping already applied db patch: ${f}`);
+                    log$1.info(`➡ skipping already applied db patch: ${f}`);
                 }
                 continue;
             }
@@ -2133,10 +2133,10 @@ class Db {
                     throw e;
                 }
                 await this.insert('public.db_patches', { id: f });
-                log.info(`✓ applied db patch: ${f}`);
+                log$1.info(`✓ applied db patch: ${f}`);
             }
             catch (e) {
-                log.error(`✖ unable to apply patch: ${f} ${e}`);
+                log$1.error(`✖ unable to apply patch: ${f} ${e}`);
                 return;
             }
         }
@@ -2227,7 +2227,7 @@ class Db {
             return (await this.dbh.query(query, params)).rows[0] || null;
         }
         catch (e) {
-            log.info('_get', query, params);
+            log$1.info('_get', query, params);
             console.error(e);
             throw e;
         }
@@ -2237,7 +2237,7 @@ class Db {
             return await this.dbh.query(query, params);
         }
         catch (e) {
-            log.info('run', query, params);
+            log$1.info('run', query, params);
             console.error(e);
             throw e;
         }
@@ -2247,7 +2247,7 @@ class Db {
             return (await this.dbh.query(query, params)).rows || [];
         }
         catch (e) {
-            log.info('_getMany', query, params);
+            log$1.info('_getMany', query, params);
             console.error(e);
             throw e;
         }
@@ -2342,15 +2342,8 @@ var Users = {
     getUser,
 };
 
-const run = async () => {
-    const db = new Db(config.db.connectStr, config.dir.DB_PATCHES_DIR);
-    await db.connect();
-    await db.patch();
-    const log = logger('main.js');
-    const port = config.http.port;
-    const hostname = config.http.hostname;
-    const app = express();
-    app.use(compression());
+const log = logger('web_routes/api/index.ts');
+function createRouter(db) {
     const storage = multer.diskStorage({
         destination: config.dir.UPLOAD_DIR,
         filename: function (req, file, cb) {
@@ -2358,19 +2351,20 @@ const run = async () => {
         }
     });
     const upload = multer({ storage }).single('file');
-    app.get('/api/me', async (req, res) => {
+    const router = express.Router();
+    router.get('/me', async (req, res) => {
         const user = await Users.getUser(db, req);
         res.send({
             id: user ? user.id : null,
             created: user ? user.created : null,
         });
     });
-    app.get('/api/conf', (req, res) => {
+    router.get('/conf', (req, res) => {
         res.send({
             WS_ADDRESS: config.ws.connectstring,
         });
     });
-    app.get('/api/replay-data', async (req, res) => {
+    router.get('/replay-data', async (req, res) => {
         const q = req.query;
         const offset = parseInt(q.offset, 10) || 0;
         if (offset < 0) {
@@ -2404,7 +2398,7 @@ const run = async () => {
         }
         res.send({ log, game: game ? Util.encodeGame(game) : null });
     });
-    app.get('/api/newgame-data', async (req, res) => {
+    router.get('/newgame-data', async (req, res) => {
         const q = req.query;
         const tagSlugs = q.tags ? q.tags.split(',') : [];
         res.send({
@@ -2412,7 +2406,7 @@ const run = async () => {
             tags: await Images.getAllTags(db),
         });
     });
-    app.get('/api/index-data', async (req, res) => {
+    router.get('/index-data', async (req, res) => {
         const ts = Time.timestamp();
         const rows = await GameStorage.getAllPublicGames(db);
         const games = [
@@ -2443,7 +2437,7 @@ const run = async () => {
             gamesFinished: games.filter(g => !!g.finished),
         });
     });
-    app.post('/api/save-image', express.json(), async (req, res) => {
+    router.post('/save-image', express.json(), async (req, res) => {
         const user = await Users.getUser(db, req);
         if (!user || !user.id) {
             res.status(403).send({ ok: false, error: 'forbidden' });
@@ -2463,11 +2457,11 @@ const run = async () => {
         await Images.setTags(db, data.id, data.tags || []);
         res.send({ ok: true });
     });
-    app.get('/api/proxy', (req, res) => {
+    router.get('/proxy', (req, res) => {
         log.info('proxy request for url:', req.query.url);
         request(req.query.url).pipe(res);
     });
-    app.post('/api/upload', (req, res) => {
+    router.post('/upload', (req, res) => {
         upload(req, res, async (err) => {
             if (err) {
                 log.log('/api/upload/', 'error', err);
@@ -2497,7 +2491,6 @@ const run = async () => {
                 height: dim.h,
                 private: isPrivate,
             }, 'id');
-            console.log(imageId);
             if (req.body.tags) {
                 const tags = req.body.tags.split(',').filter((tag) => !!tag);
                 await Images.setTags(db, imageId, tags);
@@ -2505,11 +2498,24 @@ const run = async () => {
             res.send(await Images.imageFromDb(db, imageId));
         });
     });
-    app.post('/api/newgame', express.json(), async (req, res) => {
+    router.post('/newgame', express.json(), async (req, res) => {
         const user = await Users.getOrCreateUser(db, req);
         const gameId = await Game.createNewGame(db, req.body, Time.timestamp(), user.id);
         res.send({ id: gameId });
     });
+    return router;
+}
+
+const run = async () => {
+    const db = new Db(config.db.connectStr, config.dir.DB_PATCHES_DIR);
+    await db.connect();
+    await db.patch();
+    const log = logger('main.js');
+    const port = config.http.port;
+    const hostname = config.http.hostname;
+    const app = express();
+    app.use(compression());
+    app.use('/api', createRouter(db));
     app.use('/uploads/', express.static(config.dir.UPLOAD_DIR));
     app.use('/', express.static(config.dir.PUBLIC_DIR));
     const wss = new WebSocketServer(config.ws);
