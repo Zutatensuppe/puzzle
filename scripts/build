@@ -1,7 +1,7 @@
-#!/bin/sh -ex
+#!/bin/sh -eux
 
 # server build
-npm run rollup -- -c rollup.server.config.js
+npx rollup -c rollup.server.config.js
 
 # frontend build
-npm run vite -- build
+npx vite build

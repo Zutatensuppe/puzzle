@@ -14,9 +14,14 @@ lower versions, but it may not work.
 ## Quick start
 
 This will install the dependencies, execute build and start the server.
+
 ```sh
 ./run start
 ```
+
+A database has to be setup and running separately. By default
+the script will connect via `postgresql://hyottoko:hyottoko@localhost:5434/hyottoko`.
+This can be adjusted in the `config.json`.
 
 ## Manual start
 
@@ -29,6 +34,7 @@ command              | explanation
 `./run server`       | runs the server with built files
 `./run tests`        | runs tests
 `./run start`        | combination of `install`, `build` and `server`
+`./run dev-services` | runs the dev services (eg. database)
 `./run dev-server`   | runs the dev server (from unbuilt files)
 `./run dev-frontend` | runs the dev frontend (with hmr and such)
 `./run ts [...ARGS]` | run `node`, but with ts files. eg `./run ts scripts/import_images.ts`
@@ -36,8 +42,9 @@ command              | explanation
 ## Dev
 
 Start the dev database (postgres) via:
-```
-docker-compose up
+
+```sh
+./run dev-services
 ```
 
 For development it makes sense to run both `dev-server` and `dev-frontend`
@@ -49,7 +56,8 @@ in separate shells.
 ```
 
 The dev-frontend script will output something like:
-```
+
+```sh
   vite v2.3.3 dev server running at:
 
   > Local: http://localhost:3000/
@@ -71,7 +79,6 @@ update without running an extra command.
 
 The server will restart when a change is made on the server code.
 
-Then open the url output by the dev-frontend command, eg. http://localhost:3000.
-
+Then open the url output by the dev-frontend command, eg. `http://localhost:3000`.
 
 [jigsaw.hyottoko.club]: https://jigsaw.hyottoko.club

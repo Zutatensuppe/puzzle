@@ -1,4 +1,6 @@
-#!/bin/sh
+#!/bin/sh -eu
+
+cd "$RUN_DIR"
 
 # server for built files
 export APP_CONFIG=config.json

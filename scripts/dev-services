@@ -2,4 +2,4 @@
 
 cd "$RUN_DIR"
 
-npx vite
+docker-compose up
