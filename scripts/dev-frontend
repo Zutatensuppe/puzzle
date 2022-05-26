@@ -1,3 +1,5 @@
-#!/bin/sh
+#!/bin/sh -eu
 
-npm run vite
+cd "$RUN_DIR"
+
+npx vite

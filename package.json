@@ -6,11 +6,6 @@
     "type": "git",
     "url": "git+https://github.com/Zutatensuppe/puzzle.git"
   },
-  "scripts": {
-    "rollup": "rollup",
-    "vite": "vite",
-    "eslint": "eslint"
-  },
   "author": "Zutatensuppe",
   "license": "ISC",
   "bugs": {

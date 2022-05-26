@@ -1,4 +1,6 @@
-#!/bin/sh -e
+#!/bin/sh -eu
+
+cd "$RUN_DIR"
 
 export APP_CONFIG=config.example.json
 node --experimental-vm-modules node_modules/.bin/jest

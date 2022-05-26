@@ -14,6 +14,7 @@ lower versions, but it may not work.
 ## Quick start
 
 This will install the dependencies, execute build and start the server.
+
 ```sh
 ./run start
 ```
@@ -36,8 +37,9 @@ command              | explanation
 ## Dev
 
 Start the dev database (postgres) via:
-```
-docker-compose up
+
+```sh
+./run dev-services
 ```
 
 For development it makes sense to run both `dev-server` and `dev-frontend`
@@ -49,7 +51,8 @@ in separate shells.
 ```
 
 The dev-frontend script will output something like:
-```
+
+```sh
   vite v2.3.3 dev server running at:
 
   > Local: http://localhost:3000/
@@ -71,7 +74,6 @@ update without running an extra command.
 
 The server will restart when a change is made on the server code.
 
-Then open the url output by the dev-frontend command, eg. http://localhost:3000.
-
+Then open the url output by the dev-frontend command, eg. `http://localhost:3000`.
 
 [jigsaw.hyottoko.club]: https://jigsaw.hyottoko.club
