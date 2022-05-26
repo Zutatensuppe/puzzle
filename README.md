@@ -34,6 +34,7 @@ command              | explanation
 `./run server`       | runs the server with built files
 `./run tests`        | runs tests
 `./run start`        | combination of `install`, `build` and `server`
+`./run dev-services` | runs the dev services (eg. database)
 `./run dev-server`   | runs the dev server (from unbuilt files)
 `./run dev-frontend` | runs the dev frontend (with hmr and such)
 `./run ts [...ARGS]` | run `node`, but with ts files. eg `./run ts scripts/import_images.ts`
