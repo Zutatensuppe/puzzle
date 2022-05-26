@@ -19,6 +19,10 @@ This will install the dependencies, execute build and start the server.
 ./run start
 ```
 
+A database has to be setup and running separately. By default
+the script will connect via `postgresql://hyottoko:hyottoko@localhost:5434/hyottoko`.
+This can be adjusted in the `config.json`.
+
 ## Manual start
 
 There are other `run` scripts:
