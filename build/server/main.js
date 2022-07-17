@@ -12,6 +12,8 @@ import { Mutex } from 'async-mutex';
 import * as pg from 'pg';
 import multer from 'multer';
 import request from 'request';
+import crypto from 'crypto';
+import cookieParser from 'cookie-parser';
 
 class Rng {
     constructor(seed) {
@@ -2342,8 +2344,27 @@ var Users = {
     getUser,
 };
 
+const passwordHash = (plainPass, salt) => {
+    const hash = crypto.createHmac('sha512', config.secret);
+    hash.update(`${salt}${plainPass}`);
+    return hash.digest('hex');
+};
+// do something CRYPTO secure???
+const generateToken = () => {
+    return randomString(32);
+};
+const randomString = (length) => {
+    const a = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890'.split('');
+    const b = [];
+    for (let i = 0; i < length; i++) {
+        const j = parseInt((Math.random() * (a.length - 1)).toFixed(0), 10);
+        b[i] = a[j];
+    }
+    return b.join('');
+};
+
 const log = logger('web_routes/api/index.ts');
-function createRouter(db) {
+function createRouter$1(db) {
     const storage = multer.diskStorage({
         destination: config.dir.UPLOAD_DIR,
         filename: function (req, file, cb) {
@@ -2357,7 +2378,36 @@ function createRouter(db) {
         res.send({
             id: user ? user.id : null,
             created: user ? user.created : null,
+            loggedIn: !!req.token,
         });
+    });
+    router.post('/auth', express.json(), async (req, res) => {
+        const loginPlain = req.body.login;
+        const passPlain = req.body.pass;
+        const user = await db.get('users', { login: loginPlain });
+        if (!user) {
+            res.status(401).send({ reason: 'bad credentials' });
+            return;
+        }
+        const salt = user.salt;
+        const passHashed = passwordHash(passPlain, salt);
+        if (user.pass !== passHashed) {
+            res.status(401).send({ reason: 'bad credentials' });
+            return;
+        }
+        const token = generateToken();
+        await db.insert('tokens', { user_id: user.id, token, type: 'auth' });
+        res.cookie('x-token', token, { maxAge: 356 * Time.DAY, httpOnly: true });
+        res.send({ success: true });
+    });
+    router.post('/logout', async (req, res) => {
+        if (!req.token) {
+            res.status(401).send({});
+            return;
+        }
+        await db.delete('tokens', { token: req.token });
+        res.clearCookie("x-token");
+        res.send({ success: true });
     });
     router.get('/conf', (req, res) => {
         res.send({
@@ -2506,6 +2556,36 @@ function createRouter(db) {
     return router;
 }
 
+function createRouter(db) {
+    const router = express.Router();
+    const requireLoginApi = async (req, res, next) => {
+        if (!req.token) {
+            res.status(401).send({});
+            return;
+        }
+        // TODO: check if user is admin
+        next();
+    };
+    router.use(requireLoginApi);
+    router.get('/games', async (req, res) => {
+        const items = await db.getMany('games');
+        res.send(items);
+    });
+    router.get('/images', async (req, res) => {
+        const items = await db.getMany('images');
+        res.send(items);
+    });
+    router.get('/users', async (req, res) => {
+        const items = await db.getMany('users');
+        res.send(items);
+    });
+    router.get('/groups', async (req, res) => {
+        const items = await db.getMany('user_groups');
+        res.send(items);
+    });
+    return router;
+}
+
 const run = async () => {
     const db = new Db(config.db.connectStr, config.dir.DB_PATCHES_DIR);
     await db.connect();
@@ -2514,8 +2594,34 @@ const run = async () => {
     const port = config.http.port;
     const hostname = config.http.hostname;
     const app = express();
+    app.use(cookieParser());
     app.use(compression());
-    app.use('/api', createRouter(db));
+    // add user info to all requests
+    app.use(async (req, _res, next) => {
+        const token = req.cookies['x-token'] || null;
+        const tokenInfo = await db.get('tokens', { token, type: 'auth' });
+        if (!tokenInfo) {
+            req.token = null;
+            req.user = null;
+            next();
+            return;
+        }
+        const user = await db.get('users', { id: tokenInfo.user_id });
+        if (!user) {
+            req.token = null;
+            req.user = null;
+            next();
+            return;
+        }
+        req.token = tokenInfo.token;
+        req.user = {
+            id: user.id,
+            login: user.login,
+        };
+        next();
+    });
+    app.use('/admin/api', createRouter(db));
+    app.use('/api', createRouter$1(db));
     app.use('/uploads/', express.static(config.dir.UPLOAD_DIR));
     app.use('/', express.static(config.dir.PUBLIC_DIR));
     const wss = new WebSocketServer(config.ws);

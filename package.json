@@ -15,6 +15,7 @@
   "type": "module",
   "dependencies": {
     "async-mutex": "^0.3.2",
+    "cookie-parser": "^1.4.6",
     "exif": "^0.6.0",
     "express": "^4.17.3",
     "mitt": "^3.0.0",
@@ -29,6 +30,7 @@
   },
   "devDependencies": {
     "@types/compression": "^1.7.2",
+    "@types/cookie-parser": "^1.4.3",
     "@types/exif": "^0.6.3",
     "@types/express": "^4.17.13",
     "@types/jest": "^27.4.1",

@@ -12,6 +12,7 @@ import request from 'request'
 import Time from '../../../common/Time'
 import Users from '../../Users'
 import Util, { logger } from '../../../common/Util'
+import { generateToken, passwordHash } from '../../Auth'
 
 const log = logger('web_routes/api/index.ts')
 
@@ -33,12 +34,43 @@ export default function createRouter(
   const upload = multer({storage}).single('file');
 
   const router = express.Router()
-  router.get('/me', async (req, res): Promise<void> => {
+  router.get('/me', async (req: any, res): Promise<void> => {
     const user = await Users.getUser(db, req)
     res.send({
       id: user ? user.id : null,
       created: user ? user.created : null,
+      loggedIn: !!req.token,
     })
+  })
+
+  router.post('/auth', express.json(), async (req, res): Promise<void> => {
+    const loginPlain = req.body.login
+    const passPlain = req.body.pass
+    const user = await db.get('users', { login: loginPlain })
+    if (!user) {
+      res.status(401).send({ reason: 'bad credentials' })
+      return
+    }
+    const salt = user.salt
+    const passHashed = passwordHash(passPlain, salt)
+    if (user.pass !== passHashed) {
+      res.status(401).send({ reason: 'bad credentials' })
+      return
+    }
+    const token = generateToken()
+    await db.insert('tokens', { user_id: user.id, token, type: 'auth' })
+    res.cookie('x-token', token, { maxAge: 356 * Time.DAY, httpOnly: true })
+    res.send({ success: true })
+  })
+
+  router.post('/logout', async (req: any, res): Promise<void> => {
+    if (!req.token) {
+      res.status(401).send({})
+      return
+    }
+    await db.delete('tokens', { token: req.token })
+    res.clearCookie("x-token")
+    res.send({ success: true })
   })
 
   router.get('/conf', (req, res): void => {
