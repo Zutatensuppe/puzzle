@@ -1,0 +1,18 @@
+.data-table {
+  border-collapse: collapse;
+
+  tr:nth-child(odd) {
+    background-color: rgb(0 0 0 / 70%);
+  }
+
+  tr:nth-child(even) {
+    background-color: rgb(0 0 0 / 50%);
+  }
+
+  th,
+  td {
+    font-family: sans-serif;
+    font-size: 12px;
+    padding: 3px 5px;
+  }
+}

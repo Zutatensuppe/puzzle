@@ -14,7 +14,7 @@ export default vite.defineConfig({
   },
   server: {
     proxy: {
-      '^/(api|uploads)/.*': {
+      '^/(admin/api|api|uploads)/.*': {
         target: `http://${cfg.http.hostname}:${cfg.http.port}`,
         secure: false,
       },

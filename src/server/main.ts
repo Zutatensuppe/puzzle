@@ -1,6 +1,6 @@
 import WebSocketServer from './WebSocketServer'
 import WebSocket from 'ws'
-import express from 'express'
+import express, { NextFunction } from 'express'
 import compression from 'compression'
 import Protocol from './../common/Protocol'
 import Util, { logger } from './../common/Util'
@@ -14,6 +14,8 @@ import { ServerEvent, Game as GameType } from '../common/Types'
 import GameStorage from './GameStorage'
 import Db from './Db'
 import createApiRouter from './web_routes/api'
+import createAdminApiRouter from './web_routes/admin/api'
+import cookieParser from 'cookie-parser'
 
 const run = async () => {
   const db = new Db(config.db.connectStr, config.dir.DB_PATCHES_DIR)
@@ -26,8 +28,36 @@ const run = async () => {
   const hostname = config.http.hostname
   const app = express()
 
+  app.use(cookieParser())
   app.use(compression())
 
+  // add user info to all requests
+  app.use(async (req: any, _res, next: NextFunction) => {
+    const token = req.cookies['x-token'] || null
+    const tokenInfo = await db.get('tokens', { token, type: 'auth' })
+    if (!tokenInfo) {
+      req.token = null
+      req.user = null
+      next()
+      return
+    }
+    const user = await db.get('users', { id: tokenInfo.user_id })
+    if (!user) {
+      req.token = null
+      req.user = null
+      next()
+      return
+    }
+
+    req.token = tokenInfo.token
+    req.user = {
+      id: user.id,
+      login: user.login,
+    }
+    next()
+  })
+
+  app.use('/admin/api', createAdminApiRouter(db))
   app.use('/api', createApiRouter(db))
   app.use('/uploads/', express.static(config.dir.UPLOAD_DIR))
   app.use('/', express.static(config.dir.PUBLIC_DIR))

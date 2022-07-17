@@ -38,7 +38,8 @@ export interface Config {
     UPLOAD_DIR: string
     UPLOAD_URL: string
     PUBLIC_DIR: string
-  }
+  },
+  secret: string
 }
 
 const init = (): Config => {
