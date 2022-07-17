@@ -1,5 +1,7 @@
 "use strict"
 
+import { Rect } from "../common/Geometry"
+
 function createCanvas(width:number = 0, height:number = 0): HTMLCanvasElement {
     const c = document.createElement('canvas')
     c.width = width
@@ -82,9 +84,27 @@ function colorizedCanvas(
   return c
 }
 
+function repeat(
+  bitmap: ImageBitmap,
+  rect: Rect,
+  scale: number,
+): HTMLCanvasElement {
+  const c = createCanvas(rect.w, rect.h)
+  const bmw = bitmap.width * scale
+  const bmh = bitmap.height * scale
+  const ctx = c.getContext('2d') as CanvasRenderingContext2D
+  for (let x = 0; x < c.width; x+=bmw) {
+    for (let y = 0; y < c.height; y+=bmh) {
+      ctx.drawImage(bitmap, x, y, bmw, bmh)
+    }
+  }
+  return c
+}
+
 export default {
   createCanvas,
   loadImageToBitmap,
   resizeBitmap,
   colorizedCanvas,
+  repeat,
 }
