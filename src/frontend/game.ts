@@ -38,7 +38,7 @@ const log = logger('game.ts')
 const images = import.meta.globEager('./*.png')
 
 // @ts-ignore We can ignore typescript for for binary file includes
-const textures = import.meta.globEager('./assets/textures/*.jpg')
+const textures = import.meta.globEager('./assets/textures/*.{jpg,png}')
 
 // @ts-ignore We can ignore typescript for for binary file includes
 const sounds = import.meta.globEager('./*.mp3')
@@ -858,12 +858,43 @@ export async function main(
     }
   }
 
-  const matrix = new DOMMatrix([1, 0, 0, 1, 0, 0])
+  const bounds = Game.getBounds(gameId)
+  const createTableGfx = async (texture: string, isDark: boolean): Promise<CanvasImageSource> => {
+    const tableCanvas = await Graphics.repeat(await Graphics.loadImageToBitmap(textures[texture].default), bounds, 3)
+    const tableCtx = tableCanvas.getContext('2d') as CanvasRenderingContext2D
+    // darken the outer edges of the table a bit
+    {
+      const border = {w: 16, h: 16}
+      tableCtx.fillStyle = 'rgba(0, 0, 0, .5)'
+
+      tableCtx.fillRect(0, 0, bounds.w, border.h)
+      tableCtx.fillRect(0, 0 + border.h, border.w, bounds.h - 2 * border.h)
+      tableCtx.fillRect(0 + bounds.w - border.w, 0 + border.h, border.w, bounds.h - 2 * border.h)
+      tableCtx.fillRect(0, 0 + bounds.h - border.h, bounds.w, border.w)
+    }
+
+    // darken the place where the puzzle should be at the end a bit
+    {
+      const border = {w: 8, h: 8}
+      tableCtx.fillStyle = 'rgba(0, 0, 0, .5)'
+      tableCtx.fillRect(BOARD_POS.x - border.w, BOARD_POS.y - border.h, BOARD_DIM.w + 2 * border.w, border.h)
+      tableCtx.fillRect(BOARD_POS.x - border.w, BOARD_POS.y, border.h, BOARD_DIM.h)
+      tableCtx.fillRect(BOARD_POS.x + BOARD_DIM.w, BOARD_POS.y, border.w, BOARD_DIM.h)
+      tableCtx.fillRect(BOARD_POS.x - border.w, BOARD_POS.y + BOARD_DIM.h, BOARD_DIM.w + 2 * border.w, border.h)
+    }
+
+    // draw the board
+    {
+      tableCtx.fillStyle = isDark ? 'rgba(0, 0, 0, .3)' : 'rgba(255, 255, 255, .3)'
+      tableCtx.fillRect(BOARD_POS.x, BOARD_POS.y, BOARD_DIM.w, BOARD_DIM.h)
+    }
+    return await createImageBitmap(tableCanvas)
+  }
 
   const tableImgs: Record<string, CanvasImageSource> = {
-    dark: await Graphics.loadImageToBitmap(textures['./assets/textures/wood-dark.jpg'].default),
-    light: await Graphics.loadImageToBitmap(textures['./assets/textures/wood-light.jpg'].default),
-    brown: await Graphics.loadImageToBitmap(textures['./assets/textures/Oak-none-3275x2565mm-Architextures.jpg'].default),
+    dark: await createTableGfx('./assets/textures/wood-dark.jpg', true),
+    light: await createTableGfx('./assets/textures/wood-light.jpg', false),
+    brown: await createTableGfx('./assets/textures/Oak-none-3275x2565mm-Architextures.jpg', true),
   }
 
   const onRender = async (): Promise<void> => {
@@ -883,52 +914,32 @@ export async function main(
     // ---------------------------------------------------------------
     ctx.fillStyle = playerBgColor()
     ctx.fillRect(0, 0, canvas.width, canvas.height)
+    if (window.DEBUG) Debug.checkpoint('clear done')
+    // ---------------------------------------------------------------
 
+
+    // DRAW TABLE
+    // ---------------------------------------------------------------
     if (player.showTable) {
       const tableImg = tableImgs[player.tableTexture]
       if (tableImg) {
-        const bounds = Game.getBounds(gameId)
         pos = viewport.worldToViewportRaw(bounds)
         dim = viewport.worldDimToViewportRaw(bounds)
-
-        const pat = ctx.createPattern(tableImg, 'repeat') as CanvasPattern
-        pat.setTransform(matrix.translate(pos.x, pos.y).scale(viewport.getCurrentZoom()*3))
-        ctx.fillStyle = pat
-        ctx.fillRect(pos.x, pos.y, dim.w, dim.h)
-
-        // darken the outer edges of the table a bit
-        const border = viewport.worldDimToViewportRaw({w: 16, h: 16})
-        ctx.fillStyle = 'rgba(0, 0, 0, .5)'
-        ctx.fillRect(pos.x, pos.y, dim.w, border.h)
-        ctx.fillRect(pos.x, pos.y + border.h, border.w, dim.h - 2 * border.h)
-        ctx.fillRect(pos.x + dim.w - border.w, pos.y + border.h, border.w, dim.h - 2 * border.h)
-        ctx.fillRect(pos.x, pos.y + dim.h - border.h, dim.w, border.w)
+        ctx.drawImage(tableImg, pos.x, pos.y, dim.w, dim.h)
       }
     }
-
-    if (window.DEBUG) Debug.checkpoint('clear done')
+    if (window.DEBUG) Debug.checkpoint('table done')
     // ---------------------------------------------------------------
 
 
     // DRAW BOARD
     // ---------------------------------------------------------------
-    pos = viewport.worldToViewportRaw(BOARD_POS)
-    dim = viewport.worldDimToViewportRaw(BOARD_DIM)
-    if (player.showTable) {
-      // darken the place where the puzzle should be at the end a bit
-      const border = viewport.worldDimToViewportRaw({w: 8, h: 8})
-      ctx.fillStyle = 'rgba(0, 0, 0, .5)'
-      ctx.fillRect(pos.x - border.w, pos.y - border.h, dim.w + 2 * border.w, border.h)
-      ctx.fillRect(pos.x - border.w, pos.y, border.h, dim.h)
-      ctx.fillRect(pos.x + dim.w, pos.y, border.w, dim.h)
-      ctx.fillRect(pos.x - border.w, pos.y + dim.h, dim.w + 2 * border.w, border.h)
-    }
-    if (player.showTable && ['dark', 'brown'].includes(player.tableTexture)) {
-      ctx.fillStyle = 'rgba(0, 0, 0, .3)'
-    } else {
+    if (!player.showTable) {
+      pos = viewport.worldToViewportRaw(BOARD_POS)
+      dim = viewport.worldDimToViewportRaw(BOARD_DIM)
       ctx.fillStyle = 'rgba(255, 255, 255, .3)'
+      ctx.fillRect(pos.x, pos.y, dim.w, dim.h)
     }
-    ctx.fillRect(pos.x, pos.y, dim.w, dim.h)
     if (window.DEBUG) Debug.checkpoint('board done')
     // ---------------------------------------------------------------
 
