@@ -89,7 +89,18 @@ function repeat(
   rect: Rect,
   scale: number,
 ): HTMLCanvasElement {
-  const c = createCanvas(rect.w, rect.h)
+  // fix for firefox not rendering something on canvases that are too big
+  const max = 10240
+  let w, h
+  if (rect.w > rect.h) {
+    w = Math.min(rect.w, max)
+    h = w * rect.h / rect.w
+  } else {
+    h = Math.min(rect.h, max)
+    w = h * rect.w / rect.h
+  }
+
+  const c = createCanvas(w, h)
   const bmw = bitmap.width * scale
   const bmh = bitmap.height * scale
   const ctx = c.getContext('2d') as CanvasRenderingContext2D
