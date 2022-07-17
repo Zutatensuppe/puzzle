@@ -2577,7 +2577,13 @@ function createRouter(db) {
     });
     router.get('/users', async (req, res) => {
         const items = await db.getMany('users');
-        res.send(items);
+        res.send(items.map(item => {
+            delete item.client_id;
+            delete item.client_secret;
+            delete item.pass;
+            delete item.salt;
+            return item;
+        }));
     });
     router.get('/groups', async (req, res) => {
         const items = await db.getMany('user_groups');

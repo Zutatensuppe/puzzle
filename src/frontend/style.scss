@@ -1,3 +1,5 @@
+@import "./admin/style.scss";
+
 /* TODO: clean up / split ingame vs pregame */
 
 $mainColor: #c1b19f;
@@ -767,5 +769,3 @@ html.view-replay body { overflow: hidden; }
     transform: translateY(-50%);
   }
 }
-
-@import "./admin/style.scss";
