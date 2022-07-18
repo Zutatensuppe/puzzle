@@ -10,6 +10,8 @@ export default {
   external: [
     "async-mutex",
     "compression",
+    "cookie-parser",
+    "crypto",
     "exif",
     "express",
     "fs",
