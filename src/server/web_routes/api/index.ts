@@ -35,12 +35,17 @@ export default function createRouter(
 
   const router = express.Router()
   router.get('/me', async (req: any, res): Promise<void> => {
-    const user = await Users.getUser(db, req)
-    res.send({
-      id: user ? user.id : null,
-      created: user ? user.created : null,
-      loggedIn: !!req.token,
-    })
+    if (req.user) {
+      res.send({
+        id: req.user.id,
+        clientId: req.user.client_id,
+        clientSecret: req.user.client_secret,
+        created: req.user.created,
+      })
+      return
+    }
+    res.status(401).send({ reason: 'not logged in' })
+    return
   })
 
   router.post('/auth', express.json(), async (req, res): Promise<void> => {

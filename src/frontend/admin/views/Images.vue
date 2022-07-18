@@ -37,7 +37,7 @@ import Nav from '../components/Nav.vue'
 const images = ref<any[]>([])
 
 onMounted(async () => {
-  if (user.getMe()?.loggedIn) {
+  if (user.getMe()) {
     images.value = await getImages()
   }
   user.eventBus.on('login', async () => {

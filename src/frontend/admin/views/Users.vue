@@ -33,7 +33,7 @@ import Nav from '../components/Nav.vue'
 const users = ref<any[]>([])
 
 onMounted(async () => {
-  if (user.getMe()?.loggedIn) {
+  if (user.getMe()) {
     users.value = await getUsers()
   }
   user.eventBus.on('login', async () => {

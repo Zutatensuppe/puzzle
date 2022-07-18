@@ -23,7 +23,7 @@ import Nav from '../components/Nav.vue'
 const groups = ref<any[]>([])
 
 onMounted(async () => {
-  if (user.getMe()?.loggedIn) {
+  if (user.getMe()) {
     groups.value = await getGroups()
   }
   user.eventBus.on('login', async () => {

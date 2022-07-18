@@ -2,10 +2,11 @@ import xhr from './xhr';
 import mitt from 'mitt';
 import api from "./api";
 
-interface User {
+export interface User {
   id: number
   created: string
-  loggedIn: boolean
+  clientId: string
+  clientSecret: string
 }
 
 let me: null | User = null;
@@ -17,6 +18,9 @@ async function init(): Promise<void> {
   if (me) {
     console.log('loggedin')
     eventBus.emit('login')
+  } else {
+    console.log('loggedout')
+    eventBus.emit('logout')
   }
 }
 

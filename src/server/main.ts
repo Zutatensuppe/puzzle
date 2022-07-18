@@ -50,10 +50,7 @@ const run = async () => {
     }
 
     req.token = tokenInfo.token
-    req.user = {
-      id: user.id,
-      login: user.login,
-    }
+    req.user = user
     next()
   })
 
