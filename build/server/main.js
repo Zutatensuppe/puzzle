@@ -2374,12 +2374,17 @@ function createRouter$1(db) {
     const upload = multer({ storage }).single('file');
     const router = express.Router();
     router.get('/me', async (req, res) => {
-        const user = await Users.getUser(db, req);
-        res.send({
-            id: user ? user.id : null,
-            created: user ? user.created : null,
-            loggedIn: !!req.token,
-        });
+        if (req.user) {
+            res.send({
+                id: req.user.id,
+                clientId: req.user.client_id,
+                clientSecret: req.user.client_secret,
+                created: req.user.created,
+            });
+            return;
+        }
+        res.status(401).send({ reason: 'not logged in' });
+        return;
     });
     router.post('/auth', express.json(), async (req, res) => {
         const loginPlain = req.body.login;
@@ -2620,10 +2625,7 @@ const run = async () => {
             return;
         }
         req.token = tokenInfo.token;
-        req.user = {
-            id: user.id,
-            login: user.login,
-        };
+        req.user = user;
         next();
     });
     app.use('/admin/api', createRouter(db));
