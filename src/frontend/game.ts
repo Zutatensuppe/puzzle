@@ -877,20 +877,23 @@ export async function main(
       tableCtx.fillRect(0, 0 + adjustedBounds.h - border.h, adjustedBounds.w, border.w)
     }
 
+    const boardX = -bounds.x + BOARD_POS.x
+    const boardY = -bounds.y + BOARD_POS.y
+
     // darken the place where the puzzle should be at the end a bit
     {
       const border = {w: 8, h: 8}
       tableCtx.fillStyle = 'rgba(0, 0, 0, .5)'
-      tableCtx.fillRect(ratio * (BOARD_POS.x - border.w), ratio * (BOARD_POS.y - border.h), ratio * (BOARD_DIM.w + 2 * border.w), ratio * border.h)
-      tableCtx.fillRect(ratio * (BOARD_POS.x - border.w), ratio * (BOARD_POS.y), ratio * border.h, ratio * BOARD_DIM.h)
-      tableCtx.fillRect(ratio * (BOARD_POS.x + BOARD_DIM.w), ratio * (BOARD_POS.y), ratio * border.w, ratio * BOARD_DIM.h)
-      tableCtx.fillRect(ratio * (BOARD_POS.x - border.w), ratio * (BOARD_POS.y + BOARD_DIM.h), ratio * (BOARD_DIM.w + 2 * border.w), ratio * border.h)
+      tableCtx.fillRect(ratio * (boardX - border.w), ratio * (boardY - border.h), ratio * (BOARD_DIM.w + 2 * border.w), ratio * border.h)
+      tableCtx.fillRect(ratio * (boardX - border.w), ratio * boardY, ratio * border.h, ratio * BOARD_DIM.h)
+      tableCtx.fillRect(ratio * (boardX + BOARD_DIM.w), ratio * (boardY), ratio * border.w, ratio * BOARD_DIM.h)
+      tableCtx.fillRect(ratio * (boardX - border.w), ratio * (boardY + BOARD_DIM.h), ratio * (BOARD_DIM.w + 2 * border.w), ratio * border.h)
     }
 
     // draw the board
     {
       tableCtx.fillStyle = isDark ? 'rgba(0, 0, 0, .3)' : 'rgba(255, 255, 255, .3)'
-      tableCtx.fillRect(ratio * BOARD_POS.x, ratio * BOARD_POS.y, ratio * BOARD_DIM.w, ratio * BOARD_DIM.h)
+      tableCtx.fillRect(ratio * boardX, ratio * boardY, ratio * BOARD_DIM.w, ratio * BOARD_DIM.h)
     }
     return await createImageBitmap(tableCanvas)
   }
