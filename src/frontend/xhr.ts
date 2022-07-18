@@ -1,5 +1,6 @@
 import Util from "../common/Util"
 import settings from "./settings"
+import user from "./user"
 
 export interface Response {
   status: number,
@@ -67,6 +68,19 @@ export default {
   init: () => {
     xhrClientId = uniq('ID')
     xhrClientSecret = uniq('SECRET')
+
+    user.eventBus.on('login', () => {
+      const u = user.getMe()
+      if (u) {
+        xhrClientId = u.clientId
+        xhrClientSecret = u.clientSecret
+      }
+    })
+
+    user.eventBus.on('logout', () => {
+      xhrClientId = uniq('ID')
+      xhrClientSecret = uniq('SECRET')
+    })
   },
   request,
   get: (url: string, options: any): Promise<Response> => {

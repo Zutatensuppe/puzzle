@@ -8,7 +8,7 @@
       </tr>
       <tr>
         <td>Pass:</td>
-        <td><input type="password" v-model="pass" /></td>
+        <td><input type="password" v-model="pass" @keydown.enter.prevent="doLogin" /></td>
       </tr>
       <tr>
         <td colspan="2"><span class="btn" @click="doLogin">Login</span></td>

@@ -33,7 +33,7 @@ import Nav from '../components/Nav.vue'
 const games = ref<any[]>([])
 
 onMounted(async () => {
-  if (user.getMe()?.loggedIn) {
+  if (user.getMe()) {
     games.value = await getGames()
   }
   user.eventBus.on('login', async () => {
