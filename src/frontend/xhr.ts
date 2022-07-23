@@ -86,6 +86,9 @@ export default {
   get: (url: string, options: any): Promise<Response> => {
     return request('get', url, options)
   },
+  delete: (url: string, options: any): Promise<Response> => {
+    return request('delete', url, options)
+  },
   post: (url: string, options: any): Promise<Response> => {
     return request('post', url, options)
   },
