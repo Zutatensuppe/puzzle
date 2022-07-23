@@ -2585,6 +2585,11 @@ function createRouter(db) {
         const items = await db.getMany('images');
         res.send(items);
     });
+    router.delete('/images/:id', async (req, res) => {
+        const id = req.params.id;
+        await db.delete('images', { id });
+        res.send({ ok: true });
+    });
     router.get('/users', async (req, res) => {
         const items = await db.getMany('users');
         res.send(items.map(item => {
