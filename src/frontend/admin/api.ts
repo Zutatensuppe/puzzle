@@ -20,6 +20,11 @@ export const getImages = async () => {
   return await res.json()
 }
 
+export const deleteImage = async (id: number) => {
+  const res = await xhr.delete(`/admin/api/images/${id}`, {})
+  return await res.json()
+}
+
 export const getGroups = async () => {
   const res = await xhr.get('/admin/api/groups', {})
   return await res.json()
