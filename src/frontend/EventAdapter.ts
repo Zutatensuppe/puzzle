@@ -145,6 +145,13 @@ function EventAdapter (
     }
   }
 
+  // Prevents selecting text outside of canvas when double clicking the canvas
+  const _onWndMouseDown = (ev: MouseEvent): void => {
+    if (ev.target === canvas && ev.detail > 1) {
+      ev.preventDefault()
+    }
+  }
+
   const registerEvents = () => {
     canvas.addEventListener('mousedown', _onMouseDown)
     canvas.addEventListener('mouseup', _onMouseUp)
@@ -153,6 +160,7 @@ function EventAdapter (
     window.addEventListener('keydown', _onKeyUp)
     window.addEventListener('keyup', _onKeyDown)
     window.addEventListener('keypress', _onKeyPress)
+    window.addEventListener('mousedown', _onWndMouseDown)
   }
   const unregisterEvents = () => {
     canvas.removeEventListener('mousedown', _onMouseDown)
@@ -162,6 +170,7 @@ function EventAdapter (
     window.removeEventListener('keydown', _onKeyUp)
     window.removeEventListener('keyup', _onKeyDown)
     window.removeEventListener('keypress', _onKeyPress)
+    window.removeEventListener('mousedown', _onWndMouseDown)
   }
 
   const createSnapshotEvents = (prev: Snapshot, curr: Snapshot) => {
