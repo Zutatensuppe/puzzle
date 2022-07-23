@@ -5,6 +5,11 @@ export const getGames = async () => {
   return await res.json()
 }
 
+export const deleteGame = async (id: number) => {
+  const res = await xhr.delete(`/admin/api/games/${id}`, {})
+  return await res.json()
+}
+
 export const getUsers = async () => {
   const res = await xhr.get('/admin/api/users', {})
   return await res.json()

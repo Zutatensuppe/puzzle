@@ -10,7 +10,8 @@
         <th>Created</th>
         <th>Finished</th>
         <th>Private</th>
-        <th>Data</th>
+
+        <th>Actions</th>
       </tr>
       <tr v-for="(item, idx) in games" :key="idx">
         <td>{{item.id}}</td>
@@ -19,7 +20,8 @@
         <td>{{item.created}}</td>
         <td>{{item.finished}}</td>
         <td>{{item.private ? '✓' : '✖'}}</td>
-        <td>{{item.data}}</td>
+
+        <td><span @click="onDelete(item)" class="is-clickable">DELETE</span></td>
       </tr>
     </table>
   </div>
@@ -27,10 +29,24 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue';
 import user from '../../user';
-import { getGames } from '../api';
+import { getGames, deleteGame } from '../api';
 import Nav from '../components/Nav.vue'
 
 const games = ref<any[]>([])
+
+const onDelete = async (game: any) => {
+  if (!confirm(`Really delete game ${game.id}?`)) {
+    return
+  }
+
+  const resp = await deleteGame(game.id)
+  if (resp.ok) {
+    games.value = games.value.filter(g => g.id !== game.id)
+    alert('Successfully deleted game!')
+  } else {
+    alert('Deleting game failed!')
+  }
+}
 
 onMounted(async () => {
   if (user.getMe()) {

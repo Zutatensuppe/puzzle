@@ -22,6 +22,12 @@ export default function createRouter(
     res.send(items)
   })
 
+  router.delete('/games/:id', async (req, res) => {
+    const id = req.params.id
+    await db.delete('games', { id })
+    res.send({ ok: true })
+  })
+
   router.get('/images', async (req, res) => {
     const items = await db.getMany('images')
     res.send(items)
