@@ -26,6 +26,7 @@ import {
   ServerEvent,
 } from '../common/Types'
 import EventAdapter from './EventAdapter'
+import Assets from './Assets'
 declare global {
   interface Window {
       DEBUG?: boolean
@@ -33,15 +34,6 @@ declare global {
 }
 
 const log = logger('game.ts')
-
-// @ts-ignore We can ignore typescript for for binary file includes
-const images = import.meta.globEager('./*.png')
-
-// @ts-ignore We can ignore typescript for for binary file includes
-const textures = import.meta.globEager('./assets/textures/*.{jpg,png}')
-
-// @ts-ignore We can ignore typescript for for binary file includes
-const sounds = import.meta.globEager('./*.mp3')
 
 export const MODE_PLAY = 'play'
 export const MODE_REPLAY = 'replay'
@@ -87,29 +79,21 @@ export async function main(
     return MODE === MODE_REPLAY || player.id !== clientId
   }
 
-  const click = sounds['./click.mp3'].default
-  const clickOther = sounds['./click2.mp3'].default
-  const clickAudio = new Audio(click)
-  const clickOtherAudio = new Audio(clickOther)
-
-  const cursorGrab = await Graphics.loadImageToBitmap(images['./grab.png'].default)
-  const cursorHand = await Graphics.loadImageToBitmap(images['./hand.png'].default)
-  const cursorGrabMask = await Graphics.loadImageToBitmap(images['./grab_mask.png'].default)
-  const cursorHandMask = await Graphics.loadImageToBitmap(images['./hand_mask.png'].default)
+  const assets = await Assets.load()
 
   // all cursors must be of the same dimensions
-  const CURSOR_W = cursorGrab.width
+  const CURSOR_W = assets.Gfx.GRAB.width
   const CURSOR_W_2 = Math.round(CURSOR_W / 2)
-  const CURSOR_H = cursorGrab.height
+  const CURSOR_H = assets.Gfx.GRAB.height
   const CURSOR_H_2 = Math.round(CURSOR_H / 2)
 
   const cursors: Record<string, ImageBitmap> = {}
   const getPlayerCursor = async (p: Player) => {
     const key = p.color + ' ' + p.d
     if (!cursors[key]) {
-      const cursor = p.d ? cursorGrab : cursorHand
+      const cursor = p.d ? assets.Gfx.GRAB : assets.Gfx.HAND
       if (p.color) {
-        const mask = p.d ? cursorGrabMask : cursorHandMask
+        const mask = p.d ? assets.Gfx.GRAB_MASK : assets.Gfx.HAND_MASK
         cursors[key] = await createImageBitmap(
           Graphics.colorizedCanvas(cursor, mask, p.color)
         )
@@ -352,14 +336,14 @@ export async function main(
 
   const playClick = () => {
     const vol = playerSoundVolume()
-    clickAudio.volume = vol / 100
-    clickAudio.play()
+    assets.Audio.CLICK.volume = vol / 100
+    assets.Audio.CLICK.play()
   }
 
   const playOtherClick = () => {
     const vol = playerSoundVolume()
-    clickOtherAudio.volume = vol / 100
-    clickOtherAudio.play()
+    assets.Audio.CLICK_2.volume = vol / 100
+    assets.Audio.CLICK_2.play()
   }
 
   const player = {
@@ -386,8 +370,8 @@ export async function main(
     canvas.style.cursor = `url('${url}') ${CURSOR_W_2} ${CURSOR_H_2}, ${fallback}`
   }
   const updatePlayerCursorColor = (color: string) => {
-    cursorDown = Graphics.colorizedCanvas(cursorGrab, cursorGrabMask, color).toDataURL()
-    cursor = Graphics.colorizedCanvas(cursorHand, cursorHandMask, color).toDataURL()
+    cursorDown = Graphics.colorizedCanvas(assets.Gfx.GRAB, assets.Gfx.GRAB_MASK, color).toDataURL()
+    cursor = Graphics.colorizedCanvas(assets.Gfx.HAND, assets.Gfx.HAND_MASK, color).toDataURL()
     updatePlayerCursorState(cursorState)
   }
   updatePlayerCursorColor(playerColor())
@@ -859,8 +843,8 @@ export async function main(
   }
 
   const bounds = Game.getBounds(gameId)
-  const createTableGfx = async (texture: string, isDark: boolean): Promise<CanvasImageSource> => {
-    const tableCanvas = Graphics.repeat(await Graphics.loadImageToBitmap(textures[texture].default), bounds, 3)
+  const createTableGfx = async (bitmap: ImageBitmap, isDark: boolean): Promise<CanvasImageSource> => {
+    const tableCanvas = Graphics.repeat(bitmap, bounds, 3)
 
     const adjustedBounds: Dim = { w: tableCanvas.width, h: tableCanvas.height }
     const ratio = adjustedBounds.w /bounds.w
@@ -899,9 +883,9 @@ export async function main(
   }
 
   const tableImgs: Record<string, CanvasImageSource> = {
-    dark: await createTableGfx('./assets/textures/wood-dark.jpg', true),
-    light: await createTableGfx('./assets/textures/wood-light.jpg', false),
-    brown: await createTableGfx('./assets/textures/Oak-none-3275x2565mm-Architextures.jpg', true),
+    dark: await createTableGfx(assets.Textures.WOOD_DARK, true),
+    light: await createTableGfx(assets.Textures.WOOD_LIGHT, false),
+    brown: await createTableGfx(assets.Textures.OAK_BROWN, true),
   }
 
   const onRender = async (): Promise<void> => {
