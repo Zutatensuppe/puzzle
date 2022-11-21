@@ -1,9 +1,0 @@
-#!/bin/sh -eu
-
-cd "$RUN_DIR"
-
-# lint for js files
-npx eslint src
-
-# lint for css files
-npx stylelint "src/**/*.scss"

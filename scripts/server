@@ -1,7 +1,0 @@
-#!/bin/sh -eu
-
-cd "$RUN_DIR"
-
-# server for built files
-export APP_CONFIG=config.json
-nodemon --watch build --max-old-space-size=256 -e js build/server/main.js

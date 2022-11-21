@@ -15,7 +15,7 @@ jobs:
     strategy:
       matrix:
         operating-system: [ubuntu-latest]
-        node-version: [17.x]
+        node-version: [18.x]
     name: "tests, node: ${{ matrix.node-version }}, os: ${{ matrix.operating-system }}"
 
     steps:
@@ -24,15 +24,15 @@ jobs:
       with:
         node-version: ${{ matrix.node-version }}
 
-    - run: ./run install
-    - run: ./run tests
+    - run: npm ci
+    - run: npm run test
 
   lint:
     runs-on: ${{ matrix.operating-system }}
     strategy:
       matrix:
         operating-system: [ubuntu-latest]
-        node-version: [17.x]
+        node-version: [18.x]
     name: "lint, node: ${{ matrix.node-version }}, os: ${{ matrix.operating-system }}"
 
     steps:
@@ -41,15 +41,15 @@ jobs:
       with:
         node-version: ${{ matrix.node-version }}
 
-    - run: ./run install
-    - run: ./run lint
+    - run: npm ci
+    - run: npm run lint
 
   build:
     runs-on: ${{ matrix.operating-system }}
     strategy:
       matrix:
         operating-system: [ubuntu-latest]
-        node-version: [17.x]
+        node-version: [18.x]
     name: "build, node: ${{ matrix.node-version }}, os: ${{ matrix.operating-system }}"
 
     steps:
@@ -59,5 +59,5 @@ jobs:
       with:
         node-version: ${{ matrix.node-version }}
 
-    - run: ./run install
-    - run: ./run build
+    - run: npm ci
+    - run: npm run build

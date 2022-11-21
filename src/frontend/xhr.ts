@@ -32,7 +32,7 @@ const request = async (
     xhr.setRequestHeader('Client-Id', xhrClientId)
     xhr.setRequestHeader('Client-Secret', xhrClientSecret)
 
-    xhr.addEventListener('load', function (ev: ProgressEvent<XMLHttpRequestEventTarget>
+    xhr.addEventListener('load', function (_ev: ProgressEvent<XMLHttpRequestEventTarget>
       ) {
       resolve({
         status: this.status,
@@ -40,7 +40,7 @@ const request = async (
         json: async () => JSON.parse(this.responseText),
       })
     })
-    xhr.addEventListener('error', function (ev: ProgressEvent<XMLHttpRequestEventTarget>) {
+    xhr.addEventListener('error', function (_ev: ProgressEvent<XMLHttpRequestEventTarget>) {
       reject(new Error('xhr error'))
     })
     if (xhr.upload && options.onUploadProgress) {

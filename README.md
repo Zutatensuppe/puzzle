@@ -13,11 +13,29 @@ lower versions, but it may not work.
 
 ## Quick start
 
-This will install the dependencies, execute build and start the server.
+1. Install dependencies:
 
-```sh
-./run start
-```
+    ```shell
+    npm ci
+    ```
+
+2. Prepare config file:
+
+    ```shell
+    cp config.example.json config.json
+    # or on windows:
+    Copy-Item config.example.json config.json
+    ```
+
+    Adjust the config as needed. For development no adjustments are required.
+
+3. Launch the app in dev mode:
+
+    ```shell
+    npm run dev-services
+    npm run dev-server
+    npm run dev-frontend
+    ```
 
 A database has to be setup and running separately. By default
 the script will connect via `postgresql://hyottoko:hyottoko@localhost:5434/hyottoko`.
@@ -27,37 +45,49 @@ This can be adjusted in the `config.json`.
 
 There are other `run` scripts:
 
-command              | explanation
----------------------|----------------------------------------
-`./run install`      | installs dependencies and sets up a config if none exists
-`./run build`        | builds the sources
-`./run server`       | runs the server with built files
-`./run tests`        | runs tests
-`./run start`        | combination of `install`, `build` and `server`
-`./run dev-services` | runs the dev services (eg. database)
-`./run dev-server`   | runs the dev server (from unbuilt files)
-`./run dev-frontend` | runs the dev frontend (with hmr and such)
-`./run ts [...ARGS]` | run `node`, but with ts files. eg `./run ts scripts/import_images.ts`
+command                | explanation
+-----------------------|----------------------------------------
+`npm run build`        | builds the sources
+`npm run server`       | runs the server with built files
+`npm run test`         | runs tests
+`npm run dev-services` | runs the dev services (eg. database)
+`npm run dev-server`   | runs the dev server (from unbuilt files)
+`npm run dev-frontend` | runs the dev frontend (with hmr and such)
+`./run ts [...ARGS]`   | run `node`, but with ts files. eg `./run ts scripts/import_images.ts`
+
+## Build
+
+Build the app:
+
+```shell
+npm run build
+```
+
+Then start the app using the built files with:
+
+```shell
+npm run server
+```
 
 ## Dev
 
 Start the dev database (postgres) via:
 
-```sh
-./run dev-services
+```shell
+npm run dev-services
 ```
 
 For development it makes sense to run both `dev-server` and `dev-frontend`
 in separate shells.
 
-```sh
-./run dev-server
-./run dev-frontend
+```shell
+npm run dev-server
+npm run dev-frontend
 ```
 
 The dev-frontend script will output something like:
 
-```sh
+```shell
   vite v2.3.3 dev server running at:
 
   > Local: http://localhost:3000/
