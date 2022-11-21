@@ -566,9 +566,9 @@ export async function main(
 
   if (MODE === MODE_PLAY) {
     Communication.onServerChange((msg: ServerEvent) => {
-      const msgType = msg[0]
-      const evClientId = msg[1]
-      const evClientSeq = msg[2]
+      const _msgType = msg[0]
+      const _evClientId = msg[1]
+      const _evClientSeq = msg[2]
       const evChanges = msg[3]
 
       let rerender: boolean = false;

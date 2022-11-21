@@ -43,7 +43,7 @@ export interface Config {
 }
 
 const init = (): Config => {
-  const configFile = process.env.APP_CONFIG || ''
+  const configFile = process.env.APP_CONFIG || 'config.json'
   if (configFile === '') {
     log.error('APP_CONFIG environment variable not set or empty')
     process.exit(2)

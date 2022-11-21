@@ -1,7 +1,0 @@
-#!/bin/sh -eux
-
-# server build
-npx rollup -c rollup.server.config.js
-
-# frontend build
-npx vite build

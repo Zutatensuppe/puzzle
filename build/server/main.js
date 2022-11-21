@@ -1375,7 +1375,7 @@ const UPLOAD_URL = `/uploads`;
 const PUBLIC_DIR = `${BASE_DIR}/build/public/`;
 const DB_PATCHES_DIR = `${BASE_DIR}/src/dbpatches`;
 const init = () => {
-    const configFile = process.env.APP_CONFIG || '';
+    const configFile = process.env.APP_CONFIG || 'config.json';
     if (configFile === '') {
         log$5.error('APP_CONFIG environment variable not set or empty');
         process.exit(2);
@@ -1486,7 +1486,11 @@ const log$4 = logger('Images.ts');
 const resizeImage = async (filename) => {
     try {
         const imagePath = `${config.dir.UPLOAD_DIR}/${filename}`;
-        const imageOutPath = `${config.dir.UPLOAD_DIR}/r/${filename}`;
+        const resizeDir = `${config.dir.UPLOAD_DIR}/r/`;
+        if (!fs.existsSync(resizeDir)) {
+            fs.mkdirSync(resizeDir, { recursive: true });
+        }
+        const imageOutPath = `${resizeDir}/${filename}`;
         const orientation = await getExifOrientation(imagePath);
         let sharpImg = sharp(imagePath, { failOnError: false });
         // when image is rotated to the left or right, switch width/height

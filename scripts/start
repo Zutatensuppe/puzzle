@@ -1,7 +1,0 @@
-#!/bin/sh -eu
-
-cd "$RUN_DIR"
-
-"$RUN_BIN" install
-"$RUN_BIN" build
-"$RUN_BIN" server

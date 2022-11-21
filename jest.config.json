@@ -1,6 +1,7 @@
 {
   "preset": "ts-jest",
   "verbose": true,
+  "setupFiles": ["<rootDir>/.jest.env.js"],
   "extensionsToTreatAsEsm": [
     ".ts"
   ],

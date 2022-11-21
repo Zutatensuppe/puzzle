@@ -26,7 +26,11 @@ interface ImageRow {
 const resizeImage = async (filename: string): Promise<void> => {
   try {
     const imagePath = `${config.dir.UPLOAD_DIR}/${filename}`
-    const imageOutPath = `${config.dir.UPLOAD_DIR}/r/${filename}`
+    const resizeDir = `${config.dir.UPLOAD_DIR}/r/`
+    if (!fs.existsSync(resizeDir)) {
+      fs.mkdirSync(resizeDir, { recursive: true })
+    }
+    const imageOutPath = `${resizeDir}/${filename}`
     const orientation = await getExifOrientation(imagePath)
 
     let sharpImg = sharp(imagePath, { failOnError: false })
