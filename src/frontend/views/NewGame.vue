@@ -78,8 +78,7 @@ import NewImageDialog from './../components/NewImageDialog.vue'
 import EditImageDialog from './../components/EditImageDialog.vue'
 import NewGameDialog from './../components/NewGameDialog.vue'
 import { GameSettings, Image, Tag } from '../../common/Types'
-import Util from '../../common/Util'
-import xhr from '../xhr'
+import api from '../_api'
 
 export default defineComponent({
   components: {
@@ -142,7 +141,7 @@ export default defineComponent({
       this.filtersChanged()
     },
     async loadImages () {
-      const res = await xhr.get(`/api/newgame-data${Util.asQueryArgs(this.filters)}`, {})
+      const res = await api.pub.newgameData(this.filters)
       const json = await res.json()
       this.images = json.images
       this.tags = json.tags
@@ -161,41 +160,26 @@ export default defineComponent({
     },
     async uploadImage (data: any) {
       this.uploadProgress = 0
-      const formData = new FormData();
-      formData.append('file', data.file, data.file.name);
-      formData.append('title', data.title)
-      formData.append('tags', data.tags)
-      formData.append('private', data.isPrivate)
-      const res = await xhr.post('/api/upload', {
-        body: formData,
-        onUploadProgress: (evt: ProgressEvent<XMLHttpRequestEventTarget>): void => {
-          this.uploadProgress = evt.loaded / evt.total
-        },
+      const res = await api.pub.upload({
+        file: data.file,
+        title: data.title,
+        tags: data.tags,
+        isPrivate: data.isPrivate,
+        onProgress: (progress: number): void => {
+          this.uploadProgress = progress
+        }
       })
       this.uploadProgress = 1
       return await res.json()
     },
-    async saveImage (data: any) {
-      const res = await xhr.post('/api/save-image', {
-        headers: {
-          'Accept': 'application/json',
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          id: data.id,
-          title: data.title,
-          tags: data.tags,
-        }),
-      })
-      return await res.json()
-    },
     async onSaveImageClick(data: any) {
-      const res = await this.saveImage(data)
-      if (res.ok) {
+      const res = await api.pub.saveImage(data)
+      const json = await res.json()
+      if (json.ok) {
         this.dialog = ''
         await this.loadImages()
       } else {
-        alert(res.error)
+        alert(json.error)
       }
     },
     async postToGalleryClick(data: any) {
@@ -215,13 +199,7 @@ export default defineComponent({
       this.dialog = 'new-game'
     },
     async onNewGame(gameSettings: GameSettings) {
-      const res = await xhr.post('/api/newgame', {
-        headers: {
-          'Accept': 'application/json',
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(gameSettings),
-      })
+      const res = await api.pub.newGame({ gameSettings })
       if (res.status === 200) {
         const game = await res.json()
         this.$router.push({ name: 'game', params: { id: game.id } })

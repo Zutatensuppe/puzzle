@@ -1,6 +1,5 @@
-import xhr from './xhr';
 import mitt from 'mitt';
-import api from "./api";
+import api from "./_api";
 
 export interface User {
   id: number
@@ -13,7 +12,7 @@ let me: null | User = null;
 export const eventBus = mitt()
 
 async function init(): Promise<void> {
-  const res = await xhr.get(`/api/me`, {})
+  const res = await api.pub.me()
   me = res.status === 200 ? (await res.json()) : null
   if (me) {
     console.log('loggedin')
@@ -25,7 +24,7 @@ async function init(): Promise<void> {
 }
 
 async function logout(): Promise<{ error: string | false }> {
-  const res = await api.logout();
+  const res = await api.pub.logout();
   const data = await res.json();
   if (data.success) {
     me = null
@@ -38,7 +37,7 @@ async function logout(): Promise<{ error: string | false }> {
 }
 
 async function login(user: string, pass: string): Promise<{ error: string | false }> {
-  const res = await api.auth(user, pass);
+  const res = await api.pub.auth(user, pass);
   if (res.status === 200) {
     await init()
     return { error: false }

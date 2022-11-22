@@ -1,9 +1,9 @@
 "use strict"
 
 import { ClientEvent, EncodedGame, GameEvent, ReplayData, ServerEvent } from '../common/Types'
-import Util, { logger } from '../common/Util'
+import { logger } from '../common/Util'
 import Protocol from './../common/Protocol'
-import xhr from './xhr'
+import api from './_api'
 
 const log = logger('Communication.js')
 
@@ -135,8 +135,7 @@ async function requestReplayData(
   gameId: string,
   offset: number
 ): Promise<ReplayData> {
-  const args = { gameId, offset }
-  const res = await xhr.get(`/api/replay-data${Util.asQueryArgs(args)}`, {})
+  const res = await api.pub.replayData({ gameId, offset })
   const json: ReplayData = await res.json()
   return json
 }

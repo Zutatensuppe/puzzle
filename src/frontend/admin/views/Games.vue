@@ -29,7 +29,7 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue';
 import user from '../../user';
-import { getGames, deleteGame } from '../api';
+import api from '../../_api';
 import Nav from '../components/Nav.vue'
 
 const games = ref<any[]>([])
@@ -39,7 +39,7 @@ const onDelete = async (game: any) => {
     return
   }
 
-  const resp = await deleteGame(game.id)
+  const resp = await api.admin.deleteGame(game.id)
   if (resp.ok) {
     games.value = games.value.filter(g => g.id !== game.id)
     alert('Successfully deleted game!')
@@ -50,10 +50,10 @@ const onDelete = async (game: any) => {
 
 onMounted(async () => {
   if (user.getMe()) {
-    games.value = await getGames()
+    games.value = await api.admin.getGames()
   }
   user.eventBus.on('login', async () => {
-    games.value = await getGames()
+    games.value = await api.admin.getGames()
   })
   user.eventBus.on('logout', () => {
     games.value = []

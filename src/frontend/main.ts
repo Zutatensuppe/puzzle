@@ -6,7 +6,6 @@ import Index from './views/Index.vue'
 import NewGame from './views/NewGame.vue'
 import Game from './views/Game.vue'
 import Replay from './views/Replay.vue'
-import xhr from './xhr'
 
 import ConnectionOverlay from './components/ConnectionOverlay.vue'
 import EditImageDialog from './components/EditImageDialog.vue'
@@ -33,13 +32,14 @@ import AdminGames from './admin/views/Games.vue'
 import AdminUsers from './admin/views/Users.vue'
 import AdminImages from './admin/views/Images.vue'
 import AdminGroups from './admin/views/Groups.vue'
+import api from './_api'
 
 (async () => {
-  xhr.init()
+  api.init()
 
   await user.init()
 
-  const confRes = await xhr.get(`/api/conf`, {})
+  const confRes = await api.pub.config()
   const conf = await confRes.json()
 
   const router = VueRouter.createRouter({
