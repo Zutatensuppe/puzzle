@@ -35,7 +35,7 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue';
 import user from '../../user';
-import { getImages, deleteImage } from '../api';
+import api from '../../_api';
 import Nav from '../components/Nav.vue'
 
 const images = ref<any[]>([])
@@ -45,7 +45,7 @@ const onDelete = async (image: any) => {
     return
   }
 
-  const resp = await deleteImage(image.id)
+  const resp = await api.admin.deleteImage(image.id)
   if (resp.ok) {
     images.value = images.value.filter(i => i.id !== image.id)
     alert('Successfully deleted image!')
@@ -56,10 +56,10 @@ const onDelete = async (image: any) => {
 
 onMounted(async () => {
   if (user.getMe()) {
-    images.value = await getImages()
+    images.value = await api.admin.getImages()
   }
   user.eventBus.on('login', async () => {
-    images.value = await getImages()
+    images.value = await api.admin.getImages()
   })
   user.eventBus.on('logout', () => {
     images.value = []

@@ -1,6 +1,6 @@
-import Util from "../common/Util"
-import settings from "./settings"
-import user from "./user"
+import Util from "../../common/Util"
+import settings from "./../settings"
+import user from "./../user"
 
 export interface Response {
   status: number,

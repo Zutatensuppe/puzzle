@@ -17,17 +17,17 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue';
 import user from '../../user';
-import { getGroups } from '../api';
+import api from '../../_api';
 import Nav from '../components/Nav.vue'
 
 const groups = ref<any[]>([])
 
 onMounted(async () => {
   if (user.getMe()) {
-    groups.value = await getGroups()
+    groups.value = await api.admin.getGroups()
   }
   user.eventBus.on('login', async () => {
-    groups.value = await getGroups()
+    groups.value = await api.admin.getGroups()
   })
   user.eventBus.on('logout', () => {
     groups.value = []

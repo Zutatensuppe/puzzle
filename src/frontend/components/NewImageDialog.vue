@@ -203,6 +203,9 @@ export default defineComponent({
       return item
     },
     async onPaste (evt: ClipboardEvent) {
+      if (!evt.clipboardData) {
+        return
+      }
       // check if a url was pasted
       const imageUrl = evt.clipboardData.getData('text')
       if (imageUrl) {

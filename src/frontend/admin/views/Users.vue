@@ -27,17 +27,17 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue';
 import user from '../../user';
-import { getUsers } from '../api';
+import api from '../../_api';
 import Nav from '../components/Nav.vue'
 
 const users = ref<any[]>([])
 
 onMounted(async () => {
   if (user.getMe()) {
-    users.value = await getUsers()
+    users.value = await api.admin.getUsers()
   }
   user.eventBus.on('login', async () => {
-    users.value = await getUsers()
+    users.value = await api.admin.getUsers()
   })
   user.eventBus.on('logout', () => {
     users.value = []
