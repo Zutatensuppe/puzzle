@@ -214,7 +214,7 @@ function srcRectByIdx(puzzleInfo: PuzzleInfo, idx: number): Rect {
 
 async function loadPuzzleBitmaps(puzzle: Puzzle): Promise<Array<ImageBitmap>> {
   // load bitmap, to determine the original size of the image
-  const bmp = await Graphics.loadImageToBitmap(puzzle.info.imageUrl)
+  const bmp = await Graphics.loadImageToBitmap(puzzle.info.image.url)
 
   // creation of tile bitmaps
   // then create the final puzzle bitmap

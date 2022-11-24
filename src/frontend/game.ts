@@ -25,8 +25,9 @@ import {
   Timestamp,
   ServerEvent,
 } from '../common/Types'
+import { Assets } from './Assets'
 import { EventAdapter } from './EventAdapter'
-import Assets from './Assets'
+import { PuzzleTable } from './PuzzleTable'
 import { ViewportSnapshots } from './ViewportSnapshots'
 declare global {
   interface Window {
@@ -80,7 +81,8 @@ export async function main(
     return MODE === MODE_REPLAY || player.id !== clientId
   }
 
-  const assets = await Assets.load()
+  const assets = new Assets()
+  await assets.init()
 
   // all cursors must be of the same dimensions
   const CURSOR_W = assets.Gfx.GRAB.width
@@ -197,6 +199,10 @@ export async function main(
     w: PIECE_DRAW_SIZE,
     h: PIECE_DRAW_SIZE,
   }
+
+  const bounds = Game.getBounds(gameId)
+  const puzzleTable = new PuzzleTable(bounds, assets, BOARD_POS, BOARD_DIM)
+  await puzzleTable.init()
 
   const bitmaps = await PuzzleGraphics.loadPuzzleBitmaps(Game.getPuzzle(gameId))
 
@@ -821,52 +827,6 @@ export async function main(
     }
   }
 
-  const bounds = Game.getBounds(gameId)
-  const createTableGfx = async (bitmap: ImageBitmap, isDark: boolean): Promise<CanvasImageSource> => {
-    const tableCanvas = Graphics.repeat(bitmap, bounds, 3)
-
-    const adjustedBounds: Dim = { w: tableCanvas.width, h: tableCanvas.height }
-    const ratio = adjustedBounds.w /bounds.w
-
-    const tableCtx = tableCanvas.getContext('2d') as CanvasRenderingContext2D
-    // darken the outer edges of the table a bit
-    {
-      const border = {w: 16, h: 16}
-      tableCtx.fillStyle = 'rgba(0, 0, 0, .5)'
-
-      tableCtx.fillRect(0, 0, adjustedBounds.w, border.h)
-      tableCtx.fillRect(0, 0 + border.h, border.w, adjustedBounds.h - 2 * border.h)
-      tableCtx.fillRect(0 + adjustedBounds.w - border.w, 0 + border.h, border.w, adjustedBounds.h - 2 * border.h)
-      tableCtx.fillRect(0, 0 + adjustedBounds.h - border.h, adjustedBounds.w, border.w)
-    }
-
-    const boardX = -bounds.x + BOARD_POS.x
-    const boardY = -bounds.y + BOARD_POS.y
-
-    // darken the place where the puzzle should be at the end a bit
-    {
-      const border = {w: 8, h: 8}
-      tableCtx.fillStyle = 'rgba(0, 0, 0, .5)'
-      tableCtx.fillRect(ratio * (boardX - border.w), ratio * (boardY - border.h), ratio * (BOARD_DIM.w + 2 * border.w), ratio * border.h)
-      tableCtx.fillRect(ratio * (boardX - border.w), ratio * boardY, ratio * border.h, ratio * BOARD_DIM.h)
-      tableCtx.fillRect(ratio * (boardX + BOARD_DIM.w), ratio * (boardY), ratio * border.w, ratio * BOARD_DIM.h)
-      tableCtx.fillRect(ratio * (boardX - border.w), ratio * (boardY + BOARD_DIM.h), ratio * (BOARD_DIM.w + 2 * border.w), ratio * border.h)
-    }
-
-    // draw the board
-    {
-      tableCtx.fillStyle = isDark ? 'rgba(0, 0, 0, .3)' : 'rgba(255, 255, 255, .3)'
-      tableCtx.fillRect(ratio * boardX, ratio * boardY, ratio * BOARD_DIM.w, ratio * BOARD_DIM.h)
-    }
-    return await createImageBitmap(tableCanvas)
-  }
-
-  const tableImgs: Record<string, CanvasImageSource> = {
-    dark: await createTableGfx(assets.Textures.WOOD_DARK, true),
-    light: await createTableGfx(assets.Textures.WOOD_LIGHT, false),
-    brown: await createTableGfx(assets.Textures.OAK_BROWN, true),
-  }
-
   const onRender = async (): Promise<void> => {
     if (!RERENDER) {
       return
@@ -891,7 +851,7 @@ export async function main(
     // DRAW TABLE
     // ---------------------------------------------------------------
     if (player.showTable) {
-      const tableImg = tableImgs[player.tableTexture]
+      const tableImg = puzzleTable.getImage(player.tableTexture)
       if (tableImg) {
         pos = viewport.worldToViewportRaw(bounds)
         dim = viewport.worldDimToViewportRaw(bounds)
