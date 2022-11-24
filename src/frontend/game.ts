@@ -3,7 +3,6 @@
 import { Emitter, EventType } from 'mitt'
 import { GameLoopInstance, run } from './gameloop'
 import { Camera } from './Camera'
-import Graphics from './Graphics'
 import Debug from './Debug'
 import Communication from './Communication'
 import Util, { logger } from './../common/Util'
@@ -30,6 +29,7 @@ import { ViewportSnapshots } from './ViewportSnapshots'
 import { PlayerSettings } from './PlayerSettings'
 import { Sounds } from './Sounds'
 import { PuzzleStatus } from './PuzzleStatus'
+import { PlayerCursors } from './PlayerCursors'
 declare global {
   interface Window {
       DEBUG?: boolean
@@ -85,30 +85,9 @@ export async function main(
   const assets = new Assets()
   await assets.init()
 
-  // all cursors must be of the same dimensions
-  const CURSOR_W = assets.Gfx.GRAB.width
-  const CURSOR_W_2 = Math.round(CURSOR_W / 2)
-  const CURSOR_H = assets.Gfx.GRAB.height
-  const CURSOR_H_2 = Math.round(CURSOR_H / 2)
-
-  const cursors: Record<string, ImageBitmap> = {}
-  const getPlayerCursor = async (p: Player) => {
-    const key = p.color + ' ' + p.d
-    if (!cursors[key]) {
-      const cursor = p.d ? assets.Gfx.GRAB : assets.Gfx.HAND
-      if (p.color) {
-        const mask = p.d ? assets.Gfx.GRAB_MASK : assets.Gfx.HAND_MASK
-        cursors[key] = await createImageBitmap(
-          Graphics.colorizedCanvas(cursor, mask, p.color)
-        )
-      } else {
-        cursors[key] = cursor
-      }
-    }
-    return cursors[key]
-  }
-
   const canvas = TARGET_EL
+
+  const playerCursors = new PlayerCursors(canvas, assets)
 
   // stuff only available in replay mode...
   // TODO: refactor
@@ -273,21 +252,7 @@ export async function main(
   evts.addEvent([Protocol.INPUT_EV_PLAYER_COLOR, playerSettings.color()])
   evts.addEvent([Protocol.INPUT_EV_PLAYER_NAME, playerSettings.name()])
 
-  let cursorDown: string = ''
-  let cursor: string = ''
-  let cursorState: boolean = false
-  const updatePlayerCursorState = (d: boolean) => {
-    cursorState = d
-    const [url, fallback] = d ? [cursorDown, 'grab'] : [cursor, 'default']
-    canvas.style.cursor = `url('${url}') ${CURSOR_W_2} ${CURSOR_H_2}, ${fallback}`
-  }
-  const updatePlayerCursorColor = (color: string) => {
-    cursorDown = Graphics.colorizedCanvas(assets.Gfx.GRAB, assets.Gfx.GRAB_MASK, color).toDataURL()
-    cursor = Graphics.colorizedCanvas(assets.Gfx.HAND, assets.Gfx.HAND_MASK, color).toDataURL()
-    updatePlayerCursorState(cursorState)
-  }
-  updatePlayerCursorColor(playerSettings.color())
-
+  playerCursors.updatePlayerCursorColor(playerSettings.color())
   const doSetSpeedStatus = () => {
     eventBus.emit('replaySpeed', REPLAY.speeds[REPLAY.speedIdx])
     eventBus.emit('replayPaused', REPLAY.paused)
@@ -550,11 +515,11 @@ export async function main(
             viewportSnapshots.remove(ViewportSnapshots.LAST)
           }
         } else if (type === Protocol.INPUT_EV_PLAYER_COLOR) {
-          updatePlayerCursorColor(evt[1])
+          playerCursors.updatePlayerCursorColor(evt[1])
         } else if (type === Protocol.INPUT_EV_MOUSE_DOWN) {
-          updatePlayerCursorState(true)
+          playerCursors.updatePlayerCursorState(true)
         } else if (type === Protocol.INPUT_EV_MOUSE_UP) {
-          updatePlayerCursorState(false)
+          playerCursors.updatePlayerCursorState(false)
         } else if (type === Protocol.INPUT_EV_ZOOM_IN) {
           const pos = { x: evt[1], y: evt[2] }
           RERENDER = true
@@ -632,11 +597,11 @@ export async function main(
             viewport.move(diff.w, diff.h)
           }
         } else if (type === Protocol.INPUT_EV_PLAYER_COLOR) {
-          updatePlayerCursorColor(evt[1])
+          playerCursors.updatePlayerCursorColor(evt[1])
         } else if (type === Protocol.INPUT_EV_MOUSE_DOWN) {
-          updatePlayerCursorState(true)
+          playerCursors.updatePlayerCursorState(true)
         } else if (type === Protocol.INPUT_EV_MOUSE_UP) {
-          updatePlayerCursorState(false)
+          playerCursors.updatePlayerCursorState(false)
         } else if (type === Protocol.INPUT_EV_ZOOM_IN) {
           const pos = { x: evt[1], y: evt[2] }
           RERENDER = true
@@ -763,14 +728,14 @@ export async function main(
     // Cursors
     for (const p of Game.getActivePlayers(gameId, ts)) {
       if (shouldDrawPlayer(p)) {
-        bmp = await getPlayerCursor(p)
+        bmp = await playerCursors.get(p)
         pos = viewport.worldToViewport(p)
-        ctx.drawImage(bmp, pos.x - CURSOR_W_2, pos.y - CURSOR_H_2)
+        ctx.drawImage(bmp, pos.x - playerCursors.CURSOR_W_2, pos.y - playerCursors.CURSOR_H_2)
         if (playerSettings.showPlayerNames()) {
           // performance:
           // not drawing text directly here, to have less ctx
           // switches between drawImage and fillTxt
-          texts.push([`${p.name} (${p.points})`, pos.x, pos.y + CURSOR_H])
+          texts.push([`${p.name} (${p.points})`, pos.x, pos.y + playerCursors.CURSOR_H])
         }
       }
     }
