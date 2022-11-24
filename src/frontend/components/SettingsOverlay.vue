@@ -58,29 +58,27 @@
   </overlay>
 </template>
 <script setup lang="ts">
-import { ref, watch, WatchStopHandle } from 'vue'
-import { PlayerSettings } from '../settings'
+import { ref, watch } from 'vue'
+import { PlayerSettings } from '../PlayerSettings';
 
 const emit = defineEmits<{
-  (e: 'update:modelValue', val: PlayerSettings): void
   (e: 'close'): void
 }>()
 
 const props = defineProps<{
-  modelValue: PlayerSettings
+  settings: PlayerSettings
 }>()
 
-const showTable = ref<boolean>(false)
-const tableTexture = ref<string>('dark')
-const background = ref<string>('')
-const color = ref<string>('')
-const isUkraineColor = ref<boolean>(false)
-const name = ref<string>('')
-const soundsEnabled = ref<boolean>(true)
-const otherPlayerClickSoundEnabled = ref<boolean>(true)
-const soundsVolume = ref<number>(100)
-const showPlayerNames = ref<boolean>(true)
-const watches = ref<WatchStopHandle[]>([])
+const showTable = ref<boolean>(props.settings.showTable())
+const tableTexture = ref<string>(props.settings.tableTexture())
+const background = ref<string>(props.settings.background())
+const color = ref<string>(props.settings.color())
+const isUkraineColor = ref<boolean>(color.value === 'ukraine')
+const name = ref<string>(props.settings.name())
+const soundsEnabled = ref<boolean>(props.settings.soundsEnabled())
+const otherPlayerClickSoundEnabled = ref<boolean>(props.settings.otherPlayerClickSoundEnabled())
+const soundsVolume = ref<number>(props.settings.soundsVolume())
+const showPlayerNames = ref<boolean>(props.settings.showPlayerNames())
 
 const updateVolume = (ev: Event): void => {
   const vol = parseInt((ev.target as HTMLInputElement).value)
@@ -92,51 +90,28 @@ const decreaseVolume = (): void => {
 const increaseVolume = (): void => {
   soundsVolume.value = Math.min(100, soundsVolume.value + 5)
 }
+
+// TODO: emit changes only when relevant value changed
 const emitChanges = (): void => {
-  emit('update:modelValue', {
-    showTable: showTable.value,
-    tableTexture: tableTexture.value,
-    background: background.value,
-    color: isUkraineColor.value ? 'ukraine' : color.value,
-    name: name.value,
-    soundsEnabled: soundsEnabled.value,
-    otherPlayerClickSoundEnabled: otherPlayerClickSoundEnabled.value,
-    soundsVolume: soundsVolume.value,
-    showPlayerNames: showPlayerNames.value,
-  })
-}
-const enableWatches = (): void => {
-  watches.value.push(watch(isUkraineColor, emitChanges))
-  watches.value.push(watch(background, emitChanges))
-  watches.value.push(watch(showTable, emitChanges))
-  watches.value.push(watch(tableTexture, emitChanges))
-  watches.value.push(watch(color, emitChanges))
-  watches.value.push(watch(name, emitChanges))
-  watches.value.push(watch(soundsEnabled, emitChanges))
-  watches.value.push(watch(otherPlayerClickSoundEnabled, emitChanges))
-  watches.value.push(watch(soundsVolume, emitChanges))
-  watches.value.push(watch(showPlayerNames, emitChanges))
-}
-const disableWatches = (): void => {
-  const w = watches.value
-  watches.value = []
-  w.forEach(stop => stop())
+  props.settings.setShowTable(showTable.value)
+  props.settings.setTableTexture(tableTexture.value)
+  props.settings.setBackground(background.value)
+  props.settings.setColor(isUkraineColor.value ? 'ukraine' : color.value)
+  props.settings.setName(name.value)
+  props.settings.setSoundsEnabled(soundsEnabled.value)
+  props.settings.setOtherPlayerClickSoundEnabled(otherPlayerClickSoundEnabled.value)
+  props.settings.setSoundsVolume(soundsVolume.value)
+  props.settings.setShowPlayerNames(showPlayerNames.value)
 }
 
-const apply = (modelValue: PlayerSettings): void => {
-  disableWatches()
-  showTable.value = !!modelValue.showTable
-  tableTexture.value = modelValue.tableTexture
-  background.value = `${modelValue.background}`
-  color.value = `${modelValue.color}`
-  isUkraineColor.value = color.value === 'ukraine'
-  name.value = `${modelValue.name}`
-  soundsEnabled.value = !!modelValue.soundsEnabled
-  otherPlayerClickSoundEnabled.value = !!modelValue.otherPlayerClickSoundEnabled
-  soundsVolume.value = parseInt(`${modelValue.soundsVolume}`, 10)
-  showPlayerNames.value = !!modelValue.showPlayerNames
-  enableWatches()
-}
-
-apply(props.modelValue)
+watch(isUkraineColor, emitChanges)
+watch(background, emitChanges)
+watch(showTable, emitChanges)
+watch(tableTexture, emitChanges)
+watch(color, emitChanges)
+watch(name, emitChanges)
+watch(soundsEnabled, emitChanges)
+watch(otherPlayerClickSoundEnabled, emitChanges)
+watch(soundsVolume, emitChanges)
+watch(showPlayerNames, emitChanges)
 </script>

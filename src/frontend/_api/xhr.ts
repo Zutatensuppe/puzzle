@@ -1,5 +1,5 @@
 import Util from "../../common/Util"
-import settings from "./../settings"
+import storage from "../storage"
 import user from "./../user"
 
 export interface Response {
@@ -56,10 +56,10 @@ const request = async (
 }
 
 const uniq = (str: string) => {
-  let val = settings.getStr(str, '')
+  let val = storage.getStr(str, '')
   if (!val) {
     val = Util.uniqId()
-    settings.setStr(str, val)
+    storage.setStr(str, val)
   }
   return val
 }
