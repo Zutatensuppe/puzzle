@@ -12,8 +12,6 @@ import Game from './../common/GameCommon'
 import fireworksController from './Fireworks'
 import Protocol from '../common/Protocol'
 import Time from '../common/Time'
-import settings from './settings'
-import { SETTINGS, DEFAULTS } from './settings'
 import { Dim, Point } from '../common/Geometry'
 import {
   FixedLengthArray,
@@ -29,6 +27,7 @@ import { Assets } from './Assets'
 import { EventAdapter } from './EventAdapter'
 import { PuzzleTable } from './PuzzleTable'
 import { ViewportSnapshots } from './ViewportSnapshots'
+import { PlayerSettings } from './PlayerSettings'
 declare global {
   interface Window {
       DEBUG?: boolean
@@ -279,72 +278,24 @@ export async function main(
   let finished = longFinished
   const justFinished = () => finished && !longFinished
 
-  const playerSoundVolume = (): number => {
-    return settings.getInt(SETTINGS.SOUND_VOLUME, DEFAULTS.SOUND_VOLUME)
-  }
-  const otherPlayerClickSoundEnabled = (): boolean => {
-    return settings.getBool(SETTINGS.OTHER_PLAYER_CLICK_SOUND_ENABLED, DEFAULTS.OTHER_PLAYER_CLICK_SOUND_ENABLED)
-  }
-  const playerSoundEnabled = (): boolean => {
-    return settings.getBool(SETTINGS.SOUND_ENABLED, DEFAULTS.SOUND_ENABLED)
-  }
-  const showPlayerNames = (): boolean => {
-    return settings.getBool(SETTINGS.SHOW_PLAYER_NAMES, DEFAULTS.SHOW_PLAYER_NAMES)
-  }
-  const playerShowTable = (): boolean => {
-    return settings.getBool(SETTINGS.SHOW_TABLE, DEFAULTS.SHOW_TABLE)
-  }
-  const playerTableTexture = (): string => {
-    return settings.getStr(SETTINGS.TABLE_TEXTURE, DEFAULTS.TABLE_TEXTURE)
-  }
-  const playerBgColor = (): string => {
-    if (MODE === MODE_REPLAY) {
-      return settings.getStr(SETTINGS.COLOR_BACKGROUND, DEFAULTS.COLOR_BACKGROUND)
-    }
-    return Game.getPlayerBgColor(gameId, clientId)
-        || settings.getStr(SETTINGS.COLOR_BACKGROUND, DEFAULTS.COLOR_BACKGROUND)
-  }
-  const playerColor = (): string => {
-    if (MODE === MODE_REPLAY) {
-      return settings.getStr(SETTINGS.PLAYER_COLOR, DEFAULTS.PLAYER_COLOR)
-    }
-    return Game.getPlayerColor(gameId, clientId)
-        || settings.getStr(SETTINGS.PLAYER_COLOR, DEFAULTS.PLAYER_COLOR)
-  }
-  const playerName = (): string => {
-    if (MODE === MODE_REPLAY) {
-      return settings.getStr(SETTINGS.PLAYER_NAME, DEFAULTS.PLAYER_NAME)
-    }
-    return Game.getPlayerName(gameId, clientId)
-        || settings.getStr(SETTINGS.PLAYER_NAME, DEFAULTS.PLAYER_NAME)
-  }
+  const playerSettings = new PlayerSettings(MODE, gameId, clientId, eventBus)
+  playerSettings.init()
 
   const playClick = () => {
-    const vol = playerSoundVolume()
+    const vol = playerSettings.soundsVolume()
     assets.Audio.CLICK.volume = vol / 100
     assets.Audio.CLICK.play()
   }
 
   const playOtherClick = () => {
-    const vol = playerSoundVolume()
+    const vol = playerSettings.soundsVolume()
     assets.Audio.CLICK_2.volume = vol / 100
     assets.Audio.CLICK_2.play()
   }
 
-  const player = {
-    background: playerBgColor(),
-    showTable: playerShowTable(),
-    tableTexture: playerTableTexture(),
-    color: playerColor(),
-    name: playerName(),
-    soundsEnabled: playerSoundEnabled(),
-    otherPlayerClickSoundEnabled: otherPlayerClickSoundEnabled(),
-    soundsVolume: playerSoundVolume(),
-    showPlayerNames: showPlayerNames(),
-  }
-  evts.addEvent([Protocol.INPUT_EV_BG_COLOR, player.background])
-  evts.addEvent([Protocol.INPUT_EV_PLAYER_COLOR, player.color])
-  evts.addEvent([Protocol.INPUT_EV_PLAYER_NAME, player.name])
+  evts.addEvent([Protocol.INPUT_EV_BG_COLOR, playerSettings.background()])
+  evts.addEvent([Protocol.INPUT_EV_PLAYER_COLOR, playerSettings.color()])
+  evts.addEvent([Protocol.INPUT_EV_PLAYER_NAME, playerSettings.name()])
 
   let cursorDown: string = ''
   let cursor: string = ''
@@ -359,7 +310,7 @@ export async function main(
     cursor = Graphics.colorizedCanvas(assets.Gfx.HAND, assets.Gfx.HAND_MASK, color).toDataURL()
     updatePlayerCursorState(cursorState)
   }
-  updatePlayerCursorColor(playerColor())
+  updatePlayerCursorColor(playerSettings.color())
 
   const doSetSpeedStatus = () => {
     eventBus.emit('replaySpeed', REPLAY.speeds[REPLAY.speedIdx])
@@ -402,27 +353,6 @@ export async function main(
     isPreviewVisible = !isPreviewVisible
     eventBus.emit('togglePreview', isPreviewVisible)
   }
-  const toggleSoundsEnabled = () => {
-    player.soundsEnabled = !player.soundsEnabled
-    const value = player.soundsEnabled
-    eventBus.emit('toggleSoundsEnabled', value)
-    settings.setBool(SETTINGS.SOUND_ENABLED, value)
-    showStatusMessage('Sounds', value)
-  }
-  const togglePlayerNames = () => {
-    player.showPlayerNames = !player.showPlayerNames
-    const value = player.showPlayerNames
-    eventBus.emit('togglePlayerNames', value)
-    settings.setBool(SETTINGS.SHOW_PLAYER_NAMES, value)
-    showStatusMessage('Player names', value)
-  }
-  const toggleShowTable = () => {
-    player.showTable = !player.showTable
-    const value = player.showTable
-    eventBus.emit('toggleShowTable', value)
-    settings.setBool(SETTINGS.SHOW_TABLE, value)
-    showStatusMessage('Table', value)
-  }
 
   eventBus.on('replayOnSpeedUp', () => {
     replayOnSpeedUp()
@@ -439,73 +369,22 @@ export async function main(
     }
   })
   eventBus.on('onBgChange', (value: any) => {
-    if (player.background !== value) {
-      player.background = value
-      settings.setStr(SETTINGS.COLOR_BACKGROUND, value)
-      evts.addEvent([Protocol.INPUT_EV_BG_COLOR, value])
-      showStatusMessage('Background', value)
-    }
+    evts.addEvent([Protocol.INPUT_EV_BG_COLOR, value])
   })
-  eventBus.on('onTableTextureChange', (value: any) => {
-    if (player.tableTexture !== value) {
-      player.tableTexture = value
-      settings.setStr(SETTINGS.TABLE_TEXTURE, value)
-      showStatusMessage('Table texture', value)
-      RERENDER = true
-    }
+  eventBus.on('onTableTextureChange', () => {
+    RERENDER = true
   })
-  eventBus.on('onShowTableChange', (value: any) => {
-    if (player.showTable !== value) {
-      player.showTable = value
-      settings.setStr(SETTINGS.SHOW_TABLE, value)
-      showStatusMessage('Table', value)
-      RERENDER = true
-    }
+  eventBus.on('onShowTableChange', () => {
+    RERENDER = true
   })
   eventBus.on('onColorChange', (value: any) => {
-    if (player.color !== value) {
-      player.color = value
-      settings.setStr(SETTINGS.PLAYER_COLOR, value)
-      evts.addEvent([Protocol.INPUT_EV_PLAYER_COLOR, value])
-      showStatusMessage('Color', value)
-    }
+    evts.addEvent([Protocol.INPUT_EV_PLAYER_COLOR, value])
   })
   eventBus.on('onNameChange', (value: any) => {
-    if (player.name !== value) {
-      player.name = value
-      settings.setStr(SETTINGS.PLAYER_NAME, value)
-      evts.addEvent([Protocol.INPUT_EV_PLAYER_NAME, value])
-      showStatusMessage('Name', value)
-    }
+    evts.addEvent([Protocol.INPUT_EV_PLAYER_NAME, value])
   })
-  eventBus.on('onOtherPlayerClickSoundEnabledChange', (value: any) => {
-    if (player.otherPlayerClickSoundEnabled !== value) {
-      player.otherPlayerClickSoundEnabled = value
-      settings.setBool(SETTINGS.OTHER_PLAYER_CLICK_SOUND_ENABLED, value)
-      showStatusMessage('Other player sounds', value)
-    }
-  })
-  eventBus.on('onSoundsEnabledChange', (value: any) => {
-    if (player.soundsEnabled !== value) {
-      player.soundsEnabled = value
-      settings.setBool(SETTINGS.SOUND_ENABLED, value)
-      showStatusMessage('Sounds', value)
-    }
-  })
-  eventBus.on('onSoundsVolumeChange', (value: any) => {
-    if (player.soundsVolume !== value) {
-      player.soundsVolume = value
-      settings.setInt(SETTINGS.SOUND_VOLUME, value)
-      playClick()
-      showStatusMessage('Volume', value)
-    }
-  })
-  eventBus.on('onShowPlayerNamesChange', (value: any) => {
-    if (player.showPlayerNames !== value) {
-      player.showPlayerNames = value
-      settings.setBool(SETTINGS.SHOW_PLAYER_NAMES, value)
-      showStatusMessage('Player names', value)
-    }
+  eventBus.on('onSoundsVolumeChange', () => {
+    playClick()
   })
   eventBus.on('setHotkeys', (state: any) => {
     evts.setHotkeys(state)
@@ -569,7 +448,11 @@ export async function main(
           } break;
         }
       }
-      if (otherPlayerPiecesConnected && playerSoundEnabled() && otherPlayerClickSoundEnabled()) {
+      if (
+        otherPlayerPiecesConnected
+        && playerSettings.soundsEnabled()
+        && playerSettings.otherPlayerClickSoundEnabled()
+      ) {
         playOtherClick()
       }
       if (rerender) {
@@ -711,9 +594,9 @@ export async function main(
         } else if (type === Protocol.INPUT_EV_TOGGLE_PREVIEW) {
           togglePreview()
         } else if (type === Protocol.INPUT_EV_TOGGLE_SOUNDS) {
-          toggleSoundsEnabled()
+          playerSettings.toggleSoundsEnabled()
         } else if (type === Protocol.INPUT_EV_TOGGLE_PLAYER_NAMES) {
-          togglePlayerNames()
+          playerSettings.togglePlayerNames()
         } else if (type === Protocol.INPUT_EV_CENTER_FIT_PUZZLE) {
           const slot = 'center'
           const handled = viewportSnapshots.handle(slot)
@@ -727,7 +610,7 @@ export async function main(
           showStatusMessage(`${PIECE_VIEW_LOOSE ? 'Showing' : 'Hiding'} unfinished pieces`)
           RERENDER = true
         } else if (type === Protocol.INPUT_EV_TOGGLE_TABLE) {
-          toggleShowTable()
+          playerSettings.toggleShowTable()
         } else if (type === Protocol.INPUT_EV_STORE_POS) {
           const slot: string = `${evt[1]}`
           viewportSnapshots.snap(slot)
@@ -742,7 +625,7 @@ export async function main(
         // -------------------------------------------------------------
         const ts = TIME()
         const changes = Game.handleInput(gameId, clientId, evt, ts)
-        if (playerSoundEnabled()) {
+        if (playerSettings.soundsEnabled()) {
           if (changes.find(change => change[0] === Protocol.PLAYER_SNAP)) {
             playClick()
           }
@@ -791,9 +674,9 @@ export async function main(
         } else if (type === Protocol.INPUT_EV_TOGGLE_PREVIEW) {
           togglePreview()
         } else if (type === Protocol.INPUT_EV_TOGGLE_SOUNDS) {
-          toggleSoundsEnabled()
+          playerSettings.toggleSoundsEnabled()
         } else if (type === Protocol.INPUT_EV_TOGGLE_PLAYER_NAMES) {
-          togglePlayerNames()
+          playerSettings.togglePlayerNames()
         } else if (type === Protocol.INPUT_EV_CENTER_FIT_PUZZLE) {
           const slot = 'center'
           const handled = viewportSnapshots.handle(slot)
@@ -807,7 +690,7 @@ export async function main(
           showStatusMessage(`${PIECE_VIEW_LOOSE ? 'Showing' : 'Hiding'} unfinished pieces`)
           RERENDER = true
         } else if (type === Protocol.INPUT_EV_TOGGLE_TABLE) {
-          toggleShowTable()
+          playerSettings.toggleShowTable()
         } else if (type === Protocol.INPUT_EV_STORE_POS) {
           const slot: string = `${evt[1]}`
           viewportSnapshots.snap(slot)
@@ -842,7 +725,7 @@ export async function main(
 
     // CLEAR CTX
     // ---------------------------------------------------------------
-    ctx.fillStyle = playerBgColor()
+    ctx.fillStyle = playerSettings.background()
     ctx.fillRect(0, 0, canvas.width, canvas.height)
     if (window.DEBUG) Debug.checkpoint('clear done')
     // ---------------------------------------------------------------
@@ -850,8 +733,8 @@ export async function main(
 
     // DRAW TABLE
     // ---------------------------------------------------------------
-    if (player.showTable) {
-      const tableImg = puzzleTable.getImage(player.tableTexture)
+    if (playerSettings.showTable()) {
+      const tableImg = puzzleTable.getImage(playerSettings.tableTexture())
       if (tableImg) {
         pos = viewport.worldToViewportRaw(bounds)
         dim = viewport.worldDimToViewportRaw(bounds)
@@ -864,7 +747,7 @@ export async function main(
 
     // DRAW BOARD
     // ---------------------------------------------------------------
-    if (!player.showTable) {
+    if (!playerSettings.showTable()) {
       pos = viewport.worldToViewportRaw(BOARD_POS)
       dim = viewport.worldDimToViewportRaw(BOARD_DIM)
       ctx.fillStyle = 'rgba(255, 255, 255, .3)'
@@ -907,7 +790,7 @@ export async function main(
         bmp = await getPlayerCursor(p)
         pos = viewport.worldToViewport(p)
         ctx.drawImage(bmp, pos.x - CURSOR_W_2, pos.y - CURSOR_H_2)
-        if (showPlayerNames()) {
+        if (playerSettings.showPlayerNames()) {
           // performance:
           // not drawing text directly here, to have less ctx
           // switches between drawImage and fillTxt
@@ -952,7 +835,7 @@ export async function main(
 
   return {
     previewImageUrl,
-    player: player,
+    playerSettings,
     game: Game.get(gameId),
     disconnect: Communication.disconnect,
     connect: connect,

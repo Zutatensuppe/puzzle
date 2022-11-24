@@ -1,10 +1,10 @@
 <template>
   <div id="game">
     <SettingsOverlay
-      v-if="overlay === 'settings'"
+      v-if="overlay === 'settings' && g.playerSettings"
       @close="toggle('settings', true)"
       @bgclick="toggle('settings', true)"
-      v-model="g.player" />
+      :settings="g.playerSettings" />
     <PreviewOverlay
       v-if="overlay === 'preview'"
       @close="toggle('preview', false)"
@@ -61,10 +61,9 @@
   </div>
 </template>
 <script setup lang="ts">
-import { defaultPlayerSettings, PlayerSettings } from '../settings'
 import { Game, Player, PuzzleStatus as PuzzleStatusType } from '../../common/Types'
 import { main, MODE_PLAY } from '../game'
-import { onMounted, onUnmounted, Ref, ref, watch } from 'vue'
+import { onMounted, onUnmounted, Ref, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import api from '../_api'
 import config from '../config'
@@ -77,6 +76,7 @@ import PreviewOverlay from './../components/PreviewOverlay.vue'
 import PuzzleStatus from '../components/PuzzleStatus.vue'
 import Scores from './../components/Scores.vue'
 import SettingsOverlay from './../components/SettingsOverlay.vue'
+import { PlayerSettings } from '../PlayerSettings'
 
 const statusMessages = ref<string[]>([])
 const players = ref<{ active: Player[], idle: Player[] }>({ active: [], idle: [] })
@@ -95,14 +95,14 @@ const canvasEl = ref<HTMLCanvasElement>() as Ref<HTMLCanvasElement>
 const eventBus = mitt()
 
 const g = ref<{
-  player: PlayerSettings
+  playerSettings: PlayerSettings|null
   game: Game|null
   previewImageUrl: string
   connect: () => void
   disconnect: () => void
   unload: () => void
 }>({
-  player: defaultPlayerSettings(),
+  playerSettings: null,
   game: null,
   previewImageUrl: '',
   connect: () => {},
@@ -177,11 +177,11 @@ onMounted(async () => {
   eventBus.on('puzzleCut', () => {
     cuttingPuzzle.value = false
   })
-  eventBus.on('players', (players: any) => {
-    players.value = players
+  eventBus.on('players', (newPlayers: any) => {
+    players.value = newPlayers
   })
-  eventBus.on('status', (status: any) => {
-    status.value = status
+  eventBus.on('status', (newStatus: any) => {
+    status.value = newStatus
   })
   eventBus.on('connectionState', (v: any) => {
     connectionState.value = v
@@ -191,43 +191,6 @@ onMounted(async () => {
   })
   eventBus.on('toggleInterface', (v: any) => {
     showInterface.value = !!v
-  })
-  eventBus.on('toggleSoundsEnabled', (v: any) => {
-    g.value.player.soundsEnabled = !!v
-  })
-  eventBus.on('togglePlayerNames', (v: any) => {
-    g.value.player.showPlayerNames = !!v
-  })
-  eventBus.on('toggleShowTable', (v: any) => {
-    g.value.player.showTable = !!v
-  })
-
-  watch(() => g.value.player.background, (value: string) => {
-    eventBus.emit('onBgChange', value)
-  })
-  watch(() => g.value.player.showTable, (value: boolean) => {
-    eventBus.emit('onShowTableChange', value)
-  })
-  watch(() => g.value.player.tableTexture, (value: string) => {
-    eventBus.emit('onTableTextureChange', value)
-  })
-  watch(() => g.value.player.color, (value: string) => {
-    eventBus.emit('onColorChange', value)
-  })
-  watch(() => g.value.player.name, (value: string) => {
-    eventBus.emit('onNameChange', value)
-  })
-  watch(() => g.value.player.soundsEnabled, (value: boolean) => {
-    eventBus.emit('onSoundsEnabledChange', value)
-  })
-  watch(() => g.value.player.otherPlayerClickSoundEnabled, (value: boolean) => {
-    eventBus.emit('onOtherPlayerClickSoundEnabledChange', value)
-  })
-  watch(() => g.value.player.soundsVolume, (value: number) => {
-    eventBus.emit('onSoundsVolumeChange', value)
-  })
-  watch(() => g.value.player.showPlayerNames, (value: boolean) => {
-    eventBus.emit('onShowPlayerNamesChange', value)
   })
 
   canvasEl.value.width = window.innerWidth
