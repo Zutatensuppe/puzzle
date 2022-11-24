@@ -38,7 +38,7 @@ in jigsawpuzzles.io
         </select>
       </label>
     </div>
-    <image-library
+    <ImageLibrary
       :class="{blurred: dialog !== ''}"
       :images="images"
       @imageClicked="onImageClicked"
@@ -70,141 +70,128 @@ in jigsawpuzzles.io
   </div>
 </template>
 
-<script lang="ts">
-import { defineComponent } from 'vue'
-
-import ImageLibrary from './../components/ImageLibrary.vue'
+<script setup lang="ts">
+import { computed, onMounted, ref } from 'vue'
 import NewImageDialog from './../components/NewImageDialog.vue'
 import EditImageDialog from './../components/EditImageDialog.vue'
 import NewGameDialog from './../components/NewGameDialog.vue'
-import { GameSettings, Image, Tag } from '../../common/Types'
+import { GameSettings, ImageInfo, Tag } from '../../common/Types'
 import api from '../_api'
+import { useRouter } from 'vue-router'
+import ImageLibrary from './../components/ImageLibrary.vue'
 
-export default defineComponent({
-  components: {
-    ImageLibrary,
-    NewImageDialog,
-    EditImageDialog,
-    NewGameDialog,
-  },
-  data() {
-    return {
-      filters: {
-        sort: 'date_desc',
-        tags: [] as string[],
-      },
-      images: [],
-      tags: [] as Tag[],
+const router = useRouter()
 
-      image: {
-        id: 0,
-        filename: '',
-        file: '',
-        url: '',
-        title: '',
-        tags: [],
-        created: 0,
-      } as Image,
+const filters = ref<{ sort: string, tags: string[] }>({
+  sort: 'date_desc',
+  tags: [],
+})
+const images = ref<ImageInfo[]>([])
 
-      dialog: '',
+const tags = ref<Tag[]>([])
+const image = ref<ImageInfo>({
+  id: 0,
+  uploaderUserId: null,
+  filename: '',
+  url: '',
+  title: '',
+  tags: [],
+  created: 0,
+  width: 0,
+  height: 0,
+})
 
-      newGameForcePrivate: false,
+const dialog = ref<string>('')
+const newGameForcePrivate = ref<boolean>(false)
+const uploading = ref<'postToGallery' | 'setupGame' | ''>('')
+const uploadProgress = ref<number>(0)
 
-      uploading: '',
-      uploadProgress: 0,
+const relevantTags = computed((): Tag[] => tags.value.filter((tag: Tag) => tag.total > 0))
+
+const autocompleteTags = (input: string, exclude: string[]): string[] => {
+  return tags.value
+    .filter((tag: Tag) => {
+      return !exclude.includes(tag.title)
+        && tag.title.toLowerCase().startsWith(input.toLowerCase())
+    })
+    .slice(0, 10)
+    .map((tag: Tag) => tag.title)
+}
+const toggleTag = (t: Tag) => {
+  if (filters.value.tags.includes(t.slug)) {
+    filters.value.tags = filters.value.tags.filter(slug => slug !== t.slug)
+  } else {
+    filters.value.tags.push(t.slug)
+  }
+  filtersChanged()
+}
+const loadImages = async () => {
+  const res = await api.pub.newgameData({ filters: filters.value })
+  const json = await res.json()
+  images.value = json.images
+  tags.value = json.tags
+}
+const filtersChanged = async () => {
+  await loadImages()
+}
+const onImageClicked = (newImage: ImageInfo) => {
+  image.value = newImage
+  newGameForcePrivate.value = false
+  dialog.value = 'new-game'
+}
+const onImageEditClicked = (newImage: ImageInfo) => {
+  image.value = newImage
+  dialog.value = 'edit-image'
+}
+const uploadImage = async (data: any) => {
+  uploadProgress.value = 0
+  const res = await api.pub.upload({
+    file: data.file,
+    title: data.title,
+    tags: data.tags,
+    isPrivate: data.isPrivate,
+    onProgress: (progress: number): void => {
+      uploadProgress.value = progress
     }
-  },
-  async created() {
-    await this.loadImages()
-  },
-  computed: {
-    relevantTags (): Tag[] {
-      return this.tags.filter((tag: Tag) => tag.total > 0)
-    },
-  },
-  methods: {
-    autocompleteTags (input: string, exclude: string[]): string[] {
-      return this.tags
-        .filter((tag: Tag) => {
-          return !exclude.includes(tag.title)
-            && tag.title.toLowerCase().startsWith(input.toLowerCase())
-        })
-        .slice(0, 10)
-        .map((tag: Tag) => tag.title)
-    },
-    toggleTag (t: Tag) {
-      if (this.filters.tags.includes(t.slug)) {
-        this.filters.tags = this.filters.tags.filter(slug => slug !== t.slug)
-      } else {
-        this.filters.tags.push(t.slug)
-      }
-      this.filtersChanged()
-    },
-    async loadImages () {
-      const res = await api.pub.newgameData(this.filters)
-      const json = await res.json()
-      this.images = json.images
-      this.tags = json.tags
-    },
-    async filtersChanged () {
-      await this.loadImages()
-    },
-    onImageClicked (image: Image) {
-      this.image = image
-      this.newGameForcePrivate = false
-      this.dialog = 'new-game'
-    },
-    onImageEditClicked (image: Image) {
-      this.image = image
-      this.dialog = 'edit-image'
-    },
-    async uploadImage (data: any) {
-      this.uploadProgress = 0
-      const res = await api.pub.upload({
-        file: data.file,
-        title: data.title,
-        tags: data.tags,
-        isPrivate: data.isPrivate,
-        onProgress: (progress: number): void => {
-          this.uploadProgress = progress
-        }
-      })
-      this.uploadProgress = 1
-      return await res.json()
-    },
-    async onSaveImageClick(data: any) {
-      const res = await api.pub.saveImage(data)
-      const json = await res.json()
-      if (json.ok) {
-        this.dialog = ''
-        await this.loadImages()
-      } else {
-        alert(json.error)
-      }
-    },
-    async postToGalleryClick(data: any) {
-      this.uploading = 'postToGallery'
-      await this.uploadImage(data)
-      this.uploading = ''
-      this.dialog = ''
-      await this.loadImages()
-    },
-    async setupGameClick (data: any) {
-      this.uploading = 'setupGame'
-      const image = await this.uploadImage(data)
-      this.uploading = ''
-      this.loadImages() // load images in background
-      this.image = image
-      this.newGameForcePrivate = data.isPrivate
-      this.dialog = 'new-game'
-    },
-    async onNewGame(gameSettings: GameSettings) {
-      const res = await api.pub.newGame({ gameSettings })
-      if (res.status === 200) {
-        const game = await res.json()
-        this.$router.push({ name: 'game', params: { id: game.id } })
-      }
-    },
-  },
+  })
+  uploadProgress.value = 1
+  return await res.json()
+}
+const onSaveImageClick = async (data: any) => {
+  const res = await api.pub.saveImage(data)
+  const json = await res.json()
+  if (json.ok) {
+    dialog.value = ''
+    await loadImages()
+  } else {
+    alert(json.error)
+  }
+}
+const postToGalleryClick = async (data: any) => {
+  uploading.value = 'postToGallery'
+  await uploadImage(data)
+  uploading.value = ''
+  dialog.value = ''
+  await loadImages()
+}
+const setupGameClick = async (data: any) => {
+  uploading.value = 'setupGame'
+  const image = await uploadImage(data)
+  uploading.value = ''
+  loadImages() // load images in background
+  image.value = image
+  newGameForcePrivate.value = data.isPrivate
+  dialog.value = 'new-game'
+}
+const onNewGame = async (gameSettings: GameSettings) => {
+  const res = await api.pub.newGame({ gameSettings })
+  if (res.status === 200) {
+    const game = await res.json()
+    router.push({ name: 'game', params: { id: game.id } })
+  }
+}
+
+onMounted(async () => {
+  await loadImages()
 })
 </script>

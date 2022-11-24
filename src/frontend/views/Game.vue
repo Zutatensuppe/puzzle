@@ -1,44 +1,44 @@
 <template>
   <div id="game">
-    <settings-overlay
+    <SettingsOverlay
       v-if="overlay === 'settings'"
       @close="toggle('settings', true)"
       @bgclick="toggle('settings', true)"
       v-model="g.player" />
-    <preview-overlay
+    <PreviewOverlay
       v-if="overlay === 'preview'"
       @close="toggle('preview', false)"
       @click="toggle('preview', false)"
       :img="g.previewImageUrl" />
-    <info-overlay
+    <InfoOverlay
       v-if="g.game && overlay === 'info'"
       @close="toggle('info', true)"
       @bgclick="toggle('info', true)"
       :game="g.game" />
-    <help-overlay
+    <HelpOverlay
       v-if="overlay === 'help'"
       @close="toggle('help', true)"
       @bgclick="toggle('help', true)" />
 
-    <overlay v-show="cuttingPuzzle">
+    <Overlay v-show="cuttingPuzzle">
       <template v-slot:default>
         <div><icon icon="hourglass" /> Cutting puzzle, please wait... <icon icon="hourglass" /></div>
       </template>
-    </overlay>
+    </Overlay>
 
-    <connection-overlay
+    <ConnectionOverlay
       :connectionState="connectionState"
       @reconnect="reconnect"
       />
 
-    <div class="menu-left" v-if="interface">
-      <puzzle-status :status="status" />
+    <div class="menu-left" v-if="showInterface">
+      <PuzzleStatus :status="status" />
       <div class="switch-game-replay" v-if="g.game && g.game.hasReplay">
         <router-link :to="{ name: 'replay', params: { id: g.game.id } }"><icon icon="replay" /> Watch replay</router-link>
       </div>
     </div>
 
-    <div class="menu" v-if="interface">
+    <div class="menu" v-if="showInterface">
       <router-link class="opener" :to="{name: 'index'}" target="_blank"><icon icon="puzzle-piece" /> Puzzles</router-link>
       <div class="opener" @click="toggle('preview', false)"><icon icon="preview" /> Preview</div>
       <div class="opener" @click="toggle('settings', true)"><icon icon="settings" /> Settings</div>
@@ -47,8 +47,8 @@
       <a class="opener" href="https://stand-with-ukraine.pp.ua/" target="_blank"><icon icon="ukraine-heart" /> Stand with Ukraine </a>
     </div>
 
-    <div class="menu-right" v-if="interface">
-      <scores :players="players" />
+    <div class="menu-right" v-if="showInterface">
+      <Scores :players="players" />
     </div>
 
     <div class="status-messages" v-if="statusMessages.length">
@@ -57,209 +57,200 @@
       </div>
     </div>
 
-    <canvas ref="canvas"></canvas>
+    <canvas ref="canvasEl"></canvas>
   </div>
 </template>
-<script lang="ts">
-import { defineComponent } from 'vue'
+<script setup lang="ts">
+import { defaultPlayerSettings, PlayerSettings } from '../settings'
+import { Game, Player, PuzzleStatus as PuzzleStatusType } from '../../common/Types'
+import { main, MODE_PLAY } from '../game'
+import { onMounted, onUnmounted, Ref, ref, watch } from 'vue'
+import { useRoute } from 'vue-router'
+import api from '../_api'
+import config from '../config'
 import mitt from 'mitt'
-
-import Scores from './../components/Scores.vue'
-import PuzzleStatusComponent from './../components/PuzzleStatus.vue'
-import SettingsOverlay from './../components/SettingsOverlay.vue'
-import PreviewOverlay from './../components/PreviewOverlay.vue'
-import InfoOverlay from './../components/InfoOverlay.vue'
 import ConnectionOverlay from './../components/ConnectionOverlay.vue'
 import HelpOverlay from './../components/HelpOverlay.vue'
+import InfoOverlay from './../components/InfoOverlay.vue'
+import Overlay from '../components/Overlay.vue'
+import PreviewOverlay from './../components/PreviewOverlay.vue'
+import PuzzleStatus from '../components/PuzzleStatus.vue'
+import Scores from './../components/Scores.vue'
+import SettingsOverlay from './../components/SettingsOverlay.vue'
 
-import { main, MODE_PLAY } from '../game'
-import { Game, Player, PuzzleStatus } from '../../common/Types'
-import { defaultPlayerSettings } from '../settings'
-import api from '../_api'
+const statusMessages = ref<string[]>([])
+const players = ref<{ active: Player[], idle: Player[] }>({ active: [], idle: [] })
+const status = ref<PuzzleStatusType>({
+  finished: false,
+  duration: 0,
+  piecesDone: 0,
+  piecesTotal: 0,
+})
+const overlay = ref<string>('')
+const connectionState = ref<number>(0)
+const cuttingPuzzle = ref<boolean>(true)
+const showInterface = ref<boolean>(true)
+const canvasEl = ref<HTMLCanvasElement>() as Ref<HTMLCanvasElement>
 
-export default defineComponent({
-  name: 'game',
-  components: {
-    PuzzleStatusComponent,
-    Scores,
-    SettingsOverlay,
-    PreviewOverlay,
-    InfoOverlay,
-    ConnectionOverlay,
-    HelpOverlay,
-  },
-  data() {
-    return {
-      statusMessages: [] as string[],
-      players: {
-        active: [] as Player[],
-        idle: [] as Player[],
-      },
+const eventBus = mitt()
 
-      status: {
-        finished: false,
-        duration: 0,
-        piecesDone: 0,
-        piecesTotal: 0,
-      } as PuzzleStatus,
+const g = ref<{
+  player: PlayerSettings
+  game: Game|null
+  previewImageUrl: string
+  connect: () => void
+  disconnect: () => void
+  unload: () => void
+}>({
+  player: defaultPlayerSettings(),
+  game: null,
+  previewImageUrl: '',
+  connect: () => {},
+  disconnect: () => {},
+  unload: () => {},
+})
 
-      overlay: '',
+const route = useRoute()
 
-      connectionState: 0,
-      cuttingPuzzle: true,
+const addStatusMessage = (what: string, value: any): void => {
+  if (typeof value === 'undefined') {
+    statusMessages.value.push(`${what}`)
+  } else if (value === true || value === false) {
+    statusMessages.value.push(`${what} ${value ? 'enabled' : 'disabled'}`)
+  } else {
+    statusMessages.value.push(`${what} changed to ${value}`)
+  }
+  setTimeout(() => {
+    statusMessages.value.shift()
+  }, 3000)
+}
 
-      interface: true,
+const onResize = (): void => {
+  canvasEl.value.width = window.innerWidth
+  canvasEl.value.height = window.innerHeight
+  eventBus.emit('requireRerender')
+}
 
-      eventBus: mitt(),
-      g: {
-        player: defaultPlayerSettings(),
-        game: null as Game|null,
-        previewImageUrl: '',
-        connect: () => {},
-        disconnect: () => {},
-        unload: () => {},
-      },
+const reconnect = (): void => {
+  g.value.connect()
+}
+
+const toggleTo = (newOverlay: string, onOff: boolean, affectsHotkeys: boolean): void => {
+  if (onOff === false) {
+    // off
+    overlay.value = ''
+    if (affectsHotkeys) {
+      eventBus.emit('setHotkeys', true)
     }
-  },
-  async mounted() {
-    if (!this.$route.params.id) {
-      return
+  } else {
+    // on
+    overlay.value = newOverlay
+    if (affectsHotkeys) {
+      eventBus.emit('setHotkeys', false)
     }
+  }
+}
 
-    this.eventBus.on('puzzleCut', () => {
-      this.cuttingPuzzle = false
-    })
-    this.eventBus.on('players', (players: any) => {
-      this.players = players
-    })
-    this.eventBus.on('status', (status: any) => {
-      this.status = status
-    })
-    this.eventBus.on('connectionState', (v: any) => {
-      this.connectionState = v
-    })
-    this.eventBus.on('togglePreview', (v: any) => {
-      this.toggleTo('preview', v, false)
-    })
-    this.eventBus.on('toggleInterface', (v: any) => {
-      this.interface = !!v
-    })
-    this.eventBus.on('toggleSoundsEnabled', (v: any) => {
-      this.g.player.soundsEnabled = !!v
-    })
-    this.eventBus.on('togglePlayerNames', (v: any) => {
-      this.g.player.showPlayerNames = !!v
-    })
-    this.eventBus.on('toggleShowTable', (v: any) => {
-      this.g.player.showTable = !!v
-    })
+const toggle = (newOverlay: string, affectsHotkeys: boolean): void => {
+  if (overlay.value === '') {
+    overlay.value = newOverlay
+    if (affectsHotkeys) {
+      eventBus.emit('setHotkeys', false)
+    }
+  } else {
+    // could check if overlay was the provided one
+    overlay.value = ''
+    if (affectsHotkeys) {
+      eventBus.emit('setHotkeys', true)
+    }
+  }
+  if (newOverlay === 'preview') {
+    eventBus.emit('onPreviewChange', overlay.value === 'preview')
+  }
+}
 
-    this.$watch(() => this.g.player.background, (value: string) => {
-      this.eventBus.emit('onBgChange', value)
-    })
-    this.$watch(() => this.g.player.showTable, (value: boolean) => {
-      this.eventBus.emit('onShowTableChange', value)
-    })
-    this.$watch(() => this.g.player.tableTexture, (value: string) => {
-      this.eventBus.emit('onTableTextureChange', value)
-    })
-    this.$watch(() => this.g.player.color, (value: string) => {
-      this.eventBus.emit('onColorChange', value)
-    })
-    this.$watch(() => this.g.player.name, (value: string) => {
-      this.eventBus.emit('onNameChange', value)
-    })
-    this.$watch(() => this.g.player.soundsEnabled, (value: boolean) => {
-      this.eventBus.emit('onSoundsEnabledChange', value)
-    })
-    this.$watch(() => this.g.player.otherPlayerClickSoundEnabled, (value: boolean) => {
-      this.eventBus.emit('onOtherPlayerClickSoundEnabledChange', value)
-    })
-    this.$watch(() => this.g.player.soundsVolume, (value: number) => {
-      this.eventBus.emit('onSoundsVolumeChange', value)
-    })
-    this.$watch(() => this.g.player.showPlayerNames, (value: boolean) => {
-      this.eventBus.emit('onShowPlayerNamesChange', value)
-    })
+onMounted(async () => {
+  if (!route.params.id) {
+    return
+  }
 
-    const canvasEl = this.$refs.canvas as HTMLCanvasElement
-    canvasEl.width = window.innerWidth
-    canvasEl.height = window.innerHeight
-    window.addEventListener('resize', this.onResize)
+  eventBus.on('puzzleCut', () => {
+    cuttingPuzzle.value = false
+  })
+  eventBus.on('players', (players: any) => {
+    players.value = players
+  })
+  eventBus.on('status', (status: any) => {
+    status.value = status
+  })
+  eventBus.on('connectionState', (v: any) => {
+    connectionState.value = v
+  })
+  eventBus.on('togglePreview', (v: any) => {
+    toggleTo('preview', v, false)
+  })
+  eventBus.on('toggleInterface', (v: any) => {
+    showInterface.value = !!v
+  })
+  eventBus.on('toggleSoundsEnabled', (v: any) => {
+    g.value.player.soundsEnabled = !!v
+  })
+  eventBus.on('togglePlayerNames', (v: any) => {
+    g.value.player.showPlayerNames = !!v
+  })
+  eventBus.on('toggleShowTable', (v: any) => {
+    g.value.player.showTable = !!v
+  })
 
-    this.g = await main(
-      `${this.$route.params.id}`,
-      api.clientId(),
-      // @ts-ignore
-      this.$config.WS_ADDRESS,
-      MODE_PLAY,
-      canvasEl,
-      this.eventBus,
-    )
+  watch(() => g.value.player.background, (value: string) => {
+    eventBus.emit('onBgChange', value)
+  })
+  watch(() => g.value.player.showTable, (value: boolean) => {
+    eventBus.emit('onShowTableChange', value)
+  })
+  watch(() => g.value.player.tableTexture, (value: string) => {
+    eventBus.emit('onTableTextureChange', value)
+  })
+  watch(() => g.value.player.color, (value: string) => {
+    eventBus.emit('onColorChange', value)
+  })
+  watch(() => g.value.player.name, (value: string) => {
+    eventBus.emit('onNameChange', value)
+  })
+  watch(() => g.value.player.soundsEnabled, (value: boolean) => {
+    eventBus.emit('onSoundsEnabledChange', value)
+  })
+  watch(() => g.value.player.otherPlayerClickSoundEnabled, (value: boolean) => {
+    eventBus.emit('onOtherPlayerClickSoundEnabledChange', value)
+  })
+  watch(() => g.value.player.soundsVolume, (value: number) => {
+    eventBus.emit('onSoundsVolumeChange', value)
+  })
+  watch(() => g.value.player.showPlayerNames, (value: boolean) => {
+    eventBus.emit('onShowPlayerNamesChange', value)
+  })
 
-    this.eventBus.on('statusMessage', (data: any) => {
-      this.addStatusMessage(data.what, data.value)
-    })
-  },
-  unmounted () {
-    this.g.unload()
-    this.g.disconnect()
-    window.removeEventListener('resize', this.onResize)
-  },
-  methods: {
-    addStatusMessage(what: string, value: any): void {
-      if (typeof value === 'undefined') {
-        this.statusMessages.push(`${what}`)
-      } else if (value === true || value === false) {
-        this.statusMessages.push(`${what} ${value ? 'enabled' : 'disabled'}`)
-      } else {
-        this.statusMessages.push(`${what} changed to ${value}`)
-      }
-      setTimeout(() => {
-        this.statusMessages.shift()
-      }, 3000)
-    },
-    onResize(): void {
-      const canvasEl = this.$refs.canvas as HTMLCanvasElement
-      canvasEl.width = window.innerWidth
-      canvasEl.height = window.innerHeight
-      this.eventBus.emit('requireRerender')
-    },
-    reconnect(): void {
-      this.g.connect()
-    },
-    toggleTo(overlay: string, onOff: boolean, affectsHotkeys: boolean): void {
-      if (onOff === false) {
-        // off
-        this.overlay = ''
-        if (affectsHotkeys) {
-          this.eventBus.emit('setHotkeys', true)
-        }
-      } else {
-        // on
-        this.overlay = overlay
-        if (affectsHotkeys) {
-          this.eventBus.emit('setHotkeys', false)
-        }
-      }
-    },
-    toggle(overlay: string, affectsHotkeys: boolean): void {
-      if (this.overlay === '') {
-        this.overlay = overlay
-        if (affectsHotkeys) {
-          this.eventBus.emit('setHotkeys', false)
-        }
-      } else {
-        // could check if overlay was the provided one
-        this.overlay = ''
-        if (affectsHotkeys) {
-          this.eventBus.emit('setHotkeys', true)
-        }
-      }
-      if (overlay === 'preview') {
-        this.eventBus.emit('onPreviewChange', this.overlay === 'preview')
-      }
-    },
-  },
+  canvasEl.value.width = window.innerWidth
+  canvasEl.value.height = window.innerHeight
+  window.addEventListener('resize', onResize)
+
+  g.value = await main(
+    `${route.params.id}`,
+    api.clientId(),
+    config.get().WS_ADDRESS,
+    MODE_PLAY,
+    canvasEl.value,
+    eventBus,
+  )
+
+  eventBus.on('statusMessage', (data: any) => {
+    addStatusMessage(data.what, data.value)
+  })
+})
+
+onUnmounted(() => {
+  g.value.unload()
+  g.value.disconnect()
+  window.removeEventListener('resize', onResize)
 })
 </script>

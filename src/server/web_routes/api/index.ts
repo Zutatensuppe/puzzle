@@ -1,4 +1,4 @@
-import { GameSettings, Game as GameType } from '../../../common/Types'
+import { GameSettings, Game as GameType, GameInfo } from '../../../common/Types'
 import config from '../../Config'
 import Db from '../../Db'
 import express, { Router } from 'express'
@@ -134,7 +134,7 @@ export default function createRouter(
   router.get('/index-data', async (req, res): Promise<void> => {
     const ts = Time.timestamp()
     const rows = await GameStorage.getAllPublicGames(db)
-    const games = [
+    const games: GameInfo[] = [
       ...rows.sort((a: GameType, b: GameType) => {
         const finished = GameCommon.Game_isFinished(a)
         // when both have same finished state, sort by started

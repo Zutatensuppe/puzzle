@@ -1,31 +1,32 @@
 <template>
-  <div class="overlay">
-    <div class="overlay-background" @click="$emit('bgclick')"></div>
+  <div class="overlay" ref="el">
+    <div class="overlay-background" @click="emit('bgclick')"></div>
     <div class="overlay-content">
       <slot />
     </div>
   </div>
 </template>
-<script lang="ts">
-import { defineComponent } from 'vue'
+<script setup lang="ts">
+import { onMounted, onUnmounted, Ref, ref } from 'vue'
 
-export default defineComponent({
-  emits: {
-    bgclick: null,
-    close: null,
-  },
-  methods: {
-    onKeyUp(ev: KeyboardEvent) {
-      if (ev.code === 'Escape' && window.getComputedStyle(this.$el).display !== 'none') {
-        this.$emit('close')
-      }
-    },
-  },
-  mounted () {
-    window.addEventListener('keyup', this.onKeyUp)
-  },
-  unmounted () {
-    window.removeEventListener('keyup', this.onKeyUp)
-  },
+const emit = defineEmits<{
+  (e: 'bgclick'): void
+  (e: 'close'): void
+}>()
+
+const el = ref<HTMLDivElement>() as Ref<HTMLDivElement>
+
+const onKeyUp = (ev: KeyboardEvent) => {
+  if (ev.code === 'Escape' && window.getComputedStyle(el.value).display !== 'none') {
+    emit('close')
+  }
+}
+
+onMounted(() => {
+  window.addEventListener('keyup', onKeyUp)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('keyup', onKeyUp)
 })
 </script>

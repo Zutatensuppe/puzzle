@@ -1,5 +1,5 @@
 <template>
-  <overlay class="new-game-dialog">
+  <overlay class="new-game-dialog" @close="emit('close')">
     <template v-slot:default>
       <div class="area-image">
         <div class="has-image">
@@ -72,76 +72,64 @@
         <button class="btn" :disabled="!canStartNewGame" @click="onNewGameClick">
           <icon icon="puzzle-piece" /> Generate Puzzle
         </button>
-        <button class="btn" @click="$emit('close')">Cancel</button>
+        <button class="btn" @click="emit('close')">Cancel</button>
       </div>
     </template>
   </overlay>
 </template>
-<script lang="ts">
-import { defineComponent } from 'vue'
+<script setup lang="ts">
+import { computed, ref } from 'vue'
 
-import { GameSettings, ScoreMode, ShapeMode, SnapMode } from './../../common/Types'
+import { GameSettings, ImageInfo, ScoreMode, ShapeMode, SnapMode } from './../../common/Types'
 
-export default defineComponent({
-  props: {
-    image: {
-      type: Object,
-      required: true,
-    },
-    forcePrivate: {
-      type: Boolean,
-      default: false,
-    },
-  },
-  emits: ['newGame', 'close'],
-  data() {
-    return {
-      tiles: 1000,
-      isPrivate: false,
-      scoreMode: ScoreMode.ANY,
-      shapeMode: ShapeMode.NORMAL,
-      snapMode: SnapMode.NORMAL,
-    }
-  },
-  mounted() {
-    this.isPrivate = this.forcePrivate
-  },
-  methods: {
-    onNewGameClick () {
-      this.$emit('newGame', {
-        tiles: this.tilesInt,
-        private: this.isPrivate,
-        image: this.image,
-        scoreMode: this.scoreModeInt,
-        shapeMode: this.shapeModeInt,
-        snapMode: this.snapModeInt,
-      } as GameSettings)
-    },
-  },
-  computed: {
-    canStartNewGame () {
-      if (
-        !this.tilesInt
-        || !this.image
-        || !this.image.url
-        || ![0, 1].includes(this.scoreModeInt)
-      ) {
-        return false
-      }
-      return true
-    },
-    scoreModeInt (): number {
-      return parseInt(`${this.scoreMode}`, 10)
-    },
-    shapeModeInt (): number {
-      return parseInt(`${this.shapeMode}`, 10)
-    },
-    snapModeInt (): number {
-      return parseInt(`${this.snapMode}`, 10)
-    },
-    tilesInt (): number {
-      return parseInt(`${this.tiles}`, 10)
-    },
-  },
+const props = defineProps<{
+  image: ImageInfo
+  forcePrivate: boolean
+}>()
+
+const emit = defineEmits<{
+  (e: 'newGame', val: GameSettings): void
+  (e: 'close'): void
+}>()
+
+const tiles = ref<string | number>(1000)
+const isPrivate = ref<boolean>(props.forcePrivate)
+const scoreMode = ref<ScoreMode>(ScoreMode.ANY)
+const shapeMode = ref<ShapeMode>(ShapeMode.NORMAL)
+const snapMode = ref<SnapMode>(SnapMode.NORMAL)
+
+const canStartNewGame = computed((): boolean => {
+  if (
+    !tilesInt.value
+    || !props.image
+    || !props.image.url
+    || ![0, 1].includes(scoreModeInt.value)
+  ) {
+    return false
+  }
+  return true
 })
+const scoreModeInt = computed((): number => {
+  return parseInt(`${scoreMode.value}`, 10)
+})
+const shapeModeInt = computed((): number => {
+  return parseInt(`${shapeMode.value}`, 10)
+})
+const snapModeInt = computed((): number => {
+  return parseInt(`${snapMode.value}`, 10)
+})
+const tilesInt = computed((): number => {
+  return parseInt(`${tiles.value}`, 10)
+})
+
+const onNewGameClick = () => {
+  emit('newGame', {
+    tiles: tilesInt.value,
+    private: isPrivate.value,
+    image: props.image,
+    scoreMode: scoreModeInt.value,
+    shapeMode: shapeModeInt.value,
+    snapMode: snapModeInt.value,
+  })
+}
 </script>

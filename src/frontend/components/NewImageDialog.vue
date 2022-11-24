@@ -1,10 +1,5 @@
-"Upload image" clicked: what it looks like when the image was uploaded.
-Probably needs a (x) in the upper right corner of the image to allow the
-user to remove the image if a wrong one was selected. The image should
-be uploaded to the actual gallery only when the user presses "post to
-gallery", if possible!
 <template>
-  <overlay class="new-image-dialog">
+  <overlay class="new-image-dialog" @close="emit('close')">
     <template v-slot:default>
       <div
         class="area-image"
@@ -12,7 +7,6 @@ gallery", if possible!
         @drop="onDrop"
         @dragover="onDragover"
         @dragleave="onDragleave">
-        <!-- TODO: ...  -->
         <div class="drop-target"></div>
         <div v-if="previewUrl" class="has-image">
           <span class="remove btn" @click="previewUrl=''">X</span>
@@ -86,18 +80,19 @@ gallery", if possible!
           <template v-else-if="isPrivate"><icon icon="puzzle-piece" /> Set up game</template>
           <template v-else><icon icon="puzzle-piece" /> Post to gallery <br /> + set up game</template>
         </button>
-        <button class="btn" @click="$emit('close')">Cancel</button>
+        <button class="btn" @click="emit('close')">Cancel</button>
       </div>
     </template>
   </overlay>
 </template>
-<script lang="ts">
-import { defineComponent } from 'vue'
+<script setup lang="ts">
+import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { FrontendGameSettings as FrontendNewImageEventData } from '../../common/Types';
 import { logger } from '../../common/Util'
 
 const log = logger('NewImageDialog.vue')
 
-const imageUrlToBlob = async (imageUrl: string): Promise<Blob> => {
+const imageUrlToBlob = async (imageUrl: string): Promise<Blob | null> => {
   const imageElement = await imageUrlToImageElement(imageUrl)
   const canvasElement = await imageElementToCanvas(imageElement)
   return dataURLtoBlob(canvasElement.toDataURL())
@@ -105,7 +100,7 @@ const imageUrlToBlob = async (imageUrl: string): Promise<Blob> => {
 
 const imageElementToCanvas = async (imageElement: HTMLImageElement): Promise<HTMLCanvasElement> => {
   const canvas = document.createElement('canvas')
-  const ctx = canvas.getContext('2d')
+  const ctx = canvas.getContext('2d') as CanvasRenderingContext2D
   canvas.width = imageElement.width
   canvas.height = imageElement.height
   ctx.drawImage(imageElement, 0, 0)
@@ -126,186 +121,216 @@ const imageUrlToImageElement = async (src: string): Promise<HTMLImageElement> =>
   })
 }
 
-function dataURLtoBlob(dataurl: string): Blob {
-  var arr = dataurl.split(','), mime = arr[0].match(/:(.*?);/)[1],
-      bstr = atob(arr[1]), n = bstr.length, u8arr = new Uint8Array(n);
-  while(n--){
-      u8arr[n] = bstr.charCodeAt(n);
+function dataURLtoBlob(dataurl: string): Blob | null {
+  const arr = dataurl.split(',')
+  const m = arr[0].match(/:(.*?);/)
+  if (!m) {
+    return null
   }
-  return new Blob([u8arr], {type:mime});
+  const mime = m[1]
+  const bstr = atob(arr[1])
+  let n = bstr.length
+  const u8arr = new Uint8Array(n)
+  while (n--) {
+    u8arr[n] = bstr.charCodeAt(n)
+  }
+  return new Blob([u8arr], {type:mime})
 }
 
-export default defineComponent({
-  props: {
-    autocompleteTags: {
-      type: Function,
-    },
-    uploadProgress: {
-      type: Number,
-    },
-    uploading: {
-      type: String,
-    },
-  },
-  emits: ['setupGameClick', 'postToGalleryClick', 'close'],
-  data () {
-    return {
-      previewUrl: '',
-      file: null as File|null,
-      title: '',
-      tags: [] as string[],
-      isPrivate: false,
-      droppable: false,
-      inputFocused: false,
+const props = defineProps<{
+  autocompleteTags: (input: string, exclude: string[]) => string[]
+  uploadProgress: number
+  uploading: "" | "postToGallery" | "setupGame"
+}>()
+
+const emit = defineEmits<{
+  (e: 'setupGameClick', val: FrontendNewImageEventData): void
+  (e: 'postToGalleryClick', val: FrontendNewImageEventData): void
+  (e: 'close'): void
+}>()
+
+const previewUrl = ref<string>('')
+const file = ref<File|null>(null)
+const title = ref<string>('')
+const tags = ref<string[]>([])
+const isPrivate = ref<boolean>(false)
+const droppable = ref<boolean>(false)
+const inputFocused = ref<boolean>(false)
+
+const uploadProgressPercent = computed((): number => {
+  return props.uploadProgress ? Math.round(props.uploadProgress * 100) : 0
+})
+
+const canPostToGallery = computed((): boolean => {
+  if (props.uploading) {
+    return false
+  }
+  return !!(previewUrl.value && file.value)
+})
+
+const canSetupGameClick = computed((): boolean => {
+  if (props.uploading) {
+    return false
+  }
+  return !!(previewUrl.value && file.value)
+})
+
+const reset = (): void => {
+  previewUrl.value = ''
+  file.value = null
+  title.value = ''
+  tags.value = []
+  isPrivate.value = false
+  droppable.value = false
+}
+
+const imageFromDragEvt = (evt: DragEvent): DataTransferItem|null => {
+  const items = evt.dataTransfer?.items
+  if (!items || items.length === 0) {
+    return null
+  }
+  const item = items[0]
+  if (!item.type.startsWith('image/')) {
+    return null
+  }
+  return item
+}
+
+const onPaste = async (evt: ClipboardEvent): Promise<void> => {
+  if (!evt.clipboardData) {
+    return
+  }
+  // check if a url was pasted
+  const imageUrl = evt.clipboardData.getData('text')
+  if (imageUrl) {
+    if (inputFocused.value) {
+      return;
     }
-  },
-  computed: {
-    uploadProgressPercent (): number {
-      return this.uploadProgress ? Math.round(this.uploadProgress * 100) : 0
-    },
-    canPostToGallery (): boolean {
-      if (this.uploading) {
-        return false
-      }
-      return !!(this.previewUrl && this.file)
-    },
-    canSetupGameClick (): boolean {
-      if (this.uploading) {
-        return false
-      }
-      return !!(this.previewUrl && this.file)
-    },
-  },
-  mounted () {
-    window.addEventListener('paste', this.onPaste)
-  },
-  unmounted () {
-    window.removeEventListener('paste', this.onPaste)
-  },
-  methods: {
-    reset(): void {
-      this.previewUrl = ''
-      this.file = null
-      this.title = ''
-      this.tags = []
-      this.isPrivate = false
-      this.droppable = false
-    },
-    imageFromDragEvt (evt: DragEvent): DataTransferItem|null {
-      const items = evt.dataTransfer?.items
-      if (!items || items.length === 0) {
-        return null
-      }
-      const item = items[0]
-      if (!item.type.startsWith('image/')) {
-        return null
-      }
-      return item
-    },
-    async onPaste (evt: ClipboardEvent) {
-      if (!evt.clipboardData) {
-        return
-      }
-      // check if a url was pasted
-      const imageUrl = evt.clipboardData.getData('text')
-      if (imageUrl) {
-        if (this.inputFocused) {
-          return;
-        }
-        if (imageUrl.match(/^https?:\/\//)) {
-          // need to proxy because of X-Origin
-          const proxiedUrl = '/api/proxy?' + new URLSearchParams({url: imageUrl})
-          try {
-            const imgBlob = await imageUrlToBlob(proxiedUrl)
-            this.preview(imgBlob)
-          } catch (e) {
-            // url could not be transformed into a blob.
-            console.error('unable to transform image http url into blob', e)
-          }
-        } else if (imageUrl.match(/^data:image\/([a-z]+);base64,/)) {
-          try {
-            const imgBlob = dataURLtoBlob(imageUrl)
-            this.preview(imgBlob)
-          } catch (e) {
-            // url could not be transformed into a blob.
-            console.error('unable to transform image data url into blob', e)
-          }
+    if (imageUrl.match(/^https?:\/\//)) {
+      // need to proxy because of X-Origin
+      const proxiedUrl = '/api/proxy?' + new URLSearchParams({url: imageUrl})
+      try {
+        const imgBlob = await imageUrlToBlob(proxiedUrl)
+        if (imgBlob) {
+          preview(imgBlob)
         } else {
-          // something else was pasted, ignore for now
-          console.log(imageUrl)
+          // url could not be transformed into a blob.
+          console.error('unable to transform image data url into blob')
         }
+      } catch (e) {
+        // url could not be transformed into a blob.
+        console.error('unable to transform image http url into blob', e)
       }
+    } else if (imageUrl.match(/^data:image\/([a-z]+);base64,/)) {
+      try {
+        const imgBlob = dataURLtoBlob(imageUrl)
+        if (imgBlob) {
+          preview(imgBlob)
+        } else {
+          // url could not be transformed into a blob.
+          console.error('unable to transform image data url into blob')
+        }
+      } catch (e) {
+        // url could not be transformed into a blob.
+        console.error('unable to transform image data url into blob', e)
+      }
+    } else {
+      // something else was pasted, ignore for now
+      console.log(imageUrl)
+    }
+  }
 
-      // check if an image was pasted
-      const file = evt.clipboardData.files[0]
-      if (!file) return;
-      this.preview(file)
-    },
-    onFileSelect (evt: Event) {
-      const target = (evt.target as HTMLInputElement)
-      if (!target.files) return;
-      const file = target.files[0]
-      if (!file) return;
+  // check if an image was pasted
+  const file = evt.clipboardData.files[0]
+  if (!file) return;
+  preview(file)
+}
 
-      this.preview(file)
-    },
-    preview (file: File | Blob) {
-      if (!file.type.startsWith('image/')) {
-        console.error('file type is not supported', file.type)
-        return
-      }
-      const r = new FileReader()
-      r.readAsDataURL(file)
-      r.onload = (ev: any) => {
-        this.previewUrl = ev.target.result
-        this.file = file
-      }
-    },
-    postToGallery () {
-      this.$emit('postToGalleryClick', {
-        file: this.file,
-        title: this.title,
-        tags: this.tags,
-        isPrivate: this.isPrivate,
-      })
-      this.reset()
-    },
-    setupGameClick () {
-      this.$emit('setupGameClick', {
-        file: this.file,
-        title: this.title,
-        tags: this.tags,
-        isPrivate: this.isPrivate,
-      })
-      this.reset()
-    },
-    onDrop (evt: DragEvent): boolean {
-      this.droppable = false
-      const img = this.imageFromDragEvt(evt)
-      if (!img) {
-        return false
-      }
-      const f = img.getAsFile()
-      if (!f) {
-        return false
-      }
-      this.file = f
-      this.preview(f)
-      evt.preventDefault()
-      return false
-    },
-    onDragover (evt: DragEvent): boolean {
-      const img = this.imageFromDragEvt(evt)
-      if (!img) {
-        return false
-      }
-      this.droppable = true
-      evt.preventDefault()
-      return false
-    },
-    onDragleave () {
-      this.droppable = false
-    },
-  },
+const onFileSelect = (evt: Event) => {
+  const target = (evt.target as HTMLInputElement)
+  if (!target.files) return;
+  const file = target.files[0]
+  if (!file) return;
+
+  preview(file)
+}
+
+const preview = (newFile: File | Blob) => {
+  if (!newFile.type.startsWith('image/')) {
+    console.error('file type is not supported', newFile.type)
+    return
+  }
+  const r = new FileReader()
+  r.readAsDataURL(newFile)
+  r.onload = (ev: any) => {
+    previewUrl.value = ev.target.result
+    file.value = newFile as File
+  }
+}
+
+const postToGallery = () => {
+  if (!file.value) {
+    return
+  }
+
+  emit('postToGalleryClick', {
+    file: file.value,
+    title: title.value,
+    tags: tags.value,
+    isPrivate: isPrivate.value,
+  })
+  reset()
+}
+
+const setupGameClick = () => {
+  if (!file.value) {
+    return
+  }
+
+  emit('setupGameClick', {
+    file: file.value,
+    title: title.value,
+    tags: tags.value,
+    isPrivate: isPrivate.value,
+  })
+  reset()
+}
+
+const onDrop = (evt: DragEvent): boolean => {
+  droppable.value = false
+  const img = imageFromDragEvt(evt)
+  if (!img) {
+    return false
+  }
+  const f = img.getAsFile()
+  if (!f) {
+    return false
+  }
+  file.value = f
+  preview(f)
+  evt.preventDefault()
+  return false
+}
+
+const onDragover = (evt: DragEvent): boolean => {
+  const img = imageFromDragEvt(evt)
+  if (!img) {
+    return false
+  }
+  droppable.value = true
+  evt.preventDefault()
+  return false
+}
+
+const onDragleave = () => {
+  droppable.value = false
+}
+
+onMounted(() =>{
+  window.addEventListener('paste', onPaste as (evt: Event) => Promise<void>)
+})
+
+onUnmounted(() =>{
+  window.removeEventListener('paste', onPaste as (evt: Event) => Promise<void>)
 })
 </script>

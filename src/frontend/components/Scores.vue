@@ -15,40 +15,37 @@
     </table>
   </div>
 </template>
-<script lang="ts">
-import { defineComponent } from 'vue'
+<script setup lang="ts">
+import { computed, StyleValue } from 'vue'
+import { Player } from '../../common/Types';
 
-export default defineComponent({
-  props: {
-    players: {
-      type: Object,
-      required: true,
-    },
+const props = defineProps<{
+  players: {
+    active: Player[],
+    idle: Player[],
   },
-  methods: {
-    playerStyle(p: any) {
-      if (p.color === 'ukraine') {
-        return {
-          'backgroundImage': 'linear-gradient(180deg, rgba(0,87,183,1) 0%, rgba(0,87,183,1) 50%, rgba(255,221,0,1) 50%)',
-          '-webkit-background-clip': 'text',
-          '-webkit-text-fill-color': 'transparent',
-        }
-      } else {
-        return {color: p.color}
-      }
-    },
-  },
-  computed: {
-    actives (): Array<any> {
-      // TODO: dont sort in place
-      this.players.active.sort((a: any, b: any) => b.points - a.points)
-      return this.players.active
-    },
-    idles (): Array<any> {
-      // TODO: dont sort in place
-      this.players.idle.sort((a: any, b: any) => b.points - a.points)
-      return this.players.idle
-    },
-  },
+}>()
+
+const actives = computed((): Array<any> => {
+  // TODO: dont sort in place
+  props.players.active.sort((a: any, b: any) => b.points - a.points)
+  return props.players.active
 })
+
+const idles = computed((): Array<any> => {
+  // TODO: dont sort in place
+  props.players.idle.sort((a: any, b: any) => b.points - a.points)
+  return props.players.idle
+})
+
+const playerStyle = (p: Player) => {
+  if (p.color === 'ukraine') {
+    return {
+      'backgroundImage': 'linear-gradient(180deg, rgba(0,87,183,1) 0%, rgba(0,87,183,1) 50%, rgba(255,221,0,1) 50%)',
+      '-webkit-background-clip': 'text',
+      '-webkit-text-fill-color': 'transparent',
+    } as StyleValue
+  }
+  return { color: p.color } as StyleValue
+}
 </script>

@@ -1,5 +1,5 @@
 <template>
-  <overlay class="transparent">
+  <overlay class="transparent" @close="emit('close')">
     <template v-slot:default>
       <table class="help">
         <tr>
@@ -7,7 +7,7 @@
         </tr>
         <tr>
           <td>Image Title: </td>
-          <td>{{game.puzzle.info.image.title}}</td>
+          <td>{{game.puzzle.info.image?.title}}</td>
         </tr>
         <tr>
           <td>Scoring: </td>
@@ -25,42 +25,42 @@
     </template>
   </overlay>
 </template>
-<script lang="ts">
-import { defineComponent, PropType } from 'vue'
+<script setup lang="ts">
+import { computed } from 'vue'
 import { Game, ScoreMode, ShapeMode, SnapMode } from '../../common/Types'
 
-export default defineComponent({
-  props: {
-    game: {
-      type: Object as PropType<Game>,
-      required: true,
-    },
-  },
-  computed: {
-    scoreMode () {
-      switch (this.game.scoreMode) {
-        case ScoreMode.ANY: return ['Any', 'Score when pieces are connected to each other or on final location']
-        case ScoreMode.FINAL:
-        default: return ['Final', 'Score when pieces are put to their final location']
-      }
-    },
-    shapeMode () {
-      switch (this.game.shapeMode) {
-        case ShapeMode.FLAT: return ['Flat', 'All pieces flat on all sides']
-        case ShapeMode.ANY: return ['Any', 'Flat pieces can occur anywhere']
-        case ShapeMode.NORMAL:
-        default:
-          return ['Normal', '']
-      }
-    },
-    snapMode () {
-      switch (this.game.snapMode) {
-        case SnapMode.REAL: return ['Real', 'Pieces snap only to corners, already snapped pieces and to each other']
-        case SnapMode.NORMAL:
-        default:
-          return ['Normal', 'Pieces snap to final destination and to each other']
-      }
-    },
-  },
+const props = defineProps<{
+  game: Game
+}>()
+
+const emit = defineEmits<{
+  (e: 'close'): void
+}>()
+
+const scoreMode = computed(() => {
+  switch (props.game.scoreMode) {
+    case ScoreMode.ANY: return ['Any', 'Score when pieces are connected to each other or on final location']
+    case ScoreMode.FINAL:
+    default: return ['Final', 'Score when pieces are put to their final location']
+  }
+})
+
+const shapeMode = computed(() => {
+  switch (props.game.shapeMode) {
+    case ShapeMode.FLAT: return ['Flat', 'All pieces flat on all sides']
+    case ShapeMode.ANY: return ['Any', 'Flat pieces can occur anywhere']
+    case ShapeMode.NORMAL:
+    default:
+      return ['Normal', '']
+  }
+})
+
+const snapMode = computed(() => {
+  switch (props.game.snapMode) {
+    case SnapMode.REAL: return ['Real', 'Pieces snap only to corners, already snapped pieces and to each other']
+    case SnapMode.NORMAL:
+    default:
+      return ['Normal', 'Pieces snap to final destination and to each other']
+  }
 })
 </script>

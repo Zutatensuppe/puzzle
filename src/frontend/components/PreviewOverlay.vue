@@ -1,5 +1,5 @@
 <template>
-  <overlay class="preview-overlay">
+  <overlay class="preview-overlay" @close="emit('close')">
     <template v-slot:default>
       <div class="preview">
         <div class="img" :style="previewStyle"></div>
@@ -7,19 +7,20 @@
     </template>
   </overlay>
 </template>
-<script lang="ts">
-import { defineComponent } from 'vue'
+<script setup lang="ts">
+import { computed } from 'vue'
 
-export default defineComponent({
-  props: {
-    img: String,
-  },
-  computed: {
-    previewStyle (): object {
-      return {
-        backgroundImage: `url('${this.img}')`,
-      }
-    },
-  },
+const props = defineProps<{
+  img: string
+}>()
+
+const emit = defineEmits<{
+  (e: 'close'): void
+}>()
+
+const previewStyle = computed(() => {
+  return {
+    backgroundImage: `url('${props.img}')`,
+  }
 })
 </script>

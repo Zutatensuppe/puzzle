@@ -97,6 +97,13 @@ export interface Image {
   created: number
 }
 
+export interface FrontendGameSettings {
+  file: File
+  title: string
+  tags: string[]
+  isPrivate: boolean
+}
+
 export interface GameSettings {
   tiles: number
   private: boolean
@@ -259,4 +266,15 @@ export const DefaultSnapMode = (v: any): SnapMode => {
     return v
   }
   return SnapMode.NORMAL
+}
+
+export interface GameInfo {
+  id: string;
+  hasReplay: boolean;
+  started: number;
+  finished: number;
+  piecesFinished: number;
+  piecesTotal: number;
+  players: number;
+  imageUrl: string;
 }
