@@ -25,7 +25,7 @@ import {
   Timestamp,
   ServerEvent,
 } from '../common/Types'
-import EventAdapter from './EventAdapter'
+import { EventAdapter } from './EventAdapter'
 import Assets from './Assets'
 import { ViewportSnapshots } from './ViewportSnapshots'
 declare global {
@@ -208,7 +208,7 @@ export async function main(
   eventBus.emit('puzzleCut')
 
   const viewport = new Camera()
-  const evts = EventAdapter(canvas, window, viewport, MODE)
+  const evts = new EventAdapter(canvas, window, viewport, MODE)
   const viewportSnapshots = new ViewportSnapshots(evts, viewport)
   // initialize some view data
   // this global data will change according to input events
