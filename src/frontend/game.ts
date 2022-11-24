@@ -2,7 +2,7 @@
 
 import { Emitter, EventType } from 'mitt'
 import { GameLoopInstance, run } from './gameloop'
-import { Camera, Snapshot } from './Camera'
+import { Camera } from './Camera'
 import Graphics from './Graphics'
 import Debug from './Debug'
 import Communication from './Communication'
@@ -27,6 +27,7 @@ import {
 } from '../common/Types'
 import EventAdapter from './EventAdapter'
 import Assets from './Assets'
+import { ViewportSnapshots } from './ViewportSnapshots'
 declare global {
   interface Window {
       DEBUG?: boolean
@@ -206,11 +207,11 @@ export async function main(
   canvas.classList.add('loaded')
   eventBus.emit('puzzleCut')
 
-  let viewportToggleSlot: string = '';
-  const viewportSnapshots: Record<string, Snapshot> = {}
+  const viewport = new Camera()
+  const evts = EventAdapter(canvas, window, viewport, MODE)
+  const viewportSnapshots = new ViewportSnapshots(evts, viewport)
   // initialize some view data
   // this global data will change according to input events
-  const viewport = new Camera()
 
   // theoretically we need to recalculate this when window resizes
   // but it probably doesnt matter so much
@@ -243,32 +244,10 @@ export async function main(
       viewport.setZoom(zoom, center)
     }
   }
-  const evts = EventAdapter(canvas, window, viewport, MODE)
   evts.registerEvents()
 
-  const handleViewportSnapshot = (slot: string): string | null => {
-    if (viewportSnapshots['last'] && viewportToggleSlot === slot) {
-      const prev = viewport.snapshot()
-      const curr = viewportSnapshots['last']
-      viewport.fromSnapshot(curr)
-      evts.createSnapshotEvents(prev, curr)
-      delete viewportSnapshots['last']
-      return 'last'
-    } else if (viewportSnapshots[slot]) {
-      const curr = viewportSnapshots[slot]
-      const prev = viewport.snapshot()
-      viewportSnapshots['last'] = prev
-      viewportToggleSlot = slot
-      viewport.fromSnapshot(curr)
-      evts.createSnapshotEvents(prev, curr)
-      return slot
-    } else {
-      return null
-    }
-  }
-
   centerPuzzle()
-  viewportSnapshots['center'] = viewport.snapshot()
+  viewportSnapshots.snap('center')
 
   const previewImageUrl = Game.getImageUrl(gameId)
 
@@ -695,7 +674,7 @@ export async function main(
           const dim = viewport.worldDimToViewportRaw({ w: evt[1], h: evt[2] })
           RERENDER = true
           viewport.move(dim.w, dim.h)
-          delete viewportSnapshots['last']
+          viewportSnapshots.remove(ViewportSnapshots.LAST)
         } else if (type === Protocol.INPUT_EV_MOUSE_MOVE) {
           const down = evt[5]
           if (down && !Game.getFirstOwnedPiece(gameId, clientId)) {
@@ -703,7 +682,7 @@ export async function main(
             const diff = viewport.worldDimToViewportRaw({ w: evt[3], h: evt[4] })
             RERENDER = true
             viewport.move(diff.w, diff.h)
-            delete viewportSnapshots['last']
+            viewportSnapshots.remove(ViewportSnapshots.LAST)
           }
         } else if (type === Protocol.INPUT_EV_PLAYER_COLOR) {
           updatePlayerCursorColor(evt[1])
@@ -715,12 +694,12 @@ export async function main(
           const pos = { x: evt[1], y: evt[2] }
           RERENDER = true
           viewport.zoom('in', viewport.worldToViewportRaw(pos))
-          delete viewportSnapshots['last']
+          viewportSnapshots.remove(ViewportSnapshots.LAST)
         } else if (type === Protocol.INPUT_EV_ZOOM_OUT) {
           const pos = { x: evt[1], y: evt[2] }
           RERENDER = true
           viewport.zoom('out', viewport.worldToViewportRaw(pos))
-          delete viewportSnapshots['last']
+          viewportSnapshots.remove(ViewportSnapshots.LAST)
         } else if (type === Protocol.INPUT_EV_TOGGLE_INTERFACE) {
           toggleInterface()
         } else if (type === Protocol.INPUT_EV_TOGGLE_PREVIEW) {
@@ -731,7 +710,7 @@ export async function main(
           togglePlayerNames()
         } else if (type === Protocol.INPUT_EV_CENTER_FIT_PUZZLE) {
           const slot = 'center'
-          const handled = handleViewportSnapshot(slot)
+          const handled = viewportSnapshots.handle(slot)
           showStatusMessage(handled ? `Restored position "${handled}"` : `Position "${slot}" not set`)
         } else if (type === Protocol.INPUT_EV_TOGGLE_FIXED_PIECES) {
           PIECE_VIEW_FIXED = !PIECE_VIEW_FIXED
@@ -745,11 +724,11 @@ export async function main(
           toggleShowTable()
         } else if (type === Protocol.INPUT_EV_STORE_POS) {
           const slot: string = `${evt[1]}`
-          viewportSnapshots[slot] = viewport.snapshot()
+          viewportSnapshots.snap(slot)
           showStatusMessage(`Stored position ${slot}`)
         } else if (type === Protocol.INPUT_EV_RESTORE_POS) {
           const slot: string = `${evt[1]}`
-          const handled = handleViewportSnapshot(slot)
+          const handled = viewportSnapshots.handle(slot)
           showStatusMessage(handled ? `Restored position "${handled}"` : `Position "${slot}" not set`)
         }
 
@@ -811,7 +790,7 @@ export async function main(
           togglePlayerNames()
         } else if (type === Protocol.INPUT_EV_CENTER_FIT_PUZZLE) {
           const slot = 'center'
-          const handled = handleViewportSnapshot(slot)
+          const handled = viewportSnapshots.handle(slot)
           showStatusMessage(handled ? `Restored position "${handled}"` : `Position "${slot}" not set`)
         } else if (type === Protocol.INPUT_EV_TOGGLE_FIXED_PIECES) {
           PIECE_VIEW_FIXED = !PIECE_VIEW_FIXED
@@ -825,11 +804,11 @@ export async function main(
           toggleShowTable()
         } else if (type === Protocol.INPUT_EV_STORE_POS) {
           const slot: string = `${evt[1]}`
-          viewportSnapshots[slot] = viewport.snapshot()
+          viewportSnapshots.snap(slot)
           showStatusMessage(`Stored position ${slot}`)
         } else if (type === Protocol.INPUT_EV_RESTORE_POS) {
           const slot: string = `${evt[1]}`
-          const handled = handleViewportSnapshot(slot)
+          const handled = viewportSnapshots.handle(slot)
           showStatusMessage(handled ? `Restored position "${handled}"` : `Position "${slot}" not set`)
         }
       }
