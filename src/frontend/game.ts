@@ -28,6 +28,8 @@ import { EventAdapter } from './EventAdapter'
 import { PuzzleTable } from './PuzzleTable'
 import { ViewportSnapshots } from './ViewportSnapshots'
 import { PlayerSettings } from './PlayerSettings'
+import { Sounds } from './Sounds'
+import { PuzzleStatus } from './PuzzleStatus'
 declare global {
   interface Window {
       DEBUG?: boolean
@@ -205,6 +207,13 @@ export async function main(
 
   const bitmaps = await PuzzleGraphics.loadPuzzleBitmaps(Game.getPuzzle(gameId))
 
+  const viewport = new Camera()
+  const evts = new EventAdapter(canvas, window, viewport, MODE)
+  const viewportSnapshots = new ViewportSnapshots(evts, viewport)
+  const playerSettings = new PlayerSettings(MODE, gameId, clientId, eventBus)
+  playerSettings.init()
+  const sounds = new Sounds(assets, playerSettings)
+
   const fireworks = new fireworksController(canvas, Game.getRng(gameId))
   fireworks.init()
 
@@ -212,9 +221,6 @@ export async function main(
   canvas.classList.add('loaded')
   eventBus.emit('puzzleCut')
 
-  const viewport = new Camera()
-  const evts = new EventAdapter(canvas, window, viewport, MODE)
-  const viewportSnapshots = new ViewportSnapshots(evts, viewport)
   // initialize some view data
   // this global data will change according to input events
 
@@ -256,42 +262,12 @@ export async function main(
 
   const previewImageUrl = Game.getImageUrl(gameId)
 
-  const updateStatus = (ts: number) => {
-    const startTs = Game.getStartTs(gameId)
-    const finishTs = Game.getFinishTs(gameId)
-
-    eventBus.emit('status', {
-      finished: !!(finishTs),
-      duration: (finishTs || ts) - startTs,
-      piecesDone: Game.getFinishedPiecesCount(gameId),
-      piecesTotal: Game.getPieceCount(gameId),
-    })
-    eventBus.emit('players', {
-      active: Game.getActivePlayers(gameId, ts),
-      idle: Game.getIdlePlayers(gameId, ts),
-    })
-  }
-
-  updateStatus(TIME())
+  const puzzleStatus = new PuzzleStatus(gameId, eventBus)
+  puzzleStatus.update(TIME())
 
   const longFinished = !! Game.getFinishTs(gameId)
   let finished = longFinished
   const justFinished = () => finished && !longFinished
-
-  const playerSettings = new PlayerSettings(MODE, gameId, clientId, eventBus)
-  playerSettings.init()
-
-  const playClick = () => {
-    const vol = playerSettings.soundsVolume()
-    assets.Audio.CLICK.volume = vol / 100
-    assets.Audio.CLICK.play()
-  }
-
-  const playOtherClick = () => {
-    const vol = playerSettings.soundsVolume()
-    assets.Audio.CLICK_2.volume = vol / 100
-    assets.Audio.CLICK_2.play()
-  }
 
   evts.addEvent([Protocol.INPUT_EV_BG_COLOR, playerSettings.background()])
   evts.addEvent([Protocol.INPUT_EV_PLAYER_COLOR, playerSettings.color()])
@@ -384,7 +360,7 @@ export async function main(
     evts.addEvent([Protocol.INPUT_EV_PLAYER_NAME, value])
   })
   eventBus.on('onSoundsVolumeChange', () => {
-    playClick()
+    sounds.playPieceConnected()
   })
   eventBus.on('setHotkeys', (state: any) => {
     evts.setHotkeys(state)
@@ -406,7 +382,7 @@ export async function main(
 
   if (MODE === MODE_PLAY) {
     intervals.push(setInterval(() => {
-      updateStatus(TIME())
+      puzzleStatus.update(TIME())
     }, 1000))
   } else if (MODE === MODE_REPLAY) {
     doSetSpeedStatus()
@@ -453,7 +429,7 @@ export async function main(
         && playerSettings.soundsEnabled()
         && playerSettings.otherPlayerClickSoundEnabled()
       ) {
-        playOtherClick()
+        sounds.playOtherPieceConnected()
       }
       if (rerender) {
         RERENDER = true
@@ -538,7 +514,7 @@ export async function main(
       } while (continueLoop)
       REPLAY.lastRealTs = realTs
       REPLAY.lastGameTs = maxGameTs
-      updateStatus(TIME())
+      puzzleStatus.update(TIME())
 
       if (!REPLAY.final) {
         to = setTimeout(next, 50)
@@ -627,7 +603,7 @@ export async function main(
         const changes = Game.handleInput(gameId, clientId, evt, ts)
         if (playerSettings.soundsEnabled()) {
           if (changes.find(change => change[0] === Protocol.PLAYER_SNAP)) {
-            playClick()
+            sounds.playPieceConnected()
           }
         }
         if (changes.length > 0) {
@@ -810,7 +786,7 @@ export async function main(
 
     // propagate HUD changes
     // ---------------------------------------------------------------
-    updateStatus(ts)
+    puzzleStatus.update(ts)
     if (window.DEBUG) Debug.checkpoint('HUD done')
     // ---------------------------------------------------------------
 
@@ -836,6 +812,7 @@ export async function main(
   return {
     previewImageUrl,
     playerSettings,
+    puzzleStatus,
     game: Game.get(gameId),
     disconnect: Communication.disconnect,
     connect: connect,
