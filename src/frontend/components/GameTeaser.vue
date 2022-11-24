@@ -15,32 +15,21 @@
     </div>
   </div>
 </template>
-<script lang="ts">
-import { defineComponent } from 'vue'
+<script setup lang="ts">
 import Time from './../../common/Time'
+import { GameInfo } from './../../common/Types'
 
-export default defineComponent({
-  props: {
-    game: {
-      type: Object,
-      required: true,
-    },
-  },
-  computed: {
-    style (): object {
-      const url = this.game.imageUrl.replace('uploads/', 'uploads/r/') + '-375x210.webp'
-      return {
-        'background-image': `url("${url}")`,
-      }
-    },
-  },
-  methods: {
-    time(start: number, end: number) {
-      const from = start;
-      const to = end || Time.timestamp()
-      const timeDiffStr = Time.timeDiffStr(from, to)
-      return `${timeDiffStr}`
-    },
-  },
-})
+const props = defineProps<{
+  game: GameInfo
+}>()
+
+const url = props.game.imageUrl.replace('uploads/', 'uploads/r/') + '-375x210.webp'
+const style = { 'background-image': `url("${url}")` }
+
+const time = (start: number, end: number) => {
+  const from = start;
+  const to = end || Time.timestamp()
+  const timeDiffStr = Time.timeDiffStr(from, to)
+  return `${timeDiffStr}`
+}
 </script>

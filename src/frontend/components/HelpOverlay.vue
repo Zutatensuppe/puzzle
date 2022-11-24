@@ -1,5 +1,5 @@
 <template>
-  <overlay class="transparent">
+  <overlay class="transparent" @close="emit('close')">
     <template v-slot:default>
       <table class="help">
         <tr><td><icon icon="arrow-up" /> Move up:</td><td><div><kbd>W</kbd>/<kbd>↑</kbd>/<icon icon="mouse-left" /></div></td></tr>
@@ -31,3 +31,8 @@
     </template>
   </overlay>
 </template>
+<script setup lang="ts">
+const emit = defineEmits<{
+  (e: 'close'): void
+}>()
+</script>

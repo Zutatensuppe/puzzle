@@ -9,14 +9,7 @@
       :key="columnIndex"
       class="masonry-column"
       :data-index="columnIndex"
-      :style="{
-        display: 'flex',
-        flexBasis: 0,
-        flexDirection: 'column',
-        flexGrow: 1,
-        height: ['-webkit-max-content', '-moz-max-content', 'max-content'],
-        gap: `${gap}px`,
-      }"
+      :style="style"
     >
       <div v-for="itemIndex in column" :key="itemIndex" class="masonry-item">
         <slot :item="items[itemIndex]" :index="itemIndex">
@@ -29,6 +22,8 @@
 
 <script setup lang="ts">
 import {
+  computed,
+  CSSProperties,
   nextTick,
   onBeforeUnmount,
   onMounted,
@@ -37,7 +32,9 @@ import {
   toRefs,
   watch,
 } from 'vue'
+
 type Column = number[]
+
 const props = withDefaults(
   defineProps<{
     columnWidth?: number
@@ -53,25 +50,40 @@ const props = withDefaults(
     ssrColumns: 0,
   }
 )
+
 const { columnWidth, items, gap, rtl, ssrColumns } = toRefs(props)
+
 const columns = ref<Column[]>([])
+
 const wall = ref<HTMLDivElement>() as Ref<HTMLDivElement>
-const emit = defineEmits<{
+
+  const emit = defineEmits<{
   (event: 'redraw'): void
   (event: 'redraw-skip'): void
 }>()
-function columnCount(): number {
-  const wallWidth = wall.value.getBoundingClientRect().width + gap.value
-  const colWidth = columnWidth.value + gap.value
+
+const style = computed((): CSSProperties => ({
+  display: 'flex',
+  flexBasis: 0,
+  flexDirection: 'column',
+  flexGrow: 1,
+  // @ts-ignore
+  height: ['-webkit-max-content', '-moz-max-content', 'max-content'],
+  gap: `${gap}px`,
+}))
+
+const columnCount = (): number => {
   const count = Math.floor(
     (wall.value.getBoundingClientRect().width + gap.value) /
       (columnWidth.value + gap.value)
   )
   return count > 0 ? count : 1
 }
-function createColumns(count: number): Column[] {
+
+const createColumns = (count: number): Column[] => {
   return [...new Array(count)].map(() => [])
 }
+
 if (ssrColumns.value > 0) {
   const newColumns = createColumns(ssrColumns.value)
   items.value.forEach((_: unknown, i: number) =>
@@ -79,6 +91,7 @@ if (ssrColumns.value > 0) {
   )
   columns.value = newColumns
 }
+
 async function fillColumns(itemIndex: number) {
   if (itemIndex >= items.value.length) {
     return
@@ -96,6 +109,7 @@ async function fillColumns(itemIndex: number) {
   columns.value[+target.dataset.index!].push(itemIndex)
   await fillColumns(itemIndex + 1)
 }
+
 async function redraw(force = false) {
   if (columns.value.length === columnCount() && !force) {
     emit('redraw-skip')
@@ -107,12 +121,17 @@ async function redraw(force = false) {
   window.scrollTo({ top: scrollY })
   emit('redraw')
 }
+
 const resizeObserver = new ResizeObserver(() => redraw())
+
 onMounted(() => {
   redraw()
   resizeObserver.observe(wall.value)
 })
+
 onBeforeUnmount(() => resizeObserver.unobserve(wall.value))
+
 watch([items, rtl], () => redraw(true))
+
 watch([columnWidth, gap], () => redraw())
 </script>

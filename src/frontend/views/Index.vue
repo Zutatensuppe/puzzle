@@ -1,33 +1,25 @@
 <template>
   <div>
     <h1>Running games</h1>
-    <game-teaser v-for="(g, idx) in gamesRunning" :key="idx" :game="g" />
+    <GameTeaser v-for="(g, idx) in gamesRunning" :key="idx" :game="g" />
 
     <h1>Finished games</h1>
-    <game-teaser v-for="(g, idx) in gamesFinished" :key="idx" :game="g" />
+    <GameTeaser v-for="(g, idx) in gamesFinished" :key="idx" :game="g" />
   </div>
 </template>
-<script lang="ts">
-import { defineComponent } from 'vue'
+<script setup lang="ts">
+import { onMounted, ref } from 'vue'
+import { GameInfo } from '../../common/Types';
 import api from '../_api'
+import GameTeaser from './../components/GameTeaser.vue';
 
-import GameTeaser from './../components/GameTeaser.vue'
+const gamesRunning = ref<GameInfo[]>([])
+const gamesFinished = ref<GameInfo[]>([])
 
-export default defineComponent({
-  components: {
-    GameTeaser,
-  },
-  data() {
-    return {
-      gamesRunning: [],
-      gamesFinished: [],
-    }
-  },
-  async created() {
-    const res = await api.pub.indexData()
-    const json = await res.json()
-    this.gamesRunning = json.gamesRunning
-    this.gamesFinished = json.gamesFinished
-  },
+onMounted(async () => {
+  const res = await api.pub.indexData()
+  const json = await res.json()
+  gamesRunning.value = json.gamesRunning
+  gamesFinished.value = json.gamesFinished
 })
 </script>

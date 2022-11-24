@@ -26,7 +26,19 @@ export const DEFAULTS = {
   SHOW_PLAYER_NAMES: true,
 }
 
-export const defaultPlayerSettings = () => ({
+export interface PlayerSettings {
+  background: string
+  showTable: boolean
+  tableTexture: string
+  color: string
+  name: string
+  soundsEnabled: boolean
+  otherPlayerClickSoundEnabled: boolean
+  soundsVolume: number
+  showPlayerNames: boolean
+}
+
+export const defaultPlayerSettings = (): PlayerSettings => ({
   background: '',
   showTable: true,
   tableTexture: 'dark',

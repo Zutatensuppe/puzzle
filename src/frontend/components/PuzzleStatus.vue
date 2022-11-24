@@ -10,22 +10,16 @@
     </div>
   </div>
 </template>
-<script lang="ts">
-import { defineComponent, PropType } from 'vue'
+<script setup lang="ts">
+import { computed } from 'vue'
 import { PuzzleStatus } from '../../common/Types'
 import Time from './../../common/Time'
 
-export default defineComponent({
-  props: {
-    status: {
-      type: Object as PropType<PuzzleStatus>,
-      required: true,
-    },
-  },
-  computed: {
-    durationStr (): string {
-      return Time.durationStr(this.status.duration)
-    },
-  }
+const props = defineProps<{
+  status: PuzzleStatus,
+}>()
+
+const durationStr = computed(() => {
+  return Time.durationStr(props.status.duration)
 })
 </script>

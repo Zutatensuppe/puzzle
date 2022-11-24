@@ -33,14 +33,13 @@ import AdminUsers from './admin/views/Users.vue'
 import AdminImages from './admin/views/Images.vue'
 import AdminGroups from './admin/views/Groups.vue'
 import api from './_api'
+import config from './config'
 
 (async () => {
   api.init()
 
   await user.init()
-
-  const confRes = await api.pub.config()
-  const conf = await confRes.json()
+  await config.init()
 
   const router = VueRouter.createRouter({
     history: VueRouter.createWebHashHistory(),
@@ -66,7 +65,6 @@ import api from './_api'
   })
 
   const app = Vue.createApp(App)
-  app.config.globalProperties.$config = conf
   app.use(router)
   app.component('connection-overlay', ConnectionOverlay)
   app.component('edit-image-dialog', EditImageDialog)
