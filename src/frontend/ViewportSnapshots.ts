@@ -1,4 +1,5 @@
 import { Camera, Snapshot } from "./Camera";
+import { EventAdapter } from "./EventAdapter";
 
 export class ViewportSnapshots {
   public static readonly LAST = 'last'
@@ -7,7 +8,7 @@ export class ViewportSnapshots {
   private viewportSnapshots: Record<string, Snapshot> = {}
 
   constructor(
-    private evts: any,
+    private evts: EventAdapter,
     private viewport: Camera
   ) {
     // pass
