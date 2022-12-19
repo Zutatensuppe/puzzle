@@ -1,9 +1,9 @@
 <template>
-  <overlay class="edit-image-dialog" @close="emit('close')">
+  <Overlay class="edit-image-dialog" @close="emit('close')">
     <template v-slot:default>
       <div class="area-image">
         <div class="has-image">
-          <responsive-image :src="image.url" :title="image.title" />
+          <ResponsiveImage :src="image.url" :title="image.title" />
         </div>
       </div>
 
@@ -21,7 +21,7 @@
           <tr>
             <td><label>Tags</label></td>
             <td>
-              <tags-input v-model="tags" :autocompleteTags="autocompleteTags" />
+              <TagsInput v-model="tags" :autocompleteTags="autocompleteTags" />
             </td>
           </tr>
         </table>
@@ -32,11 +32,14 @@
         <button class="btn" @click="emit('close')">Cancel</button>
       </div>
     </template>
-  </overlay>
+  </Overlay>
 </template>
 <script setup lang="ts">
 import { ref, watch } from 'vue'
-import { Image, ImageInfo, Tag } from '../../common/Types'
+import { ImageInfo, Tag } from '../../common/Types'
+import TagsInput from '../components/TagsInput.vue'
+import Overlay from './Overlay.vue';
+import ResponsiveImage from './ResponsiveImage.vue'
 
 const props = defineProps<{
   image: ImageInfo

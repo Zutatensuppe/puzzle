@@ -1,5 +1,5 @@
 <template>
-  <overlay class="transparent" @close="emit('close')">
+  <Overlay class="transparent" @close="emit('close')">
     <template v-slot:default>
       <table class="help">
         <tr><td><icon icon="arrow-up" /> Move up:</td><td><div><kbd>W</kbd>/<kbd>↑</kbd>/<icon icon="mouse-left" /></div></td></tr>
@@ -29,9 +29,11 @@
         <tr><td><icon icon="pause" /> Pause (replay):</td><td><div><kbd>P</kbd></div></td></tr>
       </table>
     </template>
-  </overlay>
+  </Overlay>
 </template>
 <script setup lang="ts">
+import Overlay from './Overlay.vue';
+
 const emit = defineEmits<{
   (e: 'close'): void
 }>()

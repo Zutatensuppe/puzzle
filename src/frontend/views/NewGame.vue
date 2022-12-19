@@ -43,7 +43,7 @@ in jigsawpuzzles.io
       :images="images"
       @imageClicked="onImageClicked"
       @imageEditClicked="onImageEditClicked" />
-    <new-image-dialog
+    <NewImageDialog
       v-if="dialog==='new-image'"
       :autocompleteTags="autocompleteTags"
       @close="dialog=''"
@@ -53,14 +53,14 @@ in jigsawpuzzles.io
       @postToGalleryClick="postToGalleryClick"
       @setupGameClick="setupGameClick"
       />
-    <edit-image-dialog
+    <EditImageDialog
       v-if="dialog==='edit-image'"
       :autocompleteTags="autocompleteTags"
       @close="dialog=''"
       @bgclick="dialog=''"
       @saveClick="onSaveImageClick"
       :image="image" />
-    <new-game-dialog
+    <NewGameDialog
       v-if="image && dialog==='new-game'"
       @close="dialog=''"
       @bgclick="dialog=''"

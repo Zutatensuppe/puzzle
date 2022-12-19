@@ -1,5 +1,5 @@
 <template>
-  <overlay class="transparent" @close="emit('close')">
+  <Overlay class="transparent" @close="emit('close')">
     <template v-slot:default>
       <table class="help">
         <tr>
@@ -23,11 +23,12 @@
         </tr>
       </table>
     </template>
-  </overlay>
+  </Overlay>
 </template>
 <script setup lang="ts">
 import { computed } from 'vue'
 import { Game, ScoreMode, ShapeMode, SnapMode } from '../../common/Types'
+import Overlay from './Overlay.vue';
 
 const props = defineProps<{
   game: Game
