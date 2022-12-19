@@ -1,5 +1,5 @@
 <template>
-  <overlay class="new-image-dialog" @close="emit('close')">
+  <Overlay class="new-image-dialog" @close="emit('close')">
     <template v-slot:default>
       <div
         class="area-image"
@@ -10,7 +10,7 @@
         <div class="drop-target"></div>
         <div v-if="previewUrl" class="has-image">
           <span class="remove btn" @click="previewUrl=''">X</span>
-          <responsive-image :src="previewUrl" />
+          <ResponsiveImage :src="previewUrl" />
         </div>
         <div v-else>
           <label class="upload">
@@ -57,7 +57,7 @@
           <tr>
             <td><label>Tags</label></td>
             <td>
-              <tags-input v-model="tags" :autocompleteTags="autocompleteTags" />
+              <TagsInput v-model="tags" :autocompleteTags="autocompleteTags" />
             </td>
           </tr>
         </table>
@@ -83,12 +83,15 @@
         <button class="btn" @click="emit('close')">Cancel</button>
       </div>
     </template>
-  </overlay>
+  </Overlay>
 </template>
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { FrontendGameSettings as FrontendNewImageEventData } from '../../common/Types';
 import { logger } from '../../common/Util'
+import TagsInput from '../components/TagsInput.vue'
+import Overlay from './Overlay.vue';
+import ResponsiveImage from './ResponsiveImage.vue';
 
 const log = logger('NewImageDialog.vue')
 

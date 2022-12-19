@@ -32,13 +32,14 @@ import {
   toRefs,
   watch,
 } from 'vue'
+import { ImageInfo } from '../../common/Types';
 
 type Column = number[]
 
 const props = withDefaults(
   defineProps<{
+    items: ImageInfo[]
     columnWidth?: number
-    items: unknown[]
     gap?: number
     rtl?: boolean
     ssrColumns?: number

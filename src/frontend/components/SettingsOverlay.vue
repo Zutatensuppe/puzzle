@@ -1,5 +1,5 @@
 <template>
-  <overlay class="transparent" @close="emit('close')">
+  <Overlay class="transparent" @close="emit('close')">
     <template v-slot:default>
       <table class="settings">
         <tr>
@@ -55,11 +55,12 @@
         </tr>
       </table>
     </template>
-  </overlay>
+  </Overlay>
 </template>
 <script setup lang="ts">
 import { ref, watch } from 'vue'
 import { PlayerSettings } from '../PlayerSettings';
+import Overlay from './Overlay.vue';
 
 const emit = defineEmits<{
   (e: 'close'): void

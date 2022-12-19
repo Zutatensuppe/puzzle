@@ -1,14 +1,15 @@
 <template>
-  <overlay class="preview-overlay" @close="emit('close')">
+  <Overlay class="preview-overlay" @close="emit('close')">
     <template v-slot:default>
       <div class="preview">
         <div class="img" :style="previewStyle"></div>
       </div>
     </template>
-  </overlay>
+  </Overlay>
 </template>
 <script setup lang="ts">
 import { computed } from 'vue'
+import Overlay from './Overlay.vue';
 
 const props = defineProps<{
   img: string

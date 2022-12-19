@@ -1,9 +1,9 @@
 <template>
-  <overlay class="new-game-dialog" @close="emit('close')">
+  <Overlay class="new-game-dialog" @close="emit('close')">
     <template v-slot:default>
       <div class="area-image">
         <div class="has-image">
-          <responsive-image :src="image.url" :title="image.title" />
+          <ResponsiveImage :src="image.url" :title="image.title" />
         </div>
         <div class="image-title" v-if="image.title || image.width || image.height">
           <span class="image-title-title" v-if="image.title">"{{image.title}}"</span>
@@ -75,12 +75,14 @@
         <button class="btn" @click="emit('close')">Cancel</button>
       </div>
     </template>
-  </overlay>
+  </Overlay>
 </template>
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 
 import { GameSettings, ImageInfo, ScoreMode, ShapeMode, SnapMode } from './../../common/Types'
+import Overlay from './Overlay.vue';
+import ResponsiveImage from './ResponsiveImage.vue';
 
 const props = defineProps<{
   image: ImageInfo
