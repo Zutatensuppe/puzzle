@@ -25,6 +25,7 @@
     "build": "npm run build:server && npm run build:frontend"
   },
   "dependencies": {
+    "@ckpack/vue-color": "^1.3.0",
     "@mdi/font": "^7.1.96",
     "async-mutex": "^0.3.2",
     "cookie-parser": "^1.4.6",

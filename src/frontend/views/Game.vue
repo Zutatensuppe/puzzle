@@ -1,14 +1,24 @@
 <template>
   <div id="game">
-    <v-dialog v-model="dialog">
+    <v-dialog v-model="dialog" :class="`overlay-${overlay}`">
       <SettingsOverlay v-if="overlay === 'settings' && g.playerSettings" :settings="g.playerSettings" />
       <PreviewOverlay v-if="overlay === 'preview'" :img="g.previewImageUrl" />
       <InfoOverlay v-if="g.game && overlay === 'info'" :game="g.game" />
       <HelpOverlay v-if="overlay === 'help'" />
     </v-dialog>
 
-    <v-dialog v-model="cuttingPuzzle">
-      <div><icon icon="hourglass" /> Cutting puzzle, please wait... <icon icon="hourglass" /></div>
+    <v-dialog class="overlay-cutting" v-model="cuttingPuzzle">
+      <v-card>
+        <v-container :fluid="true">
+          <div class="d-flex justify-center">
+            <v-icon icon="mdi-content-cut" />
+            <v-icon icon="mdi-puzzle mr-1" />
+            Cutting puzzle, please wait...
+            <v-icon icon="mdi-content-cut ml-1" />
+            <v-icon icon="mdi-puzzle" />
+          </div>
+        </v-container>
+      </v-card>
     </v-dialog>
 
     <ConnectionOverlay
@@ -25,10 +35,10 @@
 
     <div class="menu" v-if="showInterface">
       <router-link class="opener" :to="{name: 'index'}" target="_blank"><icon icon="puzzle-piece" /> Puzzles</router-link>
-      <div class="opener" @click="toggle('preview', false)"><icon icon="preview" /> Preview</div>
-      <div class="opener" @click="toggle('settings', true)"><icon icon="settings" /> Settings</div>
-      <div class="opener" @click="toggle('info', true)"><icon icon="info" /> Info</div>
-      <div class="opener" @click="toggle('help', true)"><icon icon="hotkey" /> Hotkeys</div>
+      <div class="opener" @click="toggle('preview')"><icon icon="preview" /> Preview</div>
+      <div class="opener" @click="toggle('settings')"><icon icon="settings" /> Settings</div>
+      <div class="opener" @click="toggle('info')"><icon icon="info" /> Info</div>
+      <div class="opener" @click="toggle('help')"><icon icon="hotkey" /> Hotkeys</div>
       <a class="opener" href="https://stand-with-ukraine.pp.ua/" target="_blank"><icon icon="ukraine-heart" /> Stand with Ukraine </a>
     </div>
 
@@ -131,48 +141,24 @@ const openDialog = (content: string): void => {
 
 watch(dialog, (newValue) => {
   if (newValue === false) {
-    if (overlay.value !== 'settings') {
-      eventBus.emit('setHotkeys', true)
-    }
+    eventBus.emit('setHotkeys', true)
   } else {
     if (overlay.value !== 'preview') {
       eventBus.emit('setHotkeys', false)
     }
   }
+  if (overlay.value === 'preview') {
+    eventBus.emit('onPreviewChange', newValue)
+  }
 })
 
-const toggleTo = (newOverlay: string, onOff: boolean, affectsHotkeys: boolean): void => {
-  if (onOff === false) {
-    // off
-    if (affectsHotkeys) {
-      eventBus.emit('setHotkeys', true)
-    }
-    closeDialog()
-  } else {
-    // on
-    if (affectsHotkeys) {
-      eventBus.emit('setHotkeys', false)
-    }
-    openDialog(newOverlay)
-  }
-}
-
-const toggle = (newOverlay: string, affectsHotkeys: boolean): void => {
+const toggle = (newOverlay: string): void => {
   if (dialog.value === false) {
-    if (affectsHotkeys) {
-      eventBus.emit('setHotkeys', false)
-    }
     openDialog(newOverlay)
   } else {
     // could check if overlay was the provided one
     overlay.value = ''
-    if (affectsHotkeys) {
-      eventBus.emit('setHotkeys', true)
-    }
     closeDialog()
-  }
-  if (newOverlay === 'preview') {
-    eventBus.emit('onPreviewChange', overlay.value === 'preview')
   }
 }
 
@@ -194,7 +180,11 @@ onMounted(async () => {
     connectionState.value = v
   })
   eventBus.on('togglePreview', (v: any) => {
-    toggleTo('preview', v, false)
+    if (v) {
+      openDialog('preview')
+    } else {
+      closeDialog()
+    }
   })
   eventBus.on('toggleInterface', (v: any) => {
     showInterface.value = !!v

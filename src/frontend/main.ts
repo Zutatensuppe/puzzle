@@ -23,6 +23,9 @@ import { createVuetify } from 'vuetify'
 import * as components from 'vuetify/components'
 import * as directives from 'vuetify/directives'
 
+// @ts-ignore
+import { Slider } from '@ckpack/vue-color'
+
 (async () => {
   api.init()
 
@@ -61,5 +64,6 @@ import * as directives from 'vuetify/directives'
   app.use(router)
   app.use(vuetify)
   app.component('icon', Icon)
+  app.component('colorpicker', Slider)
   app.mount('#app')
 })()

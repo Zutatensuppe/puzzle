@@ -14,6 +14,8 @@
   font-family: Roboto, sans-serif;
 }
 
+$link-color: #808db0;
+$link-color-hover: #c5cfeb;
 $bg-color-transparent: rgba(0 0 0 / 70%);
 
 .blurred {
@@ -190,6 +192,17 @@ body {
 ///
 ///
 
+a {
+  text-decoration: none;
+}
+a,
+.opener {
+  color: $link-color;
+  &:hover {
+    color: $link-color-hover;
+  }
+}
+
 h1,
 h2,
 h3,
@@ -363,5 +376,80 @@ html.view-replay body { overflow: hidden; }
     text-align: left;
     padding-left: 40px;
     margin: 2em 0;
+  }
+}
+
+kbd {
+  background-color: #eee;
+  border-radius: 3px;
+  border: 1px solid #b4b4b4;
+  box-shadow: 0 1px 1px rgba(0 0 0 / 20%), 0 2px 0 0 rgba(255 255 255 / 70%) inset;
+  color: #333;
+  display: inline-block;
+  font-size: 0.85em;
+  font-weight: 700;
+  line-height: 1;
+  padding: 2px 4px;
+  white-space: nowrap;
+}
+
+.v-dialog.overlay-cutting,
+.v-dialog.overlay-info,
+.v-dialog.overlay-settings {
+  .v-overlay__content {
+    max-width: 440px
+  }
+}
+.v-dialog.overlay-connection {
+  .v-overlay__content {
+    max-width: 320px
+  }
+}
+.v-dialog.overlay-help {
+  .v-overlay__content {
+    max-width: 500px
+  }
+}
+
+.v-dialog.overlay-preview {
+  .v-overlay__content {
+    position: absolute;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    right: 0;
+    transform: none;
+    padding: 0;
+    border: 0;
+    background: none;
+    max-width: none;
+    max-height: none;
+    width: auto;
+    margin: 0;
+
+    .v-card {
+      position: absolute;
+      top: 0;
+      left: 0;
+      bottom: 0;
+      right: 0;
+    }
+
+    .preview {
+      top: 20px;
+      left: 20px;
+      bottom: 20px;
+      right: 20px;
+      position: absolute;
+
+      .img {
+        height: 100%;
+        width: 100%;
+        position: absolute;
+        background-repeat: no-repeat;
+        background-position: center;
+        background-size: contain;
+      }
+    }
   }
 }

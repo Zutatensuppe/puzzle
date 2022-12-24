@@ -1,8 +1,18 @@
 <template>
-  <v-dialog class="connection-lost" v-model="show">
-    <div v-if="lostConnection"><icon icon="disconnect" /> LOST CONNECTION <icon icon="disconnect" /></div>
-    <span v-if="lostConnection" class="btn" @click="emit('reconnect')">Reconnect</span>
-    <div v-if="connecting">Connecting...</div>
+  <v-dialog class="overlay-connection" v-model="show">
+    <v-card>
+      <v-container :fluid="true">
+        <div v-if="lostConnection" class="d-flex justify-center mb-2">
+          <h4>CONNECTION LOST</h4>
+        </div>
+        <div v-if="lostConnection" class="d-flex justify-center">
+          <v-btn color="info" @click="emit('reconnect')" prepend-icon="mdi-wifi">Reconnect</v-btn>
+        </div>
+        <div v-if="connecting" class="d-flex justify-center">
+          Connecting...
+        </div>
+      </v-container>
+    </v-card>
   </v-dialog>
 </template>
 <script setup lang="ts">
