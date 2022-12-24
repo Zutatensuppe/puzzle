@@ -64,11 +64,15 @@
 
     <v-card-actions>
       <v-btn
+        variant="elevated"
         :disabled="!canStartNewGame"
         @click="onNewGameClick"
         prepend-icon="mdi-puzzle"
       >Generate Puzzle</v-btn>
-      <v-btn @click="emit('close')">Cancel</v-btn>
+      <v-btn
+        variant="elevated"
+        @click="emit('close')"
+      >Cancel</v-btn>
     </v-card-actions>
   </v-card>
 </template>

@@ -5,14 +5,14 @@
     <v-container :fluid="true">
       <v-row no-gutters>
         <v-col :lg="8"
-          :class="{'has-image': !!previewUrl, 'no-image': !previewUrl, droppable: droppable}"
+          :class="{'no-image': !previewUrl, droppable: droppable}"
           @drop="onDrop"
           @dragover="onDragover"
           @dragleave="onDragleave"
           style="min-height: 50vh;">
           <div class="drop-target"></div>
-          <div v-if="previewUrl" class="has-image">
-            <span class="remove btn" @click="previewUrl=''">X</span>
+          <div v-if="previewUrl" class="has-image" style="min-height: 50vh;">
+            <v-btn variant="elevated" @click="previewUrl=''" icon="mdi-close" size="x-small"></v-btn>
             <ResponsiveImage :src="previewUrl" />
           </div>
           <div v-else>
@@ -60,12 +60,14 @@
     <v-card-actions>
       <template v-if="!isPrivate">
         <v-btn
+          variant="elevated"
           v-if="uploading === 'postToGallery'"
           :disabled="!canPostToGallery"
           @click="postToGallery"
           prepend-icon="mdi-timer-sand-empty"
         >Uploading ({{uploadProgressPercent}}%)</v-btn>
         <v-btn
+          variant="elevated"
           v-if="uploading !== 'postToGallery'"
           :disabled="!canPostToGallery"
           @click="postToGallery"
@@ -74,25 +76,31 @@
       </template>
       <template v-else>
         <v-btn
+          variant="elevated"
           v-if="uploading === 'setupGame'"
           :disabled="!canSetupGameClick"
           @click="setupGameClick"
           prepend-icon="mdi-timer-sand-empty"
         >Uploading ({{uploadProgressPercent}}%)</v-btn>
         <v-btn
+          variant="elevated"
           v-else-if="isPrivate"
           :disabled="!canSetupGameClick"
           @click="setupGameClick"
           prepend-icon="mdi-puzzle"
         >Set up game</v-btn>
         <v-btn
+          variant="elevated"
           v-else
           :disabled="!canSetupGameClick"
           @click="setupGameClick"
           prepend-icon="mdi-puzzle"
         >Post to gallery <br /> + set up game</v-btn>
       </template>
-      <v-btn @click="emit('close')">Cancel</v-btn>
+      <v-btn
+        variant="elevated"
+        @click="emit('close')"
+      >Cancel</v-btn>
     </v-card-actions>
   </v-card>
 </template>

@@ -6,11 +6,17 @@ of images. Instead of categories, you can make the system tag-based, like
 in jigsawpuzzles.io
 
 <template>
-  <v-container :fluid="true" class="new-game-view">
+  <v-container :fluid="true" class="new-game-view p-0">
     <v-row>
       <v-col>
         <div :class="{blurred: dialog}" class="text-center">
-          <v-btn @click="openDialog('new-image')" size="large">Upload your image</v-btn>
+          <v-btn
+            class="font-weight-bold"
+            @click="openDialog('new-image')"
+            prepend-icon="mdi-image-plus-outline"
+            size="large"
+            color="info"
+          >Upload your image</v-btn>
           <div class="text-disabled">(The image you upload will be added to the public gallery.)</div>
         </div>
       </v-col>
@@ -45,16 +51,12 @@ in jigsawpuzzles.io
         ></v-select>
       </v-col>
     </v-row>
-    <v-row>
-      <v-col>
-        <ImageLibrary
-          :class="{blurred: dialog }"
-          :images="images"
-          @imageClicked="onImageClicked"
-          @imageEditClicked="onImageEditClicked"
-        />
-      </v-col>
-    </v-row>
+    <ImageLibrary
+      :class="{blurred: dialog }"
+      :images="images"
+      @imageClicked="onImageClicked"
+      @imageEditClicked="onImageEditClicked"
+    />
     <v-dialog v-model="dialog">
       <NewImageDialog
         v-if="dialogContent==='new-image'"

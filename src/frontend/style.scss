@@ -1,5 +1,7 @@
 @import "@mdi/font";
 
+@import url('https://fonts.googleapis.com/css2?family=Teko:wght@300&display=swap');
+
 // @font-face {
 //   font-family: dpcomic;
 //   font-style: normal;
@@ -8,10 +10,9 @@
 //   src: local("dpcomic"), url("assets/font/dpcomic.woff2") format("woff2"), url("assets/font/dpcomic.woff") format("woff");
 // }
 
-// * {
-//   font-family: dpcomic, monospace;
-//   font-size: 16px;
-// }
+* {
+  font-family: Roboto, sans-serif;
+}
 
 $bg-color-transparent: rgba(0 0 0 / 70%);
 
@@ -68,35 +69,81 @@ $bg-color-transparent: rgba(0 0 0 / 70%);
   &.icon-ukraine-heart { background-image: url("assets/icons/ukraine_heart.png"); }
 }
 
-.game-teaser-inner {
+.game-teasers-holder {
+  display: grid;
+  grid-template-columns: auto auto auto auto auto;
+  grid-gap: 10px;
+}
+
+@media (max-width: 1400px) {
+  .game-teasers-holder {
+    grid-template-columns: auto auto auto auto;
+  }
+}
+
+@media (max-width: 1100px) {
+  .game-teasers-holder {
+    grid-template-columns: auto auto auto;
+  }
+}
+
+@media (max-width: 800px) {
+  .game-teasers-holder {
+    grid-template-columns: auto auto;
+  }
+}
+
+@media (max-width: 560px) {
+  .game-teasers-holder {
+    grid-template-columns: auto;
+  }
+}
+
+.game-teaser-image {
   display: block;
   background-repeat: no-repeat;
   background-position: center;
-  background-size: contain;
+  background-size: cover;
   position: relative;
   padding-top: 56.25%;
   width: 100%;
   background-color: #222;
+}
 
-  font-size: smaller;
-
-  .game-info {
+.game-teaser {
+  .v-card-actions {
     position: absolute;
-    top: 0;
+    bottom: 0;
     left: 0;
     right: 0;
-    bottom: 0;
-    width: 100%;
-    height: 100%;
-  }
-
-  .game-info-text {
-    position: absolute;
-    top: 0;
     background: $bg-color-transparent;
-    padding: 5px;
+
+    .v-btn {
+      font-weight: bold;
+      padding: 0 16px;
+    }
+  }
+}
+
+.game-teaser-inner {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  background: rgba(0 0 0 / 50%);
+  padding: 1em;
+
+  font-size: 13px;
+
+  .game-teaser-info {
   }
 
+  .game-join {
+    position: absolute;
+    bottom: 0;
+    right: 0;
+  }
   .game-replay {
     position: absolute;
     top: 0;
@@ -125,7 +172,9 @@ $bg-color-transparent: rgba(0 0 0 / 70%);
   cursor: pointer;
 }
 
-
+.is-clickable {
+  cursor: pointer;
+}
 
 html,
 body {
@@ -141,7 +190,19 @@ h1,
 h2,
 h3,
 h4 {
-  font-size: 20px;
+  text-transform: uppercase;
+  font-family: 'Teko', sans-serif;
+  text-shadow: 0 0 10px black;
+}
+
+h1 {
+  font-size: 32px;
+}
+
+h2,
+h3,
+h4 {
+  font-size: 28px;
 }
 
 td,
@@ -214,3 +275,59 @@ html.view-game body { overflow: hidden; }
 html.view-replay { overflow: hidden; }
 
 html.view-replay body { overflow: hidden; }
+
+.masonry-item {
+  margin-bottom: 10px;
+}
+
+.imageteaser {
+  position: relative;
+  font-size: 13px;
+
+  img {
+    width: 100%;
+    vertical-align: bottom;
+  }
+
+  // .imageteaser-inner {
+  //   display: none;
+  // }
+  // &:hover .imageteaser-inner {
+  //   display: block;
+  // }
+
+  .imageteaser-inner {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    background: rgba(0 0 0 / 50%);
+    padding: 1em;
+  }
+
+  .imageteaser-title {
+    margin-bottom: 1em;
+  }
+
+  .imageteaser-info {
+  }
+
+  .imageteaser-actions {
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    padding: 1em;
+  }
+}
+
+.v-overlay {
+  .v-overlay__scrim {
+    background: $bg-color-transparent;
+  }
+  .v-overlay__content {
+    .v-card {
+      background: $bg-color-transparent;
+    }
+  }
+}

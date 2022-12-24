@@ -28,8 +28,15 @@
     </v-container>
 
     <v-card-actions>
-      <v-btn @click="saveImage" prepend-icon="mdi-image">Save image</v-btn>
-      <v-btn @click="emit('close')">Cancel</v-btn>
+      <v-btn
+        variant="elevated"
+        @click="saveImage"
+        prepend-icon="mdi-image"
+      >Save image</v-btn>
+      <v-btn
+        variant="elevated"
+        @click="emit('close')"
+      >Cancel</v-btn>
     </v-card-actions>
   </v-card>
 </template>
