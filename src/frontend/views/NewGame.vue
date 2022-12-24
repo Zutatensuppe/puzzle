@@ -7,11 +7,11 @@ in jigsawpuzzles.io
 
 <template>
   <v-container :fluid="true" class="new-game-view p-0">
-    <v-row>
+    <v-row class="mt-2 mb-2">
       <v-col>
         <div :class="{blurred: dialog}" class="text-center">
           <v-btn
-            class="font-weight-bold"
+            class="font-weight-bold mb-1"
             @click="openDialog('new-image')"
             prepend-icon="mdi-image-plus-outline"
             size="large"
@@ -21,36 +21,34 @@ in jigsawpuzzles.io
         </div>
       </v-col>
     </v-row>
-    <v-row>
-      <v-col :class="{blurred: dialog }" class="filters">
-        <template v-if="tags.length > 0">
-          <v-label>Tags:</v-label>
+    <v-container :fluid="true" :class="{blurred: dialog }" class="filters mb-2">
+      <template v-if="tags.length > 0">
+        <v-label>Tags:</v-label>
+        <v-chip-group v-model="filters.tags" multiple>
           <v-chip
-            class="is-clickable"
+            filter
             v-for="(t,idx) in relevantTags"
-            :key="idx"
-            :append-icon="filters.tags.includes(t.slug) ? 'mdi-checkbox-marked-circle' : undefined"
-            @click="toggleTag(t)">{{t.title}} ({{t.total}})</v-chip>
-        </template>
-        <v-select
-          class="sorting"
-          label="Sort by"
-          density="compact"
-          v-model="filters.sort"
-          item-title="title"
-          item-value="val"
-          :items="[
-            { val: 'date_desc', title: 'Newest first'},
-            { val: 'date_asc', title: 'Oldest first'},
-            { val: 'alpha_asc', title: 'A-Z'},
-            { val: 'alpha_desc', title: 'Z-A'},
-            { val: 'game_count_asc', title: 'Most plays first'},
-            { val: 'game_count_desc', title: 'Least plays first'},
-          ]"
-          @update:modelValue="filtersChanged"
-        ></v-select>
-      </v-col>
-    </v-row>
+            :key="idx">{{t.title}} ({{t.total}})</v-chip>
+        </v-chip-group>
+      </template>
+      <v-select
+        class="sorting"
+        label="Sort by"
+        density="compact"
+        v-model="filters.sort"
+        item-title="title"
+        item-value="val"
+        :items="[
+          { val: 'date_desc', title: 'Newest first'},
+          { val: 'date_asc', title: 'Oldest first'},
+          { val: 'alpha_asc', title: 'A-Z'},
+          { val: 'alpha_desc', title: 'Z-A'},
+          { val: 'game_count_asc', title: 'Most plays first'},
+          { val: 'game_count_desc', title: 'Least plays first'},
+        ]"
+        @update:modelValue="filtersChanged"
+      ></v-select>
+    </v-container>
     <ImageLibrary
       :class="{blurred: dialog }"
       :images="images"
@@ -86,7 +84,7 @@ in jigsawpuzzles.io
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import NewImageDialog from './../components/NewImageDialog.vue'
 import EditImageDialog from './../components/EditImageDialog.vue'
 import NewGameDialog from './../components/NewGameDialog.vue'
@@ -144,16 +142,27 @@ const autocompleteTags = (input: string, exclude: string[]): string[] => {
     .slice(0, 10)
     .map((tag: Tag) => tag.title)
 }
-const toggleTag = (t: Tag) => {
-  if (filters.value.tags.includes(t.slug)) {
-    filters.value.tags = filters.value.tags.filter(slug => slug !== t.slug)
-  } else {
-    filters.value.tags.push(t.slug)
-  }
+// const toggleTag = (t: Tag) => {
+//   if (filters.value.tags.includes(t.slug)) {
+//     filters.value.tags = filters.value.tags.filter(slug => slug !== t.slug)
+//   } else {
+//     filters.value.tags.push(t.slug)
+//   }
+//   filtersChanged()
+// }
+
+watch(filters, () => {
   filtersChanged()
-}
+}, { deep: true })
+
 const loadImages = async () => {
-  const res = await api.pub.newgameData({ filters: filters.value })
+  console.log(filters.value.tags)
+  const _filters = {
+    sort: filters.value.sort,
+    tags: filters.value.tags.map((index) => relevantTags.value[index].slug)
+  }
+  console.log(_filters)
+  const res = await api.pub.newgameData({ filters: _filters })
   const json = await res.json()
   images.value = json.images
   tags.value = json.tags
@@ -203,10 +212,10 @@ const postToGalleryClick = async (data: any) => {
 }
 const setupGameClick = async (data: any) => {
   uploading.value = 'setupGame'
-  const image = await uploadImage(data)
+  const uploadedImage = await uploadImage(data)
   uploading.value = ''
   loadImages() // load images in background
-  image.value = image
+  image.value = uploadedImage
   newGameForcePrivate.value = data.isPrivate
   openDialog('new-game')
 }

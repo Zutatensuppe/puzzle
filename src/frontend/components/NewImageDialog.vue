@@ -3,7 +3,7 @@
     <v-card-title>New Image</v-card-title>
 
     <v-container :fluid="true">
-      <v-row no-gutters>
+      <v-row>
         <v-col :lg="8"
           :class="{'no-image': !previewUrl, droppable: droppable}"
           @drop="onDrop"
@@ -19,7 +19,7 @@
             <label class="upload">
               <input type="file" style="display: none" @change="onFileSelect" accept="image/*" />
               <div class="upload-content">
-                How to upload an image? Choose any of the following methods:
+                To upload an image, choose one of the following methods:
                 <ul>
                   <li>Click this area to select an image for upload </li>
                   <li>Drag and drop an image into the area</li>
@@ -35,73 +35,71 @@
           </div>
         </v-col>
         <v-col :lg="4" class="area-settings">
-          <table>
-            <tr>
-              <td>
-                <v-text-field density="compact" v-model="title" placeholder="eg. Flower by @artist" @focus="inputFocused = true" @blur="inputFocused=false" label="Title" />
-                <div class="text-disabled">Feel free to leave a credit to the artist/photographer in the title :)</div>
-              </td>
-            </tr>
-            <tr>
-              <td>
-                <TagsInput v-model="tags" :autocompleteTags="autocompleteTags" />
-              </td>
-            </tr>
-            <tr>
-              <td>
-                <v-checkbox density="comfortable" label="Private Image (Private images won't show up in the gallery)" v-model="isPrivate"></v-checkbox>
-              </td>
-            </tr>
-          </table>
+          <div>
+            <v-text-field density="compact" v-model="title" placeholder="eg. Flower by @artist" @focus="inputFocused = true" @blur="inputFocused=false" label="Title" />
+            <div class="text-disabled">Feel free to leave a credit to the artist/photographer in the title :)</div>
+          </div>
+          <div>
+            <TagsInput v-model="tags" :autocompleteTags="autocompleteTags" />
+          </div>
+          <div>
+            <v-checkbox density="comfortable" label="Private Image (Private images won't show up in the gallery)" v-model="isPrivate"></v-checkbox>
+          </div>
+
+          <v-card-actions>
+            <template v-if="!isPrivate">
+              <v-btn
+                variant="elevated"
+                v-if="uploading === 'postToGallery'"
+                :disabled="!canPostToGallery"
+                @click="postToGallery"
+                prepend-icon="mdi-timer-sand-empty"
+                color="success"
+              >Uploading ({{uploadProgressPercent}}%)</v-btn>
+              <v-btn
+                variant="elevated"
+                v-if="uploading !== 'postToGallery'"
+                :disabled="!canPostToGallery"
+                @click="postToGallery"
+                prepend-icon="mdi-image"
+                color="success"
+              >Post to gallery</v-btn>
+            </template>
+            <template v-else>
+              <v-btn
+                variant="elevated"
+                v-if="uploading === 'setupGame'"
+                :disabled="!canSetupGameClick"
+                @click="setupGameClick"
+                prepend-icon="mdi-timer-sand-empty"
+                color="success"
+              >Uploading ({{uploadProgressPercent}}%)</v-btn>
+              <v-btn
+                variant="elevated"
+                v-else-if="isPrivate"
+                :disabled="!canSetupGameClick"
+                @click="setupGameClick"
+                prepend-icon="mdi-puzzle"
+                color="success"
+              >Set up game</v-btn>
+              <v-btn
+                variant="elevated"
+                v-else
+                :disabled="!canSetupGameClick"
+                @click="setupGameClick"
+                prepend-icon="mdi-puzzle"
+                color="success"
+              >Post to gallery <br /> + set up game</v-btn>
+            </template>
+            <v-btn
+              variant="elevated"
+              @click="emit('close')"
+              color="error"
+            >Cancel</v-btn>
+          </v-card-actions>
         </v-col>
       </v-row>
     </v-container>
-
-    <v-card-actions>
-      <template v-if="!isPrivate">
-        <v-btn
-          variant="elevated"
-          v-if="uploading === 'postToGallery'"
-          :disabled="!canPostToGallery"
-          @click="postToGallery"
-          prepend-icon="mdi-timer-sand-empty"
-        >Uploading ({{uploadProgressPercent}}%)</v-btn>
-        <v-btn
-          variant="elevated"
-          v-if="uploading !== 'postToGallery'"
-          :disabled="!canPostToGallery"
-          @click="postToGallery"
-          prepend-icon="mdi-image"
-        >Post to gallery</v-btn>
-      </template>
-      <template v-else>
-        <v-btn
-          variant="elevated"
-          v-if="uploading === 'setupGame'"
-          :disabled="!canSetupGameClick"
-          @click="setupGameClick"
-          prepend-icon="mdi-timer-sand-empty"
-        >Uploading ({{uploadProgressPercent}}%)</v-btn>
-        <v-btn
-          variant="elevated"
-          v-else-if="isPrivate"
-          :disabled="!canSetupGameClick"
-          @click="setupGameClick"
-          prepend-icon="mdi-puzzle"
-        >Set up game</v-btn>
-        <v-btn
-          variant="elevated"
-          v-else
-          :disabled="!canSetupGameClick"
-          @click="setupGameClick"
-          prepend-icon="mdi-puzzle"
-        >Post to gallery <br /> + set up game</v-btn>
-      </template>
-      <v-btn
-        variant="elevated"
-        @click="emit('close')"
-      >Cancel</v-btn>
-    </v-card-actions>
   </v-card>
 </template>
 <script setup lang="ts">

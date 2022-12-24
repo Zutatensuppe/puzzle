@@ -117,11 +117,12 @@ $bg-color-transparent: rgba(0 0 0 / 70%);
     left: 0;
     right: 0;
     background: $bg-color-transparent;
-
-    .v-btn {
-      font-weight: bold;
-      padding: 0 16px;
-    }
+  }
+}
+.v-card-actions {
+  .v-btn {
+    font-weight: bold;
+    padding: 0 16px !important;
   }
 }
 
@@ -161,8 +162,11 @@ $bg-color-transparent: rgba(0 0 0 / 70%);
 }
 
 .filters {
+  background: $bg-color-transparent;
   display: flex;
+  gap: 10px;
 }
+
 .v-input.sorting {
   width: 180px;
   display: flex;
@@ -205,10 +209,10 @@ h4 {
   font-size: 28px;
 }
 
-td,
-th {
-  vertical-align: top;
-}
+// td,
+// th {
+//   vertical-align: top;
+// }
 
 /* ingame */
 
@@ -329,5 +333,35 @@ html.view-replay body { overflow: hidden; }
     .v-card {
       background: $bg-color-transparent;
     }
+  }
+}
+
+.no-image {
+  align-content: center;
+  display: grid;
+  text-align: center;
+  border: solid 6px;
+  position: relative;
+}
+
+.upload {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  cursor: pointer;
+
+  .upload-content {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+  }
+
+  ul {
+    text-align: left;
+    padding-left: 40px;
+    margin: 2em 0;
   }
 }

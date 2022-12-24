@@ -10,34 +10,30 @@
           </div>
         </v-col>
         <v-col :lg="4" class="area-settings">
-          <table>
-            <tr>
-              <td>
-                <v-text-field density="compact" v-model="title" placeholder="eg. Flower by @artist" label="Title" />
-                <div class="text-disabled">Feel free to leave a credit to the artist/photographer in the title :)</div>
-              </td>
-            </tr>
-            <tr>
-              <td>
-                <TagsInput v-model="tags" :autocompleteTags="autocompleteTags" />
-              </td>
-            </tr>
-          </table>
+          <div>
+            <v-text-field density="compact" v-model="title" placeholder="eg. Flower by @artist" label="Title" />
+            <div class="text-disabled">Feel free to leave a credit to the artist/photographer in the title :)</div>
+          </div>
+          <div>
+            <TagsInput v-model="tags" :autocompleteTags="autocompleteTags" />
+          </div>
+
+          <v-card-actions>
+            <v-btn
+              variant="elevated"
+              color="success"
+              @click="saveImage"
+              prepend-icon="mdi-image"
+            >Save image</v-btn>
+            <v-btn
+              color="error"
+              variant="elevated"
+              @click="emit('close')"
+            >Cancel</v-btn>
+          </v-card-actions>
         </v-col>
       </v-row>
     </v-container>
-
-    <v-card-actions>
-      <v-btn
-        variant="elevated"
-        @click="saveImage"
-        prepend-icon="mdi-image"
-      >Save image</v-btn>
-      <v-btn
-        variant="elevated"
-        @click="emit('close')"
-      >Cancel</v-btn>
-    </v-card-actions>
   </v-card>
 </template>
 <script setup lang="ts">

@@ -11,6 +11,9 @@
       <div class="imageteaser-info">
         <v-icon icon="mdi-calendar-month"></v-icon> {{ date }}
       </div>
+      <div class="imageteaser-info">
+        <v-icon icon="mdi-ruler-square"></v-icon> {{ image.width }}x{{ image.height }}
+      </div>
       <div class="imageteaser-info" v-if="image.tags.length">
         <v-icon icon="mdi-tag"></v-icon> {{ image.tags.map(t => t.title).join(', ') }}
       </div>
