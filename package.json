@@ -25,6 +25,7 @@
     "build": "npm run build:server && npm run build:frontend"
   },
   "dependencies": {
+    "@mdi/font": "^7.1.96",
     "async-mutex": "^0.3.2",
     "cookie-parser": "^1.4.6",
     "exif": "^0.6.0",
@@ -37,6 +38,7 @@
     "sharp": "^0.30.2",
     "vue": "^3.2.31",
     "vue-router": "^4.0.13",
+    "vuetify": "^3.0.5",
     "ws": "^8.5.0"
   },
   "devDependencies": {

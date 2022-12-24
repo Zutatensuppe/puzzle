@@ -1,30 +1,15 @@
 <template>
   <div id="game">
-    <SettingsOverlay
-      v-if="overlay === 'settings' && g.playerSettings"
-      @close="toggle('settings', true)"
-      @bgclick="toggle('settings', true)"
-      :settings="g.playerSettings" />
-    <PreviewOverlay
-      v-if="overlay === 'preview'"
-      @close="toggle('preview', false)"
-      @click="toggle('preview', false)"
-      :img="g.previewImageUrl" />
-    <InfoOverlay
-      v-if="g.game && overlay === 'info'"
-      @close="toggle('info', true)"
-      @bgclick="toggle('info', true)"
-      :game="g.game" />
-    <HelpOverlay
-      v-if="overlay === 'help'"
-      @close="toggle('help', true)"
-      @bgclick="toggle('help', true)" />
+    <v-dialog v-model="dialog">
+      <SettingsOverlay v-if="overlay === 'settings' && g.playerSettings" :settings="g.playerSettings" />
+      <PreviewOverlay v-if="overlay === 'preview'" :img="g.previewImageUrl" />
+      <InfoOverlay v-if="g.game && overlay === 'info'" :game="g.game" />
+      <HelpOverlay v-if="overlay === 'help'" />
+    </v-dialog>
 
-    <Overlay v-show="cuttingPuzzle">
-      <template v-slot:default>
-        <div><icon icon="hourglass" /> Cutting puzzle, please wait... <icon icon="hourglass" /></div>
-      </template>
-    </Overlay>
+    <v-dialog v-model="cuttingPuzzle">
+      <div><icon icon="hourglass" /> Cutting puzzle, please wait... <icon icon="hourglass" /></div>
+    </v-dialog>
 
     <ConnectionOverlay
       :connectionState="connectionState"
@@ -63,7 +48,7 @@
 <script setup lang="ts">
 import { Game, Player, PuzzleStatus as PuzzleStatusType } from '../../common/Types'
 import { main, MODE_PLAY } from '../game'
-import { onMounted, onUnmounted, Ref, ref } from 'vue'
+import { onMounted, onUnmounted, Ref, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import api from '../_api'
 import config from '../config'
@@ -71,7 +56,6 @@ import mitt from 'mitt'
 import ConnectionOverlay from './../components/ConnectionOverlay.vue'
 import HelpOverlay from './../components/HelpOverlay.vue'
 import InfoOverlay from './../components/InfoOverlay.vue'
-import Overlay from '../components/Overlay.vue'
 import PreviewOverlay from './../components/PreviewOverlay.vue'
 import PuzzleStatus from '../components/PuzzleStatus.vue'
 import Scores from './../components/Scores.vue'
@@ -86,6 +70,7 @@ const status = ref<PuzzleStatusType>({
   piecesDone: 0,
   piecesTotal: 0,
 })
+const dialog = ref<boolean>(false)
 const overlay = ref<string>('')
 const connectionState = ref<number>(0)
 const cuttingPuzzle = ref<boolean>(true)
@@ -135,34 +120,56 @@ const reconnect = (): void => {
   g.value.connect()
 }
 
-const toggleTo = (newOverlay: string, onOff: boolean, affectsHotkeys: boolean): void => {
-  if (onOff === false) {
-    // off
-    overlay.value = ''
-    if (affectsHotkeys) {
+const closeDialog = (): void => {
+  dialog.value = false
+  overlay.value = ''
+}
+const openDialog = (content: string): void => {
+  overlay.value = content
+  dialog.value = true
+}
+
+watch(dialog, (newValue) => {
+  if (newValue === false) {
+    if (overlay.value !== 'settings') {
       eventBus.emit('setHotkeys', true)
     }
   } else {
+    if (overlay.value !== 'preview') {
+      eventBus.emit('setHotkeys', false)
+    }
+  }
+})
+
+const toggleTo = (newOverlay: string, onOff: boolean, affectsHotkeys: boolean): void => {
+  if (onOff === false) {
+    // off
+    if (affectsHotkeys) {
+      eventBus.emit('setHotkeys', true)
+    }
+    closeDialog()
+  } else {
     // on
-    overlay.value = newOverlay
     if (affectsHotkeys) {
       eventBus.emit('setHotkeys', false)
     }
+    openDialog(newOverlay)
   }
 }
 
 const toggle = (newOverlay: string, affectsHotkeys: boolean): void => {
-  if (overlay.value === '') {
-    overlay.value = newOverlay
+  if (dialog.value === false) {
     if (affectsHotkeys) {
       eventBus.emit('setHotkeys', false)
     }
+    openDialog(newOverlay)
   } else {
     // could check if overlay was the provided one
     overlay.value = ''
     if (affectsHotkeys) {
       eventBus.emit('setHotkeys', true)
     }
+    closeDialog()
   }
   if (newOverlay === 'preview') {
     eventBus.emit('onPreviewChange', overlay.value === 'preview')

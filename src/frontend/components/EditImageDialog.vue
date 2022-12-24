@@ -1,44 +1,42 @@
 <template>
-  <Overlay class="edit-image-dialog" @close="emit('close')">
-    <template v-slot:default>
-      <div class="area-image">
-        <div class="has-image">
-          <ResponsiveImage :src="image.url" :title="image.title" />
-        </div>
-      </div>
+  <v-card class="edit-image-dialog">
+    <v-card-title>Edit Image</v-card-title>
 
-      <div class="area-settings">
-        <table>
-          <tr>
-            <td><label>Title</label></td>
-            <td><input type="text" v-model="title" placeholder="Flower by @artist" /></td>
-          </tr>
-          <tr>
-            <td colspan="2">
-              <div class="hint">Feel free to leave a credit to the artist/photographer in the title :)</div>
-            </td>
-          </tr>
-          <tr>
-            <td><label>Tags</label></td>
-            <td>
-              <TagsInput v-model="tags" :autocompleteTags="autocompleteTags" />
-            </td>
-          </tr>
-        </table>
-      </div>
+    <v-container :fluid="true">
+      <v-row no-gutters>
+        <v-col :lg="8">
+          <div class="has-image" style="min-height: 50vh;">
+            <ResponsiveImage :src="image.url" :title="image.title" />
+          </div>
+        </v-col>
+        <v-col :lg="4" class="area-settings">
+          <table>
+            <tr>
+              <td>
+                <v-text-field density="compact" v-model="title" placeholder="eg. Flower by @artist" label="Title" />
+                <div class="text-disabled">Feel free to leave a credit to the artist/photographer in the title :)</div>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <TagsInput v-model="tags" :autocompleteTags="autocompleteTags" />
+              </td>
+            </tr>
+          </table>
+        </v-col>
+      </v-row>
+    </v-container>
 
-      <div class="area-buttons">
-        <button class="btn" @click="saveImage"><icon icon="preview" /> Save image</button>
-        <button class="btn" @click="emit('close')">Cancel</button>
-      </div>
-    </template>
-  </Overlay>
+    <v-card-actions>
+      <v-btn @click="saveImage" prepend-icon="mdi-image">Save image</v-btn>
+      <v-btn @click="emit('close')">Cancel</v-btn>
+    </v-card-actions>
+  </v-card>
 </template>
 <script setup lang="ts">
 import { ref, watch } from 'vue'
 import { ImageInfo, Tag } from '../../common/Types'
 import TagsInput from '../components/TagsInput.vue'
-import Overlay from './Overlay.vue';
 import ResponsiveImage from './ResponsiveImage.vue'
 
 const props = defineProps<{

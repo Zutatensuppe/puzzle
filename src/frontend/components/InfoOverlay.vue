@@ -1,34 +1,31 @@
 <template>
-  <Overlay class="transparent" @close="emit('close')">
-    <template v-slot:default>
-      <table class="help">
-        <tr>
-          <td colspan="2">Info about this puzzle</td>
-        </tr>
-        <tr>
-          <td>Image Title: </td>
-          <td>{{game.puzzle.info.image?.title}}</td>
-        </tr>
-        <tr>
-          <td>Scoring: </td>
-          <td><span :title="snapMode[1]">{{scoreMode[0]}}</span></td>
-        </tr>
-        <tr>
-          <td>Shapes: </td>
-          <td><span :title="snapMode[1]">{{shapeMode[0]}}</span></td>
-        </tr>
-        <tr>
-          <td>Snapping: </td>
-          <td><span :title="snapMode[1]">{{snapMode[0]}}</span></td>
-        </tr>
-      </table>
-    </template>
-  </Overlay>
+  <v-card class="transparent" @close="emit('close')">
+    <table class="help">
+      <tr>
+        <td colspan="2">Info about this puzzle</td>
+      </tr>
+      <tr>
+        <td>Image Title: </td>
+        <td>{{game.puzzle.info.image?.title}}</td>
+      </tr>
+      <tr>
+        <td>Scoring: </td>
+        <td><span :title="snapMode[1]">{{scoreMode[0]}}</span></td>
+      </tr>
+      <tr>
+        <td>Shapes: </td>
+        <td><span :title="snapMode[1]">{{shapeMode[0]}}</span></td>
+      </tr>
+      <tr>
+        <td>Snapping: </td>
+        <td><span :title="snapMode[1]">{{snapMode[0]}}</span></td>
+      </tr>
+    </table>
+  </v-card>
 </template>
 <script setup lang="ts">
 import { computed } from 'vue'
 import { Game, ScoreMode, ShapeMode, SnapMode } from '../../common/Types'
-import Overlay from './Overlay.vue';
 
 const props = defineProps<{
   game: Game

@@ -1,61 +1,59 @@
 <template>
-  <Overlay class="transparent" @close="emit('close')">
-    <template v-slot:default>
-      <table class="settings">
-        <tr>
-          <td><label>Background: </label></td>
-          <td><input type="color" v-model="background" /></td>
-        </tr>
-        <tr>
-          <td><label>Table: </label></td>
-          <td>
-            <label><input type="checkbox" v-model="showTable">Show</label>
-            <label v-if="showTable"><input type="radio" v-model="tableTexture" value="dark" /> Dark</label>
-            <label v-if="showTable"><input type="radio" v-model="tableTexture" value="brown" /> Brown</label>
-            <label v-if="showTable"><input type="radio" v-model="tableTexture" value="light" /> Light</label>
-          </td>
-        </tr>
-        <tr>
-          <td><label>Color: </label></td>
-          <td>
-            <input type="color" v-model="color" v-if="!isUkraineColor" />
-            <label><input type="checkbox" v-model="isUkraineColor"><icon icon="ukraine-heart" /></label>
-          </td>
-        </tr>
-        <tr>
-          <td><label>Name: </label></td>
-          <td><input type="text" maxLength="16" v-model="name" /></td>
-        </tr>
-        <tr>
-          <td><label>Sounds: </label></td>
-          <td><input type="checkbox" v-model="soundsEnabled" /></td>
-        </tr>
-        <tr>
-          <td><label>Piece connect sounds of others: </label></td>
-          <td><input type="checkbox" :disabled="!soundsEnabled" v-model="otherPlayerClickSoundEnabled" /></td>
-        </tr>
-        <tr>
-          <td><label>Sounds Volume: </label></td>
-          <td class="sound-volume">
-            <span @click="decreaseVolume"><icon icon="volume-down" /></span>
-            <input
-              :disabled="!soundsEnabled"
-              type="range"
-              min="0"
-              max="100"
-              :value="soundsVolume"
-              @change="updateVolume"
-              />
-            <span @click="increaseVolume"><icon icon="volume-up" /></span>
-          </td>
-        </tr>
-        <tr>
-          <td><label>Show player names: </label></td>
-          <td><input type="checkbox" v-model="showPlayerNames" /></td>
-        </tr>
-      </table>
-    </template>
-  </Overlay>
+  <v-card class="transparent" @close="emit('close')">
+    <table class="settings">
+      <tr>
+        <td><label>Background: </label></td>
+        <td><input type="color" v-model="background" /></td>
+      </tr>
+      <tr>
+        <td><label>Table: </label></td>
+        <td>
+          <label><input type="checkbox" v-model="showTable">Show</label>
+          <label v-if="showTable"><input type="radio" v-model="tableTexture" value="dark" /> Dark</label>
+          <label v-if="showTable"><input type="radio" v-model="tableTexture" value="brown" /> Brown</label>
+          <label v-if="showTable"><input type="radio" v-model="tableTexture" value="light" /> Light</label>
+        </td>
+      </tr>
+      <tr>
+        <td><label>Color: </label></td>
+        <td>
+          <input type="color" v-model="color" v-if="!isUkraineColor" />
+          <label><input type="checkbox" v-model="isUkraineColor"><icon icon="ukraine-heart" /></label>
+        </td>
+      </tr>
+      <tr>
+        <td><label>Name: </label></td>
+        <td><input type="text" maxLength="16" v-model="name" /></td>
+      </tr>
+      <tr>
+        <td><label>Sounds: </label></td>
+        <td><input type="checkbox" v-model="soundsEnabled" /></td>
+      </tr>
+      <tr>
+        <td><label>Piece connect sounds of others: </label></td>
+        <td><input type="checkbox" :disabled="!soundsEnabled" v-model="otherPlayerClickSoundEnabled" /></td>
+      </tr>
+      <tr>
+        <td><label>Sounds Volume: </label></td>
+        <td class="sound-volume">
+          <span @click="decreaseVolume"><icon icon="volume-down" /></span>
+          <input
+            :disabled="!soundsEnabled"
+            type="range"
+            min="0"
+            max="100"
+            :value="soundsVolume"
+            @change="updateVolume"
+            />
+          <span @click="increaseVolume"><icon icon="volume-up" /></span>
+        </td>
+      </tr>
+      <tr>
+        <td><label>Show player names: </label></td>
+        <td><input type="checkbox" v-model="showPlayerNames" /></td>
+      </tr>
+    </table>
+  </v-card>
 </template>
 <script setup lang="ts">
 import { ref, watch } from 'vue'

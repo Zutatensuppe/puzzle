@@ -1,9 +1,7 @@
 <template>
   <div class="imageteaser" @click="onClick">
     <img :src="url" />
-    <div class="btn edit" v-if="canEdit" @click.stop="onEditClick">
-      <icon icon="edit" />
-    </div>
+    <v-btn v-if="canEdit" @click.stop="onEditClick" icon="mdi-pencil" size="x-small"></v-btn>
     <div class="imageteaser-info">
       {{ image.gameCount }}x plays
     </div>

@@ -1,11 +1,11 @@
 <template>
-  <Overlay class="preview-overlay" @close="emit('close')">
+  <v-card class="preview-overlay" @close="emit('close')">
     <template v-slot:default>
       <div class="preview">
         <div class="img" :style="previewStyle"></div>
       </div>
     </template>
-  </Overlay>
+  </v-card>
 </template>
 <script setup lang="ts">
 import { computed } from 'vue'

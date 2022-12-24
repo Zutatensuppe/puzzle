@@ -1,10 +1,10 @@
 <template>
   <div>
     <div class="input-holder">
-      <input
+      <v-text-field
         ref="inputEl"
-        class="input"
-        type="text"
+        density="compact"
+        label="Tags"
         v-model="input"
         placeholder="Plants, People"
         @keydown.enter.prevent="add"
@@ -23,7 +23,13 @@
           >{{val}}</li>
       </ul>
     </div>
-    <span v-for="(tag,idx) in values" :key="idx" class="bit is-clickable" @click="rm(tag)">{{tag}} ✖</span>
+    <v-chip
+      v-for="(tag,idx) in values"
+      :key="idx"
+      class="is-clickable"
+      @click="rm(tag)"
+      append-icon="mdi-close"
+    >{{tag}}</v-chip>
   </div>
 </template>
 <script setup lang="ts">

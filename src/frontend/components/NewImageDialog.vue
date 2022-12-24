@@ -1,96 +1,106 @@
 <template>
-  <Overlay class="new-image-dialog" @close="emit('close')">
-    <template v-slot:default>
-      <div
-        class="area-image"
-        :class="{'has-image': !!previewUrl, 'no-image': !previewUrl, droppable: droppable}"
-        @drop="onDrop"
-        @dragover="onDragover"
-        @dragleave="onDragleave">
-        <div class="drop-target"></div>
-        <div v-if="previewUrl" class="has-image">
-          <span class="remove btn" @click="previewUrl=''">X</span>
-          <ResponsiveImage :src="previewUrl" />
-        </div>
-        <div v-else>
-          <label class="upload">
-            <input type="file" style="display: none" @change="onFileSelect" accept="image/*" />
-            <div class="upload-content">
-              How to upload an image? Choose any of the following methods:
-              <ul>
-                <li>Click this area to select an image for upload </li>
-                <li>Drag and drop an image into the area</li>
-                <li>Paste an image URL</li>
-                <li>Paste an image</li>
-              </ul>
-              <div class="hint">
-                Don't worry, the image will not show up in the gallery
-                unless "Post to gallery" was clicked.
+  <v-card class="new-image-dialog">
+    <v-card-title>New Image</v-card-title>
+
+    <v-container :fluid="true">
+      <v-row no-gutters>
+        <v-col :lg="8"
+          :class="{'has-image': !!previewUrl, 'no-image': !previewUrl, droppable: droppable}"
+          @drop="onDrop"
+          @dragover="onDragover"
+          @dragleave="onDragleave"
+          style="min-height: 50vh;">
+          <div class="drop-target"></div>
+          <div v-if="previewUrl" class="has-image">
+            <span class="remove btn" @click="previewUrl=''">X</span>
+            <ResponsiveImage :src="previewUrl" />
+          </div>
+          <div v-else>
+            <label class="upload">
+              <input type="file" style="display: none" @change="onFileSelect" accept="image/*" />
+              <div class="upload-content">
+                How to upload an image? Choose any of the following methods:
+                <ul>
+                  <li>Click this area to select an image for upload </li>
+                  <li>Drag and drop an image into the area</li>
+                  <li>Paste an image URL</li>
+                  <li>Paste an image</li>
+                </ul>
+                <div class="text-disabled">
+                  Don't worry, the image will not show up in the gallery
+                  unless "Post to gallery" was clicked.
+                </div>
               </div>
-            </div>
-          </label>
-        </div>
-      </div>
+            </label>
+          </div>
+        </v-col>
+        <v-col :lg="4" class="area-settings">
+          <table>
+            <tr>
+              <td>
+                <v-text-field density="compact" v-model="title" placeholder="eg. Flower by @artist" @focus="inputFocused = true" @blur="inputFocused=false" label="Title" />
+                <div class="text-disabled">Feel free to leave a credit to the artist/photographer in the title :)</div>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <TagsInput v-model="tags" :autocompleteTags="autocompleteTags" />
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <v-checkbox density="comfortable" label="Private Image (Private images won't show up in the gallery)" v-model="isPrivate"></v-checkbox>
+              </td>
+            </tr>
+          </table>
+        </v-col>
+      </v-row>
+    </v-container>
 
-      <div class="area-settings">
-        <table>
-          <tr>
-            <td><label>Title</label></td>
-            <td><input type="text" v-model="title" placeholder="Flower by @artist" @focus="inputFocused = true" @blur="inputFocused=false" /></td>
-          </tr>
-          <tr>
-            <td colspan="2">
-              <div class="hint">Feel free to leave a credit to the artist/photographer in the title :)</div>
-            </td>
-          </tr>
-          <tr>
-            <td><label>Private Image</label></td>
-            <td class="checkbox-only">
-              <input type="checkbox" v-model="isPrivate" />
-            </td>
-          </tr>
-          <tr>
-            <td colspan="2">
-              <div class="hint">Private images won't show up in the gallery.</div>
-            </td>
-          </tr>
-          <tr>
-            <td><label>Tags</label></td>
-            <td>
-              <TagsInput v-model="tags" :autocompleteTags="autocompleteTags" />
-            </td>
-          </tr>
-        </table>
-      </div>
-
-      <div class="area-buttons">
-        <button class="btn"
-          v-if="!isPrivate"
+    <v-card-actions>
+      <template v-if="!isPrivate">
+        <v-btn
+          v-if="uploading === 'postToGallery'"
           :disabled="!canPostToGallery"
           @click="postToGallery"
-        >
-          <template v-if="uploading === 'postToGallery'">Uploading ({{uploadProgressPercent}}%)</template>
-          <template v-else><icon icon="preview" /> Post to gallery</template>
-        </button>
-        <button class="btn"
+          prepend-icon="mdi-timer-sand-empty"
+        >Uploading ({{uploadProgressPercent}}%)</v-btn>
+        <v-btn
+          v-if="uploading !== 'postToGallery'"
+          :disabled="!canPostToGallery"
+          @click="postToGallery"
+          prepend-icon="mdi-image"
+        >Post to gallery</v-btn>
+      </template>
+      <template v-else>
+        <v-btn
+          v-if="uploading === 'setupGame'"
           :disabled="!canSetupGameClick"
           @click="setupGameClick"
-        >
-          <template v-if="uploading === 'setupGame'">Uploading ({{uploadProgressPercent}}%)</template>
-          <template v-else-if="isPrivate"><icon icon="puzzle-piece" /> Set up game</template>
-          <template v-else><icon icon="puzzle-piece" /> Post to gallery <br /> + set up game</template>
-        </button>
-        <button class="btn" @click="emit('close')">Cancel</button>
-      </div>
-    </template>
-  </Overlay>
+          prepend-icon="mdi-timer-sand-empty"
+        >Uploading ({{uploadProgressPercent}}%)</v-btn>
+        <v-btn
+          v-else-if="isPrivate"
+          :disabled="!canSetupGameClick"
+          @click="setupGameClick"
+          prepend-icon="mdi-puzzle"
+        >Set up game</v-btn>
+        <v-btn
+          v-else
+          :disabled="!canSetupGameClick"
+          @click="setupGameClick"
+          prepend-icon="mdi-puzzle"
+        >Post to gallery <br /> + set up game</v-btn>
+      </template>
+      <v-btn @click="emit('close')">Cancel</v-btn>
+    </v-card-actions>
+  </v-card>
 </template>
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { FrontendGameSettings as FrontendNewImageEventData } from '../../common/Types';
 import { logger } from '../../common/Util'
 import TagsInput from '../components/TagsInput.vue'
-import Overlay from './Overlay.vue';
 import ResponsiveImage from './ResponsiveImage.vue';
 
 const log = logger('NewImageDialog.vue')

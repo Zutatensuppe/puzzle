@@ -1,16 +1,13 @@
 <template>
-  <Overlay class="connection-lost" v-show="show" @close="emit('close')">
-    <template v-slot:default>
-      <div v-if="lostConnection"><icon icon="disconnect" /> LOST CONNECTION <icon icon="disconnect" /></div>
-      <span v-if="lostConnection" class="btn" @click="emit('reconnect')">Reconnect</span>
-      <div v-if="connecting">Connecting...</div>
-    </template>
-  </Overlay>
+  <v-dialog class="connection-lost" v-model="show">
+    <div v-if="lostConnection"><icon icon="disconnect" /> LOST CONNECTION <icon icon="disconnect" /></div>
+    <span v-if="lostConnection" class="btn" @click="emit('reconnect')">Reconnect</span>
+    <div v-if="connecting">Connecting...</div>
+  </v-dialog>
 </template>
 <script setup lang="ts">
 import { computed } from 'vue';
 import Communication from '../Communication';
-import Overlay from './Overlay.vue';
 
 const emit = defineEmits<{
   (e: 'reconnect'): void

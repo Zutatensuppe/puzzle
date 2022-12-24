@@ -1,87 +1,81 @@
 <template>
-  <Overlay class="new-game-dialog" @close="emit('close')">
-    <template v-slot:default>
-      <div class="area-image">
-        <div class="has-image">
-          <ResponsiveImage :src="image.url" :title="image.title" />
-        </div>
-        <div class="image-title" v-if="image.title || image.width || image.height">
-          <span class="image-title-title" v-if="image.title">"{{image.title}}"</span>
-          <span class="image-title-dim" v-if="image.width || image.height">({{image.width}} ✕ {{image.height}})</span>
-        </div>
-      </div>
+  <v-card class="new-game-dialog">
+    <v-card-title>New Game</v-card-title>
 
-      <div class="area-settings">
-        <table>
-          <tr>
-            <td><label>Pieces</label></td>
-            <td><input type="text" v-model="tiles" /></td>
-          </tr>
-          <tr>
-            <td><label>Scoring: </label></td>
-            <td>
-              <label><input type="radio" v-model="scoreMode" value="1" />
-              Any (Score when pieces are connected to each other or on final location)</label>
-              <br />
-              <label><input type="radio" v-model="scoreMode" value="0" />
-              Final (Score when pieces are put to their final location)</label>
-            </td>
-          </tr>
-          <tr>
-            <td><label>Shapes: </label></td>
-            <td>
-              <label><input type="radio" v-model="shapeMode" value="0" />
-              Normal</label>
-              <br />
-              <label><input type="radio" v-model="shapeMode" value="1" />
-              Any (Flat pieces can occur anywhere)</label>
-              <br />
-              <label><input type="radio" v-model="shapeMode" value="2" />
-              Flat (All pieces flat on all sides)</label>
-            </td>
-          </tr>
-          <tr>
-            <td><label>Snapping: </label></td>
-            <td>
-              <label><input type="radio" v-model="snapMode" value="0" />
-              Normal (Pieces snap to final destination and to each other)</label>
-              <br />
-              <label><input type="radio" v-model="snapMode" value="1" />
-              Real (Pieces snap only to corners, already snapped pieces and to each other)</label>
-            </td>
-          </tr>
-          <tr>
-            <td><label>Private Game</label></td>
-            <td class="checkbox-only"><input :disabled="forcePrivate" type="checkbox" v-model="isPrivate" /></td>
-          </tr>
-          <tr>
-            <td colspan="2">
-              <div class="hint">Private games won't show up in the game overview.</div>
-            </td>
-          </tr>
-          <tr v-if="image.tags.length">
-            <td><label>Tags: </label></td>
-            <td>
-              <span v-for="(tag,idx) in image.tags" :key="idx" class="bit">{{ tag.title }}</span>
-            </td>
-          </tr>
-        </table>
-      </div>
+    <v-container :fluid="true">
+      <v-row no-gutters>
+        <v-col :lg="8">
+          <div class="has-image">
+            <ResponsiveImage :src="image.url" :title="image.title" />
+          </div>
+          <div class="image-title" v-if="image.title || image.width || image.height">
+            <span class="image-title-title" v-if="image.title">"{{image.title}}"</span>
+            <span class="image-title-dim" v-if="image.width || image.height">({{image.width}} ✕ {{image.height}})</span>
+          </div>
+        </v-col>
+        <v-col :lg="4" class="area-settings">
+          <table>
+            <tr>
+              <td><v-text-field density="compact" v-model="tiles" label="Pieces" /></td>
+            </tr>
+            <tr>
+              <td>
+                <v-radio-group v-model="scoreMode" density="comfortable" label="Scoring">
+                  <v-radio label="Any (Score when pieces are connected to each other or on final location)" :value="1"></v-radio>
+                  <v-radio label="Final (Score when pieces are put to their final location)" :value="0"></v-radio>
+                </v-radio-group>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <v-radio-group v-model="shapeMode" density="comfortable" label="Shapes">
+                  <v-radio label="Normal" :value="0"></v-radio>
+                  <v-radio label="Any (Flat pieces can occur anywhere)" :value="1"></v-radio>
+                  <v-radio label="Flat (All pieces flat on all sides)" :value="2"></v-radio>
+                </v-radio-group>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <v-radio-group v-model="snapMode" density="comfortable" label="Snapping">
+                  <v-radio label="Normal (Pieces snap to final destination and to each other)" :value="0"></v-radio>
+                  <v-radio label="Real (Pieces snap only to corners, already snapped pieces and to each other)" :value="1"></v-radio>
+                </v-radio-group>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <v-label>Privacy</v-label>
+                <v-checkbox density="comfortable" label="Private Game (Private games won't show up in the game overview)" v-model="isPrivate" :disabled="forcePrivate"></v-checkbox>
+              </td>
+            </tr>
+            <tr v-if="image.tags.length">
+              <td>
+                <v-label>Image Tags</v-label>
+                <div class="pt-2">
+                  <v-chip v-for="(tag,idx) in image.tags" :key="idx">{{ tag.title }}</v-chip>
+                </div>
+              </td>
+            </tr>
+          </table>
+        </v-col>
+      </v-row>
+    </v-container>
 
-      <div class="area-buttons">
-        <button class="btn" :disabled="!canStartNewGame" @click="onNewGameClick">
-          <icon icon="puzzle-piece" /> Generate Puzzle
-        </button>
-        <button class="btn" @click="emit('close')">Cancel</button>
-      </div>
-    </template>
-  </Overlay>
+    <v-card-actions>
+      <v-btn
+        :disabled="!canStartNewGame"
+        @click="onNewGameClick"
+        prepend-icon="mdi-puzzle"
+      >Generate Puzzle</v-btn>
+      <v-btn @click="emit('close')">Cancel</v-btn>
+    </v-card-actions>
+  </v-card>
 </template>
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 
 import { GameSettings, ImageInfo, ScoreMode, ShapeMode, SnapMode } from './../../common/Types'
-import Overlay from './Overlay.vue';
 import ResponsiveImage from './ResponsiveImage.vue';
 
 const props = defineProps<{

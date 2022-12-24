@@ -1,5 +1,5 @@
 <template>
-  <div class="game-teaser">
+  <v-card>
     <div class="game-teaser-inner" :style="style">
       <router-link class="game-info" :to="{ name: 'game', params: { id: game.id } }">
         <span class="game-info-text">
@@ -13,7 +13,7 @@
         <icon icon="replay" /> Watch replay
       </router-link>
     </div>
-  </div>
+  </v-card>
 </template>
 <script setup lang="ts">
 import Time from './../../common/Time'
