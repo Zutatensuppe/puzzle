@@ -3,7 +3,7 @@
     <v-card-title>New Game</v-card-title>
 
     <v-container :fluid="true">
-      <v-row no-gutters>
+      <v-row>
         <v-col :lg="8">
           <div class="has-image" style="min-height: 50vh;">
             <ResponsiveImage :src="image.url" :title="image.title" />
