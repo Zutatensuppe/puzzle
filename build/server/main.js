@@ -1309,6 +1309,9 @@ function Game_getShapeMode(game) {
 function Game_getAllPlayers(game) {
     return game.players.map(Util.decodePlayer);
 }
+function Game_getPlayersWithScore(game) {
+    return Game_getAllPlayers(game).filter((p) => p.points > 0);
+}
 function Game_getActivePlayers(game, ts) {
     const minTs = ts - IDLE_TIMEOUT_SEC * Time.SEC;
     return Game_getAllPlayers(game).filter((p) => p.ts >= minTs);
@@ -1370,6 +1373,7 @@ var GameCommon = {
     Game_getFinishedPiecesCount,
     Game_getPieceCount,
     Game_getActivePlayers,
+    Game_getPlayersWithScore,
     Game_getImageUrl,
     Game_getScoreMode,
     Game_getSnapMode,
@@ -1520,6 +1524,7 @@ const resizeImage = async (filename) => {
             [150, 100, 'contain'],
             [375, 210, 'contain'],
             [375, null, 'cover'],
+            [620, 496, 'contain'],
         ];
         for (const [w, h, fit] of sizes) {
             const filename = `${imageOutPath}-${w}x${h || 0}.webp`;
@@ -2511,19 +2516,24 @@ function createRouter$1(db) {
             tags: await Images.getAllTags(db),
         });
     });
-    const GameToGameInfo = (game, ts) => ({
-        id: game.id,
-        hasReplay: GameLog.hasReplay(game),
-        started: GameCommon.Game_getStartTs(game),
-        finished: GameCommon.Game_getFinishTs(game),
-        piecesFinished: GameCommon.Game_getFinishedPiecesCount(game),
-        piecesTotal: GameCommon.Game_getPieceCount(game),
-        players: GameCommon.Game_getActivePlayers(game, ts).length,
-        imageUrl: GameCommon.Game_getImageUrl(game),
-        snapMode: GameCommon.Game_getSnapMode(game),
-        scoreMode: GameCommon.Game_getScoreMode(game),
-        shapeMode: GameCommon.Game_getShapeMode(game),
-    });
+    const GameToGameInfo = (game, ts) => {
+        const finished = GameCommon.Game_getFinishTs(game);
+        return {
+            id: game.id,
+            hasReplay: GameLog.hasReplay(game),
+            started: GameCommon.Game_getStartTs(game),
+            finished,
+            piecesFinished: GameCommon.Game_getFinishedPiecesCount(game),
+            piecesTotal: GameCommon.Game_getPieceCount(game),
+            players: finished
+                ? GameCommon.Game_getPlayersWithScore(game).length
+                : GameCommon.Game_getActivePlayers(game, ts).length,
+            imageUrl: GameCommon.Game_getImageUrl(game),
+            snapMode: GameCommon.Game_getSnapMode(game),
+            scoreMode: GameCommon.Game_getScoreMode(game),
+            shapeMode: GameCommon.Game_getShapeMode(game),
+        };
+    };
     const GAMES_PER_PAGE_LIMIT = 10;
     router.get('/index-data', async (req, res) => {
         const ts = Time.timestamp();
