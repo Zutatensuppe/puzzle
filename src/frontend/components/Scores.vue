@@ -4,12 +4,12 @@
     <table>
       <tr v-for="(p, idx) in actives" :key="idx" :style="playerStyle(p)">
         <td><icon icon="lightning" /></td>
-        <td>{{p.name}}</td>
+        <td>{{p.name || '<No name>'}}</td>
         <td>{{p.points}}</td>
       </tr>
       <tr v-for="(p, idx) in idles" :key="idx" :style="playerStyle(p)">
         <td><icon icon="zzz" /></td>
-        <td>{{p.name}}</td>
+        <td>{{p.name || '<No name>'}}</td>
         <td>{{p.points}}</td>
       </tr>
     </table>

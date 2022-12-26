@@ -1,7 +1,7 @@
 <template>
   <div id="game">
-    <v-dialog v-model="dialog" :class="`overlay-${overlay}`">
-      <SettingsOverlay v-if="overlay === 'settings' && g.playerSettings" :settings="g.playerSettings" />
+    <v-dialog v-model="dialog" :class="`overlay-${overlay}`" :persistent="dialogPersistent">
+      <SettingsOverlay v-if="overlay === 'settings' && g.playerSettings" :settings="g.playerSettings" @dialogChange="onDialogChange" />
       <PreviewOverlay v-if="overlay === 'preview'" :img="g.previewImageUrl" />
       <InfoOverlay v-if="g.game && overlay === 'info'" :game="g.game" />
       <HelpOverlay v-if="overlay === 'help'" />
@@ -81,6 +81,7 @@ const status = ref<PuzzleStatusType>({
   piecesTotal: 0,
 })
 const dialog = ref<boolean>(false)
+const dialogPersistent = ref<boolean|undefined>(undefined)
 const overlay = ref<string>('')
 const connectionState = ref<number>(0)
 const cuttingPuzzle = ref<boolean>(true)
@@ -118,6 +119,14 @@ const addStatusMessage = (what: string, value: any): void => {
   setTimeout(() => {
     statusMessages.value.shift()
   }, 3000)
+}
+
+const onDialogChange = (changes: any[]): void => {
+  changes.forEach((change: { type: string, value: any }) => {
+    if (change.type === 'persistent') {
+      dialogPersistent.value = change.value
+    }
+  })
 }
 
 const onResize = (): void => {

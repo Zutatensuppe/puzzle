@@ -4,36 +4,38 @@
       <h4>Settings</h4>
       <div>
         <v-label>Background Color</v-label>
-        <colorpicker v-model="background" class="mb-2"></colorpicker>
+        <IngameColorPicker v-model="background" @open="onColorPickerOpen" @close="onColorPickerClose" />
       </div>
 
       <div>
-        <v-label>Table</v-label>
         <div class="d-flex">
+          <v-label>Table</v-label>
           <v-checkbox-btn v-model="showTable" label="Show Table" density="comfortable"></v-checkbox-btn>
-          <v-radio-group v-model="tableTexture" v-if="showTable" inline density="comfortable" hide-details>
-            <v-radio label="Dark" value="dark"></v-radio>
-            <v-radio label="Brown" value="brown"></v-radio>
-            <v-radio label="Light" value="light"></v-radio>
-          </v-radio-group>
         </div>
+        <v-radio-group v-model="tableTexture" v-if="showTable" inline density="comfortable" hide-details>
+          <v-radio label="Dark" value="dark"></v-radio>
+          <v-radio label="Brown" value="brown"></v-radio>
+          <v-radio label="Light" value="light"></v-radio>
+        </v-radio-group>
       </div>
 
       <div>
-        <v-label>Player Color</v-label>
-        <v-checkbox v-model="isUkraineColor" density="comfortable" hide-details>
-          <template v-slot:label>
-            <icon icon="ukraine-heart" />
-          </template>
-        </v-checkbox>
-        <colorpicker v-model="color" v-if="!isUkraineColor" class="mb-2"></colorpicker>
+        <div class="d-flex">
+          <v-label>Player Color</v-label>
+          <v-checkbox v-model="isUkraineColor" density="comfortable" hide-details>
+            <template v-slot:label>
+              <icon icon="ukraine-heart" />
+            </template>
+          </v-checkbox>
+        </div>
+        <IngameColorPicker v-model="color" v-if="!isUkraineColor" @open="onColorPickerOpen" @close="onColorPickerClose" />
       </div>
 
       <div>
         <v-label>Player Name</v-label>
         <v-text-field hide-details maxLength="16" v-model="name" density="compact"></v-text-field>
 
-        <v-checkbox density="comfortable" hide-details v-model="showPlayerNames" label="Show player names"></v-checkbox>
+        <v-checkbox density="comfortable" hide-details v-model="showPlayerNames" label="Show other player names on their hands"></v-checkbox>
       </div>
 
       <div>
@@ -76,8 +78,14 @@
 import { ref, watch } from 'vue'
 import { PlayerSettings } from '../PlayerSettings';
 
+import IngameColorPicker from './IngameColorPicker.vue';
+
 const props = defineProps<{
   settings: PlayerSettings
+}>()
+
+const emit = defineEmits<{
+  (e: 'dialogChange', val: any[]): void
 }>()
 
 const showTable = ref<boolean>(props.settings.showTable())
@@ -90,6 +98,17 @@ const soundsEnabled = ref<boolean>(props.settings.soundsEnabled())
 const otherPlayerClickSoundEnabled = ref<boolean>(props.settings.otherPlayerClickSoundEnabled())
 const soundsVolume = ref<number>(props.settings.soundsVolume())
 const showPlayerNames = ref<boolean>(props.settings.showPlayerNames())
+
+const onColorPickerOpen = () => {
+  emit('dialogChange', [
+    { type: 'persistent', value: true },
+  ])
+}
+const onColorPickerClose = () => {
+  emit('dialogChange', [
+    { type: 'persistent', value: undefined },
+  ])
+}
 
 const updateVolume = (ev: Event): void => {
   const vol = parseInt((ev.target as HTMLInputElement).value)

@@ -1,6 +1,6 @@
 @import "@mdi/font";
 
-@import url('https://fonts.googleapis.com/css2?family=Teko:wght@300&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Roboto&Teko:wght@300&display=swap');
 
 // @font-face {
 //   font-family: dpcomic;
@@ -453,3 +453,9 @@ kbd {
     }
   }
 }
+
+.ingame-color-picker { display: flex; gap: 10px; }
+.current-color { display: inline-block; width: 45px; height: 45px; border: solid 1px #222; border-radius: 4px; }
+// .color-picker-background { position: absolute; left: 0; top: 0; right: 0; bottom: 0; z-index: 3000; }
+.vc-photoshop { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); color: #444; z-index: 3000; }
+.vc-ps-fields .vc-input__input { color: #444; }
