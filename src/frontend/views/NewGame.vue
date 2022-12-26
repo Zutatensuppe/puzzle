@@ -22,32 +22,39 @@ in jigsawpuzzles.io
       </v-col>
     </v-row>
     <v-container :fluid="true" :class="{blurred: dialog }" class="filters mb-2">
-      <template v-if="tags.length > 0">
-        <v-label>Tags:</v-label>
-        <v-chip-group v-model="filters.tags" multiple>
+      <div>
+        <v-select
+          class="sorting"
+          density="compact"
+          label="Sorting:"
+          v-model="filters.sort"
+          item-title="title"
+          item-value="val"
+          :items="[
+            { val: 'date_desc', title: 'Newest first'},
+            { val: 'date_asc', title: 'Oldest first'},
+            { val: 'alpha_asc', title: 'A-Z'},
+            { val: 'alpha_desc', title: 'Z-A'},
+            { val: 'game_count_asc', title: 'Most plays first'},
+            { val: 'game_count_desc', title: 'Least plays first'},
+          ]"
+          @update:modelValue="filtersChanged"
+        ></v-select>
+      </div>
+      <div>
+        <template v-if="tags.length > 0">
+          <v-label>Tags:</v-label>
           <v-chip
-            filter
             v-for="(t,idx) in relevantTags"
-            :key="idx">{{t.title}} ({{t.total}})</v-chip>
-        </v-chip-group>
-      </template>
-      <v-select
-        class="sorting"
-        label="Sort by"
-        density="compact"
-        v-model="filters.sort"
-        item-title="title"
-        item-value="val"
-        :items="[
-          { val: 'date_desc', title: 'Newest first'},
-          { val: 'date_asc', title: 'Oldest first'},
-          { val: 'alpha_asc', title: 'A-Z'},
-          { val: 'alpha_desc', title: 'Z-A'},
-          { val: 'game_count_asc', title: 'Most plays first'},
-          { val: 'game_count_desc', title: 'Least plays first'},
-        ]"
-        @update:modelValue="filtersChanged"
-      ></v-select>
+            filter
+            :key="idx"
+            @click="toggleTag(t)"
+            :prepend-icon="filters.tags.includes(t.slug) ? 'mdi-check' : undefined"
+            density="compact"
+            class="is-clickable"
+          >{{t.title}} ({{t.total}})</v-chip>
+        </template>
+      </div>
     </v-container>
     <ImageLibrary
       :class="{blurred: dialog }"
@@ -121,7 +128,73 @@ const newGameForcePrivate = ref<boolean>(false)
 const uploading = ref<'postToGallery' | 'setupGame' | ''>('')
 const uploadProgress = ref<number>(0)
 
-const relevantTags = computed((): Tag[] => tags.value.filter((tag: Tag) => tag.total > 0))
+// const relevantTags = computed((): Tag[] => tags.value.filter((tag: Tag) => tag.total > 0))
+const relevantTags = [
+  { id: 0, slug: 'blaasfZZZsd', title: 'bla', total: 1 },
+  { id: 0, slug: 'blaasfZZZsd', title: 'bla', total: 1 },
+  { id: 0, slug: 'blaasfZZZsd', title: 'bla', total: 1 },
+  { id: 0, slug: 'blaasfZZZsd', title: 'bla', total: 1 },
+  { id: 0, slug: 'blaasfZZZsd', title: 'bla', total: 1 },
+  { id: 0, slug: 'blaasfZZZsd', title: 'bla', total: 1 },
+  { id: 0, slug: 'blaasfZZZsd', title: 'bla', total: 1 },
+  { id: 0, slug: 'blaasfZZZsd', title: 'bla', total: 1 },
+  { id: 0, slug: 'blaasfZZZsd', title: 'bla', total: 1 },
+  { id: 0, slug: 'blaasfZZZsd', title: 'bla', total: 1 },
+  { id: 0, slug: 'blaasfZZZsd', title: 'bla', total: 1 },
+  { id: 0, slug: 'blaasfZZZsd', title: 'bla', total: 1 },
+  { id: 0, slug: 'blaasfZZZsd', title: 'bla', total: 1 },
+  { id: 0, slug: 'blaasfZZZsd', title: 'bla', total: 1 },
+  { id: 0, slug: 'blaasfZZZsd', title: 'bla', total: 1 },
+  { id: 0, slug: 'blaasfZZZsd', title: 'bla', total: 1 },
+  { id: 0, slug: 'blaasfZZZsd', title: 'bla', total: 1 },
+  { id: 0, slug: 'blaasfZZZsd', title: 'bla', total: 1 },
+  { id: 0, slug: 'blaasfZZZsd', title: 'bla', total: 1 },
+  { id: 0, slug: 'blaasfZZZsd', title: 'bla', total: 1 },
+  { id: 0, slug: 'blaasfZZZsd', title: 'bla', total: 1 },
+  { id: 0, slug: 'blaasfZZZsd', title: 'bla', total: 1 },
+  { id: 0, slug: 'blaasfZZZsd', title: 'bla', total: 1 },
+  { id: 0, slug: 'blaasfZZZsd', title: 'bla', total: 1 },
+  { id: 0, slug: 'blaasfZZZsd', title: 'bla', total: 1 },
+  { id: 0, slug: 'blaasfZZZsd', title: 'bla', total: 1 },
+  { id: 0, slug: 'bla', title: 'bla', total: 1 },
+  { id: 0, slug: 'bla', title: 'bla', total: 1 },
+  { id: 0, slug: 'bla', title: 'bla', total: 1 },
+  { id: 0, slug: 'bla', title: 'bla', total: 1 },
+  { id: 0, slug: 'bla', title: 'bla', total: 1 },
+  { id: 0, slug: 'bla', title: 'bla', total: 1 },
+  { id: 0, slug: 'bla', title: 'bla', total: 1 },
+  { id: 0, slug: 'bla', title: 'bla', total: 1 },
+  { id: 0, slug: 'bla', title: 'bla', total: 1 },
+  { id: 0, slug: 'bla', title: 'bla', total: 1 },
+  { id: 0, slug: 'bla', title: 'bla', total: 1 },
+  { id: 0, slug: 'bla', title: 'bla', total: 1 },
+  { id: 0, slug: 'bla', title: 'bla', total: 1 },
+  { id: 0, slug: 'bla', title: 'bla', total: 1 },
+  { id: 0, slug: 'bla', title: 'bla', total: 1 },
+  { id: 0, slug: 'bla', title: 'bla', total: 1 },
+  { id: 0, slug: 'bla', title: 'bla', total: 1 },
+  { id: 0, slug: 'bla', title: 'bla', total: 1 },
+  { id: 0, slug: 'bla', title: 'bla', total: 1 },
+  { id: 0, slug: 'bla', title: 'bla', total: 1 },
+  { id: 0, slug: 'bla', title: 'bla', total: 1 },
+  { id: 0, slug: 'bla', title: 'bla', total: 1 },
+  { id: 0, slug: 'bla', title: 'bla', total: 1 },
+  { id: 0, slug: 'bla', title: 'bla', total: 1 },
+  { id: 0, slug: 'bla', title: 'bla', total: 1 },
+  { id: 0, slug: 'bla', title: 'bla', total: 1 },
+  { id: 0, slug: 'bla', title: 'bla', total: 1 },
+  { id: 0, slug: 'bla', title: 'bla', total: 1 },
+  { id: 0, slug: 'bla', title: 'bla', total: 1 },
+  { id: 0, slug: 'bla', title: 'bla', total: 1 },
+  { id: 0, slug: 'bla', title: 'bla', total: 1 },
+  { id: 0, slug: 'bla', title: 'bla', total: 1 },
+  { id: 0, slug: 'bla', title: 'bla', total: 1 },
+  { id: 0, slug: 'bla', title: 'bla', total: 1 },
+  { id: 0, slug: 'bla', title: 'bla', total: 1 },
+  { id: 0, slug: 'bla', title: 'bla', total: 1 },
+  { id: 0, slug: 'bla', title: 'bla', total: 1 },
+  { id: 0, slug: 'bla', title: 'bla', total: 1 },
+]
 
 const openDialog = (content: string) => {
   dialogContent.value = content
@@ -142,24 +215,23 @@ const autocompleteTags = (input: string, exclude: string[]): string[] => {
     .slice(0, 10)
     .map((tag: Tag) => tag.title)
 }
-// const toggleTag = (t: Tag) => {
-//   if (filters.value.tags.includes(t.slug)) {
-//     filters.value.tags = filters.value.tags.filter(slug => slug !== t.slug)
-//   } else {
-//     filters.value.tags.push(t.slug)
-//   }
-//   filtersChanged()
-// }
+const toggleTag = (t: Tag) => {
+  if (filters.value.tags.includes(t.slug)) {
+    filters.value.tags = filters.value.tags.filter(slug => slug !== t.slug)
+  } else {
+    filters.value.tags.push(t.slug)
+  }
+  filtersChanged()
+}
 
 watch(filters, () => {
   filtersChanged()
 }, { deep: true })
 
 const loadImages = async () => {
-  console.log(filters.value.tags)
   const _filters = {
     sort: filters.value.sort,
-    tags: filters.value.tags.map((index) => relevantTags.value[index].slug)
+    tags: filters.value.tags,
   }
   console.log(_filters)
   const res = await api.pub.newgameData({ filters: _filters })

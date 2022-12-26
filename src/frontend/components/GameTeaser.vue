@@ -1,5 +1,5 @@
 <template>
-  <v-card class="game-teaser" elevation="10">
+  <v-card class="game-teaser" elevation="10" @click="emit('goToGame', game)">
     <div class="game-teaser-image" :style="style"></div>
     <div class="game-teaser-inner">
       <div class="game-teaser-info">
@@ -8,16 +8,16 @@
       <div class="game-teaser-info">
         <v-icon icon="mdi-account-group"></v-icon> {{game.players}} Players
       </div>
-      <div class="game-teaser-info" title="Scoring">
+      <div class="game-teaser-info secondary" title="Scoring">
         <v-icon icon="mdi-counter"></v-icon> {{ scoreMode }}
       </div>
-      <div class="game-teaser-info" title="Shapes">
+      <div class="game-teaser-info secondary" title="Shapes">
         <v-icon icon="mdi-shape"></v-icon> {{ shapeMode }}
       </div>
-      <div class="game-teaser-info" title="Snapping">
+      <div class="game-teaser-info secondary" title="Snapping">
         <v-icon icon="mdi-connection"></v-icon> {{ snapMode }}
       </div>
-      <div class="game-teaser-info">
+      <div class="game-teaser-info secondary">
         <v-icon icon="mdi-timer-outline" v-if="!game.finished"></v-icon>
         <v-icon icon="mdi-flag-checkered" v-else></v-icon> {{time(game.started, game.finished)}}
       </div>
@@ -25,9 +25,9 @@
     <v-card-actions class="d-flex justify-center">
       <v-btn
         class="game-join"
+        size="x-small"
         color="success"
         variant="elevated"
-        :to="{ name: 'game', params: { id: game.id } }"
         prepend-icon="mdi-puzzle"
       >
         {{ joinPuzzleText }}
@@ -35,9 +35,10 @@
       <v-btn
         v-if="game.finished && game.hasReplay"
         color="info"
+        size="x-small"
         variant="elevated"
         class="game-replay"
-        :to="{ name: 'replay', params: { id: game.id } }"
+        @click.prevent="emit('goToReplay', game)"
         prepend-icon="mdi-play"
       >
         Watch replay
@@ -52,6 +53,11 @@ import { GameInfo, ScoreMode, ShapeMode, SnapMode } from './../../common/Types'
 
 const props = defineProps<{
   game: GameInfo
+}>()
+
+const emit = defineEmits<{
+  (e: 'goToGame', val: GameInfo): void
+  (e: 'goToReplay', val: GameInfo): void
 }>()
 
 const url = props.game.imageUrl.replace('uploads/', 'uploads/r/') + '-375x210.webp'
