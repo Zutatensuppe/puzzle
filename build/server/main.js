@@ -635,10 +635,10 @@ function getImageUrl(gameId) {
     return Game_getImageUrl(GAMES[gameId]);
 }
 function getScoreMode(gameId) {
-    return GAMES[gameId].scoreMode;
+    return Game_getScoreMode(GAMES[gameId]);
 }
 function getSnapMode(gameId) {
-    return GAMES[gameId].snapMode;
+    return Game_getSnapMode(GAMES[gameId]);
 }
 function getVersion(gameId) {
     return GAMES[gameId].gameVersion;
@@ -1297,6 +1297,15 @@ function Game_getFinishedPiecesCount(game) {
 function Game_getPieceCount(game) {
     return game.puzzle.tiles.length;
 }
+function Game_getScoreMode(game) {
+    return game.scoreMode;
+}
+function Game_getSnapMode(game) {
+    return game.snapMode;
+}
+function Game_getShapeMode(game) {
+    return game.shapeMode;
+}
 function Game_getAllPlayers(game) {
     return game.players.map(Util.decodePlayer);
 }
@@ -1362,6 +1371,9 @@ var GameCommon = {
     Game_getPieceCount,
     Game_getActivePlayers,
     Game_getImageUrl,
+    Game_getScoreMode,
+    Game_getSnapMode,
+    Game_getShapeMode,
     Game_isFinished,
 };
 
@@ -1581,8 +1593,8 @@ const getCategoryRowsBySlugs = async (db, slugs) => {
 };
 const allImagesFromDb = async (db, tagSlugs, orderBy, isPrivate) => {
     const orderByMap = {
-        alpha_asc: [{ filename: 1 }],
-        alpha_desc: [{ filename: -1 }],
+        alpha_asc: [{ title: 1 }],
+        alpha_desc: [{ title: -1 }],
         date_asc: [{ created: 1 }],
         date_desc: [{ created: -1 }],
     };
@@ -2489,6 +2501,9 @@ function createRouter$1(db) {
                 piecesTotal: GameCommon.Game_getPieceCount(game),
                 players: GameCommon.Game_getActivePlayers(game, ts).length,
                 imageUrl: GameCommon.Game_getImageUrl(game),
+                snapMode: GameCommon.Game_getSnapMode(game),
+                scoreMode: GameCommon.Game_getScoreMode(game),
+                shapeMode: GameCommon.Game_getShapeMode(game),
             })),
         ];
         res.send({
