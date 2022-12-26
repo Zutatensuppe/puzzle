@@ -6,72 +6,85 @@ of images. Instead of categories, you can make the system tag-based, like
 in jigsawpuzzles.io
 
 <template>
-  <div>
-    <div class="upload-image-teaser" :class="{blurred: dialog !== ''}">
-      <div class="btn is-big" @click="dialog='new-image'">Upload your image</div>
-      <div class="hint">(The image you upload will be added to the public gallery.)</div>
-    </div>
-
-    <div :class="{blurred: dialog !== ''}">
-      <label v-if="tags.length > 0">
-        Tags:
-        <span
-          class="bit is-clickable"
-          v-for="(t,idx) in relevantTags"
-          :key="idx"
-          @click="toggleTag(t)"
-          :class="{on: filters.tags.includes(t.slug)}">{{t.title}} ({{t.total}})</span>
-        <!-- <select v-model="filters.tags" @change="filtersChanged">
-          <option value="">All</option>
-          <option v-for="(c, idx) in tags" :key="idx" :value="c.slug">{{c.title}}</option>
-        </select> -->
-      </label>
-      <label>
-        Sort by:
-        <select v-model="filters.sort" @change="filtersChanged">
-          <option value="date_desc">Newest first</option>
-          <option value="date_asc">Oldest first</option>
-          <option value="alpha_asc">A-Z</option>
-          <option value="alpha_desc">Z-A</option>
-          <option value="game_count_asc">Most plays first</option>
-          <option value="game_count_desc">Least plays first</option>
-        </select>
-      </label>
-    </div>
+  <v-container :fluid="true" class="new-game-view p-0">
+    <v-row class="mt-2 mb-2">
+      <v-col>
+        <div :class="{blurred: dialog}" class="text-center">
+          <v-btn
+            class="font-weight-bold mb-1"
+            @click="openDialog('new-image')"
+            prepend-icon="mdi-image-plus-outline"
+            size="large"
+            color="info"
+          >Upload your image</v-btn>
+          <div class="text-disabled">(The image you upload will be added to the public gallery.)</div>
+        </div>
+      </v-col>
+    </v-row>
+    <v-container :fluid="true" :class="{blurred: dialog }" class="filters mb-2">
+      <template v-if="tags.length > 0">
+        <v-label>Tags:</v-label>
+        <v-chip-group v-model="filters.tags" multiple>
+          <v-chip
+            filter
+            v-for="(t,idx) in relevantTags"
+            :key="idx">{{t.title}} ({{t.total}})</v-chip>
+        </v-chip-group>
+      </template>
+      <v-select
+        class="sorting"
+        label="Sort by"
+        density="compact"
+        v-model="filters.sort"
+        item-title="title"
+        item-value="val"
+        :items="[
+          { val: 'date_desc', title: 'Newest first'},
+          { val: 'date_asc', title: 'Oldest first'},
+          { val: 'alpha_asc', title: 'A-Z'},
+          { val: 'alpha_desc', title: 'Z-A'},
+          { val: 'game_count_asc', title: 'Most plays first'},
+          { val: 'game_count_desc', title: 'Least plays first'},
+        ]"
+        @update:modelValue="filtersChanged"
+      ></v-select>
+    </v-container>
     <ImageLibrary
-      :class="{blurred: dialog !== ''}"
+      :class="{blurred: dialog }"
       :images="images"
       @imageClicked="onImageClicked"
-      @imageEditClicked="onImageEditClicked" />
-    <NewImageDialog
-      v-if="dialog==='new-image'"
-      :autocompleteTags="autocompleteTags"
-      @close="dialog=''"
-      @bgclick="dialog=''"
-      :uploadProgress="uploadProgress"
-      :uploading="uploading"
-      @postToGalleryClick="postToGalleryClick"
-      @setupGameClick="setupGameClick"
+      @imageEditClicked="onImageEditClicked"
+    />
+    <v-dialog v-model="dialog">
+      <NewImageDialog
+        v-if="dialogContent==='new-image'"
+        :autocompleteTags="autocompleteTags"
+        :uploadProgress="uploadProgress"
+        :uploading="uploading"
+        @postToGalleryClick="postToGalleryClick"
+        @setupGameClick="setupGameClick"
+        @close="closeDialog"
+        />
+      <EditImageDialog
+        v-if="dialogContent==='edit-image'"
+        :autocompleteTags="autocompleteTags"
+        :image="image"
+        @saveClick="onSaveImageClick"
+        @close="closeDialog"
       />
-    <EditImageDialog
-      v-if="dialog==='edit-image'"
-      :autocompleteTags="autocompleteTags"
-      @close="dialog=''"
-      @bgclick="dialog=''"
-      @saveClick="onSaveImageClick"
-      :image="image" />
-    <NewGameDialog
-      v-if="image && dialog==='new-game'"
-      @close="dialog=''"
-      @bgclick="dialog=''"
-      @newGame="onNewGame"
-      :image="image"
-      :forcePrivate="newGameForcePrivate" />
-  </div>
+      <NewGameDialog
+        v-if="image && dialogContent==='new-game'"
+        :image="image"
+        :forcePrivate="newGameForcePrivate"
+        @newGame="onNewGame"
+        @close="closeDialog"
+      />
+    </v-dialog>
+  </v-container>
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import NewImageDialog from './../components/NewImageDialog.vue'
 import EditImageDialog from './../components/EditImageDialog.vue'
 import NewGameDialog from './../components/NewGameDialog.vue'
@@ -101,12 +114,24 @@ const image = ref<ImageInfo>({
   height: 0,
 })
 
-const dialog = ref<string>('')
+const dialog = ref<boolean>(false)
+const dialogContent = ref<string>('')
+
 const newGameForcePrivate = ref<boolean>(false)
 const uploading = ref<'postToGallery' | 'setupGame' | ''>('')
 const uploadProgress = ref<number>(0)
 
 const relevantTags = computed((): Tag[] => tags.value.filter((tag: Tag) => tag.total > 0))
+
+const openDialog = (content: string) => {
+  dialogContent.value = content
+  dialog.value = true
+}
+
+const closeDialog = () => {
+  dialogContent.value = ''
+  dialog.value = false
+}
 
 const autocompleteTags = (input: string, exclude: string[]): string[] => {
   return tags.value
@@ -117,16 +142,27 @@ const autocompleteTags = (input: string, exclude: string[]): string[] => {
     .slice(0, 10)
     .map((tag: Tag) => tag.title)
 }
-const toggleTag = (t: Tag) => {
-  if (filters.value.tags.includes(t.slug)) {
-    filters.value.tags = filters.value.tags.filter(slug => slug !== t.slug)
-  } else {
-    filters.value.tags.push(t.slug)
-  }
+// const toggleTag = (t: Tag) => {
+//   if (filters.value.tags.includes(t.slug)) {
+//     filters.value.tags = filters.value.tags.filter(slug => slug !== t.slug)
+//   } else {
+//     filters.value.tags.push(t.slug)
+//   }
+//   filtersChanged()
+// }
+
+watch(filters, () => {
   filtersChanged()
-}
+}, { deep: true })
+
 const loadImages = async () => {
-  const res = await api.pub.newgameData({ filters: filters.value })
+  console.log(filters.value.tags)
+  const _filters = {
+    sort: filters.value.sort,
+    tags: filters.value.tags.map((index) => relevantTags.value[index].slug)
+  }
+  console.log(_filters)
+  const res = await api.pub.newgameData({ filters: _filters })
   const json = await res.json()
   images.value = json.images
   tags.value = json.tags
@@ -137,11 +173,11 @@ const filtersChanged = async () => {
 const onImageClicked = (newImage: ImageInfo) => {
   image.value = newImage
   newGameForcePrivate.value = false
-  dialog.value = 'new-game'
+  openDialog('new-game')
 }
 const onImageEditClicked = (newImage: ImageInfo) => {
   image.value = newImage
-  dialog.value = 'edit-image'
+  openDialog('edit-image')
 }
 const uploadImage = async (data: any) => {
   uploadProgress.value = 0
@@ -161,7 +197,7 @@ const onSaveImageClick = async (data: any) => {
   const res = await api.pub.saveImage(data)
   const json = await res.json()
   if (json.ok) {
-    dialog.value = ''
+    closeDialog()
     await loadImages()
   } else {
     alert(json.error)
@@ -171,17 +207,17 @@ const postToGalleryClick = async (data: any) => {
   uploading.value = 'postToGallery'
   await uploadImage(data)
   uploading.value = ''
-  dialog.value = ''
+  closeDialog()
   await loadImages()
 }
 const setupGameClick = async (data: any) => {
   uploading.value = 'setupGame'
-  const image = await uploadImage(data)
+  const uploadedImage = await uploadImage(data)
   uploading.value = ''
   loadImages() // load images in background
-  image.value = image
+  image.value = uploadedImage
   newGameForcePrivate.value = data.isPrivate
-  dialog.value = 'new-game'
+  openDialog('new-game')
 }
 const onNewGame = async (gameSettings: GameSettings) => {
   const res = await api.pub.newGame({ gameSettings })

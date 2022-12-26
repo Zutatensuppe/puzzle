@@ -1,11 +1,15 @@
 <template>
-  <div>
+  <v-container :fluid="true" class="index-view">
     <h1>Running games</h1>
-    <GameTeaser v-for="(g, idx) in gamesRunning" :key="idx" :game="g" />
+    <v-container :fluid="true" class="pl-0 pr-0 game-teasers-holder">
+      <GameTeaser v-for="(g, idx) in gamesRunning" :game="g" :key="idx" />
+    </v-container>
 
     <h1>Finished games</h1>
-    <GameTeaser v-for="(g, idx) in gamesFinished" :key="idx" :game="g" />
-  </div>
+    <v-container :fluid="true" class="pl-0 pr-0 game-teasers-holder">
+      <GameTeaser v-for="(g, idx) in gamesFinished" :game="g" :key="idx" />
+    </v-container>
+  </v-container>
 </template>
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'

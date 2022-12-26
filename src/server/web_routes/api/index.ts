@@ -146,7 +146,7 @@ export default function createRouter(
         }
         // otherwise, sort: unfinished, finished
         return finished ? 1 : -1
-      }).map((game: GameType) => ({
+      }).map((game: GameType): GameInfo => ({
         id: game.id,
         hasReplay: GameLog.hasReplay(game),
         started: GameCommon.Game_getStartTs(game),
@@ -155,6 +155,9 @@ export default function createRouter(
         piecesTotal: GameCommon.Game_getPieceCount(game),
         players: GameCommon.Game_getActivePlayers(game, ts).length,
         imageUrl: GameCommon.Game_getImageUrl(game),
+        snapMode: GameCommon.Game_getSnapMode(game),
+        scoreMode: GameCommon.Game_getScoreMode(game),
+        shapeMode: GameCommon.Game_getShapeMode(game),
       })),
     ]
 

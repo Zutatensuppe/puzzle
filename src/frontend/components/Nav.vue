@@ -1,17 +1,14 @@
 <template>
-  <ul class="nav" v-if="showNav">
-    <li><router-link class="btn" :to="{name: 'index'}">Games overview</router-link></li>
-    <li><router-link class="btn" :to="{name: 'new-game'}">New game</router-link></li>
-    <li><a href="https://stand-with-ukraine.pp.ua/" class="btn btn-ukraine" target="_blank">
-      <icon icon="ukraine-heart" /> Stand with Ukraine <icon icon="ukraine-heart" /></a></li>
-
-    <li style="float:right" v-if="loggedIn">
-      <span class="btn" @click="doLogout">Logout</span>
-    </li>
-    <li style="float:right" v-if="loggedIn">
-      <router-link class="btn" :to="{name: 'admin'}">Admin</router-link>
-    </li>
-  </ul>
+  <v-app-bar v-if="showNav">
+    <v-btn size="small" class="mr-1" :to="{name: 'index'}">Games overview</v-btn>
+    <v-btn size="small" class="mr-1" :to="{name: 'new-game'}">New game</v-btn>
+    <v-btn size="small" class="mr-1" href="https://stand-with-ukraine.pp.ua/" target="_blank">
+      <icon icon="ukraine-heart" /> Stand with Ukraine <icon icon="ukraine-heart" />
+    </v-btn>
+    <v-spacer />
+    <v-btn size="small" class="ml-1" v-if="loggedIn" @click="doLogout">Logout</v-btn>
+    <v-btn size="small" class="ml-1" v-if="loggedIn" :to="{name: 'admin'}">Admin</v-btn>
+  </v-app-bar>
 </template>
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'

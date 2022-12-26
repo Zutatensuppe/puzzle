@@ -1,41 +1,36 @@
 <template>
-  <Overlay class="transparent" @close="emit('close')">
-    <template v-slot:default>
-      <table class="help">
-        <tr>
-          <td colspan="2">Info about this puzzle</td>
-        </tr>
-        <tr>
-          <td>Image Title: </td>
-          <td>{{game.puzzle.info.image?.title}}</td>
-        </tr>
-        <tr>
-          <td>Scoring: </td>
-          <td><span :title="snapMode[1]">{{scoreMode[0]}}</span></td>
-        </tr>
-        <tr>
-          <td>Shapes: </td>
-          <td><span :title="snapMode[1]">{{shapeMode[0]}}</span></td>
-        </tr>
-        <tr>
-          <td>Snapping: </td>
-          <td><span :title="snapMode[1]">{{snapMode[0]}}</span></td>
-        </tr>
-      </table>
-    </template>
-  </Overlay>
+  <v-card>
+    <v-container :fluid="true">
+      <h4>Info about this puzzle</h4>
+      <v-table density="compact">
+        <tbody>
+          <tr>
+            <td>Image Title: </td>
+            <td>{{game.puzzle.info.image?.title}}</td>
+          </tr>
+          <tr>
+            <td><v-icon icon="mdi-counter mr-1"></v-icon> Scoring: </td>
+            <td><span :title="snapMode[1]">{{scoreMode[0]}}</span></td>
+          </tr>
+          <tr>
+            <td><v-icon icon="mdi-shape mr-1"></v-icon> Shapes: </td>
+            <td><span :title="snapMode[1]">{{shapeMode[0]}}</span></td>
+          </tr>
+          <tr>
+            <td><v-icon icon="mdi-connection mr-1"></v-icon> Snapping: </td>
+            <td><span :title="snapMode[1]">{{snapMode[0]}}</span></td>
+          </tr>
+        </tbody>
+      </v-table>
+    </v-container>
+  </v-card>
 </template>
 <script setup lang="ts">
 import { computed } from 'vue'
 import { Game, ScoreMode, ShapeMode, SnapMode } from '../../common/Types'
-import Overlay from './Overlay.vue';
 
 const props = defineProps<{
   game: Game
-}>()
-
-const emit = defineEmits<{
-  (e: 'close'): void
 }>()
 
 const scoreMode = computed(() => {
@@ -65,3 +60,6 @@ const snapMode = computed(() => {
   }
 })
 </script>
+<style scoped>
+.v-table { background: transparent; }
+</style>

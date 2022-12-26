@@ -15,6 +15,7 @@ import {
   PuzzleData,
   PuzzleDataChange,
   ScoreMode,
+  ShapeMode,
   SnapMode,
   Timestamp
 } from './Types'
@@ -132,11 +133,11 @@ function getImageUrl(gameId: string): string {
 }
 
 function getScoreMode(gameId: string): ScoreMode {
-  return GAMES[gameId].scoreMode
+  return Game_getScoreMode(GAMES[gameId])
 }
 
 function getSnapMode(gameId: string): SnapMode {
-  return GAMES[gameId].snapMode
+  return Game_getSnapMode(GAMES[gameId])
 }
 
 function getVersion(gameId: string): number {
@@ -921,6 +922,18 @@ function Game_getPieceCount(game: Game): number {
   return game.puzzle.tiles.length
 }
 
+function Game_getScoreMode(game: Game): ScoreMode {
+  return game.scoreMode
+}
+
+function Game_getSnapMode(game: Game): SnapMode {
+  return game.snapMode
+}
+
+function Game_getShapeMode(game: Game): ShapeMode {
+  return game.shapeMode
+}
+
 function Game_getAllPlayers(game: Game): Array<Player> {
   return game.players.map(Util.decodePlayer)
 }
@@ -993,5 +1006,8 @@ export default {
   Game_getPieceCount,
   Game_getActivePlayers,
   Game_getImageUrl,
+  Game_getScoreMode,
+  Game_getSnapMode,
+  Game_getShapeMode,
   Game_isFinished,
 }

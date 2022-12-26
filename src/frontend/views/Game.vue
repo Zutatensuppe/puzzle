@@ -1,30 +1,25 @@
 <template>
   <div id="game">
-    <SettingsOverlay
-      v-if="overlay === 'settings' && g.playerSettings"
-      @close="toggle('settings', true)"
-      @bgclick="toggle('settings', true)"
-      :settings="g.playerSettings" />
-    <PreviewOverlay
-      v-if="overlay === 'preview'"
-      @close="toggle('preview', false)"
-      @click="toggle('preview', false)"
-      :img="g.previewImageUrl" />
-    <InfoOverlay
-      v-if="g.game && overlay === 'info'"
-      @close="toggle('info', true)"
-      @bgclick="toggle('info', true)"
-      :game="g.game" />
-    <HelpOverlay
-      v-if="overlay === 'help'"
-      @close="toggle('help', true)"
-      @bgclick="toggle('help', true)" />
+    <v-dialog v-model="dialog" :class="`overlay-${overlay}`" :persistent="dialogPersistent">
+      <SettingsOverlay v-if="overlay === 'settings' && g.playerSettings" :settings="g.playerSettings" @dialogChange="onDialogChange" />
+      <PreviewOverlay v-if="overlay === 'preview'" :img="g.previewImageUrl" />
+      <InfoOverlay v-if="g.game && overlay === 'info'" :game="g.game" />
+      <HelpOverlay v-if="overlay === 'help'" />
+    </v-dialog>
 
-    <Overlay v-show="cuttingPuzzle">
-      <template v-slot:default>
-        <div><icon icon="hourglass" /> Cutting puzzle, please wait... <icon icon="hourglass" /></div>
-      </template>
-    </Overlay>
+    <v-dialog class="overlay-cutting" v-model="cuttingPuzzle">
+      <v-card>
+        <v-container :fluid="true">
+          <div class="d-flex justify-center">
+            <v-icon icon="mdi-content-cut" />
+            <v-icon icon="mdi-puzzle mr-1" />
+            Cutting puzzle, please wait...
+            <v-icon icon="mdi-content-cut ml-1" />
+            <v-icon icon="mdi-puzzle" />
+          </div>
+        </v-container>
+      </v-card>
+    </v-dialog>
 
     <ConnectionOverlay
       :connectionState="connectionState"
@@ -40,10 +35,10 @@
 
     <div class="menu" v-if="showInterface">
       <router-link class="opener" :to="{name: 'index'}" target="_blank"><icon icon="puzzle-piece" /> Puzzles</router-link>
-      <div class="opener" @click="toggle('preview', false)"><icon icon="preview" /> Preview</div>
-      <div class="opener" @click="toggle('settings', true)"><icon icon="settings" /> Settings</div>
-      <div class="opener" @click="toggle('info', true)"><icon icon="info" /> Info</div>
-      <div class="opener" @click="toggle('help', true)"><icon icon="hotkey" /> Hotkeys</div>
+      <div class="opener" @click="toggle('preview')"><icon icon="preview" /> Preview</div>
+      <div class="opener" @click="toggle('settings')"><icon icon="settings" /> Settings</div>
+      <div class="opener" @click="toggle('info')"><icon icon="info" /> Info</div>
+      <div class="opener" @click="toggle('help')"><icon icon="hotkey" /> Hotkeys</div>
       <a class="opener" href="https://stand-with-ukraine.pp.ua/" target="_blank"><icon icon="ukraine-heart" /> Stand with Ukraine </a>
     </div>
 
@@ -63,7 +58,7 @@
 <script setup lang="ts">
 import { Game, Player, PuzzleStatus as PuzzleStatusType } from '../../common/Types'
 import { main, MODE_PLAY } from '../game'
-import { onMounted, onUnmounted, Ref, ref } from 'vue'
+import { onMounted, onUnmounted, Ref, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import api from '../_api'
 import config from '../config'
@@ -71,7 +66,6 @@ import mitt from 'mitt'
 import ConnectionOverlay from './../components/ConnectionOverlay.vue'
 import HelpOverlay from './../components/HelpOverlay.vue'
 import InfoOverlay from './../components/InfoOverlay.vue'
-import Overlay from '../components/Overlay.vue'
 import PreviewOverlay from './../components/PreviewOverlay.vue'
 import PuzzleStatus from '../components/PuzzleStatus.vue'
 import Scores from './../components/Scores.vue'
@@ -86,6 +80,8 @@ const status = ref<PuzzleStatusType>({
   piecesDone: 0,
   piecesTotal: 0,
 })
+const dialog = ref<boolean>(false)
+const dialogPersistent = ref<boolean|undefined>(undefined)
 const overlay = ref<string>('')
 const connectionState = ref<number>(0)
 const cuttingPuzzle = ref<boolean>(true)
@@ -125,6 +121,14 @@ const addStatusMessage = (what: string, value: any): void => {
   }, 3000)
 }
 
+const onDialogChange = (changes: any[]): void => {
+  changes.forEach((change: { type: string, value: any }) => {
+    if (change.type === 'persistent') {
+      dialogPersistent.value = change.value
+    }
+  })
+}
+
 const onResize = (): void => {
   canvasEl.value.width = window.innerWidth
   canvasEl.value.height = window.innerHeight
@@ -135,37 +139,35 @@ const reconnect = (): void => {
   g.value.connect()
 }
 
-const toggleTo = (newOverlay: string, onOff: boolean, affectsHotkeys: boolean): void => {
-  if (onOff === false) {
-    // off
-    overlay.value = ''
-    if (affectsHotkeys) {
-      eventBus.emit('setHotkeys', true)
-    }
+const closeDialog = (): void => {
+  dialog.value = false
+  overlay.value = ''
+}
+const openDialog = (content: string): void => {
+  overlay.value = content
+  dialog.value = true
+}
+
+watch(dialog, (newValue) => {
+  if (newValue === false) {
+    eventBus.emit('setHotkeys', true)
   } else {
-    // on
-    overlay.value = newOverlay
-    if (affectsHotkeys) {
+    if (overlay.value !== 'preview') {
       eventBus.emit('setHotkeys', false)
     }
   }
-}
+  if (overlay.value === 'preview') {
+    eventBus.emit('onPreviewChange', newValue)
+  }
+})
 
-const toggle = (newOverlay: string, affectsHotkeys: boolean): void => {
-  if (overlay.value === '') {
-    overlay.value = newOverlay
-    if (affectsHotkeys) {
-      eventBus.emit('setHotkeys', false)
-    }
+const toggle = (newOverlay: string): void => {
+  if (dialog.value === false) {
+    openDialog(newOverlay)
   } else {
     // could check if overlay was the provided one
     overlay.value = ''
-    if (affectsHotkeys) {
-      eventBus.emit('setHotkeys', true)
-    }
-  }
-  if (newOverlay === 'preview') {
-    eventBus.emit('onPreviewChange', overlay.value === 'preview')
+    closeDialog()
   }
 }
 
@@ -187,7 +189,11 @@ onMounted(async () => {
     connectionState.value = v
   })
   eventBus.on('togglePreview', (v: any) => {
-    toggleTo('preview', v, false)
+    if (v) {
+      openDialog('preview')
+    } else {
+      closeDialog()
+    }
   })
   eventBus.on('toggleInterface', (v: any) => {
     showInterface.value = !!v

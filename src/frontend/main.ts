@@ -18,6 +18,11 @@ import AdminGroups from './admin/views/Groups.vue'
 import api from './_api'
 import config from './config'
 
+import 'vuetify/styles'
+import { createVuetify } from 'vuetify'
+import * as components from 'vuetify/components'
+import * as directives from 'vuetify/directives'
+
 (async () => {
   api.init()
 
@@ -47,8 +52,14 @@ import config from './config'
     document.documentElement.classList.add(`view-${String(to.name)}`)
   })
 
+  const vuetify = createVuetify({
+    components,
+    directives,
+  })
+
   const app = Vue.createApp(App)
   app.use(router)
+  app.use(vuetify)
   app.component('icon', Icon)
   app.mount('#app')
 })()

@@ -177,6 +177,7 @@ export interface ImageInfo
   created: Timestamp
   width: number
   height: number
+  gameCount?: number // TODO: make it always available (currently not loaded in imageFromDb)
 }
 
 export interface PuzzleInfo {
@@ -269,12 +270,15 @@ export const DefaultSnapMode = (v: any): SnapMode => {
 }
 
 export interface GameInfo {
-  id: string;
-  hasReplay: boolean;
-  started: number;
-  finished: number;
-  piecesFinished: number;
-  piecesTotal: number;
-  players: number;
-  imageUrl: string;
+  id: string
+  hasReplay: boolean
+  started: number
+  finished: number
+  piecesFinished: number
+  piecesTotal: number
+  players: number
+  imageUrl: string
+  snapMode: SnapMode
+  scoreMode: ScoreMode
+  shapeMode: ShapeMode
 }

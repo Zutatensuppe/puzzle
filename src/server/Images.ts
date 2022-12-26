@@ -136,10 +136,10 @@ const allImagesFromDb = async (
   isPrivate: boolean,
 ): Promise<ImageInfo[]> => {
   const orderByMap = {
-    alpha_asc: [{filename: 1}],
-    alpha_desc: [{filename: -1}],
-    date_asc: [{created: 1}],
-    date_desc: [{created: -1}],
+    alpha_asc: [{ title: 1 }],
+    alpha_desc: [{ title: -1 }],
+    date_asc: [{ created: 1 }],
+    date_desc: [{ created: -1 }],
   } as Record<string, OrderBy>
 
   // TODO: .... clean up
