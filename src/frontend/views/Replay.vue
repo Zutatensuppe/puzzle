@@ -7,19 +7,7 @@
       <HelpOverlay v-if="overlay === 'help'" />
     </v-dialog>
 
-    <v-dialog class="overlay-cutting" v-model="cuttingPuzzle">
-      <v-card>
-        <v-container :fluid="true">
-          <div class="d-flex justify-center">
-            <v-icon icon="mdi-content-cut" />
-            <v-icon icon="mdi-puzzle mr-1" />
-            Cutting puzzle, please wait...
-            <v-icon icon="mdi-content-cut ml-1" />
-            <v-icon icon="mdi-puzzle" />
-          </div>
-        </v-container>
-      </v-card>
-    </v-dialog>
+    <CuttingOverlay v-model="cuttingPuzzle" />
 
     <div class="menu-left" v-if="showInterface">
       <PuzzleStatus :status="status" />
@@ -70,6 +58,7 @@ import PreviewOverlay from './../components/PreviewOverlay.vue'
 import PuzzleStatus from '../components/PuzzleStatus.vue'
 import Scores from './../components/Scores.vue'
 import SettingsOverlay from './../components/SettingsOverlay.vue'
+import CuttingOverlay from './../components/CuttingOverlay.vue'
 import { PlayerSettings } from '../PlayerSettings'
 
 const statusMessages = ref<string[]>([])

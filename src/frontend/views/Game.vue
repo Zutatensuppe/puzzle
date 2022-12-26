@@ -7,21 +7,10 @@
       <HelpOverlay v-if="overlay === 'help'" />
     </v-dialog>
 
-    <v-dialog class="overlay-cutting" v-model="cuttingPuzzle">
-      <v-card>
-        <v-container :fluid="true">
-          <div class="d-flex justify-center">
-            <v-icon icon="mdi-content-cut" />
-            <v-icon icon="mdi-puzzle mr-1" />
-            Cutting puzzle, please wait...
-            <v-icon icon="mdi-content-cut ml-1" />
-            <v-icon icon="mdi-puzzle" />
-          </div>
-        </v-container>
-      </v-card>
-    </v-dialog>
+    <CuttingOverlay v-model="cuttingPuzzle" />
 
     <ConnectionOverlay
+      v-if="!cuttingPuzzle"
       :connectionState="connectionState"
       @reconnect="reconnect"
       />
@@ -64,6 +53,7 @@ import api from '../_api'
 import config from '../config'
 import mitt from 'mitt'
 import ConnectionOverlay from './../components/ConnectionOverlay.vue'
+import CuttingOverlay from './../components/CuttingOverlay.vue'
 import HelpOverlay from './../components/HelpOverlay.vue'
 import InfoOverlay from './../components/InfoOverlay.vue'
 import PreviewOverlay from './../components/PreviewOverlay.vue'
