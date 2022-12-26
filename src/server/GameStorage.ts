@@ -96,8 +96,7 @@ async function loadGame(db: Db, gameId: string): Promise<Game | null> {
   return gameObject
 }
 
-async function getAllPublicGames(db: Db): Promise<Game[]> {
-  const gameRows = await getPublicGameRows(db)
+const gameRowsToGames = (gameRows: GameRow[]): Game[] => {
   const games: Game[] = []
   for (const gameRow of gameRows) {
     const gameObject = gameRowToGameObject(gameRow)
@@ -108,6 +107,39 @@ async function getAllPublicGames(db: Db): Promise<Game[]> {
     games.push(gameObject)
   }
   return games
+}
+
+async function getAllPublicGames(db: Db): Promise<Game[]> {
+  const gameRows = await getPublicGameRows(db)
+  return gameRowsToGames(gameRows)
+}
+
+async function getPublicRunningGames(db: Db, offset: number, limit: number): Promise<Game[]> {
+  const gameRows = await db.getMany(
+    'games',
+    { private: 0, finished: null },
+    [{ created: -1 }],
+    { limit, offset }
+  ) as GameRow[]
+  return gameRowsToGames(gameRows)
+}
+
+async function getPublicFinishedGames(db: Db, offset: number, limit: number): Promise<Game[]> {
+  const gameRows = await db.getMany(
+    'games',
+    { private: 0, finished: { '$ne': null } },
+    [{ created: -1 }],
+    { limit, offset }
+  ) as GameRow[]
+  return gameRowsToGames(gameRows)
+}
+
+async function countPublicRunningGames(db: Db): Promise<number> {
+  return await db.count('games', { private: 0, finished: null })
+}
+
+async function countPublicFinishedGames(db: Db): Promise<number> {
+  return await db.count('games', { private: 0, finished: { '$ne': null } })
 }
 
 async function exists(db: Db, gameId: string): Promise<boolean> {
@@ -181,6 +213,12 @@ export default {
 
   loadGame,
   getAllPublicGames,
+
+  getPublicRunningGames,
+  getPublicFinishedGames,
+
+  countPublicRunningGames,
+  countPublicFinishedGames,
 
   exists,
 

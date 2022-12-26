@@ -282,3 +282,21 @@ export interface GameInfo {
   scoreMode: ScoreMode
   shapeMode: ShapeMode
 }
+
+export interface Pagination {
+  limit: number
+  offset: number
+  total: number
+}
+
+export interface ApiGamesData {
+  items: GameInfo[]
+  pagination: Pagination
+}
+
+export interface ApiDataIndexData {
+  gamesRunning: ApiGamesData
+  gamesFinished: ApiGamesData
+}
+
+export type ApiDataFinishedGames = ApiGamesData

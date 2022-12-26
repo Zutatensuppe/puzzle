@@ -22,6 +22,10 @@ type Params = Array<any>
 
 export type WhereRaw = Record<string, any>
 export type OrderBy = Array<Record<string, 1 | -1>>
+export interface Limit {
+  offset: number
+  limit: number
+}
 
 interface Where {
   sql: string
@@ -145,7 +149,10 @@ class Db {
         }
 
         prop = '$ne'
-        if (where[k][prop]) {
+        if (where[k][prop] === null) {
+          wheres.push(k + ` IS NOT NULL`)
+          continue
+        } else if (where[k][prop]) {
           wheres.push(k + ` != $${$i++}`)
           values.push(where[k][prop])
           continue
@@ -173,6 +180,17 @@ class Db {
       sorts.push(k + ' ' + (s[k] > 0 ? 'ASC' : 'DESC'))
     }
     return sorts.length > 0 ? ' ORDER BY ' + sorts.join(', ') : ''
+  }
+
+  _buildLimit(limit: Limit): string {
+    const parts = []
+    if (limit.limit >= 0) {
+      parts.push(` LIMIT ${limit.limit}`)
+    }
+    if (limit.offset >= 0) {
+      parts.push(` OFFSET ${limit.offset}`)
+    }
+    return parts.join('')
   }
 
   async _get(query: string, params: Params = []): Promise<any> {
@@ -219,12 +237,24 @@ class Db {
   async getMany(
     table: string,
     whereRaw: WhereRaw = {},
-    orderBy: OrderBy = []
+    orderBy: OrderBy = [],
+    limit: Limit = { offset: -1, limit: -1 },
   ): Promise<any[]> {
     const where = this._buildWhere(whereRaw)
     const orderBySql = this._buildOrderBy(orderBy)
-    const sql = 'SELECT * FROM ' + table + where.sql + orderBySql
+    const limitSql = this._buildLimit(limit)
+    const sql = 'SELECT * FROM ' + table + where.sql + orderBySql + limitSql
     return await this._getMany(sql, where.values)
+  }
+
+  async count(
+    table: string,
+    whereRaw: WhereRaw = {},
+  ): Promise<number> {
+    const where = this._buildWhere(whereRaw)
+    const sql = 'SELECT COUNT(*) FROM ' + table + where.sql
+    const row = await this._get(sql, where.values)
+    return parseInt(row.count, 10)
   }
 
   async delete(table: string, whereRaw: WhereRaw = {}): Promise<pg.QueryResult> {

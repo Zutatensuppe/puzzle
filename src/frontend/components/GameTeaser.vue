@@ -56,8 +56,8 @@ const emit = defineEmits<{
   (e: 'goToReplay', val: GameInfo): void
 }>()
 
-const url = props.game.imageUrl.replace('uploads/', 'uploads/r/') + '-375x210.webp'
-const style = { 'background-image': `url("${url}")` }
+const url = computed(() => props.game.imageUrl.replace('uploads/', 'uploads/r/') + '-375x210.webp')
+const style = computed(() => ({ 'background-image': `url("${url.value}")` }))
 
 const joinPuzzleText = computed(() => props.game.finished ? 'View puzzle' : 'Join puzzle')
 
