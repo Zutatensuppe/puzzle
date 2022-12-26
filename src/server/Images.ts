@@ -47,9 +47,9 @@ const resizeImage = async (filename: string): Promise<void> => {
       [150, 100, 'contain'],
       [375, 210, 'contain'],
       [375, null, 'cover'],
+      [620, 496, 'contain'],
     ]
     for (const [w, h, fit] of sizes) {
-
       const filename = `${imageOutPath}-${w}x${h || 0}.webp`
       if (!fs.existsSync(filename)) {
         log.info(w, h, filename)

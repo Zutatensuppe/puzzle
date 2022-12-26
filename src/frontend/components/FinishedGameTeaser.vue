@@ -1,34 +1,31 @@
 <template>
-  <v-card class="game-teaser" elevation="10" @click="emit('goToGame', game)">
+  <v-card class="finished-game-teaser" elevation="10" @click="emit('goToGame', game)">
     <div class="game-teaser-image" :style="style"></div>
     <div class="game-teaser-inner">
       <div class="game-teaser-info">
-        <v-icon icon="mdi-puzzle"></v-icon> {{game.piecesTotal}} Pieces ({{game.piecesFinished}} done)
+        <v-icon icon="mdi-puzzle"></v-icon> {{game.piecesTotal}} Pieces
       </div>
       <div class="game-teaser-info">
         <v-icon icon="mdi-account-group"></v-icon> {{game.players}} Players
       </div>
-      <div class="game-teaser-info" v-if="game.finished">
+      <div class="game-teaser-info">
         <v-icon icon="mdi-flag-checkered"></v-icon> {{ time(game.started, game.finished) }}
       </div>
-      <div class="game-teaser-info secondary" v-if="!game.finished">
-        <v-icon icon="mdi-timer-outline"></v-icon> {{ time(game.started, game.finished) }}
-      </div>
       <div class="game-teaser-info secondary" title="Scoring">
-        <v-icon icon="mdi-counter"></v-icon> {{ scoreMode }}
+        <v-icon icon="mdi-counter"></v-icon> Scoring: {{ scoreMode }}
       </div>
       <div class="game-teaser-info secondary" title="Shapes">
-        <v-icon icon="mdi-shape"></v-icon> {{ shapeMode }}
+        <v-icon icon="mdi-shape"></v-icon> Shapes: {{ shapeMode }}
       </div>
       <div class="game-teaser-info secondary" title="Snapping">
-        <v-icon icon="mdi-connection"></v-icon> {{ snapMode }}
+        <v-icon icon="mdi-connection"></v-icon> Snapping: {{ snapMode }}
       </div>
       <div class="game-teaser-click-info">
         <h5>Click to {{ joinPuzzleText }}</h5>
       </div>
       <div class="game-teaser-replay-info">
         <v-btn
-          v-if="game.finished && game.hasReplay"
+          v-if="game.hasReplay"
           color="info"
           size="x-small"
           variant="elevated"
@@ -44,11 +41,11 @@
 </template>
 <script setup lang="ts">
 import { computed } from 'vue';
-import Time from './../../common/Time'
-import { GameInfo, ScoreMode, ShapeMode, SnapMode } from './../../common/Types'
+import Time from '../../common/Time'
+import { GameInfo, ScoreMode, ShapeMode, SnapMode } from '../../common/Types'
 
 const props = defineProps<{
-  game: GameInfo
+  game: GameInfo,
 }>()
 
 const emit = defineEmits<{
