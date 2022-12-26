@@ -167,7 +167,6 @@ const loadImages = async () => {
     sort: filters.value.sort,
     tags: filters.value.tags,
   }
-  console.log(_filters)
   const res = await api.pub.newgameData({ filters: _filters })
   const json = await res.json()
   images.value = json.images

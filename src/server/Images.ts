@@ -167,7 +167,7 @@ select count(*) as count, image_id from games where private = $1 group by image_
 `, [isPrivate ? 1 : 0])
   const imageCountMap = new Map<number, number>()
   for (const row of imageCounts) {
-    imageCountMap.set(row.image_id, row.count)
+    imageCountMap.set(row.image_id, parseInt(row.count, 10))
   }
 
   const tmpImages: ImageRow[] = await db.getMany('images', wheresRaw, orderByMap[orderBy])
