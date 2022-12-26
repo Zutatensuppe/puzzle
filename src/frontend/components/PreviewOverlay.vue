@@ -1,5 +1,5 @@
 <template>
-  <v-card class="preview-overlay">
+  <v-card class="preview-overlay" @click="emit('close')">
     <div class="preview">
       <div class="img" :style="previewStyle"></div>
     </div>
@@ -10,6 +10,10 @@ import { computed } from 'vue'
 
 const props = defineProps<{
   img: string
+}>()
+
+const emit = defineEmits<{
+  (e: 'close'): void
 }>()
 
 const previewStyle = computed(() => {

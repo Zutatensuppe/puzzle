@@ -2,7 +2,7 @@
   <div id="game">
     <v-dialog v-model="dialog" :class="`overlay-${overlay}`" :persistent="dialogPersistent">
       <SettingsOverlay v-if="overlay === 'settings' && g.playerSettings" :settings="g.playerSettings" @dialogChange="onDialogChange" />
-      <PreviewOverlay v-if="overlay === 'preview'" :img="g.previewImageUrl" />
+      <PreviewOverlay v-if="overlay === 'preview'" :img="g.previewImageUrl" @close="closeDialog" />
       <InfoOverlay v-if="g.game && overlay === 'info'" :game="g.game" />
       <HelpOverlay v-if="overlay === 'help'" />
     </v-dialog>
@@ -24,10 +24,10 @@
 
     <div class="menu" v-if="showInterface">
       <router-link class="opener" :to="{name: 'index'}" target="_blank"><icon icon="puzzle-piece" /> Puzzles</router-link>
-      <div class="opener" @click="toggle('preview')"><icon icon="preview" /> Preview</div>
-      <div class="opener" @click="toggle('settings')"><icon icon="settings" /> Settings</div>
-      <div class="opener" @click="toggle('info')"><icon icon="info" /> Info</div>
-      <div class="opener" @click="toggle('help')"><icon icon="hotkey" /> Hotkeys</div>
+      <div class="opener" @click="openDialog('preview')"><icon icon="preview" /> Preview</div>
+      <div class="opener" @click="openDialog('settings')"><icon icon="settings" /> Settings</div>
+      <div class="opener" @click="openDialog('info')"><icon icon="info" /> Info</div>
+      <div class="opener" @click="openDialog('help')"><icon icon="hotkey" /> Hotkeys</div>
       <a class="opener" href="https://stand-with-ukraine.pp.ua/" target="_blank"><icon icon="ukraine-heart" /> Stand with Ukraine </a>
     </div>
 
@@ -129,37 +129,53 @@ const reconnect = (): void => {
   g.value.connect()
 }
 
-const closeDialog = (): void => {
-  dialog.value = false
-  overlay.value = ''
+const sendEvents = (newValue: boolean, newOverlay: string, oldOverlay: string) => {
+  if (newValue) {
+    // overlay is now visible
+    if (newOverlay !== 'preview') {
+      eventBus.emit('setHotkeys', false)
+    }
+    if (newOverlay === 'preview') {
+      eventBus.emit('onPreviewChange', true)
+    }
+  } else {
+    // overlay is now closed
+    if (oldOverlay === 'preview') {
+      eventBus.emit('onPreviewChange', false)
+    }
+    eventBus.emit('setHotkeys', true)
+  }
 }
+
+const closeDialog = (): void => {
+  const newValue = false
+  const oldOverlay = overlay.value
+  const newOverlay = ''
+
+  dialog.value = newValue
+  overlay.value = newOverlay
+
+  sendEvents(newValue, newOverlay, oldOverlay)
+}
+
 const openDialog = (content: string): void => {
-  overlay.value = content
-  dialog.value = true
+  const newValue = true
+  const oldOverlay = overlay.value
+  const newOverlay = content
+
+  dialog.value = newValue
+  overlay.value = newOverlay
+
+  sendEvents(newValue, newOverlay, oldOverlay)
 }
 
 watch(dialog, (newValue) => {
   if (newValue === false) {
-    eventBus.emit('setHotkeys', true)
+    sendEvents(newValue, '', overlay.value)
   } else {
-    if (overlay.value !== 'preview') {
-      eventBus.emit('setHotkeys', false)
-    }
-  }
-  if (overlay.value === 'preview') {
-    eventBus.emit('onPreviewChange', newValue)
+    sendEvents(newValue, overlay.value, '')
   }
 })
-
-const toggle = (newOverlay: string): void => {
-  if (dialog.value === false) {
-    openDialog(newOverlay)
-  } else {
-    // could check if overlay was the provided one
-    overlay.value = ''
-    closeDialog()
-  }
-}
 
 onMounted(async () => {
   if (!route.params.id) {
