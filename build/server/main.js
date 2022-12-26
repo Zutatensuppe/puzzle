@@ -1916,9 +1916,6 @@ async function getGameRowById(db, gameId) {
     const gameRow = await db.get('games', { id: gameId });
     return gameRow || null;
 }
-async function getPublicGameRows(db) {
-    return await db.getMany('games', { private: 0 });
-}
 async function loadGame(db, gameId) {
     log$3.info(`[INFO] loading game: ${gameId}`);
     const gameRow = await getGameRowById(db, gameId);
@@ -1945,16 +1942,12 @@ const gameRowsToGames = (gameRows) => {
     }
     return games;
 };
-async function getAllPublicGames(db) {
-    const gameRows = await getPublicGameRows(db);
-    return gameRowsToGames(gameRows);
-}
 async function getPublicRunningGames(db, offset, limit) {
     const gameRows = await db.getMany('games', { private: 0, finished: null }, [{ created: -1 }], { limit, offset });
     return gameRowsToGames(gameRows);
 }
 async function getPublicFinishedGames(db, offset, limit) {
-    const gameRows = await db.getMany('games', { private: 0, finished: { '$ne': null } }, [{ created: -1 }], { limit, offset });
+    const gameRows = await db.getMany('games', { private: 0, finished: { '$ne': null } }, [{ finished: -1 }], { limit, offset });
     return gameRowsToGames(gameRows);
 }
 async function countPublicRunningGames(db) {
@@ -2022,7 +2015,6 @@ function gameToStoreData(game) {
 var GameStorage = {
     persistGame,
     loadGame,
-    getAllPublicGames,
     getPublicRunningGames,
     getPublicFinishedGames,
     countPublicRunningGames,
