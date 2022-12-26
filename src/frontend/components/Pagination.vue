@@ -1,12 +1,12 @@
 <template>
-  <div class="pagination d-flex" v-if="totalPages">
+  <div class="pagination d-flex" v-if="totalPages > 1">
     <v-btn
       size="small"
       :disabled="currentPage <= 1 ? true : undefined"
       @click="onPageClick(currentPage - 1)"
     ><v-icon icon="mdi-chevron-left"></v-icon></v-btn>
     <v-btn
-      v-for="page in totalPages"
+      v-for="page in paginationItems"
       size="small"
       :disabled="page === currentPage ? true : undefined"
       @click="onPageClick(page)"
@@ -19,7 +19,7 @@
   </div>
 </template>
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, onMounted } from 'vue';
 import { Pagination } from '../../common/Types';
 
 // TODO: limit the number of page links that are generated
@@ -35,6 +35,30 @@ const emit = defineEmits<{
 const totalPages = computed(() => {
   return Math.floor(props.pagination.total / props.pagination.limit)
     + (props.pagination.total % props.pagination.limit === 0 ? 0 : 1)
+})
+
+const OFFSET = 4
+const paginationItems = computed(() => {
+  let start = currentPage.value - OFFSET
+  const endOffsetAdd = start < 1 ? -start + 1 : 0
+  if (start < 1) {
+    start = 1
+  }
+  let end = currentPage.value + OFFSET + endOffsetAdd
+  const startOffsetAdd = end > totalPages.value ? (totalPages.value - end) : 0
+  if (end > totalPages.value) {
+    end = totalPages.value
+  }
+  start += startOffsetAdd
+  if (start < 1) {
+    start = 1
+  }
+
+  const items: number[] = []
+  for (let i = start; i <= end; i++) {
+    items.push(i)
+  }
+  return items
 })
 
 const currentPage = computed(() => {
