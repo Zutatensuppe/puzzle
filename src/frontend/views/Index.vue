@@ -1,8 +1,8 @@
 <template>
   <v-container :fluid="true" class="index-view" v-if="data">
     <h1>Running games</h1>
-    <v-container :fluid="true" class="pl-0 pr-0 game-teasers-holder">
-      <GameTeaser
+    <v-container :fluid="true" class="pl-0 pr-0 game-teasers-holder running-games">
+      <RunningGameTeaser
         v-for="(g, idx) in data.gamesRunning.items"
         :game="g"
         :key="idx"
@@ -13,8 +13,8 @@
 
     <h1>Finished games</h1>
     <Pagination :pagination="data.gamesFinished.pagination" @click="onPagination" />
-    <v-container :fluid="true" class="pl-0 pr-0 game-teasers-holder">
-      <GameTeaser
+    <v-container :fluid="true" class="pl-0 pr-0 game-teasers-holder finished-games">
+      <FinishedGameTeaser
         v-for="(g, idx) in data.gamesFinished.items"
         :game="g"
         :key="idx"
@@ -29,9 +29,10 @@
 import { onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router';
 import { ApiDataFinishedGames, ApiDataIndexData } from '../../common/Types';
+import RunningGameTeaser from '../components/RunningGameTeaser.vue';
+import FinishedGameTeaser from '../components/FinishedGameTeaser.vue';
 import Pagination from '../components/Pagination.vue';
 import api from '../_api'
-import GameTeaser from './../components/GameTeaser.vue';
 
 const router = useRouter()
 const data = ref<ApiDataIndexData | null>(null)

@@ -131,19 +131,24 @@ export default function createRouter(
     })
   })
 
-  const GameToGameInfo = (game: GameType, ts: number): GameInfo => ({
-    id: game.id,
-    hasReplay: GameLog.hasReplay(game),
-    started: GameCommon.Game_getStartTs(game),
-    finished: GameCommon.Game_getFinishTs(game),
-    piecesFinished: GameCommon.Game_getFinishedPiecesCount(game),
-    piecesTotal: GameCommon.Game_getPieceCount(game),
-    players: GameCommon.Game_getActivePlayers(game, ts).length,
-    imageUrl: GameCommon.Game_getImageUrl(game),
-    snapMode: GameCommon.Game_getSnapMode(game),
-    scoreMode: GameCommon.Game_getScoreMode(game),
-    shapeMode: GameCommon.Game_getShapeMode(game),
-  })
+  const GameToGameInfo = (game: GameType, ts: number): GameInfo => {
+    const finished = GameCommon.Game_getFinishTs(game)
+    return {
+      id: game.id,
+      hasReplay: GameLog.hasReplay(game),
+      started: GameCommon.Game_getStartTs(game),
+      finished,
+      piecesFinished: GameCommon.Game_getFinishedPiecesCount(game),
+      piecesTotal: GameCommon.Game_getPieceCount(game),
+      players: finished
+        ? GameCommon.Game_getPlayersWithScore(game).length
+        : GameCommon.Game_getActivePlayers(game, ts).length,
+      imageUrl: GameCommon.Game_getImageUrl(game),
+      snapMode: GameCommon.Game_getSnapMode(game),
+      scoreMode: GameCommon.Game_getScoreMode(game),
+      shapeMode: GameCommon.Game_getShapeMode(game),
+    }
+  }
 
   const GAMES_PER_PAGE_LIMIT = 10
   router.get('/index-data', async (req, res): Promise<void> => {

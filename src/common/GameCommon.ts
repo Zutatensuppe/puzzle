@@ -938,6 +938,10 @@ function Game_getAllPlayers(game: Game): Array<Player> {
   return game.players.map(Util.decodePlayer)
 }
 
+function Game_getPlayersWithScore(game: Game): Array<Player> {
+  return Game_getAllPlayers(game).filter((p: Player) => p.points > 0)
+}
+
 function Game_getActivePlayers(game: Game, ts: number): Array<Player> {
   const minTs = ts - IDLE_TIMEOUT_SEC * Time.SEC
   return Game_getAllPlayers(game).filter((p: Player) => p.ts >= minTs)
@@ -1005,6 +1009,7 @@ export default {
   Game_getFinishedPiecesCount,
   Game_getPieceCount,
   Game_getActivePlayers,
+  Game_getPlayersWithScore,
   Game_getImageUrl,
   Game_getScoreMode,
   Game_getSnapMode,
