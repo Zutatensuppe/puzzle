@@ -1,6 +1,5 @@
 @import "@mdi/font";
-
-@import url('https://fonts.googleapis.com/css2?family=Roboto&Teko:wght@300&display=swap');
+@import url("https://fonts.googleapis.com/css2?family=Roboto&Teko:wght@300&display=swap");
 
 // @font-face {
 //   font-family: dpcomic;
@@ -112,6 +111,13 @@ $bg-color-transparent: rgba(0 0 0 / 70%);
   background-color: #222;
 }
 
+.v-card-actions {
+  .v-btn {
+    font-weight: bold;
+    padding: 0 16px !important;
+  }
+}
+
 .game-teaser {
   .v-card-actions {
     position: absolute;
@@ -119,12 +125,6 @@ $bg-color-transparent: rgba(0 0 0 / 70%);
     left: 0;
     right: 0;
     background: $bg-color-transparent;
-  }
-}
-.v-card-actions {
-  .v-btn {
-    font-weight: bold;
-    padding: 0 16px !important;
   }
 }
 
@@ -136,17 +136,14 @@ $bg-color-transparent: rgba(0 0 0 / 70%);
   bottom: 0;
   background: rgba(0 0 0 / 50%);
   padding: 1em;
-
   font-size: 13px;
-
-  .game-teaser-info {
-  }
 
   .game-join {
     position: absolute;
     bottom: 0;
     right: 0;
   }
+
   .game-replay {
     position: absolute;
     top: 0;
@@ -154,10 +151,9 @@ $bg-color-transparent: rgba(0 0 0 / 70%);
   }
 }
 
-
 .index-view,
 .new-game-view {
-  background: url('assets/gfx/image.webp');
+  background: url("assets/gfx/image.webp");
   background-position: center center;
   background-size: cover;
   height: 100%;
@@ -195,9 +191,11 @@ body {
 a {
   text-decoration: none;
 }
+
 a,
 .opener {
   color: $link-color;
+
   &:hover {
     color: $link-color-hover;
   }
@@ -208,7 +206,7 @@ h2,
 h3,
 h4 {
   text-transform: uppercase;
-  font-family: 'Teko', sans-serif;
+  font-family: Teko, sans-serif;
   text-shadow: 0 0 10px black;
 }
 
@@ -284,7 +282,6 @@ h4 {
   }
 }
 
-
 html.view-game { overflow: hidden; }
 
 html.view-game body { overflow: hidden; }
@@ -327,9 +324,6 @@ html.view-replay body { overflow: hidden; }
     margin-bottom: 1em;
   }
 
-  .imageteaser-info {
-  }
-
   .imageteaser-actions {
     position: absolute;
     bottom: 0;
@@ -342,6 +336,7 @@ html.view-replay body { overflow: hidden; }
   .v-overlay__scrim {
     background: $bg-color-transparent;
   }
+
   .v-overlay__content {
     .v-card {
       background: $bg-color-transparent;
@@ -397,17 +392,19 @@ kbd {
 .v-dialog.overlay-info,
 .v-dialog.overlay-settings {
   .v-overlay__content {
-    max-width: 440px
+    max-width: 440px;
   }
 }
+
 .v-dialog.overlay-connection {
   .v-overlay__content {
-    max-width: 320px
+    max-width: 320px;
   }
 }
+
 .v-dialog.overlay-help {
   .v-overlay__content {
-    max-width: 500px
+    max-width: 500px;
   }
 }
 
@@ -454,8 +451,28 @@ kbd {
   }
 }
 
-.ingame-color-picker { display: flex; gap: 10px; }
-.current-color { display: inline-block; width: 45px; height: 45px; border: solid 1px #222; border-radius: 4px; }
-// .color-picker-background { position: absolute; left: 0; top: 0; right: 0; bottom: 0; z-index: 3000; }
-.vc-photoshop { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); color: #444; z-index: 3000; }
-.vc-ps-fields .vc-input__input { color: #444; }
+.ingame-color-picker {
+  display: flex;
+  gap: 10px;
+}
+
+.current-color {
+  display: inline-block;
+  width: 45px;
+  height: 45px;
+  border: solid 1px #222;
+  border-radius: 4px;
+}
+
+.vc-photoshop {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: #444;
+  z-index: 3000;
+}
+
+.vc-ps-fields .vc-input__input {
+  color: #444;
+}
