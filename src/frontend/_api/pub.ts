@@ -34,6 +34,10 @@ const indexData = async () => {
   return xhr.get('/api/index-data', {})
 }
 
+const finishedGames = async (data: { limit: number, offset: number }) => {
+  return xhr.get(`/api/finished-games${Util.asQueryArgs(data)}`, {})
+}
+
 const newgameData = async (data: { filters: { sort: string, tags: string[] } }) => {
   return xhr.get(`/api/newgame-data${Util.asQueryArgs(data.filters)}`, {})
 }
@@ -93,4 +97,5 @@ export default {
   saveImage,
   newGame,
   upload,
+  finishedGames,
 }

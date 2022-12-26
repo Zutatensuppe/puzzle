@@ -1933,8 +1933,7 @@ async function loadGame(db, gameId) {
     }
     return gameObject;
 }
-async function getAllPublicGames(db) {
-    const gameRows = await getPublicGameRows(db);
+const gameRowsToGames = (gameRows) => {
     const games = [];
     for (const gameRow of gameRows) {
         const gameObject = gameRowToGameObject(gameRow);
@@ -1945,6 +1944,24 @@ async function getAllPublicGames(db) {
         games.push(gameObject);
     }
     return games;
+};
+async function getAllPublicGames(db) {
+    const gameRows = await getPublicGameRows(db);
+    return gameRowsToGames(gameRows);
+}
+async function getPublicRunningGames(db, offset, limit) {
+    const gameRows = await db.getMany('games', { private: 0, finished: null }, [{ created: -1 }], { limit, offset });
+    return gameRowsToGames(gameRows);
+}
+async function getPublicFinishedGames(db, offset, limit) {
+    const gameRows = await db.getMany('games', { private: 0, finished: { '$ne': null } }, [{ created: -1 }], { limit, offset });
+    return gameRowsToGames(gameRows);
+}
+async function countPublicRunningGames(db) {
+    return await db.count('games', { private: 0, finished: null });
+}
+async function countPublicFinishedGames(db) {
+    return await db.count('games', { private: 0, finished: { '$ne': null } });
 }
 async function exists(db, gameId) {
     const gameRow = await getGameRowById(db, gameId);
@@ -2006,6 +2023,10 @@ var GameStorage = {
     persistGame,
     loadGame,
     getAllPublicGames,
+    getPublicRunningGames,
+    getPublicFinishedGames,
+    countPublicRunningGames,
+    countPublicFinishedGames,
     exists,
     setDirty,
     dirtyGameIds,
@@ -2215,7 +2236,11 @@ class Db {
                     continue;
                 }
                 prop = '$ne';
-                if (where[k][prop]) {
+                if (where[k][prop] === null) {
+                    wheres.push(k + ` IS NOT NULL`);
+                    continue;
+                }
+                else if (where[k][prop]) {
                     wheres.push(k + ` != $${$i++}`);
                     values.push(where[k][prop]);
                     continue;
@@ -2239,6 +2264,16 @@ class Db {
             sorts.push(k + ' ' + (s[k] > 0 ? 'ASC' : 'DESC'));
         }
         return sorts.length > 0 ? ' ORDER BY ' + sorts.join(', ') : '';
+    }
+    _buildLimit(limit) {
+        const parts = [];
+        if (limit.limit >= 0) {
+            parts.push(` LIMIT ${limit.limit}`);
+        }
+        if (limit.offset >= 0) {
+            parts.push(` OFFSET ${limit.offset}`);
+        }
+        return parts.join('');
     }
     async _get(query, params = []) {
         try {
@@ -2276,11 +2311,18 @@ class Db {
         const sql = 'SELECT * FROM ' + table + where.sql + orderBySql;
         return await this._get(sql, where.values);
     }
-    async getMany(table, whereRaw = {}, orderBy = []) {
+    async getMany(table, whereRaw = {}, orderBy = [], limit = { offset: -1, limit: -1 }) {
         const where = this._buildWhere(whereRaw);
         const orderBySql = this._buildOrderBy(orderBy);
-        const sql = 'SELECT * FROM ' + table + where.sql + orderBySql;
+        const limitSql = this._buildLimit(limit);
+        const sql = 'SELECT * FROM ' + table + where.sql + orderBySql + limitSql;
         return await this._getMany(sql, where.values);
+    }
+    async count(table, whereRaw = {}) {
+        const where = this._buildWhere(whereRaw);
+        const sql = 'SELECT COUNT(*) FROM ' + table + where.sql;
+        const row = await this._get(sql, where.values);
+        return parseInt(row.count, 10);
     }
     async delete(table, whereRaw = {}) {
         const where = this._buildWhere(whereRaw);
@@ -2477,39 +2519,53 @@ function createRouter$1(db) {
             tags: await Images.getAllTags(db),
         });
     });
+    const GameToGameInfo = (game, ts) => ({
+        id: game.id,
+        hasReplay: GameLog.hasReplay(game),
+        started: GameCommon.Game_getStartTs(game),
+        finished: GameCommon.Game_getFinishTs(game),
+        piecesFinished: GameCommon.Game_getFinishedPiecesCount(game),
+        piecesTotal: GameCommon.Game_getPieceCount(game),
+        players: GameCommon.Game_getActivePlayers(game, ts).length,
+        imageUrl: GameCommon.Game_getImageUrl(game),
+        snapMode: GameCommon.Game_getSnapMode(game),
+        scoreMode: GameCommon.Game_getScoreMode(game),
+        shapeMode: GameCommon.Game_getShapeMode(game),
+    });
+    const GAMES_PER_PAGE_LIMIT = 10;
     router.get('/index-data', async (req, res) => {
         const ts = Time.timestamp();
-        const rows = await GameStorage.getAllPublicGames(db);
-        const games = [
-            ...rows.sort((a, b) => {
-                const finished = GameCommon.Game_isFinished(a);
-                // when both have same finished state, sort by started
-                if (finished === GameCommon.Game_isFinished(b)) {
-                    if (finished) {
-                        return b.puzzle.data.finished - a.puzzle.data.finished;
-                    }
-                    return b.puzzle.data.started - a.puzzle.data.started;
-                }
-                // otherwise, sort: unfinished, finished
-                return finished ? 1 : -1;
-            }).map((game) => ({
-                id: game.id,
-                hasReplay: GameLog.hasReplay(game),
-                started: GameCommon.Game_getStartTs(game),
-                finished: GameCommon.Game_getFinishTs(game),
-                piecesFinished: GameCommon.Game_getFinishedPiecesCount(game),
-                piecesTotal: GameCommon.Game_getPieceCount(game),
-                players: GameCommon.Game_getActivePlayers(game, ts).length,
-                imageUrl: GameCommon.Game_getImageUrl(game),
-                snapMode: GameCommon.Game_getSnapMode(game),
-                scoreMode: GameCommon.Game_getScoreMode(game),
-                shapeMode: GameCommon.Game_getShapeMode(game),
-            })),
-        ];
-        res.send({
-            gamesRunning: games.filter(g => !g.finished),
-            gamesFinished: games.filter(g => !!g.finished),
-        });
+        // all running rows
+        const runningRows = await GameStorage.getPublicRunningGames(db, -1, -1);
+        const runningCount = await GameStorage.countPublicRunningGames(db);
+        const finishedRows = await GameStorage.getPublicFinishedGames(db, 0, GAMES_PER_PAGE_LIMIT);
+        const finishedCount = await GameStorage.countPublicFinishedGames(db);
+        const gamesRunning = runningRows.map((v) => GameToGameInfo(v, ts));
+        const gamesFinished = finishedRows.map((v) => GameToGameInfo(v, ts));
+        const indexData = {
+            gamesRunning: {
+                items: gamesRunning,
+                pagination: { total: runningCount, offset: 0, limit: 0 }
+            },
+            gamesFinished: {
+                items: gamesFinished,
+                pagination: { total: finishedCount, offset: 0, limit: GAMES_PER_PAGE_LIMIT }
+            },
+        };
+        res.send(indexData);
+    });
+    router.get('/finished-games', async (req, res) => {
+        // todo check offset
+        const offset = parseInt(`${req.query.offset}`, 10);
+        const ts = Time.timestamp();
+        const finishedRows = await GameStorage.getPublicFinishedGames(db, offset, GAMES_PER_PAGE_LIMIT);
+        const finishedCount = await GameStorage.countPublicFinishedGames(db);
+        const gamesFinished = finishedRows.map((v) => GameToGameInfo(v, ts));
+        const indexData = {
+            items: gamesFinished,
+            pagination: { total: finishedCount, offset: offset, limit: GAMES_PER_PAGE_LIMIT }
+        };
+        res.send(indexData);
     });
     router.post('/save-image', express.json(), async (req, res) => {
         const user = await Users.getUser(db, req);

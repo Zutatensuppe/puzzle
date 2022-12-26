@@ -1,4 +1,4 @@
-import { GameSettings, Game as GameType, GameInfo } from '../../../common/Types'
+import { GameSettings, Game as GameType, GameInfo, ApiDataIndexData, ApiDataFinishedGames } from '../../../common/Types'
 import config from '../../Config'
 import Db from '../../Db'
 import express, { Router } from 'express'
@@ -131,40 +131,57 @@ export default function createRouter(
     })
   })
 
+  const GameToGameInfo = (game: GameType, ts: number): GameInfo => ({
+    id: game.id,
+    hasReplay: GameLog.hasReplay(game),
+    started: GameCommon.Game_getStartTs(game),
+    finished: GameCommon.Game_getFinishTs(game),
+    piecesFinished: GameCommon.Game_getFinishedPiecesCount(game),
+    piecesTotal: GameCommon.Game_getPieceCount(game),
+    players: GameCommon.Game_getActivePlayers(game, ts).length,
+    imageUrl: GameCommon.Game_getImageUrl(game),
+    snapMode: GameCommon.Game_getSnapMode(game),
+    scoreMode: GameCommon.Game_getScoreMode(game),
+    shapeMode: GameCommon.Game_getShapeMode(game),
+  })
+
+  const GAMES_PER_PAGE_LIMIT = 10
   router.get('/index-data', async (req, res): Promise<void> => {
     const ts = Time.timestamp()
-    const rows = await GameStorage.getAllPublicGames(db)
-    const games: GameInfo[] = [
-      ...rows.sort((a: GameType, b: GameType) => {
-        const finished = GameCommon.Game_isFinished(a)
-        // when both have same finished state, sort by started
-        if (finished === GameCommon.Game_isFinished(b)) {
-          if (finished) {
-            return  b.puzzle.data.finished - a.puzzle.data.finished
-          }
-          return b.puzzle.data.started - a.puzzle.data.started
-        }
-        // otherwise, sort: unfinished, finished
-        return finished ? 1 : -1
-      }).map((game: GameType): GameInfo => ({
-        id: game.id,
-        hasReplay: GameLog.hasReplay(game),
-        started: GameCommon.Game_getStartTs(game),
-        finished: GameCommon.Game_getFinishTs(game),
-        piecesFinished: GameCommon.Game_getFinishedPiecesCount(game),
-        piecesTotal: GameCommon.Game_getPieceCount(game),
-        players: GameCommon.Game_getActivePlayers(game, ts).length,
-        imageUrl: GameCommon.Game_getImageUrl(game),
-        snapMode: GameCommon.Game_getSnapMode(game),
-        scoreMode: GameCommon.Game_getScoreMode(game),
-        shapeMode: GameCommon.Game_getShapeMode(game),
-      })),
-    ]
+    // all running rows
+    const runningRows = await GameStorage.getPublicRunningGames(db, -1, -1)
+    const runningCount = await GameStorage.countPublicRunningGames(db)
+    const finishedRows = await GameStorage.getPublicFinishedGames(db, 0, GAMES_PER_PAGE_LIMIT)
+    const finishedCount = await GameStorage.countPublicFinishedGames(db)
 
-    res.send({
-      gamesRunning: games.filter(g => !g.finished),
-      gamesFinished: games.filter(g => !!g.finished),
-    })
+    const gamesRunning: GameInfo[] = runningRows.map((v) => GameToGameInfo(v, ts))
+    const gamesFinished: GameInfo[] = finishedRows.map((v) => GameToGameInfo(v, ts))
+
+    const indexData: ApiDataIndexData = {
+      gamesRunning: {
+        items: gamesRunning,
+        pagination: { total: runningCount, offset: 0, limit: 0 }
+      },
+      gamesFinished: {
+        items: gamesFinished,
+        pagination: { total: finishedCount, offset: 0, limit: GAMES_PER_PAGE_LIMIT }
+      },
+    }
+    res.send(indexData)
+  })
+
+  router.get('/finished-games', async (req, res): Promise<void> => {
+    // todo check offset
+    const offset = parseInt(`${req.query.offset}`, 10)
+    const ts = Time.timestamp()
+    const finishedRows = await GameStorage.getPublicFinishedGames(db, offset, GAMES_PER_PAGE_LIMIT)
+    const finishedCount = await GameStorage.countPublicFinishedGames(db)
+    const gamesFinished: GameInfo[] = finishedRows.map((v) => GameToGameInfo(v, ts))
+    const indexData: ApiDataFinishedGames = {
+      items: gamesFinished,
+      pagination: { total: finishedCount, offset: offset, limit: GAMES_PER_PAGE_LIMIT }
+    }
+    res.send(indexData)
   })
 
   router.post('/save-image', express.json(), async (req, res): Promise<void> => {
