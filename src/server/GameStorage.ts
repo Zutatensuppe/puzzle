@@ -109,11 +109,6 @@ const gameRowsToGames = (gameRows: GameRow[]): Game[] => {
   return games
 }
 
-async function getAllPublicGames(db: Db): Promise<Game[]> {
-  const gameRows = await getPublicGameRows(db)
-  return gameRowsToGames(gameRows)
-}
-
 async function getPublicRunningGames(db: Db, offset: number, limit: number): Promise<Game[]> {
   const gameRows = await db.getMany(
     'games',
@@ -128,7 +123,7 @@ async function getPublicFinishedGames(db: Db, offset: number, limit: number): Pr
   const gameRows = await db.getMany(
     'games',
     { private: 0, finished: { '$ne': null } },
-    [{ created: -1 }],
+    [{ finished: -1 }],
     { limit, offset }
   ) as GameRow[]
   return gameRowsToGames(gameRows)
@@ -212,7 +207,6 @@ export default {
   persistGame,
 
   loadGame,
-  getAllPublicGames,
 
   getPublicRunningGames,
   getPublicFinishedGames,
