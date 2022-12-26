@@ -17,6 +17,9 @@
       <div class="imageteaser-info" v-if="image.tags.length">
         <v-icon icon="mdi-tag"></v-icon> {{ image.tags.map(t => t.title).join(', ') }}
       </div>
+      <div class="imageteaser-click-info">
+        <h5>Click to setup a game</h5>
+      </div>
       <div class="imageteaser-actions">
         <v-btn
           variant="text"
@@ -24,6 +27,7 @@
           @click.stop="onEditClick"
           icon="mdi-pencil"
           size="x-small"
+          class="imageteaser-edit"
         ></v-btn>
       </div>
     </div>

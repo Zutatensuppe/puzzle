@@ -138,6 +138,7 @@ $bg-color-transparent: rgba(0 0 0 / 70%);
   background: rgba(0 0 0 / 10%);
   padding: 1em;
   font-size: 13px;
+  text-shadow: 0 0 10px #000;
 
   .game-teaser-info {
     opacity: 0.9;
@@ -147,16 +148,19 @@ $bg-color-transparent: rgba(0 0 0 / 70%);
     opacity: 0;
   }
 
-  .game-join {
+  .game-teaser-click-info {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    padding: 1em;
+    display: none;
+  }
+
+  .game-teaser-replay-info {
     position: absolute;
     bottom: 0;
     right: 0;
-  }
-
-  .game-replay {
-    position: absolute;
-    top: 0;
-    right: 0;
+    padding: 1em;
   }
 }
 
@@ -166,6 +170,9 @@ $bg-color-transparent: rgba(0 0 0 / 70%);
 
     .game-teaser-info {
       opacity: 1;
+    }
+    .game-teaser-click-info {
+      display: block;
     }
   }
 }
@@ -181,7 +188,7 @@ $bg-color-transparent: rgba(0 0 0 / 70%);
 .filters {
   background: $bg-color-transparent;
   display: grid;
-  grid-template-columns: auto auto;
+  grid-template-columns: min-content auto;
   grid-gap: 10px;
 }
 
@@ -228,7 +235,8 @@ a,
 h1,
 h2,
 h3,
-h4 {
+h4,
+h5 {
   text-transform: uppercase;
   font-family: Teko, sans-serif;
   text-shadow: 0 0 10px black;
@@ -242,6 +250,11 @@ h2,
 h3,
 h4 {
   font-size: 28px;
+}
+
+h5 {
+  font-size: 20px;
+  line-height: 1;
 }
 
 // td,
@@ -321,18 +334,12 @@ html.view-replay body { overflow: hidden; }
 .imageteaser {
   position: relative;
   font-size: 13px;
+  text-shadow: 0 0 10px #000;
 
   img {
     width: 100%;
     vertical-align: bottom;
   }
-
-  // .imageteaser-inner {
-  //   display: none;
-  // }
-  // &:hover .imageteaser-inner {
-  //   display: block;
-  // }
 
   .imageteaser-inner {
     position: absolute;
@@ -340,7 +347,7 @@ html.view-replay body { overflow: hidden; }
     right: 0;
     top: 0;
     bottom: 0;
-    background: rgba(0 0 0 / 50%);
+    background: rgba(0 0 0 / 10%);
     padding: 1em;
   }
 
@@ -348,11 +355,28 @@ html.view-replay body { overflow: hidden; }
     margin-bottom: 1em;
   }
 
+  .imageteaser-click-info {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    padding: 1em;
+    display: none;
+  }
+
   .imageteaser-actions {
     position: absolute;
     bottom: 0;
     right: 0;
     padding: 1em;
+  }
+}
+
+.imageteaser:hover {
+  .imageteaser-inner {
+    background: rgba(0 0 0 / 50%);
+  }
+  .imageteaser-click-info {
+    display: block;
   }
 }
 

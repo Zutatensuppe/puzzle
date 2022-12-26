@@ -8,6 +8,12 @@
       <div class="game-teaser-info">
         <v-icon icon="mdi-account-group"></v-icon> {{game.players}} Players
       </div>
+      <div class="game-teaser-info" v-if="game.finished">
+        <v-icon icon="mdi-flag-checkered"></v-icon> {{ time(game.started, game.finished) }}
+      </div>
+      <div class="game-teaser-info secondary" v-if="!game.finished">
+        <v-icon icon="mdi-timer-outline"></v-icon> {{ time(game.started, game.finished) }}
+      </div>
       <div class="game-teaser-info secondary" title="Scoring">
         <v-icon icon="mdi-counter"></v-icon> {{ scoreMode }}
       </div>
@@ -17,33 +23,23 @@
       <div class="game-teaser-info secondary" title="Snapping">
         <v-icon icon="mdi-connection"></v-icon> {{ snapMode }}
       </div>
-      <div class="game-teaser-info secondary">
-        <v-icon icon="mdi-timer-outline" v-if="!game.finished"></v-icon>
-        <v-icon icon="mdi-flag-checkered" v-else></v-icon> {{time(game.started, game.finished)}}
+      <div class="game-teaser-click-info">
+        <h5>Click to {{ joinPuzzleText }}</h5>
+      </div>
+      <div class="game-teaser-replay-info">
+        <v-btn
+          v-if="game.finished && game.hasReplay"
+          color="info"
+          size="x-small"
+          variant="elevated"
+          class="game-replay"
+          @click.prevent="emit('goToReplay', game)"
+          prepend-icon="mdi-play"
+        >
+          Watch replay
+        </v-btn>
       </div>
     </div>
-    <v-card-actions class="d-flex justify-center">
-      <v-btn
-        class="game-join"
-        size="x-small"
-        color="success"
-        variant="elevated"
-        prepend-icon="mdi-puzzle"
-      >
-        {{ joinPuzzleText }}
-      </v-btn>
-      <v-btn
-        v-if="game.finished && game.hasReplay"
-        color="info"
-        size="x-small"
-        variant="elevated"
-        class="game-replay"
-        @click.prevent="emit('goToReplay', game)"
-        prepend-icon="mdi-play"
-      >
-        Watch replay
-      </v-btn>
-    </v-card-actions>
   </v-card>
 </template>
 <script setup lang="ts">
