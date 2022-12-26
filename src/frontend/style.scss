@@ -149,16 +149,12 @@ $bg-color-transparent: rgba(0 0 0 / 70%);
 
   > .v-card__overlay,
   .game-teaser-image {
-    transition: transform .2s ease-in;
-    -moz-transition: transform .2s ease-in;
-    -ms-transition: transform .2s ease-in;
-    -o-transition: transform .2s ease-in;
-    -webkit-transition: transform .2s ease-in;
+    transition: transform 0.2s ease-in;
+    -moz-transition: transform 0.2s ease-in;
+    -ms-transition: transform 0.2s ease-in;
+    -o-transition: transform 0.2s ease-in;
+    -webkit-transition: transform 0.2s ease-in;
     border-radius: 4px;
-  }
-  &:hover > .v-card__overlay,
-  &:hover .game-teaser-image {
-    transform: scale(1.1);
   }
 
   .game-teaser-inner {
@@ -185,9 +181,14 @@ $bg-color-transparent: rgba(0 0 0 / 70%);
       }
     }
   }
+
+  &:hover > .v-card__overlay,
+  &:hover .game-teaser-image {
+    transform: scale(1.1);
+  }
 }
 
-.finished-game-teaser {
+.v-card.finished-game-teaser {
   .game-teaser-image {
     display: block;
     background-repeat: no-repeat;
