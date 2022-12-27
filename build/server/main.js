@@ -2395,13 +2395,11 @@ class Db {
 
 const TABLE = 'users';
 const HEADER_CLIENT_ID = 'client-id';
-const HEADER_CLIENT_SECRET = 'client-secret';
 const getOrCreateUser = async (db, req) => {
     let user = await getUser(db, req);
     if (!user) {
         await db.insert(TABLE, {
             'client_id': req.headers[HEADER_CLIENT_ID],
-            'client_secret': req.headers[HEADER_CLIENT_SECRET],
             'created': new Date(),
         });
         user = await getUser(db, req);
@@ -2411,7 +2409,6 @@ const getOrCreateUser = async (db, req) => {
 const getUser = async (db, req) => {
     const user = await db.get(TABLE, {
         'client_id': req.headers[HEADER_CLIENT_ID],
-        'client_secret': req.headers[HEADER_CLIENT_SECRET],
     });
     if (user) {
         user.id = parseInt(user.id, 10);
@@ -2459,7 +2456,6 @@ function createRouter$1(db) {
             res.send({
                 id: req.user.id,
                 clientId: req.user.client_id,
-                clientSecret: req.user.client_secret,
                 created: req.user.created,
             });
             return;
@@ -2711,7 +2707,6 @@ function createRouter(db) {
         const items = await db.getMany('users');
         res.send(items.map(item => {
             delete item.client_id;
-            delete item.client_secret;
             delete item.pass;
             delete item.salt;
             return item;

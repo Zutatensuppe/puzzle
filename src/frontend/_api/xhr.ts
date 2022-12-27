@@ -15,7 +15,6 @@ export interface Options {
 }
 
 let xhrClientId: string = ''
-let xhrClientSecret: string = ''
 const request = async (
   method: string,
   url: string,
@@ -30,7 +29,6 @@ const request = async (
     }
 
     xhr.setRequestHeader('Client-Id', xhrClientId)
-    xhr.setRequestHeader('Client-Secret', xhrClientSecret)
 
     xhr.addEventListener('load', function (_ev: ProgressEvent<XMLHttpRequestEventTarget>
       ) {
@@ -67,19 +65,16 @@ const uniq = (str: string) => {
 export default {
   init: () => {
     xhrClientId = uniq('ID')
-    xhrClientSecret = uniq('SECRET')
 
     user.eventBus.on('login', () => {
       const u = user.getMe()
       if (u) {
         xhrClientId = u.clientId
-        xhrClientSecret = u.clientSecret
       }
     })
 
     user.eventBus.on('logout', () => {
       xhrClientId = uniq('ID')
-      xhrClientSecret = uniq('SECRET')
     })
   },
   request,

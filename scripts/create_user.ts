@@ -33,7 +33,6 @@ async function run() {
     pass: passwordHash(password, salt),
     salt: salt,
     client_id: uniqId(),
-    client_secret: uniqId(),
     created: new Date(),
   }
 

@@ -41,7 +41,6 @@ export default function createRouter(
       res.send({
         id: req.user.id,
         clientId: req.user.client_id,
-        clientSecret: req.user.client_secret,
         created: req.user.created,
       })
       return

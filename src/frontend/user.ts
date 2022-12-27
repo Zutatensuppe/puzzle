@@ -5,7 +5,6 @@ export interface User {
   id: number
   created: string
   clientId: string
-  clientSecret: string
 }
 
 let me: null | User = null;
