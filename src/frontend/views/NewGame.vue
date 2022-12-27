@@ -127,6 +127,7 @@ const image = ref<ImageInfo>({
   created: 0,
   width: 0,
   height: 0,
+  gameCount: 0,
 })
 
 const dialog = ref<boolean>(false)
@@ -221,7 +222,10 @@ const onSaveImageClick = async (data: any) => {
   const json = await res.json()
   if (json.ok) {
     closeDialog()
-    await loadImages()
+    // TODO: the image could now not match the filters anymore.
+    //       but it is probably fine to not reload the whole list at this point
+    const idx = images.value.findIndex(img => img.id === data.id)
+    images.value[idx] = json.image
   } else {
     alert(json.error)
   }

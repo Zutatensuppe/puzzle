@@ -177,7 +177,7 @@ export interface ImageInfo
   created: Timestamp
   width: number
   height: number
-  gameCount?: number // TODO: make it always available (currently not loaded in imageFromDb)
+  gameCount: number
 }
 
 export interface PuzzleInfo {

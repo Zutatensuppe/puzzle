@@ -69,7 +69,7 @@
                   <tr><td>Upload date: </td><td>{{ date }}</td></tr>
                   <tr><td>Dimensions: </td><td>{{ image.width }}x{{ image.height }}</td></tr>
                   <tr><td>Tags: </td><td>{{ image.tags.length ? image.tags.map(t => t.title).join(', ') : '-' }}</td></tr>
-                  <tr><td>Game count: </td><td>{{ image.gameCount || 0 }}</td></tr>
+                  <tr><td>Game count: </td><td>{{ image.gameCount }}</td></tr>
                 </tbody>
               </v-table>
             </v-window-item>

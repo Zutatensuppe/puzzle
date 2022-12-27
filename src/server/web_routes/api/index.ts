@@ -228,7 +228,7 @@ export default function createRouter(
 
     await Images.setTags(db, data.id, data.tags || [])
 
-    res.send({ ok: true })
+    res.send({ ok: true, image: await Images.imageFromDb(db, data.id) })
   })
 
   router.get('/proxy', (req: any, res): void => {
