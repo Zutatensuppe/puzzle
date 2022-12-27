@@ -1,5 +1,19 @@
 <template>
+  <Nav />
   <v-container :fluid="true" class="index-view" v-if="data">
+    <v-row class="mt-2 mb-2">
+      <v-col>
+        <div class="text-center">
+          <v-btn
+            class="font-weight-bold mb-1"
+            :to="{ name: 'new-game' }"
+            prepend-icon="mdi-puzzle-outline"
+            size="large"
+            color="info"
+          >Start a new Puzzle</v-btn>
+        </div>
+      </v-col>
+    </v-row>
     <h1>Running games</h1>
     <v-container :fluid="true" class="pl-0 pr-0 game-teasers-holder running-games">
       <RunningGameTeaser
@@ -33,6 +47,7 @@ import RunningGameTeaser from '../components/RunningGameTeaser.vue';
 import FinishedGameTeaser from '../components/FinishedGameTeaser.vue';
 import Pagination from '../components/Pagination.vue';
 import api from '../_api'
+import Nav from '../components/Nav.vue';
 
 const router = useRouter()
 const data = ref<ApiDataIndexData | null>(null)
