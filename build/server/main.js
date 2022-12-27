@@ -1586,6 +1586,7 @@ const imageFromDb = async (db, imageId) => {
     if (!imageRow) {
         return null;
     }
+    const gameCount = await db.count('games', { image_id: imageRow.id, private: imageRow.private });
     return {
         id: imageRow.id,
         uploaderUserId: imageRow.uploader_user_id,
@@ -1596,6 +1597,7 @@ const imageFromDb = async (db, imageId) => {
         created: imageRow.created.getTime(),
         width: imageRow.width,
         height: imageRow.height,
+        gameCount,
     };
 };
 const getCategoryRowsBySlugs = async (db, slugs) => {
@@ -2625,7 +2627,7 @@ function createRouter$1(db) {
             id: data.id,
         });
         await Images.setTags(db, data.id, data.tags || []);
-        res.send({ ok: true });
+        res.send({ ok: true, image: await Images.imageFromDb(db, data.id) });
     });
     router.get('/proxy', (req, res) => {
         log.info('proxy request for url:', req.query.url);
@@ -2735,6 +2737,13 @@ const run = async () => {
     // add user info to all requests
     app.use(async (req, _res, next) => {
         const token = req.cookies['x-token'] || null;
+        if (!token) {
+            // guest user (who has uploaded an image already or started a game)
+            req.token = null;
+            req.user = await Users.getUser(db, req);
+            next();
+            return;
+        }
         const tokenInfo = await db.get('tokens', { token, type: 'auth' });
         if (!tokenInfo) {
             req.token = null;
