@@ -6,8 +6,7 @@
       <tr>
         <th>Id</th>
         <th>Created</th>
-        <!-- <th>Client Id</th>
-        <th>Client Secret</th> -->
+        <!-- <th>Client Id</th> -->
         <th>Login</th>
         <!-- <th>Pass</th>
         <th>Salt</th> -->
@@ -15,8 +14,7 @@
       <tr v-for="(item, idx) in users" :key="idx">
         <td>{{item.id}}</td>
         <td>{{item.created}}</td>
-        <!-- <td>{{item.client_id}}</td>
-        <td>{{item.client_secret}}</td> -->
+        <!-- <td>{{item.client_id}}</td> -->
         <td><template v-if="item.login">{{item.login}}</template><template v-else>-</template></td>
         <!-- <td>{{item.pass}}</td>
         <td>{{item.salt}}</td> -->

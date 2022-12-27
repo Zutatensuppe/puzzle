@@ -43,7 +43,6 @@ export default function createRouter(
     const items = await db.getMany('users')
     res.send(items.map(item => {
       delete item.client_id
-      delete item.client_secret
       delete item.pass
       delete item.salt
       return item
