@@ -2442,7 +2442,7 @@ const randomString = (length) => {
 
 const log = logger('web_routes/api/index.ts');
 const GAMES_PER_PAGE_LIMIT = 10;
-const IMAGES_PER_PAGE_LIMIT = 10;
+const IMAGES_PER_PAGE_LIMIT = 20;
 function createRouter$1(db) {
     const storage = multer.diskStorage({
         destination: config.dir.UPLOAD_DIR,
