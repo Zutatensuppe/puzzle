@@ -255,6 +255,7 @@ $bg-color-transparent: rgba(0 0 0 / 70%);
   background: url("assets/gfx/gokhan-polat-qyC7DTbWJJk-unsplash.jpg");
   height: 100%;
   background-repeat: no-repeat;
+  background-attachment: fixed;
 }
 
 .filters {
@@ -407,11 +408,6 @@ html.view-replay body { overflow: hidden; }
   position: relative;
   font-size: 13px;
   text-shadow: 1px 1px 3px #000;
-
-  img {
-    width: 100%;
-    vertical-align: bottom;
-  }
 
   .imageteaser-inner {
     position: absolute;

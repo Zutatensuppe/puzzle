@@ -1,6 +1,5 @@
 <template>
-  <v-card class="imageteaser is-clickable" @click="onClick" elevation="10">
-    <img :src="url" />
+  <v-card class="imageteaser is-clickable" @click="onClick" elevation="10" :style="styles">
     <div class="imageteaser-inner">
       <h4 class="imageteaser-title">
         {{ image.title || '<No Title>' }}
@@ -35,11 +34,12 @@
 </template>
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
+import { ImageInfo } from '../../common/Types';
 import user, { User } from '../user'
 
-const props = defineProps({
-  image: { type: Object, required: true },
-})
+const props = defineProps<{
+  image: ImageInfo
+}>()
 
 const emit = defineEmits<{
   (event: 'click'): void
@@ -50,6 +50,14 @@ const me = ref<User|null>(null)
 
 const url = computed((): string => {
   return props.image.url.replace('uploads/', 'uploads/r/') + '-375x0.webp'
+})
+
+const styles = computed(() => {
+  return {
+    paddingTop: (props.image.height / props.image.width * 100) + '%',
+    backgroundImage: `url(${url.value})`,
+    backgroundSize: 'cover',
+  }
 })
 
 const date = computed((): string => {
