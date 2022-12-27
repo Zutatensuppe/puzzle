@@ -6,6 +6,7 @@ of images. Instead of categories, you can make the system tag-based, like
 in jigsawpuzzles.io
 
 <template>
+  <Nav :class="{blurred: dialog}" />
   <v-container :fluid="true" class="new-game-view p-0">
     <v-row class="mt-2 mb-2">
       <v-col>
@@ -99,6 +100,7 @@ import { GameSettings, ImageInfo, Tag } from '../../common/Types'
 import api from '../_api'
 import { useRouter } from 'vue-router'
 import ImageLibrary from './../components/ImageLibrary.vue'
+import Nav from '../components/Nav.vue'
 
 const router = useRouter()
 

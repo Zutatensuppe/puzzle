@@ -1,13 +1,20 @@
 <template>
   <v-app-bar v-if="showNav">
-    <v-btn size="small" class="mr-1" :to="{name: 'index'}">Games overview</v-btn>
-    <v-btn size="small" class="mr-1" :to="{name: 'new-game'}">New game</v-btn>
-    <v-btn size="small" class="mr-1" href="https://stand-with-ukraine.pp.ua/" target="_blank">
-      <icon icon="ukraine-heart" /> Stand with Ukraine <icon icon="ukraine-heart" />
-    </v-btn>
-    <v-spacer />
-    <v-btn size="small" class="ml-1" v-if="loggedIn" @click="doLogout">Logout</v-btn>
-    <v-btn size="small" class="ml-1" v-if="loggedIn" :to="{name: 'admin'}">Admin</v-btn>
+    <div class="header-bar-container d-flex">
+      <div class="justify-start">
+        <v-btn size="small" class="mr-1" :to="{name: 'index'}" icon="mdi-home" variant="text"></v-btn>
+      </div>
+      <div class="justify-center">
+        <h4 :class="{ index: route.name === 'index' }">{{ route.meta.title }}</h4>
+      </div>
+      <div class="justify-end">
+        <v-btn size="small" class="mr-1" href="https://stand-with-ukraine.pp.ua/" target="_blank">
+          <icon icon="ukraine-heart" /> <span class="ml-2 mr-2">Stand with Ukraine</span> <icon icon="ukraine-heart" />
+        </v-btn>
+        <v-btn size="small" class="ml-1" v-if="loggedIn" @click="doLogout">Logout</v-btn>
+        <v-btn size="small" class="ml-1" v-if="loggedIn" :to="{name: 'admin'}">Admin</v-btn>
+      </div>
+    </div>
   </v-app-bar>
 </template>
 <script setup lang="ts">
