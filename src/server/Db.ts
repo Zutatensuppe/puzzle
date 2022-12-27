@@ -184,11 +184,17 @@ class Db {
 
   _buildLimit(limit: Limit): string {
     const parts = []
-    if (limit.limit >= 0) {
-      parts.push(` LIMIT ${limit.limit}`)
+
+    // make sure we have integers, so we can safely inline the
+    // values into the sql
+    const limitVal = parseInt(`${limit.limit}`, 10)
+    const offsetVal = parseInt(`${limit.offset}`, 10)
+
+    if (limitVal >= 0) {
+      parts.push(` LIMIT ${limitVal}`)
     }
-    if (limit.offset >= 0) {
-      parts.push(` OFFSET ${limit.offset}`)
+    if (offsetVal >= 0) {
+      parts.push(` OFFSET ${offsetVal}`)
     }
     return parts.join('')
   }

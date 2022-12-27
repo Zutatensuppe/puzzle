@@ -21,6 +21,8 @@ interface SaveImageRequestData {
   title: string
   tags: string[]
 }
+const GAMES_PER_PAGE_LIMIT = 10
+const IMAGES_PER_PAGE_LIMIT = 10
 
 export default function createRouter(
   db: Db
@@ -126,8 +128,21 @@ export default function createRouter(
     const q: Record<string, any> = req.query
     const tagSlugs: string[] = q.tags ? q.tags.split(',') : []
     res.send({
-      images: await Images.allImagesFromDb(db, tagSlugs, q.sort, false),
+      images: await Images.imagesFromDb(db, tagSlugs, q.sort, false, 0, IMAGES_PER_PAGE_LIMIT),
       tags: await Images.getAllTags(db),
+    })
+  })
+
+  router.get('/images', async (req, res): Promise<void> => {
+    const q: Record<string, any> = req.query
+    const tagSlugs: string[] = q.tags ? q.tags.split(',') : []
+    const offset = parseInt(`${q.offset}`, 10)
+    if (isNaN(offset) || offset < 0) {
+      res.status(400).send({ error: 'bad offset' })
+      return
+    }
+    res.send({
+      images: await Images.imagesFromDb(db, tagSlugs, q.sort, false, offset, IMAGES_PER_PAGE_LIMIT),
     })
   })
 
@@ -150,7 +165,6 @@ export default function createRouter(
     }
   }
 
-  const GAMES_PER_PAGE_LIMIT = 10
   router.get('/index-data', async (req, res): Promise<void> => {
     const ts = Time.timestamp()
     // all running rows
@@ -176,8 +190,11 @@ export default function createRouter(
   })
 
   router.get('/finished-games', async (req, res): Promise<void> => {
-    // todo check offset
     const offset = parseInt(`${req.query.offset}`, 10)
+    if (isNaN(offset) || offset < 0) {
+      res.status(400).send({ error: 'bad offset' })
+      return
+    }
     const ts = Time.timestamp()
     const finishedRows = await GameStorage.getPublicFinishedGames(db, offset, GAMES_PER_PAGE_LIMIT)
     const finishedCount = await GameStorage.countPublicFinishedGames(db)

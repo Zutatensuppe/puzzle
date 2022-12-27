@@ -36,8 +36,8 @@ in jigsawpuzzles.io
             { val: 'date_asc', title: 'Oldest first'},
             { val: 'alpha_asc', title: 'A-Z'},
             { val: 'alpha_desc', title: 'Z-A'},
-            { val: 'game_count_asc', title: 'Most plays first'},
-            { val: 'game_count_desc', title: 'Least plays first'},
+            { val: 'game_count_desc', title: 'Most plays first'},
+            { val: 'game_count_asc', title: 'Least plays first'},
           ]"
           @update:modelValue="filtersChanged"
         ></v-select>
@@ -63,6 +63,7 @@ in jigsawpuzzles.io
       @imageClicked="onImageClicked"
       @imageEditClicked="onImageEditClicked"
     />
+    <Sentinel @sighted="tryLoadMore" v-if="sentinelActive" />
     <v-dialog v-model="dialog">
       <NewImageDialog
         v-if="dialogContent==='new-image'"
@@ -101,6 +102,7 @@ import api from '../_api'
 import { useRouter } from 'vue-router'
 import ImageLibrary from './../components/ImageLibrary.vue'
 import Nav from '../components/Nav.vue'
+import Sentinel from '../components/Sentinel.vue'
 
 const router = useRouter()
 
@@ -108,7 +110,11 @@ const filters = ref<{ sort: string, tags: string[] }>({
   sort: 'date_desc',
   tags: [],
 })
+const offset = ref<number>(0)
+
 const images = ref<ImageInfo[]>([])
+
+const sentinelActive = ref<boolean>(false)
 
 const tags = ref<Tag[]>([])
 const image = ref<ImageInfo>({
@@ -165,27 +171,36 @@ watch(filters, () => {
 }, { deep: true })
 
 const loadImages = async () => {
+  sentinelActive.value = false
+  offset.value = 0
   const _filters = {
     sort: filters.value.sort,
     tags: filters.value.tags,
+    offset: offset.value,
   }
   const res = await api.pub.newgameData({ filters: _filters })
   const json = await res.json()
   images.value = json.images
   tags.value = json.tags
+  sentinelActive.value = true
 }
+
 const filtersChanged = async () => {
   await loadImages()
+  sentinelActive.value = true
 }
+
 const onImageClicked = (newImage: ImageInfo) => {
   image.value = newImage
   newGameForcePrivate.value = false
   openDialog('new-game')
 }
+
 const onImageEditClicked = (newImage: ImageInfo) => {
   image.value = newImage
   openDialog('edit-image')
 }
+
 const uploadImage = async (data: any) => {
   uploadProgress.value = 0
   const res = await api.pub.upload({
@@ -200,6 +215,7 @@ const uploadImage = async (data: any) => {
   uploadProgress.value = 1
   return await res.json()
 }
+
 const onSaveImageClick = async (data: any) => {
   const res = await api.pub.saveImage(data)
   const json = await res.json()
@@ -210,6 +226,7 @@ const onSaveImageClick = async (data: any) => {
     alert(json.error)
   }
 }
+
 const postToGalleryClick = async (data: any) => {
   uploading.value = 'postToGallery'
   await uploadImage(data)
@@ -217,6 +234,7 @@ const postToGalleryClick = async (data: any) => {
   closeDialog()
   await loadImages()
 }
+
 const setupGameClick = async (data: any) => {
   uploading.value = 'setupGame'
   const uploadedImage = await uploadImage(data)
@@ -226,12 +244,32 @@ const setupGameClick = async (data: any) => {
   newGameForcePrivate.value = data.isPrivate
   openDialog('new-game')
 }
+
 const onNewGame = async (gameSettings: GameSettings) => {
   const res = await api.pub.newGame({ gameSettings })
   if (res.status === 200) {
     const game = await res.json()
     router.push({ name: 'game', params: { id: game.id } })
   }
+}
+
+const tryLoadMore = async () => {
+  offset.value = images.value.length
+  const _filters = {
+    sort: filters.value.sort,
+    tags: filters.value.tags,
+    offset: offset.value,
+  }
+  const res = await api.pub.images({ filters: _filters })
+  const json = await res.json()
+  if (json.images.length === 0) {
+    sentinelActive.value = false
+  } else {
+    // sentinel may be disabled.. but why? :(
+    // anyway for now we enable it again if images were loaded
+    sentinelActive.value = true
+  }
+  images.value.push(...json.images)
 }
 
 onMounted(async () => {

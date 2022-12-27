@@ -132,7 +132,7 @@ onMounted(() => {
 
 onBeforeUnmount(() => resizeObserver.unobserve(wall.value))
 
-watch([items, rtl], () => redraw(true))
+watch([items, rtl], () => redraw(true), { deep: true })
 
 watch([columnWidth, gap], () => redraw())
 </script>

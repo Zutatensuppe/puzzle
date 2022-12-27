@@ -42,6 +42,10 @@ const newgameData = async (data: { filters: { sort: string, tags: string[] } }) 
   return xhr.get(`/api/newgame-data${Util.asQueryArgs(data.filters)}`, {})
 }
 
+const images = async (data: { filters: { sort: string, tags: string[], offset: number } }) => {
+  return xhr.get(`/api/images${Util.asQueryArgs(data.filters)}`, {})
+}
+
 const replayData = async (data: { gameId: string, offset: number }) =>{
   return xhr.get(`/api/replay-data${Util.asQueryArgs(data)}`, {})
 }
@@ -98,4 +102,5 @@ export default {
   newGame,
   upload,
   finishedGames,
+  images,
 }

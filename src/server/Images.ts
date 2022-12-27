@@ -23,6 +23,10 @@ interface ImageRow {
   private: number
 }
 
+interface ImageRowWithCount extends ImageRow{
+  games_count: string
+}
+
 const resizeImage = async (filename: string): Promise<void> => {
   try {
     const imagePath = `${config.dir.UPLOAD_DIR}/${filename}`
@@ -129,17 +133,21 @@ const getCategoryRowsBySlugs = async (db: Db, slugs: string[]): Promise<Category
   return c as CategoryRow[]
 }
 
-const allImagesFromDb = async (
+const imagesFromDb = async (
   db: Db,
   tagSlugs: string[],
   orderBy: string,
   isPrivate: boolean,
+  offset: number,
+  limit: number,
 ): Promise<ImageInfo[]> => {
   const orderByMap = {
     alpha_asc: [{ title: 1 }],
     alpha_desc: [{ title: -1 }],
     date_asc: [{ created: 1 }],
     date_desc: [{ created: -1 }],
+    game_count_asc: [{ games_count: 1 }],
+    game_count_desc: [{ games_count: -1 }],
   } as Record<string, OrderBy>
 
   // TODO: .... clean up
@@ -162,15 +170,32 @@ inner join images i on i.id = ixc.image_id ${where.sql};
     }
     wheresRaw['id'] = {'$in': ids}
   }
-  const imageCounts = await db._getMany(`
-select count(*) as count, image_id from games where private = $1 group by image_id
-`, [isPrivate ? 1 : 0])
-  const imageCountMap = new Map<number, number>()
-  for (const row of imageCounts) {
-    imageCountMap.set(row.image_id, parseInt(row.count, 10))
-  }
 
-  const tmpImages: ImageRow[] = await db.getMany('images', wheresRaw, orderByMap[orderBy])
+  const params: any[] = []
+  params.push(isPrivate ? 1 : 0)
+  const dbWhere = db._buildWhere(wheresRaw, params.length + 1)
+  params.push(...dbWhere.values)
+  const tmpImages: ImageRowWithCount[] = await db._getMany(`
+    WITH counts AS (
+      SELECT
+        COUNT(*) AS count,
+        image_id
+      FROM
+        games
+      WHERE
+        private = $1
+      GROUP BY image_id
+    )
+    SELECT
+      images.*, COALESCE(counts.count, 0) AS games_count
+    FROM
+      images
+      LEFT JOIN counts ON counts.image_id = images.id
+    ${dbWhere.sql}
+    ${db._buildOrderBy(orderByMap[orderBy])}
+    ${db._buildLimit({ offset, limit })}
+  `, params)
+
   const images = []
   for (const i of tmpImages) {
     images.push({
@@ -184,13 +209,8 @@ select count(*) as count, image_id from games where private = $1 group by image_
       width: i.width,
       height: i.height,
       private: !!i.private,
-      gameCount: imageCountMap.get(i.id) || 0,
+      gameCount: parseInt(i.games_count, 10),
     })
-  }
-  if (orderBy === 'game_count_asc') {
-    images.sort((a: any, b: any) => a.gameCount === b.gameCount ? 0 : (a.gameCount > b.gameCount ? -1 : 1))
-  } else if (orderBy === 'game_count_desc') {
-    images.sort((a: any, b: any) => a.gameCount === b.gameCount ? 0 : (a.gameCount > b.gameCount ? 1 : -1))
   }
   return images
 }
@@ -228,7 +248,7 @@ const setTags = async (db: Db, imageId: number, tags: string[]): Promise<void> =
 
 export default {
   imageFromDb,
-  allImagesFromDb,
+  imagesFromDb,
   getAllTags,
   resizeImage,
   getDimensions,
