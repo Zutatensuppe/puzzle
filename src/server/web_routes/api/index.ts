@@ -22,7 +22,7 @@ interface SaveImageRequestData {
   tags: string[]
 }
 const GAMES_PER_PAGE_LIMIT = 10
-const IMAGES_PER_PAGE_LIMIT = 10
+const IMAGES_PER_PAGE_LIMIT = 20
 
 export default function createRouter(
   db: Db
