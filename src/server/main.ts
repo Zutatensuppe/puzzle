@@ -16,6 +16,7 @@ import Db from './Db'
 import createApiRouter from './web_routes/api'
 import createAdminApiRouter from './web_routes/admin/api'
 import cookieParser from 'cookie-parser'
+import Users from './Users'
 
 const run = async () => {
   const db = new Db(config.db.connectStr, config.dir.DB_PATCHES_DIR)
@@ -34,6 +35,14 @@ const run = async () => {
   // add user info to all requests
   app.use(async (req: any, _res, next: NextFunction) => {
     const token = req.cookies['x-token'] || null
+    if (!token) {
+      // guest user (who has uploaded an image already or started a game)
+      req.token = null
+      req.user = await Users.getUser(db, req)
+      next()
+      return
+    }
+
     const tokenInfo = await db.get('tokens', { token, type: 'auth' })
     if (!tokenInfo) {
       req.token = null

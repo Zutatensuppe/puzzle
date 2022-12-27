@@ -109,6 +109,8 @@ const imageFromDb = async (db: Db, imageId: number): Promise<ImageInfo | null> =
   if (!imageRow) {
     return null
   }
+
+  const gameCount = await db.count('games', { image_id: imageRow.id, private: imageRow.private })
   return {
     id: imageRow.id,
     uploaderUserId: imageRow.uploader_user_id,
@@ -119,6 +121,7 @@ const imageFromDb = async (db: Db, imageId: number): Promise<ImageInfo | null> =
     created: imageRow.created.getTime(),
     width: imageRow.width,
     height: imageRow.height,
+    gameCount,
   }
 }
 
