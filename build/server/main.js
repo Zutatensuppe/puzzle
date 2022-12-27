@@ -68,6 +68,7 @@ const pad = (x, pad) => {
     }
     return pad.substr(0, pad.length - str.length) + str;
 };
+const NOOP = () => { return; };
 const logger = (...pre) => {
     const log = (m) => (...args) => {
         const d = new Date();
@@ -80,6 +81,11 @@ const logger = (...pre) => {
         log: log('log'),
         error: log('error'),
         info: log('info'),
+        disable: function () {
+            this.info = NOOP;
+            this.error = NOOP;
+            this.info = NOOP;
+        },
     };
 };
 // get a unique id
@@ -1596,12 +1602,14 @@ const getCategoryRowsBySlugs = async (db, slugs) => {
     const c = await db.getMany('categories', { slug: { '$in': slugs } });
     return c;
 };
-const allImagesFromDb = async (db, tagSlugs, orderBy, isPrivate) => {
+const imagesFromDb = async (db, tagSlugs, orderBy, isPrivate, offset, limit) => {
     const orderByMap = {
         alpha_asc: [{ title: 1 }],
         alpha_desc: [{ title: -1 }],
         date_asc: [{ created: 1 }],
         date_desc: [{ created: -1 }],
+        game_count_asc: [{ games_count: 1 }],
+        game_count_desc: [{ games_count: -1 }],
     };
     // TODO: .... clean up
     const wheresRaw = {};
@@ -1623,14 +1631,30 @@ inner join images i on i.id = ixc.image_id ${where.sql};
         }
         wheresRaw['id'] = { '$in': ids };
     }
-    const imageCounts = await db._getMany(`
-select count(*) as count, image_id from games where private = $1 group by image_id
-`, [isPrivate ? 1 : 0]);
-    const imageCountMap = new Map();
-    for (const row of imageCounts) {
-        imageCountMap.set(row.image_id, parseInt(row.count, 10));
-    }
-    const tmpImages = await db.getMany('images', wheresRaw, orderByMap[orderBy]);
+    const params = [];
+    params.push(isPrivate ? 1 : 0);
+    const dbWhere = db._buildWhere(wheresRaw, params.length + 1);
+    params.push(...dbWhere.values);
+    const tmpImages = await db._getMany(`
+    WITH counts AS (
+      SELECT
+        COUNT(*) AS count,
+        image_id
+      FROM
+        games
+      WHERE
+        private = $1
+      GROUP BY image_id
+    )
+    SELECT
+      images.*, COALESCE(counts.count, 0) AS games_count
+    FROM
+      images
+      LEFT JOIN counts ON counts.image_id = images.id
+    ${dbWhere.sql}
+    ${db._buildOrderBy(orderByMap[orderBy])}
+    ${db._buildLimit({ offset, limit })}
+  `, params);
     const images = [];
     for (const i of tmpImages) {
         images.push({
@@ -1644,14 +1668,8 @@ select count(*) as count, image_id from games where private = $1 group by image_
             width: i.width,
             height: i.height,
             private: !!i.private,
-            gameCount: imageCountMap.get(i.id) || 0,
+            gameCount: parseInt(i.games_count, 10),
         });
-    }
-    if (orderBy === 'game_count_asc') {
-        images.sort((a, b) => a.gameCount === b.gameCount ? 0 : (a.gameCount > b.gameCount ? -1 : 1));
-    }
-    else if (orderBy === 'game_count_desc') {
-        images.sort((a, b) => a.gameCount === b.gameCount ? 0 : (a.gameCount > b.gameCount ? 1 : -1));
     }
     return images;
 };
@@ -1686,7 +1704,7 @@ const setTags = async (db, imageId, tags) => {
 };
 var Images = {
     imageFromDb,
-    allImagesFromDb,
+    imagesFromDb,
     getAllTags,
     resizeImage,
     getDimensions,
@@ -2264,11 +2282,15 @@ class Db {
     }
     _buildLimit(limit) {
         const parts = [];
-        if (limit.limit >= 0) {
-            parts.push(` LIMIT ${limit.limit}`);
+        // make sure we have integers, so we can safely inline the
+        // values into the sql
+        const limitVal = parseInt(`${limit.limit}`, 10);
+        const offsetVal = parseInt(`${limit.offset}`, 10);
+        if (limitVal >= 0) {
+            parts.push(` LIMIT ${limitVal}`);
         }
-        if (limit.offset >= 0) {
-            parts.push(` OFFSET ${limit.offset}`);
+        if (offsetVal >= 0) {
+            parts.push(` OFFSET ${offsetVal}`);
         }
         return parts.join('');
     }
@@ -2419,6 +2441,8 @@ const randomString = (length) => {
 };
 
 const log = logger('web_routes/api/index.ts');
+const GAMES_PER_PAGE_LIMIT = 10;
+const IMAGES_PER_PAGE_LIMIT = 10;
 function createRouter$1(db) {
     const storage = multer.diskStorage({
         destination: config.dir.UPLOAD_DIR,
@@ -2512,8 +2536,20 @@ function createRouter$1(db) {
         const q = req.query;
         const tagSlugs = q.tags ? q.tags.split(',') : [];
         res.send({
-            images: await Images.allImagesFromDb(db, tagSlugs, q.sort, false),
+            images: await Images.imagesFromDb(db, tagSlugs, q.sort, false, 0, IMAGES_PER_PAGE_LIMIT),
             tags: await Images.getAllTags(db),
+        });
+    });
+    router.get('/images', async (req, res) => {
+        const q = req.query;
+        const tagSlugs = q.tags ? q.tags.split(',') : [];
+        const offset = parseInt(`${q.offset}`, 10);
+        if (isNaN(offset) || offset < 0) {
+            res.status(400).send({ error: 'bad offset' });
+            return;
+        }
+        res.send({
+            images: await Images.imagesFromDb(db, tagSlugs, q.sort, false, offset, IMAGES_PER_PAGE_LIMIT),
         });
     });
     const GameToGameInfo = (game, ts) => {
@@ -2534,7 +2570,6 @@ function createRouter$1(db) {
             shapeMode: GameCommon.Game_getShapeMode(game),
         };
     };
-    const GAMES_PER_PAGE_LIMIT = 10;
     router.get('/index-data', async (req, res) => {
         const ts = Time.timestamp();
         // all running rows
@@ -2557,8 +2592,11 @@ function createRouter$1(db) {
         res.send(indexData);
     });
     router.get('/finished-games', async (req, res) => {
-        // todo check offset
         const offset = parseInt(`${req.query.offset}`, 10);
+        if (isNaN(offset) || offset < 0) {
+            res.status(400).send({ error: 'bad offset' });
+            return;
+        }
         const ts = Time.timestamp();
         const finishedRows = await GameStorage.getPublicFinishedGames(db, offset, GAMES_PER_PAGE_LIMIT);
         const finishedCount = await GameStorage.countPublicFinishedGames(db);
