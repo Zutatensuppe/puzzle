@@ -55,7 +55,7 @@ const url = computed((): string => {
 const styles = computed(() => {
   return {
     paddingTop: (props.image.height / props.image.width * 100) + '%',
-    backgroundImage: `url(${url.value})`,
+    backgroundImage: `url('${url.value}')`,
     backgroundSize: 'cover',
   }
 })
