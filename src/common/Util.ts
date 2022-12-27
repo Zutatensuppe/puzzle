@@ -31,7 +31,10 @@ const pad = (x: number, pad: string): string => {
 type LogArgs = Array<any>
 type LogFn = (...args: LogArgs) => void
 
-export const logger = (...pre: string[]): { log: LogFn, error: LogFn, info: LogFn } => {
+const NOOP = () => { return }
+
+export const logger = (...pre: string[]): { log: LogFn, error: LogFn, info: LogFn, disable: () => void } => {
+
   const log = (m: 'log'|'info'|'error') => (...args: LogArgs): void => {
     const d = new Date()
     const hh = pad(d.getHours(), '00')
@@ -43,6 +46,11 @@ export const logger = (...pre: string[]): { log: LogFn, error: LogFn, info: LogF
     log: log('log'),
     error: log('error'),
     info: log('info'),
+    disable: function () {
+      this.info = NOOP
+      this.error = NOOP
+      this.info = NOOP
+    },
   }
 }
 
