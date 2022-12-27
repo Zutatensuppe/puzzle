@@ -62,7 +62,7 @@ const styles = computed(() => {
 
 const date = computed((): string => {
   // TODO: use date format that is same everywhere
-  return new Date(parseInt(props.image.created, 10)).toLocaleDateString()
+  return new Date(parseInt(`${props.image.created}`, 10)).toLocaleDateString()
 })
 
 const canEdit = computed((): boolean => {

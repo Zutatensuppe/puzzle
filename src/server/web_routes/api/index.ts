@@ -42,10 +42,11 @@ export default function createRouter(
         id: req.user.id,
         clientId: req.user.client_id,
         created: req.user.created,
+        type: req.user.type,
       })
       return
     }
-    res.status(401).send({ reason: 'not logged in' })
+    res.status(401).send({ reason: 'no user' })
     return
   })
 
