@@ -47,50 +47,61 @@
           </div>
 
           <v-card-actions>
-            <template v-if="!isPrivate">
+
+            <!-- isPrivate -->
+            <template v-if="isPrivate">
               <v-btn
+                v-if="uploading"
                 variant="elevated"
-                v-if="uploading === 'postToGallery'"
-                :disabled="!canPostToGallery"
-                @click="postToGallery"
+                :disabled="true"
                 prepend-icon="mdi-timer-sand-empty"
                 color="success"
               >Uploading ({{uploadProgressPercent}}%)</v-btn>
               <v-btn
+                v-else
                 variant="elevated"
-                v-if="uploading !== 'postToGallery'"
-                :disabled="!canPostToGallery"
-                @click="postToGallery"
-                prepend-icon="mdi-image"
-                color="success"
-              >Post to gallery</v-btn>
-            </template>
-            <template v-else>
-              <v-btn
-                variant="elevated"
-                v-if="uploading === 'setupGame'"
-                :disabled="!canSetupGameClick"
-                @click="setupGameClick"
-                prepend-icon="mdi-timer-sand-empty"
-                color="success"
-              >Uploading ({{uploadProgressPercent}}%)</v-btn>
-              <v-btn
-                variant="elevated"
-                v-else-if="isPrivate"
-                :disabled="!canSetupGameClick"
+                :disabled="!canClick"
                 @click="setupGameClick"
                 prepend-icon="mdi-puzzle"
                 color="success"
               >Set up game</v-btn>
+            </template>
+
+            <!-- not isPrivate -->
+            <template v-else>
               <v-btn
+                v-if="uploading === 'postToGallery'"
                 variant="elevated"
+                :disabled="true"
+                prepend-icon="mdi-timer-sand-empty"
+                color="success"
+              >Uploading ({{uploadProgressPercent}}%)</v-btn>
+              <v-btn
                 v-else
-                :disabled="!canSetupGameClick"
+                variant="elevated"
+                :disabled="!canClick"
+                @click="postToGallery"
+                prepend-icon="mdi-image"
+                color="success"
+              >Post to gallery</v-btn>
+
+              <v-btn
+                v-if="uploading === 'setupGame'"
+                variant="elevated"
+                :disabled="true"
+                prepend-icon="mdi-timer-sand-empty"
+                color="success"
+              >Uploading ({{uploadProgressPercent}}%)</v-btn>
+              <v-btn
+                v-else
+                variant="elevated"
+                :disabled="!canClick"
                 @click="setupGameClick"
                 prepend-icon="mdi-puzzle"
                 color="success"
               >Post to gallery <br /> + set up game</v-btn>
             </template>
+
             <v-btn
               variant="elevated"
               @click="emit('close')"
@@ -180,14 +191,7 @@ const uploadProgressPercent = computed((): number => {
   return props.uploadProgress ? Math.round(props.uploadProgress * 100) : 0
 })
 
-const canPostToGallery = computed((): boolean => {
-  if (props.uploading) {
-    return false
-  }
-  return !!(previewUrl.value && file.value)
-})
-
-const canSetupGameClick = computed((): boolean => {
+const canClick = computed((): boolean => {
   if (props.uploading) {
     return false
   }
