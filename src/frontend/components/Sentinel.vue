@@ -30,7 +30,7 @@ const sighted = () => {
   }, 1000)
 }
 
-const OFFSET = 420
+const OFFSET = 640
 const isInViewport = (element) => {
   if (!element) {
     return false
