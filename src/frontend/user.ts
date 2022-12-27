@@ -5,6 +5,7 @@ export interface User {
   id: number
   created: string
   clientId: string
+  type: 'guest' | 'user'
 }
 
 let me: null | User = null;

@@ -12,7 +12,8 @@ import LoginForm from '../../components/LoginForm.vue';
 
 const loggedIn = ref<boolean>(false);
 onMounted(async () => {
-  loggedIn.value = !! user.getMe()
+  const me = user.getMe()
+  loggedIn.value = !!(me && me.type === 'user')
   user.eventBus.on('login', () => {
     console.log('login')
     loggedIn.value = true
