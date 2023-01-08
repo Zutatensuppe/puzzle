@@ -26,6 +26,7 @@ interface AccountRow {
   email: string
   password: string
   salt: string
+  status: 'verified' | 'verification_pending'
 }
 
 const createIdentity = async (db: Db, identity: any): Promise<IdentityRow> => {

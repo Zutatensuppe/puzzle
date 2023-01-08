@@ -8,6 +8,10 @@
       </v-container>
 
       <v-container :fluid="true">
+        <RegistrationForm />
+      </v-container>
+
+      <v-container :fluid="true">
         <v-btn color="#6441a5" prepend-icon="mdi-twitch" @click="openTwitchLogin" target="_blank">Login via Twitch</v-btn>
       </v-container>
     </v-card>
@@ -16,6 +20,7 @@
 <script setup lang="ts">
 import Util from '../../common/Util';
 import LoginForm from './LoginForm.vue';
+import RegistrationForm from './RegistrationForm.vue';
 
 const args = {
   client_id: 'ud669t6lfspxucc6hvn5e5kto8rllb',

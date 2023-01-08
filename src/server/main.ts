@@ -10,18 +10,21 @@ import GameSockets from './GameSockets'
 import Time from './../common/Time'
 import config from './Config'
 import GameCommon from '../common/GameCommon'
-import { ServerEvent, Game as GameType } from '../common/Types'
+import { ServerEvent, Game as GameType, TokenRow } from '../common/Types'
 import GameStorage from './GameStorage'
 import Db from './Db'
 import createApiRouter from './web_routes/api'
 import createAdminApiRouter from './web_routes/admin/api'
 import cookieParser from 'cookie-parser'
 import Users from './Users'
+import Mail from './Mail'
 
 const run = async () => {
   const db = new Db(config.db.connectStr, config.dir.DB_PATCHES_DIR)
   await db.connect()
   await db.patch()
+
+  const mail = new Mail(config.mail)
 
   const log = logger('main.js')
 
@@ -46,14 +49,14 @@ const run = async () => {
       return
     }
 
-    const tokenInfo = await db.get('tokens', { token, type: 'auth' })
-    if (!tokenInfo) {
+    const tokenRow: TokenRow | null = await db.get('tokens', { token, type: 'auth' })
+    if (!tokenRow) {
       req.token = null
       req.user = null
       next()
       return
     }
-    const user = await db.get('users', { id: tokenInfo.user_id })
+    const user = await db.get('users', { id: tokenRow.user_id })
     if (!user) {
       req.token = null
       req.user = null
@@ -61,14 +64,14 @@ const run = async () => {
       return
     }
 
-    req.token = tokenInfo.token
+    req.token = tokenRow.token
     req.user = user
     req.user_type = 'user'
     next()
   })
 
   app.use('/admin/api', createAdminApiRouter(db))
-  app.use('/api', createApiRouter(db))
+  app.use('/api', createApiRouter(db, mail))
   app.use('/uploads/', express.static(config.dir.UPLOAD_DIR))
   app.use('/', express.static(config.dir.PUBLIC_DIR))
 

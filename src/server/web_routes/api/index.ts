@@ -12,7 +12,8 @@ import request from 'request'
 import Time from '../../../common/Time'
 import Users from '../../Users'
 import Util, { logger, uniqId } from '../../../common/Util'
-import { generateToken, passwordHash } from '../../Auth'
+import { generateSalt, generateToken, passwordHash } from '../../Auth'
+import Mail from '../../Mail'
 
 const log = logger('web_routes/api/index.ts')
 
@@ -31,7 +32,8 @@ const addAuthToken = async (db: Db, userId: number, res: Response): Promise<void
 }
 
 export default function createRouter(
-  db: Db
+  db: Db,
+  mail: Mail,
 ): Router {
   const storage = multer.diskStorage({
     destination: config.dir.UPLOAD_DIR,
@@ -153,7 +155,7 @@ export default function createRouter(
         Users.updateIdentity(db, identity)
       }
 
-      addAuthToken(db, user.id, res)
+      await addAuthToken(db, user.id, res)
       res.send('<html><script>window.opener.handleAuthCallback();window.close();</script></html>')
       break
     }
@@ -166,6 +168,10 @@ export default function createRouter(
     const account = await Users.getAccount(db, { email: emailPlain })
     if (!account) {
       res.status(401).send({ reason: 'bad email' })
+      return
+    }
+    if (account.status !== 'verified') {
+      res.status(401).send({ reason: 'email not verified' })
       return
     }
     const salt = account.salt
@@ -183,8 +189,83 @@ export default function createRouter(
       return
     }
 
-    addAuthToken(db, identity.user_id, res)
+    await addAuthToken(db, identity.user_id, res)
     res.send({ success: true })
+  })
+
+  router.post('/register', express.json(), async (req: any, res): Promise<void> => {
+    const salt = generateSalt()
+
+    const emailRaw = req.body.email
+    const passwordRaw = req.body.password
+    const usernameRaw = req.body.username
+
+    // TODO: check if username already taken
+    // TODO: check if email already taken
+    //       return status 409 in both cases
+
+    const accountId = await db.insert('accounts', {
+      created: new Date(),
+      email: emailRaw,
+      password: passwordHash(passwordRaw, salt),
+      salt: salt,
+      status: 'verification_pending',
+    }, 'id') as number
+
+    const userId = await db.insert('users', {
+      created: new Date(),
+      name: usernameRaw,
+      client_id: uniqId(),
+    }, 'id') as number
+
+    const identityId = await db.insert('user_identity', {
+      user_id: userId,
+      provider_name: 'local',
+      provider_id: accountId,
+    }, 'id') as number
+
+    const userInfo = { email: emailRaw, name: usernameRaw }
+    const token = generateToken()
+    const tokenRow = { user_id: accountId, token, type: 'registration' }
+    await db.insert('tokens', tokenRow)
+    mail.sendRegistrationMail({ user: userInfo, token: tokenRow })
+    res.send({ success: true })
+  })
+
+  router.get('/verify-email/:token', async (req, res): Promise<void> => {
+    const token = req.params.token
+    const tokenRow = await db.get('tokens', { token })
+    if (!tokenRow) {
+      res.status(400).send({ reason: 'bad token' })
+      return
+    }
+
+    // tokenRow.user_id is the account id here.
+    // TODO: clean this up.. users vs accounts vs user_identity
+
+    const account = await db.get('accounts', { id: tokenRow.user_id })
+    if (!account) {
+      res.status(400).send({ reason: 'bad account' })
+      return
+    }
+
+    const identity = await db.get('user_identity', {
+      provider_name: 'local',
+      provider_id: account.id,
+    })
+    if (!identity) {
+      res.status(400).send({ reason: 'bad identity' })
+      return
+    }
+
+    // set account to verified
+    await db.update('accounts', { status: 'verified' }, { id: account.id })
+
+    // make the user logged in and redirect to startpage
+    await addAuthToken(db, identity.user_id, res)
+
+    // TODO: add parameter/hash so that user will get a message 'thanks for verifying the email'
+    res.redirect(302, '/')
   })
 
   router.post('/logout', async (req: any, res): Promise<void> => {

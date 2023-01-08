@@ -2,6 +2,7 @@ import { readFileSync } from 'fs'
 import { fileURLToPath } from 'url'
 import { dirname } from 'path'
 import { logger } from '../common/Util'
+import { MailConfig } from '../common/Types'
 
 const log = logger('Config.ts')
 
@@ -46,6 +47,7 @@ export interface Config {
       client_secret: string
     }
   }
+  mail: MailConfig
 }
 
 const init = (): Config => {

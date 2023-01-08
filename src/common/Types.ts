@@ -300,3 +300,33 @@ export interface ApiDataIndexData {
 }
 
 export type ApiDataFinishedGames = ApiGamesData
+
+export interface MailConfig {
+  sendinblue_api_key: string
+}
+
+export interface TokenRow {
+  user_id: number
+  type: string
+  token: string
+}
+
+interface MailServiceUser {
+  email: string
+  name: string
+}
+
+export interface MailServicePasswordResetData {
+  user: MailServiceUser
+  token: TokenRow
+}
+
+export interface MailServiceRegistrationData {
+  user: MailServiceUser
+  token: TokenRow
+}
+
+export interface MailService {
+  sendPasswordResetMail: (data: MailServicePasswordResetData) => any
+  sendRegistrationMail: (data: MailServiceRegistrationData) => any
+}

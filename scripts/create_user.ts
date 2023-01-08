@@ -35,6 +35,7 @@ async function run() {
     email: email,
     password: passwordHash(password, salt),
     salt: salt,
+    status: 'verified',
   }, 'id') as number
 
   const userId = await db.insert('users', {

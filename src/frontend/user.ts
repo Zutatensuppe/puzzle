@@ -57,10 +57,29 @@ async function login(
   return { error: "Unknown error" }
 }
 
+async function register(
+  username: string,
+  email: string,
+  password: string,
+): Promise<{ error: string | false }> {
+  const res = await api.pub.register(username, email, password);
+  if (res.status === 200) {
+    return { error: false }
+  }
+
+  // conflict (eg. username already taken, email already taken)
+  if (res.status === 409) {
+    return { error: (await res.json()).reason }
+  }
+
+  return { error: "Unknown error" }
+}
+
 export default {
   getMe: () => me,
   eventBus,
   logout,
   login,
+  register,
   init,
 }
