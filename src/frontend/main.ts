@@ -29,6 +29,10 @@ import * as directives from 'vuetify/directives'
   await user.init()
   await config.init()
 
+  window.handleAuthCallback = async () => {
+    await user.init()
+  }
+
   const router = VueRouter.createRouter({
     history: VueRouter.createWebHashHistory(),
     routes: [

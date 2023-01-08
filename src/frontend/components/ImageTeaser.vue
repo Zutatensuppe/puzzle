@@ -81,5 +81,11 @@ const onEditClick = () => {
 
 onMounted(async () => {
   me.value = user.getMe()
+  user.eventBus.on('login', () => {
+    me.value = user.getMe()
+  })
+  user.eventBus.on('logout', () => {
+    me.value = user.getMe()
+  })
 })
 </script>

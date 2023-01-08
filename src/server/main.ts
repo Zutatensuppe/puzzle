@@ -38,9 +38,9 @@ const run = async () => {
     if (!token) {
       // guest user (who has uploaded an image already or started a game)
       req.token = null
-      req.user = await Users.getUser(db, req)
+      req.user = await Users.getUserByRequest(db, req)
       if (req.user) {
-        req.user.type = 'guest'
+        req.user_type = 'guest'
       }
       next()
       return
@@ -63,7 +63,7 @@ const run = async () => {
 
     req.token = tokenInfo.token
     req.user = user
-    req.user.type = 'user'
+    req.user_type = 'user'
     next()
   })
 

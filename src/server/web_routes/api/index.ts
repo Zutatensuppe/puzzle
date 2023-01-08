@@ -11,7 +11,7 @@ import multer from 'multer'
 import request from 'request'
 import Time from '../../../common/Time'
 import Users from '../../Users'
-import Util, { logger } from '../../../common/Util'
+import Util, { logger, uniqId } from '../../../common/Util'
 import { generateToken, passwordHash } from '../../Auth'
 
 const log = logger('web_routes/api/index.ts')
@@ -40,14 +40,118 @@ export default function createRouter(
     if (req.user) {
       res.send({
         id: req.user.id,
+        name: req.user.name,
         clientId: req.user.client_id,
         created: req.user.created,
-        type: req.user.type,
+        type: req.user_type,
       })
       return
     }
     res.status(401).send({ reason: 'no user' })
     return
+  })
+
+  router.get('/auth/twitch/redirect_uri', async (req: any, res): Promise<void> => {
+    if (!req.query.code) {
+
+      // in error case:
+      // http://localhost:3000/
+      // ?error=access_denied
+      // &error_description=The+user+denied+you+access
+      // &state=c3ab8aa609ea11e793ae92361f002671
+      res.status(403).send({ reason: req.query })
+      return
+    }
+
+    // in success case:
+    // http://localhost:3000/
+    // ?code=gulfwdmys5lsm6qyz4xiz9q32l10
+    // &scope=channel%3Amanage%3Apolls+channel%3Aread%3Apolls
+    // &state=c3ab8aa609ea11e793ae92361f002671
+    const body = {
+      client_id: config.auth.twitch.client_id,
+      client_secret: config.auth.twitch.client_secret,
+      code: req.query.code,
+      grant_type: 'authorization_code',
+      redirect_uri: ''
+    }
+    const redirectUris = [
+      `https://${config.http.hostname}/api/auth/twitch/redirect_uri`,
+      `${req.protocol}://${req.headers.host}/api/auth/twitch/redirect_uri`,
+    ]
+    for (const redirectUri of redirectUris) {
+      body.redirect_uri = redirectUri
+      const tokenRes = await fetch(`https://id.twitch.tv/oauth2/token${Util.asQueryArgs(body)}`, {
+        method: 'POST',
+      })
+      if (!tokenRes.ok) {
+        continue
+      }
+
+      interface TwitchOauthTokenResponseData {
+        access_token: string
+        refresh_token: string
+        expires_in: number
+        scope: string[]
+        token_type: string
+      }
+      const tokenData = await tokenRes.json() as TwitchOauthTokenResponseData
+
+      // get user
+
+      const userRes = await fetch(`https://api.twitch.tv/helix/users`, {
+        headers: {
+          'Client-ID': config.auth.twitch.client_id,
+          'Authorization': `Bearer ${tokenData.access_token}`,
+        }
+      })
+      if (!userRes.ok) {
+        continue
+      }
+
+      const userData = await userRes.json()
+
+      const identity = await Users.getIdentity(db, {
+        provider_name: 'twitch',
+        provider_id: userData.data[0].id,
+      })
+
+      let user = null
+      if (req.user) {
+        user = req.user
+      } else if (identity) {
+        user = await Users.getUserByIdentity(db, identity)
+      }
+
+      if (!user) {
+        user = await Users.createUser(db, {
+          name: userData.data[0].display_name,
+          created: new Date(),
+          client_id: uniqId(),
+        })
+      } else if (!user.name) {
+        user.name = userData.data[0].display_name
+        await Users.updateUser(db, user)
+      }
+
+      if (!identity) {
+        Users.createIdentity(db, {
+          user_id: user.id,
+          provider_name: 'twitch',
+          provider_id: userData.data[0].id,
+        })
+      } else if (identity.user_id !== user.id) {
+        // maybe we do not have to do this
+        identity.user_id = user.id
+        Users.updateIdentity(db, identity)
+      }
+
+      const token = generateToken()
+      await db.insert('tokens', { user_id: user.id, token, type: 'auth' })
+      res.cookie('x-token', token, { maxAge: 356 * Time.DAY, httpOnly: true })
+      res.send('<html><script>window.opener.handleAuthCallback();window.close();</script></html>')
+      break
+    }
   })
 
   router.post('/auth', express.json(), async (req, res): Promise<void> => {
@@ -207,7 +311,7 @@ export default function createRouter(
   })
 
   router.post('/save-image', express.json(), async (req, res): Promise<void> => {
-    const user = await Users.getUser(db, req)
+    const user = await Users.getUserByRequest(db, req)
     if (!user || !user.id) {
       res.status(403).send({ ok: false, error: 'forbidden' })
       return
@@ -253,7 +357,7 @@ export default function createRouter(
         return
       }
 
-      const user = await Users.getOrCreateUser(db, req)
+      const user = await Users.getOrCreateUserByRequest(db, req)
 
       const dim = await Images.getDimensions(
         `${config.dir.UPLOAD_DIR}/${req.file.filename}`
@@ -281,7 +385,7 @@ export default function createRouter(
   })
 
   router.post('/newgame', express.json(), async (req, res): Promise<void> => {
-    const user = await Users.getOrCreateUser(db, req)
+    const user = await Users.getOrCreateUserByRequest(db, req)
     const gameId = await Game.createNewGame(
       db,
       req.body as GameSettings,
