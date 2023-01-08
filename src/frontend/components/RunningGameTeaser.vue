@@ -21,7 +21,7 @@
         <v-icon icon="mdi-connection"></v-icon> Snapping: {{ snapMode }}
       </div>
       <div class="game-teaser-click-info">
-        <v-btn color="success">{{ joinPuzzleText }}</v-btn>
+        <v-btn color="success" block>{{ joinPuzzleText }}</v-btn>
       </div>
     </div>
   </v-card>

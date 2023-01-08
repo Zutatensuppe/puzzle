@@ -5,6 +5,7 @@
         <v-btn size="small" class="mr-1" :to="{name: 'index'}" icon="mdi-home" variant="text"></v-btn>
       </div>
       <div class="justify-center">
+        <img src="./../assets/gfx/icon.png" class="mr-4" :class="{ index: route.name === 'index' }" />
         <h4 :class="{ index: route.name === 'index' }">{{ route.meta.title }}</h4>
       </div>
       <div class="justify-end">
@@ -17,7 +18,7 @@
         <!-- <v-btn size="small" class="ml-1" v-if="loggedIn" :to="{name: 'admin'}">Admin</v-btn> -->
       </div>
     </div>
-    <LoginDialog v-model="showLogin" />
+    <LoginDialog v-if="showLogin" v-model="showLogin" @close="showLogin=false" />
   </v-app-bar>
 </template>
 <script setup lang="ts">
