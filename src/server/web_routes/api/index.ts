@@ -1,7 +1,7 @@
 import { GameSettings, Game as GameType, GameInfo, ApiDataIndexData, ApiDataFinishedGames } from '../../../common/Types'
 import config from '../../Config'
 import Db from '../../Db'
-import express, { Router } from 'express'
+import express, { Response, Router } from 'express'
 import Game from '../../Game'
 import GameCommon from '../../../common/GameCommon'
 import GameLog from '../../GameLog'
@@ -23,6 +23,12 @@ interface SaveImageRequestData {
 }
 const GAMES_PER_PAGE_LIMIT = 10
 const IMAGES_PER_PAGE_LIMIT = 20
+
+const addAuthToken = async (db: Db, userId: number, res: Response): Promise<void> => {
+  const token = generateToken()
+  await db.insert('tokens', { user_id: userId, token, type: 'auth' })
+  res.cookie('x-token', token, { maxAge: 356 * Time.DAY, httpOnly: true })
+}
 
 export default function createRouter(
   db: Db
@@ -51,6 +57,7 @@ export default function createRouter(
     return
   })
 
+  // login via twitch (callback url called from twitch after authentication)
   router.get('/auth/twitch/redirect_uri', async (req: any, res): Promise<void> => {
     if (!req.query.code) {
 
@@ -146,31 +153,37 @@ export default function createRouter(
         Users.updateIdentity(db, identity)
       }
 
-      const token = generateToken()
-      await db.insert('tokens', { user_id: user.id, token, type: 'auth' })
-      res.cookie('x-token', token, { maxAge: 356 * Time.DAY, httpOnly: true })
+      addAuthToken(db, user.id, res)
       res.send('<html><script>window.opener.handleAuthCallback();window.close();</script></html>')
       break
     }
   })
 
-  router.post('/auth', express.json(), async (req, res): Promise<void> => {
-    const loginPlain = req.body.login
-    const passPlain = req.body.pass
-    const user = await db.get('users', { login: loginPlain })
-    if (!user) {
-      res.status(401).send({ reason: 'bad credentials' })
+  // login via email + password
+  router.post('/auth/local', express.json(), async (req, res): Promise<void> => {
+    const emailPlain = req.body.email
+    const passwordPlain = req.body.password
+    const account = await Users.getAccount(db, { email: emailPlain })
+    if (!account) {
+      res.status(401).send({ reason: 'bad email' })
       return
     }
-    const salt = user.salt
-    const passHashed = passwordHash(passPlain, salt)
-    if (user.pass !== passHashed) {
-      res.status(401).send({ reason: 'bad credentials' })
+    const salt = account.salt
+    const passHashed = passwordHash(passwordPlain, salt)
+    if (account.password !== passHashed) {
+      res.status(401).send({ reason: 'bad password' })
       return
     }
-    const token = generateToken()
-    await db.insert('tokens', { user_id: user.id, token, type: 'auth' })
-    res.cookie('x-token', token, { maxAge: 356 * Time.DAY, httpOnly: true })
+    const identity = await Users.getIdentity(db, {
+      provider_name: 'local',
+      provider_id: account.id,
+    })
+    if (!identity) {
+      res.status(401).send({ reason: 'no identity' })
+      return
+    }
+
+    addAuthToken(db, identity.user_id, res)
     res.send({ success: true })
   })
 

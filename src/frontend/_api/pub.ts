@@ -2,13 +2,13 @@ import { GameSettings } from "../../common/Types"
 import Util from "../../common/Util"
 import xhr from "./xhr"
 
-const auth = async (login: string, pass: string) => {
-  return await xhr.post('/api/auth', {
+const auth = async (email: string, password: string) => {
+  return await xhr.post('/api/auth/local', {
     headers: {
       'Accept': 'application/json',
       'Content-Type': 'application/json'
     },
-    body: JSON.stringify({ login, pass }),
+    body: JSON.stringify({ email, password }),
   })
 }
 

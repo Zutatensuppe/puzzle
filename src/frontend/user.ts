@@ -40,8 +40,11 @@ async function logout(): Promise<{ error: string | false }> {
   return { error: "[2021-09-25 18:36]" }
 }
 
-async function login(user: string, pass: string): Promise<{ error: string | false }> {
-  const res = await api.pub.auth(user, pass);
+async function login(
+  email: string,
+  password: string,
+): Promise<{ error: string | false }> {
+  const res = await api.pub.auth(email, password);
   if (res.status === 200) {
     await init()
     return { error: false }

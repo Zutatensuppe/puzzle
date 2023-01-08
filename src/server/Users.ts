@@ -2,6 +2,7 @@ import Db, { WhereRaw } from './Db'
 
 const TABLE_USERS = 'users'
 const TABLE_USER_IDENTITY = 'user_identity'
+const TABLE_ACCOUNTS = 'accounts'
 
 const HEADER_CLIENT_ID = 'client-id'
 
@@ -10,9 +11,6 @@ interface UserRow {
   created: Date
   client_id: string
   name: string
-  login: string
-  pass: string
-  salt: string
 }
 
 interface IdentityRow {
@@ -20,6 +18,14 @@ interface IdentityRow {
   user_id: number
   provider_name: string
   provider_id: string
+}
+
+interface AccountRow {
+  id: number
+  created: Date
+  email: string
+  password: string
+  salt: string
 }
 
 const createIdentity = async (db: Db, identity: any): Promise<IdentityRow> => {
@@ -33,6 +39,10 @@ const updateIdentity = async (db: Db, identity: any): Promise<void> => {
 
 const getIdentity = async (db: Db, where: WhereRaw): Promise<IdentityRow | null> => {
   return await db.get(TABLE_USER_IDENTITY, where)
+}
+
+const getAccount = async (db: Db, where: WhereRaw): Promise<AccountRow | null> => {
+  return await db.get(TABLE_ACCOUNTS, where)
 }
 
 const createUser = async (db: Db, user: any): Promise<UserRow> => {
@@ -81,4 +91,5 @@ export default {
   createIdentity,
   updateIdentity,
   getIdentity,
+  getAccount,
 }
