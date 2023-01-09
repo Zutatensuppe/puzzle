@@ -3,7 +3,7 @@ import express from 'express';
 import compression from 'compression';
 import fs, { readFileSync } from 'fs';
 import { fileURLToPath } from 'url';
-import { dirname } from 'path';
+import path, { dirname } from 'path';
 import probe from 'probe-image-size';
 import exif from 'exif';
 import sharp from 'sharp';
@@ -1389,9 +1389,9 @@ var GameCommon = {
 };
 
 const log$6 = logger('Config.ts');
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-const BASE_DIR = `${__dirname}/../..`;
+const __filename$1 = fileURLToPath(import.meta.url);
+const __dirname$1 = dirname(__filename$1);
+const BASE_DIR = `${__dirname$1}/../..`;
 const DATA_DIR = `${BASE_DIR}/data`;
 const UPLOAD_DIR = `${BASE_DIR}/data/uploads`;
 const UPLOAD_URL = `/uploads`;
@@ -3041,7 +3041,10 @@ class Mail {
     }
 }
 
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 const run = async () => {
+    const indexFile = path.resolve(__dirname, '..', '..', 'build', 'public', 'index.html');
     const db = new Db(config.db.connectStr, config.dir.DB_PATCHES_DIR);
     await db.connect();
     await db.patch();
@@ -3088,6 +3091,9 @@ const run = async () => {
     app.use('/api', createRouter$1(db, mail));
     app.use('/uploads/', express.static(config.dir.UPLOAD_DIR));
     app.use('/', express.static(config.dir.PUBLIC_DIR));
+    app.all('*', async (req, res) => {
+        res.sendFile(indexFile);
+    });
     const wss = new WebSocketServer(config.ws);
     const notify = (data, sockets) => {
         for (const socket of sockets) {

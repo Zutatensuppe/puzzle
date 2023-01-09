@@ -18,8 +18,15 @@ import createAdminApiRouter from './web_routes/admin/api'
 import cookieParser from 'cookie-parser'
 import Users from './Users'
 import Mail from './Mail'
+import path, { dirname } from 'path'
+import { fileURLToPath } from 'url'
+
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = dirname(__filename)
 
 const run = async () => {
+  const indexFile = path.resolve(__dirname, '..', '..', 'build', 'public', 'index.html')
+
   const db = new Db(config.db.connectStr, config.dir.DB_PATCHES_DIR)
   await db.connect()
   await db.patch()
@@ -74,6 +81,10 @@ const run = async () => {
   app.use('/api', createApiRouter(db, mail))
   app.use('/uploads/', express.static(config.dir.UPLOAD_DIR))
   app.use('/', express.static(config.dir.PUBLIC_DIR))
+
+  app.all('*', async (req: any, res) => {
+    res.sendFile(indexFile);
+  })
 
   const wss = new WebSocketServer(config.ws);
 
