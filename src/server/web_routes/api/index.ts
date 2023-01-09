@@ -85,7 +85,7 @@ export default function createRouter(
       redirect_uri: ''
     }
     const redirectUris = [
-      `https://${config.http.hostname}/api/auth/twitch/redirect_uri`,
+      `https://${config.http.public_hostname}/api/auth/twitch/redirect_uri`,
       `${req.protocol}://${req.headers.host}/api/auth/twitch/redirect_uri`,
     ]
     for (const redirectUri of redirectUris) {
@@ -159,6 +159,8 @@ export default function createRouter(
       res.send('<html><script>window.opener.handleAuthCallback();window.close();</script></html>')
       break
     }
+
+    res.status(403).send({ reason: req.query })
   })
 
   // login via email + password

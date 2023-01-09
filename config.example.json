@@ -3,6 +3,7 @@
     "connectStr": "postgresql://hyottoko:hyottoko@localhost:5434/hyottoko"
   },
   "http": {
+    "public_hostname": "127.0.0.1",
     "hostname": "127.0.0.1",
     "port": 1337
   },
