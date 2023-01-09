@@ -1,3 +1,5 @@
+import Util from "../common/Util"
+
 const set = (setting: string, value: string): void => {
   localStorage.setItem(setting, value)
 }
@@ -43,6 +45,15 @@ const getStr = (setting: string, def: string): string => {
   return value
 }
 
+const uniq = (str: string) => {
+  let val = getStr(str, '')
+  if (!val) {
+    val = Util.uniqId()
+    setStr(str, val)
+  }
+  return val
+}
+
 export default {
   setInt,
   getInt,
@@ -50,4 +61,5 @@ export default {
   getBool,
   setStr,
   getStr,
+  uniq,
 }

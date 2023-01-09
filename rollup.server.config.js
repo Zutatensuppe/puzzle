@@ -20,6 +20,7 @@ export default {
     "pg",
     "probe-image-size",
     "request",
+    "sib-api-v3-sdk",
     "sharp",
     "url",
     "v8",

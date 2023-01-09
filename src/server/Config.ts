@@ -2,6 +2,7 @@ import { readFileSync } from 'fs'
 import { fileURLToPath } from 'url'
 import { dirname } from 'path'
 import { logger } from '../common/Util'
+import { MailConfig } from '../common/Types'
 
 const log = logger('Config.ts')
 
@@ -38,8 +39,15 @@ export interface Config {
     UPLOAD_DIR: string
     UPLOAD_URL: string
     PUBLIC_DIR: string
-  },
+  }
   secret: string
+  auth: {
+    twitch: {
+      client_id: string
+      client_secret: string
+    }
+  }
+  mail: MailConfig
 }
 
 const init = (): Config => {

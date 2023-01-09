@@ -1,8 +1,14 @@
 <template>
   <v-form
-    class="login-form"
+    class="registration-form"
     v-model="valid"
   >
+    <v-text-field
+      density="compact"
+      label="Username"
+      v-model="username"
+      :rules="usernameRules"
+    ></v-text-field>
     <v-text-field
       density="compact"
       label="E-Mail"
@@ -16,15 +22,19 @@
       :append-inner-icon="showPassword ? 'mdi-eye' : 'mdi-eye-off'"
       :type="showPassword ? 'text' : 'password'"
       @click:append-inner="showPassword = !showPassword"
-      @keydown.enter.prevent="doLogin"
+      @keydown.enter.prevent="doRegister"
       :rules="passwordRules"
     ></v-text-field>
-    <div class="d-flex justify-space-between">
-      <v-btn @click="emit('forgot-password')">Forgot password?</v-btn>
-      <v-btn color="success" @click="doLogin" :disabled="!valid">Login</v-btn>
-    </div>
-    <div class="d-flex align-center justify-center mt-5">
-      No account yet? <v-btn @click="emit('register')" class="ml-5">Create one</v-btn>
+    <v-btn color="success" @click="doRegister" block :disabled="!valid">Create account</v-btn>
+    <v-btn @click="emit('login')" block class="mt-1">Already have an account?</v-btn>
+
+    <div v-if="res">
+      <div v-if="res.error === false">
+        Thank you for registering. Please check your email and click the verify link to complete the registration.
+      </div>
+      <div v-else>
+        {{ res.error }}
+      </div>
     </div>
   </v-form>
 </template>
@@ -33,16 +43,22 @@ import { ref } from 'vue';
 import user from '../user';
 
 const emit = defineEmits<{
-  (e: 'forgot-password'): void
-  (e: 'register'): void
+  (e: 'login'): void
 }>()
 
+const username = ref<string>('')
 const email = ref<string>('')
 const password = ref<string>('')
 
 const showPassword = ref<boolean>(false)
 
+const res = ref<{error: string | false} | null>(null)
+
 const valid = ref<boolean>(false)
+
+const usernameRules = [
+  v => !!v || 'Username is required'
+]
 
 const passwordRules = [
   v => !!v || 'Password is required'
@@ -52,10 +68,10 @@ const emailRules = [
   v => !!v && /^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/.test(v) || 'E-mail must be valid'
 ]
 
-async function doLogin() {
+async function doRegister() {
   if (!valid.value) {
     return
   }
-  await user.login(email.value, password.value)
+  res.value = await user.register(username.value, email.value, password.value)
 }
 </script>

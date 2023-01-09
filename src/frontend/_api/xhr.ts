@@ -1,6 +1,4 @@
-import Util from "../../common/Util"
 import storage from "../storage"
-import user from "./../user"
 
 export interface Response {
   status: number,
@@ -53,29 +51,9 @@ const request = async (
   })
 }
 
-const uniq = (str: string) => {
-  let val = storage.getStr(str, '')
-  if (!val) {
-    val = Util.uniqId()
-    storage.setStr(str, val)
-  }
-  return val
-}
-
 export default {
   init: () => {
-    xhrClientId = uniq('ID')
-
-    user.eventBus.on('login', () => {
-      const u = user.getMe()
-      if (u) {
-        xhrClientId = u.clientId
-      }
-    })
-
-    user.eventBus.on('logout', () => {
-      xhrClientId = uniq('ID')
-    })
+    xhrClientId = storage.uniq('ID')
   },
   request,
   get: (url: string, options: any): Promise<Response> => {
@@ -87,5 +65,8 @@ export default {
   post: (url: string, options: any): Promise<Response> => {
     return request('post', url, options)
   },
-  clientId: () => xhrClientId
+  clientId: () => xhrClientId,
+  setClientId: (clientId: string) => {
+    xhrClientId = clientId
+  },
 }

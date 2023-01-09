@@ -8,8 +8,11 @@
 //   src: local("dpcomic"), url("assets/font/dpcomic.woff2") format("woff2"), url("assets/font/dpcomic.woff") format("woff");
 // }
 
-* {
+html,
+body {
   font-family: Roboto, sans-serif;
+  margin: 0;
+  height: 100%;
 }
 
 $link-color: #808db0;
@@ -175,10 +178,6 @@ $bg-color-transparent: rgba(0 0 0 / 70%);
       left: 0;
       right: 0;
       padding: 1em;
-
-      .v-btn {
-        width: 100%;
-      }
     }
   }
 
@@ -280,12 +279,6 @@ $bg-color-transparent: rgba(0 0 0 / 70%);
 
 .is-clickable {
   cursor: pointer;
-}
-
-html,
-body {
-  margin: 0;
-  height: 100%;
 }
 
 /// todo: remove
@@ -456,7 +449,7 @@ html.view-replay body { overflow: hidden; }
 
   .v-overlay__content {
     .v-card {
-      background: $bg-color-transparent;
+      background: rgba(0 0 0 / 90%);
     }
   }
 }
@@ -613,14 +606,37 @@ kbd {
   h4 {
     line-height: 1;
     font-size: 24px;
+    user-select: none;
+  }
+
+  img {
+    width: 32px;
+    height: 32px;
+    user-select: none;
+  }
+
+  img.index {
+    filter: grayscale(1);
+    opacity: 0.3;
+    width: 64px;
+    height: 64px;
   }
 
   h4.index {
     line-height: 1;
     font-size: 48px;
     margin-top: 8px;
-    color: rgba(0 0 0 / 0%);
+    color: rgba(100 100 100 / 100%);
     text-shadow: 1px 1px 3px rgba(0 0 0 / 25%), 0 0 0 rgb(49 49 49);
-    user-select: none;
   }
+}
+
+.v-card-title {
+  font-family: Teko, sans-serif;
+  font-size: 24px !important;
+  text-transform: uppercase !important;
+}
+
+.v-overlay__content {
+  border: solid 1px rgba(60 60 60 / 50%);
 }

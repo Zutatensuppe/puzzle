@@ -2,22 +2,42 @@ import { GameSettings } from "../../common/Types"
 import Util from "../../common/Util"
 import xhr from "./xhr"
 
-const auth = async (login: string, pass: string) => {
-  return await xhr.post('/api/auth', {
-    headers: {
-      'Accept': 'application/json',
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({ login, pass }),
+const JSON_HEADERS = {
+  'Accept': 'application/json',
+  'Content-Type': 'application/json'
+}
+
+const auth = async (email: string, password: string) => {
+  return await xhr.post('/api/auth/local', {
+    headers: JSON_HEADERS,
+    body: JSON.stringify({ email, password }),
+  })
+}
+
+const register = async (username: string, email: string, password: string) => {
+  return await xhr.post('/api/register', {
+    headers: JSON_HEADERS,
+    body: JSON.stringify({ username, email, password }),
+  })
+}
+
+const sendPasswordResetEmail = async (email: string) => {
+  return await xhr.post('/api/send-password-reset-email', {
+    headers: JSON_HEADERS,
+    body: JSON.stringify({ email }),
+  })
+}
+
+const changePassword = async (password: string, token: string) => {
+  return await xhr.post('/api/change-password', {
+    headers: JSON_HEADERS,
+    body: JSON.stringify({ password, token }),
   })
 }
 
 const logout = async() => {
   return await xhr.post('/api/logout', {
-    headers: {
-      'Accept': 'application/json',
-      'Content-Type': 'application/json'
-    },
+    headers: JSON_HEADERS,
     body: {},
   })
 }
@@ -52,10 +72,7 @@ const replayData = async (data: { gameId: string, offset: number }) =>{
 
 const saveImage = async (data: { id: any, title: any, tags: any }) => {
   return xhr.post('/api/save-image', {
-    headers: {
-      'Accept': 'application/json',
-      'Content-Type': 'application/json'
-    },
+    headers: JSON_HEADERS,
     body: JSON.stringify({
       id: data.id,
       title: data.title,
@@ -66,10 +83,7 @@ const saveImage = async (data: { id: any, title: any, tags: any }) => {
 
 const newGame = async (data: { gameSettings: GameSettings }) => {
   return xhr.post('/api/newgame', {
-    headers: {
-      'Accept': 'application/json',
-      'Content-Type': 'application/json'
-    },
+    headers: JSON_HEADERS,
     body: JSON.stringify(data.gameSettings),
   })
 }
@@ -92,6 +106,9 @@ const upload = async (data: { file: File, title: string, tags: string[], isPriva
 
 export default {
   auth,
+  register,
+  sendPasswordResetEmail,
+  changePassword,
   logout,
   config,
   me,

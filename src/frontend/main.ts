@@ -29,8 +29,12 @@ import * as directives from 'vuetify/directives'
   await user.init()
   await config.init()
 
+  window.handleAuthCallback = async () => {
+    await user.init()
+  }
+
   const router = VueRouter.createRouter({
-    history: VueRouter.createWebHashHistory(),
+    history: VueRouter.createWebHistory(),
     routes: [
       { name: 'index', path: '/', component: Index, meta: { title: 'Jigsaw Hyottoko Club' } },
       { name: 'new-game', path: '/new-game', component: NewGame, meta: { title: 'New Game' } },

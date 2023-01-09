@@ -14,5 +14,14 @@
   "persistence": {
     "interval": 30000
   },
-  "secret": "SOME_SECRET_STRING"
+  "secret": "SOME_SECRET_STRING",
+  "auth": {
+    "twitch": {
+      "client_id": "SOME_ID",
+      "client_secret": "SOME_SECRET"
+    }
+  },
+  "mail": {
+    "sendinblue_api_key": "SOME_API_KEY"
+  }
 }

@@ -24,20 +24,36 @@ async function run() {
 
   log.info('Please enter credentials for the new user.')
 
-  const username: string = `${await question('Username: ')}`
+  const email: string = `${await question('Email: ')}`
   const password: string = `${await question('Password: ')}`
+  const displayName: string = `${await question('Display Name: ')}`
 
   const salt = generateSalt()
-  const user = {
-    login: username,
-    pass: passwordHash(password, salt),
-    salt: salt,
-    client_id: uniqId(),
-    created: new Date(),
-  }
 
-  const user_id = await db.insert('users', user)
-  log.info('user created/updated: ' + user_id)
+  const accountId = await db.insert('accounts', {
+    created: new Date(),
+    email: email,
+    password: passwordHash(password, salt),
+    salt: salt,
+    status: 'verified',
+  }, 'id') as number
+
+  const userId = await db.insert('users', {
+    created: new Date(),
+    name: displayName,
+    client_id: uniqId(),
+  }, 'id') as number
+
+  const identityId = await db.insert('user_identity', {
+    user_id: userId,
+    provider_name: 'local',
+    provider_id: accountId,
+  }, 'id') as number
+
+  log.info('user created')
+  log.info('identityId: ' + identityId)
+  log.info('userId:     ' + userId)
+  log.info('accountId:  ' + accountId)
 
   await db.close()
 }

@@ -75,10 +75,6 @@ async function getGameRowById(db: Db, gameId: string): Promise<GameRow | null> {
   return (gameRow as GameRow) || null
 }
 
-async function getPublicGameRows(db: Db): Promise<GameRow[]> {
-  return await db.getMany('games', { private: 0 }) as GameRow[]
-}
-
 async function loadGame(db: Db, gameId: string): Promise<Game | null> {
   log.info(`[INFO] loading game: ${gameId}`);
   const gameRow = await getGameRowById(db, gameId)

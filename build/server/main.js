@@ -14,6 +14,7 @@ import multer from 'multer';
 import request from 'request';
 import crypto from 'crypto';
 import cookieParser from 'cookie-parser';
+import SibApiV3Sdk from 'sib-api-v3-sdk';
 
 class Rng {
     constructor(seed) {
@@ -243,7 +244,7 @@ var Util = {
     asQueryArgs,
 };
 
-const log$6 = logger('WebSocketServer.js');
+const log$7 = logger('WebSocketServer.js');
 class EvtBus {
     constructor() {
         this._on = {};
@@ -272,13 +273,13 @@ class WebSocketServer {
         this._websocketserver.on('connection', (socket, request) => {
             const pathname = new URL(this.config.connectstring).pathname;
             if (request.url.indexOf(pathname) !== 0) {
-                log$6.log('bad request url: ', request.url);
+                log$7.log('bad request url: ', request.url);
                 socket.close();
                 return;
             }
             socket.on('message', (data) => {
                 const strData = String(data);
-                log$6.log(`ws`, socket.protocol, strData);
+                log$7.log(`ws`, socket.protocol, strData);
                 this.evt.dispatch('message', { socket, data: strData });
             });
             socket.on('close', () => {
@@ -1387,7 +1388,7 @@ var GameCommon = {
     Game_isFinished,
 };
 
-const log$5 = logger('Config.ts');
+const log$6 = logger('Config.ts');
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const BASE_DIR = `${__dirname}/../..`;
@@ -1399,7 +1400,7 @@ const DB_PATCHES_DIR = `${BASE_DIR}/src/dbpatches`;
 const init = () => {
     const configFile = process.env.APP_CONFIG || 'config.json';
     if (configFile === '') {
-        log$5.error('APP_CONFIG environment variable not set or empty');
+        log$6.error('APP_CONFIG environment variable not set or empty');
         process.exit(2);
     }
     const config = JSON.parse(String(readFileSync(configFile)));
@@ -1504,7 +1505,7 @@ var GameLog = {
     idxname,
 };
 
-const log$4 = logger('Images.ts');
+const log$5 = logger('Images.ts');
 const resizeImage = async (filename) => {
     try {
         const imagePath = `${config.dir.UPLOAD_DIR}/${filename}`;
@@ -1535,13 +1536,13 @@ const resizeImage = async (filename) => {
         for (const [w, h, fit] of sizes) {
             const filename = `${imageOutPath}-${w}x${h || 0}.webp`;
             if (!fs.existsSync(filename)) {
-                log$4.info(w, h, filename);
+                log$5.info(w, h, filename);
                 await sharpImg.resize(w, h, { fit }).toFile(filename);
             }
         }
     }
     catch (e) {
-        log$4.error('error when resizing image', filename, e);
+        log$5.error('error when resizing image', filename, e);
     }
 };
 async function getExifOrientation(imagePath) {
@@ -1906,7 +1907,7 @@ const determinePuzzleInfo = (dim, targetPieceCount) => {
     };
 };
 
-const log$3 = logger('GameStorage.js');
+const log$4 = logger('GameStorage.js');
 const dirtyGames = {};
 function setDirty(gameId) {
     dirtyGames[gameId] = true;
@@ -1942,15 +1943,15 @@ async function getGameRowById(db, gameId) {
     return gameRow || null;
 }
 async function loadGame(db, gameId) {
-    log$3.info(`[INFO] loading game: ${gameId}`);
+    log$4.info(`[INFO] loading game: ${gameId}`);
     const gameRow = await getGameRowById(db, gameId);
     if (!gameRow) {
-        log$3.info(`[INFO] game not found: ${gameId}`);
+        log$4.info(`[INFO] game not found: ${gameId}`);
         return null;
     }
     const gameObject = gameRowToGameObject(gameRow);
     if (!gameObject) {
-        log$3.error(`[ERR] unable to turn game row into game object: ${gameRow.id}`);
+        log$4.error(`[ERR] unable to turn game row into game object: ${gameRow.id}`);
         return null;
     }
     return gameObject;
@@ -1960,7 +1961,7 @@ const gameRowsToGames = (gameRows) => {
     for (const gameRow of gameRows) {
         const gameObject = gameRowToGameObject(gameRow);
         if (!gameObject) {
-            log$3.error(`[ERR] unable to turn game row into game object: ${gameRow.id}`);
+            log$4.error(`[ERR] unable to turn game row into game object: ${gameRow.id}`);
             continue;
         }
         games.push(gameObject);
@@ -2001,7 +2002,7 @@ async function persistGame(db, game) {
     }, {
         id: game.id,
     });
-    log$3.info(`[INFO] persisted game ${game.id}`);
+    log$4.info(`[INFO] persisted game ${game.id}`);
 }
 function storeDataToGame(storeData, creatorUserId, isPrivate) {
     return {
@@ -2108,7 +2109,7 @@ var Game = {
     handleInput,
 };
 
-const log$2 = logger('GameSocket.js');
+const log$3 = logger('GameSocket.js');
 // Map<gameId, Socket[]>
 const SOCKETS = {};
 function socketExists(gameId, socket) {
@@ -2122,8 +2123,8 @@ function removeSocket(gameId, socket) {
         return;
     }
     SOCKETS[gameId] = SOCKETS[gameId].filter((s) => s !== socket);
-    log$2.log('removed socket: ', gameId, socket.protocol);
-    log$2.log('socket count: ', Object.keys(SOCKETS[gameId]).length);
+    log$3.log('removed socket: ', gameId, socket.protocol);
+    log$3.log('socket count: ', Object.keys(SOCKETS[gameId]).length);
 }
 function addSocket(gameId, socket) {
     if (!(gameId in SOCKETS)) {
@@ -2131,8 +2132,8 @@ function addSocket(gameId, socket) {
     }
     if (!SOCKETS[gameId].includes(socket)) {
         SOCKETS[gameId].push(socket);
-        log$2.log('added socket: ', gameId, socket.protocol);
-        log$2.log('socket count: ', Object.keys(SOCKETS[gameId]).length);
+        log$3.log('added socket: ', gameId, socket.protocol);
+        log$3.log('socket count: ', Object.keys(SOCKETS[gameId]).length);
     }
 }
 function getSockets(gameId) {
@@ -2150,7 +2151,7 @@ var GameSockets = {
 
 // @ts-ignore
 const { Client } = pg.default;
-const log$1 = logger('Db.ts');
+const log$2 = logger('Db.ts');
 const mutex = new Mutex();
 class Db {
     constructor(connectStr, patchesDir) {
@@ -2170,7 +2171,7 @@ class Db {
         for (const f of files) {
             if (patches.includes(f)) {
                 if (verbose) {
-                    log$1.info(`➡ skipping already applied db patch: ${f}`);
+                    log$2.info(`➡ skipping already applied db patch: ${f}`);
                 }
                 continue;
             }
@@ -2189,10 +2190,10 @@ class Db {
                     throw e;
                 }
                 await this.insert('public.db_patches', { id: f });
-                log$1.info(`✓ applied db patch: ${f}`);
+                log$2.info(`✓ applied db patch: ${f}`);
             }
             catch (e) {
-                log$1.error(`✖ unable to apply patch: ${f} ${e}`);
+                log$2.error(`✖ unable to apply patch: ${f} ${e}`);
                 return;
             }
         }
@@ -2301,7 +2302,7 @@ class Db {
             return (await this.dbh.query(query, params)).rows[0] || null;
         }
         catch (e) {
-            log$1.info('_get', query, params);
+            log$2.info('_get', query, params);
             console.error(e);
             throw e;
         }
@@ -2311,7 +2312,7 @@ class Db {
             return await this.dbh.query(query, params);
         }
         catch (e) {
-            log$1.info('run', query, params);
+            log$2.info('run', query, params);
             console.error(e);
             throw e;
         }
@@ -2321,7 +2322,7 @@ class Db {
             return (await this.dbh.query(query, params)).rows || [];
         }
         catch (e) {
-            log$1.info('_getMany', query, params);
+            log$2.info('_getMany', query, params);
             console.error(e);
             throw e;
         }
@@ -2393,30 +2394,64 @@ class Db {
     }
 }
 
-const TABLE = 'users';
+const TABLE_USERS = 'users';
+const TABLE_USER_IDENTITY = 'user_identity';
+const TABLE_ACCOUNTS = 'accounts';
 const HEADER_CLIENT_ID = 'client-id';
-const getOrCreateUser = async (db, req) => {
-    let user = await getUser(db, req);
+const createIdentity = async (db, identity) => {
+    const identityId = await db.insert(TABLE_USER_IDENTITY, identity, 'id');
+    return await db.get(TABLE_USER_IDENTITY, { id: identityId });
+};
+const updateIdentity = async (db, identity) => {
+    await db.update(TABLE_USER_IDENTITY, identity, { id: identity.id });
+};
+const getIdentity = async (db, where) => {
+    return await db.get(TABLE_USER_IDENTITY, where);
+};
+const getAccount = async (db, where) => {
+    return await db.get(TABLE_ACCOUNTS, where);
+};
+const createUser = async (db, user) => {
+    const userId = await db.insert(TABLE_USERS, user, 'id');
+    return await getUser(db, { id: userId });
+};
+const updateUser = async (db, user) => {
+    await db.update(TABLE_USERS, user, { id: user.id });
+};
+const getOrCreateUserByRequest = async (db, req) => {
+    let user = await getUserByRequest(db, req);
     if (!user) {
-        await db.insert(TABLE, {
-            'client_id': req.headers[HEADER_CLIENT_ID],
-            'created': new Date(),
+        await db.insert(TABLE_USERS, {
+            client_id: req.headers[HEADER_CLIENT_ID],
+            created: new Date(),
         });
-        user = await getUser(db, req);
+        user = await getUserByRequest(db, req);
     }
     return user;
 };
-const getUser = async (db, req) => {
-    const user = await db.get(TABLE, {
-        'client_id': req.headers[HEADER_CLIENT_ID],
-    });
+const getUser = async (db, where) => {
+    const user = await db.get(TABLE_USERS, where);
     if (user) {
         user.id = parseInt(user.id, 10);
     }
     return user;
 };
+const getUserByRequest = async (db, req) => {
+    return getUser(db, { client_id: req.headers[HEADER_CLIENT_ID] });
+};
+const getUserByIdentity = async (db, identity) => {
+    return getUser(db, { id: identity.user_id });
+};
 var Users = {
-    getOrCreateUser,
+    getOrCreateUserByRequest,
+    getUserByRequest,
+    getUserByIdentity,
+    createUser,
+    updateUser,
+    createIdentity,
+    updateIdentity,
+    getIdentity,
+    getAccount,
     getUser,
 };
 
@@ -2424,6 +2459,10 @@ const passwordHash = (plainPass, salt) => {
     const hash = crypto.createHmac('sha512', config.secret);
     hash.update(`${salt}${plainPass}`);
     return hash.digest('hex');
+};
+// do something CRYPTO secure???
+const generateSalt = () => {
+    return randomString(10);
 };
 // do something CRYPTO secure???
 const generateToken = () => {
@@ -2439,10 +2478,15 @@ const randomString = (length) => {
     return b.join('');
 };
 
-const log = logger('web_routes/api/index.ts');
+const log$1 = logger('web_routes/api/index.ts');
 const GAMES_PER_PAGE_LIMIT = 10;
 const IMAGES_PER_PAGE_LIMIT = 20;
-function createRouter$1(db) {
+const addAuthToken = async (db, userId, res) => {
+    const token = generateToken();
+    await db.insert('tokens', { user_id: userId, token, type: 'auth' });
+    res.cookie('x-token', token, { maxAge: 356 * Time.DAY, httpOnly: true });
+};
+function createRouter$1(db, mail) {
     const storage = multer.diskStorage({
         destination: config.dir.UPLOAD_DIR,
         filename: function (req, file, cb) {
@@ -2455,33 +2499,248 @@ function createRouter$1(db) {
         if (req.user) {
             res.send({
                 id: req.user.id,
+                name: req.user.name,
                 clientId: req.user.client_id,
                 created: req.user.created,
-                type: req.user.type,
+                type: req.user_type,
             });
             return;
         }
         res.status(401).send({ reason: 'no user' });
         return;
     });
-    router.post('/auth', express.json(), async (req, res) => {
-        const loginPlain = req.body.login;
-        const passPlain = req.body.pass;
-        const user = await db.get('users', { login: loginPlain });
-        if (!user) {
-            res.status(401).send({ reason: 'bad credentials' });
+    // login via twitch (callback url called from twitch after authentication)
+    router.get('/auth/twitch/redirect_uri', async (req, res) => {
+        if (!req.query.code) {
+            // in error case:
+            // http://localhost:3000/
+            // ?error=access_denied
+            // &error_description=The+user+denied+you+access
+            // &state=c3ab8aa609ea11e793ae92361f002671
+            res.status(403).send({ reason: req.query });
             return;
         }
-        const salt = user.salt;
-        const passHashed = passwordHash(passPlain, salt);
-        if (user.pass !== passHashed) {
-            res.status(401).send({ reason: 'bad credentials' });
+        // in success case:
+        // http://localhost:3000/
+        // ?code=gulfwdmys5lsm6qyz4xiz9q32l10
+        // &scope=channel%3Amanage%3Apolls+channel%3Aread%3Apolls
+        // &state=c3ab8aa609ea11e793ae92361f002671
+        const body = {
+            client_id: config.auth.twitch.client_id,
+            client_secret: config.auth.twitch.client_secret,
+            code: req.query.code,
+            grant_type: 'authorization_code',
+            redirect_uri: ''
+        };
+        const redirectUris = [
+            `https://${config.http.hostname}/api/auth/twitch/redirect_uri`,
+            `${req.protocol}://${req.headers.host}/api/auth/twitch/redirect_uri`,
+        ];
+        for (const redirectUri of redirectUris) {
+            body.redirect_uri = redirectUri;
+            const tokenRes = await fetch(`https://id.twitch.tv/oauth2/token${Util.asQueryArgs(body)}`, {
+                method: 'POST',
+            });
+            if (!tokenRes.ok) {
+                continue;
+            }
+            const tokenData = await tokenRes.json();
+            // get user
+            const userRes = await fetch(`https://api.twitch.tv/helix/users`, {
+                headers: {
+                    'Client-ID': config.auth.twitch.client_id,
+                    'Authorization': `Bearer ${tokenData.access_token}`,
+                }
+            });
+            if (!userRes.ok) {
+                continue;
+            }
+            const userData = await userRes.json();
+            const identity = await Users.getIdentity(db, {
+                provider_name: 'twitch',
+                provider_id: userData.data[0].id,
+            });
+            let user = null;
+            if (req.user) {
+                user = req.user;
+            }
+            else if (identity) {
+                user = await Users.getUserByIdentity(db, identity);
+            }
+            if (!user) {
+                user = await Users.createUser(db, {
+                    name: userData.data[0].display_name,
+                    created: new Date(),
+                    client_id: uniqId(),
+                });
+            }
+            else if (!user.name) {
+                user.name = userData.data[0].display_name;
+                await Users.updateUser(db, user);
+            }
+            if (!identity) {
+                Users.createIdentity(db, {
+                    user_id: user.id,
+                    provider_name: 'twitch',
+                    provider_id: userData.data[0].id,
+                });
+            }
+            else if (identity.user_id !== user.id) {
+                // maybe we do not have to do this
+                identity.user_id = user.id;
+                Users.updateIdentity(db, identity);
+            }
+            await addAuthToken(db, user.id, res);
+            res.send('<html><script>window.opener.handleAuthCallback();window.close();</script></html>');
+            break;
+        }
+    });
+    // login via email + password
+    router.post('/auth/local', express.json(), async (req, res) => {
+        const emailPlain = req.body.email;
+        const passwordPlain = req.body.password;
+        const account = await Users.getAccount(db, { email: emailPlain });
+        if (!account) {
+            res.status(401).send({ reason: 'bad email' });
+            return;
+        }
+        if (account.status !== 'verified') {
+            res.status(401).send({ reason: 'email not verified' });
+            return;
+        }
+        const salt = account.salt;
+        const passHashed = passwordHash(passwordPlain, salt);
+        if (account.password !== passHashed) {
+            res.status(401).send({ reason: 'bad password' });
+            return;
+        }
+        const identity = await Users.getIdentity(db, {
+            provider_name: 'local',
+            provider_id: account.id,
+        });
+        if (!identity) {
+            res.status(401).send({ reason: 'no identity' });
+            return;
+        }
+        await addAuthToken(db, identity.user_id, res);
+        res.send({ success: true });
+    });
+    router.post('/change-password', express.json(), async (req, res) => {
+        const token = `${req.body.token}`;
+        const passwordRaw = `${req.body.password}`;
+        const tokenRow = await db.get('tokens', {
+            type: 'password-reset',
+            token,
+        });
+        if (!tokenRow) {
+            res.status(400).send({ reason: 'no such token' });
+            return;
+        }
+        // note: token contains account id, not user id ...
+        const account = await Users.getAccount(db, { id: tokenRow.user_id });
+        if (!account) {
+            res.status(400).send({ reason: 'no such account' });
+            return;
+        }
+        const password = passwordHash(passwordRaw, account.salt);
+        await db.update('accounts', {
+            password: password,
+        }, {
+            id: account.id
+        });
+        // remove token, already used
+        // await db.delete('tokens', tokenRow)
+        res.send({ success: true });
+    });
+    router.post('/send-password-reset-email', express.json(), async (req, res) => {
+        const emailRaw = `${req.body.email}`;
+        const account = await Users.getAccount(db, { email: emailRaw });
+        if (!account) {
+            res.status(400).send({ reason: 'no such email' });
+            return;
+        }
+        const identity = await Users.getIdentity(db, {
+            provider_name: 'local',
+            provider_id: account.id,
+        });
+        if (!identity) {
+            res.status(400).send({ reason: 'no such identity' });
+            return;
+        }
+        const user = await Users.getUser(db, {
+            id: identity.user_id,
+        });
+        if (!user) {
+            res.status(400).send({ reason: 'no such user' });
             return;
         }
         const token = generateToken();
-        await db.insert('tokens', { user_id: user.id, token, type: 'auth' });
-        res.cookie('x-token', token, { maxAge: 356 * Time.DAY, httpOnly: true });
+        // TODO: dont misuse token table user id <> account id
+        const tokenRow = { user_id: account.id, token, type: 'password-reset' };
+        await db.insert('tokens', tokenRow);
+        mail.sendPasswordResetMail({ user: { name: user.name, email: emailRaw }, token: tokenRow });
         res.send({ success: true });
+    });
+    router.post('/register', express.json(), async (req, res) => {
+        const salt = generateSalt();
+        const emailRaw = `${req.body.email}`;
+        const passwordRaw = `${req.body.password}`;
+        const usernameRaw = `${req.body.username}`;
+        // TODO: check if username already taken
+        // TODO: check if email already taken
+        //       return status 409 in both cases
+        const accountId = await db.insert('accounts', {
+            created: new Date(),
+            email: emailRaw,
+            password: passwordHash(passwordRaw, salt),
+            salt: salt,
+            status: 'verification_pending',
+        }, 'id');
+        const userId = await db.insert('users', {
+            created: new Date(),
+            name: usernameRaw,
+            client_id: uniqId(),
+        }, 'id');
+        await db.insert('user_identity', {
+            user_id: userId,
+            provider_name: 'local',
+            provider_id: accountId,
+        }, 'id');
+        const userInfo = { email: emailRaw, name: usernameRaw };
+        const token = generateToken();
+        const tokenRow = { user_id: accountId, token, type: 'registration' };
+        await db.insert('tokens', tokenRow);
+        mail.sendRegistrationMail({ user: userInfo, token: tokenRow });
+        res.send({ success: true });
+    });
+    router.get('/verify-email/:token', async (req, res) => {
+        const token = req.params.token;
+        const tokenRow = await db.get('tokens', { token });
+        if (!tokenRow) {
+            res.status(400).send({ reason: 'bad token' });
+            return;
+        }
+        // tokenRow.user_id is the account id here.
+        // TODO: clean this up.. users vs accounts vs user_identity
+        const account = await db.get('accounts', { id: tokenRow.user_id });
+        if (!account) {
+            res.status(400).send({ reason: 'bad account' });
+            return;
+        }
+        const identity = await db.get('user_identity', {
+            provider_name: 'local',
+            provider_id: account.id,
+        });
+        if (!identity) {
+            res.status(400).send({ reason: 'bad identity' });
+            return;
+        }
+        // set account to verified
+        await db.update('accounts', { status: 'verified' }, { id: account.id });
+        // make the user logged in and redirect to startpage
+        await addAuthToken(db, identity.user_id, res);
+        // TODO: add parameter/hash so that user will get a message 'thanks for verifying the email'
+        res.redirect(302, '/');
     });
     router.post('/logout', async (req, res) => {
         if (!req.token) {
@@ -2607,7 +2866,7 @@ function createRouter$1(db) {
         res.send(indexData);
     });
     router.post('/save-image', express.json(), async (req, res) => {
-        const user = await Users.getUser(db, req);
+        const user = await Users.getUserByRequest(db, req);
         if (!user || !user.id) {
             res.status(403).send({ ok: false, error: 'forbidden' });
             return;
@@ -2627,26 +2886,26 @@ function createRouter$1(db) {
         res.send({ ok: true, image: await Images.imageFromDb(db, data.id) });
     });
     router.get('/proxy', (req, res) => {
-        log.info('proxy request for url:', req.query.url);
+        log$1.info('proxy request for url:', req.query.url);
         request(req.query.url).pipe(res);
     });
     router.post('/upload', (req, res) => {
         upload(req, res, async (err) => {
             if (err) {
-                log.log('/api/upload/', 'error', err);
+                log$1.log('/api/upload/', 'error', err);
                 res.status(400).send("Something went wrong!");
                 return;
             }
-            log.info('req.file.filename', req.file.filename);
+            log$1.info('req.file.filename', req.file.filename);
             try {
                 await Images.resizeImage(req.file.filename);
             }
             catch (err) {
-                log.log('/api/upload/', 'resize error', err);
+                log$1.log('/api/upload/', 'resize error', err);
                 res.status(400).send("Something went wrong!");
                 return;
             }
-            const user = await Users.getOrCreateUser(db, req);
+            const user = await Users.getOrCreateUserByRequest(db, req);
             const dim = await Images.getDimensions(`${config.dir.UPLOAD_DIR}/${req.file.filename}`);
             // post form, so booleans are submitted as 'true' | 'false'
             const isPrivate = req.body.private === 'false' ? 0 : 1;
@@ -2668,7 +2927,7 @@ function createRouter$1(db) {
         });
     });
     router.post('/newgame', express.json(), async (req, res) => {
-        const user = await Users.getOrCreateUser(db, req);
+        const user = await Users.getOrCreateUserByRequest(db, req);
         const gameId = await Game.createNewGame(db, req.body, Time.timestamp(), user.id);
         res.send({ id: gameId });
     });
@@ -2708,8 +2967,6 @@ function createRouter(db) {
         const items = await db.getMany('users');
         res.send(items.map(item => {
             delete item.client_id;
-            delete item.pass;
-            delete item.salt;
             return item;
         }));
     });
@@ -2720,10 +2977,75 @@ function createRouter(db) {
     return router;
 }
 
+// @ts-ignore
+const log = logger('Mail.ts');
+const BASE_URL = 'https://jigsaw.hyottoko.club';
+const NAME = 'jigsaw.hyottoko.club';
+const NOREPLY_MAIL = 'noreply@jigsaw.hyottoko.club';
+const SENDER = { name: NAME, email: NOREPLY_MAIL };
+class Mail {
+    constructor(cfg) {
+        const defaultClient = SibApiV3Sdk.ApiClient.instance;
+        const apiKey = defaultClient.authentications['api-key'];
+        apiKey.apiKey = cfg.sendinblue_api_key;
+        this.apiInstance = new SibApiV3Sdk.TransactionalEmailsApi();
+    }
+    sendPasswordResetMail(passwordReset) {
+        const mail = new SibApiV3Sdk.SendSmtpEmail();
+        mail.subject = "{{params.subject}}";
+        mail.htmlContent = `<html><body>
+      <h1>Hello {{params.username}}</h1>
+      <p>To reset your password for <a href="${BASE_URL}">${NAME}</a>
+      click the following link:</p>
+      <p><a href="{{params.link}}">{{params.link}}</a></p>
+      </body></html>`;
+        mail.sender = SENDER;
+        mail.to = [{
+                email: passwordReset.user.email,
+                name: passwordReset.user.name,
+            }];
+        mail.params = {
+            username: passwordReset.user.name,
+            subject: `Password Reset for ${NAME}`,
+            link: `${BASE_URL}/#password-reset=${passwordReset.token.token}`
+        };
+        this.send(mail);
+    }
+    sendRegistrationMail(registration) {
+        const mail = new SibApiV3Sdk.SendSmtpEmail();
+        mail.subject = "{{params.subject}}";
+        mail.htmlContent = `<html><body>
+      <h1>Hello {{params.username}}</h1>
+      <p>Thank you for registering an account at <a href="${BASE_URL}">${NAME}</a>.</p>
+      <p>Please confirm your registration by clicking the following link:</p>
+      <p><a href="{{params.link}}">{{params.link}}</a></p>
+      </body></html>`;
+        mail.sender = SENDER;
+        mail.to = [{
+                email: registration.user.email,
+                name: registration.user.name,
+            }];
+        mail.params = {
+            username: registration.user.name,
+            subject: `User Registration on ${NAME}`,
+            link: `${BASE_URL}/api/verify-email/${registration.token.token}`
+        };
+        this.send(mail);
+    }
+    send(mail) {
+        this.apiInstance.sendTransacEmail(mail).then(function (data) {
+            log.info({ data }, 'API called successfully');
+        }, function (error) {
+            log.error({ error });
+        });
+    }
+}
+
 const run = async () => {
     const db = new Db(config.db.connectStr, config.dir.DB_PATCHES_DIR);
     await db.connect();
     await db.patch();
+    const mail = new Mail(config.mail);
     const log = logger('main.js');
     const port = config.http.port;
     const hostname = config.http.hostname;
@@ -2736,34 +3058,34 @@ const run = async () => {
         if (!token) {
             // guest user (who has uploaded an image already or started a game)
             req.token = null;
-            req.user = await Users.getUser(db, req);
+            req.user = await Users.getUserByRequest(db, req);
             if (req.user) {
-                req.user.type = 'guest';
+                req.user_type = 'guest';
             }
             next();
             return;
         }
-        const tokenInfo = await db.get('tokens', { token, type: 'auth' });
-        if (!tokenInfo) {
+        const tokenRow = await db.get('tokens', { token, type: 'auth' });
+        if (!tokenRow) {
             req.token = null;
             req.user = null;
             next();
             return;
         }
-        const user = await db.get('users', { id: tokenInfo.user_id });
+        const user = await db.get('users', { id: tokenRow.user_id });
         if (!user) {
             req.token = null;
             req.user = null;
             next();
             return;
         }
-        req.token = tokenInfo.token;
+        req.token = tokenRow.token;
         req.user = user;
-        req.user.type = 'user';
+        req.user_type = 'user';
         next();
     });
     app.use('/admin/api', createRouter(db));
-    app.use('/api', createRouter$1(db));
+    app.use('/api', createRouter$1(db, mail));
     app.use('/uploads/', express.static(config.dir.UPLOAD_DIR));
     app.use('/', express.static(config.dir.PUBLIC_DIR));
     const wss = new WebSocketServer(config.ws);

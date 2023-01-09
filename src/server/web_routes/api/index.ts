@@ -1,7 +1,7 @@
 import { GameSettings, Game as GameType, GameInfo, ApiDataIndexData, ApiDataFinishedGames } from '../../../common/Types'
 import config from '../../Config'
 import Db from '../../Db'
-import express, { Router } from 'express'
+import express, { Response, Router } from 'express'
 import Game from '../../Game'
 import GameCommon from '../../../common/GameCommon'
 import GameLog from '../../GameLog'
@@ -11,8 +11,9 @@ import multer from 'multer'
 import request from 'request'
 import Time from '../../../common/Time'
 import Users from '../../Users'
-import Util, { logger } from '../../../common/Util'
-import { generateToken, passwordHash } from '../../Auth'
+import Util, { logger, uniqId } from '../../../common/Util'
+import { generateSalt, generateToken, passwordHash } from '../../Auth'
+import Mail from '../../Mail'
 
 const log = logger('web_routes/api/index.ts')
 
@@ -24,8 +25,15 @@ interface SaveImageRequestData {
 const GAMES_PER_PAGE_LIMIT = 10
 const IMAGES_PER_PAGE_LIMIT = 20
 
+const addAuthToken = async (db: Db, userId: number, res: Response): Promise<void> => {
+  const token = generateToken()
+  await db.insert('tokens', { user_id: userId, token, type: 'auth' })
+  res.cookie('x-token', token, { maxAge: 356 * Time.DAY, httpOnly: true })
+}
+
 export default function createRouter(
-  db: Db
+  db: Db,
+  mail: Mail,
 ): Router {
   const storage = multer.diskStorage({
     destination: config.dir.UPLOAD_DIR,
@@ -40,9 +48,10 @@ export default function createRouter(
     if (req.user) {
       res.send({
         id: req.user.id,
+        name: req.user.name,
         clientId: req.user.client_id,
         created: req.user.created,
-        type: req.user.type,
+        type: req.user_type,
       })
       return
     }
@@ -50,24 +59,279 @@ export default function createRouter(
     return
   })
 
-  router.post('/auth', express.json(), async (req, res): Promise<void> => {
-    const loginPlain = req.body.login
-    const passPlain = req.body.pass
-    const user = await db.get('users', { login: loginPlain })
-    if (!user) {
-      res.status(401).send({ reason: 'bad credentials' })
+  // login via twitch (callback url called from twitch after authentication)
+  router.get('/auth/twitch/redirect_uri', async (req: any, res): Promise<void> => {
+    if (!req.query.code) {
+
+      // in error case:
+      // http://localhost:3000/
+      // ?error=access_denied
+      // &error_description=The+user+denied+you+access
+      // &state=c3ab8aa609ea11e793ae92361f002671
+      res.status(403).send({ reason: req.query })
       return
     }
-    const salt = user.salt
-    const passHashed = passwordHash(passPlain, salt)
-    if (user.pass !== passHashed) {
-      res.status(401).send({ reason: 'bad credentials' })
+
+    // in success case:
+    // http://localhost:3000/
+    // ?code=gulfwdmys5lsm6qyz4xiz9q32l10
+    // &scope=channel%3Amanage%3Apolls+channel%3Aread%3Apolls
+    // &state=c3ab8aa609ea11e793ae92361f002671
+    const body = {
+      client_id: config.auth.twitch.client_id,
+      client_secret: config.auth.twitch.client_secret,
+      code: req.query.code,
+      grant_type: 'authorization_code',
+      redirect_uri: ''
+    }
+    const redirectUris = [
+      `https://${config.http.hostname}/api/auth/twitch/redirect_uri`,
+      `${req.protocol}://${req.headers.host}/api/auth/twitch/redirect_uri`,
+    ]
+    for (const redirectUri of redirectUris) {
+      body.redirect_uri = redirectUri
+      const tokenRes = await fetch(`https://id.twitch.tv/oauth2/token${Util.asQueryArgs(body)}`, {
+        method: 'POST',
+      })
+      if (!tokenRes.ok) {
+        continue
+      }
+
+      interface TwitchOauthTokenResponseData {
+        access_token: string
+        refresh_token: string
+        expires_in: number
+        scope: string[]
+        token_type: string
+      }
+      const tokenData = await tokenRes.json() as TwitchOauthTokenResponseData
+
+      // get user
+
+      const userRes = await fetch(`https://api.twitch.tv/helix/users`, {
+        headers: {
+          'Client-ID': config.auth.twitch.client_id,
+          'Authorization': `Bearer ${tokenData.access_token}`,
+        }
+      })
+      if (!userRes.ok) {
+        continue
+      }
+
+      const userData = await userRes.json()
+
+      const identity = await Users.getIdentity(db, {
+        provider_name: 'twitch',
+        provider_id: userData.data[0].id,
+      })
+
+      let user = null
+      if (req.user) {
+        user = req.user
+      } else if (identity) {
+        user = await Users.getUserByIdentity(db, identity)
+      }
+
+      if (!user) {
+        user = await Users.createUser(db, {
+          name: userData.data[0].display_name,
+          created: new Date(),
+          client_id: uniqId(),
+        })
+      } else if (!user.name) {
+        user.name = userData.data[0].display_name
+        await Users.updateUser(db, user)
+      }
+
+      if (!identity) {
+        Users.createIdentity(db, {
+          user_id: user.id,
+          provider_name: 'twitch',
+          provider_id: userData.data[0].id,
+        })
+      } else if (identity.user_id !== user.id) {
+        // maybe we do not have to do this
+        identity.user_id = user.id
+        Users.updateIdentity(db, identity)
+      }
+
+      await addAuthToken(db, user.id, res)
+      res.send('<html><script>window.opener.handleAuthCallback();window.close();</script></html>')
+      break
+    }
+  })
+
+  // login via email + password
+  router.post('/auth/local', express.json(), async (req, res): Promise<void> => {
+    const emailPlain = req.body.email
+    const passwordPlain = req.body.password
+    const account = await Users.getAccount(db, { email: emailPlain })
+    if (!account) {
+      res.status(401).send({ reason: 'bad email' })
       return
     }
-    const token = generateToken()
-    await db.insert('tokens', { user_id: user.id, token, type: 'auth' })
-    res.cookie('x-token', token, { maxAge: 356 * Time.DAY, httpOnly: true })
+    if (account.status !== 'verified') {
+      res.status(401).send({ reason: 'email not verified' })
+      return
+    }
+    const salt = account.salt
+    const passHashed = passwordHash(passwordPlain, salt)
+    if (account.password !== passHashed) {
+      res.status(401).send({ reason: 'bad password' })
+      return
+    }
+    const identity = await Users.getIdentity(db, {
+      provider_name: 'local',
+      provider_id: account.id,
+    })
+    if (!identity) {
+      res.status(401).send({ reason: 'no identity' })
+      return
+    }
+
+    await addAuthToken(db, identity.user_id, res)
     res.send({ success: true })
+  })
+
+  router.post('/change-password', express.json(), async (req: any, res): Promise<void> => {
+    const token = `${req.body.token}`
+    const passwordRaw = `${req.body.password}`
+
+    const tokenRow = await db.get('tokens', {
+      type: 'password-reset',
+      token,
+    })
+
+    if (!tokenRow) {
+      res.status(400).send({ reason: 'no such token' })
+      return
+    }
+
+    // note: token contains account id, not user id ...
+    const account = await Users.getAccount(db, { id: tokenRow.user_id })
+    if (!account) {
+      res.status(400).send({ reason: 'no such account' })
+      return
+    }
+
+    const password = passwordHash(passwordRaw, account.salt)
+    await db.update('accounts', {
+      password: password,
+    }, {
+      id: account.id
+    })
+
+    // remove token, already used
+    // await db.delete('tokens', tokenRow)
+
+    res.send({ success: true })
+  })
+
+  router.post('/send-password-reset-email', express.json(), async (req: any, res): Promise<void> => {
+    const emailRaw = `${req.body.email}`
+
+    const account = await Users.getAccount(db, { email: emailRaw })
+    if (!account) {
+      res.status(400).send({ reason: 'no such email' })
+      return
+    }
+    const identity = await Users.getIdentity(db, {
+      provider_name: 'local',
+      provider_id: account.id,
+    })
+    if (!identity) {
+      res.status(400).send({ reason: 'no such identity' })
+      return
+    }
+    const user = await Users.getUser(db, {
+      id: identity.user_id,
+    })
+    if (!user) {
+      res.status(400).send({ reason: 'no such user' })
+      return
+    }
+
+    const token = generateToken()
+    // TODO: dont misuse token table user id <> account id
+    const tokenRow = { user_id: account.id, token, type: 'password-reset' }
+    await db.insert('tokens', tokenRow)
+    mail.sendPasswordResetMail({ user: { name: user.name, email: emailRaw }, token: tokenRow })
+    res.send({ success: true })
+  })
+
+  router.post('/register', express.json(), async (req: any, res): Promise<void> => {
+    const salt = generateSalt()
+
+    const emailRaw = `${req.body.email}`
+    const passwordRaw = `${req.body.password}`
+    const usernameRaw = `${req.body.username}`
+
+    // TODO: check if username already taken
+    // TODO: check if email already taken
+    //       return status 409 in both cases
+
+    const accountId = await db.insert('accounts', {
+      created: new Date(),
+      email: emailRaw,
+      password: passwordHash(passwordRaw, salt),
+      salt: salt,
+      status: 'verification_pending',
+    }, 'id') as number
+
+    const userId = await db.insert('users', {
+      created: new Date(),
+      name: usernameRaw,
+      client_id: uniqId(),
+    }, 'id') as number
+
+    await db.insert('user_identity', {
+      user_id: userId,
+      provider_name: 'local',
+      provider_id: accountId,
+    }, 'id') as number
+
+    const userInfo = { email: emailRaw, name: usernameRaw }
+    const token = generateToken()
+    const tokenRow = { user_id: accountId, token, type: 'registration' }
+    await db.insert('tokens', tokenRow)
+    mail.sendRegistrationMail({ user: userInfo, token: tokenRow })
+    res.send({ success: true })
+  })
+
+  router.get('/verify-email/:token', async (req, res): Promise<void> => {
+    const token = req.params.token
+    const tokenRow = await db.get('tokens', { token })
+    if (!tokenRow) {
+      res.status(400).send({ reason: 'bad token' })
+      return
+    }
+
+    // tokenRow.user_id is the account id here.
+    // TODO: clean this up.. users vs accounts vs user_identity
+
+    const account = await db.get('accounts', { id: tokenRow.user_id })
+    if (!account) {
+      res.status(400).send({ reason: 'bad account' })
+      return
+    }
+
+    const identity = await db.get('user_identity', {
+      provider_name: 'local',
+      provider_id: account.id,
+    })
+    if (!identity) {
+      res.status(400).send({ reason: 'bad identity' })
+      return
+    }
+
+    // set account to verified
+    await db.update('accounts', { status: 'verified' }, { id: account.id })
+
+    // make the user logged in and redirect to startpage
+    await addAuthToken(db, identity.user_id, res)
+
+    // TODO: add parameter/hash so that user will get a message 'thanks for verifying the email'
+    res.redirect(302, '/')
   })
 
   router.post('/logout', async (req: any, res): Promise<void> => {
@@ -207,7 +471,7 @@ export default function createRouter(
   })
 
   router.post('/save-image', express.json(), async (req, res): Promise<void> => {
-    const user = await Users.getUser(db, req)
+    const user = await Users.getUserByRequest(db, req)
     if (!user || !user.id) {
       res.status(403).send({ ok: false, error: 'forbidden' })
       return
@@ -253,7 +517,7 @@ export default function createRouter(
         return
       }
 
-      const user = await Users.getOrCreateUser(db, req)
+      const user = await Users.getOrCreateUserByRequest(db, req)
 
       const dim = await Images.getDimensions(
         `${config.dir.UPLOAD_DIR}/${req.file.filename}`
@@ -281,7 +545,7 @@ export default function createRouter(
   })
 
   router.post('/newgame', express.json(), async (req, res): Promise<void> => {
-    const user = await Users.getOrCreateUser(db, req)
+    const user = await Users.getOrCreateUserByRequest(db, req)
     const gameId = await Game.createNewGame(
       db,
       req.body as GameSettings,
