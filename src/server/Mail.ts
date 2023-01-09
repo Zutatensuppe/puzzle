@@ -41,7 +41,7 @@ class Mail {
     mail.params = {
       username: passwordReset.user.name,
       subject: `Password Reset for ${NAME}`,
-      link: `${BASE_URL}/api/password-reset?t=${passwordReset.token.token}`
+      link: `${BASE_URL}/#password-reset=${passwordReset.token.token}`
     }
     this.send(mail)
   }

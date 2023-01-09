@@ -14,18 +14,20 @@
         </v-btn>
         <span v-if="me && loggedIn">Hello, {{ me.name }}</span>
         <v-btn size="small" class="ml-1" v-if="loggedIn" @click="doLogout">Logout</v-btn>
-        <v-btn size="small" class="ml-1" v-else @click="showLogin = true">Login</v-btn>
+        <v-btn size="small" class="ml-1" v-else @click="emit('show-login')">Login</v-btn>
         <!-- <v-btn size="small" class="ml-1" v-if="loggedIn" :to="{name: 'admin'}">Admin</v-btn> -->
       </div>
     </div>
-    <LoginDialog v-if="showLogin" v-model="showLogin" @close="showLogin=false" />
   </v-app-bar>
 </template>
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router';
 import user, { User } from '../user'
-import LoginDialog from './LoginDialog.vue';
+
+const emit = defineEmits<{
+  (e: 'show-login'): void
+}>()
 
 const route = useRoute();
 const showNav = computed(() => {
@@ -35,7 +37,6 @@ const showNav = computed(() => {
 
 const me = ref<User|null>(null)
 
-const showLogin = ref<boolean>(false);
 const loggedIn = computed(() => {
   return !!(me.value && me.value.type === 'user')
 })
@@ -47,7 +48,6 @@ onMounted(async () => {
   me.value = user.getMe()
   user.eventBus.on('login', () => {
     me.value = user.getMe()
-    showLogin.value = false
   })
   user.eventBus.on('logout', () => {
     me.value = user.getMe()

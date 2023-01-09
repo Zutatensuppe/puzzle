@@ -193,12 +193,78 @@ export default function createRouter(
     res.send({ success: true })
   })
 
+  router.post('/change-password', express.json(), async (req: any, res): Promise<void> => {
+    const token = `${req.body.token}`
+    const passwordRaw = `${req.body.password}`
+
+    const tokenRow = await db.get('tokens', {
+      type: 'password-reset',
+      token,
+    })
+
+    if (!tokenRow) {
+      res.status(400).send({ reason: 'no such token' })
+      return
+    }
+
+    // note: token contains account id, not user id ...
+    const account = await Users.getAccount(db, { id: tokenRow.user_id })
+    if (!account) {
+      res.status(400).send({ reason: 'no such account' })
+      return
+    }
+
+    const password = passwordHash(passwordRaw, account.salt)
+    await db.update('accounts', {
+      password: password,
+    }, {
+      id: account.id
+    })
+
+    // remove token, already used
+    // await db.delete('tokens', tokenRow)
+
+    res.send({ success: true })
+  })
+
+  router.post('/send-password-reset-email', express.json(), async (req: any, res): Promise<void> => {
+    const emailRaw = `${req.body.email}`
+
+    const account = await Users.getAccount(db, { email: emailRaw })
+    if (!account) {
+      res.status(400).send({ reason: 'no such email' })
+      return
+    }
+    const identity = await Users.getIdentity(db, {
+      provider_name: 'local',
+      provider_id: account.id,
+    })
+    if (!identity) {
+      res.status(400).send({ reason: 'no such identity' })
+      return
+    }
+    const user = await Users.getUser(db, {
+      id: identity.user_id,
+    })
+    if (!user) {
+      res.status(400).send({ reason: 'no such user' })
+      return
+    }
+
+    const token = generateToken()
+    // TODO: dont misuse token table user id <> account id
+    const tokenRow = { user_id: account.id, token, type: 'password-reset' }
+    await db.insert('tokens', tokenRow)
+    mail.sendPasswordResetMail({ user: { name: user.name, email: emailRaw }, token: tokenRow })
+    res.send({ success: true })
+  })
+
   router.post('/register', express.json(), async (req: any, res): Promise<void> => {
     const salt = generateSalt()
 
-    const emailRaw = req.body.email
-    const passwordRaw = req.body.password
-    const usernameRaw = req.body.username
+    const emailRaw = `${req.body.email}`
+    const passwordRaw = `${req.body.password}`
+    const usernameRaw = `${req.body.username}`
 
     // TODO: check if username already taken
     // TODO: check if email already taken

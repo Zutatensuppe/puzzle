@@ -53,6 +53,9 @@ const emailRules = [
 ]
 
 async function doLogin() {
+  if (!valid.value) {
+    return
+  }
   await user.login(email.value, password.value)
 }
 </script>

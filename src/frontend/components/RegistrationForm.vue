@@ -69,6 +69,9 @@ const emailRules = [
 ]
 
 async function doRegister() {
+  if (!valid.value) {
+    return
+  }
   res.value = await user.register(username.value, email.value, password.value)
 }
 </script>

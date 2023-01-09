@@ -21,6 +21,20 @@ const register = async (username: string, email: string, password: string) => {
   })
 }
 
+const sendPasswordResetEmail = async (email: string) => {
+  return await xhr.post('/api/send-password-reset-email', {
+    headers: JSON_HEADERS,
+    body: JSON.stringify({ email }),
+  })
+}
+
+const changePassword = async (password: string, token: string) => {
+  return await xhr.post('/api/change-password', {
+    headers: JSON_HEADERS,
+    body: JSON.stringify({ password, token }),
+  })
+}
+
 const logout = async() => {
   return await xhr.post('/api/logout', {
     headers: JSON_HEADERS,
@@ -93,6 +107,8 @@ const upload = async (data: { file: File, title: string, tags: string[], isPriva
 export default {
   auth,
   register,
+  sendPasswordResetEmail,
+  changePassword,
   logout,
   config,
   me,

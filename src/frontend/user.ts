@@ -75,11 +75,45 @@ async function register(
   return { error: "Unknown error" }
 }
 
+async function sendPasswordResetEmail(
+  email: string,
+): Promise<{ error: string | false }> {
+  const res = await api.pub.sendPasswordResetEmail(email);
+  if (res.status === 200) {
+    return { error: false }
+  }
+
+  // conflict (eg. username already taken, email already taken)
+  if (res.status === 409) {
+    return { error: (await res.json()).reason }
+  }
+
+  return { error: "Unknown error" }
+}
+
+async function changePassword(
+  password: string,
+  token: string,
+): Promise<{ error: string | false }> {
+  const res = await api.pub.changePassword(password, token);
+  if (res.status === 200) {
+    return { error: false }
+  }
+
+  if (res.status === 400) {
+    return { error: (await res.json()).reason }
+  }
+
+  return { error: "Unknown error" }
+}
+
 export default {
   getMe: () => me,
   eventBus,
   logout,
   login,
   register,
+  sendPasswordResetEmail,
+  changePassword,
   init,
 }

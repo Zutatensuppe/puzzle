@@ -6,6 +6,8 @@
           <img src="./../assets/gfx/icon.png" width="32" height="32" class="mr-1" />
           <div class="flex-grow-1" v-if="tab === 'login'">Login</div>
           <div class="flex-grow-1" v-if="tab === 'register'">Register a free account</div>
+          <div class="flex-grow-1" v-if="tab === 'forgot-password'">Forgot password</div>
+          <div class="flex-grow-1" v-if="tab === 'reset-password'">Reset password</div>
           <v-btn icon="mdi-close" variant="text" size="x-small" @click="emit('close')"></v-btn>
         </div>
       </v-card-title>
@@ -21,6 +23,14 @@
           <v-window-item value="register">
             <RegistrationForm @login="tab='login'" />
           </v-window-item>
+
+          <v-window-item value="forgot-password">
+            <PasswordResetRequestForm @login="tab='login'" />
+          </v-window-item>
+
+          <v-window-item value="reset-password">
+            <PasswordResetForm @password-changed="tab='login'" :token="token || ''" />
+          </v-window-item>
         </v-window>
       </v-card-text>
     </v-card>
@@ -30,9 +40,20 @@
 import { ref } from 'vue';
 import Util from '../../common/Util';
 import LoginForm from './LoginForm.vue';
+import PasswordResetForm from './PasswordResetForm.vue';
+import PasswordResetRequestForm from './PasswordResetRequestForm.vue';
 import RegistrationForm from './RegistrationForm.vue';
 
-const tab = ref<'login' | 'register' | 'forgot-password'>('login')
+const tab = ref<'login' | 'register' | 'forgot-password' | 'reset-password'>('login')
+
+const props = defineProps<{
+  tab?: 'login' | 'register' | 'forgot-password' | 'reset-password',
+  token?: string,
+}>()
+
+if (props.tab) {
+  tab.value = props.tab
+}
 
 const emit = defineEmits<{
   (e: 'close'): void,

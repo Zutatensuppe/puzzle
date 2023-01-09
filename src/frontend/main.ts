@@ -34,7 +34,7 @@ import * as directives from 'vuetify/directives'
   }
 
   const router = VueRouter.createRouter({
-    history: VueRouter.createWebHashHistory(),
+    history: VueRouter.createWebHistory(),
     routes: [
       { name: 'index', path: '/', component: Index, meta: { title: 'Jigsaw Hyottoko Club' } },
       { name: 'new-game', path: '/new-game', component: NewGame, meta: { title: 'New Game' } },

@@ -6,7 +6,7 @@ of images. Instead of categories, you can make the system tag-based, like
 in jigsawpuzzles.io
 
 <template>
-  <Nav :class="{blurred: dialog}" />
+  <Nav :class="{blurred: dialog}" @show-login="showLogin = true" />
   <v-container :fluid="true" class="new-game-view p-0">
     <v-row class="mt-2 mb-2">
       <v-col>
@@ -90,6 +90,7 @@ in jigsawpuzzles.io
       />
     </v-dialog>
   </v-container>
+  <LoginDialog v-if="showLogin" v-model="showLogin" @close="showLogin=false" />
 </template>
 
 <script setup lang="ts">
@@ -103,6 +104,7 @@ import { useRouter } from 'vue-router'
 import ImageLibrary from './../components/ImageLibrary.vue'
 import Nav from '../components/Nav.vue'
 import Sentinel from '../components/Sentinel.vue'
+import user from '../user'
 
 const router = useRouter()
 
@@ -276,7 +278,13 @@ const tryLoadMore = async () => {
   images.value.push(...json.images)
 }
 
+const showLogin = ref<boolean>(false);
+
 onMounted(async () => {
+  user.eventBus.on('login', () => {
+    showLogin.value = false
+  })
+
   await loadImages()
 })
 </script>

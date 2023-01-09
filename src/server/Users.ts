@@ -93,4 +93,5 @@ export default {
   updateIdentity,
   getIdentity,
   getAccount,
+  getUser,
 }
