@@ -105,6 +105,7 @@ import ImageLibrary from './../components/ImageLibrary.vue'
 import Nav from '../components/Nav.vue'
 import Sentinel from '../components/Sentinel.vue'
 import user from '../user'
+import LoginDialog from '../components/LoginDialog.vue'
 
 const router = useRouter()
 
