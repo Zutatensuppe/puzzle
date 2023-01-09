@@ -38,7 +38,7 @@
   </v-form>
 </template>
 <script setup lang="ts">
-import { ref, Ref } from 'vue';
+import { ref } from 'vue';
 import user from '../user';
 
 const username = ref<string>('')
