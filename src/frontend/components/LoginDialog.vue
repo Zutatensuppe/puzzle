@@ -13,15 +13,13 @@
       <v-card-text>
         <v-window v-model="tab">
           <v-window-item value="login">
-            <LoginForm />
-            <v-btn variant="text" @click="tab='register'" class="mt-1">Register an account</v-btn>
+            <LoginForm @forgot-password="tab='forgot-password'" @register="tab='register'" />
             <v-divider class="mt-6 mb-6" />
             <v-btn color="#6441a5" prepend-icon="mdi-twitch" @click="openTwitchLogin" block>Login via Twitch</v-btn>
           </v-window-item>
 
           <v-window-item value="register">
-            <RegistrationForm />
-            <v-btn variant="text" @click="tab='login'" class="mt-1">Already have an account?</v-btn>
+            <RegistrationForm @login="tab='login'" />
           </v-window-item>
         </v-window>
       </v-card-text>

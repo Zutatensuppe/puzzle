@@ -19,12 +19,23 @@
       @keydown.enter.prevent="doLogin"
       :rules="passwordRules"
     ></v-text-field>
-    <v-btn color="success" @click="doLogin" block :disabled="!valid">Login</v-btn>
+    <div class="d-flex justify-space-between">
+      <v-btn @click="emit('forgot-password')">Forgot password?</v-btn>
+      <v-btn color="success" @click="doLogin" :disabled="!valid">Login</v-btn>
+    </div>
+    <div class="d-flex align-center justify-center mt-5">
+      No account yet? <v-btn @click="emit('register')" class="ml-5">Create one</v-btn>
+    </div>
   </v-form>
 </template>
 <script setup lang="ts">
-import { ref, Ref } from 'vue';
+import { ref } from 'vue';
 import user from '../user';
+
+const emit = defineEmits<{
+  (e: 'forgot-password'): void
+  (e: 'register'): void
+}>()
 
 const email = ref<string>('')
 const password = ref<string>('')

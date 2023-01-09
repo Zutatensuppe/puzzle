@@ -26,6 +26,7 @@
       :rules="passwordRules"
     ></v-text-field>
     <v-btn color="success" @click="doRegister" block :disabled="!valid">Create account</v-btn>
+    <v-btn @click="emit('login')" block class="mt-1">Already have an account?</v-btn>
 
     <div v-if="res">
       <div v-if="res.error === false">
@@ -40,6 +41,10 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 import user from '../user';
+
+const emit = defineEmits<{
+  (e: 'login'): void
+}>()
 
 const username = ref<string>('')
 const email = ref<string>('')
