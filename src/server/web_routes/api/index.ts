@@ -284,7 +284,7 @@ export default function createRouter(
       client_id: uniqId(),
     }, 'id') as number
 
-    const identityId = await db.insert('user_identity', {
+    await db.insert('user_identity', {
       user_id: userId,
       provider_name: 'local',
       provider_id: accountId,

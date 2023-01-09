@@ -8,8 +8,11 @@
 //   src: local("dpcomic"), url("assets/font/dpcomic.woff2") format("woff2"), url("assets/font/dpcomic.woff") format("woff");
 // }
 
-html, body {
+html,
+body {
   font-family: Roboto, sans-serif;
+  margin: 0;
+  height: 100%;
 }
 
 $link-color: #808db0;
@@ -278,12 +281,6 @@ $bg-color-transparent: rgba(0 0 0 / 70%);
   cursor: pointer;
 }
 
-html,
-body {
-  margin: 0;
-  height: 100%;
-}
-
 /// todo: remove
 ///
 ///
@@ -452,7 +449,7 @@ html.view-replay body { overflow: hidden; }
 
   .v-overlay__content {
     .v-card {
-      background: $bg-color-transparent;
+      background: rgba(0 0 0 / 90%);
     }
   }
 }
@@ -620,7 +617,7 @@ kbd {
 
   img.index {
     filter: grayscale(1);
-    opacity: .3;
+    opacity: 0.3;
     width: 64px;
     height: 64px;
   }
@@ -632,10 +629,6 @@ kbd {
     color: rgba(100 100 100 / 100%);
     text-shadow: 1px 1px 3px rgba(0 0 0 / 25%), 0 0 0 rgb(49 49 49);
   }
-}
-
-.v-overlay .v-overlay__content .v-card {
-  background: rgba(0, 0, 0, 0.9);
 }
 
 .v-card-title {

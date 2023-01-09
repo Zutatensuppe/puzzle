@@ -1,5 +1,4 @@
 import storage from "../storage"
-import user from "./../user"
 
 export interface Response {
   status: number,
