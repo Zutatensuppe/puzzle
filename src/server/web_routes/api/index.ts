@@ -157,7 +157,7 @@ export default function createRouter(
 
       await addAuthToken(db, user.id, res)
       res.send('<html><script>window.opener.handleAuthCallback();window.close();</script></html>')
-      break
+      return
     }
 
     res.status(403).send({ reason: req.query })
