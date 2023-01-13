@@ -12,7 +12,7 @@ import request from 'request'
 import Time from '../../../common/Time'
 import Users from '../../Users'
 import Util, { logger, uniqId } from '../../../common/Util'
-import { generateSalt, generateToken, passwordHash } from '../../Auth'
+import { COOKIE_TOKEN, generateSalt, generateToken, passwordHash } from '../../Auth'
 import Mail from '../../Mail'
 
 const log = logger('web_routes/api/index.ts')
@@ -26,9 +26,8 @@ const GAMES_PER_PAGE_LIMIT = 10
 const IMAGES_PER_PAGE_LIMIT = 20
 
 const addAuthToken = async (db: Db, userId: number, res: Response): Promise<void> => {
-  const token = generateToken()
-  await db.insert('tokens', { user_id: userId, token, type: 'auth' })
-  res.cookie('x-token', token, { maxAge: 356 * Time.DAY, httpOnly: true })
+  const token = await Users.addAuthToken(db, userId)
+  res.cookie(COOKIE_TOKEN, token, { maxAge: 356 * Time.DAY, httpOnly: true })
 }
 
 export default function createRouter(
@@ -224,7 +223,7 @@ export default function createRouter(
     })
 
     // remove token, already used
-    // await db.delete('tokens', tokenRow)
+    await db.delete('tokens', tokenRow)
 
     res.send({ success: true })
   })
@@ -272,29 +271,29 @@ export default function createRouter(
     // TODO: check if email already taken
     //       return status 409 in both cases
 
-    const accountId = await db.insert('accounts', {
+    const account = await Users.createAccount(db, {
       created: new Date(),
       email: emailRaw,
       password: passwordHash(passwordRaw, salt),
       salt: salt,
       status: 'verification_pending',
-    }, 'id') as number
+    })
 
-    const userId = await db.insert('users', {
+    const user = await Users.createUser(db, {
       created: new Date(),
       name: usernameRaw,
       client_id: uniqId(),
-    }, 'id') as number
+    })
 
-    await db.insert('user_identity', {
-      user_id: userId,
+    await Users.createIdentity(db, {
+      user_id: user.id,
       provider_name: 'local',
-      provider_id: accountId,
-    }, 'id') as number
+      provider_id: account.id,
+    })
 
     const userInfo = { email: emailRaw, name: usernameRaw }
     const token = generateToken()
-    const tokenRow = { user_id: accountId, token, type: 'registration' }
+    const tokenRow = { user_id: account.id, token, type: 'registration' }
     await db.insert('tokens', tokenRow)
     mail.sendRegistrationMail({ user: userInfo, token: tokenRow })
     res.send({ success: true })
@@ -311,13 +310,13 @@ export default function createRouter(
     // tokenRow.user_id is the account id here.
     // TODO: clean this up.. users vs accounts vs user_identity
 
-    const account = await db.get('accounts', { id: tokenRow.user_id })
+    const account = await Users.getAccount(db, { id: tokenRow.user_id })
     if (!account) {
       res.status(400).send({ reason: 'bad account' })
       return
     }
 
-    const identity = await db.get('user_identity', {
+    const identity = await Users.getIdentity(db, {
       provider_name: 'local',
       provider_id: account.id,
     })
@@ -342,7 +341,7 @@ export default function createRouter(
       return
     }
     await db.delete('tokens', { token: req.token })
-    res.clearCookie("x-token")
+    res.clearCookie(COOKIE_TOKEN)
     res.send({ success: true })
   })
 
@@ -472,8 +471,8 @@ export default function createRouter(
     res.send(indexData)
   })
 
-  router.post('/save-image', express.json(), async (req, res): Promise<void> => {
-    const user = await Users.getUserByRequest(db, req)
+  router.post('/save-image', express.json(), async (req: any, res): Promise<void> => {
+    const user = req.user || null
     if (!user || !user.id) {
       res.status(403).send({ ok: false, error: 'forbidden' })
       return
