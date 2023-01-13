@@ -1,15 +1,15 @@
 <template>
-  <v-container :fluid="true" class="canny-bug-reports-view p-0">
+  <v-container :fluid="true" :class="`canny-${board}-view p-0`">
+    <v-card>
+      <v-tabs :modelValue="board">
+        <v-tab :to="{ name: 'bug-reports' }" value="bug-reports">Bug Reports</v-tab>
+        <v-tab :to="{ name: 'feature-requests' }" value="feature-requests">Feature Requests</v-tab>
+      </v-tabs>
+      <v-container :fluid="true">
+        <div data-canny />
+      </v-container>
+    </v-card>
   </v-container>
-  <v-card>
-    <v-tabs :modelValue="board">
-      <v-tab :to="{ name: 'bug-reports' }" value="bug-reports">Bug Reports</v-tab>
-      <v-tab :to="{ name: 'feature-requests' }" value="feature-requests">Feature Requests</v-tab>
-    </v-tabs>
-    <v-container :fluid="true">
-      <div data-canny />
-    </v-container>
-  </v-card>
 </template>
 
 <script setup lang="ts">

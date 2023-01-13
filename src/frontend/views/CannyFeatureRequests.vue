@@ -1,12 +1,10 @@
 <template>
   <Nav @show-login="showLogin = true;" />
-  <v-container :fluid="true" class="canny-feature-request-view p-0">
-    <CannyWidget
-      board="feature-requests"
-      board-token="2a23cf97-9976-cfb8-88a7-c7ca0de89aba"
-      base-path="/feedback/feature-requests"
-    />
-  </v-container>
+  <CannyWidget
+    board="feature-requests"
+    board-token="2a23cf97-9976-cfb8-88a7-c7ca0de89aba"
+    base-path="/feedback/feature-requests"
+  />
   <LoginDialog v-if="showLogin" v-model="showLogin" @close="showLogin=false" />
 </template>
 
