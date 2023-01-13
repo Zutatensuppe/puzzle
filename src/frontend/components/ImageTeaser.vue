@@ -33,7 +33,7 @@
   </v-card>
 </template>
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, onBeforeUnmount, ref } from 'vue'
 import { ImageInfo } from '../../common/Types';
 import user, { User } from '../user'
 
@@ -79,13 +79,18 @@ const onEditClick = () => {
   emit('editClick')
 }
 
-onMounted(async () => {
+const onInit = () => {
   me.value = user.getMe()
-  user.eventBus.on('login', () => {
-    me.value = user.getMe()
-  })
-  user.eventBus.on('logout', () => {
-    me.value = user.getMe()
-  })
+}
+
+onMounted(() => {
+  onInit()
+  user.eventBus.on('login', onInit)
+  user.eventBus.on('logout', onInit)
+})
+
+onBeforeUnmount(() => {
+  user.eventBus.off('login', onInit)
+  user.eventBus.off('logout', onInit)
 })
 </script>

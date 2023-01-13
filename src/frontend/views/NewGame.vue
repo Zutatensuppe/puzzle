@@ -94,7 +94,7 @@ in jigsawpuzzles.io
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, onMounted, onBeforeUnmount, ref, watch } from 'vue'
 import NewImageDialog from './../components/NewImageDialog.vue'
 import EditImageDialog from './../components/EditImageDialog.vue'
 import NewGameDialog from './../components/NewGameDialog.vue'
@@ -281,11 +281,16 @@ const tryLoadMore = async () => {
 
 const showLogin = ref<boolean>(false);
 
-onMounted(async () => {
-  user.eventBus.on('login', () => {
-    showLogin.value = false
-  })
+const onInit = () => {
+  showLogin.value = false
+}
 
+onMounted(async () => {
+  user.eventBus.on('login', onInit)
   await loadImages()
+})
+
+onBeforeUnmount(() => {
+  user.eventBus.off('login', onInit)
 })
 </script>
