@@ -10,7 +10,7 @@ import GameSockets from './GameSockets'
 import Time from './../common/Time'
 import config from './Config'
 import GameCommon from '../common/GameCommon'
-import { ServerEvent, Game as GameType, TokenRow } from '../common/Types'
+import { ServerEvent, Game as GameType } from '../common/Types'
 import GameStorage from './GameStorage'
 import Db from './Db'
 import createApiRouter from './web_routes/api'
@@ -20,6 +20,7 @@ import Users from './Users'
 import Mail from './Mail'
 import path, { dirname } from 'path'
 import { fileURLToPath } from 'url'
+import { Canny } from './Canny'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
@@ -32,6 +33,7 @@ const run = async () => {
   await db.patch()
 
   const mail = new Mail(config.mail)
+  const canny = new Canny(config.canny)
 
   const log = logger('main.js')
 
@@ -44,41 +46,15 @@ const run = async () => {
 
   // add user info to all requests
   app.use(async (req: any, _res, next: NextFunction) => {
-    const token = req.cookies['x-token'] || null
-    if (!token) {
-      // guest user (who has uploaded an image already or started a game)
-      req.token = null
-      req.user = await Users.getUserByRequest(db, req)
-      if (req.user) {
-        req.user_type = 'guest'
-      }
-      next()
-      return
-    }
-
-    const tokenRow: TokenRow | null = await db.get('tokens', { token, type: 'auth' })
-    if (!tokenRow) {
-      req.token = null
-      req.user = null
-      next()
-      return
-    }
-    const user = await db.get('users', { id: tokenRow.user_id })
-    if (!user) {
-      req.token = null
-      req.user = null
-      next()
-      return
-    }
-
-    req.token = tokenRow.token
-    req.user = user
-    req.user_type = 'user'
+    const data = await Users.getUserInfoByRequest(db, req)
+    req.token = data.token
+    req.user = data.user
+    req.user_type = data.user_type
     next()
   })
 
   app.use('/admin/api', createAdminApiRouter(db))
-  app.use('/api', createApiRouter(db, mail))
+  app.use('/api', createApiRouter(db, mail, canny))
   app.use('/uploads/', express.static(config.dir.UPLOAD_DIR))
   app.use('/', express.static(config.dir.PUBLIC_DIR))
 

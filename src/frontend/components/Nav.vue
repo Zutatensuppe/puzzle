@@ -1,24 +1,41 @@
 <template>
-  <v-app-bar v-if="showNav">
-    <div class="header-bar-container d-flex">
-      <div class="justify-start">
-        <v-btn size="small" class="mr-1" :to="{name: 'index'}" icon="mdi-home" variant="text"></v-btn>
+  <div v-if="showNav">
+    <v-app-bar>
+      <div class="header-bar-container d-flex">
+        <div class="justify-start">
+          <v-app-bar-nav-icon class="mr-1" size="small" variant="text" @click.stop="drawer = !drawer"></v-app-bar-nav-icon>
+
+          <v-btn size="small" class="mr-1" :to="{name: 'index'}" icon="mdi-home" variant="text"></v-btn>
+        </div>
+        <div class="justify-center">
+          <img src="./../assets/gfx/icon.png" class="mr-4" :class="{ index: route.name === 'index' }" />
+          <h4 :class="{ index: route.name === 'index' }">{{ route.meta.title }}</h4>
+        </div>
+        <div class="justify-end">
+          <v-btn size="small" class="mr-1" href="https://stand-with-ukraine.pp.ua/" target="_blank">
+            <icon icon="ukraine-heart" /> <span class="ml-2 mr-2">Stand with Ukraine</span> <icon icon="ukraine-heart" />
+          </v-btn>
+          <span class="user-welcome-message" v-if="me && loggedIn">Hello, {{ me.name }}</span>
+          <v-btn size="small" class="ml-1" v-if="loggedIn" @click="doLogout">Logout</v-btn>
+          <v-btn size="small" class="ml-1" v-else @click="emit('show-login')">Login</v-btn>
+          <!-- <v-btn size="small" class="ml-1" v-if="loggedIn" :to="{name: 'admin'}">Admin</v-btn> -->
+        </div>
       </div>
-      <div class="justify-center">
-        <img src="./../assets/gfx/icon.png" class="mr-4" :class="{ index: route.name === 'index' }" />
-        <h4 :class="{ index: route.name === 'index' }">{{ route.meta.title }}</h4>
-      </div>
-      <div class="justify-end">
-        <v-btn size="small" class="mr-1" href="https://stand-with-ukraine.pp.ua/" target="_blank">
-          <icon icon="ukraine-heart" /> <span class="ml-2 mr-2">Stand with Ukraine</span> <icon icon="ukraine-heart" />
-        </v-btn>
-        <span v-if="me && loggedIn">Hello, {{ me.name }}</span>
-        <v-btn size="small" class="ml-1" v-if="loggedIn" @click="doLogout">Logout</v-btn>
-        <v-btn size="small" class="ml-1" v-else @click="emit('show-login')">Login</v-btn>
-        <!-- <v-btn size="small" class="ml-1" v-if="loggedIn" :to="{name: 'admin'}">Admin</v-btn> -->
-      </div>
-    </div>
-  </v-app-bar>
+    </v-app-bar>
+
+    <v-navigation-drawer
+      v-model="drawer"
+      temporary
+    >
+      <v-list>
+        <v-list-item :to="{ name: 'index' }"><v-icon icon="mdi-home" /> Home</v-list-item>
+        <v-list-item :to="{ name: 'new-game' }"><v-icon icon="mdi-puzzle" /> New Game</v-list-item>
+        <v-list-item :to="{ name: 'bug-reports' }"><v-icon icon="mdi-bug" /> Bug Reports</v-list-item>
+        <v-list-item :to="{ name: 'feature-requests' }"><v-icon icon="mdi-shimmer" /> Feature Requests</v-list-item>
+        <v-list-item href="https://discord.gg/uFGXRdUXxU" target="_blank"><v-icon icon="mdi-chat-outline" /> Discord</v-list-item>
+      </v-list>
+    </v-navigation-drawer>
+  </div>
 </template>
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
@@ -34,6 +51,8 @@ const showNav = computed(() => {
   // TODO: add info wether to show nav to route props
   return !['game', 'replay'].includes(String(route.name))
 })
+
+const drawer = ref<boolean>(false)
 
 const me = ref<User|null>(null)
 

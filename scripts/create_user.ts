@@ -1,5 +1,6 @@
 import { logger, uniqId } from '../src/common/Util'
 import Db from '../src/server/Db'
+import Users from '../src/server/Users'
 import config from '../src/server/Config'
 import { generateSalt, passwordHash } from '../src/server/Auth'
 import readline from 'readline'
@@ -30,30 +31,30 @@ async function run() {
 
   const salt = generateSalt()
 
-  const accountId = await db.insert('accounts', {
+  const account = await Users.createAccount(db, {
     created: new Date(),
     email: email,
     password: passwordHash(password, salt),
     salt: salt,
     status: 'verified',
-  }, 'id') as number
+  })
 
-  const userId = await db.insert('users', {
+  const user = await Users.createUser(db, {
     created: new Date(),
     name: displayName,
     client_id: uniqId(),
-  }, 'id') as number
+  })
 
-  const identityId = await db.insert('user_identity', {
-    user_id: userId,
+  const identity = await Users.createIdentity(db, {
+    user_id: user.id,
     provider_name: 'local',
-    provider_id: accountId,
-  }, 'id') as number
+    provider_id: account.id,
+  })
 
   log.info('user created')
-  log.info('identityId: ' + identityId)
-  log.info('userId:     ' + userId)
-  log.info('accountId:  ' + accountId)
+  log.info('identityId: ' + identity.id)
+  log.info('userId:     ' + user.id)
+  log.info('accountId:  ' + account.id)
 
   await db.close()
 }

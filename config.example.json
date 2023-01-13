@@ -22,6 +22,9 @@
       "client_secret": "SOME_SECRET"
     }
   },
+  "canny": {
+    "sso_private_key": "SOME_KEY"
+  },
   "mail": {
     "sendinblue_api_key": "SOME_API_KEY"
   }

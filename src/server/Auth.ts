@@ -1,6 +1,8 @@
 import crypto from 'crypto'
 import config from './Config'
 
+export const COOKIE_TOKEN = 'x-token'
+
 export const passwordHash = (
   plainPass: string,
   salt: string,
