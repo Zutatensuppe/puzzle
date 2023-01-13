@@ -45,7 +45,9 @@ import * as directives from 'vuetify/directives'
 
       { path: '/feedback', redirect: { name: 'bug-reports'} },
       { name: 'bug-reports', path: '/feedback/bug-reports', component: CannyBugReportsView, meta: { title: 'Bug Reports' } },
+      { path: '/feedback/bug-reports/:catchAll(.*)', component: CannyBugReportsView, meta: { title: 'Bug Reports' } },
       { name: 'feature-requests', path: '/feedback/feature-requests', component: CannyFeatureRequestsView, meta: { title: 'Feature Requests' } },
+      { path: '/feedback/feature-requests/:catchAll(.*)', component: CannyFeatureRequestsView, meta: { title: 'Feature Requests' } },
 
       { name: 'admin', path: '/admin', component: Admin },
       { name: 'admin_games', path: '/admin/games', component: AdminGames },

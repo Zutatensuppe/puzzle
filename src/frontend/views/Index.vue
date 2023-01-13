@@ -48,7 +48,7 @@
 </template>
 <script setup lang="ts">
 import LoginDialog from '../components/LoginDialog.vue';
-import { onMounted, ref } from 'vue'
+import { onMounted, onBeforeUnmount, ref } from 'vue'
 import { useRouter } from 'vue-router';
 import { ApiDataFinishedGames, ApiDataIndexData } from '../../common/Types';
 import RunningGameTeaser from '../components/RunningGameTeaser.vue';
@@ -82,10 +82,12 @@ const onPagination = async (q: { limit: number, offset: number }) => {
 const showLogin = ref<boolean>(false);
 const loginDialogTab = ref<'login' | 'register' | 'forgot-password' | 'reset-password' | undefined>(undefined)
 
+const onInit = () => {
+  showLogin.value = false
+}
+
 onMounted(async () => {
-  user.eventBus.on('login', () => {
-    showLogin.value = false
-  })
+  user.eventBus.on('login', onInit)
 
   const res = await api.pub.indexData()
   const json = await res.json() as ApiDataIndexData
@@ -100,5 +102,9 @@ onMounted(async () => {
       passwordResetToken.value= t
     }
   }
+})
+
+onBeforeUnmount(() => {
+  user.eventBus.off('login', onInit)
 })
 </script>
