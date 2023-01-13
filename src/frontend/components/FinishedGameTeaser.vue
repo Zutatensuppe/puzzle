@@ -6,7 +6,7 @@
         <v-icon icon="mdi-puzzle"></v-icon> {{game.piecesTotal}} Pieces
       </div>
       <div class="game-teaser-info">
-        <v-icon icon="mdi-account-group"></v-icon> {{game.players}} Players
+        <v-icon icon="mdi-account-group"></v-icon> {{game.players}} Player{{ game.players === 1 ? '' : 's' }}
       </div>
       <div class="game-teaser-info">
         <v-icon icon="mdi-flag-checkered"></v-icon> {{ time(game.started, game.finished) }}
