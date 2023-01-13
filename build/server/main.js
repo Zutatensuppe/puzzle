@@ -15,6 +15,7 @@ import request from 'request';
 import crypto from 'crypto';
 import cookieParser from 'cookie-parser';
 import SibApiV3Sdk from 'sib-api-v3-sdk';
+import jwt from 'jsonwebtoken';
 
 class Rng {
     constructor(seed) {
@@ -2394,67 +2395,7 @@ class Db {
     }
 }
 
-const TABLE_USERS = 'users';
-const TABLE_USER_IDENTITY = 'user_identity';
-const TABLE_ACCOUNTS = 'accounts';
-const HEADER_CLIENT_ID = 'client-id';
-const createIdentity = async (db, identity) => {
-    const identityId = await db.insert(TABLE_USER_IDENTITY, identity, 'id');
-    return await db.get(TABLE_USER_IDENTITY, { id: identityId });
-};
-const updateIdentity = async (db, identity) => {
-    await db.update(TABLE_USER_IDENTITY, identity, { id: identity.id });
-};
-const getIdentity = async (db, where) => {
-    return await db.get(TABLE_USER_IDENTITY, where);
-};
-const getAccount = async (db, where) => {
-    return await db.get(TABLE_ACCOUNTS, where);
-};
-const createUser = async (db, user) => {
-    const userId = await db.insert(TABLE_USERS, user, 'id');
-    return await getUser(db, { id: userId });
-};
-const updateUser = async (db, user) => {
-    await db.update(TABLE_USERS, user, { id: user.id });
-};
-const getOrCreateUserByRequest = async (db, req) => {
-    let user = await getUserByRequest(db, req);
-    if (!user) {
-        await db.insert(TABLE_USERS, {
-            client_id: req.headers[HEADER_CLIENT_ID],
-            created: new Date(),
-        });
-        user = await getUserByRequest(db, req);
-    }
-    return user;
-};
-const getUser = async (db, where) => {
-    const user = await db.get(TABLE_USERS, where);
-    if (user) {
-        user.id = parseInt(user.id, 10);
-    }
-    return user;
-};
-const getUserByRequest = async (db, req) => {
-    return getUser(db, { client_id: req.headers[HEADER_CLIENT_ID] });
-};
-const getUserByIdentity = async (db, identity) => {
-    return getUser(db, { id: identity.user_id });
-};
-var Users = {
-    getOrCreateUserByRequest,
-    getUserByRequest,
-    getUserByIdentity,
-    createUser,
-    updateUser,
-    createIdentity,
-    updateIdentity,
-    getIdentity,
-    getAccount,
-    getUser,
-};
-
+const COOKIE_TOKEN = 'x-token';
 const passwordHash = (plainPass, salt) => {
     const hash = crypto.createHmac('sha512', config.secret);
     hash.update(`${salt}${plainPass}`);
@@ -2478,15 +2419,114 @@ const randomString = (length) => {
     return b.join('');
 };
 
+const TABLE_USERS = 'users';
+const TABLE_USER_IDENTITY = 'user_identity';
+const TABLE_ACCOUNTS = 'accounts';
+const TABLE_TOKENS = 'tokens';
+const HEADER_CLIENT_ID = 'client-id';
+const createAccount = async (db, account) => {
+    const accountId = await db.insert(TABLE_ACCOUNTS, account, 'id');
+    return await db.get(TABLE_ACCOUNTS, { id: accountId });
+};
+const createIdentity = async (db, identity) => {
+    const identityId = await db.insert(TABLE_USER_IDENTITY, identity, 'id');
+    return await db.get(TABLE_USER_IDENTITY, { id: identityId });
+};
+const updateIdentity = async (db, identity) => {
+    await db.update(TABLE_USER_IDENTITY, identity, { id: identity.id });
+};
+const getIdentity = async (db, where) => {
+    return await db.get(TABLE_USER_IDENTITY, where);
+};
+const getAccount = async (db, where) => {
+    return await db.get(TABLE_ACCOUNTS, where);
+};
+const createUser = async (db, user) => {
+    const userId = await db.insert(TABLE_USERS, user, 'id');
+    return await getUser(db, { id: userId });
+};
+const updateUser = async (db, user) => {
+    await db.update(TABLE_USERS, user, { id: user.id });
+};
+const getOrCreateUserByRequest = async (db, req) => {
+    // if user is already set on the request use that one
+    if (req.user) {
+        return req.user;
+    }
+    let data = await getUserInfoByRequest(db, req);
+    if (!data.user) {
+        await db.insert(TABLE_USERS, {
+            client_id: req.headers[HEADER_CLIENT_ID],
+            created: new Date(),
+        });
+        data = await getUserInfoByRequest(db, req);
+    }
+    // here the user is already guaranteed to exist (as UserRow is fine here)
+    return data.user;
+};
+const getUser = async (db, where) => {
+    const user = await db.get(TABLE_USERS, where);
+    if (user) {
+        user.id = parseInt(user.id, 10);
+    }
+    return user;
+};
+const getToken = async (db, where) => {
+    return await db.get(TABLE_TOKENS, where);
+};
+const addAuthToken$1 = async (db, userId) => {
+    const token = generateToken();
+    await db.insert(TABLE_TOKENS, { user_id: userId, token, type: 'auth' });
+    return token;
+};
+const getUserInfoByRequest = async (db, req) => {
+    const token = req.cookies[COOKIE_TOKEN] || null;
+    const tokenRow = token
+        ? await getToken(db, { token, type: 'auth' })
+        : null;
+    let user = tokenRow ? await getUser(db, { id: tokenRow.user_id }) : null;
+    if (user && tokenRow) {
+        return {
+            token: tokenRow.token,
+            user: user,
+            user_type: 'user',
+        };
+    }
+    // when no token is given or the token is not found or the user is not found
+    // we fall back to check the request for client id.
+    user = await getUser(db, { client_id: req.headers[HEADER_CLIENT_ID] });
+    return {
+        token: null,
+        user: user,
+        user_type: user ? 'guest' : null,
+    };
+};
+const getUserByIdentity = async (db, identity) => {
+    return getUser(db, { id: identity.user_id });
+};
+var Users = {
+    getOrCreateUserByRequest,
+    getUserInfoByRequest,
+    getUserByIdentity,
+    createUser,
+    updateUser,
+    getUser,
+    createIdentity,
+    updateIdentity,
+    getIdentity,
+    createAccount,
+    getAccount,
+    addAuthToken: addAuthToken$1,
+};
+
 const log$1 = logger('web_routes/api/index.ts');
 const GAMES_PER_PAGE_LIMIT = 10;
 const IMAGES_PER_PAGE_LIMIT = 20;
 const addAuthToken = async (db, userId, res) => {
-    const token = generateToken();
-    await db.insert('tokens', { user_id: userId, token, type: 'auth' });
-    res.cookie('x-token', token, { maxAge: 356 * Time.DAY, httpOnly: true });
+    const token = await Users.addAuthToken(db, userId);
+    res.cookie(COOKIE_TOKEN, token, { maxAge: 356 * Time.DAY, httpOnly: true });
 };
-function createRouter$1(db, mail) {
+function createRouter$1(db, mail, canny) {
     const storage = multer.diskStorage({
         destination: config.dir.UPLOAD_DIR,
         filename: function (req, file, cb) {
@@ -2503,6 +2543,7 @@ function createRouter$1(db, mail) {
                 clientId: req.user.client_id,
                 created: req.user.created,
                 type: req.user_type,
+                cannyToken: canny.createToken(req.user),
             });
             return;
         }
@@ -2572,11 +2613,22 @@ function createRouter$1(db, mail) {
                     name: userData.data[0].display_name,
                     created: new Date(),
                     client_id: uniqId(),
+                    email: userData.data[0].email,
                 });
             }
-            else if (!user.name) {
-                user.name = userData.data[0].display_name;
-                await Users.updateUser(db, user);
+            else {
+                let updateNeeded = false;
+                if (!user.name) {
+                    user.name = userData.data[0].display_name;
+                    updateNeeded = true;
+                }
+                if (!user.email) {
+                    user.email = userData.data[0].email;
+                    updateNeeded = true;
+                }
+                if (updateNeeded) {
+                    await Users.updateUser(db, user);
+                }
             }
             if (!identity) {
                 Users.createIdentity(db, {
@@ -2585,10 +2637,20 @@ function createRouter$1(db, mail) {
                     provider_id: userData.data[0].id,
                 });
             }
-            else if (identity.user_id !== user.id) {
-                // maybe we do not have to do this
-                identity.user_id = user.id;
-                Users.updateIdentity(db, identity);
+            else {
+                let updateNeeded = false;
+                if (identity.user_id !== user.id) {
+                    // maybe we do not have to do this
+                    identity.user_id = user.id;
+                    updateNeeded = true;
+                }
+                if (!identity.provider_email) {
+                    identity.provider_email = userData.data[0].email;
+                    updateNeeded = true;
+                }
+                if (updateNeeded) {
+                    Users.updateIdentity(db, identity);
+                }
             }
             await addAuthToken(db, user.id, res);
             res.send('<html><script>window.opener.handleAuthCallback();window.close();</script></html>');
@@ -2650,7 +2712,7 @@ function createRouter$1(db, mail) {
             id: account.id
         });
         // remove token, already used
-        // await db.delete('tokens', tokenRow)
+        await db.delete('tokens', tokenRow);
         res.send({ success: true });
     });
     router.post('/send-password-reset-email', express.json(), async (req, res) => {
@@ -2690,26 +2752,27 @@ function createRouter$1(db, mail) {
         // TODO: check if username already taken
         // TODO: check if email already taken
         //       return status 409 in both cases
-        const accountId = await db.insert('accounts', {
+        const account = await Users.createAccount(db, {
             created: new Date(),
             email: emailRaw,
             password: passwordHash(passwordRaw, salt),
             salt: salt,
             status: 'verification_pending',
-        }, 'id');
-        const userId = await db.insert('users', {
+        });
+        const user = await Users.createUser(db, {
             created: new Date(),
             name: usernameRaw,
+            email: emailRaw,
             client_id: uniqId(),
-        }, 'id');
-        await db.insert('user_identity', {
-            user_id: userId,
+        });
+        await Users.createIdentity(db, {
+            user_id: user.id,
             provider_name: 'local',
-            provider_id: accountId,
-        }, 'id');
+            provider_id: account.id,
+        });
         const userInfo = { email: emailRaw, name: usernameRaw };
         const token = generateToken();
-        const tokenRow = { user_id: accountId, token, type: 'registration' };
+        const tokenRow = { user_id: account.id, token, type: 'registration' };
         await db.insert('tokens', tokenRow);
         mail.sendRegistrationMail({ user: userInfo, token: tokenRow });
         res.send({ success: true });
@@ -2723,12 +2786,12 @@ function createRouter$1(db, mail) {
         }
         // tokenRow.user_id is the account id here.
         // TODO: clean this up.. users vs accounts vs user_identity
-        const account = await db.get('accounts', { id: tokenRow.user_id });
+        const account = await Users.getAccount(db, { id: tokenRow.user_id });
         if (!account) {
             res.status(400).send({ reason: 'bad account' });
             return;
         }
-        const identity = await db.get('user_identity', {
+        const identity = await Users.getIdentity(db, {
             provider_name: 'local',
             provider_id: account.id,
         });
@@ -2749,7 +2812,7 @@ function createRouter$1(db, mail) {
             return;
         }
         await db.delete('tokens', { token: req.token });
-        res.clearCookie("x-token");
+        res.clearCookie(COOKIE_TOKEN);
         res.send({ success: true });
     });
     router.get('/conf', (req, res) => {
@@ -2867,7 +2930,7 @@ function createRouter$1(db, mail) {
         res.send(indexData);
     });
     router.post('/save-image', express.json(), async (req, res) => {
-        const user = await Users.getUserByRequest(db, req);
+        const user = req.user || null;
         if (!user || !user.id) {
             res.status(403).send({ ok: false, error: 'forbidden' });
             return;
@@ -3042,6 +3105,24 @@ class Mail {
     }
 }
 
+class Canny {
+    constructor(config) {
+        this.config = config;
+        // pass
+    }
+    createToken(user) {
+        if (!user.email) {
+            return null;
+        }
+        const userData = {
+            email: user.email,
+            id: user.id,
+            name: user.name,
+        };
+        return jwt.sign(userData, this.config.sso_private_key, { algorithm: 'HS256' });
+    }
+}
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const run = async () => {
@@ -3050,6 +3131,7 @@ const run = async () => {
     await db.connect();
     await db.patch();
     const mail = new Mail(config.mail);
+    const canny = new Canny(config.canny);
     const log = logger('main.js');
     const port = config.http.port;
     const hostname = config.http.hostname;
@@ -3058,38 +3140,14 @@ const run = async () => {
     app.use(compression());
     // add user info to all requests
     app.use(async (req, _res, next) => {
-        const token = req.cookies['x-token'] || null;
-        if (!token) {
-            // guest user (who has uploaded an image already or started a game)
-            req.token = null;
-            req.user = await Users.getUserByRequest(db, req);
-            if (req.user) {
-                req.user_type = 'guest';
-            }
-            next();
-            return;
-        }
-        const tokenRow = await db.get('tokens', { token, type: 'auth' });
-        if (!tokenRow) {
-            req.token = null;
-            req.user = null;
-            next();
-            return;
-        }
-        const user = await db.get('users', { id: tokenRow.user_id });
-        if (!user) {
-            req.token = null;
-            req.user = null;
-            next();
-            return;
-        }
-        req.token = tokenRow.token;
-        req.user = user;
-        req.user_type = 'user';
+        const data = await Users.getUserInfoByRequest(db, req);
+        req.token = data.token;
+        req.user = data.user;
+        req.user_type = data.user_type;
         next();
     });
     app.use('/admin/api', createRouter(db));
-    app.use('/api', createRouter$1(db, mail));
+    app.use('/api', createRouter$1(db, mail, canny));
     app.use('/uploads/', express.static(config.dir.UPLOAD_DIR));
     app.use('/', express.static(config.dir.PUBLIC_DIR));
     app.all('*', async (req, res) => {
