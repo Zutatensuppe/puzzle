@@ -14,6 +14,7 @@ export interface UserRow {
   created: Date
   client_id: string
   name: string
+  email: string
 }
 
 interface UserInfo {
@@ -27,6 +28,7 @@ interface IdentityRow {
   user_id: number
   provider_name: string
   provider_id: string
+  provider_email: string
 }
 
 interface AccountRow {

@@ -301,6 +301,10 @@ export interface ApiDataIndexData {
 
 export type ApiDataFinishedGames = ApiGamesData
 
+export interface CannyConfig {
+  sso_private_key: string
+}
+
 export interface MailConfig {
   sendinblue_api_key: string
 }

@@ -14,6 +14,7 @@ import Users from '../../Users'
 import Util, { logger, uniqId } from '../../../common/Util'
 import { COOKIE_TOKEN, generateSalt, generateToken, passwordHash } from '../../Auth'
 import Mail from '../../Mail'
+import { Canny } from '../../Canny'
 
 const log = logger('web_routes/api/index.ts')
 
@@ -33,6 +34,7 @@ const addAuthToken = async (db: Db, userId: number, res: Response): Promise<void
 export default function createRouter(
   db: Db,
   mail: Mail,
+  canny: Canny,
 ): Router {
   const storage = multer.diskStorage({
     destination: config.dir.UPLOAD_DIR,
@@ -51,6 +53,7 @@ export default function createRouter(
         clientId: req.user.client_id,
         created: req.user.created,
         type: req.user_type,
+        cannyToken: canny.createToken(req.user),
       })
       return
     }
@@ -136,10 +139,21 @@ export default function createRouter(
           name: userData.data[0].display_name,
           created: new Date(),
           client_id: uniqId(),
+          email: userData.data[0].email,
         })
-      } else if (!user.name) {
-        user.name = userData.data[0].display_name
-        await Users.updateUser(db, user)
+      } else {
+        let updateNeeded = false
+        if (!user.name) {
+          user.name = userData.data[0].display_name
+          updateNeeded = true
+        }
+        if (!user.email) {
+          user.email = userData.data[0].email
+          updateNeeded = true
+        }
+        if (updateNeeded) {
+          await Users.updateUser(db, user)
+        }
       }
 
       if (!identity) {
@@ -148,10 +162,20 @@ export default function createRouter(
           provider_name: 'twitch',
           provider_id: userData.data[0].id,
         })
-      } else if (identity.user_id !== user.id) {
-        // maybe we do not have to do this
-        identity.user_id = user.id
-        Users.updateIdentity(db, identity)
+      } else {
+        let updateNeeded = false
+        if (identity.user_id !== user.id) {
+          // maybe we do not have to do this
+          identity.user_id = user.id
+          updateNeeded = true
+        }
+        if (!identity.provider_email) {
+          identity.provider_email = userData.data[0].email
+          updateNeeded = true
+        }
+        if (updateNeeded) {
+          Users.updateIdentity(db, identity)
+        }
       }
 
       await addAuthToken(db, user.id, res)
@@ -282,6 +306,7 @@ export default function createRouter(
     const user = await Users.createUser(db, {
       created: new Date(),
       name: usernameRaw,
+      email: emailRaw,
       client_id: uniqId(),
     })
 

@@ -6,6 +6,8 @@ import Index from './views/Index.vue'
 import NewGame from './views/NewGame.vue'
 import Game from './views/Game.vue'
 import Replay from './views/Replay.vue'
+import CannyBugReportsView from './views/CannyBugReports.vue'
+import CannyFeatureRequestsView from './views/CannyFeatureRequests.vue'
 
 import Icon from './components/Icon.vue'
 import user from './user'
@@ -40,6 +42,10 @@ import * as directives from 'vuetify/directives'
       { name: 'new-game', path: '/new-game', component: NewGame, meta: { title: 'New Game' } },
       { name: 'game', path: '/g/:id', component: Game },
       { name: 'replay', path: '/replay/:id', component: Replay },
+
+      { path: '/feedback', redirect: { name: 'bug-reports'} },
+      { name: 'bug-reports', path: '/feedback/bug-reports', component: CannyBugReportsView, meta: { title: 'Bug Reports' } },
+      { name: 'feature-requests', path: '/feedback/feature-requests', component: CannyFeatureRequestsView, meta: { title: 'Feature Requests' } },
 
       { name: 'admin', path: '/admin', component: Admin },
       { name: 'admin_games', path: '/admin/games', component: AdminGames },

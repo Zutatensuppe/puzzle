@@ -63,7 +63,7 @@ const args = {
   client_id: 'ud669t6lfspxucc6hvn5e5kto8rllb',
   redirect_uri: `${window.location.protocol}//${window.location.host}/api/auth/twitch/redirect_uri`,
   response_type: 'code',
-  scope: 'openid',
+  scope: 'openid user:read:email',
 }
 
 const openTwitchLogin = () => {

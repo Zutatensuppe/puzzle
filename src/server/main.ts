@@ -20,6 +20,7 @@ import Users, { UserRow } from './Users'
 import Mail from './Mail'
 import path, { dirname } from 'path'
 import { fileURLToPath } from 'url'
+import { Canny } from './Canny'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
@@ -32,6 +33,7 @@ const run = async () => {
   await db.patch()
 
   const mail = new Mail(config.mail)
+  const canny = new Canny(config.canny)
 
   const log = logger('main.js')
 
@@ -52,7 +54,7 @@ const run = async () => {
   })
 
   app.use('/admin/api', createAdminApiRouter(db))
-  app.use('/api', createApiRouter(db, mail))
+  app.use('/api', createApiRouter(db, mail, canny))
   app.use('/uploads/', express.static(config.dir.UPLOAD_DIR))
   app.use('/', express.static(config.dir.PUBLIC_DIR))
 

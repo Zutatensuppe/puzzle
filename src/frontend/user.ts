@@ -9,6 +9,7 @@ export interface User {
   created: string
   clientId: string
   type: 'guest' | 'user'
+  cannyToken: string | null
 }
 
 let me: null | User = null;
