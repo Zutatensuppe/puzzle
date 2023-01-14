@@ -1608,12 +1608,12 @@ const getCategoryRowsBySlugs = async (db, slugs) => {
 };
 const imagesFromDb = async (db, tagSlugs, orderBy, isPrivate, offset, limit) => {
     const orderByMap = {
-        alpha_asc: [{ title: 1 }],
-        alpha_desc: [{ title: -1 }],
+        alpha_asc: [{ title: 1 }, { created: -1 }],
+        alpha_desc: [{ title: -1 }, { created: -1 }],
         date_asc: [{ created: 1 }],
         date_desc: [{ created: -1 }],
-        game_count_asc: [{ games_count: 1 }],
-        game_count_desc: [{ games_count: -1 }],
+        game_count_asc: [{ games_count: 1 }, { created: -1 }],
+        game_count_desc: [{ games_count: -1 }, { created: -1 }],
     };
     // TODO: .... clean up
     const wheresRaw = {};

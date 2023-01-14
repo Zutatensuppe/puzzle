@@ -145,12 +145,12 @@ const imagesFromDb = async (
   limit: number,
 ): Promise<ImageInfo[]> => {
   const orderByMap = {
-    alpha_asc: [{ title: 1 }],
-    alpha_desc: [{ title: -1 }],
+    alpha_asc: [{ title: 1 }, { created: -1 }],
+    alpha_desc: [{ title: -1 }, { created: -1 }],
     date_asc: [{ created: 1 }],
     date_desc: [{ created: -1 }],
-    game_count_asc: [{ games_count: 1 }],
-    game_count_desc: [{ games_count: -1 }],
+    game_count_asc: [{ games_count: 1 }, { created: -1 }],
+    game_count_desc: [{ games_count: -1 }, { created: -1 }],
   } as Record<string, OrderBy>
 
   // TODO: .... clean up
