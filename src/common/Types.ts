@@ -170,6 +170,7 @@ export interface ImageInfo
 {
   id: number
   uploaderUserId: number|null
+  uploaderName: string|null
   filename: string
   url: string
   title: string

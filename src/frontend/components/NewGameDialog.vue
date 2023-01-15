@@ -66,6 +66,7 @@
               <v-table>
                 <tbody>
                   <tr><td>Title: </td><td>{{ image.title || '<No Title>' }}</td></tr>
+                  <tr><td>Uploader: </td><td>{{ image.uploaderName || '<Unknown>' }}</td></tr>
                   <tr><td>Upload date: </td><td>{{ date }}</td></tr>
                   <tr><td>Dimensions: </td><td>{{ image.width }}x{{ image.height }}</td></tr>
                   <tr><td>Tags: </td><td>{{ image.tags.length ? image.tags.map(t => t.title).join(', ') : '-' }}</td></tr>

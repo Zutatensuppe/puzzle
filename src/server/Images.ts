@@ -8,12 +8,14 @@ import Db, { OrderBy, WhereRaw } from './Db'
 import { Dim } from '../common/Geometry'
 import Util, { logger } from '../common/Util'
 import { Tag, ImageInfo } from '../common/Types'
+import Users from './Users'
 
 const log = logger('Images.ts')
 
 interface ImageRow {
   id: number
   uploader_user_id: number
+  uploader_user_name: string
   created: Date
   filename: string
   filename_original: string
@@ -111,9 +113,11 @@ const imageFromDb = async (db: Db, imageId: number): Promise<ImageInfo | null> =
   }
 
   const gameCount = await db.count('games', { image_id: imageRow.id, private: imageRow.private })
+  const user = await Users.getUser(db, { id: imageRow.uploader_user_id })
   return {
     id: imageRow.id,
     uploaderUserId: imageRow.uploader_user_id,
+    uploaderName: user?.name || null,
     filename: imageRow.filename,
     url: `${config.dir.UPLOAD_URL}/${encodeURIComponent(imageRow.filename)}`,
     title: imageRow.title,
@@ -190,10 +194,13 @@ inner join images i on i.id = ixc.image_id ${where.sql};
       GROUP BY image_id
     )
     SELECT
-      images.*, COALESCE(counts.count, 0) AS games_count
+      images.*,
+      COALESCE(counts.count, 0) AS games_count,
+      COALESCE(users.name, '') as uploader_user_name
     FROM
       images
       LEFT JOIN counts ON counts.image_id = images.id
+      LEFT JOIN users ON users.id = images.uploader_user_id
     ${dbWhere.sql}
     ${db._buildOrderBy(orderByMap[orderBy])}
     ${db._buildLimit({ offset, limit })}
@@ -204,6 +211,7 @@ inner join images i on i.id = ixc.image_id ${where.sql};
     images.push({
       id: i.id as number,
       uploaderUserId: i.uploader_user_id,
+      uploaderName: i.uploader_user_name || null,
       filename: i.filename,
       url: `${config.dir.UPLOAD_URL}/${encodeURIComponent(i.filename)}`,
       title: i.title,
