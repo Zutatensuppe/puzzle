@@ -7,12 +7,12 @@ import path, { dirname } from 'path';
 import probe from 'probe-image-size';
 import exif from 'exif';
 import sharp from 'sharp';
+import crypto from 'crypto';
 import v8 from 'v8';
 import { Mutex } from 'async-mutex';
 import * as pg from 'pg';
 import multer from 'multer';
 import request from 'request';
-import crypto from 'crypto';
 import cookieParser from 'cookie-parser';
 import SibApiV3Sdk from 'sib-api-v3-sdk';
 import jwt from 'jsonwebtoken';
@@ -1506,6 +1506,130 @@ var GameLog = {
     idxname,
 };
 
+const COOKIE_TOKEN = 'x-token';
+const passwordHash = (plainPass, salt) => {
+    const hash = crypto.createHmac('sha512', config.secret);
+    hash.update(`${salt}${plainPass}`);
+    return hash.digest('hex');
+};
+// do something CRYPTO secure???
+const generateSalt = () => {
+    return randomString(10);
+};
+// do something CRYPTO secure???
+const generateToken = () => {
+    return randomString(32);
+};
+const randomString = (length) => {
+    const a = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890'.split('');
+    const b = [];
+    for (let i = 0; i < length; i++) {
+        const j = parseInt((Math.random() * (a.length - 1)).toFixed(0), 10);
+        b[i] = a[j];
+    }
+    return b.join('');
+};
+
+const TABLE_USERS = 'users';
+const TABLE_USER_IDENTITY = 'user_identity';
+const TABLE_ACCOUNTS = 'accounts';
+const TABLE_TOKENS = 'tokens';
+const HEADER_CLIENT_ID = 'client-id';
+const createAccount = async (db, account) => {
+    const accountId = await db.insert(TABLE_ACCOUNTS, account, 'id');
+    return await db.get(TABLE_ACCOUNTS, { id: accountId });
+};
+const createIdentity = async (db, identity) => {
+    const identityId = await db.insert(TABLE_USER_IDENTITY, identity, 'id');
+    return await db.get(TABLE_USER_IDENTITY, { id: identityId });
+};
+const updateIdentity = async (db, identity) => {
+    await db.update(TABLE_USER_IDENTITY, identity, { id: identity.id });
+};
+const getIdentity = async (db, where) => {
+    return await db.get(TABLE_USER_IDENTITY, where);
+};
+const getAccount = async (db, where) => {
+    return await db.get(TABLE_ACCOUNTS, where);
+};
+const createUser = async (db, user) => {
+    const userId = await db.insert(TABLE_USERS, user, 'id');
+    return await getUser(db, { id: userId });
+};
+const updateUser = async (db, user) => {
+    await db.update(TABLE_USERS, user, { id: user.id });
+};
+const getOrCreateUserByRequest = async (db, req) => {
+    // if user is already set on the request use that one
+    if (req.user) {
+        return req.user;
+    }
+    let data = await getUserInfoByRequest(db, req);
+    if (!data.user) {
+        await db.insert(TABLE_USERS, {
+            client_id: req.headers[HEADER_CLIENT_ID],
+            created: new Date(),
+        });
+        data = await getUserInfoByRequest(db, req);
+    }
+    // here the user is already guaranteed to exist (as UserRow is fine here)
+    return data.user;
+};
+const getUser = async (db, where) => {
+    const user = await db.get(TABLE_USERS, where);
+    if (user) {
+        user.id = parseInt(user.id, 10);
+    }
+    return user;
+};
+const getToken = async (db, where) => {
+    return await db.get(TABLE_TOKENS, where);
+};
+const addAuthToken$1 = async (db, userId) => {
+    const token = generateToken();
+    await db.insert(TABLE_TOKENS, { user_id: userId, token, type: 'auth' });
+    return token;
+};
+const getUserInfoByRequest = async (db, req) => {
+    const token = req.cookies[COOKIE_TOKEN] || null;
+    const tokenRow = token
+        ? await getToken(db, { token, type: 'auth' })
+        : null;
+    let user = tokenRow ? await getUser(db, { id: tokenRow.user_id }) : null;
+    if (user && tokenRow) {
+        return {
+            token: tokenRow.token,
+            user: user,
+            user_type: 'user',
+        };
+    }
+    // when no token is given or the token is not found or the user is not found
+    // we fall back to check the request for client id.
+    user = await getUser(db, { client_id: req.headers[HEADER_CLIENT_ID] });
+    return {
+        token: null,
+        user: user,
+        user_type: user ? 'guest' : null,
+    };
+};
+const getUserByIdentity = async (db, identity) => {
+    return getUser(db, { id: identity.user_id });
+};
+var Users = {
+    getOrCreateUserByRequest,
+    getUserInfoByRequest,
+    getUserByIdentity,
+    createUser,
+    updateUser,
+    getUser,
+    createIdentity,
+    updateIdentity,
+    getIdentity,
+    createAccount,
+    getAccount,
+    addAuthToken: addAuthToken$1,
+};
+
 const log$5 = logger('Images.ts');
 const resizeImage = async (filename) => {
     try {
@@ -1589,9 +1713,11 @@ const imageFromDb = async (db, imageId) => {
         return null;
     }
     const gameCount = await db.count('games', { image_id: imageRow.id, private: imageRow.private });
+    const user = await Users.getUser(db, { id: imageRow.uploader_user_id });
     return {
         id: imageRow.id,
         uploaderUserId: imageRow.uploader_user_id,
+        uploaderName: user?.name || null,
         filename: imageRow.filename,
         url: `${config.dir.UPLOAD_URL}/${encodeURIComponent(imageRow.filename)}`,
         title: imageRow.title,
@@ -1651,10 +1777,13 @@ inner join images i on i.id = ixc.image_id ${where.sql};
       GROUP BY image_id
     )
     SELECT
-      images.*, COALESCE(counts.count, 0) AS games_count
+      images.*,
+      COALESCE(counts.count, 0) AS games_count,
+      COALESCE(users.name, '') as uploader_user_name
     FROM
       images
       LEFT JOIN counts ON counts.image_id = images.id
+      LEFT JOIN users ON users.id = images.uploader_user_id
     ${dbWhere.sql}
     ${db._buildOrderBy(orderByMap[orderBy])}
     ${db._buildLimit({ offset, limit })}
@@ -1664,6 +1793,7 @@ inner join images i on i.id = ixc.image_id ${where.sql};
         images.push({
             id: i.id,
             uploaderUserId: i.uploader_user_id,
+            uploaderName: i.uploader_user_name || null,
             filename: i.filename,
             url: `${config.dir.UPLOAD_URL}/${encodeURIComponent(i.filename)}`,
             title: i.title,
@@ -2394,130 +2524,6 @@ class Db {
         await this.run(sql, [...values, ...where.values]);
     }
 }
-
-const COOKIE_TOKEN = 'x-token';
-const passwordHash = (plainPass, salt) => {
-    const hash = crypto.createHmac('sha512', config.secret);
-    hash.update(`${salt}${plainPass}`);
-    return hash.digest('hex');
-};
-// do something CRYPTO secure???
-const generateSalt = () => {
-    return randomString(10);
-};
-// do something CRYPTO secure???
-const generateToken = () => {
-    return randomString(32);
-};
-const randomString = (length) => {
-    const a = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890'.split('');
-    const b = [];
-    for (let i = 0; i < length; i++) {
-        const j = parseInt((Math.random() * (a.length - 1)).toFixed(0), 10);
-        b[i] = a[j];
-    }
-    return b.join('');
-};
-
-const TABLE_USERS = 'users';
-const TABLE_USER_IDENTITY = 'user_identity';
-const TABLE_ACCOUNTS = 'accounts';
-const TABLE_TOKENS = 'tokens';
-const HEADER_CLIENT_ID = 'client-id';
-const createAccount = async (db, account) => {
-    const accountId = await db.insert(TABLE_ACCOUNTS, account, 'id');
-    return await db.get(TABLE_ACCOUNTS, { id: accountId });
-};
-const createIdentity = async (db, identity) => {
-    const identityId = await db.insert(TABLE_USER_IDENTITY, identity, 'id');
-    return await db.get(TABLE_USER_IDENTITY, { id: identityId });
-};
-const updateIdentity = async (db, identity) => {
-    await db.update(TABLE_USER_IDENTITY, identity, { id: identity.id });
-};
-const getIdentity = async (db, where) => {
-    return await db.get(TABLE_USER_IDENTITY, where);
-};
-const getAccount = async (db, where) => {
-    return await db.get(TABLE_ACCOUNTS, where);
-};
-const createUser = async (db, user) => {
-    const userId = await db.insert(TABLE_USERS, user, 'id');
-    return await getUser(db, { id: userId });
-};
-const updateUser = async (db, user) => {
-    await db.update(TABLE_USERS, user, { id: user.id });
-};
-const getOrCreateUserByRequest = async (db, req) => {
-    // if user is already set on the request use that one
-    if (req.user) {
-        return req.user;
-    }
-    let data = await getUserInfoByRequest(db, req);
-    if (!data.user) {
-        await db.insert(TABLE_USERS, {
-            client_id: req.headers[HEADER_CLIENT_ID],
-            created: new Date(),
-        });
-        data = await getUserInfoByRequest(db, req);
-    }
-    // here the user is already guaranteed to exist (as UserRow is fine here)
-    return data.user;
-};
-const getUser = async (db, where) => {
-    const user = await db.get(TABLE_USERS, where);
-    if (user) {
-        user.id = parseInt(user.id, 10);
-    }
-    return user;
-};
-const getToken = async (db, where) => {
-    return await db.get(TABLE_TOKENS, where);
-};
-const addAuthToken$1 = async (db, userId) => {
-    const token = generateToken();
-    await db.insert(TABLE_TOKENS, { user_id: userId, token, type: 'auth' });
-    return token;
-};
-const getUserInfoByRequest = async (db, req) => {
-    const token = req.cookies[COOKIE_TOKEN] || null;
-    const tokenRow = token
-        ? await getToken(db, { token, type: 'auth' })
-        : null;
-    let user = tokenRow ? await getUser(db, { id: tokenRow.user_id }) : null;
-    if (user && tokenRow) {
-        return {
-            token: tokenRow.token,
-            user: user,
-            user_type: 'user',
-        };
-    }
-    // when no token is given or the token is not found or the user is not found
-    // we fall back to check the request for client id.
-    user = await getUser(db, { client_id: req.headers[HEADER_CLIENT_ID] });
-    return {
-        token: null,
-        user: user,
-        user_type: user ? 'guest' : null,
-    };
-};
-const getUserByIdentity = async (db, identity) => {
-    return getUser(db, { id: identity.user_id });
-};
-var Users = {
-    getOrCreateUserByRequest,
-    getUserInfoByRequest,
-    getUserByIdentity,
-    createUser,
-    updateUser,
-    getUser,
-    createIdentity,
-    updateIdentity,
-    getIdentity,
-    createAccount,
-    getAccount,
-    addAuthToken: addAuthToken$1,
-};
 
 const log$1 = logger('web_routes/api/index.ts');
 const GAMES_PER_PAGE_LIMIT = 10;
