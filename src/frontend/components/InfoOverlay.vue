@@ -6,7 +6,11 @@
         <tbody>
           <tr>
             <td>Image Title: </td>
-            <td>{{game.puzzle.info.image?.title}}</td>
+            <td>{{game.puzzle.info.image?.title || '<No Title>'}}</td>
+          </tr>
+          <tr>
+            <td>Image Uploader: </td>
+            <td>{{game.puzzle.info.image?.uploaderName || '<Unknown>'}}</td>
           </tr>
           <tr>
             <td><v-icon icon="mdi-counter mr-1"></v-icon> Scoring: </td>
