@@ -27,5 +27,15 @@
   },
   "mail": {
     "sendinblue_api_key": "SOME_API_KEY"
+  },
+  "discord": {
+    "bot": {
+      "url": "https://discord-bot.hyottoko.club",
+      "token": "TOKEN_FOR_THE_URL"
+    },
+    "announce": {
+      "guildId": "GUILD/SERVER ID",
+      "channelId": "CHANNEL ID"
+    }
   }
 }

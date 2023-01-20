@@ -1,5 +1,10 @@
 import storage from "../storage"
 
+export const JSON_HEADERS = {
+  'Accept': 'application/json',
+  'Content-Type': 'application/json'
+}
+
 export interface Response {
   status: number,
   text: string,

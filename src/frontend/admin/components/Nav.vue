@@ -13,5 +13,6 @@ const nav = ref<string[]>([
   'admin_images',
   'admin_users',
   'admin_groups',
+  'admin_announcements',
 ])
 </script>

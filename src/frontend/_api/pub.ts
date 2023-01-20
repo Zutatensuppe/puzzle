@@ -1,11 +1,6 @@
 import { GameSettings } from "../../common/Types"
 import Util from "../../common/Util"
-import xhr from "./xhr"
-
-const JSON_HEADERS = {
-  'Accept': 'application/json',
-  'Content-Type': 'application/json'
-}
+import xhr, { JSON_HEADERS } from "./xhr"
 
 const auth = async (email: string, password: string) => {
   return await xhr.post('/api/auth/local', {

@@ -1,8 +1,10 @@
 import express, { NextFunction } from 'express'
 import Db from '../../../Db'
+import { Discord } from '../../../Discord'
 
 export default function createRouter(
-  db: Db
+  db: Db,
+  discord: Discord,
 ): express.Router {
   const router = express.Router()
 
@@ -50,6 +52,21 @@ export default function createRouter(
   router.get('/groups', async (req, res) => {
     const items = await db.getMany('user_groups')
     res.send(items)
+  })
+
+  router.get('/announcements', async (req, res) => {
+    const items = await db.getMany('announcements')
+    res.send(items)
+  })
+
+  router.post('/announcements', express.json(), async (req, res) => {
+    const message = req.body.message
+    const title = req.body.title
+    const id = await db.insert('announcements', { created: new Date(), title, message }, 'id')
+
+    const announcement = await db.get('announcements', { id })
+    await discord.announce(`**${title}**\n${announcement.message}`)
+    res.send({ announcement })
   })
 
   return router

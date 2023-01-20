@@ -2,7 +2,7 @@ import { readFileSync } from 'fs'
 import { fileURLToPath } from 'url'
 import { dirname } from 'path'
 import { logger } from '../common/Util'
-import { CannyConfig, MailConfig } from '../common/Types'
+import { CannyConfig, DiscordConfig, MailConfig } from '../common/Types'
 
 const log = logger('Config.ts')
 
@@ -50,6 +50,7 @@ export interface Config {
   }
   canny: CannyConfig
   mail: MailConfig
+  discord: DiscordConfig
 }
 
 const init = (): Config => {

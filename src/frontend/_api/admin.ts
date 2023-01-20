@@ -1,4 +1,4 @@
-import xhr from "./xhr"
+import xhr, { JSON_HEADERS } from "./xhr"
 
 const getGames = async () => {
   const res = await xhr.get('/admin/api/games', {})
@@ -12,6 +12,19 @@ const deleteGame = async (id: number) => {
 
 const getUsers = async () => {
   const res = await xhr.get('/admin/api/users', {})
+  return await res.json()
+}
+
+const getAnnouncements = async () => {
+  const res = await xhr.get('/admin/api/announcements', {})
+  return await res.json()
+}
+
+const postAnnouncement = async (title: string, message: string) => {
+  const res = await xhr.post('/admin/api/announcements', {
+    headers: JSON_HEADERS,
+    body: JSON.stringify({ title, message }),
+  })
   return await res.json()
 }
 
@@ -31,6 +44,8 @@ const getGroups = async () => {
 }
 
 export default {
+  getAnnouncements,
+  postAnnouncement,
   getGames,
   deleteGame,
   getUsers,
