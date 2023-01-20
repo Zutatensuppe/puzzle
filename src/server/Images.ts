@@ -175,7 +175,7 @@ inner join images i on i.id = ixc.image_id ${where.sql};
     if (ids.length === 0) {
       return []
     }
-    wheresRaw['id'] = {'$in': ids}
+    wheresRaw['images.id'] = {'$in': ids}
   }
 
   const params: any[] = []
