@@ -20,7 +20,7 @@ export default function createRouter(
     }
     const adminGroup = await db.get('user_groups', { name: 'admin' })
     if (!adminGroup) {
-      res.status(500).send({ ok: false, error: 'no admin' })
+      res.status(403).send({ ok: false, error: 'no admin' })
       return
     }
     const userXAdmin = await db.get('user_x_user_group', {
@@ -28,7 +28,7 @@ export default function createRouter(
       user_id: user.id,
     })
     if (!userXAdmin) {
-      res.status(500).send({ ok: false, error: 'not an admin' })
+      res.status(403).send({ ok: false, error: 'not an admin' })
       return
     }
     next()

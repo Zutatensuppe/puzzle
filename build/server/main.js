@@ -3011,7 +3011,24 @@ function createRouter(db, discord) {
             res.status(401).send({});
             return;
         }
-        // TODO: check if user is admin
+        const user = req.user || null;
+        if (!user || !user.id) {
+            res.status(403).send({ ok: false, error: 'forbidden' });
+            return;
+        }
+        const adminGroup = await db.get('user_groups', { name: 'admin' });
+        if (!adminGroup) {
+            res.status(403).send({ ok: false, error: 'no admin' });
+            return;
+        }
+        const userXAdmin = await db.get('user_x_user_group', {
+            user_group_id: adminGroup.id,
+            user_id: user.id,
+        });
+        if (!userXAdmin) {
+            res.status(403).send({ ok: false, error: 'not an admin' });
+            return;
+        }
         next();
     };
     router.use(requireLoginApi);
