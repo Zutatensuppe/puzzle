@@ -18,7 +18,7 @@ export default function createRouter(
       res.status(403).send({ ok: false, error: 'forbidden' })
       return
     }
-    const adminGroup = await db.get('groups', { name: 'admin' })
+    const adminGroup = await db.get('user_groups', { name: 'admin' })
     if (!adminGroup) {
       res.status(500).send({ ok: false, error: 'no admin' })
       return
