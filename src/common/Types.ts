@@ -310,6 +310,17 @@ export interface MailConfig {
   sendinblue_api_key: string
 }
 
+export interface DiscordConfig {
+  bot: {
+    url: string
+    token: string
+  }
+  announce: {
+    guildId: string
+    channelId: string
+  }
+}
+
 export interface TokenRow {
   user_id: number
   type: string

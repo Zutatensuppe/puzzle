@@ -17,6 +17,7 @@ import AdminGames from './admin/views/Games.vue'
 import AdminUsers from './admin/views/Users.vue'
 import AdminImages from './admin/views/Images.vue'
 import AdminGroups from './admin/views/Groups.vue'
+import AdminAnnouncements from './admin/views/Announcements.vue'
 import api from './_api'
 import config from './config'
 
@@ -54,6 +55,7 @@ import * as directives from 'vuetify/directives'
       { name: 'admin_users', path: '/admin/users', component: AdminUsers },
       { name: 'admin_images', path: '/admin/images', component: AdminImages },
       { name: 'admin_groups', path: '/admin/groups', component: AdminGroups },
+      { name: 'admin_announcements', path: '/admin/announcements', component: AdminAnnouncements },
     ],
   })
 

@@ -3004,7 +3004,7 @@ function createRouter$1(db, mail, canny) {
     return router;
 }
 
-function createRouter(db) {
+function createRouter(db, discord) {
     const router = express.Router();
     const requireLoginApi = async (req, res, next) => {
         if (!req.token) {
@@ -3043,6 +3043,18 @@ function createRouter(db) {
     router.get('/groups', async (req, res) => {
         const items = await db.getMany('user_groups');
         res.send(items);
+    });
+    router.get('/announcements', async (req, res) => {
+        const items = await db.getMany('announcements');
+        res.send(items);
+    });
+    router.post('/announcements', express.json(), async (req, res) => {
+        const message = req.body.message;
+        const title = req.body.title;
+        const id = await db.insert('announcements', { created: new Date(), title, message }, 'id');
+        const announcement = await db.get('announcements', { id });
+        await discord.announce(`**${title}**\n${announcement.message}`);
+        res.send({ announcement });
     });
     return router;
 }
@@ -3129,6 +3141,27 @@ class Canny {
     }
 }
 
+class Discord {
+    constructor(config) {
+        this.config = config;
+        // pass
+    }
+    async announce(message) {
+        fetch(this.config.bot.url + '/announce', {
+            method: 'POST',
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                "guildId": this.config.announce.guildId,
+                "channelId": this.config.announce.channelId,
+                "message": message,
+            })
+        });
+    }
+}
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const run = async () => {
@@ -3138,6 +3171,7 @@ const run = async () => {
     await db.patch();
     const mail = new Mail(config.mail);
     const canny = new Canny(config.canny);
+    const discord = new Discord(config.discord);
     const log = logger('main.js');
     const port = config.http.port;
     const hostname = config.http.hostname;
@@ -3152,7 +3186,7 @@ const run = async () => {
         req.user_type = data.user_type;
         next();
     });
-    app.use('/admin/api', createRouter(db));
+    app.use('/admin/api', createRouter(db, discord));
     app.use('/api', createRouter$1(db, mail, canny));
     app.use('/uploads/', express.static(config.dir.UPLOAD_DIR));
     app.use('/', express.static(config.dir.PUBLIC_DIR));

@@ -21,6 +21,7 @@ import Mail from './Mail'
 import path, { dirname } from 'path'
 import { fileURLToPath } from 'url'
 import { Canny } from './Canny'
+import { Discord } from './Discord'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
@@ -34,6 +35,7 @@ const run = async () => {
 
   const mail = new Mail(config.mail)
   const canny = new Canny(config.canny)
+  const discord = new Discord(config.discord)
 
   const log = logger('main.js')
 
@@ -53,7 +55,7 @@ const run = async () => {
     next()
   })
 
-  app.use('/admin/api', createAdminApiRouter(db))
+  app.use('/admin/api', createAdminApiRouter(db, discord))
   app.use('/api', createApiRouter(db, mail, canny))
   app.use('/uploads/', express.static(config.dir.UPLOAD_DIR))
   app.use('/', express.static(config.dir.PUBLIC_DIR))
