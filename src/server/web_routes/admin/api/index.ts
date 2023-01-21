@@ -37,7 +37,7 @@ export default function createRouter(
   router.use(requireLoginApi)
 
   router.get('/games', async (req, res) => {
-    const items = await db.getMany('games')
+    const items = await db.getMany('games', undefined, [{ created: -1 }])
     res.send(items)
   })
 
@@ -48,7 +48,7 @@ export default function createRouter(
   })
 
   router.get('/images', async (req, res) => {
-    const items = await db.getMany('images')
+    const items = await db.getMany('images', undefined, [{ id: -1 }])
     res.send(items)
   })
 
@@ -59,15 +59,12 @@ export default function createRouter(
   })
 
   router.get('/users', async (req, res) => {
-    const items = await db.getMany('users')
-    res.send(items.map(item => {
-      delete item.client_id
-      return item
-    }))
+    const items = await db.getMany('users', undefined, [{ id: -1 }])
+    res.send(items)
   })
 
   router.get('/groups', async (req, res) => {
-    const items = await db.getMany('user_groups')
+    const items = await db.getMany('user_groups', undefined, [{ id: -1 }])
     res.send(items)
   })
 

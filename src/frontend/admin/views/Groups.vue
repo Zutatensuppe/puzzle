@@ -1,17 +1,21 @@
 <template>
   <div>
     <Nav />
-    GROUPS
-    <table class="data-table">
-      <tr>
-        <th>Id</th>
-        <th>Name</th>
-      </tr>
-      <tr v-for="(item, idx) in groups" :key="idx">
-        <td>{{item.id}}</td>
-        <td>{{item.name}}</td>
-      </tr>
-    </table>
+    <h1>Groups</h1>
+    <v-table>
+      <thead>
+        <tr>
+          <th>Id</th>
+          <th>Name</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr v-for="(item, idx) in groups" :key="idx">
+          <td>{{item.id}}</td>
+          <td>{{item.name}}</td>
+        </tr>
+      </tbody>
+    </v-table>
   </div>
 </template>
 <script setup lang="ts">
