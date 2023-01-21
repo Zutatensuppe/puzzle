@@ -37,6 +37,11 @@ const logout = async() => {
   })
 }
 
+const getAnnouncements = async () => {
+  const res = await xhr.get('/api/announcements', {})
+  return await res.json()
+}
+
 const config = async () => {
   return xhr.get(`/api/conf`, {})
 }
@@ -107,6 +112,7 @@ export default {
   logout,
   config,
   me,
+  getAnnouncements,
   indexData,
   newgameData,
   replayData,

@@ -11,6 +11,7 @@ import CannyFeatureRequestsView from './views/CannyFeatureRequests.vue'
 
 import Icon from './components/Icon.vue'
 import user from './user'
+import announcements from './announcements'
 
 import Admin from './admin/views/Index.vue'
 import AdminGames from './admin/views/Games.vue'
@@ -31,6 +32,7 @@ import * as directives from 'vuetify/directives'
 
   await user.init()
   await config.init()
+  await announcements.init()
 
   window.handleAuthCallback = async () => {
     await user.init()

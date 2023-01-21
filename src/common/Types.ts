@@ -39,6 +39,13 @@ export type EncodedPiece = FixedLengthArray<[
   number,
 ]>
 
+export interface Announcement {
+  id: number
+  created: string // date string
+  title: string
+  message: string
+}
+
 export type EncodedPieceShape = number
 
 export type EncodedGame = FixedLengthArray<[
