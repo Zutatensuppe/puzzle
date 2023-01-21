@@ -1627,6 +1627,11 @@ const getUserInfoByRequest = async (db, req) => {
 const getUserByIdentity = async (db, identity) => {
     return getUser(db, { id: identity.user_id });
 };
+const getGroups = async (db, userId) => {
+    const relations = await db.getMany('user_x_user_group', { user_id: userId });
+    const groupIds = relations.map(r => r.user_group_id);
+    return await db.getMany('user_groups', { id: { '$in': groupIds } });
+};
 var Users = {
     getOrCreateUserByRequest,
     getUserInfoByRequest,
@@ -1640,6 +1645,7 @@ var Users = {
     createAccount,
     getAccount,
     addAuthToken: addAuthToken$1,
+    getGroups,
 };
 
 const log$5 = logger('Images.ts');
@@ -2356,6 +2362,9 @@ class Db {
                         wheres.push(k + ' NOT IN (' + where[k][prop].map(() => `$${$i++}`) + ')');
                         values.push(...where[k][prop]);
                     }
+                    else {
+                        wheres.push('TRUE');
+                    }
                     continue;
                 }
                 prop = '$in';
@@ -2363,6 +2372,9 @@ class Db {
                     if (where[k][prop].length > 0) {
                         wheres.push(k + ' IN (' + where[k][prop].map(() => `$${$i++}`) + ')');
                         values.push(...where[k][prop]);
+                    }
+                    else {
+                        wheres.push('FALSE');
                     }
                     continue;
                 }
@@ -2555,6 +2567,7 @@ function createRouter$1(db, mail, canny) {
     const router = express.Router();
     router.get('/me', async (req, res) => {
         if (req.user) {
+            const groups = await Users.getGroups(db, req.user.id);
             res.send({
                 id: req.user.id,
                 name: req.user.name,
@@ -2562,6 +2575,7 @@ function createRouter$1(db, mail, canny) {
                 created: req.user.created,
                 type: req.user_type,
                 cannyToken: canny.createToken(req.user),
+                groups: groups.map(g => g.name),
             });
             return;
         }

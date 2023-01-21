@@ -47,6 +47,7 @@ export default function createRouter(
   const router = express.Router()
   router.get('/me', async (req: any, res): Promise<void> => {
     if (req.user) {
+      const groups = await Users.getGroups(db, req.user.id)
       res.send({
         id: req.user.id,
         name: req.user.name,
@@ -54,6 +55,7 @@ export default function createRouter(
         created: req.user.created,
         type: req.user_type,
         cannyToken: canny.createToken(req.user),
+        groups: groups.map(g => g.name),
       })
       return
     }

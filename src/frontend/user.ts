@@ -10,6 +10,7 @@ export interface User {
   clientId: string
   type: 'guest' | 'user'
   cannyToken: string | null
+  groups: string[]
 }
 
 let me: null | User = null;
