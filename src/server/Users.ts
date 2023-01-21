@@ -40,6 +40,11 @@ interface AccountRow {
   status: 'verified' | 'verification_pending'
 }
 
+interface UserGroupRow {
+  id: number
+  name: string
+}
+
 const createAccount = async (db: Db, account: any): Promise<AccountRow> => {
   const accountId = await db.insert(TABLE_ACCOUNTS, account, 'id') as number
   return await db.get(TABLE_ACCOUNTS, { id: accountId }) as AccountRow
@@ -135,6 +140,12 @@ const getUserByIdentity = async (db: Db, identity: IdentityRow): Promise<UserRow
   return getUser(db, { id: identity.user_id })
 }
 
+const getGroups = async (db: Db, userId: number): Promise<UserGroupRow[]> => {
+  const relations = await db.getMany('user_x_user_group', { user_id: userId })
+  const groupIds = relations.map(r => r.user_group_id)
+  return await db.getMany('user_groups', { id: { '$in': groupIds }}) as UserGroupRow[]
+}
+
 export default {
   getOrCreateUserByRequest,
   getUserInfoByRequest,
@@ -148,4 +159,5 @@ export default {
   createAccount,
   getAccount,
   addAuthToken,
+  getGroups,
 }

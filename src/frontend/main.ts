@@ -52,16 +52,19 @@ import * as directives from 'vuetify/directives'
       { name: 'feature-requests', path: '/feedback/feature-requests', component: CannyFeatureRequestsView, meta: { title: 'Feature Requests' } },
       { path: '/feedback/feature-requests/:catchAll(.*)', component: CannyFeatureRequestsView, meta: { title: 'Feature Requests' } },
 
-      { name: 'admin', path: '/admin', component: Admin },
-      { name: 'admin_games', path: '/admin/games', component: AdminGames },
-      { name: 'admin_users', path: '/admin/users', component: AdminUsers },
-      { name: 'admin_images', path: '/admin/images', component: AdminImages },
-      { name: 'admin_groups', path: '/admin/groups', component: AdminGroups },
-      { name: 'admin_announcements', path: '/admin/announcements', component: AdminAnnouncements },
+      { name: 'admin', path: '/admin', component: Admin, meta: { admin: true } },
+      { name: 'admin_games', path: '/admin/games', component: AdminGames, meta: { admin: true } },
+      { name: 'admin_users', path: '/admin/users', component: AdminUsers, meta: { admin: true } },
+      { name: 'admin_images', path: '/admin/images', component: AdminImages, meta: { admin: true } },
+      { name: 'admin_groups', path: '/admin/groups', component: AdminGroups, meta: { admin: true } },
+      { name: 'admin_announcements', path: '/admin/announcements', component: AdminAnnouncements, meta: { admin: true } },
     ],
   })
 
   router.beforeEach((to, from) => {
+    if (to.meta && to.meta.admin && !user.getMe()?.groups.includes('admin')) {
+      return { name: 'index' }
+    }
     if (from.name) {
       document.documentElement.classList.remove(`view-${String(from.name)}`)
     }

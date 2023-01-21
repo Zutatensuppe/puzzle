@@ -3,7 +3,7 @@
     <v-app-bar>
       <div class="header-bar-container d-flex">
         <div class="justify-start">
-          <v-app-bar-nav-icon class="mr-1" size="small" variant="text" @click.stop="drawerLeft = !drawerLeft"></v-app-bar-nav-icon>
+          <v-app-bar-nav-icon class="mr-1" size="small" variant="text" @click.stop="drawerMenu = !drawerMenu"></v-app-bar-nav-icon>
 
           <v-btn size="small" class="mr-1" :to="{name: 'index'}" icon="mdi-home" variant="text"></v-btn>
         </div>
@@ -15,8 +15,7 @@
           <v-btn size="small" class="mr-1" href="https://stand-with-ukraine.pp.ua/" target="_blank">
             <icon icon="ukraine-heart" /> <span class="ml-2 mr-2">Stand with Ukraine</span> <icon icon="ukraine-heart" />
           </v-btn>
-          <span class="user-welcome-message" v-if="me && loggedIn">Hello, {{ me.name }}</span>
-          <v-btn size="small" class="ml-1" v-if="loggedIn" @click="doLogout">Logout</v-btn>
+          <v-btn class="user-welcome-message" v-if="me && loggedIn" @click="drawerUser = !drawerUser">Hello, {{ me.name }}</v-btn>
           <v-btn size="small" class="ml-1" v-else @click="emit('show-login')">Login</v-btn>
           <v-app-bar-nav-icon class="mr-1" size="small" variant="text" @click.stop="toggleAnnouncements">
             <v-badge :content="unseenAnnouncementCount" color="red-darken-2" v-if="unseenAnnouncementCount">
@@ -29,7 +28,7 @@
     </v-app-bar>
 
     <v-navigation-drawer
-      v-model="drawerLeft"
+      v-model="drawerMenu"
       temporary
     >
       <v-list>
@@ -42,7 +41,18 @@
     </v-navigation-drawer>
 
     <v-navigation-drawer
-      v-model="drawerRight"
+      v-model="drawerUser"
+      location="right"
+      temporary
+    >
+      <v-list>
+        <v-list-item :to="{ name: 'admin' }" v-if="me?.groups.includes('admin')"><v-icon icon="mdi-security" /> Admin</v-list-item>
+        <v-list-item @click="doLogout"><v-icon icon="mdi-logout" /> Logout</v-list-item>
+      </v-list>
+    </v-navigation-drawer>
+
+    <v-navigation-drawer
+      v-model="drawerAnnouncements"
       class="announcements-drawer text-body-2"
       location="right"
       temporary
@@ -85,18 +95,19 @@ const showNav = computed(() => {
   return !['game', 'replay'].includes(String(route.name))
 })
 
-const drawerLeft = ref<boolean>(false)
-const drawerRight = ref<boolean>(false)
+const drawerMenu = ref<boolean>(false)
+const drawerAnnouncements = ref<boolean>(false)
+const drawerUser = ref<boolean>(false)
 
 let lastSeenAnnouncement = storage.getInt('lastSeenAnnouncement', 0)
 const allAnnouncements = announcements.announcements()
 const lastAnnouncement = allAnnouncements.length ? new Date(allAnnouncements[0].created).getTime() : 0
 let unseenAnnouncementCount = allAnnouncements.filter(a => new Date(a.created).getTime() > lastSeenAnnouncement).length
 const toggleAnnouncements = () => {
-  drawerRight.value = !drawerRight.value
+  drawerAnnouncements.value = !drawerAnnouncements.value
 }
-watch(drawerRight, () => {
-  if (!drawerRight.value) {
+watch(drawerAnnouncements, () => {
+  if (!drawerAnnouncements.value) {
     lastSeenAnnouncement = lastAnnouncement
     unseenAnnouncementCount = 0
     storage.setInt('lastSeenAnnouncement', lastSeenAnnouncement)
@@ -115,6 +126,9 @@ async function doLogout() {
 
 const onInit = () => {
   me.value = user.getMe()
+  if (!loggedIn.value) {
+    drawerUser.value = false
+  }
 }
 
 onMounted(() => {

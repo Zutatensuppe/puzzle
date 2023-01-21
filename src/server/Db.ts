@@ -101,6 +101,8 @@ class Db {
           if (where[k][prop].length > 0) {
             wheres.push(k + ' NOT IN (' + where[k][prop].map(() => `$${$i++}`) + ')')
             values.push(...where[k][prop])
+          } else {
+            wheres.push('TRUE')
           }
           continue
         }
@@ -109,6 +111,8 @@ class Db {
           if (where[k][prop].length > 0) {
             wheres.push(k + ' IN (' + where[k][prop].map(() => `$${$i++}`) + ')')
             values.push(...where[k][prop])
+          } else {
+            wheres.push('FALSE')
           }
           continue
         }
