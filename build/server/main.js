@@ -3063,7 +3063,7 @@ function createRouter(db, discord) {
     };
     router.use(requireLoginApi);
     router.get('/games', async (req, res) => {
-        const items = await db.getMany('games');
+        const items = await db.getMany('games', undefined, [{ created: -1 }]);
         res.send(items);
     });
     router.delete('/games/:id', async (req, res) => {
@@ -3072,7 +3072,7 @@ function createRouter(db, discord) {
         res.send({ ok: true });
     });
     router.get('/images', async (req, res) => {
-        const items = await db.getMany('images');
+        const items = await db.getMany('images', undefined, [{ id: -1 }]);
         res.send(items);
     });
     router.delete('/images/:id', async (req, res) => {
@@ -3081,14 +3081,11 @@ function createRouter(db, discord) {
         res.send({ ok: true });
     });
     router.get('/users', async (req, res) => {
-        const items = await db.getMany('users');
-        res.send(items.map(item => {
-            delete item.client_id;
-            return item;
-        }));
+        const items = await db.getMany('users', undefined, [{ id: -1 }]);
+        res.send(items);
     });
     router.get('/groups', async (req, res) => {
-        const items = await db.getMany('user_groups');
+        const items = await db.getMany('user_groups', undefined, [{ id: -1 }]);
         res.send(items);
     });
     router.get('/announcements', async (req, res) => {
