@@ -650,3 +650,9 @@ kbd {
   filter: invert(0.9);
   color-scheme: none;
 }
+
+.announcements-drawer {
+  .v-list-item {
+    border-bottom: solid 1px #111;
+  }
+}

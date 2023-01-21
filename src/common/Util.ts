@@ -25,7 +25,7 @@ const pad = (x: number, pad: string): string => {
   if (str.length >= pad.length) {
     return str
   }
-  return pad.substr(0, pad.length - str.length) + str
+  return pad.substring(0, pad.length - str.length) + str
 }
 
 type LogArgs = Array<any>
@@ -37,10 +37,8 @@ export const logger = (...pre: string[]): { log: LogFn, error: LogFn, info: LogF
 
   const log = (m: 'log'|'info'|'error') => (...args: LogArgs): void => {
     const d = new Date()
-    const hh = pad(d.getHours(), '00')
-    const mm = pad(d.getMinutes(), '00')
-    const ss = pad(d.getSeconds(), '00')
-    console[m](`${hh}:${mm}:${ss}`, ...pre, ...args)
+    const date = dateformat('hh:mm:ss', d)
+    console[m](`${date}`, ...pre, ...args)
   }
   return {
     log: log('log'),
@@ -205,10 +203,28 @@ function asQueryArgs(data: Record<string, any>): string {
   return `?${q.join('&')}`
 }
 
+export const dateformat = (
+  format: string,
+  date: Date,
+): string => {
+  return format.replace(/(YYYY|MM|DD|hh|mm|ss|Month(?:\.(?:de|en))?)/g, (m0: string, m1: string) => {
+    switch (m1) {
+      case 'YYYY': return pad(date.getFullYear(), '0000')
+      case 'MM': return pad(date.getMonth() + 1, '00')
+      case 'DD': return pad(date.getDate(), '00')
+      case 'hh': return pad(date.getHours(), '00')
+      case 'mm': return pad(date.getMinutes(), '00')
+      case 'ss': return pad(date.getSeconds(), '00')
+      default: return m0
+    }
+  })
+}
+
 export default {
   hash,
   slug,
   pad,
+  dateformat,
   uniqId,
 
   encodeShape,

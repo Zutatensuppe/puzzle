@@ -3,7 +3,7 @@
     <v-app-bar>
       <div class="header-bar-container d-flex">
         <div class="justify-start">
-          <v-app-bar-nav-icon class="mr-1" size="small" variant="text" @click.stop="drawer = !drawer"></v-app-bar-nav-icon>
+          <v-app-bar-nav-icon class="mr-1" size="small" variant="text" @click.stop="drawerLeft = !drawerLeft"></v-app-bar-nav-icon>
 
           <v-btn size="small" class="mr-1" :to="{name: 'index'}" icon="mdi-home" variant="text"></v-btn>
         </div>
@@ -18,13 +18,18 @@
           <span class="user-welcome-message" v-if="me && loggedIn">Hello, {{ me.name }}</span>
           <v-btn size="small" class="ml-1" v-if="loggedIn" @click="doLogout">Logout</v-btn>
           <v-btn size="small" class="ml-1" v-else @click="emit('show-login')">Login</v-btn>
-          <!-- <v-btn size="small" class="ml-1" v-if="loggedIn" :to="{name: 'admin'}">Admin</v-btn> -->
+          <v-app-bar-nav-icon class="mr-1" size="small" variant="text" @click.stop="toggleAnnouncements">
+            <v-badge :content="unseenAnnouncementCount" color="red-darken-2" v-if="unseenAnnouncementCount">
+              <v-icon icon="mdi-bullhorn"></v-icon>
+            </v-badge>
+            <v-icon icon="mdi-bullhorn" v-else></v-icon>
+          </v-app-bar-nav-icon>
         </div>
       </div>
     </v-app-bar>
 
     <v-navigation-drawer
-      v-model="drawer"
+      v-model="drawerLeft"
       temporary
     >
       <v-list>
@@ -35,12 +40,40 @@
         <v-list-item href="https://discord.gg/uFGXRdUXxU" target="_blank"><v-icon icon="mdi-chat-outline" /> Discord</v-list-item>
       </v-list>
     </v-navigation-drawer>
+
+    <v-navigation-drawer
+      v-model="drawerRight"
+      class="announcements-drawer text-body-2"
+      location="right"
+      temporary
+      width="400"
+    >
+      <v-list class="pa-0">
+        <v-list-item v-for="(announcement, idx) in announcements.announcements()" :key="idx" class="pt-3 pb-3 pl-5 pr-5">
+          <div class="d-flex justify-space-between mb-2">
+            <span class="font-weight-bold">
+              <span v-if="new Date(announcement.created).getTime() > lastSeenAnnouncement" class="text-red-darken-2">
+                NEW
+              </span>
+              {{ announcement.title }}
+            </span>
+            <span><v-icon icon="mdi-calendar"></v-icon> {{ dateformat('YYYY-MM-DD hh:mm', new Date(announcement.created)) }}</span>
+          </div>
+          <div v-for="line of announcement.message.split('\n')">
+            {{ line }}
+          </div>
+        </v-list-item>
+      </v-list>
+    </v-navigation-drawer>
   </div>
 </template>
 <script setup lang="ts">
-import { computed, onMounted, onBeforeUnmount, ref } from 'vue'
+import { computed, onMounted, onBeforeUnmount, ref, watch } from 'vue'
 import { useRoute } from 'vue-router';
 import user, { User } from '../user'
+import announcements from '../announcements'
+import { dateformat } from '../../common/Util'
+import storage from '../storage';
 
 const emit = defineEmits<{
   (e: 'show-login'): void
@@ -52,7 +85,23 @@ const showNav = computed(() => {
   return !['game', 'replay'].includes(String(route.name))
 })
 
-const drawer = ref<boolean>(false)
+const drawerLeft = ref<boolean>(false)
+const drawerRight = ref<boolean>(false)
+
+let lastSeenAnnouncement = storage.getInt('lastSeenAnnouncement', 0)
+const allAnnouncements = announcements.announcements()
+const lastAnnouncement = new Date(allAnnouncements[allAnnouncements.length - 1].created).getTime()
+let unseenAnnouncementCount = allAnnouncements.filter(a => new Date(a.created).getTime() > lastSeenAnnouncement).length
+const toggleAnnouncements = () => {
+  drawerRight.value = !drawerRight.value
+}
+watch(drawerRight, () => {
+  if (!drawerRight.value) {
+    lastSeenAnnouncement = lastAnnouncement
+    unseenAnnouncementCount = 0
+    storage.setInt('lastSeenAnnouncement', lastSeenAnnouncement)
+  }
+})
 
 const me = ref<User|null>(null)
 

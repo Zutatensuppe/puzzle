@@ -570,6 +570,11 @@ export default function createRouter(
     })
   })
 
+  router.get('/announcements', async (req, res) => {
+    const items = await db.getMany('announcements')
+    res.send(items)
+  })
+
   router.post('/newgame', express.json(), async (req, res): Promise<void> => {
     const user = await Users.getOrCreateUserByRequest(db, req)
     const gameId = await Game.createNewGame(

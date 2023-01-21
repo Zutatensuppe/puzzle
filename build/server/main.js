@@ -68,16 +68,14 @@ const pad = (x, pad) => {
     if (str.length >= pad.length) {
         return str;
     }
-    return pad.substr(0, pad.length - str.length) + str;
+    return pad.substring(0, pad.length - str.length) + str;
 };
 const NOOP = () => { return; };
 const logger = (...pre) => {
     const log = (m) => (...args) => {
         const d = new Date();
-        const hh = pad(d.getHours(), '00');
-        const mm = pad(d.getMinutes(), '00');
-        const ss = pad(d.getSeconds(), '00');
-        console[m](`${hh}:${mm}:${ss}`, ...pre, ...args);
+        const date = dateformat('hh:mm:ss', d);
+        console[m](`${date}`, ...pre, ...args);
     };
     return {
         log: log('log'),
@@ -227,10 +225,24 @@ function asQueryArgs(data) {
     }
     return `?${q.join('&')}`;
 }
+const dateformat = (format, date) => {
+    return format.replace(/(YYYY|MM|DD|hh|mm|ss|Month(?:\.(?:de|en))?)/g, (m0, m1) => {
+        switch (m1) {
+            case 'YYYY': return pad(date.getFullYear(), '0000');
+            case 'MM': return pad(date.getMonth() + 1, '00');
+            case 'DD': return pad(date.getDate(), '00');
+            case 'hh': return pad(date.getHours(), '00');
+            case 'mm': return pad(date.getMinutes(), '00');
+            case 'ss': return pad(date.getSeconds(), '00');
+            default: return m0;
+        }
+    });
+};
 var Util = {
     hash,
     slug,
     pad,
+    dateformat,
     uniqId,
     encodeShape,
     decodeShape,
@@ -2995,6 +3007,10 @@ function createRouter$1(db, mail, canny) {
             }
             res.send(await Images.imageFromDb(db, imageId));
         });
+    });
+    router.get('/announcements', async (req, res) => {
+        const items = await db.getMany('announcements');
+        res.send(items);
     });
     router.post('/newgame', express.json(), async (req, res) => {
         const user = await Users.getOrCreateUserByRequest(db, req);
