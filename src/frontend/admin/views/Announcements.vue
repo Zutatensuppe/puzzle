@@ -6,22 +6,25 @@
       <v-textarea v-model="message" label="Message"></v-textarea>
       <v-btn @click="publish">Publish</v-btn>
     </div>
-
-    Announcements
-    <table class="data-table">
-      <tr>
-        <th>Id</th>
-        <th>Created</th>
-        <th>Title</th>
-        <th>Message</th>
-      </tr>
-      <tr v-for="(item, idx) in announcements" :key="idx">
-        <td>{{ item.id }}</td>
-        <td>{{ item.created }}</td>
-        <td>{{ item.title }}</td>
-        <td>{{ item.message }}</td>
-      </tr>
-    </table>
+    <h1>Announcements</h1>
+    <v-table>
+      <thead>
+        <tr>
+          <th>Id</th>
+          <th>Created</th>
+          <th>Title</th>
+          <th>Message</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr v-for="(item, idx) in announcements" :key="idx">
+          <td>{{ item.id }}</td>
+          <td>{{ item.created }}</td>
+          <td>{{ item.title }}</td>
+          <td>{{ item.message }}</td>
+        </tr>
+      </tbody>
+    </v-table>
   </div>
 </template>
 <script setup lang="ts">
