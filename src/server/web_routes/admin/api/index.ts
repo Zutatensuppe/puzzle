@@ -72,7 +72,7 @@ export default function createRouter(
   })
 
   router.get('/announcements', async (req, res) => {
-    const items = await db.getMany('announcements')
+    const items = await db.getMany('announcements', undefined, [{ created: -1 }])
     res.send(items)
   })
 
