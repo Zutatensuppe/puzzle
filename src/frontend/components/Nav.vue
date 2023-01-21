@@ -90,7 +90,7 @@ const drawerRight = ref<boolean>(false)
 
 let lastSeenAnnouncement = storage.getInt('lastSeenAnnouncement', 0)
 const allAnnouncements = announcements.announcements()
-const lastAnnouncement = new Date(allAnnouncements[allAnnouncements.length - 1].created).getTime()
+const lastAnnouncement = allAnnouncements.length ? new Date(allAnnouncements[0].created).getTime() : 0
 let unseenAnnouncementCount = allAnnouncements.filter(a => new Date(a.created).getTime() > lastSeenAnnouncement).length
 const toggleAnnouncements = () => {
   drawerRight.value = !drawerRight.value

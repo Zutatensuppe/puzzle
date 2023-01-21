@@ -12,11 +12,13 @@
       <tr>
         <th>Id</th>
         <th>Created</th>
+        <th>Title</th>
         <th>Message</th>
       </tr>
       <tr v-for="(item, idx) in announcements" :key="idx">
         <td>{{ item.id }}</td>
         <td>{{ item.created }}</td>
+        <td>{{ item.title }}</td>
         <td>{{ item.message }}</td>
       </tr>
     </table>

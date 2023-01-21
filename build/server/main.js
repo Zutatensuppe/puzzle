@@ -3009,7 +3009,7 @@ function createRouter$1(db, mail, canny) {
         });
     });
     router.get('/announcements', async (req, res) => {
-        const items = await db.getMany('announcements');
+        const items = await db.getMany('announcements', undefined, [{ created: -1 }]);
         res.send(items);
     });
     router.post('/newgame', express.json(), async (req, res) => {
@@ -3078,7 +3078,7 @@ function createRouter(db, discord) {
         res.send(items);
     });
     router.get('/announcements', async (req, res) => {
-        const items = await db.getMany('announcements');
+        const items = await db.getMany('announcements', undefined, [{ created: -1 }]);
         res.send(items);
     });
     router.post('/announcements', express.json(), async (req, res) => {
