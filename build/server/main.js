@@ -1825,6 +1825,50 @@ inner join images i on i.id = ixc.image_id ${where.sql};
     }
     return images;
 };
+const imagesByIdsFromDb = async (db, ids) => {
+    const params = [];
+    const dbWhere = db._buildWhere({ 'images.id': { '$in': ids } });
+    params.push(...dbWhere.values);
+    const tmpImages = await db._getMany(`
+    WITH counts AS (
+      SELECT
+        COUNT(*) AS count,
+        image_id
+      FROM
+        games
+      WHERE
+        private = 0
+      GROUP BY image_id
+    )
+    SELECT
+      images.*,
+      COALESCE(counts.count, 0) AS games_count,
+      COALESCE(users.name, '') as uploader_user_name
+    FROM
+      images
+      LEFT JOIN counts ON counts.image_id = images.id
+      LEFT JOIN users ON users.id = images.uploader_user_id
+    ${dbWhere.sql}
+  `, params);
+    const images = [];
+    for (const i of tmpImages) {
+        images.push({
+            id: i.id,
+            uploaderUserId: i.uploader_user_id,
+            uploaderName: i.uploader_user_name || null,
+            filename: i.filename,
+            url: `${config.dir.UPLOAD_URL}/${encodeURIComponent(i.filename)}`,
+            title: i.title,
+            tags: await getTags(db, i.id),
+            created: i.created.getTime(),
+            width: i.width,
+            height: i.height,
+            private: !!i.private,
+            gameCount: parseInt(i.games_count, 10),
+        });
+    }
+    return images;
+};
 async function getDimensions(imagePath) {
     const dimensions = await probe(fs.createReadStream(imagePath));
     const orientation = await getExifOrientation(imagePath);
@@ -1857,6 +1901,7 @@ const setTags = async (db, imageId, tags) => {
 var Images = {
     imageFromDb,
     imagesFromDb,
+    imagesByIdsFromDb,
     getAllTags,
     resizeImage,
     getDimensions,
@@ -2892,6 +2937,25 @@ function createRouter$1(db, mail, canny) {
         res.send({
             images: await Images.imagesFromDb(db, tagSlugs, q.sort, false, 0, IMAGES_PER_PAGE_LIMIT),
             tags: await Images.getAllTags(db),
+        });
+    });
+    router.get('/artist/:name', async (req, res) => {
+        const name = req.params.name;
+        const artist = await db.get('artist', { name });
+        if (!artist) {
+            res.status(404).send({ reason: 'not found' });
+            return;
+        }
+        const rel1 = await db.getMany('artist_x_collection', { artist_id: artist.id });
+        const collections = await db.getMany('collection', { id: { '$in': rel1.map((r) => r.collection_id) } });
+        const rel2 = await db.getMany('collection_x_image', { collection_id: { '$in': collections.map((r) => r.id) } });
+        const images = await Images.imagesByIdsFromDb(db, rel2.map((r) => r.image_id));
+        collections.forEach(c => {
+            c.images = images.filter(image => rel2.find(r => r.collection_id === c.id && r.image_id === image.id) ? true : false);
+        });
+        res.send({
+            artist,
+            collections,
         });
     });
     router.get('/images', async (req, res) => {

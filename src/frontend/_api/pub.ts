@@ -88,6 +88,10 @@ const newGame = async (data: { gameSettings: GameSettings }) => {
   })
 }
 
+const getArtistData = async (data: { name: string }) => {
+  return xhr.get(`/api/artist/${data.name}`, {})
+}
+
 const upload = async (data: { file: File, title: string, tags: string[], isPrivate: boolean, onProgress: (progress: number) => void }) => {
   const formData = new FormData();
   formData.append('file', data.file, data.file.name);
@@ -113,6 +117,7 @@ export default {
   config,
   me,
   getAnnouncements,
+  getArtistData,
   indexData,
   newgameData,
   replayData,

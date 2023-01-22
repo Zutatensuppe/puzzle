@@ -226,6 +226,55 @@ inner join images i on i.id = ixc.image_id ${where.sql};
   return images
 }
 
+const imagesByIdsFromDb = async (
+  db: Db,
+  ids: number[],
+): Promise<ImageInfo[]> => {
+  const params: any[] = []
+  const dbWhere = db._buildWhere({'images.id': { '$in': ids }})
+  params.push(...dbWhere.values)
+  const tmpImages: ImageRowWithCount[] = await db._getMany(`
+    WITH counts AS (
+      SELECT
+        COUNT(*) AS count,
+        image_id
+      FROM
+        games
+      WHERE
+        private = 0
+      GROUP BY image_id
+    )
+    SELECT
+      images.*,
+      COALESCE(counts.count, 0) AS games_count,
+      COALESCE(users.name, '') as uploader_user_name
+    FROM
+      images
+      LEFT JOIN counts ON counts.image_id = images.id
+      LEFT JOIN users ON users.id = images.uploader_user_id
+    ${dbWhere.sql}
+  `, params)
+
+  const images = []
+  for (const i of tmpImages) {
+    images.push({
+      id: i.id as number,
+      uploaderUserId: i.uploader_user_id,
+      uploaderName: i.uploader_user_name || null,
+      filename: i.filename,
+      url: `${config.dir.UPLOAD_URL}/${encodeURIComponent(i.filename)}`,
+      title: i.title,
+      tags: await getTags(db, i.id),
+      created: i.created.getTime(),
+      width: i.width,
+      height: i.height,
+      private: !!i.private,
+      gameCount: parseInt(i.games_count, 10),
+    })
+  }
+  return images
+}
+
 async function getDimensions(imagePath: string): Promise<Dim> {
   const dimensions = await probe(fs.createReadStream(imagePath))
   const orientation = await getExifOrientation(imagePath)
@@ -260,6 +309,7 @@ const setTags = async (db: Db, imageId: number, tags: string[]): Promise<void> =
 export default {
   imageFromDb,
   imagesFromDb,
+  imagesByIdsFromDb,
   getAllTags,
   resizeImage,
   getDimensions,

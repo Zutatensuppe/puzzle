@@ -425,6 +425,26 @@ export default function createRouter(
     })
   })
 
+  router.get('/artist/:name', async (req, res): Promise<void> => {
+    const name = req.params.name
+    const artist = await db.get('artist', { name })
+    if (!artist) {
+      res.status(404).send({ reason: 'not found' })
+      return
+    }
+    const rel1 = await db.getMany('artist_x_collection', { artist_id: artist.id })
+    const collections = await db.getMany('collection', { id: { '$in': rel1.map((r: any) => r.collection_id )}})
+    const rel2 = await db.getMany('collection_x_image', { collection_id: { '$in': collections.map((r: any) => r.id )}})
+    const images = await Images.imagesByIdsFromDb(db, rel2.map((r: any) => r.image_id ))
+    collections.forEach(c => {
+      c.images = images.filter(image => rel2.find(r => r.collection_id === c.id && r.image_id === image.id) ? true : false)
+    })
+    res.send({
+      artist,
+      collections,
+    })
+  })
+
   router.get('/images', async (req, res): Promise<void> => {
     const q: Record<string, any> = req.query
     const tagSlugs: string[] = q.tags ? q.tags.split(',') : []

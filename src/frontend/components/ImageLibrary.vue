@@ -1,7 +1,7 @@
 <template>
   <MasonryWall :items="images" :column-width="320" :gap="10">
     <template #default="{ item, index }">
-      <ImageTeaser :image="item" @click="emit('imageClicked', item)" @editClick="emit('imageEditClicked', item)" :key="index" />
+      <ImageTeaser :image="item" @click="emit('imageClicked', item)" @editClick="emit('imageEditClicked', item)" :key="index" :edit="edit" />
     </template>
   </MasonryWall>
 </template>
@@ -10,9 +10,12 @@ import { ImageInfo } from '../../common/Types'
 import ImageTeaser from './ImageTeaser.vue';
 import MasonryWall from './MasonryWall.vue';
 
-defineProps<{
+withDefaults(defineProps<{
   images: ImageInfo[]
-}>()
+  edit?: boolean
+}>(), {
+  edit: true,
+})
 
 const emit = defineEmits<{
   (e: 'imageClicked', val: ImageInfo): void

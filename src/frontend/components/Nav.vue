@@ -10,6 +10,7 @@
         <div class="justify-center">
           <img src="./../assets/gfx/icon.png" class="mr-4" :class="{ index: route.name === 'index' }" />
           <h4 :class="{ index: route.name === 'index' }">{{ route.meta.title }}</h4>
+          <slot name="title"></slot>
         </div>
         <div class="justify-end">
           <v-btn size="small" class="mr-1" href="https://stand-with-ukraine.pp.ua/" target="_blank">
