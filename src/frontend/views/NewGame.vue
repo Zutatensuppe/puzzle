@@ -22,6 +22,19 @@ in jigsawpuzzles.io
         </div>
       </v-col>
     </v-row>
+    <v-container :fluid="true" :class="{blurred: dialog }" class="mb-2 d-flex">
+      <h3 class="mr-5">Featured Artists:</h3>
+      <v-btn variant="text" :to="{ name: 'featured-artist', params: { artist: 'LisadiKaprio' }}">
+        <img src="../assets/featured-artist/lisa.png" width="32" height="32"
+        style="border-radius:32px;" class="mr-3" />
+        LisadiKaprio
+      </v-btn>
+      <v-btn variant="text" :to="{ name: 'featured-artist', params: { artist: 'PEAKY_kun' }}">
+        <img src="../assets/featured-artist/peaky.png" width="32" height="32"
+        style="border-radius:32px;" class="mr-3" />
+        PEAKY_kun
+      </v-btn>
+    </v-container>
     <v-container :fluid="true" :class="{blurred: dialog }" class="filters mb-2">
       <div>
         <v-select

@@ -3,7 +3,7 @@ CREATE TABLE artist (
   created TIMESTAMP NOT NULL,
   name TEXT NOT NULL,
   introduction TEXT NOT NULL,
-  links JSON NOT NOT NULL
+  links JSON NOT NULL
 );
 
 CREATE TABLE collection (
