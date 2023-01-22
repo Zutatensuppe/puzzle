@@ -37,9 +37,12 @@ import { computed, onMounted, onBeforeUnmount, ref } from 'vue'
 import { ImageInfo } from '../../common/Types';
 import user, { User } from '../user'
 
-const props = defineProps<{
+const props = withDefaults(defineProps<{
   image: ImageInfo
-}>()
+  edit?: boolean
+}>(), {
+  edit: true,
+})
 
 const emit = defineEmits<{
   (event: 'click'): void
@@ -66,6 +69,9 @@ const date = computed((): string => {
 })
 
 const canEdit = computed((): boolean => {
+  if (!props.edit) {
+    return false
+  }
   if (!me.value || !me.value.id) {
     return false
   }

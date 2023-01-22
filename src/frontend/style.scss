@@ -656,3 +656,13 @@ kbd {
     border-bottom: solid 1px #111;
   }
 }
+
+.featured-artist-content {
+  margin: auto;
+  width: 60%;
+  max-width: 1024px;
+
+  .featured-artist-links {
+    min-width: 200px;
+  }
+}

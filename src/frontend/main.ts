@@ -4,6 +4,7 @@ import * as Vue from 'vue'
 import App from './App.vue'
 import Index from './views/Index.vue'
 import NewGame from './views/NewGame.vue'
+import FeaturedArtistView from './views/FeaturedArtist.vue'
 import Game from './views/Game.vue'
 import Replay from './views/Replay.vue'
 import CannyBugReportsView from './views/CannyBugReports.vue'
@@ -43,15 +44,20 @@ import * as directives from 'vuetify/directives'
     routes: [
       { name: 'index', path: '/', component: Index, meta: { title: 'Jigsaw Hyottoko Club' } },
       { name: 'new-game', path: '/new-game', component: NewGame, meta: { title: 'New Game' } },
+      { name: 'featured-artist', path: '/featured-artist/:artist', component: FeaturedArtistView },
+
+      // Ingame
       { name: 'game', path: '/g/:id', component: Game },
       { name: 'replay', path: '/replay/:id', component: Replay },
 
+      // Canny.io feedback
       { path: '/feedback', redirect: { name: 'bug-reports'} },
       { name: 'bug-reports', path: '/feedback/bug-reports', component: CannyBugReportsView, meta: { title: 'Bug Reports' } },
       { path: '/feedback/bug-reports/:catchAll(.*)', component: CannyBugReportsView, meta: { title: 'Bug Reports' } },
       { name: 'feature-requests', path: '/feedback/feature-requests', component: CannyFeatureRequestsView, meta: { title: 'Feature Requests' } },
       { path: '/feedback/feature-requests/:catchAll(.*)', component: CannyFeatureRequestsView, meta: { title: 'Feature Requests' } },
 
+      // Admin
       { name: 'admin', path: '/admin', component: Admin, meta: { admin: true } },
       { name: 'admin_games', path: '/admin/games', component: AdminGames, meta: { admin: true } },
       { name: 'admin_users', path: '/admin/users', component: AdminUsers, meta: { admin: true } },

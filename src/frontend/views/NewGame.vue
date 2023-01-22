@@ -123,6 +123,7 @@ const tags = ref<Tag[]>([])
 const image = ref<ImageInfo>({
   id: 0,
   uploaderUserId: null,
+  uploaderName: '',
   filename: '',
   url: '',
   title: '',
