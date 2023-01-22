@@ -5,7 +5,7 @@
     </template>
   </Nav>
 
-  <v-container v-if="artist" :fluid="true">
+  <v-container v-if="artist" :fluid="true" class="featured-artist-view p-0">
     <div class="featured-artist-content">
       <v-card class="pa-5 mb-5 d-flex">
         <div class="justify-start flex-grow-1 mr-5 pr-5">
