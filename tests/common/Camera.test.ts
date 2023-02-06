@@ -1,6 +1,7 @@
 import { Camera } from '../../src/frontend/Camera'
+import { expect, it } from 'vitest'
 
-test('test input stuff', () => {
+it('test input stuff', () => {
   const viewport = new Camera()
   viewport.reset()
 
@@ -10,7 +11,7 @@ test('test input stuff', () => {
 
   let evts: any[] = [];
 
-  let set_events = (newevts: any[]) => {
+  const setEvents = (newevts: any[]) => {
     evts = newevts.map(evt => {
       // const pos2 = {x: evt.clientX, y: evt.clientY}
       // return { type: evt.type, pos: pos2}
@@ -19,8 +20,8 @@ test('test input stuff', () => {
     })
   }
 
-  let update = (evts: any[]) => {
-    for (let evt of evts) {
+  const update = (evts: any[]) => {
+    for (const evt of evts) {
       if (evt.type === 'mousedown') {
         _last_mouse_down = evt.pos
       } else if (evt.type === 'mousemove') {
@@ -40,7 +41,7 @@ test('test input stuff', () => {
     }
   }
 
-  set_events([
+  setEvents([
     { type: 'mousedown', clientX: 100, clientY: 100 }, // put mouse to 100/100
   ])
   update(evts)
@@ -49,7 +50,7 @@ test('test input stuff', () => {
   actual = viewport.snapshot()
   expect(actual).toStrictEqual(expected)
 
-  set_events([
+  setEvents([
     { type: 'mousemove', clientX: 110, clientY: 110 }, // move mouse to 110/110
   ])
   expected = [{type: 'mousemove', pos: {x: 110, y: 110}}]
@@ -70,7 +71,7 @@ test('test input stuff', () => {
 
   // viewport: 10/10
   // mouse: 120/120 = 110/110 ....
-  set_events([
+  setEvents([
     { type: 'mousemove', clientX: 120, clientY: 120 }, // move mouse to 120/120
     { type: 'mousemove', clientX: 130, clientY: 130 }, // move mouse to 120/120
   ])
@@ -92,7 +93,7 @@ test('test input stuff', () => {
   actual = viewport.snapshot()
   expect(actual).toStrictEqual(expected)
 
-  set_events([
+  setEvents([
     { type: 'mousemove', clientX: 110, clientY: 110 },
     { type: 'mousemove', clientX: 100, clientY: 100 },
   ])
@@ -109,7 +110,7 @@ test('test input stuff', () => {
   actual = viewport.snapshot()
   expect(actual).toStrictEqual(expected)
 
-  set_events([
+  setEvents([
     { type: 'mousemove', clientX: 160, clientY: 160 },
     { type: 'mousemove', clientX: 150, clientY: 150 },
   ])

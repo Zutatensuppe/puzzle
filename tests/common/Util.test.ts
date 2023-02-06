@@ -1,17 +1,18 @@
 import { EncodedGame, EncodedPiece, EncodedPlayer, Game, Piece, Player, Puzzle, PuzzleInfo } from '../../src/common/Types'
 import Util from '../../src/common/Util'
+import { describe, expect, it } from 'vitest'
 
 describe('Util', () => {
-  test('slug', () => {
+  it('slug', () => {
     expect(Util.slug('^%5k0sj55%%zxc0j')).toBe('5k0sj55-zxc0j')
   })
 
-  test('pad', () => {
+  it('pad', () => {
     expect(Util.pad(5, '0000')).toBe('0005')
     expect(Util.pad(5555, '00')).toBe('5555')
   })
 
-  test.each([
+  ;[
     {shape: {top: -1, right: -1, bottom: -1, left: -1 }, encoded: 0b00000000 },
     {shape: {top:  1, right: -1, bottom: -1, left: -1 }, encoded: 0b00000010 },
     {shape: {top:  0, right: -1, bottom: -1, left: -1 }, encoded: 0b00000001 },
@@ -22,12 +23,12 @@ describe('Util', () => {
     {shape: {top: -1, right:  1, bottom: -1, left: -1 }, encoded: 0b00001000 },
     {shape: {top: -1, right:  0, bottom: -1, left: -1 }, encoded: 0b00000100 },
     {shape: {top:  1, right:  1, bottom:  1, left:  1 }, encoded: 0b10101010 },
-  ])('de/encodeShape $shape', ({shape, encoded}) => {
+  ].forEach(({shape, encoded}) => it('de/encodeShape $shape', () => {
     expect(Util.encodeShape(shape)).toBe(encoded)
     expect(Util.decodeShape(encoded)).toStrictEqual(shape)
-  })
+  }))
 
-  test.each([
+  ;[
     {
       piece: {idx: 1, pos: {x: 2, y: 3}, z: 4, owner: 5, group: 6} as Piece,
       encoded: [1, 2, 3, 4, 5, 6] as EncodedPiece,
@@ -36,20 +37,20 @@ describe('Util', () => {
       piece: {idx: 1, pos: {x: 0, y: 9}, z: 4, owner: -1, group: 6} as Piece,
       encoded: [1, 0, 9, 4, -1, 6] as EncodedPiece,
     },
-  ])('de/encodePiece $piece', ({piece, encoded}) => {
+  ].forEach(({piece, encoded}) => it('de/encodePiece $piece', () => {
     expect(Util.encodePiece(piece)).toStrictEqual(encoded)
     expect(Util.decodePiece(encoded)).toStrictEqual(piece)
-  })
+  }))
 
-  test.each([
+  ;[
     {
       player: {id: 'bla', x: 1, y: 2, d: 0, name: 'name', color: 'color', bgcolor: 'bgcolor', points: 5, ts: 6} as Player,
       encoded: ['bla', 1, 2, 0, 'name', 'color', 'bgcolor', 5, 6] as EncodedPlayer
     },
-  ])('de/encodePlayer $player', ({player, encoded}) => {
+  ].forEach(({player, encoded}) => it('de/encodePlayer $player', () => {
     expect(Util.encodePlayer(player)).toStrictEqual(encoded)
     expect(Util.decodePlayer(encoded)).toStrictEqual(player)
-  })
+  }))
 
   const rng = {
     rand_high: 1,
@@ -84,12 +85,13 @@ describe('Util', () => {
     },
     info: puzzleInfo,
   }
-  test.each([
+
+  ;[
     {
       game: {id: 'id', rng: { type: 'asd', obj: rng}, puzzle: puzzle, players: [], scoreMode: 1, shapeMode: 1, snapMode: 1, creatorUserId: 1, hasReplay: true, gameVersion: 1, private: true} as Game,
       encoded: ['id', 'asd', {rand_high: 1, rand_low: 1}, puzzle, [], 1, 1, 1, 1, true, 1, true] as EncodedGame,
     },
-  ])('de/encodeGame $game', ({game, encoded}) => {
+  ].forEach(({game, encoded}) => it('de/encodeGame $game', () => {
     expect(Util.encodeGame(game)).toStrictEqual(encoded)
 
     const decoded = Util.decodeGame(encoded)
@@ -99,25 +101,25 @@ describe('Util', () => {
     expect(decoded.rng.obj.rand_low).toBe(encoded[2].rand_low)
     decoded.rng.obj = rng
     expect(decoded).toStrictEqual(game)
-  })
+  }))
 
-  test('coordByPieceIdxDeprecated', () => {
+  it('coordByPieceIdxDeprecated', () => {
     expect(Util.coordByPieceIdxDeprecated(puzzleInfo, 5)).toStrictEqual({"x": 1, "y": 2})
     expect(Util.coordByPieceIdxDeprecated(puzzleInfo, 999)).toStrictEqual({"x": 1, "y": 499})
   })
 
-  test.each([
+  ;[
     { str: 'some str', expected: 1503307013 },
     { str: '', expected: 0 },
-  ])('hash $str', ({ str, expected }) => {
+  ].forEach(({ str, expected }) => it('hash $str', () => {
     expect(Util.hash(str)).toBe(expected)
-  })
+  }))
 
-  test.each([
+  ;[
     { data: { hell: 'yo' }, expected: '?hell=yo'},
     { data: { a: 56, hell: 'y o' }, expected: '?a=56&hell=y%20o'},
     { data: { 'b  la': '?^%123' }, expected: '?b%20%20la=%3F%5E%25123'},
-  ])('asQueryArgs $data', ({data, expected}) => {
+  ].forEach(({data, expected}) => it('asQueryArgs $data', () => {
     expect(Util.asQueryArgs(data)).toBe(expected)
-  })
+  }))
 })
