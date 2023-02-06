@@ -19,7 +19,7 @@
     "dev-frontend": "vite",
     "dev-backend": "nodemon -x \"node --experimental-specifier-resolution=node --loader ts-node/esm\" -w src/server -w src/common src/server/main.ts",
     "lint": "eslint src && stylelint \"src/**/*.scss\"",
-    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js",
+    "test": "vitest --run",
     "build:server": "rollup -c rollup.server.config.js",
     "build:frontend": "vite build --config vite.config.build.js",
     "build": "npm run build:server && npm run build:frontend"
