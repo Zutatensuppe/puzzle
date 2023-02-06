@@ -6,13 +6,13 @@ import { fileURLToPath } from 'url';
 import path, { dirname } from 'path';
 import probe from 'probe-image-size';
 import exif from 'exif';
-import sharp from 'sharp';
 import crypto from 'crypto';
 import v8 from 'v8';
 import { Mutex } from 'async-mutex';
 import * as pg from 'pg';
 import multer from 'multer';
 import request from 'request';
+import sharp from 'sharp';
 import cookieParser from 'cookie-parser';
 import SibApiV3Sdk from 'sib-api-v3-sdk';
 import jwt from 'jsonwebtoken';
@@ -1648,46 +1648,6 @@ var Users = {
     getGroups,
 };
 
-const log$5 = logger('Images.ts');
-const resizeImage = async (filename) => {
-    try {
-        const imagePath = `${config.dir.UPLOAD_DIR}/${filename}`;
-        const resizeDir = `${config.dir.UPLOAD_DIR}/r/`;
-        if (!fs.existsSync(resizeDir)) {
-            fs.mkdirSync(resizeDir, { recursive: true });
-        }
-        const imageOutPath = `${resizeDir}/${filename}`;
-        const orientation = await getExifOrientation(imagePath);
-        let sharpImg = sharp(imagePath, { failOnError: false });
-        // when image is rotated to the left or right, switch width/height
-        // https://jdhao.github.io/2019/07/31/image_rotation_exif_info/
-        if (orientation === 6) {
-            sharpImg = sharpImg.rotate(90);
-        }
-        else if (orientation === 3) {
-            sharpImg = sharpImg.rotate(180);
-        }
-        else if (orientation === 8) {
-            sharpImg = sharpImg.rotate(270);
-        }
-        const sizes = [
-            [150, 100, 'contain'],
-            [375, 210, 'contain'],
-            [375, null, 'cover'],
-            [620, 496, 'contain'],
-        ];
-        for (const [w, h, fit] of sizes) {
-            const filename = `${imageOutPath}-${w}x${h || 0}.webp`;
-            if (!fs.existsSync(filename)) {
-                log$5.info(w, h, filename);
-                await sharpImg.resize(w, h, { fit }).toFile(filename);
-            }
-        }
-    }
-    catch (e) {
-        log$5.error('error when resizing image', filename, e);
-    }
-};
 async function getExifOrientation(imagePath) {
     return new Promise((resolve) => {
         new exif.ExifImage({ image: imagePath }, (error, exifData) => {
@@ -1903,8 +1863,8 @@ var Images = {
     imagesFromDb,
     imagesByIdsFromDb,
     getAllTags,
-    resizeImage,
     getDimensions,
+    getExifOrientation,
     setTags,
 };
 
@@ -2103,7 +2063,7 @@ const determinePuzzleInfo = (dim, targetPieceCount) => {
     };
 };
 
-const log$4 = logger('GameStorage.js');
+const log$5 = logger('GameStorage.js');
 const dirtyGames = {};
 function setDirty(gameId) {
     dirtyGames[gameId] = true;
@@ -2139,15 +2099,15 @@ async function getGameRowById(db, gameId) {
     return gameRow || null;
 }
 async function loadGame(db, gameId) {
-    log$4.info(`[INFO] loading game: ${gameId}`);
+    log$5.info(`[INFO] loading game: ${gameId}`);
     const gameRow = await getGameRowById(db, gameId);
     if (!gameRow) {
-        log$4.info(`[INFO] game not found: ${gameId}`);
+        log$5.info(`[INFO] game not found: ${gameId}`);
         return null;
     }
     const gameObject = gameRowToGameObject(gameRow);
     if (!gameObject) {
-        log$4.error(`[ERR] unable to turn game row into game object: ${gameRow.id}`);
+        log$5.error(`[ERR] unable to turn game row into game object: ${gameRow.id}`);
         return null;
     }
     return gameObject;
@@ -2157,7 +2117,7 @@ const gameRowsToGames = (gameRows) => {
     for (const gameRow of gameRows) {
         const gameObject = gameRowToGameObject(gameRow);
         if (!gameObject) {
-            log$4.error(`[ERR] unable to turn game row into game object: ${gameRow.id}`);
+            log$5.error(`[ERR] unable to turn game row into game object: ${gameRow.id}`);
             continue;
         }
         games.push(gameObject);
@@ -2198,7 +2158,7 @@ async function persistGame(db, game) {
     }, {
         id: game.id,
     });
-    log$4.info(`[INFO] persisted game ${game.id}`);
+    log$5.info(`[INFO] persisted game ${game.id}`);
 }
 function storeDataToGame(storeData, creatorUserId, isPrivate) {
     return {
@@ -2305,7 +2265,7 @@ var Game = {
     handleInput,
 };
 
-const log$3 = logger('GameSocket.js');
+const log$4 = logger('GameSocket.js');
 // Map<gameId, Socket[]>
 const SOCKETS = {};
 function socketExists(gameId, socket) {
@@ -2319,8 +2279,8 @@ function removeSocket(gameId, socket) {
         return;
     }
     SOCKETS[gameId] = SOCKETS[gameId].filter((s) => s !== socket);
-    log$3.log('removed socket: ', gameId, socket.protocol);
-    log$3.log('socket count: ', Object.keys(SOCKETS[gameId]).length);
+    log$4.log('removed socket: ', gameId, socket.protocol);
+    log$4.log('socket count: ', Object.keys(SOCKETS[gameId]).length);
 }
 function addSocket(gameId, socket) {
     if (!(gameId in SOCKETS)) {
@@ -2328,8 +2288,8 @@ function addSocket(gameId, socket) {
     }
     if (!SOCKETS[gameId].includes(socket)) {
         SOCKETS[gameId].push(socket);
-        log$3.log('added socket: ', gameId, socket.protocol);
-        log$3.log('socket count: ', Object.keys(SOCKETS[gameId]).length);
+        log$4.log('added socket: ', gameId, socket.protocol);
+        log$4.log('socket count: ', Object.keys(SOCKETS[gameId]).length);
     }
 }
 function getSockets(gameId) {
@@ -2347,7 +2307,7 @@ var GameSockets = {
 
 // @ts-ignore
 const { Client } = pg.default;
-const log$2 = logger('Db.ts');
+const log$3 = logger('Db.ts');
 const mutex = new Mutex();
 class Db {
     constructor(connectStr, patchesDir) {
@@ -2367,7 +2327,7 @@ class Db {
         for (const f of files) {
             if (patches.includes(f)) {
                 if (verbose) {
-                    log$2.info(`➡ skipping already applied db patch: ${f}`);
+                    log$3.info(`➡ skipping already applied db patch: ${f}`);
                 }
                 continue;
             }
@@ -2386,10 +2346,10 @@ class Db {
                     throw e;
                 }
                 await this.insert('public.db_patches', { id: f });
-                log$2.info(`✓ applied db patch: ${f}`);
+                log$3.info(`✓ applied db patch: ${f}`);
             }
             catch (e) {
-                log$2.error(`✖ unable to apply patch: ${f} ${e}`);
+                log$3.error(`✖ unable to apply patch: ${f} ${e}`);
                 return;
             }
         }
@@ -2504,7 +2464,7 @@ class Db {
             return (await this.dbh.query(query, params)).rows[0] || null;
         }
         catch (e) {
-            log$2.info('_get', query, params);
+            log$3.info('_get', query, params);
             console.error(e);
             throw e;
         }
@@ -2514,7 +2474,7 @@ class Db {
             return await this.dbh.query(query, params);
         }
         catch (e) {
-            log$2.info('run', query, params);
+            log$3.info('run', query, params);
             console.error(e);
             throw e;
         }
@@ -2524,7 +2484,7 @@ class Db {
             return (await this.dbh.query(query, params)).rows || [];
         }
         catch (e) {
-            log$2.info('_getMany', query, params);
+            log$3.info('_getMany', query, params);
             console.error(e);
             throw e;
         }
@@ -2595,6 +2555,50 @@ class Db {
         await this.run(sql, [...values, ...where.values]);
     }
 }
+
+const log$2 = logger('ImageResize.ts');
+const resizeImage = async (filename) => {
+    try {
+        const imagePath = `${config.dir.UPLOAD_DIR}/${filename}`;
+        const resizeDir = `${config.dir.UPLOAD_DIR}/r/`;
+        if (!fs.existsSync(resizeDir)) {
+            fs.mkdirSync(resizeDir, { recursive: true });
+        }
+        const imageOutPath = `${resizeDir}/${filename}`;
+        const orientation = await getExifOrientation(imagePath);
+        let sharpImg = sharp(imagePath, { failOnError: false });
+        // when image is rotated to the left or right, switch width/height
+        // https://jdhao.github.io/2019/07/31/image_rotation_exif_info/
+        if (orientation === 6) {
+            sharpImg = sharpImg.rotate(90);
+        }
+        else if (orientation === 3) {
+            sharpImg = sharpImg.rotate(180);
+        }
+        else if (orientation === 8) {
+            sharpImg = sharpImg.rotate(270);
+        }
+        const sizes = [
+            [150, 100, 'contain'],
+            [375, 210, 'contain'],
+            [375, null, 'cover'],
+            [620, 496, 'contain'],
+        ];
+        for (const [w, h, fit] of sizes) {
+            const filename = `${imageOutPath}-${w}x${h || 0}.webp`;
+            if (!fs.existsSync(filename)) {
+                log$2.info(w, h, filename);
+                await sharpImg.resize(w, h, { fit }).toFile(filename);
+            }
+        }
+    }
+    catch (e) {
+        log$2.error('error when resizing image', filename, e);
+    }
+};
+var ImageResize = {
+    resizeImage,
+};
 
 const log$1 = logger('web_routes/api/index.ts');
 const GAMES_PER_PAGE_LIMIT = 10;
@@ -3060,7 +3064,7 @@ function createRouter$1(db, mail, canny) {
             }
             log$1.info('req.file.filename', req.file.filename);
             try {
-                await Images.resizeImage(req.file.filename);
+                await ImageResize.resizeImage(req.file.filename);
             }
             catch (err) {
                 log$1.log('/api/upload/', 'resize error', err);

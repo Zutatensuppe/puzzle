@@ -15,6 +15,7 @@ import Util, { logger, uniqId } from '../../../common/Util'
 import { COOKIE_TOKEN, generateSalt, generateToken, passwordHash } from '../../Auth'
 import Mail from '../../Mail'
 import { Canny } from '../../Canny'
+import ImageResize from '../../ImageResize'
 
 const log = logger('web_routes/api/index.ts')
 
@@ -558,7 +559,7 @@ export default function createRouter(
 
       log.info('req.file.filename', req.file.filename)
       try {
-        await Images.resizeImage(req.file.filename)
+        await ImageResize.resizeImage(req.file.filename)
       } catch (err) {
         log.log('/api/upload/', 'resize error', err)
         res.status(400).send("Something went wrong!")
