@@ -37,7 +37,7 @@
     "pg": "^8.7.3",
     "probe-image-size": "^7.2.3",
     "request": "^2.88.2",
-    "sharp": "^0.30.2",
+    "sharp": "^0.30.7",
     "sib-api-v3-sdk": "^8.5.0",
     "vue": "^3.2.31",
     "vue-router": "^4.0.13",

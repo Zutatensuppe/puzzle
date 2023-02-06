@@ -1,3 +1,4 @@
+process.env.APP_CONFIG='config.example.json'
+
 export default {
-  "setupFiles": ["<rootDir>/.vitest.env.ts"],
 }
