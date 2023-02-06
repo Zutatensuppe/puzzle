@@ -2075,10 +2075,12 @@ const determinePiecesXY = (dim, targetPiecesCount) => {
         size++;
         pieces = Math.floor(w_ / size) * Math.floor(h_ / size);
     } while (pieces >= targetPiecesCount);
-    size--;
+    if (pieces !== targetPiecesCount) {
+        size--;
+    }
     return {
-        countHorizontal: Math.round(w_ / size),
-        countVertical: Math.round(h_ / size),
+        countHorizontal: Math.floor(w_ / size),
+        countVertical: Math.floor(h_ / size),
     };
 };
 const determinePuzzleInfo = (dim, targetPieceCount) => {
