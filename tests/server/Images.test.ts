@@ -1,6 +1,7 @@
 import images from '../../src/server/Images'
 import { fileURLToPath } from 'url'
 import { dirname } from 'path'
+import { expect, it } from 'vitest'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
@@ -10,7 +11,7 @@ const __dirname = dirname(__filename)
 // @ts-ignore
 global.setImmediate = global.setImmediate || ((fn, ...args) => global.setTimeout(fn, 0, ...args));
 
-test.each([
+[
   {
     // image with CMYK instead of RGB
     // src: https://github.com/image-size/image-size/issues/37#issuecomment-114720646
@@ -22,7 +23,7 @@ test.each([
     imagePath: __dirname + '/fixtures/kxjfngu5gb32ad2vm39-avatar.jpeg',
     expected: { w: 203, h: 203 },
   },
-])('getDimensions', async ({ imagePath, expected }) => {
+].forEach(({ imagePath, expected }) => it('getDimensions', async () => {
   const actual = await images.getDimensions(imagePath)
   expect(actual).toStrictEqual(expected)
-})
+}))
