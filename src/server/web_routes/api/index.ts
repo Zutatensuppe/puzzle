@@ -600,13 +600,18 @@ export default function createRouter(
 
   router.post('/newgame', express.json(), async (req, res): Promise<void> => {
     const user = await Users.getOrCreateUserByRequest(db, req)
-    const gameId = await Game.createNewGame(
-      db,
-      req.body as GameSettings,
-      Time.timestamp(),
-      user.id
-    )
-    res.send({ id: gameId })
+    try {
+      const gameId = await Game.createNewGame(
+        db,
+        req.body as GameSettings,
+        Time.timestamp(),
+        user.id
+      )
+      res.send({ id: gameId })
+    } catch (e: any) {
+      log.error(e)
+      res.status(400).send({ reason: e.message })
+    }
   })
   return router
 }
