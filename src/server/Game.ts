@@ -1,4 +1,4 @@
-import GameCommon from './../common/GameCommon'
+import GameCommon, { NEWGAME_MAX_PIECES, NEWGAME_MIN_PIECES } from './../common/GameCommon'
 import { Change, Game, Input, ScoreMode, ShapeMode, SnapMode,ImageInfo, Timestamp, GameSettings } from './../common/Types'
 import Util, { logger } from './../common/Util'
 import { Rng } from './../common/Rng'
@@ -46,6 +46,9 @@ async function createNewGame(
   ts: Timestamp,
   creatorUserId: number
 ): Promise<string> {
+  if (gameSettings.tiles < NEWGAME_MIN_PIECES || gameSettings.tiles > NEWGAME_MAX_PIECES) {
+    throw new Error(`Target pieces count must be between ${NEWGAME_MIN_PIECES} and ${NEWGAME_MAX_PIECES}`)
+  }
   let gameId;
   do {
     gameId = Util.uniqId()

@@ -564,6 +564,8 @@ const DefaultSnapMode = (v) => {
     return SnapMode.NORMAL;
 };
 
+const NEWGAME_MIN_PIECES = 10;
+const NEWGAME_MAX_PIECES = 5000;
 const IDLE_TIMEOUT_SEC = 30;
 // Map<gameId, Game>
 const GAMES = {};
@@ -2224,6 +2226,9 @@ async function createGameObject(gameId, gameVersion, targetPieceCount, image, ts
     };
 }
 async function createNewGame(db, gameSettings, ts, creatorUserId) {
+    if (gameSettings.tiles < NEWGAME_MIN_PIECES || gameSettings.tiles > NEWGAME_MAX_PIECES) {
+        throw new Error(`Target pieces count must be between ${NEWGAME_MIN_PIECES} and ${NEWGAME_MAX_PIECES}`);
+    }
     let gameId;
     do {
         gameId = Util.uniqId();
@@ -3098,8 +3103,14 @@ function createRouter$1(db, mail, canny) {
     });
     router.post('/newgame', express.json(), async (req, res) => {
         const user = await Users.getOrCreateUserByRequest(db, req);
-        const gameId = await Game.createNewGame(db, req.body, Time.timestamp(), user.id);
-        res.send({ id: gameId });
+        try {
+            const gameId = await Game.createNewGame(db, req.body, Time.timestamp(), user.id);
+            res.send({ id: gameId });
+        }
+        catch (e) {
+            log$1.error(e);
+            res.status(400).send({ reason: e.message });
+        }
     });
     return router;
 }

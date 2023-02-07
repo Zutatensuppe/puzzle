@@ -17,50 +17,52 @@
 
           <v-window v-model="tab">
             <v-window-item value="settings">
-              <div>
-                <v-text-field density="compact" v-model="tiles" label="Pieces" />
-              </div>
-              <div>
-                <v-label><v-icon icon="mdi-counter mr-1"></v-icon> Scoring</v-label>
-                <v-radio-group v-model="scoreMode" density="comfortable">
-                  <v-radio label="Any (Score when pieces are connected to each other or on final location)" :value="1"></v-radio>
-                  <v-radio label="Final (Score when pieces are put to their final location)" :value="0"></v-radio>
-                </v-radio-group>
-              </div>
-              <div>
-                <v-label><v-icon icon="mdi-shape mr-1"></v-icon> Shapes</v-label>
-                <v-radio-group v-model="shapeMode" density="comfortable">
-                  <v-radio label="Normal" :value="0"></v-radio>
-                  <v-radio label="Any (Flat pieces can occur anywhere)" :value="1"></v-radio>
-                  <v-radio label="Flat (All pieces flat on all sides)" :value="2"></v-radio>
-                </v-radio-group>
-              </div>
-              <div>
-                <v-label><v-icon icon="mdi-connection mr-1"></v-icon> Snapping</v-label>
-                <v-radio-group v-model="snapMode" density="comfortable">
-                  <v-radio label="Normal (Pieces snap to final destination and to each other)" :value="0"></v-radio>
-                  <v-radio label="Real (Pieces snap only to corners, already snapped pieces and to each other)" :value="1"></v-radio>
-                </v-radio-group>
-              </div>
-              <div>
-                <v-label><v-icon icon="mdi-incognito mr-1"></v-icon> Privacy</v-label>
-                <v-checkbox density="comfortable" label="Private Game (Private games won't show up in the game overview)" v-model="isPrivate" :disabled="forcePrivate"></v-checkbox>
-              </div>
+              <v-form ref="form" v-model="valid">
+                <div>
+                  <v-text-field density="compact" v-model="pieces" :rules="[numberRule]" label="Pieces" />
+                </div>
+                <div>
+                  <v-label><v-icon icon="mdi-counter mr-1"></v-icon> Scoring</v-label>
+                  <v-radio-group v-model="scoreMode" density="comfortable">
+                    <v-radio label="Any (Score when pieces are connected to each other or on final location)" :value="1"></v-radio>
+                    <v-radio label="Final (Score when pieces are put to their final location)" :value="0"></v-radio>
+                  </v-radio-group>
+                </div>
+                <div>
+                  <v-label><v-icon icon="mdi-shape mr-1"></v-icon> Shapes</v-label>
+                  <v-radio-group v-model="shapeMode" density="comfortable">
+                    <v-radio label="Normal" :value="0"></v-radio>
+                    <v-radio label="Any (Flat pieces can occur anywhere)" :value="1"></v-radio>
+                    <v-radio label="Flat (All pieces flat on all sides)" :value="2"></v-radio>
+                  </v-radio-group>
+                </div>
+                <div>
+                  <v-label><v-icon icon="mdi-connection mr-1"></v-icon> Snapping</v-label>
+                  <v-radio-group v-model="snapMode" density="comfortable">
+                    <v-radio label="Normal (Pieces snap to final destination and to each other)" :value="0"></v-radio>
+                    <v-radio label="Real (Pieces snap only to corners, already snapped pieces and to each other)" :value="1"></v-radio>
+                  </v-radio-group>
+                </div>
+                <div>
+                  <v-label><v-icon icon="mdi-incognito mr-1"></v-icon> Privacy</v-label>
+                  <v-checkbox density="comfortable" label="Private Game (Private games won't show up in the game overview)" v-model="isPrivate" :disabled="forcePrivate"></v-checkbox>
+                </div>
 
-              <v-card-actions>
-                <v-btn
-                  variant="elevated"
-                  :disabled="!canStartNewGame"
-                  @click="onNewGameClick"
-                  prepend-icon="mdi-puzzle"
-                  color="success"
-                >Generate Puzzle</v-btn>
-                <v-btn
-                  variant="elevated"
-                  @click="emit('close')"
-                  color="error"
-                >Cancel</v-btn>
-              </v-card-actions>
+                <v-card-actions>
+                  <v-btn
+                    variant="elevated"
+                    :disabled="!canStartNewGame"
+                    @click="onNewGameClick"
+                    prepend-icon="mdi-puzzle"
+                    color="success"
+                  >Generate Puzzle</v-btn>
+                  <v-btn
+                    variant="elevated"
+                    @click="emit('close')"
+                    color="error"
+                  >Cancel</v-btn>
+                </v-card-actions>
+              </v-form>
             </v-window-item>
             <v-window-item value="image-info">
               <v-table>
@@ -81,9 +83,10 @@
   </v-card>
 </template>
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 
 import { GameSettings, ImageInfo, ScoreMode, ShapeMode, SnapMode } from './../../common/Types'
+import { NEWGAME_MIN_PIECES, NEWGAME_MAX_PIECES } from './../../common/GameCommon'
 import ResponsiveImage from './ResponsiveImage.vue';
 
 const props = defineProps<{
@@ -98,11 +101,13 @@ const emit = defineEmits<{
 
 const tab = ref<string>('settings')
 
-const tiles = ref<string | number>(1000)
+const pieces = ref<string | number>(1000)
 const isPrivate = ref<boolean>(props.forcePrivate)
 const scoreMode = ref<ScoreMode>(ScoreMode.ANY)
 const shapeMode = ref<ShapeMode>(ShapeMode.NORMAL)
 const snapMode = ref<SnapMode>(SnapMode.NORMAL)
+
+const valid = ref<boolean>(true)
 
 const date = computed((): string => {
   // TODO: use date format that is same everywhere
@@ -110,8 +115,11 @@ const date = computed((): string => {
 })
 
 const canStartNewGame = computed((): boolean => {
+  if (!valid.value) {
+    return false
+  }
   if (
-    !tilesInt.value
+    !piecesInt.value
     || !props.image
     || !props.image.url
     || ![0, 1].includes(scoreModeInt.value)
@@ -129,13 +137,21 @@ const shapeModeInt = computed((): number => {
 const snapModeInt = computed((): number => {
   return parseInt(`${snapMode.value}`, 10)
 })
-const tilesInt = computed((): number => {
-  return parseInt(`${tiles.value}`, 10)
+const piecesInt = computed((): number => {
+  return parseInt(`${pieces.value}`, 10)
 })
+
+const numberRule = (v: string) => {
+  const num = parseInt(v, 10)
+  if (!isNaN(num) && num >= NEWGAME_MIN_PIECES && num <= NEWGAME_MAX_PIECES) {
+    return true
+  }
+  return 'Pieces have to be between 10 and 5000'
+}
 
 const onNewGameClick = () => {
   emit('newGame', {
-    tiles: tilesInt.value,
+    tiles: piecesInt.value,
     private: isPrivate.value,
     image: props.image,
     scoreMode: scoreModeInt.value,
@@ -143,4 +159,11 @@ const onNewGameClick = () => {
     snapMode: snapModeInt.value,
   })
 }
+
+const form = ref<any>()
+
+onMounted(() => {
+  // @ts-ignore
+  form.value.validate()
+})
 </script>

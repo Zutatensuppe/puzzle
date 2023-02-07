@@ -21,6 +21,9 @@ import {
 } from './Types'
 import Util from './Util'
 
+export const NEWGAME_MIN_PIECES = 10
+export const NEWGAME_MAX_PIECES = 5000
+
 const IDLE_TIMEOUT_SEC = 30
 
 // Map<gameId, Game>
