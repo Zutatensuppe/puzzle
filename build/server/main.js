@@ -2277,7 +2277,10 @@ var Images = {
 // cut size of each puzzle piece in the
 // final resized version of the puzzle image
 const PIECE_SIZE = 64;
-const determinePiecesXY = (dim, targetPiecesCount) => {
+const determinePiecesXY = (dim, desiredPieceCount) => {
+    if (desiredPieceCount <= 0 || isNaN(desiredPieceCount)) {
+        return { countHorizontal: 0, countVertical: 0 };
+    }
     const w_ = dim.w < dim.h ? (dim.w * dim.h) : (dim.w * dim.w);
     const h_ = dim.w < dim.h ? (dim.h * dim.h) : (dim.w * dim.h);
     let size = 0;
@@ -2285,8 +2288,8 @@ const determinePiecesXY = (dim, targetPiecesCount) => {
     do {
         size++;
         pieces = Math.floor(w_ / size) * Math.floor(h_ / size);
-    } while (pieces >= targetPiecesCount);
-    if (pieces !== targetPiecesCount) {
+    } while (pieces >= desiredPieceCount);
+    if (pieces !== desiredPieceCount) {
         size--;
     }
     return {

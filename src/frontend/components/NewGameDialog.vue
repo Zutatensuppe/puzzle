@@ -23,15 +23,14 @@
           <v-window v-model="tab">
             <v-window-item value="settings">
               <v-form ref="form" v-model="valid">
-                <div>
-                  <v-text-field density="compact" v-model="pieces" :rules="[numberRule]" label="Desired pieces" class="pieces-input">
-                    <template v-slot:append-inner>
-                      <span class="text-caption" v-if="valid">
-                        Resulting pieces: {{ puzzleCreationInfo.pieceCount }}
-                      </span>
-                    </template>
+                <fieldset>
+                  <legend>Pieces Amount</legend>
+                  <v-text-field type="number" step="100" min="0" max="5000" density="compact" v-model="pieces" :rules="[numberRule]" class="pieces-input">
                   </v-text-field>
-                </div>
+                  <span>
+                    Resulting pieces: {{ valid ? puzzleCreationInfo.pieceCount : '-' }}
+                  </span>
+                </fieldset>
                 <div>
                   <v-label><v-icon icon="mdi-counter mr-1"></v-icon> Scoring</v-label>
                   <v-radio-group v-model="scoreMode" density="comfortable">
@@ -193,6 +192,17 @@ onMounted(() => {
   form.value.validate()
 })
 </script>
-<style>
-.pieces-input .v-field__append-inner { white-space: nowrap; padding-top: 3px; }
+<style lang="scss">
+fieldset {
+  padding: 1em;
+  margin: 1em 0;
+  border: solid 2px;
+  border-radius: 5px;
+  color: rgba(var(--v-theme-on-surface), var(--v-medium-emphasis-opacity));
+
+  legend {
+    padding: 0 .5em;
+    color: rgba(var(--v-theme-on-surface), var(--v-medium-emphasis-opacity));
+  }
+}
 </style>
