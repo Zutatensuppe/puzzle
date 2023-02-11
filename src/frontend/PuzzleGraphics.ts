@@ -1,6 +1,6 @@
 "use strict"
 
-import Geometry, { Rect } from '../common/Geometry'
+import Geometry, { Dim, Point, Rect } from '../common/Geometry'
 import Graphics from './Graphics'
 import Util, { logger } from './../common/Util'
 import { Puzzle, PuzzleInfo, PieceShape, EncodedPiece, ShapeMode } from './../common/Types'
@@ -71,43 +71,34 @@ function createPathForShape(shape: PieceShape, x: number, y: number, pieceSize: 
 }
 
 export function drawPuzzlePreview(
+  previewDim: Dim,
+  previewPieceSize: number,
   puzzleCreationInfo: PuzzleCreationInfo,
   shapeMode: ShapeMode,
   ctx: CanvasRenderingContext2D,
-  rect: Rect,
+  imageRect: Rect,
+  off: Point,
 ): void {
-  const previewPieceSize = Math.min(
-    rect.w / puzzleCreationInfo.pieceCountHorizontal,
-    rect.h / puzzleCreationInfo.pieceCountVertical,
-  )
-
-  const w = puzzleCreationInfo.pieceCountHorizontal * previewPieceSize
-  const h = puzzleCreationInfo.pieceCountVertical * previewPieceSize
-
-  const offX = 0
-  const offY = 0
-
   ctx.save()
-  ctx.fillStyle = '#08f'
-  ctx.globalAlpha = .3
-  ctx.fillRect(rect.x + offX, rect.y + offY, w, h)
-  // ctx.fillRect(dx, dy, offX, h)
-  // ctx.fillRect(dx + w + offX, dy, imgDrawWidth - w - offX, h)
-  // ctx.fillRect(dx, dy, w, offY)
-  // ctx.fillRect(dx, dy + h + offY, w, imgDrawHeight - h - offY)
+  ctx.fillStyle = '#000'
+  ctx.globalAlpha = .5
+  ctx.fillRect(imageRect.x, imageRect.y, off.x, previewDim.h)
+  ctx.fillRect(imageRect.x + previewDim.w + off.x, imageRect.y, imageRect.w - previewDim.w - off.x, previewDim.h)
+  ctx.fillRect(imageRect.x, imageRect.y, previewDim.w, off.y)
+  ctx.fillRect(imageRect.x, imageRect.y + previewDim.h + off.y, previewDim.w, imageRect.h - previewDim.h - off.y)
   ctx.restore()
 
   const shapes = determinePuzzlePieceShapes(new Rng(0), puzzleCreationInfo, shapeMode)
   ctx.save()
   ctx.fillStyle = '#000'
-  ctx.lineWidth = .1
+  ctx.lineWidth = .3
   ctx.globalAlpha = .7
   for (let y = 0; y < puzzleCreationInfo.pieceCountVertical; y++) {
     for (let x = 0; x < puzzleCreationInfo.pieceCountHorizontal; x++) {
       const path = createPathForShape(
         Util.decodeShape(shapes.shift() as number),
-        rect.x + offX + x * previewPieceSize,
-        rect.y + offY + y * previewPieceSize,
+        imageRect.x + off.x + x * previewPieceSize,
+        imageRect.y + off.y + y * previewPieceSize,
         previewPieceSize
       )
       ctx.stroke(path)

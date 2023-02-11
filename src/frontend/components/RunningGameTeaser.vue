@@ -29,6 +29,7 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import Time from '../../common/Time'
+import { resizeUrl } from '../../common/ImageService'
 import { GameInfo, ScoreMode, ShapeMode, SnapMode } from '../../common/Types'
 
 const props = defineProps<{
@@ -40,7 +41,7 @@ const emit = defineEmits<{
   (e: 'goToReplay', val: GameInfo): void
 }>()
 
-const url = computed(() => props.game.imageUrl.replace('uploads/', 'uploads/r/') + '-620x496.webp')
+const url = computed(() => resizeUrl(props.game.imageUrl, 620, 496, 'contain'))
 const style = computed(() => ({ 'background-image': `url("${url.value}")` }))
 
 const joinPuzzleText = computed(() => props.game.finished ? 'View puzzle' : 'Join puzzle')

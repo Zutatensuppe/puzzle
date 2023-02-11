@@ -6,7 +6,12 @@
       <v-row>
         <v-col :lg="8">
           <div class="has-image" style="min-height: 50vh;">
-            <PuzzleCropper :image="image" :puzzle-creation-info="puzzleCreationInfo" :shape-mode="shapeMode" @crop-update="onCropUpdate" />
+            <PuzzleCropper
+              :image="image"
+              :puzzle-creation-info="puzzleCreationInfo"
+              :shape-mode="shapeMode"
+              :pieces-preview="tab === 'settings'"
+              @crop-update="onCropUpdate" />
           </div>
         </v-col>
         <v-col :lg="4" class="area-settings">
@@ -19,7 +24,13 @@
             <v-window-item value="settings">
               <v-form ref="form" v-model="valid">
                 <div>
-                  <v-text-field density="compact" v-model="pieces" :rules="[numberRule]" label="Pieces" />
+                  <v-text-field density="compact" v-model="pieces" :rules="[numberRule]" label="Desired pieces" class="pieces-input">
+                    <template v-slot:append-inner>
+                      <span class="text-caption" v-if="valid">
+                        Resulting pieces: {{ puzzleCreationInfo.pieceCount }}
+                      </span>
+                    </template>
+                  </v-text-field>
                 </div>
                 <div>
                   <v-label><v-icon icon="mdi-counter mr-1"></v-icon> Scoring</v-label>
@@ -182,3 +193,6 @@ onMounted(() => {
   form.value.validate()
 })
 </script>
+<style>
+.pieces-input .v-field__append-inner { white-space: nowrap; padding-top: 3px; }
+</style>

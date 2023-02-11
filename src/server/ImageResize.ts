@@ -59,10 +59,10 @@ const resizeImage = async (
     }
     const originalImagePath = `${config.dir.UPLOAD_DIR}/${filename}`
     const sharpImg = await loadSharpImage(originalImagePath)
-    const resizeFilename = `${baseDir}/${filename}-${w}x${h || 0}.webp`
+    const resizeFilename = `${baseDir}/${filename}-${w}x${h || 0}-${fit}.webp`
     if (!fs.existsSync(resizeFilename)) {
       log.info(w, h, resizeFilename)
-      await sharpImg.resize(w, h, { fit }).toFile(resizeFilename)
+      await sharpImg.resize(w, h || null, { fit }).toFile(resizeFilename)
     }
     return resizeFilename
   } catch (e) {
@@ -71,23 +71,7 @@ const resizeImage = async (
   }
 }
 
-const createImageVariants = async (filename: string): Promise<void> => {
-  try {
-    const sizes: [number, number | null, 'contain' | 'cover' | 'inside' | 'outside'][] = [
-      [150, 100, 'contain'],
-      [375, 210, 'contain'],
-      [375, null, 'cover'],
-      [620, 496, 'contain'],
-    ]
-    for (const [w, h, fit] of sizes) {
-      await resizeImage(filename, w, h, fit)
-    }
-  } catch (e) {
-    log.error('error when resizing image', filename, e)
-  }
-}
-
 export default {
-  createImageVariants,
   cropImage,
+  resizeImage,
 }

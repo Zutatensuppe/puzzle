@@ -1,4 +1,5 @@
 import Geometry, { Point, Rect } from './Geometry'
+import { cropUrl } from './ImageService'
 import Protocol from './Protocol'
 import { Rng } from './Rng'
 import Time from './Time'
@@ -961,7 +962,7 @@ function Game_getImageUrl(game: Game): string {
     throw new Error('[2021-07-11] no image url set')
   }
   if (game.crop) {
-    return imageUrl.replace('/uploads/', '/image-service/image/') + Util.asQueryArgs(game.crop)
+    return cropUrl(imageUrl, game.crop)
   }
   return imageUrl
 }

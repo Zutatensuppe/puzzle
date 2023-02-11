@@ -12,6 +12,7 @@ export interface PuzzleCreationInfo {
   pieceCount: number
   pieceCountHorizontal: number
   pieceCountVertical: number
+  desiredPieceCount: number
 }
 
 // cut size of each puzzle piece in the
@@ -41,9 +42,9 @@ const determinePiecesXY = (
 
 export const determinePuzzleInfo = (
   dim: Dim,
-  targetPieceCount: number
+  desiredPieceCount: number
 ): PuzzleCreationInfo => {
-  const { countHorizontal, countVertical } = determinePiecesXY(dim, targetPieceCount)
+  const { countHorizontal, countVertical } = determinePiecesXY(dim, desiredPieceCount)
   const pieceCount = countHorizontal * countVertical
   const pieceSize = PIECE_SIZE
   const width = countHorizontal * pieceSize
@@ -61,6 +62,7 @@ export const determinePuzzleInfo = (
     pieceCount: pieceCount,
     pieceCountHorizontal: countHorizontal,
     pieceCountVertical: countVertical,
+    desiredPieceCount: desiredPieceCount,
   }
 }
 
