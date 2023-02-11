@@ -64,12 +64,16 @@ const centerCrop = (): void => {
   offset.value.y = (imgDrawRect.h - dim.h) / 2
 }
 
+const emitCropChange = (): void => {
+  emit('cropUpdate', createCropEventData())
+}
+
 watch(() => props.puzzleCreationInfo, () => {
   if (props.puzzleCreationInfo === null) {
     return
   }
   centerCrop()
-  emit('cropUpdate', createCropEventData())
+  emitCropChange()
   redraw()
 })
 watch(() => props.shapeMode, () => {
@@ -100,7 +104,7 @@ const onMousemove = (ev: MouseEvent) => {
 
   lastMouseDown = ev
 
-  emit('cropUpdate', createCropEventData())
+  emitCropChange()
   redraw()
 }
 
@@ -178,6 +182,7 @@ onMounted(() => {
   image.src = props.image.url
   image.onload = (ev: Event) => {
     centerCrop()
+    emitCropChange()
     redraw()
   }
 })
