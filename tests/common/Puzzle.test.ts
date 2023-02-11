@@ -5,7 +5,7 @@ describe('determinePuzzleInfo', () => {
   [
     {
       dim: { w: 1706, h: 1000 },
-      targetPieceCount: 700,
+      desiredPieceCount: 700,
       expected: {
         width: 2240,
         height: 1280,
@@ -15,11 +15,12 @@ describe('determinePuzzleInfo', () => {
         pieceCount: 700,
         pieceCountHorizontal: 35,
         pieceCountVertical: 20,
+        desiredPieceCount: 700,
       },
     },
     {
       dim: { w: 1706, h: 1000 },
-      targetPieceCount: 701,
+      desiredPieceCount: 701,
       expected: {
         width: 2240,
         height: 1344,
@@ -29,11 +30,12 @@ describe('determinePuzzleInfo', () => {
         pieceCount: 735,
         pieceCountHorizontal: 35,
         pieceCountVertical: 21,
+        desiredPieceCount: 701,
       },
     },
     {
       dim: { w: 1706, h: 1000 },
-      targetPieceCount: 735,
+      desiredPieceCount: 735,
       expected: {
         width: 2240,
         height: 1344,
@@ -43,10 +45,11 @@ describe('determinePuzzleInfo', () => {
         pieceCount: 735,
         pieceCountHorizontal: 35,
         pieceCountVertical: 21,
+        desiredPieceCount: 735,
       },
     },
-  ].forEach(({ dim, targetPieceCount, expected }) => it('determinePieceCount', () => {
-    const actual = determinePuzzleInfo(dim, targetPieceCount)
+  ].forEach(({ dim, desiredPieceCount, expected }) => it('determinePieceCount', () => {
+    const actual = determinePuzzleInfo(dim, desiredPieceCount)
     assert.deepStrictEqual(actual, expected)
   }))
 })
