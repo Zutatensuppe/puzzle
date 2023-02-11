@@ -67,11 +67,11 @@ const _log = (gameId: string, type: number, ...args: Array<any>): void => {
     idxObj.currentFile = filename(gameId, idxObj.total)
   }
 
-  const tsIdx = type === Protocol.LOG_HEADER ? 3 : (args.length - 1)
-  const ts: Timestamp = args[tsIdx]
+  const timestampIdx = type === Protocol.LOG_HEADER ? 3 : (args.length - 1)
+  const ts: Timestamp = args[timestampIdx]
   if (type !== Protocol.LOG_HEADER) {
     // for everything but header save the diff to last log entry
-    args[tsIdx] = ts - idxObj.lastTs
+    args[timestampIdx] = ts - idxObj.lastTs
   }
   const line = JSON.stringify([type, ...args]).slice(1, -1)
   fs.appendFileSync(idxObj.currentFile, line + "\n")
@@ -105,7 +105,9 @@ const get = (
     log[0][7] = DefaultSnapMode(log[0][7])
     log[0][8] = log[0][8] || null // creatorUserId
     log[0][9] = log[0][9] || 0 // private
+    log[0][10] = log[0][10] || undefined // crop
   }
+  console.log(log[0])
   return log
 }
 

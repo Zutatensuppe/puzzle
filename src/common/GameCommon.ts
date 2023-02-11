@@ -1,4 +1,5 @@
 import Geometry, { Point, Rect } from './Geometry'
+import { cropUrl } from './ImageService'
 import Protocol from './Protocol'
 import { Rng } from './Rng'
 import Time from './Time'
@@ -960,13 +961,15 @@ function Game_getImageUrl(game: Game): string {
   if (!imageUrl) {
     throw new Error('[2021-07-11] no image url set')
   }
+  if (game.crop) {
+    return cropUrl(imageUrl, game.crop)
+  }
   return imageUrl
 }
 
 function Game_isFinished(game: Game): boolean {
   return Game_getFinishedPiecesCount(game) === Game_getPieceCount(game)
 }
-
 
 export default {
   setGame,

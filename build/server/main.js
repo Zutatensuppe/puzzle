@@ -1,21 +1,21 @@
-import { WebSocketServer as WebSocketServer$1 } from 'ws';
-import express from 'express';
-import compression from 'compression';
+import v8 from 'v8';
 import fs, { readFileSync } from 'fs';
 import { fileURLToPath } from 'url';
 import path, { dirname } from 'path';
+import { Mutex } from 'async-mutex';
+import * as pg from 'pg';
+import SibApiV3Sdk from 'sib-api-v3-sdk';
+import jwt from 'jsonwebtoken';
+import { WebSocketServer as WebSocketServer$1 } from 'ws';
+import express from 'express';
+import compression from 'compression';
 import probe from 'probe-image-size';
 import exif from 'exif';
 import crypto from 'crypto';
-import v8 from 'v8';
-import { Mutex } from 'async-mutex';
-import * as pg from 'pg';
 import multer from 'multer';
 import request from 'request';
 import sharp from 'sharp';
 import cookieParser from 'cookie-parser';
-import SibApiV3Sdk from 'sib-api-v3-sdk';
-import jwt from 'jsonwebtoken';
 
 class Rng {
     constructor(seed) {
@@ -155,7 +155,21 @@ function decodePlayer(data) {
     };
 }
 function encodeGame(data) {
-    return [
+    return data.crop ? [
+        data.id,
+        data.rng.type || '',
+        Rng.serialize(data.rng.obj),
+        data.puzzle,
+        data.players,
+        data.scoreMode,
+        data.shapeMode,
+        data.snapMode,
+        data.creatorUserId,
+        data.hasReplay,
+        data.gameVersion,
+        data.private,
+        data.crop,
+    ] : [
         data.id,
         data.rng.type || '',
         Rng.serialize(data.rng.obj),
@@ -170,7 +184,28 @@ function encodeGame(data) {
         data.private,
     ];
 }
+const isEncodedGameLegacy = (data) => {
+    return data.length <= 12;
+};
 function decodeGame(data) {
+    if (isEncodedGameLegacy(data)) {
+        return {
+            id: data[0],
+            rng: {
+                type: data[1],
+                obj: Rng.unserialize(data[2]),
+            },
+            puzzle: data[3],
+            players: data[4],
+            scoreMode: data[5],
+            shapeMode: data[6],
+            snapMode: data[7],
+            creatorUserId: data[8],
+            hasReplay: data[9],
+            gameVersion: data[10],
+            private: data[11],
+        };
+    }
     return {
         id: data[0],
         rng: {
@@ -186,6 +221,7 @@ function decodeGame(data) {
         hasReplay: data[9],
         gameVersion: data[10],
         private: data[11],
+        crop: data[12],
     };
 }
 /**
@@ -257,7 +293,384 @@ var Util = {
     asQueryArgs,
 };
 
-const log$7 = logger('WebSocketServer.js');
+const log$8 = logger('Config.ts');
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+const BASE_DIR = `${__dirname}/../..`;
+const DATA_DIR = `${BASE_DIR}/data`;
+const UPLOAD_DIR = `${BASE_DIR}/data/uploads`;
+const CROP_DIR = `${BASE_DIR}/data/uploads/c`;
+const RESIZE_DIR = `${BASE_DIR}/data/uploads/r`;
+const UPLOAD_URL = `/uploads`;
+const PUBLIC_DIR = `${BASE_DIR}/build/public`;
+const DB_PATCHES_DIR = `${BASE_DIR}/src/dbpatches`;
+const init = () => {
+    const configFile = process.env.APP_CONFIG || 'config.json';
+    if (configFile === '') {
+        log$8.error('APP_CONFIG environment variable not set or empty');
+        process.exit(2);
+    }
+    const config = JSON.parse(String(readFileSync(configFile)));
+    config.dir = { DATA_DIR, UPLOAD_DIR, UPLOAD_URL, CROP_DIR, RESIZE_DIR, PUBLIC_DIR, DB_PATCHES_DIR };
+    return config;
+};
+const config = init();
+
+// @ts-ignore
+const { Client } = pg.default;
+const log$7 = logger('Db.ts');
+const mutex = new Mutex();
+class Db {
+    constructor(connectStr, patchesDir) {
+        this.patchesDir = patchesDir;
+        this.dbh = new Client(connectStr);
+    }
+    async connect() {
+        await this.dbh.connect();
+    }
+    async close() {
+        await this.dbh.end();
+    }
+    async patch(verbose = true) {
+        await this.run('CREATE TABLE IF NOT EXISTS public.db_patches ( id TEXT PRIMARY KEY);', []);
+        const files = fs.readdirSync(this.patchesDir);
+        const patches = (await this.getMany('public.db_patches')).map(row => row.id);
+        for (const f of files) {
+            if (patches.includes(f)) {
+                if (verbose) {
+                    log$7.info(`➡ skipping already applied db patch: ${f}`);
+                }
+                continue;
+            }
+            const contents = fs.readFileSync(`${this.patchesDir}/${f}`, 'utf-8');
+            const all = contents.split(';').map(s => s.trim()).filter(s => !!s);
+            try {
+                try {
+                    await this.run('BEGIN');
+                    for (const q of all) {
+                        await this.run(q);
+                    }
+                    await this.run('COMMIT');
+                }
+                catch (e) {
+                    await this.run('ROLLBACK');
+                    throw e;
+                }
+                await this.insert('public.db_patches', { id: f });
+                log$7.info(`✓ applied db patch: ${f}`);
+            }
+            catch (e) {
+                log$7.error(`✖ unable to apply patch: ${f} ${e}`);
+                return;
+            }
+        }
+    }
+    _buildWhere(where, $i = 1) {
+        const wheres = [];
+        const values = [];
+        for (const k of Object.keys(where)) {
+            if (where[k] === null) {
+                wheres.push(k + ' IS NULL');
+                continue;
+            }
+            if (typeof where[k] === 'object') {
+                let prop = '$nin';
+                if (where[k][prop]) {
+                    if (where[k][prop].length > 0) {
+                        wheres.push(k + ' NOT IN (' + where[k][prop].map(() => `$${$i++}`) + ')');
+                        values.push(...where[k][prop]);
+                    }
+                    else {
+                        wheres.push('TRUE');
+                    }
+                    continue;
+                }
+                prop = '$in';
+                if (where[k][prop]) {
+                    if (where[k][prop].length > 0) {
+                        wheres.push(k + ' IN (' + where[k][prop].map(() => `$${$i++}`) + ')');
+                        values.push(...where[k][prop]);
+                    }
+                    else {
+                        wheres.push('FALSE');
+                    }
+                    continue;
+                }
+                prop = "$gte";
+                if (where[k][prop]) {
+                    wheres.push(k + ` >= $${$i++}`);
+                    values.push(where[k][prop]);
+                    continue;
+                }
+                prop = "$lte";
+                if (where[k][prop]) {
+                    wheres.push(k + ` <= $${$i++}`);
+                    values.push(where[k][prop]);
+                    continue;
+                }
+                prop = "$lte";
+                if (where[k][prop]) {
+                    wheres.push(k + ` <= $${$i++}`);
+                    values.push(where[k][prop]);
+                    continue;
+                }
+                prop = '$gt';
+                if (where[k][prop]) {
+                    wheres.push(k + ` > $${$i++}`);
+                    values.push(where[k][prop]);
+                    continue;
+                }
+                prop = '$lt';
+                if (where[k][prop]) {
+                    wheres.push(k + ` < $${$i++}`);
+                    values.push(where[k][prop]);
+                    continue;
+                }
+                prop = '$ne';
+                if (where[k][prop] === null) {
+                    wheres.push(k + ` IS NOT NULL`);
+                    continue;
+                }
+                else if (where[k][prop]) {
+                    wheres.push(k + ` != $${$i++}`);
+                    values.push(where[k][prop]);
+                    continue;
+                }
+                // TODO: implement rest of mongo like query args ($eq, $lte, $in...)
+                throw new Error('not implemented: ' + JSON.stringify(where[k]));
+            }
+            wheres.push(k + ` = $${$i++}`);
+            values.push(where[k]);
+        }
+        return {
+            sql: wheres.length > 0 ? ' WHERE ' + wheres.join(' AND ') : '',
+            values,
+            $i,
+        };
+    }
+    _buildOrderBy(orderBy) {
+        const sorts = [];
+        for (const s of orderBy) {
+            const k = Object.keys(s)[0];
+            sorts.push(k + ' ' + (s[k] > 0 ? 'ASC' : 'DESC'));
+        }
+        return sorts.length > 0 ? ' ORDER BY ' + sorts.join(', ') : '';
+    }
+    _buildLimit(limit) {
+        const parts = [];
+        // make sure we have integers, so we can safely inline the
+        // values into the sql
+        const limitVal = parseInt(`${limit.limit}`, 10);
+        const offsetVal = parseInt(`${limit.offset}`, 10);
+        if (limitVal >= 0) {
+            parts.push(` LIMIT ${limitVal}`);
+        }
+        if (offsetVal >= 0) {
+            parts.push(` OFFSET ${offsetVal}`);
+        }
+        return parts.join('');
+    }
+    async _get(query, params = []) {
+        try {
+            return (await this.dbh.query(query, params)).rows[0] || null;
+        }
+        catch (e) {
+            log$7.info('_get', query, params);
+            console.error(e);
+            throw e;
+        }
+    }
+    async run(query, params = []) {
+        try {
+            return await this.dbh.query(query, params);
+        }
+        catch (e) {
+            log$7.info('run', query, params);
+            console.error(e);
+            throw e;
+        }
+    }
+    async _getMany(query, params = []) {
+        try {
+            return (await this.dbh.query(query, params)).rows || [];
+        }
+        catch (e) {
+            log$7.info('_getMany', query, params);
+            console.error(e);
+            throw e;
+        }
+    }
+    async get(table, whereRaw = {}, orderBy = []) {
+        const where = this._buildWhere(whereRaw);
+        const orderBySql = this._buildOrderBy(orderBy);
+        const sql = 'SELECT * FROM ' + table + where.sql + orderBySql;
+        return await this._get(sql, where.values);
+    }
+    async getMany(table, whereRaw = {}, orderBy = [], limit = { offset: -1, limit: -1 }) {
+        const where = this._buildWhere(whereRaw);
+        const orderBySql = this._buildOrderBy(orderBy);
+        const limitSql = this._buildLimit(limit);
+        const sql = 'SELECT * FROM ' + table + where.sql + orderBySql + limitSql;
+        return await this._getMany(sql, where.values);
+    }
+    async count(table, whereRaw = {}) {
+        const where = this._buildWhere(whereRaw);
+        const sql = 'SELECT COUNT(*) FROM ' + table + where.sql;
+        const row = await this._get(sql, where.values);
+        return parseInt(row.count, 10);
+    }
+    async delete(table, whereRaw = {}) {
+        const where = this._buildWhere(whereRaw);
+        const sql = 'DELETE FROM ' + table + where.sql;
+        return await this.run(sql, where.values);
+    }
+    async exists(table, whereRaw) {
+        return !!await this.get(table, whereRaw);
+    }
+    async upsert(table, data, check, idcol = null) {
+        return mutex.runExclusive(async () => {
+            if (!await this.exists(table, check)) {
+                return await this.insert(table, data, idcol);
+            }
+            await this.update(table, data, check);
+            if (idcol === null) {
+                return 0; // dont care about id
+            }
+            return (await this.get(table, check))[idcol]; // get id manually
+        });
+    }
+    async insert(table, data, idcol = null) {
+        const keys = Object.keys(data);
+        const values = keys.map(k => data[k]);
+        let $i = 1;
+        let sql = 'INSERT INTO ' + table
+            + ' (' + keys.join(',') + ')'
+            + ' VALUES (' + keys.map(() => `$${$i++}`).join(',') + ')';
+        if (idcol) {
+            sql += ` RETURNING ${idcol}`;
+            return (await this.run(sql, values)).rows[0][idcol];
+        }
+        await this.run(sql, values);
+        return 0;
+    }
+    async update(table, data, whereRaw = {}) {
+        const keys = Object.keys(data);
+        if (keys.length === 0) {
+            return;
+        }
+        let $i = 1;
+        const values = keys.map(k => data[k]);
+        const setSql = ' SET ' + keys.map((k) => `${k} = $${$i++}`).join(',');
+        const where = this._buildWhere(whereRaw, $i);
+        const sql = 'UPDATE ' + table + setSql + where.sql;
+        await this.run(sql, [...values, ...where.values]);
+    }
+}
+
+// @ts-ignore
+const log$6 = logger('Mail.ts');
+const BASE_URL = 'https://jigsaw.hyottoko.club';
+const NAME = 'jigsaw.hyottoko.club';
+const NOREPLY_MAIL = 'noreply@jigsaw.hyottoko.club';
+const SENDER = { name: NAME, email: NOREPLY_MAIL };
+class Mail {
+    constructor(cfg) {
+        const defaultClient = SibApiV3Sdk.ApiClient.instance;
+        const apiKey = defaultClient.authentications['api-key'];
+        apiKey.apiKey = cfg.sendinblue_api_key;
+        this.apiInstance = new SibApiV3Sdk.TransactionalEmailsApi();
+    }
+    sendPasswordResetMail(passwordReset) {
+        const mail = new SibApiV3Sdk.SendSmtpEmail();
+        mail.subject = "{{params.subject}}";
+        mail.htmlContent = `<html><body>
+      <h1>Hello {{params.username}}</h1>
+      <p>To reset your password for <a href="${BASE_URL}">${NAME}</a>
+      click the following link:</p>
+      <p><a href="{{params.link}}">{{params.link}}</a></p>
+      </body></html>`;
+        mail.sender = SENDER;
+        mail.to = [{
+                email: passwordReset.user.email,
+                name: passwordReset.user.name,
+            }];
+        mail.params = {
+            username: passwordReset.user.name,
+            subject: `Password Reset for ${NAME}`,
+            link: `${BASE_URL}/#password-reset=${passwordReset.token.token}`
+        };
+        this.send(mail);
+    }
+    sendRegistrationMail(registration) {
+        const mail = new SibApiV3Sdk.SendSmtpEmail();
+        mail.subject = "{{params.subject}}";
+        mail.htmlContent = `<html><body>
+      <h1>Hello {{params.username}}</h1>
+      <p>Thank you for registering an account at <a href="${BASE_URL}">${NAME}</a>.</p>
+      <p>Please confirm your registration by clicking the following link:</p>
+      <p><a href="{{params.link}}">{{params.link}}</a></p>
+      </body></html>`;
+        mail.sender = SENDER;
+        mail.to = [{
+                email: registration.user.email,
+                name: registration.user.name,
+            }];
+        mail.params = {
+            username: registration.user.name,
+            subject: `User Registration on ${NAME}`,
+            link: `${BASE_URL}/api/verify-email/${registration.token.token}`
+        };
+        this.send(mail);
+    }
+    send(mail) {
+        this.apiInstance.sendTransacEmail(mail).then(function (data) {
+            log$6.info({ data }, 'API called successfully');
+        }, function (error) {
+            log$6.error({ error });
+        });
+    }
+}
+
+class Canny {
+    constructor(config) {
+        this.config = config;
+        // pass
+    }
+    createToken(user) {
+        if (!user.email) {
+            return null;
+        }
+        const userData = {
+            email: user.email,
+            id: user.id,
+            name: user.name,
+        };
+        return jwt.sign(userData, this.config.sso_private_key, { algorithm: 'HS256' });
+    }
+}
+
+class Discord {
+    constructor(config) {
+        this.config = config;
+        // pass
+    }
+    async announce(message) {
+        fetch(this.config.bot.url + '/announce', {
+            method: 'POST',
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                "guildId": this.config.announce.guildId,
+                "channelId": this.config.announce.channelId,
+                "message": message,
+            })
+        });
+    }
+}
+
+const log$5 = logger('WebSocketServer.js');
 class EvtBus {
     constructor() {
         this._on = {};
@@ -286,13 +699,13 @@ class WebSocketServer {
         this._websocketserver.on('connection', (socket, request) => {
             const pathname = new URL(this.config.connectstring).pathname;
             if (request.url.indexOf(pathname) !== 0) {
-                log$7.log('bad request url: ', request.url);
+                log$5.log('bad request url: ', request.url);
                 socket.close();
                 return;
             }
             socket.on('message', (data) => {
                 const strData = String(data);
-                log$7.log(`ws`, socket.protocol, strData);
+                log$5.log(`ws`, socket.protocol, strData);
                 this.evt.dispatch('message', { socket, data: strData });
             });
             socket.on('close', () => {
@@ -490,6 +903,13 @@ var Geometry = {
     rectMoved,
     rectCenterDistance,
     rectsOverlap,
+};
+
+const cropUrl = (imageUrl, crop) => {
+    return imageUrl
+        .replace('/uploads/', '/image-service/image/')
+        .replace(/\?.*/, '')
+        + Util.asQueryArgs(crop);
 };
 
 const MS = 1;
@@ -1347,6 +1767,9 @@ function Game_getImageUrl(game) {
     if (!imageUrl) {
         throw new Error('[2021-07-11] no image url set');
     }
+    if (game.crop) {
+        return cropUrl(imageUrl, game.crop);
+    }
     return imageUrl;
 }
 function Game_isFinished(game) {
@@ -1403,27 +1826,6 @@ var GameCommon = {
     Game_isFinished,
 };
 
-const log$6 = logger('Config.ts');
-const __filename$1 = fileURLToPath(import.meta.url);
-const __dirname$1 = dirname(__filename$1);
-const BASE_DIR = `${__dirname$1}/../..`;
-const DATA_DIR = `${BASE_DIR}/data`;
-const UPLOAD_DIR = `${BASE_DIR}/data/uploads`;
-const UPLOAD_URL = `/uploads`;
-const PUBLIC_DIR = `${BASE_DIR}/build/public/`;
-const DB_PATCHES_DIR = `${BASE_DIR}/src/dbpatches`;
-const init = () => {
-    const configFile = process.env.APP_CONFIG || 'config.json';
-    if (configFile === '') {
-        log$6.error('APP_CONFIG environment variable not set or empty');
-        process.exit(2);
-    }
-    const config = JSON.parse(String(readFileSync(configFile)));
-    config.dir = { DATA_DIR, UPLOAD_DIR, UPLOAD_URL, PUBLIC_DIR, DB_PATCHES_DIR };
-    return config;
-};
-const config = init();
-
 const LINES_PER_LOG_FILE = 10000;
 const POST_GAME_LOG_DURATION = 5 * Time.MIN;
 const shouldLog = (finishTs, currentTs) => {
@@ -1475,11 +1877,11 @@ const _log = (gameId, type, ...args) => {
     if (idxObj.total % idxObj.perFile === 0) {
         idxObj.currentFile = filename(gameId, idxObj.total);
     }
-    const tsIdx = type === Protocol.LOG_HEADER ? 3 : (args.length - 1);
-    const ts = args[tsIdx];
+    const timestampIdx = type === Protocol.LOG_HEADER ? 3 : (args.length - 1);
+    const ts = args[timestampIdx];
     if (type !== Protocol.LOG_HEADER) {
         // for everything but header save the diff to last log entry
-        args[tsIdx] = ts - idxObj.lastTs;
+        args[timestampIdx] = ts - idxObj.lastTs;
     }
     const line = JSON.stringify([type, ...args]).slice(1, -1);
     fs.appendFileSync(idxObj.currentFile, line + "\n");
@@ -1506,7 +1908,9 @@ const get = (gameId, offset = 0) => {
         log[0][7] = DefaultSnapMode(log[0][7]);
         log[0][8] = log[0][8] || null; // creatorUserId
         log[0][9] = log[0][9] || 0; // private
+        log[0][10] = log[0][10] || undefined; // crop
     }
+    console.log(log[0]);
     return log;
 };
 var GameLog = {
@@ -1873,6 +2277,69 @@ var Images = {
 // cut size of each puzzle piece in the
 // final resized version of the puzzle image
 const PIECE_SIZE = 64;
+const determinePiecesXY = (dim, targetPiecesCount) => {
+    const w_ = dim.w < dim.h ? (dim.w * dim.h) : (dim.w * dim.w);
+    const h_ = dim.w < dim.h ? (dim.h * dim.h) : (dim.w * dim.h);
+    let size = 0;
+    let pieces = 0;
+    do {
+        size++;
+        pieces = Math.floor(w_ / size) * Math.floor(h_ / size);
+    } while (pieces >= targetPiecesCount);
+    if (pieces !== targetPiecesCount) {
+        size--;
+    }
+    return {
+        countHorizontal: Math.floor(w_ / size),
+        countVertical: Math.floor(h_ / size),
+    };
+};
+const determinePuzzleInfo = (dim, desiredPieceCount) => {
+    const { countHorizontal, countVertical } = determinePiecesXY(dim, desiredPieceCount);
+    const pieceCount = countHorizontal * countVertical;
+    const pieceSize = PIECE_SIZE;
+    const width = countHorizontal * pieceSize;
+    const height = countVertical * pieceSize;
+    const pieceMarginWidth = pieceSize * .5;
+    const pieceDrawSize = Math.round(pieceSize + pieceMarginWidth * 2);
+    return {
+        width,
+        height,
+        pieceSize: pieceSize,
+        pieceMarginWidth: pieceMarginWidth,
+        pieceDrawSize: pieceDrawSize,
+        pieceCount: pieceCount,
+        pieceCountHorizontal: countHorizontal,
+        pieceCountVertical: countVertical,
+        desiredPieceCount: desiredPieceCount,
+    };
+};
+function determineTabs(shapeMode) {
+    switch (shapeMode) {
+        case ShapeMode.ANY:
+            return [-1, 0, 1];
+        case ShapeMode.FLAT:
+            return [0];
+        case ShapeMode.NORMAL:
+        default:
+            return [-1, 1];
+    }
+}
+function determinePuzzlePieceShapes(rng, info, shapeMode) {
+    const tabs = determineTabs(shapeMode);
+    const shapes = new Array(info.pieceCount);
+    for (let i = 0; i < info.pieceCount; i++) {
+        const coord = Util.coordByPieceIdx(info, i);
+        shapes[i] = {
+            top: coord.y === 0 ? 0 : shapes[i - info.pieceCountHorizontal].bottom * -1,
+            right: coord.x === info.pieceCountHorizontal - 1 ? 0 : rng.choice(tabs),
+            left: coord.x === 0 ? 0 : shapes[i - 1].right * -1,
+            bottom: coord.y === info.pieceCountVertical - 1 ? 0 : rng.choice(tabs),
+        };
+    }
+    return shapes.map(Util.encodeShape);
+}
+
 async function createPuzzle(rng, targetPieceCount, image, ts, shapeMode, gameVersion) {
     const imagePath = `${config.dir.UPLOAD_DIR}/${image.filename}`;
     const imageUrl = image.url;
@@ -2003,69 +2470,8 @@ function determineTableDim(info, gameVersion) {
     const tableSize = Math.max(info.width, info.height) * 6;
     return { w: tableSize, h: tableSize };
 }
-function determineTabs(shapeMode) {
-    switch (shapeMode) {
-        case ShapeMode.ANY:
-            return [-1, 0, 1];
-        case ShapeMode.FLAT:
-            return [0];
-        case ShapeMode.NORMAL:
-        default:
-            return [-1, 1];
-    }
-}
-function determinePuzzlePieceShapes(rng, info, shapeMode) {
-    const tabs = determineTabs(shapeMode);
-    const shapes = new Array(info.pieceCount);
-    for (let i = 0; i < info.pieceCount; i++) {
-        const coord = Util.coordByPieceIdx(info, i);
-        shapes[i] = {
-            top: coord.y === 0 ? 0 : shapes[i - info.pieceCountHorizontal].bottom * -1,
-            right: coord.x === info.pieceCountHorizontal - 1 ? 0 : rng.choice(tabs),
-            left: coord.x === 0 ? 0 : shapes[i - 1].right * -1,
-            bottom: coord.y === info.pieceCountVertical - 1 ? 0 : rng.choice(tabs),
-        };
-    }
-    return shapes.map(Util.encodeShape);
-}
-const determinePiecesXY = (dim, targetPiecesCount) => {
-    const w_ = dim.w < dim.h ? (dim.w * dim.h) : (dim.w * dim.w);
-    const h_ = dim.w < dim.h ? (dim.h * dim.h) : (dim.w * dim.h);
-    let size = 0;
-    let pieces = 0;
-    do {
-        size++;
-        pieces = Math.floor(w_ / size) * Math.floor(h_ / size);
-    } while (pieces >= targetPiecesCount);
-    if (pieces !== targetPiecesCount) {
-        size--;
-    }
-    return {
-        countHorizontal: Math.floor(w_ / size),
-        countVertical: Math.floor(h_ / size),
-    };
-};
-const determinePuzzleInfo = (dim, targetPieceCount) => {
-    const { countHorizontal, countVertical } = determinePiecesXY(dim, targetPieceCount);
-    const pieceCount = countHorizontal * countVertical;
-    const pieceSize = PIECE_SIZE;
-    const width = countHorizontal * pieceSize;
-    const height = countVertical * pieceSize;
-    const pieceMarginWidth = pieceSize * .5;
-    const pieceDrawSize = Math.round(pieceSize + pieceMarginWidth * 2);
-    return {
-        width,
-        height,
-        pieceSize: pieceSize,
-        pieceMarginWidth: pieceMarginWidth,
-        pieceDrawSize: pieceDrawSize,
-        pieceCount: pieceCount,
-        pieceCountHorizontal: countHorizontal,
-        pieceCountVertical: countVertical,
-    };
-};
 
-const log$5 = logger('GameStorage.js');
+const log$4 = logger('GameStorage.js');
 const dirtyGames = {};
 function setDirty(gameId) {
     dirtyGames[gameId] = true;
@@ -2094,6 +2500,7 @@ function gameRowToGameObject(gameRow) {
     }
     const gameObject = storeDataToGame(game, gameRow.creator_user_id, !!gameRow.private);
     gameObject.hasReplay = GameLog.hasReplay(gameObject);
+    gameObject.crop = game.crop;
     return gameObject;
 }
 async function getGameRowById(db, gameId) {
@@ -2101,15 +2508,15 @@ async function getGameRowById(db, gameId) {
     return gameRow || null;
 }
 async function loadGame(db, gameId) {
-    log$5.info(`[INFO] loading game: ${gameId}`);
+    log$4.info(`[INFO] loading game: ${gameId}`);
     const gameRow = await getGameRowById(db, gameId);
     if (!gameRow) {
-        log$5.info(`[INFO] game not found: ${gameId}`);
+        log$4.info(`[INFO] game not found: ${gameId}`);
         return null;
     }
     const gameObject = gameRowToGameObject(gameRow);
     if (!gameObject) {
-        log$5.error(`[ERR] unable to turn game row into game object: ${gameRow.id}`);
+        log$4.error(`[ERR] unable to turn game row into game object: ${gameRow.id}`);
         return null;
     }
     return gameObject;
@@ -2119,7 +2526,7 @@ const gameRowsToGames = (gameRows) => {
     for (const gameRow of gameRows) {
         const gameObject = gameRowToGameObject(gameRow);
         if (!gameObject) {
-            log$5.error(`[ERR] unable to turn game row into game object: ${gameRow.id}`);
+            log$4.error(`[ERR] unable to turn game row into game object: ${gameRow.id}`);
             continue;
         }
         games.push(gameObject);
@@ -2160,7 +2567,7 @@ async function persistGame(db, game) {
     }, {
         id: game.id,
     });
-    log$5.info(`[INFO] persisted game ${game.id}`);
+    log$4.info(`[INFO] persisted game ${game.id}`);
 }
 function storeDataToGame(storeData, creatorUserId, isPrivate) {
     return {
@@ -2194,6 +2601,7 @@ function gameToStoreData(game) {
         shapeMode: game.shapeMode,
         snapMode: game.snapMode,
         hasReplay: game.hasReplay,
+        crop: game.crop,
     };
 }
 var GameStorage = {
@@ -2208,7 +2616,7 @@ var GameStorage = {
     dirtyGameIds,
 };
 
-async function createGameObject(gameId, gameVersion, targetPieceCount, image, ts, scoreMode, shapeMode, snapMode, creatorUserId, hasReplay, isPrivate) {
+async function createGameObject(gameId, gameVersion, targetPieceCount, image, ts, scoreMode, shapeMode, snapMode, creatorUserId, hasReplay, isPrivate, crop) {
     const seed = Util.hash(gameId + ' ' + ts);
     const rng = new Rng(seed);
     return {
@@ -2223,6 +2631,7 @@ async function createGameObject(gameId, gameVersion, targetPieceCount, image, ts
         snapMode,
         hasReplay,
         private: isPrivate,
+        crop,
     };
 }
 async function createNewGame(db, gameSettings, ts, creatorUserId) {
@@ -2234,9 +2643,9 @@ async function createNewGame(db, gameSettings, ts, creatorUserId) {
         gameId = Util.uniqId();
     } while (await GameStorage.exists(db, gameId));
     const gameObject = await createGameObject(gameId, Protocol.GAME_VERSION, gameSettings.tiles, gameSettings.image, ts, gameSettings.scoreMode, gameSettings.shapeMode, gameSettings.snapMode, creatorUserId, true, // hasReplay
-    gameSettings.private);
+    gameSettings.private, gameSettings.crop);
     GameLog.create(gameId, ts);
-    GameLog.log(gameObject.id, Protocol.LOG_HEADER, gameObject.gameVersion, gameSettings.tiles, gameSettings.image, ts, gameObject.scoreMode, gameObject.shapeMode, gameObject.snapMode, gameObject.creatorUserId, gameObject.private ? 1 : 0);
+    GameLog.log(gameObject.id, Protocol.LOG_HEADER, gameObject.gameVersion, gameSettings.tiles, gameSettings.image, ts, gameObject.scoreMode, gameObject.shapeMode, gameObject.snapMode, gameObject.creatorUserId, gameObject.private ? 1 : 0, gameSettings.crop);
     GameCommon.setGame(gameObject.id, gameObject);
     GameStorage.setDirty(gameObject.id);
     return gameObject.id;
@@ -2270,349 +2679,14 @@ var Game = {
     handleInput,
 };
 
-const log$4 = logger('GameSocket.js');
-// Map<gameId, Socket[]>
-const SOCKETS = {};
-function socketExists(gameId, socket) {
-    if (!(gameId in SOCKETS)) {
-        return false;
-    }
-    return SOCKETS[gameId].includes(socket);
-}
-function removeSocket(gameId, socket) {
-    if (!(gameId in SOCKETS)) {
-        return;
-    }
-    SOCKETS[gameId] = SOCKETS[gameId].filter((s) => s !== socket);
-    log$4.log('removed socket: ', gameId, socket.protocol);
-    log$4.log('socket count: ', Object.keys(SOCKETS[gameId]).length);
-}
-function addSocket(gameId, socket) {
-    if (!(gameId in SOCKETS)) {
-        SOCKETS[gameId] = [];
-    }
-    if (!SOCKETS[gameId].includes(socket)) {
-        SOCKETS[gameId].push(socket);
-        log$4.log('added socket: ', gameId, socket.protocol);
-        log$4.log('socket count: ', Object.keys(SOCKETS[gameId]).length);
-    }
-}
-function getSockets(gameId) {
-    if (!(gameId in SOCKETS)) {
-        return [];
-    }
-    return SOCKETS[gameId];
-}
-var GameSockets = {
-    addSocket,
-    removeSocket,
-    socketExists,
-    getSockets,
-};
-
-// @ts-ignore
-const { Client } = pg.default;
-const log$3 = logger('Db.ts');
-const mutex = new Mutex();
-class Db {
-    constructor(connectStr, patchesDir) {
-        this.patchesDir = patchesDir;
-        this.dbh = new Client(connectStr);
-    }
-    async connect() {
-        await this.dbh.connect();
-    }
-    async close() {
-        await this.dbh.end();
-    }
-    async patch(verbose = true) {
-        await this.run('CREATE TABLE IF NOT EXISTS public.db_patches ( id TEXT PRIMARY KEY);', []);
-        const files = fs.readdirSync(this.patchesDir);
-        const patches = (await this.getMany('public.db_patches')).map(row => row.id);
-        for (const f of files) {
-            if (patches.includes(f)) {
-                if (verbose) {
-                    log$3.info(`➡ skipping already applied db patch: ${f}`);
-                }
-                continue;
-            }
-            const contents = fs.readFileSync(`${this.patchesDir}/${f}`, 'utf-8');
-            const all = contents.split(';').map(s => s.trim()).filter(s => !!s);
-            try {
-                try {
-                    await this.run('BEGIN');
-                    for (const q of all) {
-                        await this.run(q);
-                    }
-                    await this.run('COMMIT');
-                }
-                catch (e) {
-                    await this.run('ROLLBACK');
-                    throw e;
-                }
-                await this.insert('public.db_patches', { id: f });
-                log$3.info(`✓ applied db patch: ${f}`);
-            }
-            catch (e) {
-                log$3.error(`✖ unable to apply patch: ${f} ${e}`);
-                return;
-            }
-        }
-    }
-    _buildWhere(where, $i = 1) {
-        const wheres = [];
-        const values = [];
-        for (const k of Object.keys(where)) {
-            if (where[k] === null) {
-                wheres.push(k + ' IS NULL');
-                continue;
-            }
-            if (typeof where[k] === 'object') {
-                let prop = '$nin';
-                if (where[k][prop]) {
-                    if (where[k][prop].length > 0) {
-                        wheres.push(k + ' NOT IN (' + where[k][prop].map(() => `$${$i++}`) + ')');
-                        values.push(...where[k][prop]);
-                    }
-                    else {
-                        wheres.push('TRUE');
-                    }
-                    continue;
-                }
-                prop = '$in';
-                if (where[k][prop]) {
-                    if (where[k][prop].length > 0) {
-                        wheres.push(k + ' IN (' + where[k][prop].map(() => `$${$i++}`) + ')');
-                        values.push(...where[k][prop]);
-                    }
-                    else {
-                        wheres.push('FALSE');
-                    }
-                    continue;
-                }
-                prop = "$gte";
-                if (where[k][prop]) {
-                    wheres.push(k + ` >= $${$i++}`);
-                    values.push(where[k][prop]);
-                    continue;
-                }
-                prop = "$lte";
-                if (where[k][prop]) {
-                    wheres.push(k + ` <= $${$i++}`);
-                    values.push(where[k][prop]);
-                    continue;
-                }
-                prop = "$lte";
-                if (where[k][prop]) {
-                    wheres.push(k + ` <= $${$i++}`);
-                    values.push(where[k][prop]);
-                    continue;
-                }
-                prop = '$gt';
-                if (where[k][prop]) {
-                    wheres.push(k + ` > $${$i++}`);
-                    values.push(where[k][prop]);
-                    continue;
-                }
-                prop = '$lt';
-                if (where[k][prop]) {
-                    wheres.push(k + ` < $${$i++}`);
-                    values.push(where[k][prop]);
-                    continue;
-                }
-                prop = '$ne';
-                if (where[k][prop] === null) {
-                    wheres.push(k + ` IS NOT NULL`);
-                    continue;
-                }
-                else if (where[k][prop]) {
-                    wheres.push(k + ` != $${$i++}`);
-                    values.push(where[k][prop]);
-                    continue;
-                }
-                // TODO: implement rest of mongo like query args ($eq, $lte, $in...)
-                throw new Error('not implemented: ' + JSON.stringify(where[k]));
-            }
-            wheres.push(k + ` = $${$i++}`);
-            values.push(where[k]);
-        }
-        return {
-            sql: wheres.length > 0 ? ' WHERE ' + wheres.join(' AND ') : '',
-            values,
-            $i,
-        };
-    }
-    _buildOrderBy(orderBy) {
-        const sorts = [];
-        for (const s of orderBy) {
-            const k = Object.keys(s)[0];
-            sorts.push(k + ' ' + (s[k] > 0 ? 'ASC' : 'DESC'));
-        }
-        return sorts.length > 0 ? ' ORDER BY ' + sorts.join(', ') : '';
-    }
-    _buildLimit(limit) {
-        const parts = [];
-        // make sure we have integers, so we can safely inline the
-        // values into the sql
-        const limitVal = parseInt(`${limit.limit}`, 10);
-        const offsetVal = parseInt(`${limit.offset}`, 10);
-        if (limitVal >= 0) {
-            parts.push(` LIMIT ${limitVal}`);
-        }
-        if (offsetVal >= 0) {
-            parts.push(` OFFSET ${offsetVal}`);
-        }
-        return parts.join('');
-    }
-    async _get(query, params = []) {
-        try {
-            return (await this.dbh.query(query, params)).rows[0] || null;
-        }
-        catch (e) {
-            log$3.info('_get', query, params);
-            console.error(e);
-            throw e;
-        }
-    }
-    async run(query, params = []) {
-        try {
-            return await this.dbh.query(query, params);
-        }
-        catch (e) {
-            log$3.info('run', query, params);
-            console.error(e);
-            throw e;
-        }
-    }
-    async _getMany(query, params = []) {
-        try {
-            return (await this.dbh.query(query, params)).rows || [];
-        }
-        catch (e) {
-            log$3.info('_getMany', query, params);
-            console.error(e);
-            throw e;
-        }
-    }
-    async get(table, whereRaw = {}, orderBy = []) {
-        const where = this._buildWhere(whereRaw);
-        const orderBySql = this._buildOrderBy(orderBy);
-        const sql = 'SELECT * FROM ' + table + where.sql + orderBySql;
-        return await this._get(sql, where.values);
-    }
-    async getMany(table, whereRaw = {}, orderBy = [], limit = { offset: -1, limit: -1 }) {
-        const where = this._buildWhere(whereRaw);
-        const orderBySql = this._buildOrderBy(orderBy);
-        const limitSql = this._buildLimit(limit);
-        const sql = 'SELECT * FROM ' + table + where.sql + orderBySql + limitSql;
-        return await this._getMany(sql, where.values);
-    }
-    async count(table, whereRaw = {}) {
-        const where = this._buildWhere(whereRaw);
-        const sql = 'SELECT COUNT(*) FROM ' + table + where.sql;
-        const row = await this._get(sql, where.values);
-        return parseInt(row.count, 10);
-    }
-    async delete(table, whereRaw = {}) {
-        const where = this._buildWhere(whereRaw);
-        const sql = 'DELETE FROM ' + table + where.sql;
-        return await this.run(sql, where.values);
-    }
-    async exists(table, whereRaw) {
-        return !!await this.get(table, whereRaw);
-    }
-    async upsert(table, data, check, idcol = null) {
-        return mutex.runExclusive(async () => {
-            if (!await this.exists(table, check)) {
-                return await this.insert(table, data, idcol);
-            }
-            await this.update(table, data, check);
-            if (idcol === null) {
-                return 0; // dont care about id
-            }
-            return (await this.get(table, check))[idcol]; // get id manually
-        });
-    }
-    async insert(table, data, idcol = null) {
-        const keys = Object.keys(data);
-        const values = keys.map(k => data[k]);
-        let $i = 1;
-        let sql = 'INSERT INTO ' + table
-            + ' (' + keys.join(',') + ')'
-            + ' VALUES (' + keys.map(() => `$${$i++}`).join(',') + ')';
-        if (idcol) {
-            sql += ` RETURNING ${idcol}`;
-            return (await this.run(sql, values)).rows[0][idcol];
-        }
-        await this.run(sql, values);
-        return 0;
-    }
-    async update(table, data, whereRaw = {}) {
-        const keys = Object.keys(data);
-        if (keys.length === 0) {
-            return;
-        }
-        let $i = 1;
-        const values = keys.map(k => data[k]);
-        const setSql = ' SET ' + keys.map((k) => `${k} = $${$i++}`).join(',');
-        const where = this._buildWhere(whereRaw, $i);
-        const sql = 'UPDATE ' + table + setSql + where.sql;
-        await this.run(sql, [...values, ...where.values]);
-    }
-}
-
-const log$2 = logger('ImageResize.ts');
-const resizeImage = async (filename) => {
-    try {
-        const imagePath = `${config.dir.UPLOAD_DIR}/${filename}`;
-        const resizeDir = `${config.dir.UPLOAD_DIR}/r/`;
-        if (!fs.existsSync(resizeDir)) {
-            fs.mkdirSync(resizeDir, { recursive: true });
-        }
-        const imageOutPath = `${resizeDir}/${filename}`;
-        const orientation = await getExifOrientation(imagePath);
-        let sharpImg = sharp(imagePath, { failOnError: false });
-        // when image is rotated to the left or right, switch width/height
-        // https://jdhao.github.io/2019/07/31/image_rotation_exif_info/
-        if (orientation === 6) {
-            sharpImg = sharpImg.rotate(90);
-        }
-        else if (orientation === 3) {
-            sharpImg = sharpImg.rotate(180);
-        }
-        else if (orientation === 8) {
-            sharpImg = sharpImg.rotate(270);
-        }
-        const sizes = [
-            [150, 100, 'contain'],
-            [375, 210, 'contain'],
-            [375, null, 'cover'],
-            [620, 496, 'contain'],
-        ];
-        for (const [w, h, fit] of sizes) {
-            const filename = `${imageOutPath}-${w}x${h || 0}.webp`;
-            if (!fs.existsSync(filename)) {
-                log$2.info(w, h, filename);
-                await sharpImg.resize(w, h, { fit }).toFile(filename);
-            }
-        }
-    }
-    catch (e) {
-        log$2.error('error when resizing image', filename, e);
-    }
-};
-var ImageResize = {
-    resizeImage,
-};
-
-const log$1 = logger('web_routes/api/index.ts');
+const log$3 = logger('web_routes/api/index.ts');
 const GAMES_PER_PAGE_LIMIT = 10;
 const IMAGES_PER_PAGE_LIMIT = 20;
 const addAuthToken = async (db, userId, res) => {
     const token = await Users.addAuthToken(db, userId);
     res.cookie(COOKIE_TOKEN, token, { maxAge: 356 * Time.DAY, httpOnly: true });
 };
-function createRouter$1(db, mail, canny) {
+function createRouter$2(db, mail, canny) {
     const storage = multer.diskStorage({
         destination: config.dir.UPLOAD_DIR,
         filename: function (req, file, cb) {
@@ -2938,7 +3012,8 @@ function createRouter$1(db, mail, canny) {
             log[0][7], // snapMode
             log[0][8], // creatorUserId
             true, // hasReplay
-            !!log[0][9]);
+            !!log[0][9], // private
+            log[0][10]);
         }
         res.send({ log, game: game ? Util.encodeGame(game) : null });
     });
@@ -3057,25 +3132,17 @@ function createRouter$1(db, mail, canny) {
         res.send({ ok: true, image: await Images.imageFromDb(db, data.id) });
     });
     router.get('/proxy', (req, res) => {
-        log$1.info('proxy request for url:', req.query.url);
+        log$3.info('proxy request for url:', req.query.url);
         request(req.query.url).pipe(res);
     });
     router.post('/upload', (req, res) => {
         upload(req, res, async (err) => {
             if (err) {
-                log$1.log('/api/upload/', 'error', err);
+                log$3.log('/api/upload/', 'error', err);
                 res.status(400).send("Something went wrong!");
                 return;
             }
-            log$1.info('req.file.filename', req.file.filename);
-            try {
-                await ImageResize.resizeImage(req.file.filename);
-            }
-            catch (err) {
-                log$1.log('/api/upload/', 'resize error', err);
-                res.status(400).send("Something went wrong!");
-                return;
-            }
+            log$3.info('req.file.filename', req.file.filename);
             const user = await Users.getOrCreateUserByRequest(db, req);
             const dim = await Images.getDimensions(`${config.dir.UPLOAD_DIR}/${req.file.filename}`);
             // post form, so booleans are submitted as 'true' | 'false'
@@ -3108,14 +3175,14 @@ function createRouter$1(db, mail, canny) {
             res.send({ id: gameId });
         }
         catch (e) {
-            log$1.error(e);
+            log$3.error(e);
             res.status(400).send({ reason: e.message });
         }
     });
     return router;
 }
 
-function createRouter(db, discord) {
+function createRouter$1(db, discord) {
     const router = express.Router();
     const requireLoginApi = async (req, res, next) => {
         if (!req.token) {
@@ -3184,255 +3251,339 @@ function createRouter(db, discord) {
     return router;
 }
 
-// @ts-ignore
-const log = logger('Mail.ts');
-const BASE_URL = 'https://jigsaw.hyottoko.club';
-const NAME = 'jigsaw.hyottoko.club';
-const NOREPLY_MAIL = 'noreply@jigsaw.hyottoko.club';
-const SENDER = { name: NAME, email: NOREPLY_MAIL };
-class Mail {
-    constructor(cfg) {
-        const defaultClient = SibApiV3Sdk.ApiClient.instance;
-        const apiKey = defaultClient.authentications['api-key'];
-        apiKey.apiKey = cfg.sendinblue_api_key;
-        this.apiInstance = new SibApiV3Sdk.TransactionalEmailsApi();
+const log$2 = logger('ImageResize.ts');
+const loadSharpImage = async (imagePath) => {
+    const orientation = await getExifOrientation(imagePath);
+    let sharpImg = sharp(imagePath, { failOnError: false });
+    // when image is rotated to the left or right, switch width/height
+    // https://jdhao.github.io/2019/07/31/image_rotation_exif_info/
+    if (orientation === 6) {
+        sharpImg = sharpImg.rotate(90);
     }
-    sendPasswordResetMail(passwordReset) {
-        const mail = new SibApiV3Sdk.SendSmtpEmail();
-        mail.subject = "{{params.subject}}";
-        mail.htmlContent = `<html><body>
-      <h1>Hello {{params.username}}</h1>
-      <p>To reset your password for <a href="${BASE_URL}">${NAME}</a>
-      click the following link:</p>
-      <p><a href="{{params.link}}">{{params.link}}</a></p>
-      </body></html>`;
-        mail.sender = SENDER;
-        mail.to = [{
-                email: passwordReset.user.email,
-                name: passwordReset.user.name,
-            }];
-        mail.params = {
-            username: passwordReset.user.name,
-            subject: `Password Reset for ${NAME}`,
-            link: `${BASE_URL}/#password-reset=${passwordReset.token.token}`
-        };
-        this.send(mail);
+    else if (orientation === 3) {
+        sharpImg = sharpImg.rotate(180);
     }
-    sendRegistrationMail(registration) {
-        const mail = new SibApiV3Sdk.SendSmtpEmail();
-        mail.subject = "{{params.subject}}";
-        mail.htmlContent = `<html><body>
-      <h1>Hello {{params.username}}</h1>
-      <p>Thank you for registering an account at <a href="${BASE_URL}">${NAME}</a>.</p>
-      <p>Please confirm your registration by clicking the following link:</p>
-      <p><a href="{{params.link}}">{{params.link}}</a></p>
-      </body></html>`;
-        mail.sender = SENDER;
-        mail.to = [{
-                email: registration.user.email,
-                name: registration.user.name,
-            }];
-        mail.params = {
-            username: registration.user.name,
-            subject: `User Registration on ${NAME}`,
-            link: `${BASE_URL}/api/verify-email/${registration.token.token}`
-        };
-        this.send(mail);
+    else if (orientation === 8) {
+        sharpImg = sharpImg.rotate(270);
     }
-    send(mail) {
-        this.apiInstance.sendTransacEmail(mail).then(function (data) {
-            log.info({ data }, 'API called successfully');
-        }, function (error) {
-            log.error({ error });
-        });
+    return sharpImg;
+};
+const cropImage = async (filename, crop) => {
+    try {
+        const baseDir = config.dir.CROP_DIR;
+        if (!fs.existsSync(baseDir)) {
+            fs.mkdirSync(baseDir, { recursive: true });
+        }
+        const originalImagePath = `${config.dir.UPLOAD_DIR}/${filename}`;
+        const sharpImg = await loadSharpImage(originalImagePath);
+        const cropFilename = `${baseDir}/${filename}-${crop.x}_${crop.y}_${crop.w}_${crop.h}.webp`;
+        if (!fs.existsSync(cropFilename)) {
+            await sharpImg.extract({
+                top: crop.y,
+                left: crop.x,
+                width: crop.w,
+                height: crop.h
+            }).toFile(cropFilename);
+        }
+        return cropFilename;
     }
+    catch (e) {
+        log$2.error('error when cropping image', filename, e);
+        return null;
+    }
+};
+const resizeImage = async (filename, w, h, fit) => {
+    try {
+        const baseDir = config.dir.RESIZE_DIR;
+        if (!fs.existsSync(baseDir)) {
+            fs.mkdirSync(baseDir, { recursive: true });
+        }
+        const originalImagePath = `${config.dir.UPLOAD_DIR}/${filename}`;
+        const sharpImg = await loadSharpImage(originalImagePath);
+        const resizeFilename = `${baseDir}/${filename}-${w}x${h || 0}-${fit}.webp`;
+        if (!fs.existsSync(resizeFilename)) {
+            log$2.info(w, h, resizeFilename);
+            await sharpImg.resize(w, h || null, { fit }).toFile(resizeFilename);
+        }
+        return resizeFilename;
+    }
+    catch (e) {
+        log$2.error('error when resizing image', filename, e);
+        return null;
+    }
+};
+var ImageResize = {
+    cropImage,
+    resizeImage,
+};
+
+function createRouter() {
+    const router = express.Router();
+    router.get('/image/:filename', async (req, res) => {
+        const filename = req.params.filename;
+        const query = req.query;
+        // RESIZE
+        if (('w' in query && 'h' in query && 'fit' in query)) {
+            const w = parseInt(`${query.w}`, 10);
+            const h = parseInt(`${query.h}`, 10);
+            const fit = `${query.fit}`;
+            if (`${w}` !== query.w || `${h}` !== query.h) {
+                res.status(400).send('x, y must be numbers');
+                return;
+            }
+            const resizedFilename = await ImageResize.resizeImage(filename, w, h, fit);
+            if (!resizedFilename) {
+                res.status(500).send('unable to resize image');
+                return;
+            }
+            const p = path.resolve(config.dir.RESIZE_DIR, resizedFilename);
+            res.sendFile(p);
+            return;
+        }
+        // CROP
+        if (('x' in query && 'y' in query && 'w' in query && 'h' in query)) {
+            const crop = {
+                x: parseInt(`${query.x}`, 10),
+                y: parseInt(`${query.y}`, 10),
+                w: parseInt(`${query.w}`, 10),
+                h: parseInt(`${query.h}`, 10),
+            };
+            if (`${crop.x}` !== query.x ||
+                `${crop.y}` !== query.y ||
+                `${crop.w}` !== query.w ||
+                `${crop.h}` !== query.h) {
+                res.status(400).send('x, y, w and h must be numbers');
+                return;
+            }
+            const croppedFilename = await ImageResize.cropImage(filename, crop);
+            if (!croppedFilename) {
+                res.status(500).send('unable to crop image');
+                return;
+            }
+            const p = path.resolve(config.dir.CROP_DIR, croppedFilename);
+            res.sendFile(p);
+        }
+        // original image
+        const p = path.resolve(config.dir.UPLOAD_DIR, filename);
+        res.sendFile(p);
+        return;
+    });
+    return router;
 }
 
-class Canny {
-    constructor(config) {
-        this.config = config;
+const log$1 = logger('Server.ts');
+class Server {
+    constructor(db, mail, canny, discord, gameSockets) {
+        this.db = db;
+        this.mail = mail;
+        this.canny = canny;
+        this.discord = discord;
+        this.gameSockets = gameSockets;
+        this.webserver = null;
+        this.websocketserver = null;
         // pass
     }
-    createToken(user) {
-        if (!user.email) {
-            return null;
-        }
-        const userData = {
-            email: user.email,
-            id: user.id,
-            name: user.name,
-        };
-        return jwt.sign(userData, this.config.sso_private_key, { algorithm: 'HS256' });
-    }
-}
-
-class Discord {
-    constructor(config) {
-        this.config = config;
-        // pass
-    }
-    async announce(message) {
-        fetch(this.config.bot.url + '/announce', {
-            method: 'POST',
-            headers: {
-                'Accept': 'application/json',
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                "guildId": this.config.announce.guildId,
-                "channelId": this.config.announce.channelId,
-                "message": message,
-            })
-        });
-    }
-}
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-const run = async () => {
-    const indexFile = path.resolve(__dirname, '..', '..', 'build', 'public', 'index.html');
-    const db = new Db(config.db.connectStr, config.dir.DB_PATCHES_DIR);
-    await db.connect();
-    await db.patch();
-    const mail = new Mail(config.mail);
-    const canny = new Canny(config.canny);
-    const discord = new Discord(config.discord);
-    const log = logger('main.js');
-    const port = config.http.port;
-    const hostname = config.http.hostname;
-    const app = express();
-    app.use(cookieParser());
-    app.use(compression());
-    // add user info to all requests
-    app.use(async (req, _res, next) => {
-        const data = await Users.getUserInfoByRequest(db, req);
-        req.token = data.token;
-        req.user = data.user;
-        req.user_type = data.user_type;
-        next();
-    });
-    app.use('/admin/api', createRouter(db, discord));
-    app.use('/api', createRouter$1(db, mail, canny));
-    app.use('/uploads/', express.static(config.dir.UPLOAD_DIR));
-    app.use('/', express.static(config.dir.PUBLIC_DIR));
-    app.all('*', async (req, res) => {
-        res.sendFile(indexFile);
-    });
-    const wss = new WebSocketServer(config.ws);
-    const notify = (data, sockets) => {
-        for (const socket of sockets) {
-            wss.notifyOne(data, socket);
-        }
-    };
-    const persistGame = async (gameId) => {
+    async persistGame(gameId) {
         const game = GameCommon.get(gameId);
         if (!game) {
-            log.error(`[ERROR] unable to persist non existing game ${gameId}`);
+            log$1.error(`[ERROR] unable to persist non existing game ${gameId}`);
             return;
         }
-        await GameStorage.persistGame(db, game);
-    };
-    const persistGames = async () => {
+        await GameStorage.persistGame(this.db, game);
+    }
+    async persistGames() {
         for (const gameId of GameStorage.dirtyGameIds()) {
-            await persistGame(gameId);
+            await this.persistGame(gameId);
         }
-    };
-    wss.on('close', async ({ socket }) => {
-        try {
-            const proto = socket.protocol.split('|');
-            const clientId = proto[0];
-            const gameId = proto[1];
-            GameSockets.removeSocket(gameId, socket);
-            const ts = Time.timestamp();
-            const clientSeq = -1; // client lost connection, so clientSeq doesn't matter
-            const clientEvtData = [Protocol.INPUT_EV_CONNECTION_CLOSE];
-            const changes = Game.handleInput(gameId, clientId, clientEvtData, ts);
-            const sockets = GameSockets.getSockets(gameId);
-            if (sockets.length) {
-                notify([Protocol.EV_SERVER_EVENT, clientId, clientSeq, changes], sockets);
+    }
+    start() {
+        const port = config.http.port;
+        const hostname = config.http.hostname;
+        const app = express();
+        app.use(cookieParser());
+        app.use(compression());
+        // add user info to all requests
+        app.use(async (req, _res, next) => {
+            const data = await Users.getUserInfoByRequest(this.db, req);
+            req.token = data.token;
+            req.user = data.user;
+            req.user_type = data.user_type;
+            next();
+        });
+        app.use('/admin/api', createRouter$1(this.db, this.discord));
+        app.use('/api', createRouter$2(this.db, this.mail, this.canny));
+        app.use('/image-service', createRouter());
+        app.use('/uploads/', express.static(config.dir.UPLOAD_DIR));
+        app.use('/', express.static(config.dir.PUBLIC_DIR));
+        app.all('*', async (req, res) => {
+            res.sendFile(`${config.dir.PUBLIC_DIR}/index.html`);
+        });
+        const wss = new WebSocketServer(config.ws);
+        const notify = (data, sockets) => {
+            for (const socket of sockets) {
+                wss.notifyOne(data, socket);
             }
-            else {
-                persistGame(gameId);
-                log.info(`[INFO] unloading game: ${gameId}`);
-                GameCommon.unsetGame(gameId);
+        };
+        wss.on('close', async ({ socket }) => {
+            try {
+                const proto = socket.protocol.split('|');
+                const clientId = proto[0];
+                const gameId = proto[1];
+                this.gameSockets.removeSocket(gameId, socket);
+                const ts = Time.timestamp();
+                const clientSeq = -1; // client lost connection, so clientSeq doesn't matter
+                const clientEvtData = [Protocol.INPUT_EV_CONNECTION_CLOSE];
+                const changes = Game.handleInput(gameId, clientId, clientEvtData, ts);
+                const sockets = this.gameSockets.getSockets(gameId);
+                if (sockets.length) {
+                    notify([Protocol.EV_SERVER_EVENT, clientId, clientSeq, changes], sockets);
+                }
+                else {
+                    this.persistGame(gameId);
+                    log$1.info(`[INFO] unloading game: ${gameId}`);
+                    GameCommon.unsetGame(gameId);
+                }
             }
-        }
-        catch (e) {
-            log.error(e);
-        }
-    });
-    wss.on('message', async ({ socket, data }) => {
-        if (!data) {
-            // no data (maybe ping :3)
-            return;
-        }
-        try {
-            const proto = socket.protocol.split('|');
-            const clientId = proto[0];
-            const gameId = proto[1];
-            const msg = JSON.parse(data);
-            const msgType = msg[0];
-            switch (msgType) {
-                case Protocol.EV_CLIENT_INIT:
-                    {
-                        if (!GameCommon.loaded(gameId)) {
-                            const gameObject = await GameStorage.loadGame(db, gameId);
-                            if (!gameObject) {
-                                throw `[game ${gameId} does not exist... ]`;
+            catch (e) {
+                log$1.error(e);
+            }
+        });
+        wss.on('message', async ({ socket, data }) => {
+            if (!data) {
+                // no data (maybe ping :3)
+                return;
+            }
+            try {
+                const proto = socket.protocol.split('|');
+                const clientId = proto[0];
+                const gameId = proto[1];
+                const msg = JSON.parse(data);
+                const msgType = msg[0];
+                switch (msgType) {
+                    case Protocol.EV_CLIENT_INIT:
+                        {
+                            if (!GameCommon.loaded(gameId)) {
+                                const gameObject = await GameStorage.loadGame(this.db, gameId);
+                                if (!gameObject) {
+                                    throw `[game ${gameId} does not exist... ]`;
+                                }
+                                GameCommon.setGame(gameObject.id, gameObject);
                             }
-                            GameCommon.setGame(gameObject.id, gameObject);
-                        }
-                        const ts = Time.timestamp();
-                        Game.addPlayer(gameId, clientId, ts);
-                        GameSockets.addSocket(gameId, socket);
-                        const game = GameCommon.get(gameId);
-                        if (!game) {
-                            throw `[game ${gameId} does not exist (anymore)... ]`;
-                        }
-                        notify([Protocol.EV_SERVER_INIT, Util.encodeGame(game)], [socket]);
-                    }
-                    break;
-                case Protocol.EV_CLIENT_EVENT:
-                    {
-                        if (!GameCommon.loaded(gameId)) {
-                            const gameObject = await GameStorage.loadGame(db, gameId);
-                            if (!gameObject) {
-                                throw `[game ${gameId} does not exist... ]`;
-                            }
-                            GameCommon.setGame(gameObject.id, gameObject);
-                        }
-                        const clientSeq = msg[1];
-                        const clientEvtData = msg[2];
-                        const ts = Time.timestamp();
-                        let sendGame = false;
-                        if (!GameCommon.playerExists(gameId, clientId)) {
+                            const ts = Time.timestamp();
                             Game.addPlayer(gameId, clientId, ts);
-                            sendGame = true;
-                        }
-                        if (!GameSockets.socketExists(gameId, socket)) {
-                            GameSockets.addSocket(gameId, socket);
-                            sendGame = true;
-                        }
-                        if (sendGame) {
+                            this.gameSockets.addSocket(gameId, socket);
                             const game = GameCommon.get(gameId);
                             if (!game) {
                                 throw `[game ${gameId} does not exist (anymore)... ]`;
                             }
                             notify([Protocol.EV_SERVER_INIT, Util.encodeGame(game)], [socket]);
                         }
-                        const changes = Game.handleInput(gameId, clientId, clientEvtData, ts);
-                        notify([Protocol.EV_SERVER_EVENT, clientId, clientSeq, changes], GameSockets.getSockets(gameId));
-                    }
-                    break;
+                        break;
+                    case Protocol.EV_CLIENT_EVENT:
+                        {
+                            if (!GameCommon.loaded(gameId)) {
+                                const gameObject = await GameStorage.loadGame(this.db, gameId);
+                                if (!gameObject) {
+                                    throw `[game ${gameId} does not exist... ]`;
+                                }
+                                GameCommon.setGame(gameObject.id, gameObject);
+                            }
+                            const clientSeq = msg[1];
+                            const clientEvtData = msg[2];
+                            const ts = Time.timestamp();
+                            let sendGame = false;
+                            if (!GameCommon.playerExists(gameId, clientId)) {
+                                Game.addPlayer(gameId, clientId, ts);
+                                sendGame = true;
+                            }
+                            if (!this.gameSockets.socketExists(gameId, socket)) {
+                                this.gameSockets.addSocket(gameId, socket);
+                                sendGame = true;
+                            }
+                            if (sendGame) {
+                                const game = GameCommon.get(gameId);
+                                if (!game) {
+                                    throw `[game ${gameId} does not exist (anymore)... ]`;
+                                }
+                                notify([Protocol.EV_SERVER_INIT, Util.encodeGame(game)], [socket]);
+                            }
+                            const changes = Game.handleInput(gameId, clientId, clientEvtData, ts);
+                            notify([Protocol.EV_SERVER_EVENT, clientId, clientSeq, changes], this.gameSockets.getSockets(gameId));
+                        }
+                        break;
+                }
             }
+            catch (e) {
+                log$1.error(e);
+                log$1.error('data:', data);
+            }
+        });
+        this.webserver = app.listen(port, hostname, () => log$1.log(`server running on http://${hostname}:${port}`));
+        wss.listen();
+        this.websocketserver = wss;
+    }
+    close() {
+        log$1.log('shutting down webserver...');
+        if (this.webserver) {
+            this.webserver.close();
+            this.webserver = null;
         }
-        catch (e) {
-            log.error(e);
-            log.error('data:', data);
+        log$1.log('shutting down websocketserver...');
+        if (this.websocketserver) {
+            this.websocketserver.close();
+            this.websocketserver = null;
         }
-    });
-    const server = app.listen(port, hostname, () => log.log(`server running on http://${hostname}:${port}`));
-    wss.listen();
+    }
+}
+
+const log = logger('GameSocket.js');
+class GameSockets {
+    constructor() {
+        this.sockets = {};
+    }
+    socketExists(gameId, socket) {
+        if (!(gameId in this.sockets)) {
+            return false;
+        }
+        return this.sockets[gameId].includes(socket);
+    }
+    removeSocket(gameId, socket) {
+        if (!(gameId in this.sockets)) {
+            return;
+        }
+        this.sockets[gameId] = this.sockets[gameId].filter((s) => s !== socket);
+        log.log('removed socket: ', gameId, socket.protocol);
+        log.log('socket count: ', Object.keys(this.sockets[gameId]).length);
+    }
+    addSocket(gameId, socket) {
+        if (!(gameId in this.sockets)) {
+            this.sockets[gameId] = [];
+        }
+        if (!this.sockets[gameId].includes(socket)) {
+            this.sockets[gameId].push(socket);
+            log.log('added socket: ', gameId, socket.protocol);
+            log.log('socket count: ', Object.keys(this.sockets[gameId]).length);
+        }
+    }
+    getSockets(gameId) {
+        if (!(gameId in this.sockets)) {
+            return [];
+        }
+        return this.sockets[gameId];
+    }
+}
+
+const run = async () => {
+    const db = new Db(config.db.connectStr, config.dir.DB_PATCHES_DIR);
+    await db.connect();
+    await db.patch();
+    const mail = new Mail(config.mail);
+    const canny = new Canny(config.canny);
+    const discord = new Discord(config.discord);
+    const gameSockets = new GameSockets();
+    const server = new Server(db, mail, canny, discord, gameSockets);
+    server.start();
+    const log = logger('main.js');
     const memoryUsageHuman = () => {
         const totalHeapSize = v8.getHeapStatistics().total_available_size;
         const totalHeapSizeInGB = (totalHeapSize / 1024 / 1024 / 1024).toFixed(2);
@@ -3445,7 +3596,7 @@ const run = async () => {
     let persistInterval = null;
     const doPersist = async () => {
         log.log('Persisting games...');
-        await persistGames();
+        await server.persistGames();
         memoryUsageHuman();
         persistInterval = setTimeout(doPersist, config.persistence.interval);
     };
@@ -3455,11 +3606,9 @@ const run = async () => {
         log.log('clearing persist interval...');
         clearInterval(persistInterval);
         log.log('Persisting games...');
-        await persistGames();
-        log.log('shutting down webserver...');
+        await server.persistGames();
+        log.log('shutting down server...');
         server.close();
-        log.log('shutting down websocketserver...');
-        wss.close();
         log.log('shutting down...');
         process.exit();
     };

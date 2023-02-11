@@ -1,6 +1,7 @@
-import { PuzzleCreationInfo } from '../server/Puzzle'
+import { PuzzleCreationInfo } from './Puzzle'
 import {
   EncodedGame,
+  EncodedGameLegacy,
   EncodedPiece,
   EncodedPieceShape,
   EncodedPlayer,
@@ -125,8 +126,22 @@ function decodePlayer(data: EncodedPlayer): Player {
   }
 }
 
-function encodeGame(data: Game): EncodedGame {
-  return [
+function encodeGame(data: Game): EncodedGame | EncodedGameLegacy {
+  return data.crop ? [
+    data.id,
+    data.rng.type || '',
+    Rng.serialize(data.rng.obj),
+    data.puzzle,
+    data.players,
+    data.scoreMode,
+    data.shapeMode,
+    data.snapMode,
+    data.creatorUserId,
+    data.hasReplay,
+    data.gameVersion,
+    data.private,
+    data.crop,
+  ] : [
     data.id,
     data.rng.type || '',
     Rng.serialize(data.rng.obj),
@@ -142,7 +157,30 @@ function encodeGame(data: Game): EncodedGame {
   ]
 }
 
-function decodeGame(data: EncodedGame): Game {
+const isEncodedGameLegacy = (data: EncodedGame | EncodedGameLegacy): data is EncodedGameLegacy => {
+  return data.length <= 12
+}
+
+function decodeGame(data: EncodedGame | EncodedGameLegacy): Game {
+  if (isEncodedGameLegacy(data)) {
+    return {
+      id: data[0],
+      rng: {
+        type: data[1],
+        obj: Rng.unserialize(data[2]),
+      },
+      puzzle: data[3],
+      players: data[4],
+      scoreMode: data[5],
+      shapeMode: data[6],
+      snapMode: data[7],
+      creatorUserId: data[8],
+      hasReplay: data[9],
+      gameVersion: data[10],
+      private: data[11],
+    }
+  }
+
   return {
     id: data[0],
     rng: {
@@ -158,6 +196,7 @@ function decodeGame(data: EncodedGame): Game {
     hasReplay: data[9],
     gameVersion: data[10],
     private: data[11],
+    crop: data[12],
   }
 }
 
@@ -218,6 +257,10 @@ export const dateformat = (
       default: return m0
     }
   })
+}
+
+export const clamp = (val: number, min: number, max: number): number => {
+  return Math.max(min, Math.min(max, val))
 }
 
 export default {

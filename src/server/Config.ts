@@ -13,8 +13,10 @@ const BASE_DIR = `${__dirname}/../..`
 
 const DATA_DIR = `${BASE_DIR}/data`
 const UPLOAD_DIR = `${BASE_DIR}/data/uploads`
+const CROP_DIR = `${BASE_DIR}/data/uploads/c`
+const RESIZE_DIR = `${BASE_DIR}/data/uploads/r`
 const UPLOAD_URL = `/uploads`
-const PUBLIC_DIR = `${BASE_DIR}/build/public/`
+const PUBLIC_DIR = `${BASE_DIR}/build/public`
 const DB_PATCHES_DIR = `${BASE_DIR}/src/dbpatches`
 
 export interface Config {
@@ -38,6 +40,8 @@ export interface Config {
     DB_PATCHES_DIR: string
     DATA_DIR: string
     UPLOAD_DIR: string
+    CROP_DIR: string
+    RESIZE_DIR: string
     UPLOAD_URL: string
     PUBLIC_DIR: string
   }
@@ -60,7 +64,7 @@ const init = (): Config => {
     process.exit(2)
   }
   const config: Config = JSON.parse(String(readFileSync(configFile)))
-  config.dir = { DATA_DIR, UPLOAD_DIR, UPLOAD_URL, PUBLIC_DIR, DB_PATCHES_DIR }
+  config.dir = { DATA_DIR, UPLOAD_DIR, UPLOAD_URL, CROP_DIR, RESIZE_DIR, PUBLIC_DIR, DB_PATCHES_DIR }
   return config
 }
 const config: Config = init()

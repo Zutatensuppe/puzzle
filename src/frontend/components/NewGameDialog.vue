@@ -6,7 +6,12 @@
       <v-row>
         <v-col :lg="8">
           <div class="has-image" style="min-height: 50vh;">
-            <ResponsiveImage :src="image.url" :title="image.title" />
+            <PuzzleCropper
+              :image="image"
+              :puzzle-creation-info="puzzleCreationInfo"
+              :shape-mode="shapeMode"
+              :pieces-preview="tab === 'settings'"
+              @crop-update="onCropUpdate" />
           </div>
         </v-col>
         <v-col :lg="4" class="area-settings">
@@ -19,7 +24,13 @@
             <v-window-item value="settings">
               <v-form ref="form" v-model="valid">
                 <div>
-                  <v-text-field density="compact" v-model="pieces" :rules="[numberRule]" label="Pieces" />
+                  <v-text-field density="compact" v-model="pieces" :rules="[numberRule]" label="Desired pieces" class="pieces-input">
+                    <template v-slot:append-inner>
+                      <span class="text-caption" v-if="valid">
+                        Resulting pieces: {{ puzzleCreationInfo.pieceCount }}
+                      </span>
+                    </template>
+                  </v-text-field>
                 </div>
                 <div>
                   <v-label><v-icon icon="mdi-counter mr-1"></v-icon> Scoring</v-label>
@@ -87,7 +98,9 @@ import { computed, onMounted, ref } from 'vue'
 
 import { GameSettings, ImageInfo, ScoreMode, ShapeMode, SnapMode } from './../../common/Types'
 import { NEWGAME_MIN_PIECES, NEWGAME_MAX_PIECES } from './../../common/GameCommon'
-import ResponsiveImage from './ResponsiveImage.vue';
+import PuzzleCropper from './PuzzleCropper.vue'
+import { determinePuzzleInfo, PuzzleCreationInfo } from '../../common/Puzzle';
+import { Rect } from '../../common/Geometry';
 
 const props = defineProps<{
   image: ImageInfo
@@ -106,6 +119,8 @@ const isPrivate = ref<boolean>(props.forcePrivate)
 const scoreMode = ref<ScoreMode>(ScoreMode.ANY)
 const shapeMode = ref<ShapeMode>(ShapeMode.NORMAL)
 const snapMode = ref<SnapMode>(SnapMode.NORMAL)
+
+const crop = ref<Rect>({ x: 0, y: 0, w: props.image.width, h: props.image.height })
 
 const valid = ref<boolean>(true)
 
@@ -140,6 +155,12 @@ const snapModeInt = computed((): number => {
 const piecesInt = computed((): number => {
   return parseInt(`${pieces.value}`, 10)
 })
+const puzzleCreationInfo = computed((): PuzzleCreationInfo => {
+  return determinePuzzleInfo({
+    w: props.image.width,
+    h: props.image.height,
+  }, piecesInt.value)
+})
 
 const numberRule = (v: string) => {
   const num = parseInt(v, 10)
@@ -147,6 +168,10 @@ const numberRule = (v: string) => {
     return true
   }
   return 'Pieces have to be between 10 and 5000'
+}
+
+const onCropUpdate = (newCrop: Rect) => {
+  crop.value = newCrop
 }
 
 const onNewGameClick = () => {
@@ -157,6 +182,7 @@ const onNewGameClick = () => {
     scoreMode: scoreModeInt.value,
     shapeMode: shapeModeInt.value,
     snapMode: snapModeInt.value,
+    crop: crop.value,
   })
 }
 
@@ -167,3 +193,6 @@ onMounted(() => {
   form.value.validate()
 })
 </script>
+<style>
+.pieces-input .v-field__append-inner { white-space: nowrap; padding-top: 3px; }
+</style>

@@ -34,6 +34,7 @@
 </template>
 <script setup lang="ts">
 import { computed, onMounted, onBeforeUnmount, ref } from 'vue'
+import { resizeUrl } from '../../common/ImageService';
 import { ImageInfo } from '../../common/Types';
 import user, { User } from '../user'
 
@@ -51,9 +52,7 @@ const emit = defineEmits<{
 
 const me = ref<User|null>(null)
 
-const url = computed((): string => {
-  return props.image.url.replace('uploads/', 'uploads/r/') + '-375x0.webp'
-})
+const url = computed(() => resizeUrl(props.image.url, 375, 0, 'cover'))
 
 const styles = computed(() => {
   return {

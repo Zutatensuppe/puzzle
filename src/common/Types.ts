@@ -1,4 +1,4 @@
-import { Point } from "./Geometry"
+import { Point, Rect } from "./Geometry"
 import { Rng, RngSerialized } from "./Rng"
 
 // @see https://stackoverflow.com/a/59906630/392905
@@ -48,6 +48,21 @@ export interface Announcement {
 
 export type EncodedPieceShape = number
 
+export type EncodedGameLegacy = FixedLengthArray<[
+  string,
+  string,
+  RngSerialized,
+  Puzzle,
+  Array<EncodedPlayer>,
+  ScoreMode,
+  ShapeMode,
+  SnapMode,
+  number|null,
+  boolean, // has replay
+  number, // gameVersion
+  boolean, // private
+]>
+
 export type EncodedGame = FixedLengthArray<[
   string,
   string,
@@ -61,6 +76,7 @@ export type EncodedGame = FixedLengthArray<[
   boolean, // has replay
   number, // gameVersion
   boolean, // private
+  Rect, // crop
 ]>
 
 export interface ReplayData {
@@ -92,6 +108,7 @@ export interface Game {
   rng: GameRng
   private: boolean
   hasReplay: boolean
+  crop?: Rect
 }
 
 export interface Image {
@@ -118,6 +135,7 @@ export interface GameSettings {
   scoreMode: ScoreMode
   shapeMode: ShapeMode
   snapMode: SnapMode
+  crop: Rect
 }
 
 export interface Puzzle {

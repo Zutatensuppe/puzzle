@@ -9,7 +9,7 @@ const cfg = JSON.parse(String(fs.readFileSync('./config.json')))
 export default vite.defineConfig(Object.assign({}, viteConfigBuild, {
   server: {
     proxy: {
-      '^/(admin/api|api|uploads)/.*': {
+      '^/(admin/api|api|uploads|image-service)/.*': {
         target: `http://${cfg.http.hostname}:${cfg.http.port}`,
         secure: false,
       },
