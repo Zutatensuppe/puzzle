@@ -294,9 +294,9 @@ var Util = {
 };
 
 const log$8 = logger('Config.ts');
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-const BASE_DIR = `${__dirname}/../..`;
+const __filename$1 = fileURLToPath(import.meta.url);
+const __dirname$1 = dirname(__filename$1);
+const BASE_DIR = `${__dirname$1}/../..`;
 const DATA_DIR = `${BASE_DIR}/data`;
 const UPLOAD_DIR = `${BASE_DIR}/data/uploads`;
 const CROP_DIR = `${BASE_DIR}/data/uploads/c`;
@@ -3362,6 +3362,7 @@ function createRouter() {
             }
             const p = path.resolve(config.dir.CROP_DIR, croppedFilename);
             res.sendFile(p);
+            return;
         }
         // original image
         const p = path.resolve(config.dir.UPLOAD_DIR, filename);
@@ -3371,6 +3372,9 @@ function createRouter() {
     return router;
 }
 
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+const indexFile = path.resolve(__dirname, '..', '..', 'build', 'public', 'index.html');
 const log$1 = logger('Server.ts');
 class Server {
     constructor(db, mail, canny, discord, gameSockets) {
@@ -3416,7 +3420,7 @@ class Server {
         app.use('/uploads/', express.static(config.dir.UPLOAD_DIR));
         app.use('/', express.static(config.dir.PUBLIC_DIR));
         app.all('*', async (req, res) => {
-            res.sendFile(`${config.dir.PUBLIC_DIR}/index.html`);
+            res.sendFile(indexFile);
         });
         const wss = new WebSocketServer(config.ws);
         const notify = (data, sockets) => {
