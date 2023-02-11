@@ -20,7 +20,7 @@ export default function createRouter(
         res.status(400).send('x, y must be numbers')
         return
       }
-      const resizedFilename = await ImageResize.resizeImage(filename, w, h, fit as keyof sharp.FitEnum,)
+      const resizedFilename = await ImageResize.resizeImage(filename, w, h, fit as keyof sharp.FitEnum)
       if (!resizedFilename) {
         res.status(500).send('unable to resize image')
         return
@@ -57,6 +57,7 @@ export default function createRouter(
 
       const p = path.resolve(config.dir.CROP_DIR, croppedFilename)
       res.sendFile(p)
+      return
     }
     // original image
     const p = path.resolve(config.dir.UPLOAD_DIR, filename)

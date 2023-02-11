@@ -21,6 +21,12 @@ import { Canny } from './Canny'
 import { Discord } from './Discord'
 import Db from './Db'
 import { Server as HttpServer } from 'http';
+import path, { dirname } from 'path'
+import { fileURLToPath } from 'url'
+
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = dirname(__filename)
+const indexFile = path.resolve(__dirname, '..', '..', 'build', 'public', 'index.html')
 
 const log = logger('Server.ts')
 
@@ -77,7 +83,7 @@ export class Server {
     app.use('/', express.static(config.dir.PUBLIC_DIR))
 
     app.all('*', async (req: any, res) => {
-      res.sendFile(`${config.dir.PUBLIC_DIR}/index.html`);
+      res.sendFile(indexFile);
     })
 
     const wss = new WebSocketServer(config.ws);
