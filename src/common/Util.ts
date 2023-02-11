@@ -1,4 +1,4 @@
-import { PuzzleCreationInfo } from '../server/Puzzle'
+import { PuzzleCreationInfo } from './Puzzle'
 import {
   EncodedGame,
   EncodedPiece,
@@ -218,6 +218,10 @@ export const dateformat = (
       default: return m0
     }
   })
+}
+
+export const clamp = (val: number, min: number, max: number): number => {
+  return Math.max(min, Math.min(max, val))
 }
 
 export default {

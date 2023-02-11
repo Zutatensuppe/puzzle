@@ -3,46 +3,40 @@ import WebSocket from 'ws'
 
 const log = logger('GameSocket.js')
 
-// Map<gameId, Socket[]>
-const SOCKETS = {} as Record<string, WebSocket[]>
+export class GameSockets {
+  #sockets: Record<string, WebSocket[]> = {}
 
-function socketExists(gameId: string, socket: WebSocket): boolean {
-  if (!(gameId in SOCKETS)) {
-    return false
+  socketExists(gameId: string, socket: WebSocket): boolean {
+    if (!(gameId in this.#sockets)) {
+      return false
+    }
+    return this.#sockets[gameId].includes(socket)
   }
-  return SOCKETS[gameId].includes(socket)
-}
 
-function removeSocket(gameId: string, socket: WebSocket): void {
-  if (!(gameId in SOCKETS)) {
-    return
+  removeSocket(gameId: string, socket: WebSocket): void {
+    if (!(gameId in this.#sockets)) {
+      return
+    }
+    this.#sockets[gameId] = this.#sockets[gameId].filter((s: WebSocket) => s !== socket)
+    log.log('removed socket: ', gameId, socket.protocol)
+    log.log('socket count: ', Object.keys(this.#sockets[gameId]).length)
   }
-  SOCKETS[gameId] = SOCKETS[gameId].filter((s: WebSocket) => s !== socket)
-  log.log('removed socket: ', gameId, socket.protocol)
-  log.log('socket count: ', Object.keys(SOCKETS[gameId]).length)
-}
 
-function addSocket(gameId: string, socket: WebSocket): void {
-  if (!(gameId in SOCKETS)) {
-    SOCKETS[gameId] = []
+  addSocket(gameId: string, socket: WebSocket): void {
+    if (!(gameId in this.#sockets)) {
+      this.#sockets[gameId] = []
+    }
+    if (!this.#sockets[gameId].includes(socket)) {
+      this.#sockets[gameId].push(socket)
+      log.log('added socket: ', gameId, socket.protocol)
+      log.log('socket count: ', Object.keys(this.#sockets[gameId]).length)
+    }
   }
-  if (!SOCKETS[gameId].includes(socket)) {
-    SOCKETS[gameId].push(socket)
-    log.log('added socket: ', gameId, socket.protocol)
-    log.log('socket count: ', Object.keys(SOCKETS[gameId]).length)
-  }
-}
 
-function getSockets(gameId: string): WebSocket[] {
-  if (!(gameId in SOCKETS)) {
-    return []
+  getSockets(gameId: string): WebSocket[] {
+    if (!(gameId in this.#sockets)) {
+      return []
+    }
+    return this.#sockets[gameId]
   }
-  return SOCKETS[gameId]
-}
-
-export default {
-  addSocket,
-  removeSocket,
-  socketExists,
-  getSockets,
 }

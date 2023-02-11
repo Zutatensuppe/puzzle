@@ -6,7 +6,7 @@
       <v-row>
         <v-col :lg="8">
           <div class="has-image" style="min-height: 50vh;">
-            <ResponsiveImage :src="image.url" :title="image.title" />
+            <PuzzleCropper :image="image" :puzzle-creation-info="puzzleCreationInfo" :shape-mode="shapeMode" @crop-update="onCropUpdate" />
           </div>
         </v-col>
         <v-col :lg="4" class="area-settings">
@@ -87,7 +87,8 @@ import { computed, onMounted, ref } from 'vue'
 
 import { GameSettings, ImageInfo, ScoreMode, ShapeMode, SnapMode } from './../../common/Types'
 import { NEWGAME_MIN_PIECES, NEWGAME_MAX_PIECES } from './../../common/GameCommon'
-import ResponsiveImage from './ResponsiveImage.vue';
+import PuzzleCropper from './PuzzleCropper.vue'
+import { determinePuzzleInfo, PuzzleCreationInfo } from '../../common/Puzzle';
 
 const props = defineProps<{
   image: ImageInfo
@@ -140,6 +141,12 @@ const snapModeInt = computed((): number => {
 const piecesInt = computed((): number => {
   return parseInt(`${pieces.value}`, 10)
 })
+const puzzleCreationInfo = computed((): PuzzleCreationInfo => {
+  return determinePuzzleInfo({
+    w: props.image.width,
+    h: props.image.height,
+  }, piecesInt.value)
+})
 
 const numberRule = (v: string) => {
   const num = parseInt(v, 10)
@@ -147,6 +154,10 @@ const numberRule = (v: string) => {
     return true
   }
   return 'Pieces have to be between 10 and 5000'
+}
+
+const onCropUpdate = (ev: any) => {
+  console.log(ev)
 }
 
 const onNewGameClick = () => {
