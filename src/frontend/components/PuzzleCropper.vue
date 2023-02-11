@@ -5,7 +5,7 @@
 </template>
 <script setup lang="ts">
 import { onMounted, onBeforeUnmount, ref, Ref, watch } from 'vue';
-import { Dim, Rect } from '../../common/Geometry';
+import { Dim, Point, Rect } from '../../common/Geometry';
 import { clamp } from '../../common/Util';
 import { PuzzleCreationInfo } from '../../common/Puzzle';
 import { ImageInfo, ShapeMode } from '../../common/Types';
@@ -26,8 +26,7 @@ const emit = defineEmits<{
 const canvas = ref<HTMLCanvasElement>() as Ref<HTMLCanvasElement>
 const puzzleCropper = ref<HTMLCanvasElement>() as Ref<HTMLCanvasElement>
 
-const offX = ref<number>(0)
-const offY = ref<number>(0)
+const offset = ref<Point>({ x: 0, y: 0 })
 
 let imgDrawRect: Rect = { x: 0, y: 0, w: 0, h: 0 }
 
@@ -53,18 +52,23 @@ const createCropEventData = (): Rect => {
   const dim = determinePreviewDim(determinePreviewPieceSize())
   const w = clamp(Math.round(dim.w * image.width / imgDrawRect.w), 0, image.width)
   const h = clamp(Math.round(dim.h * image.height / imgDrawRect.h), 0, image.height)
-  const x = clamp(Math.round(image.width / imgDrawRect.w * offX.value), 0, image.width - w)
-  const y = clamp(Math.round(image.height / imgDrawRect.h * offY.value), 0, image.height - h)
+  const x = clamp(Math.round(image.width / imgDrawRect.w * offset.value.x), 0, image.width - w)
+  const y = clamp(Math.round(image.height / imgDrawRect.h * offset.value.y), 0, image.height - h)
   return { x, y, w, h }
+}
+
+const centerCrop = (): void => {
+  const imgDrawRect = calculateImageDrawRect()
+  const dim = determinePreviewDim(determinePreviewPieceSize())
+  offset.value.x = (imgDrawRect.w - dim.w) / 2
+  offset.value.y = (imgDrawRect.h - dim.h) / 2
 }
 
 watch(() => props.puzzleCreationInfo, () => {
   if (props.puzzleCreationInfo === null) {
     return
   }
-  offX.value = 0
-  offY.value = 0
-
+  centerCrop()
   emit('cropUpdate', createCropEventData())
   redraw()
 })
@@ -72,6 +76,7 @@ watch(() => props.shapeMode, () => {
   redraw()
 })
 
+const manuallyCropped = ref<boolean>(false)
 
 let lastMouseDown: MouseEvent | null = null
 const onMousedown = (ev: MouseEvent) => {
@@ -86,11 +91,12 @@ const onMousemove = (ev: MouseEvent) => {
   }
 
   const dim = determinePreviewDim(determinePreviewPieceSize())
-  const _offX = offX.value + (ev.offsetX - lastMouseDown.offsetX)
-  const _offY = offY.value + (ev.offsetY - lastMouseDown.offsetY)
+  const offX = offset.value.x + (ev.offsetX - lastMouseDown.offsetX)
+  const offY = offset.value.y + (ev.offsetY - lastMouseDown.offsetY)
 
-  offX.value = clamp(_offX, 0, imgDrawRect.w - dim.w)
-  offY.value = clamp(_offY, 0, imgDrawRect.h - dim.h)
+  offset.value.x = clamp(offX, 0, imgDrawRect.w - dim.w)
+  offset.value.y = clamp(offY, 0, imgDrawRect.h - dim.h)
+  manuallyCropped.value = true
 
   lastMouseDown = ev
 
@@ -157,7 +163,7 @@ const redraw = () => {
       props.shapeMode,
       ctx,
       imgDrawRect,
-      { x: offX.value, y: offY.value }
+      offset.value
     )
   }
 }
@@ -171,6 +177,7 @@ onMounted(() => {
 
   image.src = props.image.url
   image.onload = (ev: Event) => {
+    centerCrop()
     redraw()
   }
 })
