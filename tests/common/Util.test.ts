@@ -1,4 +1,4 @@
-import { EncodedGame, EncodedPiece, EncodedPlayer, Game, Piece, Player, Puzzle, PuzzleInfo } from '../../src/common/Types'
+import { EncodedGame, EncodedGameLegacy, EncodedPiece, EncodedPlayer, Game, Piece, Player, Puzzle, PuzzleInfo } from '../../src/common/Types'
 import Util, { clamp } from '../../src/common/Util'
 import { describe, expect, it } from 'vitest'
 
@@ -123,7 +123,11 @@ describe('Util', () => {
     const testCases = [
       {
         game: { id: 'id', rng: { type: 'asd', obj: rng }, puzzle: puzzle, players: [], scoreMode: 1, shapeMode: 1, snapMode: 1, creatorUserId: 1, hasReplay: true, gameVersion: 1, private: true } as Game,
-        encoded: ['id', 'asd', { rand_high: 1, rand_low: 1 }, puzzle, [], 1, 1, 1, 1, true, 1, true] as EncodedGame,
+        encoded: ['id', 'asd', { rand_high: 1, rand_low: 1 }, puzzle, [], 1, 1, 1, 1, true, 1, true] as EncodedGameLegacy,
+      },
+      {
+        game: { id: 'id', rng: { type: 'asd', obj: rng }, puzzle: puzzle, players: [], scoreMode: 1, shapeMode: 1, snapMode: 1, creatorUserId: 1, hasReplay: true, gameVersion: 1, private: true, crop: { x: 0, y: 0, w: 100, h: 100 } } as Game,
+        encoded: ['id', 'asd', { rand_high: 1, rand_low: 1 }, puzzle, [], 1, 1, 1, 1, true, 1, true, { x: 0, y: 0, w: 100, h: 100 }] as EncodedGame,
       },
     ]
     testCases.forEach(({ game, encoded }) => it('encodeGame $game', () => {

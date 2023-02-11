@@ -7,6 +7,7 @@ import { createPuzzle } from './Puzzle'
 import Protocol from './../common/Protocol'
 import GameStorage from './GameStorage'
 import Db from './Db'
+import { Rect } from '../common/Geometry'
 
 const log = logger('Game.ts')
 
@@ -22,6 +23,7 @@ async function createGameObject(
   creatorUserId: number|null,
   hasReplay: boolean,
   isPrivate: boolean,
+  crop: Rect,
 ): Promise<Game> {
   const seed = Util.hash(gameId + ' ' + ts)
   const rng = new Rng(seed)
@@ -37,6 +39,7 @@ async function createGameObject(
     snapMode,
     hasReplay,
     private: isPrivate,
+    crop,
   }
 }
 
@@ -66,6 +69,7 @@ async function createNewGame(
     creatorUserId,
     true, // hasReplay
     gameSettings.private,
+    gameSettings.crop,
   )
 
   GameLog.create(gameId, ts)
@@ -81,6 +85,7 @@ async function createNewGame(
     gameObject.snapMode,
     gameObject.creatorUserId,
     gameObject.private ? 1 : 0,
+    gameSettings.crop,
   )
 
   GameCommon.setGame(gameObject.id, gameObject)

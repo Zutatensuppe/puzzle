@@ -13,6 +13,7 @@ import { ServerEvent, Game as GameType } from '../common/Types'
 import GameStorage from './GameStorage'
 import createApiRouter from './web_routes/api'
 import createAdminApiRouter from './web_routes/admin/api'
+import createImageServiceRouter from './web_routes/image-service'
 import cookieParser from 'cookie-parser'
 import Users from './Users'
 import Mail from './Mail'
@@ -20,15 +21,8 @@ import { Canny } from './Canny'
 import { Discord } from './Discord'
 import Db from './Db'
 import { Server as HttpServer } from 'http';
-import path, { dirname } from 'path'
-import { fileURLToPath } from 'url'
-
-const __filename = fileURLToPath(import.meta.url)
-const __dirname = dirname(__filename)
 
 const log = logger('Server.ts')
-
-const indexFile = path.resolve(__dirname, '..', '..', 'build', 'public', 'index.html')
 
 export class Server {
   private webserver: HttpServer | null = null
@@ -78,11 +72,12 @@ export class Server {
 
     app.use('/admin/api', createAdminApiRouter(this.db, this.discord))
     app.use('/api', createApiRouter(this.db, this.mail, this.canny))
+    app.use('/image-service', createImageServiceRouter())
     app.use('/uploads/', express.static(config.dir.UPLOAD_DIR))
     app.use('/', express.static(config.dir.PUBLIC_DIR))
 
     app.all('*', async (req: any, res) => {
-      res.sendFile(indexFile);
+      res.sendFile(`${config.dir.PUBLIC_DIR}/index.html`);
     })
 
     const wss = new WebSocketServer(config.ws);

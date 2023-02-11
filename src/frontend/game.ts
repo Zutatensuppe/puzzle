@@ -45,6 +45,7 @@ let PIECE_VIEW_FIXED = true
 let PIECE_VIEW_LOOSE = true
 
 interface Replay {
+  started: boolean
   final: boolean
   log: Array<any> // current log entries
   logPointer: number // pointer to current item in the log array
@@ -184,7 +185,10 @@ export async function main(
   const puzzleTable = new PuzzleTable(bounds, assets, BOARD_POS, BOARD_DIM)
   await puzzleTable.init()
 
-  const bitmaps = await PuzzleGraphics.loadPuzzleBitmaps(Game.getPuzzle(gameId))
+  const bitmaps = await PuzzleGraphics.loadPuzzleBitmaps(
+    Game.getPuzzle(gameId),
+    Game.getImageUrl(gameId),
+  )
 
   const viewport = new Camera()
   const evts = new EventAdapter(canvas, window, viewport, MODE)
@@ -456,7 +460,11 @@ export async function main(
           } else {
 
             const currLogEntry = REPLAY.log[REPLAY.logPointer]
-            const currTs: Timestamp = GAME_TS + currLogEntry[currLogEntry.length - 1]
+            const currTs: Timestamp = GAME_TS + (
+              currLogEntry[0] === Protocol.LOG_HEADER
+              ? 0
+              : currLogEntry[currLogEntry.length - 1]
+            )
 
             const nextLogEntry = REPLAY.log[nextIdx]
             const diffToNext = nextLogEntry[nextLogEntry.length - 1]

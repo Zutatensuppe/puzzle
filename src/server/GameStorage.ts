@@ -6,6 +6,7 @@ import { logger } from './../common/Util'
 import { Rng, RngSerialized } from './../common/Rng'
 import Db from './Db'
 import GameLog from './GameLog'
+import { Rect } from '../common/Geometry'
 
 const log = logger('GameStorage.js')
 
@@ -32,6 +33,7 @@ interface GameStoreData {
   shapeMode: ShapeMode
   snapMode: SnapMode
   hasReplay: boolean
+  crop?: Rect
 }
 
 const dirtyGames: Record<string, boolean> = {}
@@ -67,6 +69,7 @@ function gameRowToGameObject(gameRow: GameRow): Game | null {
     !!gameRow.private
   )
   gameObject.hasReplay = GameLog.hasReplay(gameObject)
+  gameObject.crop = game.crop
   return gameObject
 }
 
@@ -196,6 +199,7 @@ function gameToStoreData(game: Game): GameStoreData {
     shapeMode: game.shapeMode,
     snapMode: game.snapMode,
     hasReplay: game.hasReplay,
+    crop: game.crop,
   };
 }
 

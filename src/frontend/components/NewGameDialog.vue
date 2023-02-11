@@ -89,6 +89,7 @@ import { GameSettings, ImageInfo, ScoreMode, ShapeMode, SnapMode } from './../..
 import { NEWGAME_MIN_PIECES, NEWGAME_MAX_PIECES } from './../../common/GameCommon'
 import PuzzleCropper from './PuzzleCropper.vue'
 import { determinePuzzleInfo, PuzzleCreationInfo } from '../../common/Puzzle';
+import { Rect } from '../../common/Geometry';
 
 const props = defineProps<{
   image: ImageInfo
@@ -107,6 +108,8 @@ const isPrivate = ref<boolean>(props.forcePrivate)
 const scoreMode = ref<ScoreMode>(ScoreMode.ANY)
 const shapeMode = ref<ShapeMode>(ShapeMode.NORMAL)
 const snapMode = ref<SnapMode>(SnapMode.NORMAL)
+
+const crop = ref<Rect>({ x: 0, y: 0, w: props.image.width, h: props.image.height })
 
 const valid = ref<boolean>(true)
 
@@ -156,8 +159,8 @@ const numberRule = (v: string) => {
   return 'Pieces have to be between 10 and 5000'
 }
 
-const onCropUpdate = (ev: any) => {
-  console.log(ev)
+const onCropUpdate = (newCrop: Rect) => {
+  crop.value = newCrop
 }
 
 const onNewGameClick = () => {
@@ -168,6 +171,7 @@ const onNewGameClick = () => {
     scoreMode: scoreModeInt.value,
     shapeMode: shapeModeInt.value,
     snapMode: snapModeInt.value,
+    crop: crop.value,
   })
 }
 

@@ -960,13 +960,15 @@ function Game_getImageUrl(game: Game): string {
   if (!imageUrl) {
     throw new Error('[2021-07-11] no image url set')
   }
+  if (game.crop) {
+    return imageUrl.replace('/uploads/', '/image-service/image/') + Util.asQueryArgs(game.crop)
+  }
   return imageUrl
 }
 
 function Game_isFinished(game: Game): boolean {
   return Game_getFinishedPiecesCount(game) === Game_getPieceCount(game)
 }
-
 
 export default {
   setGame,
