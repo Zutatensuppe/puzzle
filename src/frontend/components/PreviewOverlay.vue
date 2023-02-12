@@ -7,9 +7,11 @@
 </template>
 <script setup lang="ts">
 import { computed } from 'vue'
+import { GamePlay } from '../GamePlay';
+import { GameReplay } from '../GameReplay';
 
 const props = defineProps<{
-  img: string
+  game: GamePlay | GameReplay
 }>()
 
 const emit = defineEmits<{
@@ -18,7 +20,7 @@ const emit = defineEmits<{
 
 const previewStyle = computed(() => {
   return {
-    backgroundImage: `url('${props.img}')`,
+    backgroundImage: `url('${props.game.getPreviewImageUrl()}')`,
   }
 })
 </script>

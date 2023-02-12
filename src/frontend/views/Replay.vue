@@ -1,9 +1,9 @@
 <template>
   <div id="replay">
     <v-dialog v-model="dialog" :class="`overlay-${overlay}`" :persistent="dialogPersistent">
-      <SettingsOverlay v-if="overlay === 'settings' && g.playerSettings" :settings="g.playerSettings" @dialogChange="onDialogChange" />
-      <PreviewOverlay v-if="overlay === 'preview'" :img="g.previewImageUrl" @close="closeDialog" />
-      <InfoOverlay v-if="g.game && overlay === 'info'" :game="g.game" />
+      <SettingsOverlay v-if="g && overlay === 'settings'" :game="g" @dialogChange="onDialogChange" />
+      <PreviewOverlay v-if="g && overlay === 'preview'" :game="g" @close="closeDialog" />
+      <InfoOverlay v-if="g && overlay === 'info'" :game="g" />
       <HelpOverlay v-if="overlay === 'help'" />
     </v-dialog>
 
@@ -11,14 +11,14 @@
 
     <div class="menu-left" v-if="showInterface">
       <PuzzleStatus :status="status" />
-      <div class="playback-control">
+      <div class="playback-control" v-if="g">
         <div>{{replayText}}</div>
-        <button class="btn" @click="eventBus.emit('replayOnSpeedUp')"><icon icon="speed-up" /></button>
-        <button class="btn" @click="eventBus.emit('replayOnSpeedDown')"><icon icon="speed-down" /></button>
-        <button class="btn" @click="eventBus.emit('replayOnPauseToggle')"><icon icon="pause" /></button>
+        <button class="btn" @click="onSpeedUp"><icon icon="speed-up" /></button>
+        <button class="btn" @click="onSpeedDown"><icon icon="speed-down" /></button>
+        <button class="btn" @click="onTogglePause"><icon icon="pause" /></button>
       </div>
-      <div class="switch-game-replay" v-if="g.game">
-        <router-link :to="{ name: 'game', params: { id: g.game.id } }"><icon icon="puzzle-piece" /> To the game</router-link>
+      <div class="switch-game-replay" v-if="g">
+        <router-link :to="{ name: 'game', params: { id: g.getGameId() } }"><icon icon="puzzle-piece" /> To the game</router-link>
       </div>
     </div>
 
@@ -46,12 +46,11 @@
 </template>
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, Ref, ref, watch } from 'vue'
-import { Game, Player, PuzzleStatus as PuzzleStatusType } from '../../common/Types'
-import { main, MODE_REPLAY } from './../game'
+import { ReplayHud, Player, PuzzleStatus as PuzzleStatusType } from '../../common/Types'
+import { GameReplay } from './../GameReplay'
 import { useRoute } from 'vue-router'
 import api from '../_api'
 import config from '../config'
-import mitt from 'mitt'
 import HelpOverlay from './../components/HelpOverlay.vue'
 import InfoOverlay from './../components/InfoOverlay.vue'
 import PreviewOverlay from './../components/PreviewOverlay.vue'
@@ -59,7 +58,6 @@ import PuzzleStatus from '../components/PuzzleStatus.vue'
 import Scores from './../components/Scores.vue'
 import SettingsOverlay from './../components/SettingsOverlay.vue'
 import CuttingOverlay from './../components/CuttingOverlay.vue'
-import { PlayerSettings } from '../PlayerSettings'
 
 const statusMessages = ref<string[]>([])
 const players = ref<{ active: Player[], idle: Player[] }>({ active: [], idle: [] })
@@ -77,22 +75,7 @@ const cuttingPuzzle = ref<boolean>(true)
 const showInterface = ref<boolean>(true)
 const canvasEl = ref<HTMLCanvasElement>() as Ref<HTMLCanvasElement>
 
-const eventBus = mitt()
-const g = ref<{
-  playerSettings: PlayerSettings|null,
-  game: Game|null,
-  previewImageUrl: string,
-  connect: () => void,
-  disconnect: () => void,
-  unload: () => void,
-}>({
-  playerSettings: null,
-  game: null,
-  previewImageUrl: '',
-  connect: () => {},
-  disconnect: () => {},
-  unload: () => {},
-})
+const g = ref<GameReplay | null>(null)
 
 const replay = ref<{ speed: number, paused: boolean }>({ speed: 1, paused: false })
 
@@ -128,24 +111,30 @@ const onDialogChange = (changes: any[]): void => {
 const onResize = (): void => {
   canvasEl.value.width = window.innerWidth
   canvasEl.value.height = window.innerHeight
-  eventBus.emit('requireRerender')
+  if (g.value) {
+    g.value.requireRerender()
+  }
 }
 
 const sendEvents = (newValue: boolean, newOverlay: string, oldOverlay: string) => {
+  if (!g.value) {
+    return
+  }
+
   if (newValue) {
     // overlay is now visible
     if (newOverlay !== 'preview') {
-      eventBus.emit('setHotkeys', false)
+      g.value.toggleHotkeys(false)
     }
     if (newOverlay === 'preview') {
-      eventBus.emit('onPreviewChange', true)
+      g.value.togglePreview(true)
     }
   } else {
     // overlay is now closed
     if (oldOverlay === 'preview') {
-      eventBus.emit('onPreviewChange', false)
+      g.value.togglePreview(false)
     }
-    eventBus.emit('setHotkeys', true)
+    g.value.toggleHotkeys(true)
   }
 }
 
@@ -171,6 +160,24 @@ const openDialog = (content: string): void => {
   sendEvents(newValue, newOverlay, oldOverlay)
 }
 
+const onSpeedUp = () => {
+  if (g.value) {
+    g.value.speedUp()
+  }
+}
+
+const onSpeedDown = () => {
+  if (g.value) {
+    g.value.speedDown()
+  }
+}
+
+const onTogglePause = () => {
+  if (g.value) {
+    g.value.togglePause()
+  }
+}
+
 watch(dialog, (newValue) => {
   if (newValue === false) {
     sendEvents(newValue, '', overlay.value)
@@ -179,61 +186,65 @@ watch(dialog, (newValue) => {
   }
 })
 
-onMounted(async () => {
-  if (!route.params.id) {
-    return
-  }
 
-  eventBus.on('puzzleCut', () => {
+const hud: ReplayHud = {
+  setPuzzleCut: () => {
     cuttingPuzzle.value = false
-  })
-  eventBus.on('players', (newPlayers: any) => {
-    players.value = newPlayers
-  })
-  eventBus.on('status', (newStatus: any) => {
-    status.value = newStatus
-  })
-  eventBus.on('connectionState', (v: any) => {
+  },
+  setPlayers: (v: any) => {
+    players.value = v
+  },
+  setStatus: (v: any) => {
+    status.value = v
+  },
+  setConnectionState: (v: any) => {
     connectionState.value = v
-  })
-  eventBus.on('togglePreview', (v: any) => {
+  },
+  togglePreview: (v: boolean) => {
     if (v) {
       openDialog('preview')
     } else {
       closeDialog()
     }
-  })
-  eventBus.on('toggleInterface', (v: any) => {
+  },
+  toggleInterface: (v: any) => {
     showInterface.value = !!v
-  })
-  eventBus.on('replaySpeed', (v: any) => {
+  },
+  addStatusMessage,
+  setReplaySpeed: (v: number) => {
     replay.value.speed = v
-  })
-  eventBus.on('replayPaused', (v: any) => {
+  },
+  setReplayPaused: (v: boolean) => {
     replay.value.paused = v
-  })
+  },
+}
+
+onMounted(async () => {
+  if (!route.params.id) {
+    return
+  }
 
   canvasEl.value.width = window.innerWidth
   canvasEl.value.height = window.innerHeight
   window.addEventListener('resize', onResize)
 
-  g.value = await main(
+  const game = new GameReplay(
     `${route.params.id}`,
     api.clientId(),
     config.get().WS_ADDRESS,
-    MODE_REPLAY,
     canvasEl.value,
-    eventBus,
+    hud,
   )
 
-  eventBus.on('statusMessage', (data: any) => {
-    addStatusMessage(data.what, data.value)
-  })
+  await game.init()
+  g.value = game
 })
 
 onUnmounted(() => {
-  g.value.unload()
-  g.value.disconnect()
+  if (g.value) {
+    g.value.unload()
+    g.value = null
+  }
   window.removeEventListener('resize', onResize)
 })
 </script>

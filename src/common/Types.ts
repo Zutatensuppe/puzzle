@@ -371,3 +371,18 @@ export interface MailService {
   sendPasswordResetMail: (data: MailServicePasswordResetData) => any
   sendRegistrationMail: (data: MailServiceRegistrationData) => any
 }
+
+export interface Hud {
+  setPuzzleCut: () => void
+  setPlayers: (v: any) => void
+  setStatus: (v: any) => void
+  setConnectionState: (v: any) => void
+  togglePreview: (v: boolean) => void
+  toggleInterface: (v: boolean) => void
+  addStatusMessage: (what: string, value: any) => void
+}
+
+export interface ReplayHud extends Hud {
+  setReplaySpeed: (v: number) => void
+  setReplayPaused: (v: boolean) => void
+}

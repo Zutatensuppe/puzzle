@@ -107,7 +107,6 @@ const get = (
     log[0][9] = log[0][9] || 0 // private
     log[0][10] = log[0][10] || undefined // crop
   }
-  console.log(log[0])
   return log
 }
 

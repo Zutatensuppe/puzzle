@@ -144,6 +144,10 @@ function getSnapMode(gameId: string): SnapMode {
   return Game_getSnapMode(GAMES[gameId])
 }
 
+function getShapeMode(gameId: string): ShapeMode {
+  return Game_getShapeMode(GAMES[gameId])
+}
+
 function getVersion(gameId: string): number {
   return GAMES[gameId].gameVersion
 }
@@ -1007,6 +1011,9 @@ export default {
   getFinalPiecePos,
   getStartTs,
   getFinishTs,
+  getScoreMode,
+  getSnapMode,
+  getShapeMode,
   handleInput,
 
   /// operate directly on the game object given

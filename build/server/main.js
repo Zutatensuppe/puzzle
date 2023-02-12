@@ -1082,6 +1082,9 @@ function getScoreMode(gameId) {
 function getSnapMode(gameId) {
     return Game_getSnapMode(GAMES[gameId]);
 }
+function getShapeMode(gameId) {
+    return Game_getShapeMode(GAMES[gameId]);
+}
 function getVersion(gameId) {
     return GAMES[gameId].gameVersion;
 }
@@ -1811,6 +1814,9 @@ var GameCommon = {
     getFinalPiecePos,
     getStartTs,
     getFinishTs,
+    getScoreMode,
+    getSnapMode,
+    getShapeMode,
     handleInput: handleInput$1,
     /// operate directly on the game object given
     Game_getStartTs,
@@ -1910,7 +1916,6 @@ const get = (gameId, offset = 0) => {
         log[0][9] = log[0][9] || 0; // private
         log[0][10] = log[0][10] || undefined; // crop
     }
-    console.log(log[0]);
     return log;
 };
 var GameLog = {

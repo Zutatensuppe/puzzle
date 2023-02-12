@@ -1,9 +1,9 @@
 "use strict"
 
-import { ClientEvent, EncodedGame, GameEvent, ReplayData, ServerEvent } from '../common/Types'
+import { ClientEvent, EncodedGame, GameEvent, ServerEvent } from '../common/Types'
 import { logger } from '../common/Util'
 import Protocol from './../common/Protocol'
-import api from './_api'
+import { GamePlay } from './GamePlay'
 
 const log = logger('Communication.js')
 
@@ -80,15 +80,13 @@ function cancelKeepAlive() {
 }
 
 function connect(
-  address: string,
-  gameId: string,
-  clientId: string
+  game: GamePlay,
 ): Promise<EncodedGame> {
   clientSeq = 0
   events = {}
   setConnectionState(CONN_STATE_CONNECTING)
   return new Promise(resolve => {
-    ws = new WebSocket(address, clientId + '|' + gameId)
+    ws = new WebSocket(game.getWsAddres(), game.getClientId() + '|' + game.getGameId())
     ws.onopen = () => {
       setConnectionState(CONN_STATE_CONNECTED)
       send([Protocol.EV_CLIENT_INIT])
@@ -103,7 +101,7 @@ function connect(
       } else if (msgType === Protocol.EV_SERVER_EVENT) {
         const msgClientId = msg[1]
         const msgClientSeq = msg[2]
-        if (msgClientId === clientId && events[msgClientSeq]) {
+        if (msgClientId === game.getClientId() && events[msgClientSeq]) {
           delete events[msgClientSeq]
           // we have already calculated that change locally. probably
           return
@@ -131,15 +129,6 @@ function connect(
   })
 }
 
-async function requestReplayData(
-  gameId: string,
-  offset: number
-): Promise<ReplayData> {
-  const res = await api.pub.replayData({ gameId, offset })
-  const json: ReplayData = await res.json()
-  return json
-}
-
 function disconnect(): void {
   if (ws) {
     ws.close(CODE_CUSTOM_DISCONNECT)
@@ -158,7 +147,6 @@ function sendClientEvent(evt: GameEvent): void {
 
 export default {
   connect,
-  requestReplayData,
   disconnect,
   sendClientEvent,
   onServerChange,
