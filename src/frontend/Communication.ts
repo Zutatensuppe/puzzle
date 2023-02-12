@@ -1,9 +1,8 @@
 "use strict"
 
-import { ClientEvent, EncodedGame, GameEvent, ReplayData, ServerEvent } from '../common/Types'
+import { ClientEvent, EncodedGame, GameEvent, ServerEvent } from '../common/Types'
 import { logger } from '../common/Util'
 import Protocol from './../common/Protocol'
-import api from './_api'
 
 const log = logger('Communication.js')
 
@@ -131,15 +130,6 @@ function connect(
   })
 }
 
-async function requestReplayData(
-  gameId: string,
-  offset: number
-): Promise<ReplayData> {
-  const res = await api.pub.replayData({ gameId, offset })
-  const json: ReplayData = await res.json()
-  return json
-}
-
 function disconnect(): void {
   if (ws) {
     ws.close(CODE_CUSTOM_DISCONNECT)
@@ -158,7 +148,6 @@ function sendClientEvent(evt: GameEvent): void {
 
 export default {
   connect,
-  requestReplayData,
   disconnect,
   sendClientEvent,
   onServerChange,

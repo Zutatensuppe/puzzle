@@ -30,6 +30,7 @@ import { PlayerSettings } from './PlayerSettings'
 import { Sounds } from './Sounds'
 import { PuzzleStatus } from './PuzzleStatus'
 import { PlayerCursors } from './PlayerCursors'
+import _api from './_api'
 declare global {
   interface Window {
       DEBUG?: boolean
@@ -45,7 +46,6 @@ let PIECE_VIEW_FIXED = true
 let PIECE_VIEW_LOOSE = true
 
 interface Replay {
-  started: boolean
   final: boolean
   log: Array<any> // current log entries
   logPointer: number // pointer to current item in the log array
@@ -112,13 +112,15 @@ export async function main(
 
   const queryNextReplayBatch = async (
     gameId: string
-  ): Promise<ReplayData> => {
+  ): Promise<ReplayData | null> => {
     const offset = REPLAY.dataOffset
     REPLAY.dataOffset += 10000 // meh
-    const replay: ReplayData = await Communication.requestReplayData(
-      gameId,
-      offset
-    )
+
+    const res = await _api.pub.replayData({ gameId, offset })
+    if (res.status !== 200) {
+      throw new Error('Replay not found')
+    }
+    const replay: ReplayData = await res.json() as ReplayData
 
     // cut log that was already handled
     REPLAY.log = REPLAY.log.slice(REPLAY.logPointer)
@@ -139,7 +141,10 @@ export async function main(
       Game.setGame(gameObject.id, gameObject)
       TIME = () => Time.timestamp()
     } else if (MODE === MODE_REPLAY) {
-      const replay: ReplayData = await queryNextReplayBatch(gameId)
+      const replay: ReplayData | null = await queryNextReplayBatch(gameId)
+      if (!replay) {
+        throw '[ 2023-02-12 no replay data received ]'
+      }
       if (!replay.game) {
         throw '[ 2021-05-29 no game received ]'
       }
