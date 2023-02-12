@@ -1,6 +1,5 @@
 "use strict"
 
-import fireworksController from './Fireworks'
 import GameCommon from '../common/GameCommon'
 import Protocol from '../common/Protocol'
 import { Game as GameType, EncodedGame, Gui, ServerEvent } from '../common/Types'
@@ -174,8 +173,7 @@ export class GamePlay extends Game<Gui> {
     this.playerSettings.init()
     this.sounds = new Sounds(this.assets, this.playerSettings)
 
-    this.fireworks = new fireworksController(this.canvas, GameCommon.getRng(this.gameId))
-    this.fireworks.init()
+    this.initFireworks()
 
     this.canvas.classList.add('loaded')
     this.gui.setPuzzleCut()

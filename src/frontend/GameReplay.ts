@@ -1,5 +1,5 @@
+"use strict"
 
-import fireworksController from './Fireworks'
 import GameCommon from '../common/GameCommon'
 import Protocol from '../common/Protocol'
 import Time from '../common/Time'
@@ -354,8 +354,7 @@ export class GameReplay extends Game<ReplayGui> {
     this.playerSettings.init()
     this.sounds = new Sounds(this.assets, this.playerSettings)
 
-    this.fireworks = new fireworksController(this.canvas, GameCommon.getRng(this.gameId))
-    this.fireworks.init()
+    this.initFireworks()
 
     this.canvas.classList.add('loaded')
     this.gui.setPuzzleCut()
