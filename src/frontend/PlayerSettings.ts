@@ -1,8 +1,7 @@
 import { MODE_REPLAY } from "./GameMode";
 import storage from "./storage";
 import GameCommon from './../common/GameCommon'
-import { GamePlay } from "./GamePlay";
-import { GameReplay } from "./GameReplay";
+import { Game } from "./Game";
 
 const SETTINGS = {
   SOUND_VOLUME: 'sound_volume',
@@ -44,7 +43,7 @@ export class PlayerSettings {
 
   private settings!: PlayerSettingsData
 
-  constructor(private game: GamePlay | GameReplay) {
+  constructor(private game: Game<any>) {
     // pass
   }
 

@@ -45,7 +45,7 @@
   </div>
 </template>
 <script setup lang="ts">
-import { Gui, Player, PuzzleStatus as PuzzleStatusType } from '../../common/Types'
+import { Hud, Player, PuzzleStatus as PuzzleStatusType } from '../../common/Types'
 import { GamePlay } from '../GamePlay'
 import { onMounted, onUnmounted, Ref, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
@@ -166,7 +166,7 @@ watch(dialog, (newValue) => {
   }
 })
 
-const gui: Gui = {
+const hud: Hud = {
   setPuzzleCut: () => {
     cuttingPuzzle.value = false
   },
@@ -179,19 +179,17 @@ const gui: Gui = {
   setConnectionState: (v: any) => {
     connectionState.value = v
   },
-  togglePreview: (v: any) => {
+  togglePreview: (v: boolean) => {
     if (v) {
       openDialog('preview')
     } else {
       closeDialog()
     }
   },
-  toggleInterface: (v: any) => {
+  toggleInterface: (v: boolean) => {
     showInterface.value = !!v
   },
-  addStatusMessage: (data: any) => {
-    addStatusMessage(data.what, data.value)
-  },
+  addStatusMessage,
 }
 
 onMounted(async () => {
@@ -208,7 +206,7 @@ onMounted(async () => {
     api.clientId(),
     config.get().WS_ADDRESS,
     canvasEl.value,
-    gui,
+    hud,
   )
 
   await game.init()

@@ -14,15 +14,17 @@ import {
   Player,
   Piece,
   ServerEvent,
-  Gui,
+  Hud,
   ScoreMode,
   SnapMode,
   ShapeMode,
+  GameEvent,
 } from '../common/Types'
 import { Assets } from './Assets'
 import { EventAdapter } from './EventAdapter'
 import { PuzzleTable } from './PuzzleTable'
 import { ViewportSnapshots } from './ViewportSnapshots'
+import PuzzleGraphics from './PuzzleGraphics'
 import { PlayerSettings } from './PlayerSettings'
 import { Sounds } from './Sounds'
 import { PuzzleStatus } from './PuzzleStatus'
@@ -37,29 +39,29 @@ declare global {
 
 const log = logger('Game.ts')
 
-export abstract class Game<GuiType extends Gui> {
+export abstract class Game<HudType extends Hud> {
   protected rerender: boolean = true
   private ctx: CanvasRenderingContext2D
-  protected bitmaps!: ImageBitmap[]
+  private bitmaps!: ImageBitmap[]
 
-  protected assets: Assets
+  private assets: Assets
   protected sounds!: Sounds
-  protected viewport: Camera
-  protected evts!: EventAdapter
-  protected playerCursors!: PlayerCursors
-  protected viewportSnapshots!: ViewportSnapshots
+  private viewport: Camera
+  private evts!: EventAdapter
+  private playerCursors!: PlayerCursors
+  private viewportSnapshots!: ViewportSnapshots
   protected playerSettings!: PlayerSettings
   protected puzzleStatus!: PuzzleStatus
-  protected puzzleTable!: PuzzleTable
+  private puzzleTable!: PuzzleTable
   private fireworks!: fireworksController
 
-  protected tableWidth: number = 0
-  protected tableHeight: number = 0
-  protected tableBounds!: Rect
-  protected boardPos!: Point
-  protected boardDim!: Dim
-  protected pieceDim!: Dim
-  protected pieceDrawOffset!: number
+  private tableWidth: number = 0
+  private tableHeight: number = 0
+  private tableBounds!: Rect
+  private boardPos!: Point
+  private boardDim!: Dim
+  private pieceDim!: Dim
+  private pieceDrawOffset!: number
 
   private isInterfaceVisible: boolean = true
   private isPreviewVisible: boolean = false
@@ -76,8 +78,10 @@ export abstract class Game<GuiType extends Gui> {
     protected readonly clientId: string,
     private readonly wsAddress: string,
     protected readonly canvas: HTMLCanvasElement,
-    protected readonly gui: GuiType,
+    protected readonly hud: HudType,
   ) {
+    if (typeof window.DEBUG === 'undefined') window.DEBUG = false
+
     this.ctx = this.canvas.getContext('2d') as CanvasRenderingContext2D
     this.assets = new Assets()
     this.viewport = new Camera()
@@ -128,6 +132,79 @@ export abstract class Game<GuiType extends Gui> {
     this.gameLoop.stop()
   }
 
+  async initBaseProps(): Promise<void> {
+    this.initFireworks()
+
+    await this.assets.init()
+    this.playerCursors = new PlayerCursors(this.canvas, this.assets)
+
+    this.pieceDrawOffset = GameCommon.getPieceDrawOffset(this.gameId)
+    const pieceDrawSize = GameCommon.getPieceDrawSize(this.gameId)
+    const puzzleWidth = GameCommon.getPuzzleWidth(this.gameId)
+    const puzzleHeight = GameCommon.getPuzzleHeight(this.gameId)
+    this.tableWidth = GameCommon.getTableWidth(this.gameId)
+    this.tableHeight = GameCommon.getTableHeight(this.gameId)
+
+    this.boardPos = {
+      x: (this.tableWidth - puzzleWidth) / 2,
+      y: (this.tableHeight - puzzleHeight) / 2
+    }
+    this.boardDim = {
+      w: puzzleWidth,
+      h: puzzleHeight,
+    }
+    this.pieceDim = {
+      w: pieceDrawSize,
+      h: pieceDrawSize,
+    }
+
+    this.tableBounds = GameCommon.getBounds(this.gameId)
+    this.puzzleTable = new PuzzleTable(this.tableBounds, this.assets, this.boardPos, this.boardDim)
+    await this.puzzleTable.init()
+
+    this.bitmaps = await PuzzleGraphics.loadPuzzleBitmaps(
+      GameCommon.getPuzzle(this.gameId),
+      GameCommon.getImageUrl(this.gameId),
+    )
+
+    this.evts = new EventAdapter(this)
+    this.viewportSnapshots = new ViewportSnapshots(this.evts, this.viewport)
+    this.playerSettings = new PlayerSettings(this)
+    this.playerSettings.init()
+    this.sounds = new Sounds(this.assets, this.playerSettings)
+
+    this.canvas.classList.add('loaded')
+    this.hud.setPuzzleCut()
+
+    // initialize some view data
+    // this global data will change according to input events
+
+    // theoretically we need to recalculate this when window resizes
+    // but it probably doesnt matter so much
+    this.viewport.calculateZoomCapping(
+      window.innerWidth,
+      window.innerHeight,
+      this.tableWidth,
+      this.tableHeight,
+    )
+
+    this.evts.registerEvents()
+
+    this.centerPuzzle()
+    this.viewportSnapshots.snap('center')
+
+    this.puzzleStatus = new PuzzleStatus(this)
+    this.puzzleStatus.update(this.time())
+
+    this.initFinishState()
+
+    this.evts.addEvent([Protocol.INPUT_EV_BG_COLOR, this.playerSettings.background()])
+    this.evts.addEvent([Protocol.INPUT_EV_PLAYER_COLOR, this.playerSettings.color()])
+    this.evts.addEvent([Protocol.INPUT_EV_PLAYER_NAME, this.playerSettings.name()])
+
+    this.playerCursors.updatePlayerCursorColor(this.playerSettings.color())
+  }
+
   initFireworks(): void {
     this.fireworks = new fireworksController(this.canvas, GameCommon.getRng(this.gameId))
     this.fireworks.init()
@@ -153,7 +230,7 @@ export abstract class Game<GuiType extends Gui> {
     this.finished = !! GameCommon.getFinishTs(this.gameId)
     if (this.justFinished()) {
       this.fireworks.update()
-      this.rerender = true
+      this.requireRerender()
     }
   }
 
@@ -190,25 +267,25 @@ export abstract class Game<GuiType extends Gui> {
 
   emitToggleInterface(): void {
     this.isInterfaceVisible = !this.isInterfaceVisible
-    this.gui.toggleInterface(this.isInterfaceVisible)
+    this.hud.toggleInterface(this.isInterfaceVisible)
     this.showStatusMessage('Interface', this.isInterfaceVisible)
   }
 
   emitTogglePreview(): void {
     this.isPreviewVisible = !this.isPreviewVisible
-    this.gui.togglePreview(this.isPreviewVisible)
+    this.hud.togglePreview(this.isPreviewVisible)
   }
 
   toggleViewFixedPieces(): void {
     this.isViewFixedPieces = !this.isViewFixedPieces
     this.showStatusMessage(`${this.isViewFixedPieces ? 'Showing' : 'Hiding'} finished pieces`)
-    this.rerender = true
+    this.requireRerender()
   }
 
   toggleViewLoosePieces(): void {
     this.isViewLoosePieces = !this.isViewLoosePieces
     this.showStatusMessage(`${this.isViewLoosePieces ? 'Showing' : 'Hiding'} unfinished pieces`)
-    this.rerender = true
+    this.requireRerender()
   }
 
   togglePreview(value: boolean): void {
@@ -222,11 +299,11 @@ export abstract class Game<GuiType extends Gui> {
   }
 
   changeStatus(value: any): void {
-    this.gui.setStatus(value)
+    this.hud.setStatus(value)
   }
 
   changePlayers(value: any): void {
-    this.gui.setPlayers(value)
+    this.hud.setPlayers(value)
   }
 
   getScoreMode(): ScoreMode {
@@ -292,12 +369,89 @@ export abstract class Game<GuiType extends Gui> {
       this.sounds.playOtherPieceConnected()
     }
     if (rerender) {
-      this.rerender = true
+      this.requireRerender()
     }
     this.finished = !! GameCommon.getFinishTs(this.gameId)
   }
 
-  abstract onUpdate(): void
+  onUpdate(): void {
+    // handle key downs once per onUpdate
+    // this will create Protocol.INPUT_EV_MOVE events if something
+    // relevant is pressed
+    this.evts.createKeyEvents()
+
+    for (const evt of this.evts.consumeAll()) {
+      this.handleEvent(evt)
+    }
+
+    this.checkFinished()
+  }
+
+  abstract handleEvent(evt: GameEvent): void
+
+  handleLocalEvent(evt: GameEvent): boolean {
+    const type = evt[0]
+    if (type === Protocol.INPUT_EV_MOVE) {
+      const dim = this.viewport.worldDimToViewportRaw({ w: evt[1], h: evt[2] })
+      this.requireRerender()
+      this.viewport.move(dim.w, dim.h)
+      this.viewportSnapshots.remove(ViewportSnapshots.LAST)
+    } else if (type === Protocol.INPUT_EV_MOUSE_MOVE) {
+      const down = evt[5]
+      if (down && !GameCommon.getFirstOwnedPiece(this.gameId, this.clientId)) {
+        // move the cam
+        const diff = this.viewport.worldDimToViewportRaw({ w: evt[3], h: evt[4] })
+        this.requireRerender()
+        this.viewport.move(diff.w, diff.h)
+        this.viewportSnapshots.remove(ViewportSnapshots.LAST)
+      }
+    } else if (type === Protocol.INPUT_EV_PLAYER_COLOR) {
+      this.playerCursors.updatePlayerCursorColor(evt[1])
+    } else if (type === Protocol.INPUT_EV_MOUSE_DOWN) {
+      this.playerCursors.updatePlayerCursorState(true)
+    } else if (type === Protocol.INPUT_EV_MOUSE_UP) {
+      this.playerCursors.updatePlayerCursorState(false)
+    } else if (type === Protocol.INPUT_EV_ZOOM_IN) {
+      const pos = { x: evt[1], y: evt[2] }
+      this.requireRerender()
+      this.viewport.zoom('in', this.viewport.worldToViewportRaw(pos))
+      this.viewportSnapshots.remove(ViewportSnapshots.LAST)
+    } else if (type === Protocol.INPUT_EV_ZOOM_OUT) {
+      const pos = { x: evt[1], y: evt[2] }
+      this.requireRerender()
+      this.viewport.zoom('out', this.viewport.worldToViewportRaw(pos))
+      this.viewportSnapshots.remove(ViewportSnapshots.LAST)
+    } else if (type === Protocol.INPUT_EV_TOGGLE_INTERFACE) {
+      this.emitToggleInterface()
+    } else if (type === Protocol.INPUT_EV_TOGGLE_PREVIEW) {
+      this.emitTogglePreview()
+    } else if (type === Protocol.INPUT_EV_TOGGLE_SOUNDS) {
+      this.playerSettings.toggleSoundsEnabled()
+    } else if (type === Protocol.INPUT_EV_TOGGLE_PLAYER_NAMES) {
+      this.playerSettings.togglePlayerNames()
+    } else if (type === Protocol.INPUT_EV_TOGGLE_FIXED_PIECES) {
+      this.toggleViewFixedPieces()
+    } else if (type === Protocol.INPUT_EV_TOGGLE_LOOSE_PIECES) {
+      this.toggleViewLoosePieces()
+    } else if (type === Protocol.INPUT_EV_TOGGLE_TABLE) {
+      this.playerSettings.toggleShowTable()
+    } else if (type === Protocol.INPUT_EV_CENTER_FIT_PUZZLE) {
+      const slot = 'center'
+      const handled = this.viewportSnapshots.handle(slot)
+      this.showStatusMessage(handled ? `Restored position "${handled}"` : `Position "${slot}" not set`)
+    } else if (type === Protocol.INPUT_EV_STORE_POS) {
+      const slot: string = `${evt[1]}`
+      this.viewportSnapshots.snap(slot)
+      this.showStatusMessage(`Stored position ${slot}`)
+    } else if (type === Protocol.INPUT_EV_RESTORE_POS) {
+      const slot: string = `${evt[1]}`
+      const handled = this.viewportSnapshots.handle(slot)
+      this.showStatusMessage(handled ? `Restored position "${handled}"` : `Position "${slot}" not set`)
+    } else {
+      return false
+    }
+    return true
+  }
 
   async onRender (): Promise<void> {
     if (!this.rerender) {
@@ -435,7 +589,7 @@ export abstract class Game<GuiType extends Gui> {
   }
 
   showStatusMessage(what: string, value: any = undefined): void {
-    this.gui.addStatusMessage({ what, value })
+    this.hud.addStatusMessage(what, value)
   }
 
   bgChange(value: string): void {
@@ -443,11 +597,11 @@ export abstract class Game<GuiType extends Gui> {
   }
 
   changeTableTexture(_value: string): void {
-    this.rerender = true
+    this.requireRerender()
   }
 
   changeShowTable(_value: boolean): void {
-    this.rerender = true
+    this.requireRerender()
   }
 
   changeColor(value: string): void {

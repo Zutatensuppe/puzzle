@@ -3,52 +3,25 @@
 import GameCommon from '../common/GameCommon'
 import Protocol from '../common/Protocol'
 import Time from '../common/Time'
-import { Game as GameType, Player, ReplayData, ReplayGui, Timestamp } from '../common/Types'
+import { Game as GameType, GameEvent, Player, ReplayData, ReplayHud, Timestamp } from '../common/Types'
 import Util from '../common/Util'
-import { EventAdapter } from './EventAdapter'
 import { Game } from './Game'
 import { MODE_REPLAY } from './GameMode'
-import { PlayerCursors } from './PlayerCursors'
-import { PlayerSettings } from './PlayerSettings'
-import PuzzleGraphics from './PuzzleGraphics'
-import { PuzzleTable } from './PuzzleTable'
-import { Sounds } from './Sounds'
-import { ViewportSnapshots } from './ViewportSnapshots'
 import _api from './_api'
-import { PuzzleStatus } from './PuzzleStatus'
 
-interface Replay {
-  final: boolean
-  log: Array<any> // current log entries
-  logPointer: number // pointer to current item in the log array
-  speeds: Array<number>
-  speedIdx: number
-  paused: boolean
-  lastRealTs: number
-  lastGameTs: number
-  gameStartTs: number
-  skipNonActionPhases: boolean
-  //
-  dataOffset: number
-}
-
-export class GameReplay extends Game<ReplayGui> {
-  private REPLAY: Replay = {
-    final: false,
-    log: [],
-    logPointer: 0,
-    speeds: [0.5, 1, 2, 5, 10, 20, 50, 100, 250, 500],
-    speedIdx: 1,
-    paused: false,
-    lastRealTs: 0,
-    lastGameTs: 0,
-    gameStartTs: 0,
-    skipNonActionPhases: true,
-    dataOffset: 0,
-  }
-
-  private GAME_TS!: number
-
+export class GameReplay extends Game<ReplayHud> {
+  private final: boolean = false
+  private log: any[] = []
+  private logPointer: number = 0
+  private speeds: number[] = [0.5, 1, 2, 5, 10, 20, 50, 100, 250, 500]
+  private speedIdx: number = 1
+  private paused: boolean = false
+  private lastRealTs: number = 0
+  private lastGameTs: number = 0
+  private gameStartTs: number = 0
+  private skipNonActionPhases: boolean = true
+  private dataOffset: number = 0
+  private gameTs!: number
   private to: NodeJS.Timeout | null = null
 
   getMode(): string {
@@ -60,13 +33,12 @@ export class GameReplay extends Game<ReplayGui> {
   }
 
   time(): number {
-    return this.REPLAY.lastGameTs
+    return this.lastGameTs
   }
 
-
   async queryNextReplayBatch (): Promise<ReplayData | null> {
-    const offset = this.REPLAY.dataOffset
-    this.REPLAY.dataOffset += 10000 // meh
+    const offset = this.dataOffset
+    this.dataOffset += 10000 // meh
 
     const res = await _api.pub.replayData({ gameId: this.gameId, offset })
     if (res.status !== 200) {
@@ -75,12 +47,12 @@ export class GameReplay extends Game<ReplayGui> {
     const replay: ReplayData = await res.json() as ReplayData
 
     // cut log that was already handled
-    this.REPLAY.log = this.REPLAY.log.slice(this.REPLAY.logPointer)
-    this.REPLAY.logPointer = 0
-    this.REPLAY.log.push(...replay.log)
+    this.log = this.log.slice(this.logPointer)
+    this.logPointer = 0
+    this.log.push(...replay.log)
 
     if (replay.log.length === 0) {
-      this.REPLAY.final = true
+      this.final = true
     }
     return replay
   }
@@ -96,114 +68,55 @@ export class GameReplay extends Game<ReplayGui> {
     const gameObject: GameType = Util.decodeGame(replay.game)
     GameCommon.setGame(gameObject.id, gameObject)
 
-    this.REPLAY.lastRealTs = Time.timestamp()
-    this.REPLAY.gameStartTs = parseInt(replay.log[0][4], 10)
-    this.REPLAY.lastGameTs = this.REPLAY.gameStartTs
+    this.lastRealTs = Time.timestamp()
+    this.gameStartTs = parseInt(replay.log[0][4], 10)
+    this.lastGameTs = this.gameStartTs
 
-    this.GAME_TS = this.REPLAY.lastGameTs
+    this.gameTs = this.lastGameTs
 
-    // rerender after (re-)connect
-    this.rerender = true
+    this.requireRerender()
   }
 
   doSetSpeedStatus(): void {
-    this.gui.setReplaySpeed(this.REPLAY.speeds[this.REPLAY.speedIdx])
-    this.gui.setReplayPaused(this.REPLAY.paused)
+    this.hud.setReplaySpeed(this.speeds[this.speedIdx])
+    this.hud.setReplayPaused(this.paused)
   }
 
   replayOnSpeedUp(): void {
-    if (this.REPLAY.speedIdx + 1 < this.REPLAY.speeds.length) {
-      this.REPLAY.speedIdx++
+    if (this.speedIdx + 1 < this.speeds.length) {
+      this.speedIdx++
       this.doSetSpeedStatus()
       this.showStatusMessage('Speed Up')
     }
   }
 
   replayOnSpeedDown(): void {
-    if (this.REPLAY.speedIdx >= 1) {
-      this.REPLAY.speedIdx--
+    if (this.speedIdx >= 1) {
+      this.speedIdx--
       this.doSetSpeedStatus()
       this.showStatusMessage('Speed Down')
     }
   }
 
   replayOnPauseToggle(): void {
-    this.REPLAY.paused = !this.REPLAY.paused
+    this.paused = !this.paused
     this.doSetSpeedStatus()
-    this.showStatusMessage(this.REPLAY.paused ? 'Paused' : 'Playing')
+    this.showStatusMessage(this.paused ? 'Paused' : 'Playing')
   }
 
-  onUpdate(): void {
-    // handle key downs once per onUpdate
-    // this will create Protocol.INPUT_EV_MOVE events if something
-    // relevant is pressed
-    this.evts.createKeyEvents()
-
-    for (const evt of this.evts.consumeAll()) {
-      // LOCAL ONLY CHANGES
-      // -------------------------------------------------------------
-      const type = evt[0]
-      if (type === Protocol.INPUT_EV_REPLAY_TOGGLE_PAUSE) {
-        this.replayOnPauseToggle()
-      } else if (type === Protocol.INPUT_EV_REPLAY_SPEED_DOWN) {
-        this.replayOnSpeedDown()
-      } else if (type === Protocol.INPUT_EV_REPLAY_SPEED_UP) {
-        this.replayOnSpeedUp()
-      } else if (type === Protocol.INPUT_EV_MOVE) {
-        const dim = this.viewport.worldDimToViewportRaw({ w: evt[1], h: evt[2] })
-        this.rerender = true
-        this.viewport.move(dim.w, dim.h)
-      } else if (type === Protocol.INPUT_EV_MOUSE_MOVE) {
-        const down = evt[5]
-        if (down) {
-          const diff = this.viewport.worldDimToViewportRaw({ w: evt[3], h: evt[4] })
-          this.rerender = true
-          this.viewport.move(diff.w, diff.h)
-        }
-      } else if (type === Protocol.INPUT_EV_PLAYER_COLOR) {
-        this.playerCursors.updatePlayerCursorColor(evt[1])
-      } else if (type === Protocol.INPUT_EV_MOUSE_DOWN) {
-        this.playerCursors.updatePlayerCursorState(true)
-      } else if (type === Protocol.INPUT_EV_MOUSE_UP) {
-        this.playerCursors.updatePlayerCursorState(false)
-      } else if (type === Protocol.INPUT_EV_ZOOM_IN) {
-        const pos = { x: evt[1], y: evt[2] }
-        this.rerender = true
-        this.viewport.zoom('in', this.viewport.worldToViewportRaw(pos))
-      } else if (type === Protocol.INPUT_EV_ZOOM_OUT) {
-        const pos = { x: evt[1], y: evt[2] }
-        this.rerender = true
-        this.viewport.zoom('out', this.viewport.worldToViewportRaw(pos))
-      } else if (type === Protocol.INPUT_EV_TOGGLE_INTERFACE) {
-        this.emitToggleInterface()
-      } else if (type === Protocol.INPUT_EV_TOGGLE_PREVIEW) {
-        this.emitTogglePreview()
-      } else if (type === Protocol.INPUT_EV_TOGGLE_SOUNDS) {
-        this.playerSettings.toggleSoundsEnabled()
-      } else if (type === Protocol.INPUT_EV_TOGGLE_PLAYER_NAMES) {
-        this.playerSettings.togglePlayerNames()
-      } else if (type === Protocol.INPUT_EV_CENTER_FIT_PUZZLE) {
-        const slot = 'center'
-        const handled = this.viewportSnapshots.handle(slot)
-        this.showStatusMessage(handled ? `Restored position "${handled}"` : `Position "${slot}" not set`)
-      } else if (type === Protocol.INPUT_EV_TOGGLE_FIXED_PIECES) {
-        this.toggleViewFixedPieces()
-      } else if (type === Protocol.INPUT_EV_TOGGLE_LOOSE_PIECES) {
-        this.toggleViewLoosePieces()
-      } else if (type === Protocol.INPUT_EV_TOGGLE_TABLE) {
-        this.playerSettings.toggleShowTable()
-      } else if (type === Protocol.INPUT_EV_STORE_POS) {
-        const slot: string = `${evt[1]}`
-        this.viewportSnapshots.snap(slot)
-        this.showStatusMessage(`Stored position ${slot}`)
-      } else if (type === Protocol.INPUT_EV_RESTORE_POS) {
-        const slot: string = `${evt[1]}`
-        const handled = this.viewportSnapshots.handle(slot)
-        this.showStatusMessage(handled ? `Restored position "${handled}"` : `Position "${slot}" not set`)
-      }
+  handleEvent(evt: GameEvent): void {
+    // LOCAL ONLY CHANGES
+    // -------------------------------------------------------------
+    const type = evt[0]
+    if (type === Protocol.INPUT_EV_REPLAY_TOGGLE_PAUSE) {
+      this.replayOnPauseToggle()
+    } else if (type === Protocol.INPUT_EV_REPLAY_SPEED_DOWN) {
+      this.replayOnSpeedDown()
+    } else if (type === Protocol.INPUT_EV_REPLAY_SPEED_UP) {
+      this.replayOnSpeedUp()
+    } else {
+      this.handleLocalEvent(evt)
     }
-
-    this.checkFinished()
   }
 
   private handleLogEntry(logEntry: any[], ts: Timestamp) {
@@ -234,58 +147,57 @@ export class GameReplay extends Game<ReplayGui> {
   }
 
   private async next() {
-    if (this.REPLAY.logPointer + 1 >= this.REPLAY.log.length) {
+    if (this.logPointer + 1 >= this.log.length) {
       await this.queryNextReplayBatch()
     }
 
     const realTs = Time.timestamp()
-    if (this.REPLAY.paused) {
-      this.REPLAY.lastRealTs = realTs
+    if (this.paused) {
+      this.lastRealTs = realTs
       this.to = setTimeout(this.next.bind(this), 50)
       return
     }
-    const timePassedReal = realTs - this.REPLAY.lastRealTs
-    const timePassedGame = timePassedReal * this.REPLAY.speeds[this.REPLAY.speedIdx]
-    let maxGameTs = this.REPLAY.lastGameTs + timePassedGame
+    const timePassedReal = realTs - this.lastRealTs
+    const timePassedGame = timePassedReal * this.speeds[this.speedIdx]
+    let maxGameTs = this.lastGameTs + timePassedGame
 
-    let continueLoop: boolean = true
     do {
-      if (this.REPLAY.paused) {
+      if (this.paused) {
         break
       }
-      const nextIdx = this.REPLAY.logPointer + 1
-      if (nextIdx >= this.REPLAY.log.length) {
+      const nextIdx = this.logPointer + 1
+      if (nextIdx >= this.log.length) {
         break
       }
-      const currLogEntry = this.REPLAY.log[this.REPLAY.logPointer]
-      const currTs: Timestamp = this.GAME_TS + (
+      const currLogEntry = this.log[this.logPointer]
+      const currTs: Timestamp = this.gameTs + (
         currLogEntry[0] === Protocol.LOG_HEADER
         ? 0
         : currLogEntry[currLogEntry.length - 1]
       )
 
-      const nextLogEntry = this.REPLAY.log[nextIdx]
+      const nextLogEntry = this.log[nextIdx]
       const diffToNext = nextLogEntry[nextLogEntry.length - 1]
       const nextTs: Timestamp = currTs + diffToNext
       if (nextTs > maxGameTs) {
         // next log entry is too far into the future
-        if (this.REPLAY.skipNonActionPhases && (maxGameTs + 500 * Time.MS < nextTs)) {
+        if (this.skipNonActionPhases && (maxGameTs + 500 * Time.MS < nextTs)) {
           maxGameTs += diffToNext
         }
-        continueLoop = false
-      } else {
-        this.GAME_TS = currTs
-        if (this.handleLogEntry(nextLogEntry, nextTs)) {
-          this.rerender = true
-        }
-        this.REPLAY.logPointer = nextIdx
+        break
       }
-    } while (continueLoop)
-    this.REPLAY.lastRealTs = realTs
-    this.REPLAY.lastGameTs = maxGameTs
+      this.gameTs = currTs
+      if (this.handleLogEntry(nextLogEntry, nextTs)) {
+        this.requireRerender()
+      }
+      this.logPointer = nextIdx
+      // eslint-disable-next-line
+    } while (true)
+    this.lastRealTs = realTs
+    this.lastGameTs = maxGameTs
     this.puzzleStatus.update(this.time())
 
-    if (!this.REPLAY.final) {
+    if (!this.final) {
       this.to = setTimeout(this.next.bind(this), 50)
     }
   }
@@ -311,86 +223,10 @@ export class GameReplay extends Game<ReplayGui> {
   }
 
   async init(): Promise<void> {
-    if (typeof window.DEBUG === 'undefined') window.DEBUG = false
-
-    await this.assets.init()
-
-    this.playerCursors = new PlayerCursors(this.canvas, this.assets)
-
     await this.connect()
-
-    const PIECE_DRAW_SIZE = GameCommon.getPieceDrawSize(this.gameId)
-    this.pieceDrawOffset = GameCommon.getPieceDrawOffset(this.gameId)
-    const PUZZLE_WIDTH = GameCommon.getPuzzleWidth(this.gameId)
-    const PUZZLE_HEIGHT = GameCommon.getPuzzleHeight(this.gameId)
-    this.tableWidth = GameCommon.getTableWidth(this.gameId)
-    this.tableHeight = GameCommon.getTableHeight(this.gameId)
-
-    this.boardPos = {
-      x: (this.tableWidth - PUZZLE_WIDTH) / 2,
-      y: (this.tableHeight - PUZZLE_HEIGHT) / 2
-    }
-    this.boardDim = {
-      w: PUZZLE_WIDTH,
-      h: PUZZLE_HEIGHT,
-    }
-    this.pieceDim = {
-      w: PIECE_DRAW_SIZE,
-      h: PIECE_DRAW_SIZE,
-    }
-
-    this.tableBounds = GameCommon.getBounds(this.gameId)
-    this.puzzleTable = new PuzzleTable(this.tableBounds, this.assets, this.boardPos, this.boardDim)
-    await this.puzzleTable.init()
-
-    this.bitmaps = await PuzzleGraphics.loadPuzzleBitmaps(
-      GameCommon.getPuzzle(this.gameId),
-      GameCommon.getImageUrl(this.gameId),
-    )
-
-    this.evts = new EventAdapter(this)
-    this.viewportSnapshots = new ViewportSnapshots(this.evts, this.viewport)
-    this.playerSettings = new PlayerSettings(this)
-    this.playerSettings.init()
-    this.sounds = new Sounds(this.assets, this.playerSettings)
-
-    this.initFireworks()
-
-    this.canvas.classList.add('loaded')
-    this.gui.setPuzzleCut()
-
-    // initialize some view data
-    // this global data will change according to input events
-
-    // theoretically we need to recalculate this when window resizes
-    // but it probably doesnt matter so much
-    this.viewport.calculateZoomCapping(
-      window.innerWidth,
-      window.innerHeight,
-      this.tableWidth,
-      this.tableHeight,
-    )
-
-    this.evts.registerEvents()
-
-    this.centerPuzzle()
-    this.viewportSnapshots.snap('center')
-
-    this.puzzleStatus = new PuzzleStatus(this)
-    this.puzzleStatus.update(this.time())
-
-    this.initFinishState()
-
-    this.evts.addEvent([Protocol.INPUT_EV_BG_COLOR, this.playerSettings.background()])
-    this.evts.addEvent([Protocol.INPUT_EV_PLAYER_COLOR, this.playerSettings.color()])
-    this.evts.addEvent([Protocol.INPUT_EV_PLAYER_NAME, this.playerSettings.name()])
-
-    this.playerCursors.updatePlayerCursorColor(this.playerSettings.color())
-
+    await this.initBaseProps()
     this.doSetSpeedStatus()
-
     this.next()
-
     this.initGameLoop()
   }
 }

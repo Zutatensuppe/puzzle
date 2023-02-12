@@ -1,9 +1,8 @@
 import Protocol from "../common/Protocol"
 import { GameEvent } from "../common/Types"
 import { Camera, Snapshot } from "./Camera"
+import { Game } from "./Game"
 import { MODE_REPLAY } from "./GameMode"
-import { GamePlay } from "./GamePlay"
-import { GameReplay } from "./GameReplay"
 
 export class EventAdapter {
   private events: Array<GameEvent> = []
@@ -22,7 +21,7 @@ export class EventAdapter {
   private lastMouseRaw: [number, number]|null = null
   private lastMouseWorld: [number, number]|null = null
 
-  constructor (private game: GamePlay | GameReplay) {
+  constructor (private game: Game<any>) {
     // pass
   }
 

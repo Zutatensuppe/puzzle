@@ -46,12 +46,11 @@
 </template>
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, Ref, ref, watch } from 'vue'
-import { ReplayGui, Player, PuzzleStatus as PuzzleStatusType } from '../../common/Types'
+import { ReplayHud, Player, PuzzleStatus as PuzzleStatusType } from '../../common/Types'
 import { GameReplay } from './../GameReplay'
 import { useRoute } from 'vue-router'
 import api from '../_api'
 import config from '../config'
-import mitt from 'mitt'
 import HelpOverlay from './../components/HelpOverlay.vue'
 import InfoOverlay from './../components/InfoOverlay.vue'
 import PreviewOverlay from './../components/PreviewOverlay.vue'
@@ -76,7 +75,6 @@ const cuttingPuzzle = ref<boolean>(true)
 const showInterface = ref<boolean>(true)
 const canvasEl = ref<HTMLCanvasElement>() as Ref<HTMLCanvasElement>
 
-const eventBus = mitt()
 const g = ref<GameReplay | null>(null)
 
 const replay = ref<{ speed: number, paused: boolean }>({ speed: 1, paused: false })
@@ -189,7 +187,7 @@ watch(dialog, (newValue) => {
 })
 
 
-const gui: ReplayGui = {
+const hud: ReplayHud = {
   setPuzzleCut: () => {
     cuttingPuzzle.value = false
   },
@@ -202,7 +200,7 @@ const gui: ReplayGui = {
   setConnectionState: (v: any) => {
     connectionState.value = v
   },
-  togglePreview: (v: any) => {
+  togglePreview: (v: boolean) => {
     if (v) {
       openDialog('preview')
     } else {
@@ -212,13 +210,11 @@ const gui: ReplayGui = {
   toggleInterface: (v: any) => {
     showInterface.value = !!v
   },
-  addStatusMessage: (data: any) => {
-    addStatusMessage(data.what, data.value)
-  },
-  setReplaySpeed: (v: any) => {
+  addStatusMessage,
+  setReplaySpeed: (v: number) => {
     replay.value.speed = v
   },
-  setReplayPaused: (v: any) => {
+  setReplayPaused: (v: boolean) => {
     replay.value.paused = v
   },
 }
@@ -237,7 +233,7 @@ onMounted(async () => {
     api.clientId(),
     config.get().WS_ADDRESS,
     canvasEl.value,
-    gui,
+    hud,
   )
 
   await game.init()

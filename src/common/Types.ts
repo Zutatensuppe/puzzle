@@ -372,17 +372,17 @@ export interface MailService {
   sendRegistrationMail: (data: MailServiceRegistrationData) => any
 }
 
-export interface Gui {
+export interface Hud {
   setPuzzleCut: () => void
   setPlayers: (v: any) => void
   setStatus: (v: any) => void
   setConnectionState: (v: any) => void
-  togglePreview: (v: any) => void
-  toggleInterface: (v: any) => void
-  addStatusMessage: (v: any) => void
+  togglePreview: (v: boolean) => void
+  toggleInterface: (v: boolean) => void
+  addStatusMessage: (what: string, value: any) => void
 }
 
-export interface ReplayGui extends Gui {
-  setReplaySpeed: (v: any) => void
-  setReplayPaused: (v: any) => void
+export interface ReplayHud extends Hud {
+  setReplaySpeed: (v: number) => void
+  setReplayPaused: (v: boolean) => void
 }

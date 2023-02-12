@@ -1,9 +1,8 @@
 import GameCommon from './../common/GameCommon'
-import { GamePlay } from './GamePlay';
-import { GameReplay } from './GameReplay';
+import { Game } from './Game'
 
 export class PuzzleStatus {
-  constructor(private game: GamePlay | GameReplay) {
+  constructor(private game: Game<any>) {
     // pass
   }
 
