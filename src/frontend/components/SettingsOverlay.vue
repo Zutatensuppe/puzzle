@@ -76,28 +76,29 @@
 </template>
 <script setup lang="ts">
 import { ref, watch } from 'vue'
-import { PlayerSettings } from '../PlayerSettings';
+import { GamePlay } from '../GamePlay';
+import { GameReplay } from '../GameReplay';
 
 import IngameColorPicker from './IngameColorPicker.vue';
 
 const props = defineProps<{
-  settings: PlayerSettings
+  game: GamePlay | GameReplay
 }>()
 
 const emit = defineEmits<{
   (e: 'dialogChange', val: any[]): void
 }>()
 
-const showTable = ref<boolean>(props.settings.showTable())
-const tableTexture = ref<string>(props.settings.tableTexture())
-const background = ref<string>(props.settings.background())
-const color = ref<string>(props.settings.color())
+const showTable = ref<boolean>(props.game.getPlayerSettings().showTable())
+const tableTexture = ref<string>(props.game.getPlayerSettings().tableTexture())
+const background = ref<string>(props.game.getPlayerSettings().background())
+const color = ref<string>(props.game.getPlayerSettings().color())
 const isUkraineColor = ref<boolean>(color.value === 'ukraine')
-const name = ref<string>(props.settings.name())
-const soundsEnabled = ref<boolean>(props.settings.soundsEnabled())
-const otherPlayerClickSoundEnabled = ref<boolean>(props.settings.otherPlayerClickSoundEnabled())
-const soundsVolume = ref<number>(props.settings.soundsVolume())
-const showPlayerNames = ref<boolean>(props.settings.showPlayerNames())
+const name = ref<string>(props.game.getPlayerSettings().name())
+const soundsEnabled = ref<boolean>(props.game.getPlayerSettings().soundsEnabled())
+const otherPlayerClickSoundEnabled = ref<boolean>(props.game.getPlayerSettings().otherPlayerClickSoundEnabled())
+const soundsVolume = ref<number>(props.game.getPlayerSettings().soundsVolume())
+const showPlayerNames = ref<boolean>(props.game.getPlayerSettings().showPlayerNames())
 
 const onColorPickerOpen = () => {
   emit('dialogChange', [
@@ -110,9 +111,8 @@ const onColorPickerClose = () => {
   ])
 }
 
-const updateVolume = (ev: Event): void => {
-  const vol = parseInt((ev.target as HTMLInputElement).value)
-  soundsVolume.value = vol
+const updateVolume = (newVolume: number): void => {
+  soundsVolume.value = newVolume
 }
 const decreaseVolume = (): void => {
   soundsVolume.value = Math.max(0, soundsVolume.value - 5)
@@ -123,15 +123,15 @@ const increaseVolume = (): void => {
 
 // TODO: emit changes only when relevant value changed
 const emitChanges = (): void => {
-  props.settings.setShowTable(showTable.value)
-  props.settings.setTableTexture(tableTexture.value)
-  props.settings.setBackground(background.value)
-  props.settings.setColor(isUkraineColor.value ? 'ukraine' : color.value)
-  props.settings.setName(name.value)
-  props.settings.setSoundsEnabled(soundsEnabled.value)
-  props.settings.setOtherPlayerClickSoundEnabled(otherPlayerClickSoundEnabled.value)
-  props.settings.setSoundsVolume(soundsVolume.value)
-  props.settings.setShowPlayerNames(showPlayerNames.value)
+  props.game.getPlayerSettings().setShowTable(showTable.value)
+  props.game.getPlayerSettings().setTableTexture(tableTexture.value)
+  props.game.getPlayerSettings().setBackground(background.value)
+  props.game.getPlayerSettings().setColor(isUkraineColor.value ? 'ukraine' : color.value)
+  props.game.getPlayerSettings().setName(name.value)
+  props.game.getPlayerSettings().setSoundsEnabled(soundsEnabled.value)
+  props.game.getPlayerSettings().setOtherPlayerClickSoundEnabled(otherPlayerClickSoundEnabled.value)
+  props.game.getPlayerSettings().setSoundsVolume(soundsVolume.value)
+  props.game.getPlayerSettings().setShowPlayerNames(showPlayerNames.value)
 }
 
 watch(isUkraineColor, emitChanges)

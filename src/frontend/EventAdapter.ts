@@ -1,7 +1,9 @@
 import Protocol from "../common/Protocol"
 import { GameEvent } from "../common/Types"
 import { Camera, Snapshot } from "./Camera"
-import { MODE_REPLAY } from "./game"
+import { MODE_REPLAY } from "./GameMode"
+import { GamePlay } from "./GamePlay"
+import { GameReplay } from "./GameReplay"
 
 export class EventAdapter {
   private events: Array<GameEvent> = []
@@ -20,22 +22,17 @@ export class EventAdapter {
   private lastMouseRaw: [number, number]|null = null
   private lastMouseWorld: [number, number]|null = null
 
-  constructor (
-    private canvas: HTMLCanvasElement,
-    private window: Window,
-    private viewport: Camera,
-    private MODE: string
-  ) {
+  constructor (private game: GamePlay | GameReplay) {
     // pass
   }
 
   _toWorldPoint (x: number, y: number): [number, number] {
-    const pos = this.viewport.viewportToWorld({x, y})
+    const pos = this.game.getViewport().viewportToWorld({x, y})
     return [pos.x, pos.y]
   }
 
   _toWorldDim (w: number, h: number): [number, number] {
-    const dim = this.viewport.viewportDimToWorld({ w, h })
+    const dim = this.game.getViewport().viewportDimToWorld({ w, h })
     return [ dim.w, dim.h ]
   }
 
@@ -44,7 +41,7 @@ export class EventAdapter {
   }
 
   _canvasCenter () {
-    return this._toWorldPoint(this.canvas.width / 2, this.canvas.height / 2)
+    return this._toWorldPoint(this.game.getCanvas().width / 2, this.game.getCanvas().height / 2)
   }
 
   _key (state: boolean, ev: KeyboardEvent) {
@@ -102,7 +99,7 @@ export class EventAdapter {
 
   _onWheel (ev: WheelEvent) {
     this.lastMouseWorld = this._mousePos(ev)
-    if (this.viewport.canZoom(ev.deltaY < 0 ? 'in' : 'out')) {
+    if (this.game.getViewport().canZoom(ev.deltaY < 0 ? 'in' : 'out')) {
       const evt = ev.deltaY < 0
         ? Protocol.INPUT_EV_ZOOM_IN
         : Protocol.INPUT_EV_ZOOM_OUT
@@ -123,7 +120,7 @@ export class EventAdapter {
       return
     }
 
-    if (this.MODE === MODE_REPLAY) {
+    if (this.game.getMode() === MODE_REPLAY) {
       if (ev.code === 'KeyI') {
         this.addEvent([Protocol.INPUT_EV_REPLAY_SPEED_UP])
       } else if (ev.code === 'KeyO') {
@@ -163,30 +160,30 @@ export class EventAdapter {
 
   // Prevents selecting text outside of canvas when double clicking the canvas
   _onWndMouseDown (ev: MouseEvent): void {
-    if (ev.target === this.canvas && ev.detail > 1) {
+    if (ev.target === this.game.getCanvas() && ev.detail > 1) {
       ev.preventDefault()
     }
   }
 
   registerEvents () {
-    this.canvas.addEventListener('mousedown', this._onMouseDown.bind(this))
-    this.canvas.addEventListener('mouseup', this._onMouseUp.bind(this))
-    this.canvas.addEventListener('mousemove', this._onMouseMove.bind(this))
-    this.canvas.addEventListener('wheel', this._onWheel.bind(this))
-    this.window.addEventListener('keydown', this._onKeyUp.bind(this))
-    this.window.addEventListener('keyup', this._onKeyDown.bind(this))
-    this.window.addEventListener('keypress', this._onKeyPress.bind(this))
-    this.window.addEventListener('mousedown', this._onWndMouseDown.bind(this))
+    this.game.getCanvas().addEventListener('mousedown', this._onMouseDown.bind(this))
+    this.game.getCanvas().addEventListener('mouseup', this._onMouseUp.bind(this))
+    this.game.getCanvas().addEventListener('mousemove', this._onMouseMove.bind(this))
+    this.game.getCanvas().addEventListener('wheel', this._onWheel.bind(this))
+    this.game.getWindow().addEventListener('keydown', this._onKeyUp.bind(this))
+    this.game.getWindow().addEventListener('keyup', this._onKeyDown.bind(this))
+    this.game.getWindow().addEventListener('keypress', this._onKeyPress.bind(this))
+    this.game.getWindow().addEventListener('mousedown', this._onWndMouseDown.bind(this))
   }
   unregisterEvents () {
-    this.canvas.removeEventListener('mousedown', this._onMouseDown.bind(this))
-    this.canvas.removeEventListener('mouseup', this._onMouseUp.bind(this))
-    this.canvas.removeEventListener('mousemove', this._onMouseMove.bind(this))
-    this.canvas.removeEventListener('wheel', this._onWheel.bind(this))
-    this.window.removeEventListener('keydown', this._onKeyUp.bind(this))
-    this.window.removeEventListener('keyup', this._onKeyDown.bind(this))
-    this.window.removeEventListener('keypress', this._onKeyPress.bind(this))
-    this.window.removeEventListener('mousedown', this._onWndMouseDown.bind(this))
+    this.game.getCanvas().removeEventListener('mousedown', this._onMouseDown.bind(this))
+    this.game.getCanvas().removeEventListener('mouseup', this._onMouseUp.bind(this))
+    this.game.getCanvas().removeEventListener('mousemove', this._onMouseMove.bind(this))
+    this.game.getCanvas().removeEventListener('wheel', this._onWheel.bind(this))
+    this.game.getWindow().removeEventListener('keydown', this._onKeyUp.bind(this))
+    this.game.getWindow().removeEventListener('keyup', this._onKeyDown.bind(this))
+    this.game.getWindow().removeEventListener('keypress', this._onKeyPress.bind(this))
+    this.game.getWindow().removeEventListener('mousedown', this._onWndMouseDown.bind(this))
   }
 
   createSnapshotEvents (prev: Snapshot, curr: Snapshot) {
@@ -220,8 +217,8 @@ export class EventAdapter {
     const w = (this.LEFT ? 1 : 0) - (this.RIGHT ? 1 : 0)
     const h = (this.UP ? 1 : 0) - (this.DOWN ? 1 : 0)
     if (w !== 0 || h !== 0) {
-      const amount = (this.SHIFT ? 24 : 12) * Math.sqrt(this.viewport.getCurrentZoom())
-      const pos = this.viewport.viewportDimToWorld({w: w * amount, h: h * amount})
+      const amount = (this.SHIFT ? 24 : 12) * Math.sqrt(this.game.getViewport().getCurrentZoom())
+      const pos = this.game.getViewport().viewportDimToWorld({w: w * amount, h: h * amount})
       this.addEvent([Protocol.INPUT_EV_MOVE, pos.w, pos.h])
       if (this.lastMouseWorld) {
         this.lastMouseWorld[0] -= pos.w
@@ -232,12 +229,12 @@ export class EventAdapter {
     if (this.ZOOM_IN && this.ZOOM_OUT) {
       // cancel each other out
     } else if (this.ZOOM_IN) {
-      if (this.viewport.canZoom('in')) {
+      if (this.game.getViewport().canZoom('in')) {
         const target = this.lastMouseWorld || this._canvasCenter()
         this.addEvent([Protocol.INPUT_EV_ZOOM_IN, ...target])
       }
     } else if (this.ZOOM_OUT) {
-      if (this.viewport.canZoom('out')) {
+      if (this.game.getViewport().canZoom('out')) {
         const target = this.lastMouseWorld || this._canvasCenter()
         this.addEvent([Protocol.INPUT_EV_ZOOM_OUT, ...target])
       }

@@ -371,3 +371,18 @@ export interface MailService {
   sendPasswordResetMail: (data: MailServicePasswordResetData) => any
   sendRegistrationMail: (data: MailServiceRegistrationData) => any
 }
+
+export interface Gui {
+  setPuzzleCut: () => void
+  setPlayers: (v: any) => void
+  setStatus: (v: any) => void
+  setConnectionState: (v: any) => void
+  togglePreview: (v: any) => void
+  toggleInterface: (v: any) => void
+  addStatusMessage: (v: any) => void
+}
+
+export interface ReplayGui extends Gui {
+  setReplaySpeed: (v: any) => void
+  setReplayPaused: (v: any) => void
+}

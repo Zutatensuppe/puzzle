@@ -6,11 +6,11 @@
         <tbody>
           <tr>
             <td>Image Title: </td>
-            <td>{{game.puzzle.info.image?.title || '<No Title>'}}</td>
+            <td>{{ game.getImageTitle() }}</td>
           </tr>
           <tr>
             <td>Image Uploader: </td>
-            <td>{{game.puzzle.info.image?.uploaderName || '<Unknown>'}}</td>
+            <td>{{ game.getImageUploaderName() }}</td>
           </tr>
           <tr>
             <td><v-icon icon="mdi-counter mr-1"></v-icon> Scoring: </td>
@@ -31,14 +31,16 @@
 </template>
 <script setup lang="ts">
 import { computed } from 'vue'
-import { Game, ScoreMode, ShapeMode, SnapMode } from '../../common/Types'
+import { ScoreMode, ShapeMode, SnapMode } from '../../common/Types'
+import { GamePlay } from '../GamePlay';
+import { GameReplay } from '../GameReplay';
 
 const props = defineProps<{
-  game: Game
+  game: GamePlay | GameReplay
 }>()
 
 const scoreMode = computed(() => {
-  switch (props.game.scoreMode) {
+  switch (props.game.getScoreMode()) {
     case ScoreMode.ANY: return ['Any', 'Score when pieces are connected to each other or on final location']
     case ScoreMode.FINAL:
     default: return ['Final', 'Score when pieces are put to their final location']
@@ -46,7 +48,7 @@ const scoreMode = computed(() => {
 })
 
 const shapeMode = computed(() => {
-  switch (props.game.shapeMode) {
+  switch (props.game.getShapeMode()) {
     case ShapeMode.FLAT: return ['Flat', 'All pieces flat on all sides']
     case ShapeMode.ANY: return ['Any', 'Flat pieces can occur anywhere']
     case ShapeMode.NORMAL:
@@ -56,7 +58,7 @@ const shapeMode = computed(() => {
 })
 
 const snapMode = computed(() => {
-  switch (props.game.snapMode) {
+  switch (props.game.getSnapMode()) {
     case SnapMode.REAL: return ['Real', 'Pieces snap only to corners, already snapped pieces and to each other']
     case SnapMode.NORMAL:
     default:

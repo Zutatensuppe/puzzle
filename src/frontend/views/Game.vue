@@ -1,9 +1,9 @@
 <template>
   <div id="game">
     <v-dialog v-model="dialog" :class="`overlay-${overlay}`" :persistent="dialogPersistent">
-      <SettingsOverlay v-if="overlay === 'settings' && g.playerSettings" :settings="g.playerSettings" @dialogChange="onDialogChange" />
-      <PreviewOverlay v-if="overlay === 'preview'" :img="g.previewImageUrl" @close="closeDialog" />
-      <InfoOverlay v-if="g.game && overlay === 'info'" :game="g.game" />
+      <SettingsOverlay v-if="g && overlay === 'settings'" :game="g" @dialogChange="onDialogChange" />
+      <PreviewOverlay v-if="g && overlay === 'preview'" :game="g" @close="closeDialog" />
+      <InfoOverlay v-if="g && overlay === 'info'" :game="g" />
       <HelpOverlay v-if="overlay === 'help'" />
     </v-dialog>
 
@@ -17,8 +17,8 @@
 
     <div class="menu-left" v-if="showInterface">
       <PuzzleStatus :status="status" />
-      <div class="switch-game-replay" v-if="g.game && g.game.hasReplay">
-        <router-link :to="{ name: 'replay', params: { id: g.game.id } }"><icon icon="replay" /> Watch replay</router-link>
+      <div class="switch-game-replay" v-if="g?.hasReplay()">
+        <router-link :to="{ name: 'replay', params: { id: g.getGameId() } }"><icon icon="replay" /> Watch replay</router-link>
       </div>
     </div>
 
@@ -45,13 +45,12 @@
   </div>
 </template>
 <script setup lang="ts">
-import { Game, Player, PuzzleStatus as PuzzleStatusType } from '../../common/Types'
-import { main, MODE_PLAY } from '../game'
+import { Gui, Player, PuzzleStatus as PuzzleStatusType } from '../../common/Types'
+import { GamePlay } from '../GamePlay'
 import { onMounted, onUnmounted, Ref, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import api from '../_api'
 import config from '../config'
-import mitt from 'mitt'
 import ConnectionOverlay from './../components/ConnectionOverlay.vue'
 import CuttingOverlay from './../components/CuttingOverlay.vue'
 import HelpOverlay from './../components/HelpOverlay.vue'
@@ -60,7 +59,6 @@ import PreviewOverlay from './../components/PreviewOverlay.vue'
 import PuzzleStatus from '../components/PuzzleStatus.vue'
 import Scores from './../components/Scores.vue'
 import SettingsOverlay from './../components/SettingsOverlay.vue'
-import { PlayerSettings } from '../PlayerSettings'
 
 const statusMessages = ref<string[]>([])
 const players = ref<{ active: Player[], idle: Player[] }>({ active: [], idle: [] })
@@ -78,24 +76,7 @@ const cuttingPuzzle = ref<boolean>(true)
 const showInterface = ref<boolean>(true)
 const canvasEl = ref<HTMLCanvasElement>() as Ref<HTMLCanvasElement>
 
-const eventBus = mitt()
-
-const g = ref<{
-  playerSettings: PlayerSettings|null
-  game: Game|null
-  previewImageUrl: string
-  connect: () => void
-  disconnect: () => void
-  unload: () => void
-}>({
-  playerSettings: null,
-  game: null,
-  previewImageUrl: '',
-  connect: () => {},
-  disconnect: () => {},
-  unload: () => {},
-})
-
+const g = ref<GamePlay | null>(null)
 const route = useRoute()
 
 const addStatusMessage = (what: string, value: any): void => {
@@ -122,28 +103,36 @@ const onDialogChange = (changes: any[]): void => {
 const onResize = (): void => {
   canvasEl.value.width = window.innerWidth
   canvasEl.value.height = window.innerHeight
-  eventBus.emit('requireRerender')
+  if (g.value) {
+    g.value.requireRerender()
+  }
 }
 
 const reconnect = (): void => {
-  g.value.connect()
+  if (g.value) {
+    g.value.connect()
+  }
 }
 
 const sendEvents = (newValue: boolean, newOverlay: string, oldOverlay: string) => {
+  if (!g.value) {
+    return
+  }
+
   if (newValue) {
     // overlay is now visible
     if (newOverlay !== 'preview') {
-      eventBus.emit('setHotkeys', false)
+      g.value.toggleHotkeys(false)
     }
     if (newOverlay === 'preview') {
-      eventBus.emit('onPreviewChange', true)
+      g.value.togglePreview(true)
     }
   } else {
     // overlay is now closed
     if (oldOverlay === 'preview') {
-      eventBus.emit('onPreviewChange', false)
+      g.value.togglePreview(false)
     }
-    eventBus.emit('setHotkeys', true)
+    g.value.toggleHotkeys(true)
   }
 }
 
@@ -177,55 +166,60 @@ watch(dialog, (newValue) => {
   }
 })
 
-onMounted(async () => {
-  if (!route.params.id) {
-    return
-  }
-
-  eventBus.on('puzzleCut', () => {
+const gui: Gui = {
+  setPuzzleCut: () => {
     cuttingPuzzle.value = false
-  })
-  eventBus.on('players', (newPlayers: any) => {
-    players.value = newPlayers
-  })
-  eventBus.on('status', (newStatus: any) => {
-    status.value = newStatus
-  })
-  eventBus.on('connectionState', (v: any) => {
+  },
+  setPlayers: (v: any) => {
+    players.value = v
+  },
+  setStatus: (v: any) => {
+    status.value = v
+  },
+  setConnectionState: (v: any) => {
     connectionState.value = v
-  })
-  eventBus.on('togglePreview', (v: any) => {
+  },
+  togglePreview: (v: any) => {
     if (v) {
       openDialog('preview')
     } else {
       closeDialog()
     }
-  })
-  eventBus.on('toggleInterface', (v: any) => {
+  },
+  toggleInterface: (v: any) => {
     showInterface.value = !!v
-  })
+  },
+  addStatusMessage: (data: any) => {
+    addStatusMessage(data.what, data.value)
+  },
+}
+
+onMounted(async () => {
+  if (!route.params.id) {
+    return
+  }
 
   canvasEl.value.width = window.innerWidth
   canvasEl.value.height = window.innerHeight
   window.addEventListener('resize', onResize)
 
-  g.value = await main(
+  const game = new GamePlay(
     `${route.params.id}`,
     api.clientId(),
     config.get().WS_ADDRESS,
-    MODE_PLAY,
     canvasEl.value,
-    eventBus,
+    gui,
   )
 
-  eventBus.on('statusMessage', (data: any) => {
-    addStatusMessage(data.what, data.value)
-  })
+  await game.init()
+  g.value = game
 })
 
 onUnmounted(() => {
-  g.value.unload()
-  g.value.disconnect()
+  if (g.value) {
+    g.value.unload()
+    g.value = null
+  }
   window.removeEventListener('resize', onResize)
 })
 </script>
