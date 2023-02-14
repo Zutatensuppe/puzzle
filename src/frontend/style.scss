@@ -677,17 +677,16 @@ fieldset {
   color: rgba(var(--v-theme-on-surface), var(--v-medium-emphasis-opacity));
 
   legend {
-    padding: 0 .5em;
+    padding: 0 0.5em;
     color: rgba(var(--v-theme-on-surface), var(--v-medium-emphasis-opacity));
   }
 }
 
 .enter-hint {
   white-space: nowrap;
-  padding-top: .4em;
+  padding-top: 0.4em;
   color: rgba(var(--v-theme-on-surface), var(--v-medium-emphasis-opacity));
 }
-
 
 .imageteaser-info {
   a {
