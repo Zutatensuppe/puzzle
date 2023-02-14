@@ -7,7 +7,8 @@
         <tr>
           <th>Id</th>
           <th>Creator</th>
-          <th>Image</th>
+          <th>Image Id</th>
+          <th>Image Preview</th>
           <th>Created</th>
           <th>Finished</th>
           <th>Private</th>
@@ -20,6 +21,7 @@
           <td>{{ item.id }}</td>
           <td>{{ item.creator_user_id || '-' }}</td>
           <td>{{ item.image_id }}</td>
+          <th><img :src="resizeUrl(`/image-service/image/${item.image.filename}`, 150, 100, 'contain')"></th>
           <td>{{ item.created }}</td>
           <td>{{ item.finished }}</td>
           <td>{{ item.private ? '✓' : '✖' }}</td>
@@ -32,6 +34,7 @@
 </template>
 <script setup lang="ts">
 import { onMounted, ref } from 'vue';
+import { resizeUrl } from '../../../common/ImageService';
 import user from '../../user';
 import api from '../../_api';
 import Nav from '../components/Nav.vue'

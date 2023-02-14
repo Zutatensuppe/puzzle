@@ -22,24 +22,13 @@
       </div>
     </div>
 
-    <div class="menu" v-if="showInterface">
-      <router-link class="opener" :to="{name: 'index'}" target="_blank"><icon icon="puzzle-piece" /> Puzzles</router-link>
-      <div class="opener" @click="openDialog('preview')"><icon icon="preview" /> Preview</div>
-      <div class="opener" @click="openDialog('settings')"><icon icon="settings" /> Settings</div>
-      <div class="opener" @click="openDialog('info')"><icon icon="info" /> Info</div>
-      <div class="opener" @click="openDialog('help')"><icon icon="hotkey" /> Hotkeys</div>
-      <a class="opener" href="https://stand-with-ukraine.pp.ua/" target="_blank"><icon icon="ukraine-heart" /> Stand with Ukraine </a>
-    </div>
+    <IngameMenu v-if="showInterface" @open-dialog="openDialog" />
 
     <div class="menu-right" v-if="showInterface">
       <Scores :players="players" />
     </div>
 
-    <div class="status-messages" v-if="statusMessages.length">
-      <div v-for="(msg,idx) in statusMessages" :key="idx">
-        {{msg}}
-      </div>
-    </div>
+    <StatusMessages ref="statusMessages" />
 
     <canvas ref="canvasEl"></canvas>
   </div>
@@ -59,8 +48,10 @@ import PreviewOverlay from './../components/PreviewOverlay.vue'
 import PuzzleStatus from '../components/PuzzleStatus.vue'
 import Scores from './../components/Scores.vue'
 import SettingsOverlay from './../components/SettingsOverlay.vue'
+import StatusMessages from '../components/StatusMessages.vue'
+import IngameMenu from '../components/IngameMenu.vue'
 
-const statusMessages = ref<string[]>([])
+const statusMessages = ref<InstanceType<typeof StatusMessages>>() as Ref<InstanceType<typeof StatusMessages>>
 const players = ref<{ active: Player[], idle: Player[] }>({ active: [], idle: [] })
 const status = ref<PuzzleStatusType>({
   finished: false,
@@ -78,19 +69,6 @@ const canvasEl = ref<HTMLCanvasElement>() as Ref<HTMLCanvasElement>
 
 const g = ref<GamePlay | null>(null)
 const route = useRoute()
-
-const addStatusMessage = (what: string, value: any): void => {
-  if (typeof value === 'undefined') {
-    statusMessages.value.push(`${what}`)
-  } else if (value === true || value === false) {
-    statusMessages.value.push(`${what} ${value ? 'enabled' : 'disabled'}`)
-  } else {
-    statusMessages.value.push(`${what} changed to ${value}`)
-  }
-  setTimeout(() => {
-    statusMessages.value.shift()
-  }, 3000)
-}
 
 const onDialogChange = (changes: any[]): void => {
   changes.forEach((change: { type: string, value: any }) => {
@@ -189,7 +167,7 @@ const hud: Hud = {
   toggleInterface: (v: boolean) => {
     showInterface.value = !!v
   },
-  addStatusMessage,
+  addStatusMessage: (what: string, value: any) => statusMessages.value.addMessage(what, value),
 }
 
 onMounted(async () => {

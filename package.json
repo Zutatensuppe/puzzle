@@ -1,6 +1,6 @@
 {
   "name": "puzzle",
-  "version": "1.27.0",
+  "version": "1.27.1",
   "description": "This is a multiplayer puzzle game running in the browser. See a live version at [jigsaw.hyottoko.club].",
   "repository": {
     "type": "git",

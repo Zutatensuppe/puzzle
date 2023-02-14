@@ -35,6 +35,7 @@ import * as directives from 'vuetify/directives'
   await config.init()
   await announcements.init()
 
+  // @ts-ignore
   window.handleAuthCallback = async () => {
     await user.init()
   }
@@ -44,11 +45,7 @@ import * as directives from 'vuetify/directives'
     routes: [
       { name: 'index', path: '/', component: Index, meta: { title: 'Jigsaw Hyottoko Club' } },
       { name: 'new-game', path: '/new-game', component: NewGame, meta: { title: 'New Game' } },
-      { name: 'featured-artist', path: '/featured-artist/:artist', component: FeaturedArtistView },
-
-      // Ingame
-      { name: 'game', path: '/g/:id', component: Game },
-      { name: 'replay', path: '/replay/:id', component: Replay },
+      { name: 'featured-artist', path: '/featured-artist/:artist', component: FeaturedArtistView, meta: { title: 'Featured Artist'} },
 
       // Canny.io feedback
       { path: '/feedback', redirect: { name: 'bug-reports'} },
@@ -57,13 +54,17 @@ import * as directives from 'vuetify/directives'
       { name: 'feature-requests', path: '/feedback/feature-requests', component: CannyFeatureRequestsView, meta: { title: 'Feature Requests' } },
       { path: '/feedback/feature-requests/:catchAll(.*)', component: CannyFeatureRequestsView, meta: { title: 'Feature Requests' } },
 
+      // Ingame
+      { name: 'game', path: '/g/:id', component: Game, meta: { ingame: true } },
+      { name: 'replay', path: '/replay/:id', component: Replay, meta: { ingame: true } },
+
       // Admin
-      { name: 'admin', path: '/admin', component: Admin, meta: { admin: true } },
-      { name: 'admin_games', path: '/admin/games', component: AdminGames, meta: { admin: true } },
-      { name: 'admin_users', path: '/admin/users', component: AdminUsers, meta: { admin: true } },
-      { name: 'admin_images', path: '/admin/images', component: AdminImages, meta: { admin: true } },
-      { name: 'admin_groups', path: '/admin/groups', component: AdminGroups, meta: { admin: true } },
-      { name: 'admin_announcements', path: '/admin/announcements', component: AdminAnnouncements, meta: { admin: true } },
+      { name: 'admin', path: '/admin', component: Admin, meta: { admin: true, title: 'Admin' } },
+      { name: 'admin_games', path: '/admin/games', component: AdminGames, meta: { admin: true, title: 'Admin - Games' } },
+      { name: 'admin_users', path: '/admin/users', component: AdminUsers, meta: { admin: true, title: 'Admin - Users' } },
+      { name: 'admin_images', path: '/admin/images', component: AdminImages, meta: { admin: true, title: 'Admin - Images' } },
+      { name: 'admin_groups', path: '/admin/groups', component: AdminGroups, meta: { admin: true, title: 'Admin - Groups' } },
+      { name: 'admin_announcements', path: '/admin/announcements', component: AdminAnnouncements, meta: { admin: true, title: 'Admin - Announcements' } },
     ],
   })
 
