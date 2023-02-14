@@ -2115,6 +2115,8 @@ const imageFromDb = async (db, imageId) => {
         width: imageRow.width,
         height: imageRow.height,
         gameCount,
+        copyrightName: imageRow.copyright_name,
+        copyrightURL: imageRow.copyright_url,
     };
 };
 const getCategoryRowsBySlugs = async (db, slugs) => {
@@ -2192,6 +2194,8 @@ inner join images i on i.id = ixc.image_id ${where.sql};
             height: i.height,
             private: !!i.private,
             gameCount: parseInt(i.games_count, 10),
+            copyrightName: i.copyright_name,
+            copyrightURL: i.copyright_url,
         });
     }
     return images;
@@ -2236,6 +2240,8 @@ const imagesByIdsFromDb = async (db, ids) => {
             height: i.height,
             private: !!i.private,
             gameCount: parseInt(i.games_count, 10),
+            copyrightName: i.copyright_name,
+            copyrightURL: i.copyright_url,
         });
     }
     return images;
@@ -3133,6 +3139,8 @@ function createRouter$2(db, mail, canny) {
         }
         await db.update('images', {
             title: data.title,
+            copyright_name: data.copyrightName,
+            copyright_url: data.copyrightURL,
         }, {
             id: data.id,
         });
@@ -3160,6 +3168,8 @@ function createRouter$2(db, mail, canny) {
                 filename: req.file.filename,
                 filename_original: req.file.originalname,
                 title: req.body.title || '',
+                copyright_name: req.body.copyrightName || '',
+                copyright_url: req.body.copyrightURL || '',
                 created: new Date(),
                 width: dim.w,
                 height: dim.h,
