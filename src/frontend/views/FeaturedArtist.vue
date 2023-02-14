@@ -1,10 +1,4 @@
 <template>
-  <Nav>
-    <template v-slot:title>
-      <h4 v-if="artist">Featured Artist: {{ artist.name }}</h4>
-    </template>
-  </Nav>
-
   <v-container v-if="artist" :fluid="true" class="featured-artist-view p-0">
     <div class="featured-artist-content">
       <v-card class="pa-5 mb-5 d-flex">
@@ -33,7 +27,7 @@
       </v-card>
     </div>
   </v-container>
-  
+
   <v-dialog v-model="dialog">
     <NewGameDialog
       v-if="image && dialogContent==='new-game'"
@@ -49,7 +43,6 @@ import { onMounted, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { GameSettings, ImageInfo } from '../../common/Types';
 import ImageLibrary from '../components/ImageLibrary.vue';
-import Nav from '../components/Nav.vue';
 import NewGameDialog from '../components/NewGameDialog.vue';
 import api from '../_api';
 
@@ -97,11 +90,6 @@ const onNewGame = async (gameSettings: GameSettings) => {
 const onImageClicked = (newImage: ImageInfo) => {
   image.value = newImage
   openDialog('new-game')
-}
-
-const onImageEditClicked = (newImage: ImageInfo) => {
-  image.value = newImage
-  openDialog('edit-image')
 }
 
 onMounted(async () => {

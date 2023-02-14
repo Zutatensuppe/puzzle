@@ -47,7 +47,7 @@
       temporary
     >
       <v-list>
-        <v-list-item :to="{ name: 'admin' }" v-if="me?.groups.includes('admin')"><v-icon icon="mdi-security" /> Admin</v-list-item>
+        <v-list-item :to="{ name: 'admin' }" ><v-icon icon="mdi-security" /> Admin</v-list-item>
         <v-list-item @click="doLogout"><v-icon icon="mdi-logout" /> Logout</v-list-item>
       </v-list>
     </v-navigation-drawer>

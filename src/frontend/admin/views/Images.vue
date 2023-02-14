@@ -8,6 +8,7 @@
           <th>Id</th>
           <th>Uploader</th>
           <th>Created</th>
+          <th>Preview</th>
           <th>Filename</th>
           <th>Filename Original</th>
           <th>Title</th>
@@ -23,6 +24,7 @@
           <td>{{item.id}}</td>
           <td>{{item.uploader_user_id || '-'}}</td>
           <td>{{item.created}}</td>
+          <th><img :src="resizeUrl(`/image-service/image/${item.filename}`, 150, 100, 'contain')"></th>
           <td>{{item.filename}}</td>
           <td>{{item.filename_original}}</td>
           <td>{{item.title}}</td>
@@ -38,6 +40,7 @@
 </template>
 <script setup lang="ts">
 import { onMounted, ref } from 'vue';
+import { resizeUrl } from '../../../common/ImageService';
 import user from '../../user';
 import api from '../../_api';
 import Nav from '../components/Nav.vue'
