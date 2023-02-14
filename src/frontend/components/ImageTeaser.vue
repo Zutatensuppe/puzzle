@@ -4,6 +4,11 @@
       <h4 class="imageteaser-title">
         {{ image.title || '<No Title>' }}
       </h4>
+      <div class="imageteaser-info" v-if="image.copyrightName || image.copyrightURL">
+        <v-icon icon="mdi-copyright"></v-icon>
+        <a :href="image.copyrightURL" v-if="image.copyrightURL" target="_blank" class="ml-1">{{ image.copyrightName || 'Source' }} <v-icon icon="mdi-open-in-new" /></a>
+        <span class="ml-1" v-else>{{ image.copyrightName }}</span>
+      </div>
       <div class="imageteaser-info">
         <v-icon icon="mdi-motion-play"></v-icon> {{ image.gameCount }}x plays
       </div>
@@ -77,7 +82,10 @@ const canEdit = computed((): boolean => {
   return me.value.id === props.image.uploaderUserId
 })
 
-const onClick = () => {
+const onClick = (ev: Event) => {
+  if ((ev.target as HTMLElement).tagName === 'A') {
+    return
+  }
   emit('click')
 }
 const onEditClick = () => {

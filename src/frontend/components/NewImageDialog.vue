@@ -36,12 +36,17 @@
         </v-col>
         <v-col :lg="4" class="area-settings">
           <div>
-            <v-text-field density="compact" v-model="title" placeholder="eg. Flower by @artist" @focus="inputFocused = true" @blur="inputFocused=false" label="Title" />
-            <div class="text-disabled">Feel free to leave a credit to the artist/photographer in the title :)</div>
+            <v-text-field density="compact" v-model="title" placeholder="eg. Girl with flowers" @focus="inputFocused = true" @blur="inputFocused=false" label="Title" />
           </div>
-          <div>
+          <fieldset>
+            <legend>Source</legend>
+            <v-text-field density="compact" v-model="copyrightName" placeholder="eg. Artist Name" @focus="inputFocused = true" @blur="inputFocused=false" label="Creator" />
+            <v-text-field density="compact" v-model="copyrightURL" placeholder="eg. https://example.net/" @focus="inputFocused = true" @blur="inputFocused=false" label="URL" />
+          </fieldset>
+          <fieldset>
+            <legend>Tags</legend>
             <TagsInput v-model="tags" :autocompleteTags="autocompleteTags" />
-          </div>
+          </fieldset>
           <div>
             <v-checkbox density="comfortable" label="Private Image (Private images won't show up in the gallery)" v-model="isPrivate"></v-checkbox>
           </div>
@@ -182,6 +187,8 @@ const emit = defineEmits<{
 const previewUrl = ref<string>('')
 const file = ref<File|null>(null)
 const title = ref<string>('')
+const copyrightName = ref<string>('')
+const copyrightURL = ref<string>('')
 const tags = ref<string[]>([])
 const isPrivate = ref<boolean>(false)
 const droppable = ref<boolean>(false)
@@ -202,6 +209,8 @@ const reset = (): void => {
   previewUrl.value = ''
   file.value = null
   title.value = ''
+  copyrightName.value = ''
+  copyrightURL.value = ''
   tags.value = []
   isPrivate.value = false
   droppable.value = false
@@ -299,6 +308,8 @@ const postToGallery = () => {
   emit('postToGalleryClick', {
     file: file.value,
     title: title.value,
+    copyrightName: copyrightName.value,
+    copyrightURL: copyrightURL.value,
     tags: tags.value,
     isPrivate: isPrivate.value,
   })
@@ -313,6 +324,8 @@ const setupGameClick = () => {
   emit('setupGameClick', {
     file: file.value,
     title: title.value,
+    copyrightName: copyrightName.value,
+    copyrightURL: copyrightURL.value,
     tags: tags.value,
     isPrivate: isPrivate.value,
   })

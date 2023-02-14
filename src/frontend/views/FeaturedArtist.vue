@@ -64,6 +64,8 @@ const image = ref<ImageInfo>({
   width: 0,
   height: 0,
   gameCount: 0,
+  copyrightName: '',
+  copyrightURL: '',
 })
 
 const dialog = ref<boolean>(false)

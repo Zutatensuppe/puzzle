@@ -19,6 +19,7 @@ import {
   SnapMode,
   ShapeMode,
   GameEvent,
+  ImageInfo,
 } from '../common/Types'
 import { Assets } from './Assets'
 import { EventAdapter } from './EventAdapter'
@@ -318,12 +319,8 @@ export abstract class Game<HudType extends Hud> {
     return GameCommon.getShapeMode(this.gameId)
   }
 
-  getImageTitle(): string {
-    return GameCommon.getPuzzle(this.gameId).info.image?.title || '<No Title>'
-  }
-
-  getImageUploaderName(): string {
-    return GameCommon.getPuzzle(this.gameId).info.image?.uploaderName || '<Unknown>'
+  getImage(): ImageInfo | undefined {
+    return GameCommon.getPuzzle(this.gameId).info.image
   }
 
   onServerEvent(msg: ServerEvent): void {

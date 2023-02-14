@@ -12,11 +12,16 @@
         <v-col :lg="4" class="area-settings">
           <div>
             <v-text-field density="compact" v-model="title" placeholder="eg. Flower by @artist" label="Title" />
-            <div class="text-disabled">Feel free to leave a credit to the artist/photographer in the title :)</div>
           </div>
-          <div>
+          <fieldset>
+            <legend>Source</legend>
+            <v-text-field density="compact" v-model="copyrightName" placeholder="eg. Artist Name" label="Creator" />
+            <v-text-field density="compact" v-model="copyrightURL" placeholder="eg. https://example.net/" label="URL" />
+          </fieldset>
+          <fieldset>
+            <legend>Tags</legend>
             <TagsInput v-model="tags" :autocompleteTags="autocompleteTags" />
-          </div>
+          </fieldset>
 
           <v-card-actions>
             <v-btn
@@ -48,15 +53,19 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
-  (e: 'saveClick', val: { id: number, title: string, tags: string[] }): void
+  (e: 'saveClick', val: { id: number, copyrightName: string, copyrightURL: string, title: string, tags: string[] }): void
   (e: 'close'): void
 }>()
 
 const title = ref<string>('')
+const copyrightName = ref<string>('')
+const copyrightURL = ref<string>('')
 const tags = ref<string[]>([])
 
 const init = (image: ImageInfo) => {
   title.value = image.title
+  copyrightName.value = image.copyrightName
+  copyrightURL.value = image.copyrightURL
   tags.value = image.tags.map((t: Tag) => t.title)
 }
 
@@ -64,6 +73,8 @@ const saveImage = () => {
   emit('saveClick', {
     id: props.image.id,
     title: title.value,
+    copyrightName: copyrightName.value,
+    copyrightURL: copyrightURL.value,
     tags: tags.value,
   })
 }

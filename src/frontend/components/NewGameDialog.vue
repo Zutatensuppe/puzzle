@@ -78,6 +78,13 @@
               <v-table>
                 <tbody>
                   <tr><td>Title: </td><td>{{ image.title || '<No Title>' }}</td></tr>
+                  <tr v-if="image.copyrightURL || image.copyrightName">
+                    <td>Copyright: </td>
+                    <td>
+                      <a :href="image.copyrightURL" v-if="image.copyrightURL" target="_blank">{{ image.copyrightName || 'Source' }} <v-icon icon="mdi-open-in-new" /></a>
+                      <span v-else>{{ image.copyrightName }}</span>
+                    </td>
+                  </tr>
                   <tr><td>Uploader: </td><td>{{ image.uploaderName || '<Unknown>' }}</td></tr>
                   <tr><td>Upload date: </td><td>{{ date }}</td></tr>
                   <tr><td>Dimensions: </td><td>{{ image.width }}x{{ image.height }}</td></tr>
@@ -192,17 +199,3 @@ onMounted(() => {
   form.value.validate()
 })
 </script>
-<style lang="scss">
-fieldset {
-  padding: 1em;
-  margin: 1em 0;
-  border: solid 2px;
-  border-radius: 5px;
-  color: rgba(var(--v-theme-on-surface), var(--v-medium-emphasis-opacity));
-
-  legend {
-    padding: 0 .5em;
-    color: rgba(var(--v-theme-on-surface), var(--v-medium-emphasis-opacity));
-  }
-}
-</style>

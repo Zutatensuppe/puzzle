@@ -5,12 +5,19 @@
       <v-table density="compact">
         <tbody>
           <tr>
-            <td>Image Title: </td>
-            <td>{{ game.getImageTitle() }}</td>
+            <td><v-icon icon="mdi-subtitles-outline" /> Image Title: </td>
+            <td>{{ image?.title || '<No Title>' }}</td>
+          </tr>
+          <tr v-if="image?.copyrightURL || image?.copyrightName">
+            <td><v-icon icon="mdi-copyright" /> Image Copyright: </td>
+            <td>
+              <a :href="image.copyrightURL" v-if="image.copyrightURL" target="_blank">{{ image.copyrightName || 'Source' }} <v-icon icon="mdi-open-in-new" /></a>
+              <span v-else>{{ image.copyrightName }}</span>
+            </td>
           </tr>
           <tr>
-            <td>Image Uploader: </td>
-            <td>{{ game.getImageUploaderName() }}</td>
+            <td><v-icon icon="mdi-account-arrow-up" /> Image Uploader: </td>
+            <td>{{ image?.uploaderName || '<Unknown>' }}</td>
           </tr>
           <tr>
             <td><v-icon icon="mdi-counter mr-1"></v-icon> Scoring: </td>
@@ -38,6 +45,8 @@ import { GameReplay } from '../GameReplay';
 const props = defineProps<{
   game: GamePlay | GameReplay
 }>()
+
+const image = props.game.getImage()
 
 const scoreMode = computed(() => {
   switch (props.game.getScoreMode()) {

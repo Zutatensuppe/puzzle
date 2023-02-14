@@ -15,6 +15,8 @@
           <th>Width</th>
           <th>Height</th>
           <th>Private</th>
+          <th>Copyright Name</th>
+          <th>Copyright URL</th>
 
           <th>Actions</th>
         </tr>
@@ -31,6 +33,8 @@
           <td>{{item.width}}</td>
           <td>{{item.height}}</td>
           <td>{{item.private ? '✓' : '✖'}}</td>
+          <td>{{item.copyright_name}}</td>
+          <td>{{item.copyright_url}}</td>
 
           <td><span @click="onDelete(item)" class="is-clickable">DELETE</span></td>
         </tr>

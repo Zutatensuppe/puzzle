@@ -22,6 +22,8 @@ interface ImageRow {
   width: number
   height: number
   private: number
+  copyright_name: string
+  copyright_url: string
 }
 
 interface ImageRowWithCount extends ImageRow{
@@ -87,6 +89,8 @@ const imageFromDb = async (db: Db, imageId: number): Promise<ImageInfo | null> =
     width: imageRow.width,
     height: imageRow.height,
     gameCount,
+    copyrightName: imageRow.copyright_name,
+    copyrightURL: imageRow.copyright_url,
   }
 }
 
@@ -182,6 +186,8 @@ inner join images i on i.id = ixc.image_id ${where.sql};
       height: i.height,
       private: !!i.private,
       gameCount: parseInt(i.games_count, 10),
+      copyrightName: i.copyright_name,
+      copyrightURL: i.copyright_url,
     })
   }
   return images
@@ -231,6 +237,8 @@ const imagesByIdsFromDb = async (
       height: i.height,
       private: !!i.private,
       gameCount: parseInt(i.games_count, 10),
+      copyrightName: i.copyright_name,
+      copyrightURL: i.copyright_url,
     })
   }
   return images

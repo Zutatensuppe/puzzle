@@ -668,3 +668,29 @@ kbd {
     min-width: 200px;
   }
 }
+
+fieldset {
+  padding: 1em;
+  margin: 1em 0;
+  border: solid 2px;
+  border-radius: 5px;
+  color: rgba(var(--v-theme-on-surface), var(--v-medium-emphasis-opacity));
+
+  legend {
+    padding: 0 .5em;
+    color: rgba(var(--v-theme-on-surface), var(--v-medium-emphasis-opacity));
+  }
+}
+
+.enter-hint {
+  white-space: nowrap;
+  padding-top: .4em;
+  color: rgba(var(--v-theme-on-surface), var(--v-medium-emphasis-opacity));
+}
+
+
+.imageteaser-info {
+  a {
+    color: white;
+  }
+}

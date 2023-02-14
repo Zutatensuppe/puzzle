@@ -124,6 +124,8 @@ export interface Image {
 export interface FrontendGameSettings {
   file: File
   title: string
+  copyrightName: string
+  copyrightURL: string
   tags: string[]
   isPrivate: boolean
 }
@@ -204,6 +206,8 @@ export interface ImageInfo
   width: number
   height: number
   gameCount: number
+  copyrightName: string
+  copyrightURL: string
 }
 
 export interface PuzzleInfo {

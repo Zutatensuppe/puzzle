@@ -1,35 +1,26 @@
 <template>
   <div>
-    <div class="input-holder">
-      <v-text-field
-        ref="inputEl"
-        density="compact"
-        label="Tags"
-        v-model="input"
-        placeholder="Plants, People"
-        @keydown.enter.prevent="add"
-        @keydown.tab.prevent="add"
-        @keyup="onKeyUp"
-        />
-      <div class="enter-hint color-highlight" v-if="input">[Press ENTER/TAB to add]</div>
+    <v-autocomplete
+      v-model="selected"
+      v-model:search="input"
+      :items="autocompleteValues"
+      density="compact"
+      hide-no-data
+      hide-details
+      label="Tag"
+      @keydown.enter.prevent="add"
+      @keydown.tab.prevent="add"
+      @keyup="onKeyUp"
+    ></v-autocomplete>
+    <div v-if="values.length > 0" class="mt-4 d-flex">
+      <v-chip
+        v-for="(tag,idx) in values"
+        :key="idx"
+        class="is-clickable mr-2"
+        @click="rm(tag)"
+        append-icon="mdi-close"
+      >{{tag}}</v-chip>
     </div>
-    <div v-if="autocomplete.values" class="autocomplete">
-      <ul>
-        <li
-          v-for="(val,idx) in autocomplete.values"
-          :key="idx"
-          :class="{active: idx===autocomplete.idx}"
-          @click="addVal(val)"
-          >{{val}}</li>
-      </ul>
-    </div>
-    <v-chip
-      v-for="(tag,idx) in values"
-      :key="idx"
-      class="is-clickable"
-      @click="rm(tag)"
-      append-icon="mdi-close"
-    >{{tag}}</v-chip>
   </div>
 </template>
 <script setup lang="ts">
@@ -44,54 +35,25 @@ const emit = defineEmits<{
   (e: 'update:modelValue', val: string[]): void
 }>()
 
+const selected = ref<string>('')
 const input = ref<string>('')
 const values = ref<string[]>(props.modelValue)
-const autocomplete = ref<{ idx: number, values: string[] }>({
-  idx: -1,
-  values: [] as string[],
-})
+const autocompleteValues = ref<string[]>([])
 
-const inputEl = ref<HTMLInputElement>() as Ref<HTMLInputElement>
-
-const onKeyUp = (ev: KeyboardEvent) => {
-  if (ev.code === 'ArrowDown' && autocomplete.value.values.length > 0) {
-    if (autocomplete.value.idx < autocomplete.value.values.length - 1) {
-      autocomplete.value.idx++
-    }
-    ev.stopPropagation()
-    return false
-  }
-  if (ev.code === 'ArrowUp' && autocomplete.value.values.length > 0) {
-    if (autocomplete.value.idx > 0) {
-      autocomplete.value.idx--
-    }
-    ev.stopPropagation()
-    return false
-  }
-  if (ev.key === ',') {
-    add()
-    ev.stopPropagation()
-    return false
-  }
-
-  if (ev.code === 'Escape') {
-    autocomplete.value.values = []
-    autocomplete.value.idx = -1
-    ev.stopPropagation()
-    return false
-  }
-
+const onKeyUp = () => {
   if (input.value && props.autocompleteTags) {
-    autocomplete.value.values = props.autocompleteTags(
+    autocompleteValues.value = props.autocompleteTags(
       input.value,
       values.value
     )
-    autocomplete.value.idx = -1
-  } else {
-    autocomplete.value.values = []
-    autocomplete.value.idx = -1
   }
 }
+
+watch(selected, (newVal) => {
+  if (newVal) {
+    addVal(newVal)
+  }
+})
 
 const addVal = (value: string) => {
   const newval = value.replace(/,/g, '').trim()
@@ -102,17 +64,13 @@ const addVal = (value: string) => {
     values.value.push(newval)
   }
   input.value = ''
-  autocomplete.value.values = []
-  autocomplete.value.idx = -1
+  selected.value = ''
+  autocompleteValues.value = []
   emit('update:modelValue', values.value)
-  inputEl.value.focus()
 }
 
 const add = () => {
-  const value = autocomplete.value.idx >= 0
-    ? autocomplete.value.values[autocomplete.value.idx]
-    : input.value
-  addVal(value)
+  addVal(input.value)
 }
 
 const rm = (val: string) => {
