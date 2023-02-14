@@ -3220,7 +3220,17 @@ function createRouter$1(db, discord) {
     router.use(requireLoginApi);
     router.get('/games', async (req, res) => {
         const items = await db.getMany('games', undefined, [{ created: -1 }]);
-        res.send(items);
+        const imageIdMap = {};
+        items.forEach(game => {
+            imageIdMap[game.image_id] = true;
+        });
+        const imageIds = Object.keys(imageIdMap);
+        const images = await db.getMany('images', { id: { '$in': imageIds } });
+        const gamesWithImages = items.map(game => {
+            game.image = images.find(image => image.id === game.image_id) || null;
+            return game;
+        });
+        res.send(gamesWithImages);
     });
     router.delete('/games/:id', async (req, res) => {
         const id = req.params.id;
