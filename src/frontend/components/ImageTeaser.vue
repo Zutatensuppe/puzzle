@@ -83,7 +83,11 @@ const canEdit = computed((): boolean => {
 })
 
 const onClick = (ev: Event) => {
-  if ((ev.target as HTMLElement).tagName === 'A') {
+  const target = ev.target as HTMLElement
+  if (
+    target.tagName === 'A'
+    || (target.parentElement && target.parentElement.tagName === 'A')
+  ) {
     return
   }
   emit('click')
