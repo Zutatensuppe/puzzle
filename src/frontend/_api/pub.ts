@@ -70,12 +70,14 @@ const replayData = async (data: { gameId: string, offset: number }) =>{
   return xhr.get(`/api/replay-data${Util.asQueryArgs(data)}`, {})
 }
 
-const saveImage = async (data: { id: any, title: any, tags: any }) => {
+const saveImage = async (data: { id: any, title: any, copyrightName: string, copyrightURL: string, tags: any }) => {
   return xhr.post('/api/save-image', {
     headers: JSON_HEADERS,
     body: JSON.stringify({
       id: data.id,
       title: data.title,
+      copyrightName: data.copyrightName,
+      copyrightURL: data.copyrightURL,
       tags: data.tags,
     }),
   })
@@ -92,10 +94,12 @@ const getArtistData = async (data: { name: string }) => {
   return xhr.get(`/api/artist/${data.name}`, {})
 }
 
-const upload = async (data: { file: File, title: string, tags: string[], isPrivate: boolean, onProgress: (progress: number) => void }) => {
+const upload = async (data: { file: File, title: string, copyrightName: string, copyrightURL: string, tags: string[], isPrivate: boolean, onProgress: (progress: number) => void }) => {
   const formData = new FormData();
   formData.append('file', data.file, data.file.name);
   formData.append('title', data.title)
+  formData.append('copyrightName', data.copyrightName)
+  formData.append('copyrightURL', data.copyrightURL)
   // @ts-ignore
   formData.append('tags', data.tags)
   // @ts-ignore

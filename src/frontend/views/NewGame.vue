@@ -140,6 +140,8 @@ const image = ref<ImageInfo>({
   width: 0,
   height: 0,
   gameCount: 0,
+  copyrightName: '',
+  copyrightURL: '',
 })
 
 const dialog = ref<boolean>(false)
@@ -219,6 +221,8 @@ const uploadImage = async (data: any) => {
   const res = await api.pub.upload({
     file: data.file,
     title: data.title,
+    copyrightName: data.copyrightName,
+    copyrightURL: data.copyrightURL,
     tags: data.tags,
     isPrivate: data.isPrivate,
     onProgress: (progress: number): void => {

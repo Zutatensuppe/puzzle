@@ -21,6 +21,8 @@ const log = logger('web_routes/api/index.ts')
 interface SaveImageRequestData {
   id: number
   title: string
+  copyrightName: string
+  copyrightURL: string
   tags: string[]
 }
 const GAMES_PER_PAGE_LIMIT = 10
@@ -535,6 +537,8 @@ export default function createRouter(
 
     await db.update('images', {
       title: data.title,
+      copyright_name: data.copyrightName,
+      copyright_url: data.copyrightURL,
     }, {
       id: data.id,
     })
@@ -571,6 +575,8 @@ export default function createRouter(
         filename: req.file.filename,
         filename_original: req.file.originalname,
         title: req.body.title || '',
+        copyright_name: req.body.copyrightName || '',
+        copyright_url: req.body.copyrightURL || '',
         created: new Date(),
         width: dim.w,
         height: dim.h,
