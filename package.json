@@ -18,7 +18,7 @@
     "dev-services": "docker-compose up",
     "dev-frontend": "vite",
     "dev-backend": "nodemon -x \"node --experimental-specifier-resolution=node --loader ts-node/esm\" -w src/server -w src/common src/server/main.ts",
-    "lint": "eslint src && stylelint \"src/**/*.scss\"",
+    "lint": "tsc --noEmit && eslint src && stylelint \"src/**/*.scss\"",
     "test": "vitest --run",
     "build:server": "rollup -c rollup.server.config.js",
     "build:frontend": "vite build --config vite.config.build.js",

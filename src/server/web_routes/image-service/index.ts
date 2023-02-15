@@ -1,10 +1,11 @@
 import express, { Request, Response, Router } from "express";
 import path from "path";
-import ImageResize from "../../ImageResize";
 import config from '../../Config'
 import sharp from "sharp";
+import { ServerInterface } from "../../Server";
 
 export default function createRouter(
+  server: ServerInterface,
 ): Router {
   const router = express.Router()
   router.get('/image/:filename', async (req: Request, res: Response) => {
@@ -20,7 +21,7 @@ export default function createRouter(
         res.status(400).send('x, y must be numbers')
         return
       }
-      const resizedFilename = await ImageResize.resizeImage(filename, w, h, fit as keyof sharp.FitEnum)
+      const resizedFilename = await server.getImageResize().resizeImage(filename, w, h, fit as keyof sharp.FitEnum)
       if (!resizedFilename) {
         res.status(500).send('unable to resize image')
         return
@@ -49,7 +50,7 @@ export default function createRouter(
         return
       }
 
-      const croppedFilename = await ImageResize.cropImage(filename, crop)
+      const croppedFilename = await server.getImageResize().cropImage(filename, crop)
       if (!croppedFilename) {
         res.status(500).send('unable to crop image')
         return

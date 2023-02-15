@@ -3,284 +3,143 @@ import fs from 'fs'
 import exif from 'exif'
 
 import config from './Config'
-import Db, { OrderBy, WhereRaw } from './Db'
 import { Dim } from '../common/Geometry'
 import Util, { logger } from '../common/Util'
 import { Tag, ImageInfo } from '../common/Types'
-import Users from './Users'
+import { ImageRow, ImageRowWithCount, ImagesRepo } from './repo/ImagesRepo'
+import { WhereRaw } from './Db'
 
 const log = logger('Images.ts')
 
-interface ImageRow {
-  id: number
-  uploader_user_id: number
-  uploader_user_name: string
-  created: Date
-  filename: string
-  filename_original: string
-  title: string
-  width: number
-  height: number
-  private: number
-  copyright_name: string
-  copyright_url: string
-}
-
-interface ImageRowWithCount extends ImageRow{
-  games_count: string
-}
-
-export async function getExifOrientation(imagePath: string): Promise<number> {
-  return new Promise((resolve) => {
-    new exif.ExifImage({ image: imagePath }, (error, exifData) => {
-      if (error) {
-        resolve(0)
-      } else {
-        resolve(exifData.image.Orientation || 0)
-      }
-    })
-  })
-}
-
-const getAllTags = async (db: Db): Promise<Tag[]> => {
-  const query = `
-select c.id, c.slug, c.title, count(*) as total from categories c
-inner join image_x_category ixc on c.id = ixc.category_id
-inner join images i on i.id = ixc.image_id
-group by c.id order by total desc;`
-  return (await db._getMany(query)).map(row => ({
-    id: parseInt(row.id, 10) || 0,
-    slug: row.slug,
-    title: row.title,
-    total: parseInt(row.total, 10) || 0,
-  }))
-}
-
-const getTags = async (db: Db, imageId: number): Promise<Tag[]> => {
-  const query = `
-select c.id, c.slug, c.title from categories c
-inner join image_x_category ixc on c.id = ixc.category_id
-where ixc.image_id = $1`
-  return (await db._getMany(query, [imageId])).map(row => ({
-    id: parseInt(row.id, 10) || 0,
-    slug: row.slug,
-    title: row.title,
-    total: 0,
-  }))
-}
-
-const imageFromDb = async (db: Db, imageId: number): Promise<ImageInfo | null> => {
-  const imageRow: ImageRow | null = await db.get('images', { id: imageId })
-  if (!imageRow) {
-    return null
+export class Images {
+  constructor(
+    private readonly imagesRepo: ImagesRepo,
+  ) {
+    // pass
   }
 
-  const gameCount = await db.count('games', { image_id: imageRow.id, private: imageRow.private })
-  const user = await Users.getUser(db, { id: imageRow.uploader_user_id })
-  return {
-    id: imageRow.id,
-    uploaderUserId: imageRow.uploader_user_id,
-    uploaderName: user?.name || null,
-    filename: imageRow.filename,
-    url: `${config.dir.UPLOAD_URL}/${encodeURIComponent(imageRow.filename)}`,
-    title: imageRow.title,
-    tags: await getTags(db, imageRow.id),
-    created: imageRow.created.getTime(),
-    width: imageRow.width,
-    height: imageRow.height,
-    gameCount,
-    copyrightName: imageRow.copyright_name,
-    copyrightURL: imageRow.copyright_url,
-  }
-}
-
-interface CategoryRow {
-  id: number
-  slug: string
-  title: string
-}
-
-const getCategoryRowsBySlugs = async (db: Db, slugs: string[]): Promise<CategoryRow[]> => {
-  const c = await db.getMany('categories', {slug: {'$in': slugs}})
-  return c as CategoryRow[]
-}
-
-const imagesFromDb = async (
-  db: Db,
-  tagSlugs: string[],
-  orderBy: string,
-  isPrivate: boolean,
-  offset: number,
-  limit: number,
-): Promise<ImageInfo[]> => {
-  const orderByMap = {
-    alpha_asc: [{ title: 1 }, { created: -1 }],
-    alpha_desc: [{ title: -1 }, { created: -1 }],
-    date_asc: [{ created: 1 }],
-    date_desc: [{ created: -1 }],
-    game_count_asc: [{ games_count: 1 }, { created: -1 }],
-    game_count_desc: [{ games_count: -1 }, { created: -1 }],
-  } as Record<string, OrderBy>
-
-  // TODO: .... clean up
-  const wheresRaw: WhereRaw = {}
-  wheresRaw['private'] = isPrivate ? 1 : 0
-  if (tagSlugs.length > 0) {
-    const c = await getCategoryRowsBySlugs(db, tagSlugs)
-    if (!c) {
-      return []
-    }
-    const where = db._buildWhere({
-      'category_id': {'$in': c.map(x => x.id)}
-    })
-    const ids: number[] = (await db._getMany(`
-select i.id from image_x_category ixc
-inner join images i on i.id = ixc.image_id ${where.sql};
-`, where.values)).map(img => img.id)
-    if (ids.length === 0) {
-      return []
-    }
-    wheresRaw['images.id'] = {'$in': ids}
-  }
-
-  const params: any[] = []
-  params.push(isPrivate ? 1 : 0)
-  const dbWhere = db._buildWhere(wheresRaw, params.length + 1)
-  params.push(...dbWhere.values)
-  const tmpImages: ImageRowWithCount[] = await db._getMany(`
-    WITH counts AS (
-      SELECT
-        COUNT(*) AS count,
-        image_id
-      FROM
-        games
-      WHERE
-        private = $1
-      GROUP BY image_id
-    )
-    SELECT
-      images.*,
-      COALESCE(counts.count, 0) AS games_count,
-      COALESCE(users.name, '') as uploader_user_name
-    FROM
-      images
-      LEFT JOIN counts ON counts.image_id = images.id
-      LEFT JOIN users ON users.id = images.uploader_user_id
-    ${dbWhere.sql}
-    ${db._buildOrderBy(orderByMap[orderBy])}
-    ${db._buildLimit({ offset, limit })}
-  `, params)
-
-  const images = []
-  for (const i of tmpImages) {
-    images.push({
-      id: i.id as number,
-      uploaderUserId: i.uploader_user_id,
-      uploaderName: i.uploader_user_name || null,
-      filename: i.filename,
-      url: `${config.dir.UPLOAD_URL}/${encodeURIComponent(i.filename)}`,
-      title: i.title,
-      tags: await getTags(db, i.id),
-      created: i.created.getTime(),
-      width: i.width,
-      height: i.height,
-      private: !!i.private,
-      gameCount: parseInt(i.games_count, 10),
-      copyrightName: i.copyright_name,
-      copyrightURL: i.copyright_url,
-    })
-  }
-  return images
-}
-
-const imagesByIdsFromDb = async (
-  db: Db,
-  ids: number[],
-): Promise<ImageInfo[]> => {
-  const params: any[] = []
-  const dbWhere = db._buildWhere({'images.id': { '$in': ids }})
-  params.push(...dbWhere.values)
-  const tmpImages: ImageRowWithCount[] = await db._getMany(`
-    WITH counts AS (
-      SELECT
-        COUNT(*) AS count,
-        image_id
-      FROM
-        games
-      WHERE
-        private = 0
-      GROUP BY image_id
-    )
-    SELECT
-      images.*,
-      COALESCE(counts.count, 0) AS games_count,
-      COALESCE(users.name, '') as uploader_user_name
-    FROM
-      images
-      LEFT JOIN counts ON counts.image_id = images.id
-      LEFT JOIN users ON users.id = images.uploader_user_id
-    ${dbWhere.sql}
-  `, params)
-
-  const images = []
-  for (const i of tmpImages) {
-    images.push({
-      id: i.id as number,
-      uploaderUserId: i.uploader_user_id,
-      uploaderName: i.uploader_user_name || null,
-      filename: i.filename,
-      url: `${config.dir.UPLOAD_URL}/${encodeURIComponent(i.filename)}`,
-      title: i.title,
-      tags: await getTags(db, i.id),
-      created: i.created.getTime(),
-      width: i.width,
-      height: i.height,
-      private: !!i.private,
-      gameCount: parseInt(i.games_count, 10),
-      copyrightName: i.copyright_name,
-      copyrightURL: i.copyright_url,
-    })
-  }
-  return images
-}
-
-async function getDimensions(imagePath: string): Promise<Dim> {
-  const dimensions = await probe(fs.createReadStream(imagePath))
-  const orientation = await getExifOrientation(imagePath)
-  // when image is rotated to the left or right, switch width/height
-  // https://jdhao.github.io/2019/07/31/image_rotation_exif_info/
-  if (orientation === 6 || orientation === 8) {
-    return {
-      w: dimensions.height || 0,
-      h: dimensions.width || 0,
-    }
-  }
-  return {
-    w: dimensions.width || 0,
-    h: dimensions.height || 0,
-  }
-}
-
-const setTags = async (db: Db, imageId: number, tags: string[]): Promise<void> => {
-  await db.delete('image_x_category', { image_id: imageId })
-  for (const tag of tags) {
-    const slug = Util.slug(tag)
-    const id = await db.upsert('categories', { slug, title: tag }, { slug }, 'id')
-    if (id) {
-      await db.insert('image_x_category', {
-        image_id: imageId,
-        category_id: id,
+  async getExifOrientation(imagePath: string): Promise<number> {
+    return new Promise((resolve) => {
+      new exif.ExifImage({ image: imagePath }, (error, exifData) => {
+        if (error) {
+          resolve(0)
+        } else {
+          resolve(exifData.image.Orientation || 0)
+        }
       })
+    })
+  }
+
+  async getAllTags(): Promise<Tag[]> {
+    const tagRows = await this.imagesRepo.getAllTagsWithCount()
+    return tagRows.map(row => ({
+      id: row.id,
+      slug: row.slug,
+      title: row.title,
+      total: row.images_count,
+    }))
+  }
+
+  async getTags(imageId: number): Promise<Tag[]> {
+    const tagRows = await this.imagesRepo.getTagsByImageId(imageId)
+    return  tagRows.map(row => ({
+      id: row.id,
+      slug: row.slug,
+      title: row.title,
+      total: 0,
+    }))
+  }
+
+  async imageFromDb(imageId: number): Promise<ImageInfo | null> {
+    const imageInfos = await this.imagesByIdsFromDb([imageId])
+    return imageInfos.length === 0 ? null : imageInfos[0]
+  }
+
+  async imageWithCountToImageInfo(row: ImageRowWithCount): Promise<ImageInfo> {
+    return {
+      id: row.id as number,
+      uploaderUserId: row.uploader_user_id,
+      uploaderName: row.uploader_user_name || null,
+      filename: row.filename,
+      url: `${config.dir.UPLOAD_URL}/${encodeURIComponent(row.filename)}`,
+      title: row.title,
+      tags: await this.getTags(row.id),
+      created: row.created.getTime(),
+      width: row.width,
+      height: row.height,
+      private: !!row.private,
+      gameCount: parseInt(row.games_count, 10),
+      copyrightName: row.copyright_name,
+      copyrightURL: row.copyright_url,
     }
   }
-}
 
-export default {
-  imageFromDb,
-  imagesFromDb,
-  imagesByIdsFromDb,
-  getAllTags,
-  getDimensions,
-  getExifOrientation,
-  setTags,
+  async imagesFromDb(
+    tagSlugs: string[],
+    orderBy: string,
+    isPrivate: boolean,
+    offset: number,
+    limit: number,
+  ): Promise<ImageInfo[]> {
+    const rows = await this.imagesRepo.getImagesWithCount(tagSlugs, orderBy, isPrivate, offset, limit)
+    const images = []
+    for (const row of rows) {
+      images.push(await this.imageWithCountToImageInfo(row))
+    }
+    return images
+  }
+
+  async imagesByIdsFromDb(
+    ids: number[],
+  ): Promise<ImageInfo[]> {
+    const rows = await this.imagesRepo.getImagesWithCountByIds(ids)
+    const images = []
+    for (const row of rows) {
+      images.push(await this.imageWithCountToImageInfo(row))
+    }
+    return images
+  }
+
+  async getDimensions(imagePath: string): Promise<Dim> {
+    const dimensions = await probe(fs.createReadStream(imagePath))
+    const orientation = await this.getExifOrientation(imagePath)
+    // when image is rotated to the left or right, switch width/height
+    // https://jdhao.github.io/2019/07/31/image_rotation_exif_info/
+    if (orientation === 6 || orientation === 8) {
+      return {
+        w: dimensions.height || 0,
+        h: dimensions.width || 0,
+      }
+    }
+    return {
+      w: dimensions.width || 0,
+      h: dimensions.height || 0,
+    }
+  }
+
+  async setTags(imageId: number, tags: string[]): Promise<void> {
+    this.imagesRepo.deleteTagRelations(imageId)
+    for (const tag of tags) {
+      const slug = Util.slug(tag)
+      const id = await this.imagesRepo.upsertTag({ slug, title: tag })
+      if (id) {
+        this.imagesRepo.insertTagRelation({
+          image_id: imageId,
+          category_id: id,
+        })
+      }
+    }
+  }
+
+  async insertImage(image: Partial<ImageRow>): Promise<number> {
+    return await this.imagesRepo.insert(image)
+  }
+
+  async updateImage(image: Partial<ImageRow>, where: WhereRaw): Promise<void> {
+    await this.imagesRepo.update(image, where)
+  }
+
+  async getImageById(imageId: number): Promise<ImageRow | null> {
+    return await this.imagesRepo.get({ id: imageId })
+  }
 }

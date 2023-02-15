@@ -1,10 +1,8 @@
 import express, { NextFunction } from 'express'
-import Db from '../../../Db'
-import { Discord } from '../../../Discord'
+import { ServerInterface } from '../../../Server'
 
 export default function createRouter(
-  db: Db,
-  discord: Discord,
+  server: ServerInterface
 ): express.Router {
   const router = express.Router()
 
@@ -18,12 +16,12 @@ export default function createRouter(
       res.status(403).send({ ok: false, error: 'forbidden' })
       return
     }
-    const adminGroup = await db.get('user_groups', { name: 'admin' })
+    const adminGroup = await server.getDb().get('user_groups', { name: 'admin' })
     if (!adminGroup) {
       res.status(403).send({ ok: false, error: 'no admin' })
       return
     }
-    const userXAdmin = await db.get('user_x_user_group', {
+    const userXAdmin = await server.getDb().get('user_x_user_group', {
       user_group_id: adminGroup.id,
       user_id: user.id,
     })
@@ -37,13 +35,13 @@ export default function createRouter(
   router.use(requireLoginApi)
 
   router.get('/games', async (req, res) => {
-    const items = await db.getMany('games', undefined, [{ created: -1 }])
+    const items = await server.getDb().getMany('games', undefined, [{ created: -1 }])
     const imageIdMap: Record<string, boolean> = {}
     items.forEach(game => {
       imageIdMap[game.image_id] = true
     })
     const imageIds = Object.keys(imageIdMap)
-    const images = await db.getMany('images', { id: { '$in': imageIds }})
+    const images = await server.getDb().getMany('images', { id: { '$in': imageIds }})
     const gamesWithImages = items.map(game => {
       game.image = images.find(image => image.id === game.image_id) || null
       return game
@@ -53,43 +51,46 @@ export default function createRouter(
 
   router.delete('/games/:id', async (req, res) => {
     const id = req.params.id
-    await db.delete('games', { id })
+    await server.getDb().delete('games', { id })
     res.send({ ok: true })
   })
 
   router.get('/images', async (req, res) => {
-    const items = await db.getMany('images', undefined, [{ id: -1 }])
+    const items = await server.getDb().getMany('images', undefined, [{ id: -1 }])
     res.send(items)
   })
 
   router.delete('/images/:id', async (req, res) => {
     const id = req.params.id
-    await db.delete('images', { id })
+    await server.getDb().delete('images', { id })
     res.send({ ok: true })
   })
 
   router.get('/users', async (req, res) => {
-    const items = await db.getMany('users', undefined, [{ id: -1 }])
+    const items = await server.getDb().getMany('users', undefined, [{ id: -1 }])
     res.send(items)
   })
 
   router.get('/groups', async (req, res) => {
-    const items = await db.getMany('user_groups', undefined, [{ id: -1 }])
+    const items = await server.getDb().getMany('user_groups', undefined, [{ id: -1 }])
     res.send(items)
   })
 
   router.get('/announcements', async (req, res) => {
-    const items = await db.getMany('announcements', undefined, [{ created: -1 }])
+    const items = await server.getAnnouncementsRepo().getAll()
     res.send(items)
   })
 
   router.post('/announcements', express.json(), async (req, res) => {
     const message = req.body.message
     const title = req.body.title
-    const id = await db.insert('announcements', { created: new Date(), title, message }, 'id')
-
-    const announcement = await db.get('announcements', { id })
-    await discord.announce(`**${title}**\n${announcement.message}`)
+    const id = await server.getAnnouncementsRepo().insert({ created: new Date(), title, message })
+    const announcement = await server.getAnnouncementsRepo().get({ id })
+    if (!announcement) {
+      res.status(500).send({ ok: false, reason: 'unable_to_get_announcement' })
+      return
+    }
+    await server.getDiscord().announce(`**${title}**\n${announcement.message}`)
     res.send({ announcement })
   })
 

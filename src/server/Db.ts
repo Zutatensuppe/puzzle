@@ -262,9 +262,9 @@ class Db {
     whereRaw: WhereRaw = {},
   ): Promise<number> {
     const where = this._buildWhere(whereRaw)
-    const sql = 'SELECT COUNT(*) FROM ' + table + where.sql
+    const sql = 'SELECT COUNT(*)::int FROM ' + table + where.sql
     const row = await this._get(sql, where.values)
-    return parseInt(row.count, 10)
+    return row.count
   }
 
   async delete(table: string, whereRaw: WhereRaw = {}): Promise<pg.QueryResult> {
