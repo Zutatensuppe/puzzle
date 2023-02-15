@@ -9,13 +9,13 @@ import jwt from 'jsonwebtoken';
 import { WebSocketServer as WebSocketServer$1 } from 'ws';
 import express from 'express';
 import compression from 'compression';
-import probe from 'probe-image-size';
-import exif from 'exif';
-import crypto from 'crypto';
 import multer from 'multer';
 import request from 'request';
-import sharp from 'sharp';
+import crypto from 'crypto';
 import cookieParser from 'cookie-parser';
+import probe from 'probe-image-size';
+import exif from 'exif';
+import sharp from 'sharp';
 
 class Rng {
     constructor(seed) {
@@ -515,9 +515,9 @@ class Db {
     }
     async count(table, whereRaw = {}) {
         const where = this._buildWhere(whereRaw);
-        const sql = 'SELECT COUNT(*) FROM ' + table + where.sql;
+        const sql = 'SELECT COUNT(*)::int FROM ' + table + where.sql;
         const row = await this._get(sql, where.values);
-        return parseInt(row.count, 10);
+        return row.count;
     }
     async delete(table, whereRaw = {}) {
         const where = this._buildWhere(whereRaw);
@@ -838,6 +838,37 @@ var Protocol = {
     PLAYER_SNAP,
 };
 
+const MS = 1;
+const SEC = MS * 1000;
+const MIN = SEC * 60;
+const HOUR = MIN * 60;
+const DAY = HOUR * 24;
+const timestamp = () => {
+    const d = new Date();
+    return Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(), d.getUTCHours(), d.getUTCMinutes(), d.getUTCSeconds(), d.getUTCMilliseconds());
+};
+const durationStr = (duration) => {
+    const d = Math.floor(duration / DAY);
+    duration = duration % DAY;
+    const h = Math.floor(duration / HOUR);
+    duration = duration % HOUR;
+    const m = Math.floor(duration / MIN);
+    duration = duration % MIN;
+    const s = Math.floor(duration / SEC);
+    return `${d}d ${h}h ${m}m ${s}s`;
+};
+const timeDiffStr = (from, to) => durationStr(to - from);
+var Time = {
+    MS,
+    SEC,
+    MIN,
+    HOUR,
+    DAY,
+    timestamp,
+    timeDiffStr,
+    durationStr,
+};
+
 function pointSub(a, b) {
     return { x: a.x - b.x, y: a.y - b.y };
 }
@@ -910,37 +941,6 @@ const cropUrl = (imageUrl, crop) => {
         .replace('/uploads/', '/image-service/image/')
         .replace(/\?.*/, '')
         + Util.asQueryArgs(crop);
-};
-
-const MS = 1;
-const SEC = MS * 1000;
-const MIN = SEC * 60;
-const HOUR = MIN * 60;
-const DAY = HOUR * 24;
-const timestamp = () => {
-    const d = new Date();
-    return Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(), d.getUTCHours(), d.getUTCMinutes(), d.getUTCSeconds(), d.getUTCMilliseconds());
-};
-const durationStr = (duration) => {
-    const d = Math.floor(duration / DAY);
-    duration = duration % DAY;
-    const h = Math.floor(duration / HOUR);
-    duration = duration % HOUR;
-    const m = Math.floor(duration / MIN);
-    duration = duration % MIN;
-    const s = Math.floor(duration / SEC);
-    return `${d}d ${h}h ${m}m ${s}s`;
-};
-const timeDiffStr = (from, to) => durationStr(to - from);
-var Time = {
-    MS,
-    SEC,
-    MIN,
-    HOUR,
-    DAY,
-    timestamp,
-    timeDiffStr,
-    durationStr,
 };
 
 var PieceEdge;
@@ -1059,7 +1059,7 @@ function getActivePlayers(gameId, ts) {
 function getIdlePlayers(gameId, ts) {
     return Game_getIdlePlayers(GAMES[gameId], ts);
 }
-function addPlayer$1(gameId, playerId, ts) {
+function addPlayer(gameId, playerId, ts) {
     if (!playerExists(gameId, playerId)) {
         setPlayer(gameId, playerId, __createPlayerObject(playerId, ts));
     }
@@ -1431,7 +1431,7 @@ const maySnapToFinal = (gameId, pieceIdxs) => {
     // in other modes can always snap
     return true;
 };
-function handleInput$1(gameId, playerId, input, ts) {
+function handleInput(gameId, playerId, input, ts) {
     const puzzle = GAMES[gameId].puzzle;
     const changes = [];
     const _dataChange = () => {
@@ -1766,7 +1766,7 @@ function Game_getIdlePlayers(game, ts) {
     return Game_getAllPlayers(game).filter((p) => p.ts < minTs && p.points > 0);
 }
 function Game_getImageUrl(game) {
-    const imageUrl = game.puzzle.info.image?.url || game.puzzle.info.imageUrl;
+    const imageUrl = game.puzzle.info.image.url;
     if (!imageUrl) {
         throw new Error('[2021-07-11] no image url set');
     }
@@ -1785,7 +1785,7 @@ var GameCommon = {
     playerExists,
     getActivePlayers,
     getIdlePlayers,
-    addPlayer: addPlayer$1,
+    addPlayer,
     getFinishedPiecesCount,
     getPieceCount,
     getImageUrl,
@@ -1817,7 +1817,7 @@ var GameCommon = {
     getScoreMode,
     getSnapMode,
     getShapeMode,
-    handleInput: handleInput$1,
+    handleInput,
     /// operate directly on the game object given
     Game_getStartTs,
     Game_getFinishTs,
@@ -1858,12 +1858,12 @@ const create = (gameId, ts) => {
         }));
     }
 };
-const exists$1 = (gameId) => {
+const exists = (gameId) => {
     const idxfile = idxname(gameId);
     return fs.existsSync(idxfile);
 };
 function hasReplay(game) {
-    if (!exists$1(game.id)) {
+    if (!exists(game.id)) {
         return false;
     }
     if (game.gameVersion < 2) {
@@ -1921,7 +1921,7 @@ const get = (gameId, offset = 0) => {
 var GameLog = {
     shouldLog,
     create,
-    exists: exists$1,
+    exists,
     hasReplay,
     log: _log,
     get,
@@ -1953,337 +1953,1613 @@ const randomString = (length) => {
     return b.join('');
 };
 
-const TABLE_USERS = 'users';
-const TABLE_USER_IDENTITY = 'user_identity';
-const TABLE_ACCOUNTS = 'accounts';
-const TABLE_TOKENS = 'tokens';
-const HEADER_CLIENT_ID = 'client-id';
-const createAccount = async (db, account) => {
-    const accountId = await db.insert(TABLE_ACCOUNTS, account, 'id');
-    return await db.get(TABLE_ACCOUNTS, { id: accountId });
-};
-const createIdentity = async (db, identity) => {
-    const identityId = await db.insert(TABLE_USER_IDENTITY, identity, 'id');
-    return await db.get(TABLE_USER_IDENTITY, { id: identityId });
-};
-const updateIdentity = async (db, identity) => {
-    await db.update(TABLE_USER_IDENTITY, identity, { id: identity.id });
-};
-const getIdentity = async (db, where) => {
-    return await db.get(TABLE_USER_IDENTITY, where);
-};
-const getAccount = async (db, where) => {
-    return await db.get(TABLE_ACCOUNTS, where);
-};
-const createUser = async (db, user) => {
-    const userId = await db.insert(TABLE_USERS, user, 'id');
-    return await getUser(db, { id: userId });
-};
-const updateUser = async (db, user) => {
-    await db.update(TABLE_USERS, user, { id: user.id });
-};
-const getOrCreateUserByRequest = async (db, req) => {
-    // if user is already set on the request use that one
-    if (req.user) {
-        return req.user;
-    }
-    let data = await getUserInfoByRequest(db, req);
-    if (!data.user) {
-        await db.insert(TABLE_USERS, {
-            client_id: req.headers[HEADER_CLIENT_ID],
-            created: new Date(),
-        });
-        data = await getUserInfoByRequest(db, req);
-    }
-    // here the user is already guaranteed to exist (as UserRow is fine here)
-    return data.user;
-};
-const getUser = async (db, where) => {
-    const user = await db.get(TABLE_USERS, where);
-    if (user) {
-        user.id = parseInt(user.id, 10);
-    }
-    return user;
-};
-const getToken = async (db, where) => {
-    return await db.get(TABLE_TOKENS, where);
-};
-const addAuthToken$1 = async (db, userId) => {
-    const token = generateToken();
-    await db.insert(TABLE_TOKENS, { user_id: userId, token, type: 'auth' });
-    return token;
-};
-const getUserInfoByRequest = async (db, req) => {
-    const token = req.cookies[COOKIE_TOKEN] || null;
-    const tokenRow = token
-        ? await getToken(db, { token, type: 'auth' })
-        : null;
-    let user = tokenRow ? await getUser(db, { id: tokenRow.user_id }) : null;
-    if (user && tokenRow) {
-        return {
-            token: tokenRow.token,
-            user: user,
-            user_type: 'user',
-        };
-    }
-    // when no token is given or the token is not found or the user is not found
-    // we fall back to check the request for client id.
-    user = await getUser(db, { client_id: req.headers[HEADER_CLIENT_ID] });
-    return {
-        token: null,
-        user: user,
-        user_type: user ? 'guest' : null,
+const log$4 = logger('web_routes/api/index.ts');
+const GAMES_PER_PAGE_LIMIT = 10;
+const IMAGES_PER_PAGE_LIMIT = 20;
+function createRouter$2(server) {
+    const addAuthToken = async (userId, res) => {
+        const token = await server.getUsers().addAuthToken(userId);
+        res.cookie(COOKIE_TOKEN, token, { maxAge: 356 * Time.DAY, httpOnly: true });
     };
-};
-const getUserByIdentity = async (db, identity) => {
-    return getUser(db, { id: identity.user_id });
-};
-const getGroups = async (db, userId) => {
-    const relations = await db.getMany('user_x_user_group', { user_id: userId });
-    const groupIds = relations.map(r => r.user_group_id);
-    return await db.getMany('user_groups', { id: { '$in': groupIds } });
-};
-var Users = {
-    getOrCreateUserByRequest,
-    getUserInfoByRequest,
-    getUserByIdentity,
-    createUser,
-    updateUser,
-    getUser,
-    createIdentity,
-    updateIdentity,
-    getIdentity,
-    createAccount,
-    getAccount,
-    addAuthToken: addAuthToken$1,
-    getGroups,
-};
-
-async function getExifOrientation(imagePath) {
-    return new Promise((resolve) => {
-        new exif.ExifImage({ image: imagePath }, (error, exifData) => {
-            if (error) {
-                resolve(0);
+    const storage = multer.diskStorage({
+        destination: config.dir.UPLOAD_DIR,
+        filename: function (req, file, cb) {
+            cb(null, `${Util.uniqId()}-${file.originalname}`);
+        }
+    });
+    const upload = multer({ storage }).single('file');
+    const router = express.Router();
+    router.get('/me', async (req, res) => {
+        if (req.user) {
+            const groups = await server.getUsers().getGroups(req.user.id);
+            res.send({
+                id: req.user.id,
+                name: req.user.name,
+                clientId: req.user.client_id,
+                created: req.user.created,
+                type: req.user_type,
+                cannyToken: server.getCanny().createToken(req.user),
+                groups: groups.map(g => g.name),
+            });
+            return;
+        }
+        res.status(401).send({ reason: 'no user' });
+        return;
+    });
+    // login via twitch (callback url called from twitch after authentication)
+    router.get('/auth/twitch/redirect_uri', async (req, res) => {
+        if (!req.query.code) {
+            // in error case:
+            // http://localhost:3000/
+            // ?error=access_denied
+            // &error_description=The+user+denied+you+access
+            // &state=c3ab8aa609ea11e793ae92361f002671
+            res.status(403).send({ reason: req.query });
+            return;
+        }
+        // in success case:
+        // http://localhost:3000/
+        // ?code=gulfwdmys5lsm6qyz4xiz9q32l10
+        // &scope=channel%3Amanage%3Apolls+channel%3Aread%3Apolls
+        // &state=c3ab8aa609ea11e793ae92361f002671
+        const body = {
+            client_id: config.auth.twitch.client_id,
+            client_secret: config.auth.twitch.client_secret,
+            code: req.query.code,
+            grant_type: 'authorization_code',
+            redirect_uri: ''
+        };
+        const redirectUris = [
+            `https://${config.http.public_hostname}/api/auth/twitch/redirect_uri`,
+            `${req.protocol}://${req.headers.host}/api/auth/twitch/redirect_uri`,
+        ];
+        for (const redirectUri of redirectUris) {
+            body.redirect_uri = redirectUri;
+            const tokenRes = await fetch(`https://id.twitch.tv/oauth2/token${Util.asQueryArgs(body)}`, {
+                method: 'POST',
+            });
+            if (!tokenRes.ok) {
+                continue;
+            }
+            const tokenData = await tokenRes.json();
+            // get user
+            const userRes = await fetch(`https://api.twitch.tv/helix/users`, {
+                headers: {
+                    'Client-ID': config.auth.twitch.client_id,
+                    'Authorization': `Bearer ${tokenData.access_token}`,
+                }
+            });
+            if (!userRes.ok) {
+                continue;
+            }
+            const userData = await userRes.json();
+            const identity = await server.getUsers().getIdentity({
+                provider_name: 'twitch',
+                provider_id: userData.data[0].id,
+            });
+            let user = null;
+            if (req.user) {
+                user = req.user;
+            }
+            else if (identity) {
+                user = await server.getUsers().getUserByIdentity(identity);
+            }
+            if (!user) {
+                user = await server.getUsers().createUser({
+                    name: userData.data[0].display_name,
+                    created: new Date(),
+                    client_id: uniqId(),
+                    email: userData.data[0].email,
+                });
             }
             else {
-                resolve(exifData.image.Orientation || 0);
+                let updateNeeded = false;
+                if (!user.name) {
+                    user.name = userData.data[0].display_name;
+                    updateNeeded = true;
+                }
+                if (!user.email) {
+                    user.email = userData.data[0].email;
+                    updateNeeded = true;
+                }
+                if (updateNeeded) {
+                    await server.getUsers().updateUser(user);
+                }
             }
+            if (!identity) {
+                server.getUsers().createIdentity({
+                    user_id: user.id,
+                    provider_name: 'twitch',
+                    provider_id: userData.data[0].id,
+                });
+            }
+            else {
+                let updateNeeded = false;
+                if (identity.user_id !== user.id) {
+                    // maybe we do not have to do this
+                    identity.user_id = user.id;
+                    updateNeeded = true;
+                }
+                if (!identity.provider_email) {
+                    identity.provider_email = userData.data[0].email;
+                    updateNeeded = true;
+                }
+                if (updateNeeded) {
+                    server.getUsers().updateIdentity(identity);
+                }
+            }
+            await addAuthToken(user.id, res);
+            res.send('<html><script>window.opener.handleAuthCallback();window.close();</script></html>');
+            return;
+        }
+        res.status(403).send({ reason: req.query });
+    });
+    // login via email + password
+    router.post('/auth/local', express.json(), async (req, res) => {
+        const emailPlain = req.body.email;
+        const passwordPlain = req.body.password;
+        const account = await server.getUsers().getAccount({ email: emailPlain });
+        if (!account) {
+            res.status(401).send({ reason: 'bad email' });
+            return;
+        }
+        if (account.status !== 'verified') {
+            res.status(401).send({ reason: 'email not verified' });
+            return;
+        }
+        const salt = account.salt;
+        const passHashed = passwordHash(passwordPlain, salt);
+        if (account.password !== passHashed) {
+            res.status(401).send({ reason: 'bad password' });
+            return;
+        }
+        const identity = await server.getUsers().getIdentity({
+            provider_name: 'local',
+            provider_id: account.id,
+        });
+        if (!identity) {
+            res.status(401).send({ reason: 'no identity' });
+            return;
+        }
+        await addAuthToken(identity.user_id, res);
+        res.send({ success: true });
+    });
+    router.post('/change-password', express.json(), async (req, res) => {
+        const token = `${req.body.token}`;
+        const passwordRaw = `${req.body.password}`;
+        const tokenRow = await server.getTokensRepo().get({ type: 'password-reset', token });
+        if (!tokenRow) {
+            res.status(400).send({ reason: 'no such token' });
+            return;
+        }
+        // note: token contains account id, not user id ...
+        const account = await server.getUsers().getAccount({ id: tokenRow.user_id });
+        if (!account) {
+            res.status(400).send({ reason: 'no such account' });
+            return;
+        }
+        const password = passwordHash(passwordRaw, account.salt);
+        account.password = password;
+        await server.getUsers().updateAccount(account);
+        // remove token, already used
+        await server.getTokensRepo().delete(tokenRow);
+        res.send({ success: true });
+    });
+    router.post('/send-password-reset-email', express.json(), async (req, res) => {
+        const emailRaw = `${req.body.email}`;
+        const account = await server.getUsers().getAccount({ email: emailRaw });
+        if (!account) {
+            res.status(400).send({ reason: 'no such email' });
+            return;
+        }
+        const identity = await server.getUsers().getIdentity({
+            provider_name: 'local',
+            provider_id: account.id,
+        });
+        if (!identity) {
+            res.status(400).send({ reason: 'no such identity' });
+            return;
+        }
+        const user = await server.getUsers().getUser({
+            id: identity.user_id,
+        });
+        if (!user) {
+            res.status(400).send({ reason: 'no such user' });
+            return;
+        }
+        const token = generateToken();
+        // TODO: dont misuse token table user id <> account id
+        const tokenRow = { user_id: account.id, token, type: 'password-reset' };
+        await server.getTokensRepo().insert(tokenRow);
+        server.getMail().sendPasswordResetMail({ user: { name: user.name, email: emailRaw }, token: tokenRow });
+        res.send({ success: true });
+    });
+    router.post('/register', express.json(), async (req, res) => {
+        const salt = generateSalt();
+        const emailRaw = `${req.body.email}`;
+        const passwordRaw = `${req.body.password}`;
+        const usernameRaw = `${req.body.username}`;
+        // TODO: check if username already taken
+        // TODO: check if email already taken
+        //       return status 409 in both cases
+        const account = await server.getUsers().createAccount({
+            created: new Date(),
+            email: emailRaw,
+            password: passwordHash(passwordRaw, salt),
+            salt: salt,
+            status: 'verification_pending',
+        });
+        const user = await server.getUsers().createUser({
+            created: new Date(),
+            name: usernameRaw,
+            email: emailRaw,
+            client_id: uniqId(),
+        });
+        await server.getUsers().createIdentity({
+            user_id: user.id,
+            provider_name: 'local',
+            provider_id: account.id,
+        });
+        const userInfo = { email: emailRaw, name: usernameRaw };
+        const token = generateToken();
+        const tokenRow = { user_id: account.id, token, type: 'registration' };
+        await server.getTokensRepo().insert(tokenRow);
+        server.getMail().sendRegistrationMail({ user: userInfo, token: tokenRow });
+        res.send({ success: true });
+    });
+    router.get('/verify-email/:token', async (req, res) => {
+        const token = req.params.token;
+        const tokenRow = await server.getTokensRepo().get({ token });
+        if (!tokenRow) {
+            res.status(400).send({ reason: 'bad token' });
+            return;
+        }
+        // tokenRow.user_id is the account id here.
+        // TODO: clean this up.. users vs accounts vs user_identity
+        const account = await server.getUsers().getAccount({ id: tokenRow.user_id });
+        if (!account) {
+            res.status(400).send({ reason: 'bad account' });
+            return;
+        }
+        const identity = await server.getUsers().getIdentity({
+            provider_name: 'local',
+            provider_id: account.id,
+        });
+        if (!identity) {
+            res.status(400).send({ reason: 'bad identity' });
+            return;
+        }
+        // set account to verified
+        await server.getUsers().setAccountVerified(account.id);
+        // make the user logged in and redirect to startpage
+        await addAuthToken(identity.user_id, res);
+        // TODO: add parameter/hash so that user will get a message 'thanks for verifying the email'
+        res.redirect(302, '/');
+    });
+    router.post('/logout', async (req, res) => {
+        if (!req.token) {
+            res.status(401).send({});
+            return;
+        }
+        await server.getTokensRepo().delete({ token: req.token });
+        res.clearCookie(COOKIE_TOKEN);
+        res.send({ success: true });
+    });
+    router.get('/conf', (req, res) => {
+        res.send({
+            WS_ADDRESS: config.ws.connectstring,
         });
     });
-}
-const getAllTags = async (db) => {
-    const query = `
-select c.id, c.slug, c.title, count(*) as total from categories c
-inner join image_x_category ixc on c.id = ixc.category_id
-inner join images i on i.id = ixc.image_id
-group by c.id order by total desc;`;
-    return (await db._getMany(query)).map(row => ({
-        id: parseInt(row.id, 10) || 0,
-        slug: row.slug,
-        title: row.title,
-        total: parseInt(row.total, 10) || 0,
-    }));
-};
-const getTags = async (db, imageId) => {
-    const query = `
-select c.id, c.slug, c.title from categories c
-inner join image_x_category ixc on c.id = ixc.category_id
-where ixc.image_id = $1`;
-    return (await db._getMany(query, [imageId])).map(row => ({
-        id: parseInt(row.id, 10) || 0,
-        slug: row.slug,
-        title: row.title,
-        total: 0,
-    }));
-};
-const imageFromDb = async (db, imageId) => {
-    const imageRow = await db.get('images', { id: imageId });
-    if (!imageRow) {
-        return null;
-    }
-    const gameCount = await db.count('games', { image_id: imageRow.id, private: imageRow.private });
-    const user = await Users.getUser(db, { id: imageRow.uploader_user_id });
-    return {
-        id: imageRow.id,
-        uploaderUserId: imageRow.uploader_user_id,
-        uploaderName: user?.name || null,
-        filename: imageRow.filename,
-        url: `${config.dir.UPLOAD_URL}/${encodeURIComponent(imageRow.filename)}`,
-        title: imageRow.title,
-        tags: await getTags(db, imageRow.id),
-        created: imageRow.created.getTime(),
-        width: imageRow.width,
-        height: imageRow.height,
-        gameCount,
-        copyrightName: imageRow.copyright_name,
-        copyrightURL: imageRow.copyright_url,
-    };
-};
-const getCategoryRowsBySlugs = async (db, slugs) => {
-    const c = await db.getMany('categories', { slug: { '$in': slugs } });
-    return c;
-};
-const imagesFromDb = async (db, tagSlugs, orderBy, isPrivate, offset, limit) => {
-    const orderByMap = {
-        alpha_asc: [{ title: 1 }, { created: -1 }],
-        alpha_desc: [{ title: -1 }, { created: -1 }],
-        date_asc: [{ created: 1 }],
-        date_desc: [{ created: -1 }],
-        game_count_asc: [{ games_count: 1 }, { created: -1 }],
-        game_count_desc: [{ games_count: -1 }, { created: -1 }],
-    };
-    // TODO: .... clean up
-    const wheresRaw = {};
-    wheresRaw['private'] = isPrivate ? 1 : 0;
-    if (tagSlugs.length > 0) {
-        const c = await getCategoryRowsBySlugs(db, tagSlugs);
-        if (!c) {
-            return [];
+    router.get('/replay-data', async (req, res) => {
+        const q = req.query;
+        const offset = parseInt(q.offset, 10) || 0;
+        if (offset < 0) {
+            res.status(400).send({ reason: 'bad offset' });
+            return;
         }
-        const where = db._buildWhere({
-            'category_id': { '$in': c.map(x => x.id) }
-        });
-        const ids = (await db._getMany(`
-select i.id from image_x_category ixc
-inner join images i on i.id = ixc.image_id ${where.sql};
-`, where.values)).map(img => img.id);
-        if (ids.length === 0) {
-            return [];
+        const size = parseInt(q.size, 10) || 10000;
+        if (size < 0 || size > 10000) {
+            res.status(400).send({ reason: 'bad size' });
+            return;
         }
-        wheresRaw['images.id'] = { '$in': ids };
-    }
-    const params = [];
-    params.push(isPrivate ? 1 : 0);
-    const dbWhere = db._buildWhere(wheresRaw, params.length + 1);
-    params.push(...dbWhere.values);
-    const tmpImages = await db._getMany(`
-    WITH counts AS (
-      SELECT
-        COUNT(*) AS count,
-        image_id
-      FROM
-        games
-      WHERE
-        private = $1
-      GROUP BY image_id
-    )
-    SELECT
-      images.*,
-      COALESCE(counts.count, 0) AS games_count,
-      COALESCE(users.name, '') as uploader_user_name
-    FROM
-      images
-      LEFT JOIN counts ON counts.image_id = images.id
-      LEFT JOIN users ON users.id = images.uploader_user_id
-    ${dbWhere.sql}
-    ${db._buildOrderBy(orderByMap[orderBy])}
-    ${db._buildLimit({ offset, limit })}
-  `, params);
-    const images = [];
-    for (const i of tmpImages) {
-        images.push({
-            id: i.id,
-            uploaderUserId: i.uploader_user_id,
-            uploaderName: i.uploader_user_name || null,
-            filename: i.filename,
-            url: `${config.dir.UPLOAD_URL}/${encodeURIComponent(i.filename)}`,
-            title: i.title,
-            tags: await getTags(db, i.id),
-            created: i.created.getTime(),
-            width: i.width,
-            height: i.height,
-            private: !!i.private,
-            gameCount: parseInt(i.games_count, 10),
-            copyrightName: i.copyright_name,
-            copyrightURL: i.copyright_url,
+        const gameId = q.gameId || '';
+        if (!GameLog.exists(q.gameId)) {
+            res.status(404).send({ reason: 'no log found' });
+            return;
+        }
+        const log = GameLog.get(gameId, offset);
+        let game = null;
+        if (offset === 0) {
+            // also need the game
+            game = await server.getGameService().createGameObject(gameId, log[0][1], // gameVersion
+            log[0][2], // targetPieceCount
+            log[0][3], // must be ImageInfo
+            log[0][4], // ts (of game creation)
+            log[0][5], // scoreMode
+            log[0][6], // shapeMode
+            log[0][7], // snapMode
+            log[0][8], // creatorUserId
+            true, // hasReplay
+            !!log[0][9], // private
+            log[0][10]);
+        }
+        res.send({ log, game: game ? Util.encodeGame(game) : null });
+    });
+    router.get('/newgame-data', async (req, res) => {
+        const q = req.query;
+        const tagSlugs = q.tags ? q.tags.split(',') : [];
+        res.send({
+            images: await server.getImages().imagesFromDb(tagSlugs, q.sort, false, 0, IMAGES_PER_PAGE_LIMIT),
+            tags: await server.getImages().getAllTags(),
         });
-    }
-    return images;
-};
-const imagesByIdsFromDb = async (db, ids) => {
-    const params = [];
-    const dbWhere = db._buildWhere({ 'images.id': { '$in': ids } });
-    params.push(...dbWhere.values);
-    const tmpImages = await db._getMany(`
-    WITH counts AS (
-      SELECT
-        COUNT(*) AS count,
-        image_id
-      FROM
-        games
-      WHERE
-        private = 0
-      GROUP BY image_id
-    )
-    SELECT
-      images.*,
-      COALESCE(counts.count, 0) AS games_count,
-      COALESCE(users.name, '') as uploader_user_name
-    FROM
-      images
-      LEFT JOIN counts ON counts.image_id = images.id
-      LEFT JOIN users ON users.id = images.uploader_user_id
-    ${dbWhere.sql}
-  `, params);
-    const images = [];
-    for (const i of tmpImages) {
-        images.push({
-            id: i.id,
-            uploaderUserId: i.uploader_user_id,
-            uploaderName: i.uploader_user_name || null,
-            filename: i.filename,
-            url: `${config.dir.UPLOAD_URL}/${encodeURIComponent(i.filename)}`,
-            title: i.title,
-            tags: await getTags(db, i.id),
-            created: i.created.getTime(),
-            width: i.width,
-            height: i.height,
-            private: !!i.private,
-            gameCount: parseInt(i.games_count, 10),
-            copyrightName: i.copyright_name,
-            copyrightURL: i.copyright_url,
+    });
+    router.get('/artist/:name', async (req, res) => {
+        const name = req.params.name;
+        const artist = await server.getDb().get('artist', { name });
+        if (!artist) {
+            res.status(404).send({ reason: 'not found' });
+            return;
+        }
+        const rel1 = await server.getDb().getMany('artist_x_collection', { artist_id: artist.id });
+        const collections = await server.getDb().getMany('collection', { id: { '$in': rel1.map((r) => r.collection_id) } });
+        const rel2 = await server.getDb().getMany('collection_x_image', { collection_id: { '$in': collections.map((r) => r.id) } });
+        const items = await server.getImages().imagesByIdsFromDb(rel2.map((r) => r.image_id));
+        collections.forEach(c => {
+            c.images = items.filter(image => rel2.find(r => r.collection_id === c.id && r.image_id === image.id) ? true : false);
         });
-    }
-    return images;
-};
-async function getDimensions(imagePath) {
-    const dimensions = await probe(fs.createReadStream(imagePath));
-    const orientation = await getExifOrientation(imagePath);
-    // when image is rotated to the left or right, switch width/height
-    // https://jdhao.github.io/2019/07/31/image_rotation_exif_info/
-    if (orientation === 6 || orientation === 8) {
+        res.send({
+            artist,
+            collections,
+        });
+    });
+    router.get('/images', async (req, res) => {
+        const q = req.query;
+        const tagSlugs = q.tags ? q.tags.split(',') : [];
+        const offset = parseInt(`${q.offset}`, 10);
+        if (isNaN(offset) || offset < 0) {
+            res.status(400).send({ error: 'bad offset' });
+            return;
+        }
+        res.send({
+            images: await server.getImages().imagesFromDb(tagSlugs, q.sort, false, offset, IMAGES_PER_PAGE_LIMIT),
+        });
+    });
+    const GameToGameInfo = (game, ts) => {
+        const finished = GameCommon.Game_getFinishTs(game);
         return {
-            w: dimensions.height || 0,
-            h: dimensions.width || 0,
+            id: game.id,
+            hasReplay: GameLog.hasReplay(game),
+            started: GameCommon.Game_getStartTs(game),
+            finished,
+            piecesFinished: GameCommon.Game_getFinishedPiecesCount(game),
+            piecesTotal: GameCommon.Game_getPieceCount(game),
+            players: finished
+                ? GameCommon.Game_getPlayersWithScore(game).length
+                : GameCommon.Game_getActivePlayers(game, ts).length,
+            imageUrl: GameCommon.Game_getImageUrl(game),
+            snapMode: GameCommon.Game_getSnapMode(game),
+            scoreMode: GameCommon.Game_getScoreMode(game),
+            shapeMode: GameCommon.Game_getShapeMode(game),
+        };
+    };
+    router.get('/index-data', async (req, res) => {
+        const ts = Time.timestamp();
+        // all running rows
+        const runningRows = await server.getGameService().getPublicRunningGames(-1, -1);
+        const runningCount = await server.getGameService().countPublicRunningGames();
+        const finishedRows = await server.getGameService().getPublicFinishedGames(0, GAMES_PER_PAGE_LIMIT);
+        const finishedCount = await server.getGameService().countPublicFinishedGames();
+        const gamesRunning = runningRows.map((v) => GameToGameInfo(v, ts));
+        const gamesFinished = finishedRows.map((v) => GameToGameInfo(v, ts));
+        const indexData = {
+            gamesRunning: {
+                items: gamesRunning,
+                pagination: { total: runningCount, offset: 0, limit: 0 }
+            },
+            gamesFinished: {
+                items: gamesFinished,
+                pagination: { total: finishedCount, offset: 0, limit: GAMES_PER_PAGE_LIMIT }
+            },
+        };
+        res.send(indexData);
+    });
+    router.get('/finished-games', async (req, res) => {
+        const offset = parseInt(`${req.query.offset}`, 10);
+        if (isNaN(offset) || offset < 0) {
+            res.status(400).send({ error: 'bad offset' });
+            return;
+        }
+        const ts = Time.timestamp();
+        const finishedRows = await server.getGameService().getPublicFinishedGames(offset, GAMES_PER_PAGE_LIMIT);
+        const finishedCount = await server.getGameService().countPublicFinishedGames();
+        const gamesFinished = finishedRows.map((v) => GameToGameInfo(v, ts));
+        const indexData = {
+            items: gamesFinished,
+            pagination: { total: finishedCount, offset: offset, limit: GAMES_PER_PAGE_LIMIT }
+        };
+        res.send(indexData);
+    });
+    router.post('/save-image', express.json(), async (req, res) => {
+        const user = req.user || null;
+        if (!user || !user.id) {
+            res.status(403).send({ ok: false, error: 'forbidden' });
+            return;
+        }
+        const data = req.body;
+        const image = await server.getImages().getImageById(data.id);
+        if (!image) {
+            res.status(404).send({ ok: false, error: 'not_found' });
+            return;
+        }
+        if (image.uploader_user_id !== user.id) {
+            res.status(403).send({ ok: false, error: 'forbidden' });
+            return;
+        }
+        await server.getImages().updateImage({
+            title: data.title,
+            copyright_name: data.copyrightName,
+            copyright_url: data.copyrightURL,
+        }, { id: data.id });
+        await server.getImages().setTags(data.id, data.tags || []);
+        res.send({ ok: true, image: await server.getImages().imageFromDb(data.id) });
+    });
+    router.get('/proxy', (req, res) => {
+        log$4.info('proxy request for url:', req.query.url);
+        request(req.query.url).pipe(res);
+    });
+    router.post('/upload', (req, res) => {
+        upload(req, res, async (err) => {
+            if (err) {
+                log$4.log('/api/upload/', 'error', err);
+                res.status(400).send("Something went wrong!");
+                return;
+            }
+            log$4.info('req.file.filename', req.file.filename);
+            const user = await server.getUsers().getOrCreateUserByRequest(req);
+            const dim = await server.getImages().getDimensions(`${config.dir.UPLOAD_DIR}/${req.file.filename}`);
+            // post form, so booleans are submitted as 'true' | 'false'
+            const isPrivate = req.body.private === 'false' ? 0 : 1;
+            const imageId = await server.getImages().insertImage({
+                uploader_user_id: user.id,
+                filename: req.file.filename,
+                filename_original: req.file.originalname,
+                title: req.body.title || '',
+                copyright_name: req.body.copyrightName || '',
+                copyright_url: req.body.copyrightURL || '',
+                created: new Date(),
+                width: dim.w,
+                height: dim.h,
+                private: isPrivate,
+            });
+            if (req.body.tags) {
+                const tags = req.body.tags.split(',').filter((tag) => !!tag);
+                await server.getImages().setTags(imageId, tags);
+            }
+            res.send(await server.getImages().imageFromDb(imageId));
+        });
+    });
+    router.get('/announcements', async (req, res) => {
+        const items = await server.getAnnouncementsRepo().getAll();
+        res.send(items);
+    });
+    router.post('/newgame', express.json(), async (req, res) => {
+        const user = await server.getUsers().getOrCreateUserByRequest(req);
+        try {
+            const gameId = await server.getGameService().createNewGame(req.body, Time.timestamp(), user.id);
+            res.send({ id: gameId });
+        }
+        catch (e) {
+            log$4.error(e);
+            res.status(400).send({ reason: e.message });
+        }
+    });
+    return router;
+}
+
+function createRouter$1(server) {
+    const router = express.Router();
+    const requireLoginApi = async (req, res, next) => {
+        if (!req.token) {
+            res.status(401).send({});
+            return;
+        }
+        const user = req.user || null;
+        if (!user || !user.id) {
+            res.status(403).send({ ok: false, error: 'forbidden' });
+            return;
+        }
+        const adminGroup = await server.getDb().get('user_groups', { name: 'admin' });
+        if (!adminGroup) {
+            res.status(403).send({ ok: false, error: 'no admin' });
+            return;
+        }
+        const userXAdmin = await server.getDb().get('user_x_user_group', {
+            user_group_id: adminGroup.id,
+            user_id: user.id,
+        });
+        if (!userXAdmin) {
+            res.status(403).send({ ok: false, error: 'not an admin' });
+            return;
+        }
+        next();
+    };
+    router.use(requireLoginApi);
+    router.get('/games', async (req, res) => {
+        const items = await server.getDb().getMany('games', undefined, [{ created: -1 }]);
+        const imageIdMap = {};
+        items.forEach(game => {
+            imageIdMap[game.image_id] = true;
+        });
+        const imageIds = Object.keys(imageIdMap);
+        const images = await server.getDb().getMany('images', { id: { '$in': imageIds } });
+        const gamesWithImages = items.map(game => {
+            game.image = images.find(image => image.id === game.image_id) || null;
+            return game;
+        });
+        res.send(gamesWithImages);
+    });
+    router.delete('/games/:id', async (req, res) => {
+        const id = req.params.id;
+        await server.getDb().delete('games', { id });
+        res.send({ ok: true });
+    });
+    router.get('/images', async (req, res) => {
+        const items = await server.getDb().getMany('images', undefined, [{ id: -1 }]);
+        res.send(items);
+    });
+    router.delete('/images/:id', async (req, res) => {
+        const id = req.params.id;
+        await server.getDb().delete('images', { id });
+        res.send({ ok: true });
+    });
+    router.get('/users', async (req, res) => {
+        const items = await server.getDb().getMany('users', undefined, [{ id: -1 }]);
+        res.send(items);
+    });
+    router.get('/groups', async (req, res) => {
+        const items = await server.getDb().getMany('user_groups', undefined, [{ id: -1 }]);
+        res.send(items);
+    });
+    router.get('/announcements', async (req, res) => {
+        const items = await server.getAnnouncementsRepo().getAll();
+        res.send(items);
+    });
+    router.post('/announcements', express.json(), async (req, res) => {
+        const message = req.body.message;
+        const title = req.body.title;
+        const id = await server.getAnnouncementsRepo().insert({ created: new Date(), title, message });
+        const announcement = await server.getAnnouncementsRepo().get({ id });
+        if (!announcement) {
+            res.status(500).send({ ok: false, reason: 'unable_to_get_announcement' });
+            return;
+        }
+        await server.getDiscord().announce(`**${title}**\n${announcement.message}`);
+        res.send({ announcement });
+    });
+    return router;
+}
+
+function createRouter(server) {
+    const router = express.Router();
+    router.get('/image/:filename', async (req, res) => {
+        const filename = req.params.filename;
+        const query = req.query;
+        // RESIZE
+        if (('w' in query && 'h' in query && 'fit' in query)) {
+            const w = parseInt(`${query.w}`, 10);
+            const h = parseInt(`${query.h}`, 10);
+            const fit = `${query.fit}`;
+            if (`${w}` !== query.w || `${h}` !== query.h) {
+                res.status(400).send('x, y must be numbers');
+                return;
+            }
+            const resizedFilename = await server.getImageResize().resizeImage(filename, w, h, fit);
+            if (!resizedFilename) {
+                res.status(500).send('unable to resize image');
+                return;
+            }
+            const p = path.resolve(config.dir.RESIZE_DIR, resizedFilename);
+            res.sendFile(p);
+            return;
+        }
+        // CROP
+        if (('x' in query && 'y' in query && 'w' in query && 'h' in query)) {
+            const crop = {
+                x: parseInt(`${query.x}`, 10),
+                y: parseInt(`${query.y}`, 10),
+                w: parseInt(`${query.w}`, 10),
+                h: parseInt(`${query.h}`, 10),
+            };
+            if (`${crop.x}` !== query.x ||
+                `${crop.y}` !== query.y ||
+                `${crop.w}` !== query.w ||
+                `${crop.h}` !== query.h) {
+                res.status(400).send('x, y, w and h must be numbers');
+                return;
+            }
+            const croppedFilename = await server.getImageResize().cropImage(filename, crop);
+            if (!croppedFilename) {
+                res.status(500).send('unable to crop image');
+                return;
+            }
+            const p = path.resolve(config.dir.CROP_DIR, croppedFilename);
+            res.sendFile(p);
+            return;
+        }
+        // original image
+        const p = path.resolve(config.dir.UPLOAD_DIR, filename);
+        res.sendFile(p);
+        return;
+    });
+    return router;
+}
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+const indexFile = path.resolve(__dirname, '..', '..', 'build', 'public', 'index.html');
+const log$3 = logger('Server.ts');
+class Server {
+    constructor(db, mail, canny, discord, gameSockets, gameService, users, images, imageResize, tokensRepo, announcementsRepo) {
+        this.db = db;
+        this.mail = mail;
+        this.canny = canny;
+        this.discord = discord;
+        this.gameSockets = gameSockets;
+        this.gameService = gameService;
+        this.users = users;
+        this.images = images;
+        this.imageResize = imageResize;
+        this.tokensRepo = tokensRepo;
+        this.announcementsRepo = announcementsRepo;
+        this.webserver = null;
+        this.websocketserver = null;
+        // pass
+    }
+    getDb() {
+        return this.db;
+    }
+    getMail() {
+        return this.mail;
+    }
+    getCanny() {
+        return this.canny;
+    }
+    getDiscord() {
+        return this.discord;
+    }
+    getGameSockets() {
+        return this.gameSockets;
+    }
+    getGameService() {
+        return this.gameService;
+    }
+    getUsers() {
+        return this.users;
+    }
+    getImages() {
+        return this.images;
+    }
+    getImageResize() {
+        return this.imageResize;
+    }
+    getTokensRepo() {
+        return this.tokensRepo;
+    }
+    getAnnouncementsRepo() {
+        return this.announcementsRepo;
+    }
+    async persistGame(gameId) {
+        const game = GameCommon.get(gameId);
+        if (!game) {
+            log$3.error(`[ERROR] unable to persist non existing game ${gameId}`);
+            return;
+        }
+        await this.gameService.persistGame(game);
+    }
+    async persistGames() {
+        for (const gameId of this.gameService.dirtyGameIds()) {
+            await this.persistGame(gameId);
+        }
+    }
+    start() {
+        const port = config.http.port;
+        const hostname = config.http.hostname;
+        const app = express();
+        app.use(cookieParser());
+        app.use(compression());
+        // add user info to all requests
+        app.use(async (req, _res, next) => {
+            const data = await this.users.getUserInfoByRequest(req);
+            req.token = data.token;
+            req.user = data.user;
+            req.user_type = data.user_type;
+            next();
+        });
+        app.use('/admin/api', createRouter$1(this));
+        app.use('/api', createRouter$2(this));
+        app.use('/image-service', createRouter(this));
+        app.use('/uploads/', express.static(config.dir.UPLOAD_DIR));
+        app.use('/', express.static(config.dir.PUBLIC_DIR));
+        app.all('*', async (req, res) => {
+            res.sendFile(indexFile);
+        });
+        const wss = new WebSocketServer(config.ws);
+        const notify = (data, sockets) => {
+            for (const socket of sockets) {
+                wss.notifyOne(data, socket);
+            }
+        };
+        wss.on('close', async ({ socket }) => {
+            try {
+                const proto = socket.protocol.split('|');
+                const clientId = proto[0];
+                const gameId = proto[1];
+                this.gameSockets.removeSocket(gameId, socket);
+                const ts = Time.timestamp();
+                const clientSeq = -1; // client lost connection, so clientSeq doesn't matter
+                const clientEvtData = [Protocol.INPUT_EV_CONNECTION_CLOSE];
+                const changes = this.gameService.handleInput(gameId, clientId, clientEvtData, ts);
+                const sockets = this.gameSockets.getSockets(gameId);
+                if (sockets.length) {
+                    notify([Protocol.EV_SERVER_EVENT, clientId, clientSeq, changes], sockets);
+                }
+                else {
+                    this.persistGame(gameId);
+                    log$3.info(`[INFO] unloading game: ${gameId}`);
+                    GameCommon.unsetGame(gameId);
+                }
+            }
+            catch (e) {
+                log$3.error(e);
+            }
+        });
+        wss.on('message', async ({ socket, data }) => {
+            if (!data) {
+                // no data (maybe ping :3)
+                return;
+            }
+            try {
+                const proto = socket.protocol.split('|');
+                const clientId = proto[0];
+                const gameId = proto[1];
+                const msg = JSON.parse(data);
+                const msgType = msg[0];
+                switch (msgType) {
+                    case Protocol.EV_CLIENT_INIT:
+                        {
+                            if (!GameCommon.loaded(gameId)) {
+                                const gameObject = await this.gameService.loadGame(gameId);
+                                if (!gameObject) {
+                                    throw `[game ${gameId} does not exist... ]`;
+                                }
+                                GameCommon.setGame(gameObject.id, gameObject);
+                            }
+                            const ts = Time.timestamp();
+                            this.gameService.addPlayer(gameId, clientId, ts);
+                            this.gameSockets.addSocket(gameId, socket);
+                            const game = GameCommon.get(gameId);
+                            if (!game) {
+                                throw `[game ${gameId} does not exist (anymore)... ]`;
+                            }
+                            notify([Protocol.EV_SERVER_INIT, Util.encodeGame(game)], [socket]);
+                        }
+                        break;
+                    case Protocol.EV_CLIENT_EVENT:
+                        {
+                            if (!GameCommon.loaded(gameId)) {
+                                const gameObject = await this.gameService.loadGame(gameId);
+                                if (!gameObject) {
+                                    throw `[game ${gameId} does not exist... ]`;
+                                }
+                                GameCommon.setGame(gameObject.id, gameObject);
+                            }
+                            const clientSeq = msg[1];
+                            const clientEvtData = msg[2];
+                            const ts = Time.timestamp();
+                            let sendGame = false;
+                            if (!GameCommon.playerExists(gameId, clientId)) {
+                                this.gameService.addPlayer(gameId, clientId, ts);
+                                sendGame = true;
+                            }
+                            if (!this.gameSockets.socketExists(gameId, socket)) {
+                                this.gameSockets.addSocket(gameId, socket);
+                                sendGame = true;
+                            }
+                            if (sendGame) {
+                                const game = GameCommon.get(gameId);
+                                if (!game) {
+                                    throw `[game ${gameId} does not exist (anymore)... ]`;
+                                }
+                                notify([Protocol.EV_SERVER_INIT, Util.encodeGame(game)], [socket]);
+                            }
+                            const changes = this.gameService.handleInput(gameId, clientId, clientEvtData, ts);
+                            notify([Protocol.EV_SERVER_EVENT, clientId, clientSeq, changes], this.gameSockets.getSockets(gameId));
+                        }
+                        break;
+                }
+            }
+            catch (e) {
+                log$3.error(e);
+                log$3.error('data:', data);
+            }
+        });
+        this.webserver = app.listen(port, hostname, () => log$3.log(`server running on http://${hostname}:${port}`));
+        wss.listen();
+        this.websocketserver = wss;
+    }
+    close() {
+        log$3.log('shutting down webserver...');
+        if (this.webserver) {
+            this.webserver.close();
+            this.webserver = null;
+        }
+        log$3.log('shutting down websocketserver...');
+        if (this.websocketserver) {
+            this.websocketserver.close();
+            this.websocketserver = null;
+        }
+    }
+}
+
+const log$2 = logger('GameSocket.js');
+class GameSockets {
+    constructor() {
+        this.sockets = {};
+    }
+    socketExists(gameId, socket) {
+        if (!(gameId in this.sockets)) {
+            return false;
+        }
+        return this.sockets[gameId].includes(socket);
+    }
+    removeSocket(gameId, socket) {
+        if (!(gameId in this.sockets)) {
+            return;
+        }
+        this.sockets[gameId] = this.sockets[gameId].filter((s) => s !== socket);
+        log$2.log('removed socket: ', gameId, socket.protocol);
+        log$2.log('socket count: ', Object.keys(this.sockets[gameId]).length);
+    }
+    addSocket(gameId, socket) {
+        if (!(gameId in this.sockets)) {
+            this.sockets[gameId] = [];
+        }
+        if (!this.sockets[gameId].includes(socket)) {
+            this.sockets[gameId].push(socket);
+            log$2.log('added socket: ', gameId, socket.protocol);
+            log$2.log('socket count: ', Object.keys(this.sockets[gameId]).length);
+        }
+    }
+    getSockets(gameId) {
+        if (!(gameId in this.sockets)) {
+            return [];
+        }
+        return this.sockets[gameId];
+    }
+}
+
+const log$1 = logger('GameService.js');
+class GameService {
+    constructor(repo, puzzleService) {
+        this.repo = repo;
+        this.puzzleService = puzzleService;
+        this.dirtyGames = {};
+        // pass
+    }
+    setDirty(gameId) {
+        this.dirtyGames[gameId] = true;
+    }
+    setClean(gameId) {
+        if (gameId in this.dirtyGames) {
+            delete this.dirtyGames[gameId];
+        }
+    }
+    gameRowToGameObject(gameRow) {
+        let game;
+        try {
+            game = JSON.parse(gameRow.data);
+        }
+        catch {
+            return null;
+        }
+        if (typeof game.puzzle.data.started === 'undefined') {
+            game.puzzle.data.started = gameRow.created.getTime();
+        }
+        if (typeof game.puzzle.data.finished === 'undefined') {
+            game.puzzle.data.finished = gameRow.finished ? gameRow.finished.getTime() : 0;
+        }
+        if (!Array.isArray(game.players)) {
+            game.players = Object.values(game.players);
+        }
+        const gameObject = this.storeDataToGame(game, gameRow.creator_user_id, !!gameRow.private);
+        gameObject.hasReplay = GameLog.hasReplay(gameObject);
+        gameObject.crop = game.crop;
+        return gameObject;
+    }
+    async loadGame(gameId) {
+        log$1.info(`[INFO] loading game: ${gameId}`);
+        const gameRow = await this.repo.getGameRowById(gameId);
+        if (!gameRow) {
+            log$1.info(`[INFO] game not found: ${gameId}`);
+            return null;
+        }
+        const gameObject = this.gameRowToGameObject(gameRow);
+        if (!gameObject) {
+            log$1.error(`[ERR] unable to turn game row into game object: ${gameRow.id}`);
+            return null;
+        }
+        return gameObject;
+    }
+    gameRowsToGames(gameRows) {
+        const games = [];
+        for (const gameRow of gameRows) {
+            const gameObject = this.gameRowToGameObject(gameRow);
+            if (!gameObject) {
+                log$1.error(`[ERR] unable to turn game row into game object: ${gameRow.id}`);
+                continue;
+            }
+            games.push(gameObject);
+        }
+        return games;
+    }
+    async getPublicRunningGames(offset, limit) {
+        const rows = await this.repo.getPublicRunningGames(offset, limit);
+        return this.gameRowsToGames(rows);
+    }
+    async getPublicFinishedGames(offset, limit) {
+        const rows = await this.repo.getPublicFinishedGames(offset, limit);
+        return this.gameRowsToGames(rows);
+    }
+    async countPublicRunningGames() {
+        return await this.repo.countPublicRunningGames();
+    }
+    async countPublicFinishedGames() {
+        return await this.repo.countPublicFinishedGames();
+    }
+    async exists(gameId) {
+        return await this.repo.exists(gameId);
+    }
+    dirtyGameIds() {
+        return Object.keys(this.dirtyGames);
+    }
+    async persistGame(game) {
+        this.setClean(game.id);
+        await this.repo.upsert({
+            id: game.id,
+            creator_user_id: game.creatorUserId,
+            image_id: game.puzzle.info.image.id,
+            created: new Date(game.puzzle.data.started),
+            finished: game.puzzle.data.finished ? new Date(game.puzzle.data.finished) : null,
+            data: JSON.stringify(this.gameToStoreData(game)),
+            private: game.private ? 1 : 0,
+        }, {
+            id: game.id,
+        });
+        log$1.info(`[INFO] persisted game ${game.id}`);
+    }
+    storeDataToGame(storeData, creatorUserId, isPrivate) {
+        return {
+            id: storeData.id,
+            gameVersion: storeData.gameVersion || 1,
+            creatorUserId,
+            rng: {
+                type: storeData.rng ? storeData.rng.type : '_fake_',
+                obj: storeData.rng ? Rng.unserialize(storeData.rng.obj) : new Rng(0),
+            },
+            puzzle: storeData.puzzle,
+            players: storeData.players,
+            scoreMode: DefaultScoreMode(storeData.scoreMode),
+            shapeMode: DefaultShapeMode(storeData.shapeMode),
+            snapMode: DefaultSnapMode(storeData.snapMode),
+            hasReplay: !!storeData.hasReplay,
+            private: isPrivate,
         };
     }
-    return {
-        w: dimensions.width || 0,
-        h: dimensions.height || 0,
-    };
+    gameToStoreData(game) {
+        return {
+            id: game.id,
+            gameVersion: game.gameVersion,
+            rng: {
+                type: game.rng.type,
+                obj: Rng.serialize(game.rng.obj),
+            },
+            puzzle: game.puzzle,
+            players: game.players,
+            scoreMode: game.scoreMode,
+            shapeMode: game.shapeMode,
+            snapMode: game.snapMode,
+            hasReplay: game.hasReplay,
+            crop: game.crop,
+        };
+    }
+    async createGameObject(gameId, gameVersion, targetPieceCount, image, ts, scoreMode, shapeMode, snapMode, creatorUserId, hasReplay, isPrivate, crop) {
+        const seed = Util.hash(gameId + ' ' + ts);
+        const rng = new Rng(seed);
+        return {
+            id: gameId,
+            gameVersion: gameVersion,
+            creatorUserId,
+            rng: { type: 'Rng', obj: rng },
+            puzzle: await this.puzzleService.createPuzzle(rng, targetPieceCount, image, ts, shapeMode, gameVersion),
+            players: [],
+            scoreMode,
+            shapeMode,
+            snapMode,
+            hasReplay,
+            private: isPrivate,
+            crop,
+        };
+    }
+    async createNewGame(gameSettings, ts, creatorUserId) {
+        if (gameSettings.tiles < NEWGAME_MIN_PIECES || gameSettings.tiles > NEWGAME_MAX_PIECES) {
+            throw new Error(`Target pieces count must be between ${NEWGAME_MIN_PIECES} and ${NEWGAME_MAX_PIECES}`);
+        }
+        let gameId;
+        do {
+            gameId = Util.uniqId();
+        } while (await this.exists(gameId));
+        const gameObject = await this.createGameObject(gameId, Protocol.GAME_VERSION, gameSettings.tiles, gameSettings.image, ts, gameSettings.scoreMode, gameSettings.shapeMode, gameSettings.snapMode, creatorUserId, true, // hasReplay
+        gameSettings.private, gameSettings.crop);
+        GameLog.create(gameId, ts);
+        GameLog.log(gameObject.id, Protocol.LOG_HEADER, gameObject.gameVersion, gameSettings.tiles, gameSettings.image, ts, gameObject.scoreMode, gameObject.shapeMode, gameObject.snapMode, gameObject.creatorUserId, gameObject.private ? 1 : 0, gameSettings.crop);
+        GameCommon.setGame(gameObject.id, gameObject);
+        this.setDirty(gameObject.id);
+        return gameObject.id;
+    }
+    addPlayer(gameId, playerId, ts) {
+        if (GameLog.shouldLog(GameCommon.getFinishTs(gameId), ts)) {
+            const idx = GameCommon.getPlayerIndexById(gameId, playerId);
+            if (idx === -1) {
+                GameLog.log(gameId, Protocol.LOG_ADD_PLAYER, playerId, ts);
+            }
+            else {
+                GameLog.log(gameId, Protocol.LOG_UPDATE_PLAYER, idx, ts);
+            }
+        }
+        GameCommon.addPlayer(gameId, playerId, ts);
+        this.setDirty(gameId);
+    }
+    handleInput(gameId, playerId, input, ts) {
+        if (GameLog.shouldLog(GameCommon.getFinishTs(gameId), ts)) {
+            const idx = GameCommon.getPlayerIndexById(gameId, playerId);
+            GameLog.log(gameId, Protocol.LOG_HANDLE_INPUT, idx, input, ts);
+        }
+        const ret = GameCommon.handleInput(gameId, playerId, input, ts);
+        this.setDirty(gameId);
+        return ret;
+    }
 }
-const setTags = async (db, imageId, tags) => {
-    await db.delete('image_x_category', { image_id: imageId });
-    for (const tag of tags) {
-        const slug = Util.slug(tag);
-        const id = await db.upsert('categories', { slug, title: tag }, { slug }, 'id');
-        if (id) {
-            await db.insert('image_x_category', {
-                image_id: imageId,
-                category_id: id,
+
+const TABLE$6 = 'games';
+class GamesRepo {
+    constructor(db) {
+        this.db = db;
+        // pass
+    }
+    async getGameRowById(gameId) {
+        const gameRow = await this.db.get(TABLE$6, { id: gameId });
+        return gameRow || null;
+    }
+    async getPublicRunningGames(offset, limit) {
+        return await this.db.getMany(TABLE$6, { private: 0, finished: null }, [{ created: -1 }], { limit, offset });
+    }
+    async getPublicFinishedGames(offset, limit) {
+        return await this.db.getMany(TABLE$6, { private: 0, finished: { '$ne': null } }, [{ finished: -1 }], { limit, offset });
+    }
+    async countPublicRunningGames() {
+        return await this.count({ private: 0, finished: null });
+    }
+    async countPublicFinishedGames() {
+        return await this.count({ private: 0, finished: { '$ne': null } });
+    }
+    async count(where) {
+        return await this.db.count(TABLE$6, where);
+    }
+    async exists(gameId) {
+        const gameRow = await this.getGameRowById(gameId);
+        return !!gameRow;
+    }
+    async upsert(row, where) {
+        await this.db.upsert(TABLE$6, row, where);
+    }
+}
+
+const TABLE$5 = 'accounts';
+class AccountsRepo {
+    constructor(db) {
+        this.db = db;
+        // pass
+    }
+    async insert(account) {
+        return await this.db.insert(TABLE$5, account, 'id');
+    }
+    async get(where) {
+        return await this.db.get(TABLE$5, where);
+    }
+    async update(account, where) {
+        await this.db.update('accounts', account, where);
+    }
+}
+
+const TABLE$4 = 'tokens';
+class TokensRepo {
+    constructor(db) {
+        this.db = db;
+        // pass
+    }
+    async insert(row) {
+        await this.db.insert(TABLE$4, row);
+    }
+    async get(where) {
+        return await this.db.get(TABLE$4, where);
+    }
+    async delete(where) {
+        await this.db.delete('tokens', where);
+    }
+}
+
+const TABLE$3 = 'user_identity';
+class UserIdentityRepo {
+    constructor(db) {
+        this.db = db;
+        // pass
+    }
+    async insert(userIdentity) {
+        return await this.db.insert(TABLE$3, userIdentity, 'id');
+    }
+    async get(where) {
+        return await this.db.get(TABLE$3, where);
+    }
+    async update(userIdentity) {
+        await this.db.update(TABLE$3, userIdentity, { id: userIdentity.id });
+    }
+}
+
+const TABLE$2 = 'users';
+class UsersRepo {
+    constructor(db) {
+        this.db = db;
+        // pass
+    }
+    async insert(user) {
+        return await this.db.insert(TABLE$2, user, 'id');
+    }
+    async update(user) {
+        await this.db.update(TABLE$2, user, { id: user.id });
+    }
+    async get(where) {
+        const user = await this.db.get(TABLE$2, where);
+        if (user) {
+            user.id = parseInt(user.id, 10);
+        }
+        return user;
+    }
+    async getGroupsByUserId(userId) {
+        const relations = await this.db.getMany('user_x_user_group', { user_id: userId });
+        const groupIds = relations.map(r => r.user_group_id);
+        return await this.db.getMany('user_groups', { id: { '$in': groupIds } });
+    }
+}
+
+const HEADER_CLIENT_ID = 'client-id';
+class Users {
+    constructor(db) {
+        this.usersRepo = new UsersRepo(db);
+        this.accountsRepo = new AccountsRepo(db);
+        this.userIdentityRepo = new UserIdentityRepo(db);
+        this.tokensRepo = new TokensRepo(db);
+    }
+    async setAccountVerified(accountId) {
+        await this.accountsRepo.update({ status: 'verified' }, { id: accountId });
+    }
+    async getGroups(userId) {
+        return await this.usersRepo.getGroupsByUserId(userId);
+    }
+    async createAccount(account) {
+        const accountId = await this.accountsRepo.insert(account);
+        return await this.accountsRepo.get({ id: accountId });
+    }
+    async createIdentity(identity) {
+        const identityId = await this.userIdentityRepo.insert(identity);
+        return await this.userIdentityRepo.get({ id: identityId });
+    }
+    async updateIdentity(identity) {
+        await this.userIdentityRepo.update(identity);
+    }
+    async getIdentity(where) {
+        return await this.userIdentityRepo.get(where);
+    }
+    async getAccount(where) {
+        return await this.accountsRepo.get(where);
+    }
+    async updateAccount(account) {
+        return await this.accountsRepo.update(account, { id: account.id });
+    }
+    async createUser(user) {
+        const userId = await this.usersRepo.insert(user);
+        return await this.getUser({ id: userId });
+    }
+    async updateUser(user) {
+        await this.usersRepo.update(user);
+    }
+    async getOrCreateUserByRequest(req) {
+        // if user is already set on the request use that one
+        if (req.user) {
+            return req.user;
+        }
+        let data = await this.getUserInfoByRequest(req);
+        if (!data.user) {
+            await this.usersRepo.insert({
+                client_id: req.headers[HEADER_CLIENT_ID],
+                created: new Date(),
             });
+            data = await this.getUserInfoByRequest(req);
+        }
+        // here the user is already guaranteed to exist (as UserRow is fine here)
+        return data.user;
+    }
+    async getUser(where) {
+        return await this.usersRepo.get(where);
+    }
+    async getToken(where) {
+        return await this.tokensRepo.get(where);
+    }
+    async addAuthToken(userId) {
+        const token = generateToken();
+        await this.tokensRepo.insert({ user_id: userId, token, type: 'auth' });
+        return token;
+    }
+    async getUserInfoByRequest(req) {
+        const token = req.cookies[COOKIE_TOKEN] || null;
+        const tokenRow = token
+            ? await this.getToken({ token, type: 'auth' })
+            : null;
+        let user = tokenRow ? await this.getUser({ id: tokenRow.user_id }) : null;
+        if (user && tokenRow) {
+            return {
+                token: tokenRow.token,
+                user: user,
+                user_type: 'user',
+            };
+        }
+        // when no token is given or the token is not found or the user is not found
+        // we fall back to check the request for client id.
+        user = await this.getUser({ client_id: req.headers[HEADER_CLIENT_ID] });
+        return {
+            token: null,
+            user: user,
+            user_type: user ? 'guest' : null,
+        };
+    }
+    async getUserByIdentity(identity) {
+        return this.getUser({ id: identity.user_id });
+    }
+}
+
+const TABLE$1 = 'images';
+class ImagesRepo {
+    constructor(db) {
+        this.db = db;
+        // pass
+    }
+    async get(where) {
+        return await this.db.get(TABLE$1, where);
+    }
+    async insert(image) {
+        return await this.db.insert(TABLE$1, image, 'id');
+    }
+    async update(image, where) {
+        await this.db.update(TABLE$1, image, where);
+    }
+    async deleteTagRelations(imageId) {
+        await this.db.delete('image_x_category', { image_id: imageId });
+    }
+    async insertTagRelation(imageXtag) {
+        await this.db.insert('image_x_category', imageXtag);
+    }
+    async upsertTag(tag) {
+        return await this.db.upsert('categories', tag, { slug: tag.slug }, 'id');
+    }
+    async getTagsBySlugs(slugs) {
+        return await this.db.getMany('categories', { slug: { '$in': slugs } });
+    }
+    async getTagsByImageId(imageId) {
+        const query = `
+      select c.id, c.slug, c.title from categories c
+      inner join image_x_category ixc on c.id = ixc.category_id
+      where ixc.image_id = $1`;
+        return await this.db._getMany(query, [imageId]);
+    }
+    async getImagesWithCount(tagSlugs, orderBy, isPrivate, offset, limit) {
+        const orderByMap = {
+            alpha_asc: [{ title: 1 }, { created: -1 }],
+            alpha_desc: [{ title: -1 }, { created: -1 }],
+            date_asc: [{ created: 1 }],
+            date_desc: [{ created: -1 }],
+            game_count_asc: [{ games_count: 1 }, { created: -1 }],
+            game_count_desc: [{ games_count: -1 }, { created: -1 }],
+        };
+        // TODO: .... clean up
+        const wheresRaw = {};
+        wheresRaw['private'] = isPrivate ? 1 : 0;
+        if (tagSlugs.length > 0) {
+            const c = await this.getTagsBySlugs(tagSlugs);
+            if (!c) {
+                return [];
+            }
+            const where = this.db._buildWhere({
+                'category_id': { '$in': c.map(x => x.id) }
+            });
+            const ids = (await this.db._getMany(`
+  select i.id from image_x_category ixc
+  inner join images i on i.id = ixc.image_id ${where.sql};
+  `, where.values)).map(img => img.id);
+            if (ids.length === 0) {
+                return [];
+            }
+            wheresRaw['images.id'] = { '$in': ids };
+        }
+        const params = [];
+        params.push(isPrivate ? 1 : 0);
+        const dbWhere = this.db._buildWhere(wheresRaw, params.length + 1);
+        params.push(...dbWhere.values);
+        return await this.db._getMany(`
+      WITH counts AS (
+        SELECT
+          COUNT(*)::int AS count,
+          image_id
+        FROM
+          games
+        WHERE
+          private = $1
+        GROUP BY image_id
+      )
+      SELECT
+        images.*,
+        COALESCE(counts.count, 0) AS games_count,
+        COALESCE(users.name, '') as uploader_user_name
+      FROM
+        images
+        LEFT JOIN counts ON counts.image_id = images.id
+        LEFT JOIN users ON users.id = images.uploader_user_id
+      ${dbWhere.sql}
+      ${this.db._buildOrderBy(orderByMap[orderBy])}
+      ${this.db._buildLimit({ offset, limit })}
+    `, params);
+    }
+    async getImagesWithCountByIds(imageIds) {
+        const params = [];
+        const dbWhere = this.db._buildWhere({ 'images.id': { '$in': imageIds } });
+        params.push(...dbWhere.values);
+        return await this.db._getMany(`
+      WITH counts AS (
+        SELECT
+          COUNT(*)::int AS count,
+          image_id
+        FROM
+          games
+        WHERE
+          private = 0
+        GROUP BY image_id
+      )
+      SELECT
+        images.*,
+        COALESCE(counts.count, 0) AS games_count,
+        COALESCE(users.name, '') as uploader_user_name
+      FROM
+        images
+        LEFT JOIN counts ON counts.image_id = images.id
+        LEFT JOIN users ON users.id = images.uploader_user_id
+      ${dbWhere.sql}
+    `, params);
+    }
+    async getAllTagsWithCount() {
+        const query = `
+      select c.id, c.slug, c.title, count(*)::int as images_count from categories c
+      inner join image_x_category ixc on c.id = ixc.category_id
+      inner join images i on i.id = ixc.image_id
+      group by c.id order by images_count desc;`;
+        return await this.db._getMany(query);
+    }
+}
+
+class Images {
+    constructor(imagesRepo) {
+        this.imagesRepo = imagesRepo;
+        // pass
+    }
+    async getExifOrientation(imagePath) {
+        return new Promise((resolve) => {
+            new exif.ExifImage({ image: imagePath }, (error, exifData) => {
+                if (error) {
+                    resolve(0);
+                }
+                else {
+                    resolve(exifData.image.Orientation || 0);
+                }
+            });
+        });
+    }
+    async getAllTags() {
+        const tagRows = await this.imagesRepo.getAllTagsWithCount();
+        return tagRows.map(row => ({
+            id: row.id,
+            slug: row.slug,
+            title: row.title,
+            total: row.images_count,
+        }));
+    }
+    async getTags(imageId) {
+        const tagRows = await this.imagesRepo.getTagsByImageId(imageId);
+        return tagRows.map(row => ({
+            id: row.id,
+            slug: row.slug,
+            title: row.title,
+            total: 0,
+        }));
+    }
+    async imageFromDb(imageId) {
+        const imageInfos = await this.imagesByIdsFromDb([imageId]);
+        return imageInfos.length === 0 ? null : imageInfos[0];
+    }
+    async imageWithCountToImageInfo(row) {
+        return {
+            id: row.id,
+            uploaderUserId: row.uploader_user_id,
+            uploaderName: row.uploader_user_name || null,
+            filename: row.filename,
+            url: `${config.dir.UPLOAD_URL}/${encodeURIComponent(row.filename)}`,
+            title: row.title,
+            tags: await this.getTags(row.id),
+            created: row.created.getTime(),
+            width: row.width,
+            height: row.height,
+            private: !!row.private,
+            gameCount: parseInt(row.games_count, 10),
+            copyrightName: row.copyright_name,
+            copyrightURL: row.copyright_url,
+        };
+    }
+    async imagesFromDb(tagSlugs, orderBy, isPrivate, offset, limit) {
+        const rows = await this.imagesRepo.getImagesWithCount(tagSlugs, orderBy, isPrivate, offset, limit);
+        const images = [];
+        for (const row of rows) {
+            images.push(await this.imageWithCountToImageInfo(row));
+        }
+        return images;
+    }
+    async imagesByIdsFromDb(ids) {
+        const rows = await this.imagesRepo.getImagesWithCountByIds(ids);
+        const images = [];
+        for (const row of rows) {
+            images.push(await this.imageWithCountToImageInfo(row));
+        }
+        return images;
+    }
+    async getDimensions(imagePath) {
+        const dimensions = await probe(fs.createReadStream(imagePath));
+        const orientation = await this.getExifOrientation(imagePath);
+        // when image is rotated to the left or right, switch width/height
+        // https://jdhao.github.io/2019/07/31/image_rotation_exif_info/
+        if (orientation === 6 || orientation === 8) {
+            return {
+                w: dimensions.height || 0,
+                h: dimensions.width || 0,
+            };
+        }
+        return {
+            w: dimensions.width || 0,
+            h: dimensions.height || 0,
+        };
+    }
+    async setTags(imageId, tags) {
+        this.imagesRepo.deleteTagRelations(imageId);
+        for (const tag of tags) {
+            const slug = Util.slug(tag);
+            const id = await this.imagesRepo.upsertTag({ slug, title: tag });
+            if (id) {
+                this.imagesRepo.insertTagRelation({
+                    image_id: imageId,
+                    category_id: id,
+                });
+            }
         }
     }
-};
-var Images = {
-    imageFromDb,
-    imagesFromDb,
-    imagesByIdsFromDb,
-    getAllTags,
-    getDimensions,
-    getExifOrientation,
-    setTags,
-};
+    async insertImage(image) {
+        return await this.imagesRepo.insert(image);
+    }
+    async updateImage(image, where) {
+        await this.imagesRepo.update(image, where);
+    }
+    async getImageById(imageId) {
+        return await this.imagesRepo.get({ id: imageId });
+    }
+}
+
+const TABLE = 'announcements';
+class AnnouncementsRepo {
+    constructor(db) {
+        this.db = db;
+        // pass
+    }
+    async getAll() {
+        return await this.db.getMany(TABLE, undefined, [{ created: -1 }]);
+    }
+    async insert(announcement) {
+        return await this.db.insert(TABLE, announcement, 'id');
+    }
+    async get(where) {
+        return await this.db.get('announcements', where);
+    }
+}
+
+const log = logger('ImageResize.ts');
+class ImageResize {
+    constructor(images) {
+        this.images = images;
+        // pass
+    }
+    async loadSharpImage(imagePath) {
+        const orientation = await this.images.getExifOrientation(imagePath);
+        let sharpImg = sharp(imagePath, { failOnError: false });
+        // when image is rotated to the left or right, switch width/height
+        // https://jdhao.github.io/2019/07/31/image_rotation_exif_info/
+        if (orientation === 6) {
+            sharpImg = sharpImg.rotate(90);
+        }
+        else if (orientation === 3) {
+            sharpImg = sharpImg.rotate(180);
+        }
+        else if (orientation === 8) {
+            sharpImg = sharpImg.rotate(270);
+        }
+        return sharpImg;
+    }
+    async cropImage(filename, crop) {
+        try {
+            const baseDir = config.dir.CROP_DIR;
+            if (!fs.existsSync(baseDir)) {
+                fs.mkdirSync(baseDir, { recursive: true });
+            }
+            const originalImagePath = `${config.dir.UPLOAD_DIR}/${filename}`;
+            const sharpImg = await this.loadSharpImage(originalImagePath);
+            const cropFilename = `${baseDir}/${filename}-${crop.x}_${crop.y}_${crop.w}_${crop.h}.webp`;
+            if (!fs.existsSync(cropFilename)) {
+                await sharpImg.extract({
+                    top: crop.y,
+                    left: crop.x,
+                    width: crop.w,
+                    height: crop.h
+                }).toFile(cropFilename);
+            }
+            return cropFilename;
+        }
+        catch (e) {
+            log.error('error when cropping image', filename, e);
+            return null;
+        }
+    }
+    async resizeImage(filename, w, h, fit) {
+        try {
+            const baseDir = config.dir.RESIZE_DIR;
+            if (!fs.existsSync(baseDir)) {
+                fs.mkdirSync(baseDir, { recursive: true });
+            }
+            const originalImagePath = `${config.dir.UPLOAD_DIR}/${filename}`;
+            const sharpImg = await this.loadSharpImage(originalImagePath);
+            const resizeFilename = `${baseDir}/${filename}-${w}x${h || 0}-${fit}.webp`;
+            if (!fs.existsSync(resizeFilename)) {
+                log.info(w, h, resizeFilename);
+                await sharpImg.resize(w, h || null, { fit }).toFile(resizeFilename);
+            }
+            return resizeFilename;
+        }
+        catch (e) {
+            log.error('error when resizing image', filename, e);
+            return null;
+        }
+    }
+}
 
 // cut size of each puzzle piece in the
 // final resized version of the puzzle image
@@ -2354,1254 +3630,138 @@ function determinePuzzlePieceShapes(rng, info, shapeMode) {
     return shapes.map(Util.encodeShape);
 }
 
-async function createPuzzle(rng, targetPieceCount, image, ts, shapeMode, gameVersion) {
-    const imagePath = `${config.dir.UPLOAD_DIR}/${image.filename}`;
-    const imageUrl = image.url;
-    // determine puzzle information from the image dimensions
-    const dim = await Images.getDimensions(imagePath);
-    if (!dim.w || !dim.h) {
-        throw `[ 2021-05-16 invalid dimension for path ${imagePath} ]`;
-    }
-    const info = determinePuzzleInfo(dim, targetPieceCount);
-    const rawPieces = new Array(info.pieceCount);
-    for (let i = 0; i < rawPieces.length; i++) {
-        rawPieces[i] = { idx: i };
-    }
-    const shapes = determinePuzzlePieceShapes(rng, info, shapeMode);
-    let positions = new Array(info.pieceCount);
-    for (const piece of rawPieces) {
-        const coord = Util.coordByPieceIdx(info, piece.idx);
-        positions[piece.idx] = {
-            // TODO: cant we just use info.pieceDrawSize?
-            // instead of info.pieceSize, we multiply it by 1.5
-            // to spread the pieces a bit
-            x: coord.x * info.pieceSize * 1.5,
-            y: coord.y * info.pieceSize * 1.5,
-        };
-    }
-    const tableDim = determineTableDim(info, gameVersion);
-    const off = info.pieceSize * 1.5;
-    const last = {
-        x: (tableDim.w - info.width) / 2 - (1 * off),
-        y: (tableDim.h - info.height) / 2 - (2 * off),
-    };
-    let countX = Math.ceil(info.width / off) + 2;
-    let countY = Math.ceil(info.height / off) + 2;
-    let diffX = off;
-    let diffY = 0;
-    let index = 0;
-    for (const pos of positions) {
-        pos.x = last.x;
-        pos.y = last.y;
-        last.x += diffX;
-        last.y += diffY;
-        index++;
-        // did we move horizontally?
-        if (diffX !== 0) {
-            if (index === countX) {
-                diffY = diffX;
-                countY++;
-                diffX = 0;
-                index = 0;
-            }
-        }
-        else {
-            if (index === countY) {
-                diffX = -diffY;
-                countX++;
-                diffY = 0;
-                index = 0;
-            }
-        }
-    }
-    // then shuffle the positions
-    positions = rng.shuffle(positions);
-    const pieces = rawPieces.map(piece => {
-        return Util.encodePiece({
-            idx: piece.idx,
-            group: 0,
-            z: 0,
-            // who owns the piece
-            // 0 = free for taking
-            // -1 = finished
-            // other values: id of player who has the piece
-            owner: 0,
-            // physical current position of the piece (x/y in pixels)
-            // this position is the initial position only and is the
-            // value that changes when moving a piece
-            pos: positions[piece.idx],
-        });
-    });
-    // Complete puzzle object
-    return {
-        // pieces array
-        tiles: pieces,
-        // game data for puzzle, data changes during the game
-        data: {
-            // TODO: maybe calculate this each time?
-            maxZ: 0,
-            maxGroup: 0,
-            started: ts,
-            finished: 0, // finish timestamp
-        },
-        // static puzzle information. stays same for complete duration of
-        // the game
-        info: {
-            table: {
-                width: tableDim.w,
-                height: tableDim.h,
-            },
-            // information that was used to create the puzzle
-            targetTiles: targetPieceCount,
-            imageUrl,
-            image: image,
-            width: info.width,
-            height: info.height,
-            tileSize: info.pieceSize,
-            tileDrawSize: info.pieceDrawSize,
-            tileMarginWidth: info.pieceMarginWidth,
-            // offset in x and y when drawing tiles, so that they appear to be at pos
-            tileDrawOffset: (info.pieceDrawSize - info.pieceSize) / -2,
-            // max distance between tile and destination that
-            // makes the tile snap to destination
-            snapDistance: info.pieceSize / 2,
-            tiles: info.pieceCount,
-            tilesX: info.pieceCountHorizontal,
-            tilesY: info.pieceCountVertical,
-            // ( index => {x, y} )
-            // this is not the physical coordinate, but
-            // the piece_coordinate
-            // this can be used to determine where the
-            // final destination of a piece is
-            shapes: shapes, // piece shapes
-        },
-    };
-}
-function determineTableDim(info, gameVersion) {
-    if (gameVersion <= 3) {
-        return { w: info.width * 3, h: info.height * 3 };
-    }
-    const tableSize = Math.max(info.width, info.height) * 6;
-    return { w: tableSize, h: tableSize };
-}
-
-const log$4 = logger('GameStorage.js');
-const dirtyGames = {};
-function setDirty(gameId) {
-    dirtyGames[gameId] = true;
-}
-function setClean(gameId) {
-    if (gameId in dirtyGames) {
-        delete dirtyGames[gameId];
-    }
-}
-function gameRowToGameObject(gameRow) {
-    let game;
-    try {
-        game = JSON.parse(gameRow.data);
-    }
-    catch {
-        return null;
-    }
-    if (typeof game.puzzle.data.started === 'undefined') {
-        game.puzzle.data.started = gameRow.created.getTime();
-    }
-    if (typeof game.puzzle.data.finished === 'undefined') {
-        game.puzzle.data.finished = gameRow.finished ? gameRow.finished.getTime() : 0;
-    }
-    if (!Array.isArray(game.players)) {
-        game.players = Object.values(game.players);
-    }
-    const gameObject = storeDataToGame(game, gameRow.creator_user_id, !!gameRow.private);
-    gameObject.hasReplay = GameLog.hasReplay(gameObject);
-    gameObject.crop = game.crop;
-    return gameObject;
-}
-async function getGameRowById(db, gameId) {
-    const gameRow = await db.get('games', { id: gameId });
-    return gameRow || null;
-}
-async function loadGame(db, gameId) {
-    log$4.info(`[INFO] loading game: ${gameId}`);
-    const gameRow = await getGameRowById(db, gameId);
-    if (!gameRow) {
-        log$4.info(`[INFO] game not found: ${gameId}`);
-        return null;
-    }
-    const gameObject = gameRowToGameObject(gameRow);
-    if (!gameObject) {
-        log$4.error(`[ERR] unable to turn game row into game object: ${gameRow.id}`);
-        return null;
-    }
-    return gameObject;
-}
-const gameRowsToGames = (gameRows) => {
-    const games = [];
-    for (const gameRow of gameRows) {
-        const gameObject = gameRowToGameObject(gameRow);
-        if (!gameObject) {
-            log$4.error(`[ERR] unable to turn game row into game object: ${gameRow.id}`);
-            continue;
-        }
-        games.push(gameObject);
-    }
-    return games;
-};
-async function getPublicRunningGames(db, offset, limit) {
-    const gameRows = await db.getMany('games', { private: 0, finished: null }, [{ created: -1 }], { limit, offset });
-    return gameRowsToGames(gameRows);
-}
-async function getPublicFinishedGames(db, offset, limit) {
-    const gameRows = await db.getMany('games', { private: 0, finished: { '$ne': null } }, [{ finished: -1 }], { limit, offset });
-    return gameRowsToGames(gameRows);
-}
-async function countPublicRunningGames(db) {
-    return await db.count('games', { private: 0, finished: null });
-}
-async function countPublicFinishedGames(db) {
-    return await db.count('games', { private: 0, finished: { '$ne': null } });
-}
-async function exists(db, gameId) {
-    const gameRow = await getGameRowById(db, gameId);
-    return !!gameRow;
-}
-function dirtyGameIds() {
-    return Object.keys(dirtyGames);
-}
-async function persistGame(db, game) {
-    setClean(game.id);
-    await db.upsert('games', {
-        id: game.id,
-        creator_user_id: game.creatorUserId,
-        image_id: game.puzzle.info.image?.id,
-        created: new Date(game.puzzle.data.started),
-        finished: game.puzzle.data.finished ? new Date(game.puzzle.data.finished) : null,
-        data: JSON.stringify(gameToStoreData(game)),
-        private: game.private ? 1 : 0,
-    }, {
-        id: game.id,
-    });
-    log$4.info(`[INFO] persisted game ${game.id}`);
-}
-function storeDataToGame(storeData, creatorUserId, isPrivate) {
-    return {
-        id: storeData.id,
-        gameVersion: storeData.gameVersion || 1,
-        creatorUserId,
-        rng: {
-            type: storeData.rng ? storeData.rng.type : '_fake_',
-            obj: storeData.rng ? Rng.unserialize(storeData.rng.obj) : new Rng(0),
-        },
-        puzzle: storeData.puzzle,
-        players: storeData.players,
-        scoreMode: DefaultScoreMode(storeData.scoreMode),
-        shapeMode: DefaultShapeMode(storeData.shapeMode),
-        snapMode: DefaultSnapMode(storeData.snapMode),
-        hasReplay: !!storeData.hasReplay,
-        private: isPrivate,
-    };
-}
-function gameToStoreData(game) {
-    return {
-        id: game.id,
-        gameVersion: game.gameVersion,
-        rng: {
-            type: game.rng.type,
-            obj: Rng.serialize(game.rng.obj),
-        },
-        puzzle: game.puzzle,
-        players: game.players,
-        scoreMode: game.scoreMode,
-        shapeMode: game.shapeMode,
-        snapMode: game.snapMode,
-        hasReplay: game.hasReplay,
-        crop: game.crop,
-    };
-}
-var GameStorage = {
-    persistGame,
-    loadGame,
-    getPublicRunningGames,
-    getPublicFinishedGames,
-    countPublicRunningGames,
-    countPublicFinishedGames,
-    exists,
-    setDirty,
-    dirtyGameIds,
-};
-
-async function createGameObject(gameId, gameVersion, targetPieceCount, image, ts, scoreMode, shapeMode, snapMode, creatorUserId, hasReplay, isPrivate, crop) {
-    const seed = Util.hash(gameId + ' ' + ts);
-    const rng = new Rng(seed);
-    return {
-        id: gameId,
-        gameVersion: gameVersion,
-        creatorUserId,
-        rng: { type: 'Rng', obj: rng },
-        puzzle: await createPuzzle(rng, targetPieceCount, image, ts, shapeMode, gameVersion),
-        players: [],
-        scoreMode,
-        shapeMode,
-        snapMode,
-        hasReplay,
-        private: isPrivate,
-        crop,
-    };
-}
-async function createNewGame(db, gameSettings, ts, creatorUserId) {
-    if (gameSettings.tiles < NEWGAME_MIN_PIECES || gameSettings.tiles > NEWGAME_MAX_PIECES) {
-        throw new Error(`Target pieces count must be between ${NEWGAME_MIN_PIECES} and ${NEWGAME_MAX_PIECES}`);
-    }
-    let gameId;
-    do {
-        gameId = Util.uniqId();
-    } while (await GameStorage.exists(db, gameId));
-    const gameObject = await createGameObject(gameId, Protocol.GAME_VERSION, gameSettings.tiles, gameSettings.image, ts, gameSettings.scoreMode, gameSettings.shapeMode, gameSettings.snapMode, creatorUserId, true, // hasReplay
-    gameSettings.private, gameSettings.crop);
-    GameLog.create(gameId, ts);
-    GameLog.log(gameObject.id, Protocol.LOG_HEADER, gameObject.gameVersion, gameSettings.tiles, gameSettings.image, ts, gameObject.scoreMode, gameObject.shapeMode, gameObject.snapMode, gameObject.creatorUserId, gameObject.private ? 1 : 0, gameSettings.crop);
-    GameCommon.setGame(gameObject.id, gameObject);
-    GameStorage.setDirty(gameObject.id);
-    return gameObject.id;
-}
-function addPlayer(gameId, playerId, ts) {
-    if (GameLog.shouldLog(GameCommon.getFinishTs(gameId), ts)) {
-        const idx = GameCommon.getPlayerIndexById(gameId, playerId);
-        if (idx === -1) {
-            GameLog.log(gameId, Protocol.LOG_ADD_PLAYER, playerId, ts);
-        }
-        else {
-            GameLog.log(gameId, Protocol.LOG_UPDATE_PLAYER, idx, ts);
-        }
-    }
-    GameCommon.addPlayer(gameId, playerId, ts);
-    GameStorage.setDirty(gameId);
-}
-function handleInput(gameId, playerId, input, ts) {
-    if (GameLog.shouldLog(GameCommon.getFinishTs(gameId), ts)) {
-        const idx = GameCommon.getPlayerIndexById(gameId, playerId);
-        GameLog.log(gameId, Protocol.LOG_HANDLE_INPUT, idx, input, ts);
-    }
-    const ret = GameCommon.handleInput(gameId, playerId, input, ts);
-    GameStorage.setDirty(gameId);
-    return ret;
-}
-var Game = {
-    createGameObject,
-    createNewGame,
-    addPlayer,
-    handleInput,
-};
-
-const log$3 = logger('web_routes/api/index.ts');
-const GAMES_PER_PAGE_LIMIT = 10;
-const IMAGES_PER_PAGE_LIMIT = 20;
-const addAuthToken = async (db, userId, res) => {
-    const token = await Users.addAuthToken(db, userId);
-    res.cookie(COOKIE_TOKEN, token, { maxAge: 356 * Time.DAY, httpOnly: true });
-};
-function createRouter$2(db, mail, canny) {
-    const storage = multer.diskStorage({
-        destination: config.dir.UPLOAD_DIR,
-        filename: function (req, file, cb) {
-            cb(null, `${Util.uniqId()}-${file.originalname}`);
-        }
-    });
-    const upload = multer({ storage }).single('file');
-    const router = express.Router();
-    router.get('/me', async (req, res) => {
-        if (req.user) {
-            const groups = await Users.getGroups(db, req.user.id);
-            res.send({
-                id: req.user.id,
-                name: req.user.name,
-                clientId: req.user.client_id,
-                created: req.user.created,
-                type: req.user_type,
-                cannyToken: canny.createToken(req.user),
-                groups: groups.map(g => g.name),
-            });
-            return;
-        }
-        res.status(401).send({ reason: 'no user' });
-        return;
-    });
-    // login via twitch (callback url called from twitch after authentication)
-    router.get('/auth/twitch/redirect_uri', async (req, res) => {
-        if (!req.query.code) {
-            // in error case:
-            // http://localhost:3000/
-            // ?error=access_denied
-            // &error_description=The+user+denied+you+access
-            // &state=c3ab8aa609ea11e793ae92361f002671
-            res.status(403).send({ reason: req.query });
-            return;
-        }
-        // in success case:
-        // http://localhost:3000/
-        // ?code=gulfwdmys5lsm6qyz4xiz9q32l10
-        // &scope=channel%3Amanage%3Apolls+channel%3Aread%3Apolls
-        // &state=c3ab8aa609ea11e793ae92361f002671
-        const body = {
-            client_id: config.auth.twitch.client_id,
-            client_secret: config.auth.twitch.client_secret,
-            code: req.query.code,
-            grant_type: 'authorization_code',
-            redirect_uri: ''
-        };
-        const redirectUris = [
-            `https://${config.http.public_hostname}/api/auth/twitch/redirect_uri`,
-            `${req.protocol}://${req.headers.host}/api/auth/twitch/redirect_uri`,
-        ];
-        for (const redirectUri of redirectUris) {
-            body.redirect_uri = redirectUri;
-            const tokenRes = await fetch(`https://id.twitch.tv/oauth2/token${Util.asQueryArgs(body)}`, {
-                method: 'POST',
-            });
-            if (!tokenRes.ok) {
-                continue;
-            }
-            const tokenData = await tokenRes.json();
-            // get user
-            const userRes = await fetch(`https://api.twitch.tv/helix/users`, {
-                headers: {
-                    'Client-ID': config.auth.twitch.client_id,
-                    'Authorization': `Bearer ${tokenData.access_token}`,
-                }
-            });
-            if (!userRes.ok) {
-                continue;
-            }
-            const userData = await userRes.json();
-            const identity = await Users.getIdentity(db, {
-                provider_name: 'twitch',
-                provider_id: userData.data[0].id,
-            });
-            let user = null;
-            if (req.user) {
-                user = req.user;
-            }
-            else if (identity) {
-                user = await Users.getUserByIdentity(db, identity);
-            }
-            if (!user) {
-                user = await Users.createUser(db, {
-                    name: userData.data[0].display_name,
-                    created: new Date(),
-                    client_id: uniqId(),
-                    email: userData.data[0].email,
-                });
-            }
-            else {
-                let updateNeeded = false;
-                if (!user.name) {
-                    user.name = userData.data[0].display_name;
-                    updateNeeded = true;
-                }
-                if (!user.email) {
-                    user.email = userData.data[0].email;
-                    updateNeeded = true;
-                }
-                if (updateNeeded) {
-                    await Users.updateUser(db, user);
-                }
-            }
-            if (!identity) {
-                Users.createIdentity(db, {
-                    user_id: user.id,
-                    provider_name: 'twitch',
-                    provider_id: userData.data[0].id,
-                });
-            }
-            else {
-                let updateNeeded = false;
-                if (identity.user_id !== user.id) {
-                    // maybe we do not have to do this
-                    identity.user_id = user.id;
-                    updateNeeded = true;
-                }
-                if (!identity.provider_email) {
-                    identity.provider_email = userData.data[0].email;
-                    updateNeeded = true;
-                }
-                if (updateNeeded) {
-                    Users.updateIdentity(db, identity);
-                }
-            }
-            await addAuthToken(db, user.id, res);
-            res.send('<html><script>window.opener.handleAuthCallback();window.close();</script></html>');
-            return;
-        }
-        res.status(403).send({ reason: req.query });
-    });
-    // login via email + password
-    router.post('/auth/local', express.json(), async (req, res) => {
-        const emailPlain = req.body.email;
-        const passwordPlain = req.body.password;
-        const account = await Users.getAccount(db, { email: emailPlain });
-        if (!account) {
-            res.status(401).send({ reason: 'bad email' });
-            return;
-        }
-        if (account.status !== 'verified') {
-            res.status(401).send({ reason: 'email not verified' });
-            return;
-        }
-        const salt = account.salt;
-        const passHashed = passwordHash(passwordPlain, salt);
-        if (account.password !== passHashed) {
-            res.status(401).send({ reason: 'bad password' });
-            return;
-        }
-        const identity = await Users.getIdentity(db, {
-            provider_name: 'local',
-            provider_id: account.id,
-        });
-        if (!identity) {
-            res.status(401).send({ reason: 'no identity' });
-            return;
-        }
-        await addAuthToken(db, identity.user_id, res);
-        res.send({ success: true });
-    });
-    router.post('/change-password', express.json(), async (req, res) => {
-        const token = `${req.body.token}`;
-        const passwordRaw = `${req.body.password}`;
-        const tokenRow = await db.get('tokens', {
-            type: 'password-reset',
-            token,
-        });
-        if (!tokenRow) {
-            res.status(400).send({ reason: 'no such token' });
-            return;
-        }
-        // note: token contains account id, not user id ...
-        const account = await Users.getAccount(db, { id: tokenRow.user_id });
-        if (!account) {
-            res.status(400).send({ reason: 'no such account' });
-            return;
-        }
-        const password = passwordHash(passwordRaw, account.salt);
-        await db.update('accounts', {
-            password: password,
-        }, {
-            id: account.id
-        });
-        // remove token, already used
-        await db.delete('tokens', tokenRow);
-        res.send({ success: true });
-    });
-    router.post('/send-password-reset-email', express.json(), async (req, res) => {
-        const emailRaw = `${req.body.email}`;
-        const account = await Users.getAccount(db, { email: emailRaw });
-        if (!account) {
-            res.status(400).send({ reason: 'no such email' });
-            return;
-        }
-        const identity = await Users.getIdentity(db, {
-            provider_name: 'local',
-            provider_id: account.id,
-        });
-        if (!identity) {
-            res.status(400).send({ reason: 'no such identity' });
-            return;
-        }
-        const user = await Users.getUser(db, {
-            id: identity.user_id,
-        });
-        if (!user) {
-            res.status(400).send({ reason: 'no such user' });
-            return;
-        }
-        const token = generateToken();
-        // TODO: dont misuse token table user id <> account id
-        const tokenRow = { user_id: account.id, token, type: 'password-reset' };
-        await db.insert('tokens', tokenRow);
-        mail.sendPasswordResetMail({ user: { name: user.name, email: emailRaw }, token: tokenRow });
-        res.send({ success: true });
-    });
-    router.post('/register', express.json(), async (req, res) => {
-        const salt = generateSalt();
-        const emailRaw = `${req.body.email}`;
-        const passwordRaw = `${req.body.password}`;
-        const usernameRaw = `${req.body.username}`;
-        // TODO: check if username already taken
-        // TODO: check if email already taken
-        //       return status 409 in both cases
-        const account = await Users.createAccount(db, {
-            created: new Date(),
-            email: emailRaw,
-            password: passwordHash(passwordRaw, salt),
-            salt: salt,
-            status: 'verification_pending',
-        });
-        const user = await Users.createUser(db, {
-            created: new Date(),
-            name: usernameRaw,
-            email: emailRaw,
-            client_id: uniqId(),
-        });
-        await Users.createIdentity(db, {
-            user_id: user.id,
-            provider_name: 'local',
-            provider_id: account.id,
-        });
-        const userInfo = { email: emailRaw, name: usernameRaw };
-        const token = generateToken();
-        const tokenRow = { user_id: account.id, token, type: 'registration' };
-        await db.insert('tokens', tokenRow);
-        mail.sendRegistrationMail({ user: userInfo, token: tokenRow });
-        res.send({ success: true });
-    });
-    router.get('/verify-email/:token', async (req, res) => {
-        const token = req.params.token;
-        const tokenRow = await db.get('tokens', { token });
-        if (!tokenRow) {
-            res.status(400).send({ reason: 'bad token' });
-            return;
-        }
-        // tokenRow.user_id is the account id here.
-        // TODO: clean this up.. users vs accounts vs user_identity
-        const account = await Users.getAccount(db, { id: tokenRow.user_id });
-        if (!account) {
-            res.status(400).send({ reason: 'bad account' });
-            return;
-        }
-        const identity = await Users.getIdentity(db, {
-            provider_name: 'local',
-            provider_id: account.id,
-        });
-        if (!identity) {
-            res.status(400).send({ reason: 'bad identity' });
-            return;
-        }
-        // set account to verified
-        await db.update('accounts', { status: 'verified' }, { id: account.id });
-        // make the user logged in and redirect to startpage
-        await addAuthToken(db, identity.user_id, res);
-        // TODO: add parameter/hash so that user will get a message 'thanks for verifying the email'
-        res.redirect(302, '/');
-    });
-    router.post('/logout', async (req, res) => {
-        if (!req.token) {
-            res.status(401).send({});
-            return;
-        }
-        await db.delete('tokens', { token: req.token });
-        res.clearCookie(COOKIE_TOKEN);
-        res.send({ success: true });
-    });
-    router.get('/conf', (req, res) => {
-        res.send({
-            WS_ADDRESS: config.ws.connectstring,
-        });
-    });
-    router.get('/replay-data', async (req, res) => {
-        const q = req.query;
-        const offset = parseInt(q.offset, 10) || 0;
-        if (offset < 0) {
-            res.status(400).send({ reason: 'bad offset' });
-            return;
-        }
-        const size = parseInt(q.size, 10) || 10000;
-        if (size < 0 || size > 10000) {
-            res.status(400).send({ reason: 'bad size' });
-            return;
-        }
-        const gameId = q.gameId || '';
-        if (!GameLog.exists(q.gameId)) {
-            res.status(404).send({ reason: 'no log found' });
-            return;
-        }
-        const log = GameLog.get(gameId, offset);
-        let game = null;
-        if (offset === 0) {
-            // also need the game
-            game = await Game.createGameObject(gameId, log[0][1], // gameVersion
-            log[0][2], // targetPieceCount
-            log[0][3], // must be ImageInfo
-            log[0][4], // ts (of game creation)
-            log[0][5], // scoreMode
-            log[0][6], // shapeMode
-            log[0][7], // snapMode
-            log[0][8], // creatorUserId
-            true, // hasReplay
-            !!log[0][9], // private
-            log[0][10]);
-        }
-        res.send({ log, game: game ? Util.encodeGame(game) : null });
-    });
-    router.get('/newgame-data', async (req, res) => {
-        const q = req.query;
-        const tagSlugs = q.tags ? q.tags.split(',') : [];
-        res.send({
-            images: await Images.imagesFromDb(db, tagSlugs, q.sort, false, 0, IMAGES_PER_PAGE_LIMIT),
-            tags: await Images.getAllTags(db),
-        });
-    });
-    router.get('/artist/:name', async (req, res) => {
-        const name = req.params.name;
-        const artist = await db.get('artist', { name });
-        if (!artist) {
-            res.status(404).send({ reason: 'not found' });
-            return;
-        }
-        const rel1 = await db.getMany('artist_x_collection', { artist_id: artist.id });
-        const collections = await db.getMany('collection', { id: { '$in': rel1.map((r) => r.collection_id) } });
-        const rel2 = await db.getMany('collection_x_image', { collection_id: { '$in': collections.map((r) => r.id) } });
-        const images = await Images.imagesByIdsFromDb(db, rel2.map((r) => r.image_id));
-        collections.forEach(c => {
-            c.images = images.filter(image => rel2.find(r => r.collection_id === c.id && r.image_id === image.id) ? true : false);
-        });
-        res.send({
-            artist,
-            collections,
-        });
-    });
-    router.get('/images', async (req, res) => {
-        const q = req.query;
-        const tagSlugs = q.tags ? q.tags.split(',') : [];
-        const offset = parseInt(`${q.offset}`, 10);
-        if (isNaN(offset) || offset < 0) {
-            res.status(400).send({ error: 'bad offset' });
-            return;
-        }
-        res.send({
-            images: await Images.imagesFromDb(db, tagSlugs, q.sort, false, offset, IMAGES_PER_PAGE_LIMIT),
-        });
-    });
-    const GameToGameInfo = (game, ts) => {
-        const finished = GameCommon.Game_getFinishTs(game);
-        return {
-            id: game.id,
-            hasReplay: GameLog.hasReplay(game),
-            started: GameCommon.Game_getStartTs(game),
-            finished,
-            piecesFinished: GameCommon.Game_getFinishedPiecesCount(game),
-            piecesTotal: GameCommon.Game_getPieceCount(game),
-            players: finished
-                ? GameCommon.Game_getPlayersWithScore(game).length
-                : GameCommon.Game_getActivePlayers(game, ts).length,
-            imageUrl: GameCommon.Game_getImageUrl(game),
-            snapMode: GameCommon.Game_getSnapMode(game),
-            scoreMode: GameCommon.Game_getScoreMode(game),
-            shapeMode: GameCommon.Game_getShapeMode(game),
-        };
-    };
-    router.get('/index-data', async (req, res) => {
-        const ts = Time.timestamp();
-        // all running rows
-        const runningRows = await GameStorage.getPublicRunningGames(db, -1, -1);
-        const runningCount = await GameStorage.countPublicRunningGames(db);
-        const finishedRows = await GameStorage.getPublicFinishedGames(db, 0, GAMES_PER_PAGE_LIMIT);
-        const finishedCount = await GameStorage.countPublicFinishedGames(db);
-        const gamesRunning = runningRows.map((v) => GameToGameInfo(v, ts));
-        const gamesFinished = finishedRows.map((v) => GameToGameInfo(v, ts));
-        const indexData = {
-            gamesRunning: {
-                items: gamesRunning,
-                pagination: { total: runningCount, offset: 0, limit: 0 }
-            },
-            gamesFinished: {
-                items: gamesFinished,
-                pagination: { total: finishedCount, offset: 0, limit: GAMES_PER_PAGE_LIMIT }
-            },
-        };
-        res.send(indexData);
-    });
-    router.get('/finished-games', async (req, res) => {
-        const offset = parseInt(`${req.query.offset}`, 10);
-        if (isNaN(offset) || offset < 0) {
-            res.status(400).send({ error: 'bad offset' });
-            return;
-        }
-        const ts = Time.timestamp();
-        const finishedRows = await GameStorage.getPublicFinishedGames(db, offset, GAMES_PER_PAGE_LIMIT);
-        const finishedCount = await GameStorage.countPublicFinishedGames(db);
-        const gamesFinished = finishedRows.map((v) => GameToGameInfo(v, ts));
-        const indexData = {
-            items: gamesFinished,
-            pagination: { total: finishedCount, offset: offset, limit: GAMES_PER_PAGE_LIMIT }
-        };
-        res.send(indexData);
-    });
-    router.post('/save-image', express.json(), async (req, res) => {
-        const user = req.user || null;
-        if (!user || !user.id) {
-            res.status(403).send({ ok: false, error: 'forbidden' });
-            return;
-        }
-        const data = req.body;
-        const image = await db.get('images', { id: data.id });
-        if (parseInt(image.uploader_user_id, 10) !== user.id) {
-            res.status(403).send({ ok: false, error: 'forbidden' });
-            return;
-        }
-        await db.update('images', {
-            title: data.title,
-            copyright_name: data.copyrightName,
-            copyright_url: data.copyrightURL,
-        }, {
-            id: data.id,
-        });
-        await Images.setTags(db, data.id, data.tags || []);
-        res.send({ ok: true, image: await Images.imageFromDb(db, data.id) });
-    });
-    router.get('/proxy', (req, res) => {
-        log$3.info('proxy request for url:', req.query.url);
-        request(req.query.url).pipe(res);
-    });
-    router.post('/upload', (req, res) => {
-        upload(req, res, async (err) => {
-            if (err) {
-                log$3.log('/api/upload/', 'error', err);
-                res.status(400).send("Something went wrong!");
-                return;
-            }
-            log$3.info('req.file.filename', req.file.filename);
-            const user = await Users.getOrCreateUserByRequest(db, req);
-            const dim = await Images.getDimensions(`${config.dir.UPLOAD_DIR}/${req.file.filename}`);
-            // post form, so booleans are submitted as 'true' | 'false'
-            const isPrivate = req.body.private === 'false' ? 0 : 1;
-            const imageId = await db.insert('images', {
-                uploader_user_id: user.id,
-                filename: req.file.filename,
-                filename_original: req.file.originalname,
-                title: req.body.title || '',
-                copyright_name: req.body.copyrightName || '',
-                copyright_url: req.body.copyrightURL || '',
-                created: new Date(),
-                width: dim.w,
-                height: dim.h,
-                private: isPrivate,
-            }, 'id');
-            if (req.body.tags) {
-                const tags = req.body.tags.split(',').filter((tag) => !!tag);
-                await Images.setTags(db, imageId, tags);
-            }
-            res.send(await Images.imageFromDb(db, imageId));
-        });
-    });
-    router.get('/announcements', async (req, res) => {
-        const items = await db.getMany('announcements', undefined, [{ created: -1 }]);
-        res.send(items);
-    });
-    router.post('/newgame', express.json(), async (req, res) => {
-        const user = await Users.getOrCreateUserByRequest(db, req);
-        try {
-            const gameId = await Game.createNewGame(db, req.body, Time.timestamp(), user.id);
-            res.send({ id: gameId });
-        }
-        catch (e) {
-            log$3.error(e);
-            res.status(400).send({ reason: e.message });
-        }
-    });
-    return router;
-}
-
-function createRouter$1(db, discord) {
-    const router = express.Router();
-    const requireLoginApi = async (req, res, next) => {
-        if (!req.token) {
-            res.status(401).send({});
-            return;
-        }
-        const user = req.user || null;
-        if (!user || !user.id) {
-            res.status(403).send({ ok: false, error: 'forbidden' });
-            return;
-        }
-        const adminGroup = await db.get('user_groups', { name: 'admin' });
-        if (!adminGroup) {
-            res.status(403).send({ ok: false, error: 'no admin' });
-            return;
-        }
-        const userXAdmin = await db.get('user_x_user_group', {
-            user_group_id: adminGroup.id,
-            user_id: user.id,
-        });
-        if (!userXAdmin) {
-            res.status(403).send({ ok: false, error: 'not an admin' });
-            return;
-        }
-        next();
-    };
-    router.use(requireLoginApi);
-    router.get('/games', async (req, res) => {
-        const items = await db.getMany('games', undefined, [{ created: -1 }]);
-        const imageIdMap = {};
-        items.forEach(game => {
-            imageIdMap[game.image_id] = true;
-        });
-        const imageIds = Object.keys(imageIdMap);
-        const images = await db.getMany('images', { id: { '$in': imageIds } });
-        const gamesWithImages = items.map(game => {
-            game.image = images.find(image => image.id === game.image_id) || null;
-            return game;
-        });
-        res.send(gamesWithImages);
-    });
-    router.delete('/games/:id', async (req, res) => {
-        const id = req.params.id;
-        await db.delete('games', { id });
-        res.send({ ok: true });
-    });
-    router.get('/images', async (req, res) => {
-        const items = await db.getMany('images', undefined, [{ id: -1 }]);
-        res.send(items);
-    });
-    router.delete('/images/:id', async (req, res) => {
-        const id = req.params.id;
-        await db.delete('images', { id });
-        res.send({ ok: true });
-    });
-    router.get('/users', async (req, res) => {
-        const items = await db.getMany('users', undefined, [{ id: -1 }]);
-        res.send(items);
-    });
-    router.get('/groups', async (req, res) => {
-        const items = await db.getMany('user_groups', undefined, [{ id: -1 }]);
-        res.send(items);
-    });
-    router.get('/announcements', async (req, res) => {
-        const items = await db.getMany('announcements', undefined, [{ created: -1 }]);
-        res.send(items);
-    });
-    router.post('/announcements', express.json(), async (req, res) => {
-        const message = req.body.message;
-        const title = req.body.title;
-        const id = await db.insert('announcements', { created: new Date(), title, message }, 'id');
-        const announcement = await db.get('announcements', { id });
-        await discord.announce(`**${title}**\n${announcement.message}`);
-        res.send({ announcement });
-    });
-    return router;
-}
-
-const log$2 = logger('ImageResize.ts');
-const loadSharpImage = async (imagePath) => {
-    const orientation = await getExifOrientation(imagePath);
-    let sharpImg = sharp(imagePath, { failOnError: false });
-    // when image is rotated to the left or right, switch width/height
-    // https://jdhao.github.io/2019/07/31/image_rotation_exif_info/
-    if (orientation === 6) {
-        sharpImg = sharpImg.rotate(90);
-    }
-    else if (orientation === 3) {
-        sharpImg = sharpImg.rotate(180);
-    }
-    else if (orientation === 8) {
-        sharpImg = sharpImg.rotate(270);
-    }
-    return sharpImg;
-};
-const cropImage = async (filename, crop) => {
-    try {
-        const baseDir = config.dir.CROP_DIR;
-        if (!fs.existsSync(baseDir)) {
-            fs.mkdirSync(baseDir, { recursive: true });
-        }
-        const originalImagePath = `${config.dir.UPLOAD_DIR}/${filename}`;
-        const sharpImg = await loadSharpImage(originalImagePath);
-        const cropFilename = `${baseDir}/${filename}-${crop.x}_${crop.y}_${crop.w}_${crop.h}.webp`;
-        if (!fs.existsSync(cropFilename)) {
-            await sharpImg.extract({
-                top: crop.y,
-                left: crop.x,
-                width: crop.w,
-                height: crop.h
-            }).toFile(cropFilename);
-        }
-        return cropFilename;
-    }
-    catch (e) {
-        log$2.error('error when cropping image', filename, e);
-        return null;
-    }
-};
-const resizeImage = async (filename, w, h, fit) => {
-    try {
-        const baseDir = config.dir.RESIZE_DIR;
-        if (!fs.existsSync(baseDir)) {
-            fs.mkdirSync(baseDir, { recursive: true });
-        }
-        const originalImagePath = `${config.dir.UPLOAD_DIR}/${filename}`;
-        const sharpImg = await loadSharpImage(originalImagePath);
-        const resizeFilename = `${baseDir}/${filename}-${w}x${h || 0}-${fit}.webp`;
-        if (!fs.existsSync(resizeFilename)) {
-            log$2.info(w, h, resizeFilename);
-            await sharpImg.resize(w, h || null, { fit }).toFile(resizeFilename);
-        }
-        return resizeFilename;
-    }
-    catch (e) {
-        log$2.error('error when resizing image', filename, e);
-        return null;
-    }
-};
-var ImageResize = {
-    cropImage,
-    resizeImage,
-};
-
-function createRouter() {
-    const router = express.Router();
-    router.get('/image/:filename', async (req, res) => {
-        const filename = req.params.filename;
-        const query = req.query;
-        // RESIZE
-        if (('w' in query && 'h' in query && 'fit' in query)) {
-            const w = parseInt(`${query.w}`, 10);
-            const h = parseInt(`${query.h}`, 10);
-            const fit = `${query.fit}`;
-            if (`${w}` !== query.w || `${h}` !== query.h) {
-                res.status(400).send('x, y must be numbers');
-                return;
-            }
-            const resizedFilename = await ImageResize.resizeImage(filename, w, h, fit);
-            if (!resizedFilename) {
-                res.status(500).send('unable to resize image');
-                return;
-            }
-            const p = path.resolve(config.dir.RESIZE_DIR, resizedFilename);
-            res.sendFile(p);
-            return;
-        }
-        // CROP
-        if (('x' in query && 'y' in query && 'w' in query && 'h' in query)) {
-            const crop = {
-                x: parseInt(`${query.x}`, 10),
-                y: parseInt(`${query.y}`, 10),
-                w: parseInt(`${query.w}`, 10),
-                h: parseInt(`${query.h}`, 10),
-            };
-            if (`${crop.x}` !== query.x ||
-                `${crop.y}` !== query.y ||
-                `${crop.w}` !== query.w ||
-                `${crop.h}` !== query.h) {
-                res.status(400).send('x, y, w and h must be numbers');
-                return;
-            }
-            const croppedFilename = await ImageResize.cropImage(filename, crop);
-            if (!croppedFilename) {
-                res.status(500).send('unable to crop image');
-                return;
-            }
-            const p = path.resolve(config.dir.CROP_DIR, croppedFilename);
-            res.sendFile(p);
-            return;
-        }
-        // original image
-        const p = path.resolve(config.dir.UPLOAD_DIR, filename);
-        res.sendFile(p);
-        return;
-    });
-    return router;
-}
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-const indexFile = path.resolve(__dirname, '..', '..', 'build', 'public', 'index.html');
-const log$1 = logger('Server.ts');
-class Server {
-    constructor(db, mail, canny, discord, gameSockets) {
-        this.db = db;
-        this.mail = mail;
-        this.canny = canny;
-        this.discord = discord;
-        this.gameSockets = gameSockets;
-        this.webserver = null;
-        this.websocketserver = null;
+class PuzzleService {
+    constructor(images) {
+        this.images = images;
         // pass
     }
-    async persistGame(gameId) {
-        const game = GameCommon.get(gameId);
-        if (!game) {
-            log$1.error(`[ERROR] unable to persist non existing game ${gameId}`);
-            return;
+    async createPuzzle(rng, targetPieceCount, image, ts, shapeMode, gameVersion) {
+        const imagePath = `${config.dir.UPLOAD_DIR}/${image.filename}`;
+        // determine puzzle information from the image dimensions
+        const dim = await this.images.getDimensions(imagePath);
+        if (!dim.w || !dim.h) {
+            throw `[ 2021-05-16 invalid dimension for path ${imagePath} ]`;
         }
-        await GameStorage.persistGame(this.db, game);
-    }
-    async persistGames() {
-        for (const gameId of GameStorage.dirtyGameIds()) {
-            await this.persistGame(gameId);
+        const info = determinePuzzleInfo(dim, targetPieceCount);
+        const rawPieces = new Array(info.pieceCount);
+        for (let i = 0; i < rawPieces.length; i++) {
+            rawPieces[i] = { idx: i };
         }
-    }
-    start() {
-        const port = config.http.port;
-        const hostname = config.http.hostname;
-        const app = express();
-        app.use(cookieParser());
-        app.use(compression());
-        // add user info to all requests
-        app.use(async (req, _res, next) => {
-            const data = await Users.getUserInfoByRequest(this.db, req);
-            req.token = data.token;
-            req.user = data.user;
-            req.user_type = data.user_type;
-            next();
-        });
-        app.use('/admin/api', createRouter$1(this.db, this.discord));
-        app.use('/api', createRouter$2(this.db, this.mail, this.canny));
-        app.use('/image-service', createRouter());
-        app.use('/uploads/', express.static(config.dir.UPLOAD_DIR));
-        app.use('/', express.static(config.dir.PUBLIC_DIR));
-        app.all('*', async (req, res) => {
-            res.sendFile(indexFile);
-        });
-        const wss = new WebSocketServer(config.ws);
-        const notify = (data, sockets) => {
-            for (const socket of sockets) {
-                wss.notifyOne(data, socket);
-            }
+        const shapes = determinePuzzlePieceShapes(rng, info, shapeMode);
+        let positions = new Array(info.pieceCount);
+        for (const piece of rawPieces) {
+            const coord = Util.coordByPieceIdx(info, piece.idx);
+            positions[piece.idx] = {
+                // TODO: cant we just use info.pieceDrawSize?
+                // instead of info.pieceSize, we multiply it by 1.5
+                // to spread the pieces a bit
+                x: coord.x * info.pieceSize * 1.5,
+                y: coord.y * info.pieceSize * 1.5,
+            };
+        }
+        const tableDim = this.determineTableDim(info, gameVersion);
+        const off = info.pieceSize * 1.5;
+        const last = {
+            x: (tableDim.w - info.width) / 2 - (1 * off),
+            y: (tableDim.h - info.height) / 2 - (2 * off),
         };
-        wss.on('close', async ({ socket }) => {
-            try {
-                const proto = socket.protocol.split('|');
-                const clientId = proto[0];
-                const gameId = proto[1];
-                this.gameSockets.removeSocket(gameId, socket);
-                const ts = Time.timestamp();
-                const clientSeq = -1; // client lost connection, so clientSeq doesn't matter
-                const clientEvtData = [Protocol.INPUT_EV_CONNECTION_CLOSE];
-                const changes = Game.handleInput(gameId, clientId, clientEvtData, ts);
-                const sockets = this.gameSockets.getSockets(gameId);
-                if (sockets.length) {
-                    notify([Protocol.EV_SERVER_EVENT, clientId, clientSeq, changes], sockets);
-                }
-                else {
-                    this.persistGame(gameId);
-                    log$1.info(`[INFO] unloading game: ${gameId}`);
-                    GameCommon.unsetGame(gameId);
+        let countX = Math.ceil(info.width / off) + 2;
+        let countY = Math.ceil(info.height / off) + 2;
+        let diffX = off;
+        let diffY = 0;
+        let index = 0;
+        for (const pos of positions) {
+            pos.x = last.x;
+            pos.y = last.y;
+            last.x += diffX;
+            last.y += diffY;
+            index++;
+            // did we move horizontally?
+            if (diffX !== 0) {
+                if (index === countX) {
+                    diffY = diffX;
+                    countY++;
+                    diffX = 0;
+                    index = 0;
                 }
             }
-            catch (e) {
-                log$1.error(e);
+            else {
+                if (index === countY) {
+                    diffX = -diffY;
+                    countX++;
+                    diffY = 0;
+                    index = 0;
+                }
             }
+        }
+        // then shuffle the positions
+        positions = rng.shuffle(positions);
+        const pieces = rawPieces.map(piece => {
+            return Util.encodePiece({
+                idx: piece.idx,
+                group: 0,
+                z: 0,
+                // who owns the piece
+                // 0 = free for taking
+                // -1 = finished
+                // other values: id of player who has the piece
+                owner: 0,
+                // physical current position of the piece (x/y in pixels)
+                // this position is the initial position only and is the
+                // value that changes when moving a piece
+                pos: positions[piece.idx],
+            });
         });
-        wss.on('message', async ({ socket, data }) => {
-            if (!data) {
-                // no data (maybe ping :3)
-                return;
-            }
-            try {
-                const proto = socket.protocol.split('|');
-                const clientId = proto[0];
-                const gameId = proto[1];
-                const msg = JSON.parse(data);
-                const msgType = msg[0];
-                switch (msgType) {
-                    case Protocol.EV_CLIENT_INIT:
-                        {
-                            if (!GameCommon.loaded(gameId)) {
-                                const gameObject = await GameStorage.loadGame(this.db, gameId);
-                                if (!gameObject) {
-                                    throw `[game ${gameId} does not exist... ]`;
-                                }
-                                GameCommon.setGame(gameObject.id, gameObject);
-                            }
-                            const ts = Time.timestamp();
-                            Game.addPlayer(gameId, clientId, ts);
-                            this.gameSockets.addSocket(gameId, socket);
-                            const game = GameCommon.get(gameId);
-                            if (!game) {
-                                throw `[game ${gameId} does not exist (anymore)... ]`;
-                            }
-                            notify([Protocol.EV_SERVER_INIT, Util.encodeGame(game)], [socket]);
-                        }
-                        break;
-                    case Protocol.EV_CLIENT_EVENT:
-                        {
-                            if (!GameCommon.loaded(gameId)) {
-                                const gameObject = await GameStorage.loadGame(this.db, gameId);
-                                if (!gameObject) {
-                                    throw `[game ${gameId} does not exist... ]`;
-                                }
-                                GameCommon.setGame(gameObject.id, gameObject);
-                            }
-                            const clientSeq = msg[1];
-                            const clientEvtData = msg[2];
-                            const ts = Time.timestamp();
-                            let sendGame = false;
-                            if (!GameCommon.playerExists(gameId, clientId)) {
-                                Game.addPlayer(gameId, clientId, ts);
-                                sendGame = true;
-                            }
-                            if (!this.gameSockets.socketExists(gameId, socket)) {
-                                this.gameSockets.addSocket(gameId, socket);
-                                sendGame = true;
-                            }
-                            if (sendGame) {
-                                const game = GameCommon.get(gameId);
-                                if (!game) {
-                                    throw `[game ${gameId} does not exist (anymore)... ]`;
-                                }
-                                notify([Protocol.EV_SERVER_INIT, Util.encodeGame(game)], [socket]);
-                            }
-                            const changes = Game.handleInput(gameId, clientId, clientEvtData, ts);
-                            notify([Protocol.EV_SERVER_EVENT, clientId, clientSeq, changes], this.gameSockets.getSockets(gameId));
-                        }
-                        break;
-                }
-            }
-            catch (e) {
-                log$1.error(e);
-                log$1.error('data:', data);
-            }
-        });
-        this.webserver = app.listen(port, hostname, () => log$1.log(`server running on http://${hostname}:${port}`));
-        wss.listen();
-        this.websocketserver = wss;
+        // Complete puzzle object
+        return {
+            // pieces array
+            tiles: pieces,
+            // game data for puzzle, data changes during the game
+            data: {
+                // TODO: maybe calculate this each time?
+                maxZ: 0,
+                maxGroup: 0,
+                started: ts,
+                finished: 0, // finish timestamp
+            },
+            // static puzzle information. stays same for complete duration of
+            // the game
+            info: {
+                table: {
+                    width: tableDim.w,
+                    height: tableDim.h,
+                },
+                // information that was used to create the puzzle
+                targetTiles: targetPieceCount,
+                image: image,
+                width: info.width,
+                height: info.height,
+                tileSize: info.pieceSize,
+                tileDrawSize: info.pieceDrawSize,
+                tileMarginWidth: info.pieceMarginWidth,
+                // offset in x and y when drawing tiles, so that they appear to be at pos
+                tileDrawOffset: (info.pieceDrawSize - info.pieceSize) / -2,
+                // max distance between tile and destination that
+                // makes the tile snap to destination
+                snapDistance: info.pieceSize / 2,
+                tiles: info.pieceCount,
+                tilesX: info.pieceCountHorizontal,
+                tilesY: info.pieceCountVertical,
+                // ( index => {x, y} )
+                // this is not the physical coordinate, but
+                // the piece_coordinate
+                // this can be used to determine where the
+                // final destination of a piece is
+                shapes: shapes, // piece shapes
+            },
+        };
     }
-    close() {
-        log$1.log('shutting down webserver...');
-        if (this.webserver) {
-            this.webserver.close();
-            this.webserver = null;
+    determineTableDim(info, gameVersion) {
+        if (gameVersion <= 3) {
+            return { w: info.width * 3, h: info.height * 3 };
         }
-        log$1.log('shutting down websocketserver...');
-        if (this.websocketserver) {
-            this.websocketserver.close();
-            this.websocketserver = null;
-        }
-    }
-}
-
-const log = logger('GameSocket.js');
-class GameSockets {
-    constructor() {
-        this.sockets = {};
-    }
-    socketExists(gameId, socket) {
-        if (!(gameId in this.sockets)) {
-            return false;
-        }
-        return this.sockets[gameId].includes(socket);
-    }
-    removeSocket(gameId, socket) {
-        if (!(gameId in this.sockets)) {
-            return;
-        }
-        this.sockets[gameId] = this.sockets[gameId].filter((s) => s !== socket);
-        log.log('removed socket: ', gameId, socket.protocol);
-        log.log('socket count: ', Object.keys(this.sockets[gameId]).length);
-    }
-    addSocket(gameId, socket) {
-        if (!(gameId in this.sockets)) {
-            this.sockets[gameId] = [];
-        }
-        if (!this.sockets[gameId].includes(socket)) {
-            this.sockets[gameId].push(socket);
-            log.log('added socket: ', gameId, socket.protocol);
-            log.log('socket count: ', Object.keys(this.sockets[gameId]).length);
-        }
-    }
-    getSockets(gameId) {
-        if (!(gameId in this.sockets)) {
-            return [];
-        }
-        return this.sockets[gameId];
+        const tableSize = Math.max(info.width, info.height) * 6;
+        return { w: tableSize, h: tableSize };
     }
 }
 
@@ -3613,7 +3773,16 @@ const run = async () => {
     const canny = new Canny(config.canny);
     const discord = new Discord(config.discord);
     const gameSockets = new GameSockets();
-    const server = new Server(db, mail, canny, discord, gameSockets);
+    const gamesRepo = new GamesRepo(db);
+    const imagesRepo = new ImagesRepo(db);
+    const users = new Users(db);
+    const images = new Images(imagesRepo);
+    const imageResize = new ImageResize(images);
+    const tokensRepo = new TokensRepo(db);
+    const announcementsRepo = new AnnouncementsRepo(db);
+    const puzzleService = new PuzzleService(images);
+    const gameService = new GameService(gamesRepo, puzzleService);
+    const server = new Server(db, mail, canny, discord, gameSockets, gameService, users, images, imageResize, tokensRepo, announcementsRepo);
     server.start();
     const log = logger('main.js');
     const memoryUsageHuman = () => {
