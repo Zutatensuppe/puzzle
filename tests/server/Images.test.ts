@@ -1,7 +1,8 @@
-import images from '../../src/server/Images'
+import { Images } from '../../src/server/Images'
 import { fileURLToPath } from 'url'
 import { dirname } from 'path'
 import { expect, it } from 'vitest'
+import { ImagesRepo } from '../../src/server/repo/ImagesRepo'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
@@ -24,6 +25,8 @@ global.setImmediate = global.setImmediate || ((fn, ...args) => global.setTimeout
     expected: { w: 203, h: 203 },
   },
 ].forEach(({ imagePath, expected }) => it('getDimensions', async () => {
+  const imagesRepo = {} as unknown as ImagesRepo
+  const images = new Images(imagesRepo)
   const actual = await images.getDimensions(imagePath)
   expect(actual).toStrictEqual(expected)
 }))
