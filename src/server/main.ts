@@ -7,6 +7,15 @@ import { Canny } from './Canny'
 import { Discord } from './Discord'
 import { Server } from './Server'
 import { GameSockets } from './GameSockets'
+import { GameService } from './GameService'
+import { GamesRepo } from './repo/GamesRepo'
+import { Users } from './Users'
+import { ImagesRepo } from './repo/ImagesRepo'
+import { Images } from './Images'
+import { TokensRepo } from './repo/TokensRepo'
+import { AnnouncementsRepo } from './repo/AnnouncementsRepo'
+import { ImageResize } from './ImageResize'
+import { PuzzleService } from './PuzzleService'
 
 const run = async () => {
   const db = new Db(config.db.connectStr, config.dir.DB_PATCHES_DIR)
@@ -17,6 +26,15 @@ const run = async () => {
   const canny = new Canny(config.canny)
   const discord = new Discord(config.discord)
   const gameSockets = new GameSockets()
+  const gamesRepo = new GamesRepo(db)
+  const imagesRepo = new ImagesRepo(db)
+  const users = new Users(db)
+  const images = new Images(imagesRepo)
+  const imageResize = new ImageResize(images)
+  const tokensRepo = new TokensRepo(db)
+  const announcementsRepo = new AnnouncementsRepo(db)
+  const puzzleService = new PuzzleService(images)
+  const gameService = new GameService(gamesRepo, puzzleService)
 
   const server = new Server(
     db,
@@ -24,6 +42,12 @@ const run = async () => {
     canny,
     discord,
     gameSockets,
+    gameService,
+    users,
+    images,
+    imageResize,
+    tokensRepo,
+    announcementsRepo,
   )
   server.start()
 

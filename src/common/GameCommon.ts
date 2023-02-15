@@ -961,7 +961,7 @@ function Game_getIdlePlayers(game: Game, ts: number): Player[] {
 }
 
 function Game_getImageUrl(game: Game): string {
-  const imageUrl = game.puzzle.info.image?.url || game.puzzle.info.imageUrl
+  const imageUrl = game.puzzle.info.image.url
   if (!imageUrl) {
     throw new Error('[2021-07-11] no image url set')
   }

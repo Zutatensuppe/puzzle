@@ -1,20 +1,14 @@
 import { GameSettings, Game as GameType, GameInfo, ApiDataIndexData, ApiDataFinishedGames } from '../../../common/Types'
 import config from '../../Config'
-import Db from '../../Db'
 import express, { Response, Router } from 'express'
-import Game from '../../Game'
 import GameCommon from '../../../common/GameCommon'
 import GameLog from '../../GameLog'
-import GameStorage from '../../GameStorage'
-import Images from '../../Images'
 import multer from 'multer'
 import request from 'request'
 import Time from '../../../common/Time'
-import Users from '../../Users'
 import Util, { logger, uniqId } from '../../../common/Util'
 import { COOKIE_TOKEN, generateSalt, generateToken, passwordHash } from '../../Auth'
-import Mail from '../../Mail'
-import { Canny } from '../../Canny'
+import { ServerInterface } from '../../Server'
 
 const log = logger('web_routes/api/index.ts')
 
@@ -28,16 +22,15 @@ interface SaveImageRequestData {
 const GAMES_PER_PAGE_LIMIT = 10
 const IMAGES_PER_PAGE_LIMIT = 20
 
-const addAuthToken = async (db: Db, userId: number, res: Response): Promise<void> => {
-  const token = await Users.addAuthToken(db, userId)
-  res.cookie(COOKIE_TOKEN, token, { maxAge: 356 * Time.DAY, httpOnly: true })
-}
-
 export default function createRouter(
-  db: Db,
-  mail: Mail,
-  canny: Canny,
+  server: ServerInterface,
 ): Router {
+
+  const addAuthToken = async (userId: number, res: Response): Promise<void> => {
+    const token = await server.getUsers().addAuthToken(userId)
+    res.cookie(COOKIE_TOKEN, token, { maxAge: 356 * Time.DAY, httpOnly: true })
+  }
+
   const storage = multer.diskStorage({
     destination: config.dir.UPLOAD_DIR,
     filename: function (req, file, cb) {
@@ -49,14 +42,14 @@ export default function createRouter(
   const router = express.Router()
   router.get('/me', async (req: any, res): Promise<void> => {
     if (req.user) {
-      const groups = await Users.getGroups(db, req.user.id)
+      const groups = await server.getUsers().getGroups(req.user.id)
       res.send({
         id: req.user.id,
         name: req.user.name,
         clientId: req.user.client_id,
         created: req.user.created,
         type: req.user_type,
-        cannyToken: canny.createToken(req.user),
+        cannyToken: server.getCanny().createToken(req.user),
         groups: groups.map(g => g.name),
       })
       return
@@ -126,7 +119,7 @@ export default function createRouter(
 
       const userData = await userRes.json()
 
-      const identity = await Users.getIdentity(db, {
+      const identity = await server.getUsers().getIdentity({
         provider_name: 'twitch',
         provider_id: userData.data[0].id,
       })
@@ -135,11 +128,11 @@ export default function createRouter(
       if (req.user) {
         user = req.user
       } else if (identity) {
-        user = await Users.getUserByIdentity(db, identity)
+        user = await server.getUsers().getUserByIdentity(identity)
       }
 
       if (!user) {
-        user = await Users.createUser(db, {
+        user = await server.getUsers().createUser({
           name: userData.data[0].display_name,
           created: new Date(),
           client_id: uniqId(),
@@ -156,12 +149,12 @@ export default function createRouter(
           updateNeeded = true
         }
         if (updateNeeded) {
-          await Users.updateUser(db, user)
+          await server.getUsers().updateUser(user)
         }
       }
 
       if (!identity) {
-        Users.createIdentity(db, {
+        server.getUsers().createIdentity({
           user_id: user.id,
           provider_name: 'twitch',
           provider_id: userData.data[0].id,
@@ -178,11 +171,11 @@ export default function createRouter(
           updateNeeded = true
         }
         if (updateNeeded) {
-          Users.updateIdentity(db, identity)
+          server.getUsers().updateIdentity(identity)
         }
       }
 
-      await addAuthToken(db, user.id, res)
+      await addAuthToken(user.id, res)
       res.send('<html><script>window.opener.handleAuthCallback();window.close();</script></html>')
       return
     }
@@ -194,7 +187,7 @@ export default function createRouter(
   router.post('/auth/local', express.json(), async (req, res): Promise<void> => {
     const emailPlain = req.body.email
     const passwordPlain = req.body.password
-    const account = await Users.getAccount(db, { email: emailPlain })
+    const account = await server.getUsers().getAccount({ email: emailPlain })
     if (!account) {
       res.status(401).send({ reason: 'bad email' })
       return
@@ -209,7 +202,7 @@ export default function createRouter(
       res.status(401).send({ reason: 'bad password' })
       return
     }
-    const identity = await Users.getIdentity(db, {
+    const identity = await server.getUsers().getIdentity({
       provider_name: 'local',
       provider_id: account.id,
     })
@@ -218,7 +211,7 @@ export default function createRouter(
       return
     }
 
-    await addAuthToken(db, identity.user_id, res)
+    await addAuthToken(identity.user_id, res)
     res.send({ success: true })
   })
 
@@ -226,10 +219,7 @@ export default function createRouter(
     const token = `${req.body.token}`
     const passwordRaw = `${req.body.password}`
 
-    const tokenRow = await db.get('tokens', {
-      type: 'password-reset',
-      token,
-    })
+    const tokenRow = await server.getTokensRepo().get({ type: 'password-reset', token })
 
     if (!tokenRow) {
       res.status(400).send({ reason: 'no such token' })
@@ -237,21 +227,18 @@ export default function createRouter(
     }
 
     // note: token contains account id, not user id ...
-    const account = await Users.getAccount(db, { id: tokenRow.user_id })
+    const account = await server.getUsers().getAccount({ id: tokenRow.user_id })
     if (!account) {
       res.status(400).send({ reason: 'no such account' })
       return
     }
 
     const password = passwordHash(passwordRaw, account.salt)
-    await db.update('accounts', {
-      password: password,
-    }, {
-      id: account.id
-    })
+    account.password = password
+    await server.getUsers().updateAccount(account)
 
     // remove token, already used
-    await db.delete('tokens', tokenRow)
+    await server.getTokensRepo().delete(tokenRow)
 
     res.send({ success: true })
   })
@@ -259,12 +246,12 @@ export default function createRouter(
   router.post('/send-password-reset-email', express.json(), async (req: any, res): Promise<void> => {
     const emailRaw = `${req.body.email}`
 
-    const account = await Users.getAccount(db, { email: emailRaw })
+    const account = await server.getUsers().getAccount({ email: emailRaw })
     if (!account) {
       res.status(400).send({ reason: 'no such email' })
       return
     }
-    const identity = await Users.getIdentity(db, {
+    const identity = await server.getUsers().getIdentity({
       provider_name: 'local',
       provider_id: account.id,
     })
@@ -272,7 +259,7 @@ export default function createRouter(
       res.status(400).send({ reason: 'no such identity' })
       return
     }
-    const user = await Users.getUser(db, {
+    const user = await server.getUsers().getUser({
       id: identity.user_id,
     })
     if (!user) {
@@ -283,8 +270,8 @@ export default function createRouter(
     const token = generateToken()
     // TODO: dont misuse token table user id <> account id
     const tokenRow = { user_id: account.id, token, type: 'password-reset' }
-    await db.insert('tokens', tokenRow)
-    mail.sendPasswordResetMail({ user: { name: user.name, email: emailRaw }, token: tokenRow })
+    await server.getTokensRepo().insert(tokenRow)
+    server.getMail().sendPasswordResetMail({ user: { name: user.name, email: emailRaw }, token: tokenRow })
     res.send({ success: true })
   })
 
@@ -299,7 +286,7 @@ export default function createRouter(
     // TODO: check if email already taken
     //       return status 409 in both cases
 
-    const account = await Users.createAccount(db, {
+    const account = await server.getUsers().createAccount({
       created: new Date(),
       email: emailRaw,
       password: passwordHash(passwordRaw, salt),
@@ -307,14 +294,14 @@ export default function createRouter(
       status: 'verification_pending',
     })
 
-    const user = await Users.createUser(db, {
+    const user = await server.getUsers().createUser({
       created: new Date(),
       name: usernameRaw,
       email: emailRaw,
       client_id: uniqId(),
     })
 
-    await Users.createIdentity(db, {
+    await server.getUsers().createIdentity({
       user_id: user.id,
       provider_name: 'local',
       provider_id: account.id,
@@ -323,14 +310,14 @@ export default function createRouter(
     const userInfo = { email: emailRaw, name: usernameRaw }
     const token = generateToken()
     const tokenRow = { user_id: account.id, token, type: 'registration' }
-    await db.insert('tokens', tokenRow)
-    mail.sendRegistrationMail({ user: userInfo, token: tokenRow })
+    await server.getTokensRepo().insert(tokenRow)
+    server.getMail().sendRegistrationMail({ user: userInfo, token: tokenRow })
     res.send({ success: true })
   })
 
   router.get('/verify-email/:token', async (req, res): Promise<void> => {
     const token = req.params.token
-    const tokenRow = await db.get('tokens', { token })
+    const tokenRow = await server.getTokensRepo().get({ token })
     if (!tokenRow) {
       res.status(400).send({ reason: 'bad token' })
       return
@@ -339,13 +326,13 @@ export default function createRouter(
     // tokenRow.user_id is the account id here.
     // TODO: clean this up.. users vs accounts vs user_identity
 
-    const account = await Users.getAccount(db, { id: tokenRow.user_id })
+    const account = await server.getUsers().getAccount({ id: tokenRow.user_id })
     if (!account) {
       res.status(400).send({ reason: 'bad account' })
       return
     }
 
-    const identity = await Users.getIdentity(db, {
+    const identity = await server.getUsers().getIdentity({
       provider_name: 'local',
       provider_id: account.id,
     })
@@ -355,10 +342,10 @@ export default function createRouter(
     }
 
     // set account to verified
-    await db.update('accounts', { status: 'verified' }, { id: account.id })
+    await server.getUsers().setAccountVerified(account.id)
 
     // make the user logged in and redirect to startpage
-    await addAuthToken(db, identity.user_id, res)
+    await addAuthToken(identity.user_id, res)
 
     // TODO: add parameter/hash so that user will get a message 'thanks for verifying the email'
     res.redirect(302, '/')
@@ -369,7 +356,7 @@ export default function createRouter(
       res.status(401).send({})
       return
     }
-    await db.delete('tokens', { token: req.token })
+    await server.getTokensRepo().delete({ token: req.token })
     res.clearCookie(COOKIE_TOKEN)
     res.send({ success: true })
   })
@@ -401,7 +388,7 @@ export default function createRouter(
     let game: GameType|null = null
     if (offset === 0) {
       // also need the game
-      game = await Game.createGameObject(
+      game = await server.getGameService().createGameObject(
         gameId,
         log[0][1], // gameVersion
         log[0][2], // targetPieceCount
@@ -423,24 +410,24 @@ export default function createRouter(
     const q: Record<string, any> = req.query
     const tagSlugs: string[] = q.tags ? q.tags.split(',') : []
     res.send({
-      images: await Images.imagesFromDb(db, tagSlugs, q.sort, false, 0, IMAGES_PER_PAGE_LIMIT),
-      tags: await Images.getAllTags(db),
+      images: await server.getImages().imagesFromDb(tagSlugs, q.sort, false, 0, IMAGES_PER_PAGE_LIMIT),
+      tags: await server.getImages().getAllTags(),
     })
   })
 
   router.get('/artist/:name', async (req, res): Promise<void> => {
     const name = req.params.name
-    const artist = await db.get('artist', { name })
+    const artist = await server.getDb().get('artist', { name })
     if (!artist) {
       res.status(404).send({ reason: 'not found' })
       return
     }
-    const rel1 = await db.getMany('artist_x_collection', { artist_id: artist.id })
-    const collections = await db.getMany('collection', { id: { '$in': rel1.map((r: any) => r.collection_id )}})
-    const rel2 = await db.getMany('collection_x_image', { collection_id: { '$in': collections.map((r: any) => r.id )}})
-    const images = await Images.imagesByIdsFromDb(db, rel2.map((r: any) => r.image_id ))
+    const rel1 = await server.getDb().getMany('artist_x_collection', { artist_id: artist.id })
+    const collections = await server.getDb().getMany('collection', { id: { '$in': rel1.map((r: any) => r.collection_id )}})
+    const rel2 = await server.getDb().getMany('collection_x_image', { collection_id: { '$in': collections.map((r: any) => r.id )}})
+    const items = await server.getImages().imagesByIdsFromDb(rel2.map((r: any) => r.image_id ))
     collections.forEach(c => {
-      c.images = images.filter(image => rel2.find(r => r.collection_id === c.id && r.image_id === image.id) ? true : false)
+      c.images = items.filter(image => rel2.find(r => r.collection_id === c.id && r.image_id === image.id) ? true : false)
     })
     res.send({
       artist,
@@ -457,7 +444,7 @@ export default function createRouter(
       return
     }
     res.send({
-      images: await Images.imagesFromDb(db, tagSlugs, q.sort, false, offset, IMAGES_PER_PAGE_LIMIT),
+      images: await server.getImages().imagesFromDb(tagSlugs, q.sort, false, offset, IMAGES_PER_PAGE_LIMIT),
     })
   })
 
@@ -483,10 +470,10 @@ export default function createRouter(
   router.get('/index-data', async (req, res): Promise<void> => {
     const ts = Time.timestamp()
     // all running rows
-    const runningRows = await GameStorage.getPublicRunningGames(db, -1, -1)
-    const runningCount = await GameStorage.countPublicRunningGames(db)
-    const finishedRows = await GameStorage.getPublicFinishedGames(db, 0, GAMES_PER_PAGE_LIMIT)
-    const finishedCount = await GameStorage.countPublicFinishedGames(db)
+    const runningRows = await server.getGameService().getPublicRunningGames(-1, -1)
+    const runningCount = await server.getGameService().countPublicRunningGames()
+    const finishedRows = await server.getGameService().getPublicFinishedGames(0, GAMES_PER_PAGE_LIMIT)
+    const finishedCount = await server.getGameService().countPublicFinishedGames()
 
     const gamesRunning: GameInfo[] = runningRows.map((v) => GameToGameInfo(v, ts))
     const gamesFinished: GameInfo[] = finishedRows.map((v) => GameToGameInfo(v, ts))
@@ -511,8 +498,8 @@ export default function createRouter(
       return
     }
     const ts = Time.timestamp()
-    const finishedRows = await GameStorage.getPublicFinishedGames(db, offset, GAMES_PER_PAGE_LIMIT)
-    const finishedCount = await GameStorage.countPublicFinishedGames(db)
+    const finishedRows = await server.getGameService().getPublicFinishedGames(offset, GAMES_PER_PAGE_LIMIT)
+    const finishedCount = await server.getGameService().countPublicFinishedGames()
     const gamesFinished: GameInfo[] = finishedRows.map((v) => GameToGameInfo(v, ts))
     const indexData: ApiDataFinishedGames = {
       items: gamesFinished,
@@ -529,23 +516,26 @@ export default function createRouter(
     }
 
     const data = req.body as SaveImageRequestData
-    const image = await db.get('images', {id: data.id})
-    if (parseInt(image.uploader_user_id, 10) !== user.id) {
+    const image = await server.getImages().getImageById(data.id)
+    if (!image) {
+      res.status(404).send({ ok: false, error: 'not_found' })
+      return
+    }
+
+    if (image.uploader_user_id !== user.id) {
       res.status(403).send({ ok: false, error: 'forbidden' })
       return
     }
 
-    await db.update('images', {
+    await server.getImages().updateImage({
       title: data.title,
       copyright_name: data.copyrightName,
       copyright_url: data.copyrightURL,
-    }, {
-      id: data.id,
-    })
+    }, { id: data.id })
 
-    await Images.setTags(db, data.id, data.tags || [])
+    await server.getImages().setTags(data.id, data.tags || [])
 
-    res.send({ ok: true, image: await Images.imageFromDb(db, data.id) })
+    res.send({ ok: true, image: await server.getImages().imageFromDb(data.id) })
   })
 
   router.get('/proxy', (req: any, res): void => {
@@ -563,14 +553,14 @@ export default function createRouter(
 
       log.info('req.file.filename', req.file.filename)
 
-      const user = await Users.getOrCreateUserByRequest(db, req)
+      const user = await server.getUsers().getOrCreateUserByRequest(req)
 
-      const dim = await Images.getDimensions(
+      const dim = await server.getImages().getDimensions(
         `${config.dir.UPLOAD_DIR}/${req.file.filename}`
       )
       // post form, so booleans are submitted as 'true' | 'false'
       const isPrivate = req.body.private === 'false' ? 0 : 1;
-      const imageId = await db.insert('images', {
+      const imageId = await server.getImages().insertImage({
         uploader_user_id: user.id,
         filename: req.file.filename,
         filename_original: req.file.originalname,
@@ -581,30 +571,29 @@ export default function createRouter(
         width: dim.w,
         height: dim.h,
         private: isPrivate,
-      }, 'id')
+      })
 
       if (req.body.tags) {
         const tags = req.body.tags.split(',').filter((tag: string) => !!tag)
-        await Images.setTags(db, imageId as number, tags)
+        await server.getImages().setTags(imageId as number, tags)
       }
 
-      res.send(await Images.imageFromDb(db, imageId as number))
+      res.send(await server.getImages().imageFromDb(imageId as number))
     })
   })
 
   router.get('/announcements', async (req, res) => {
-    const items = await db.getMany('announcements', undefined, [{ created: -1 }])
+    const items = await server.getAnnouncementsRepo().getAll()
     res.send(items)
   })
 
   router.post('/newgame', express.json(), async (req, res): Promise<void> => {
-    const user = await Users.getOrCreateUserByRequest(db, req)
+    const user = await server.getUsers().getOrCreateUserByRequest(req)
     try {
-      const gameId = await Game.createNewGame(
-        db,
+      const gameId = await server.getGameService().createNewGame(
         req.body as GameSettings,
         Time.timestamp(),
-        user.id
+        user.id,
       )
       res.send({ id: gameId })
     } catch (e: any) {

@@ -1,6 +1,6 @@
 {
   "name": "puzzle",
-  "version": "1.28.1",
+  "version": "1.28.2",
   "description": "This is a multiplayer puzzle game running in the browser. See a live version at [jigsaw.hyottoko.club].",
   "repository": {
     "type": "git",
@@ -18,7 +18,7 @@
     "dev-services": "docker-compose up",
     "dev-frontend": "vite",
     "dev-backend": "nodemon -x \"node --experimental-specifier-resolution=node --loader ts-node/esm\" -w src/server -w src/common src/server/main.ts",
-    "lint": "eslint src && stylelint \"src/**/*.scss\"",
+    "lint": "tsc --noEmit && eslint src && stylelint \"src/**/*.scss\"",
     "test": "vitest --run",
     "build:server": "rollup -c rollup.server.config.js",
     "build:frontend": "vite build --config vite.config.build.js",

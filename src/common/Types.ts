@@ -206,6 +206,7 @@ export interface ImageInfo
   width: number
   height: number
   gameCount: number
+  private: boolean
   copyrightName: string
   copyrightURL: string
 }
@@ -213,8 +214,7 @@ export interface ImageInfo
 export interface PuzzleInfo {
   table: PuzzleTable
   targetTiles: number
-  imageUrl?: string // deprecated, use image.url instead
-  image?: ImageInfo
+  image: ImageInfo
 
   width: number
   height: number

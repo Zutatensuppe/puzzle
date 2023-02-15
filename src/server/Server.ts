@@ -4,18 +4,17 @@ import express, { NextFunction } from 'express'
 import compression from 'compression'
 import Protocol from './../common/Protocol'
 import Util, { logger } from './../common/Util'
-import Game from './Game'
 import { GameSockets } from './GameSockets'
 import Time from './../common/Time'
 import config from './Config'
 import GameCommon from '../common/GameCommon'
 import { ServerEvent, Game as GameType } from '../common/Types'
-import GameStorage from './GameStorage'
+import { GameService } from './GameService'
 import createApiRouter from './web_routes/api'
 import createAdminApiRouter from './web_routes/admin/api'
 import createImageServiceRouter from './web_routes/image-service'
 import cookieParser from 'cookie-parser'
-import Users from './Users'
+import { Users } from './Users'
 import Mail from './Mail'
 import { Canny } from './Canny'
 import { Discord } from './Discord'
@@ -23,6 +22,10 @@ import Db from './Db'
 import { Server as HttpServer } from 'http';
 import path, { dirname } from 'path'
 import { fileURLToPath } from 'url'
+import { Images } from './Images'
+import { TokensRepo } from './repo/TokensRepo'
+import { AnnouncementsRepo } from './repo/AnnouncementsRepo'
+import { ImageResize } from './ImageResize'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
@@ -30,7 +33,21 @@ const indexFile = path.resolve(__dirname, '..', '..', 'build', 'public', 'index.
 
 const log = logger('Server.ts')
 
-export class Server {
+export interface ServerInterface {
+  getDb: () => Db
+  getMail: () => Mail
+  getCanny: () => Canny
+  getDiscord: () => Discord
+  getGameSockets: () => GameSockets
+  getGameService: () => GameService
+  getUsers: () => Users
+  getImages: () => Images
+  getImageResize: () => ImageResize
+  getTokensRepo: () => TokensRepo
+  getAnnouncementsRepo: () => AnnouncementsRepo
+}
+
+export class Server implements ServerInterface {
   private webserver: HttpServer | null = null
   private websocketserver: WebSocketServer | null = null
 
@@ -40,8 +57,48 @@ export class Server {
     private readonly canny: Canny,
     private readonly discord: Discord,
     private readonly gameSockets: GameSockets,
+    private readonly gameService: GameService,
+    private readonly users: Users,
+    private readonly images: Images,
+    private readonly imageResize: ImageResize,
+    private readonly tokensRepo: TokensRepo,
+    private readonly announcementsRepo: AnnouncementsRepo,
   ) {
     // pass
+  }
+
+  getDb(): Db {
+    return this.db
+  }
+  getMail(): Mail {
+    return this.mail
+  }
+  getCanny(): Canny {
+    return this.canny
+  }
+  getDiscord(): Discord {
+    return this.discord
+  }
+  getGameSockets(): GameSockets {
+    return this.gameSockets
+  }
+  getGameService(): GameService {
+    return this.gameService
+  }
+  getUsers(): Users {
+    return this.users
+  }
+  getImages(): Images {
+    return this.images
+  }
+  getImageResize(): ImageResize {
+    return this.imageResize
+  }
+  getTokensRepo(): TokensRepo {
+    return this.tokensRepo
+  }
+  getAnnouncementsRepo(): AnnouncementsRepo {
+    return this.announcementsRepo
   }
 
   async persistGame(gameId: string): Promise<void> {
@@ -50,11 +107,11 @@ export class Server {
       log.error(`[ERROR] unable to persist non existing game ${gameId}`)
       return
     }
-    await GameStorage.persistGame(this.db, game)
+    await this.gameService.persistGame(game)
   }
 
   async persistGames(): Promise<void> {
-    for (const gameId of GameStorage.dirtyGameIds()) {
+    for (const gameId of this.gameService.dirtyGameIds()) {
       await this.persistGame(gameId)
     }
   }
@@ -69,16 +126,16 @@ export class Server {
 
     // add user info to all requests
     app.use(async (req: any, _res, next: NextFunction) => {
-      const data = await Users.getUserInfoByRequest(this.db, req)
+      const data = await this.users.getUserInfoByRequest(req)
       req.token = data.token
       req.user = data.user
       req.user_type = data.user_type
       next()
     })
 
-    app.use('/admin/api', createAdminApiRouter(this.db, this.discord))
-    app.use('/api', createApiRouter(this.db, this.mail, this.canny))
-    app.use('/image-service', createImageServiceRouter())
+    app.use('/admin/api', createAdminApiRouter(this))
+    app.use('/api', createApiRouter(this))
+    app.use('/image-service', createImageServiceRouter(this))
     app.use('/uploads/', express.static(config.dir.UPLOAD_DIR))
     app.use('/', express.static(config.dir.PUBLIC_DIR))
 
@@ -106,7 +163,7 @@ export class Server {
         const ts = Time.timestamp()
         const clientSeq = -1 // client lost connection, so clientSeq doesn't matter
         const clientEvtData = [ Protocol.INPUT_EV_CONNECTION_CLOSE ]
-        const changes = Game.handleInput(gameId, clientId, clientEvtData, ts)
+        const changes = this.gameService.handleInput(gameId, clientId, clientEvtData, ts)
         const sockets = this.gameSockets.getSockets(gameId)
         if (sockets.length) {
           notify(
@@ -140,14 +197,14 @@ export class Server {
         switch (msgType) {
           case Protocol.EV_CLIENT_INIT: {
             if (!GameCommon.loaded(gameId)) {
-              const gameObject = await GameStorage.loadGame(this.db, gameId)
+              const gameObject = await this.gameService.loadGame(gameId)
               if (!gameObject) {
                 throw `[game ${gameId} does not exist... ]`
               }
               GameCommon.setGame(gameObject.id, gameObject)
             }
             const ts = Time.timestamp()
-            Game.addPlayer(gameId, clientId, ts)
+            this.gameService.addPlayer(gameId, clientId, ts)
             this.gameSockets.addSocket(gameId, socket)
 
             const game: GameType|null = GameCommon.get(gameId)
@@ -162,7 +219,7 @@ export class Server {
 
           case Protocol.EV_CLIENT_EVENT: {
             if (!GameCommon.loaded(gameId)) {
-              const gameObject = await GameStorage.loadGame(this.db, gameId)
+              const gameObject = await this.gameService.loadGame(gameId)
               if (!gameObject) {
                 throw `[game ${gameId} does not exist... ]`
               }
@@ -174,7 +231,7 @@ export class Server {
 
             let sendGame = false
             if (!GameCommon.playerExists(gameId, clientId)) {
-              Game.addPlayer(gameId, clientId, ts)
+              this.gameService.addPlayer(gameId, clientId, ts)
               sendGame = true
             }
             if (!this.gameSockets.socketExists(gameId, socket)) {
@@ -192,7 +249,7 @@ export class Server {
               )
             }
 
-            const changes = Game.handleInput(gameId, clientId, clientEvtData, ts)
+            const changes = this.gameService.handleInput(gameId, clientId, clientEvtData, ts)
             notify(
               [Protocol.EV_SERVER_EVENT, clientId, clientSeq, changes],
               this.gameSockets.getSockets(gameId)
