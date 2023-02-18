@@ -324,9 +324,19 @@ export interface ApiGamesData {
   pagination: Pagination
 }
 
+export interface LeaderboardRow {
+  rank: number
+  user_id: number
+  user_name: string
+  games_count: number
+  pieces_count: number
+}
+
 export interface ApiDataIndexData {
   gamesRunning: ApiGamesData
   gamesFinished: ApiGamesData
+  leaderboardTop10: LeaderboardRow[]
+  leaderboardUser: LeaderboardRow | null
 }
 
 export type ApiDataFinishedGames = ApiGamesData

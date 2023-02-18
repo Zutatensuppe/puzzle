@@ -1,13 +1,5 @@
 @import "@mdi/font";
 
-// @font-face {
-//   font-family: dpcomic;
-//   font-style: normal;
-//   font-weight: 400;
-//   font-display: swap;
-//   src: local("dpcomic"), url("assets/font/dpcomic.woff2") format("woff2"), url("assets/font/dpcomic.woff") format("woff");
-// }
-
 html,
 body {
   font-family: Roboto, sans-serif;
@@ -105,12 +97,24 @@ $bg-color-transparent: rgba(0 0 0 / 70%);
   }
 }
 
-.running-games {
-  grid-template-columns: auto auto auto;
+.running-games-and-leaderboard {
+  display: grid;
+  grid-template-columns: auto 400px;
   grid-gap: 30px;
 }
 
-@media (max-width: 1650px) {
+@media (max-width: 1300px) {
+  .running-games-and-leaderboard {
+    grid-template-columns: auto;
+  }
+}
+
+.running-games {
+  grid-template-columns: auto auto;
+  grid-gap: 30px;
+}
+
+@media (max-width: 1500px) {
   .running-games {
     grid-template-columns: auto auto;
   }
@@ -148,6 +152,7 @@ $bg-color-transparent: rgba(0 0 0 / 70%);
     padding-top: 80%;
     width: 100%;
     background-color: #222;
+    min-height: 260px;
   }
 
   > .v-card__overlay,
@@ -691,5 +696,15 @@ fieldset {
 .imageteaser-info {
   a {
     color: white;
+  }
+}
+
+.leaderboard-table {
+  th:first-child,
+  td:first-child {
+    width: 1%;
+  }
+  .user-rank-row td {
+    border-top: 2px solid rgba(var(--v-theme-on-surface), var(--v-disabled-opacity));
   }
 }

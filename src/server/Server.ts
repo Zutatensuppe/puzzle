@@ -26,6 +26,7 @@ import { Images } from './Images'
 import { TokensRepo } from './repo/TokensRepo'
 import { AnnouncementsRepo } from './repo/AnnouncementsRepo'
 import { ImageResize } from './ImageResize'
+import { LeaderboardRepo } from './repo/LeaderboardRepo'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
@@ -45,6 +46,7 @@ export interface ServerInterface {
   getImageResize: () => ImageResize
   getTokensRepo: () => TokensRepo
   getAnnouncementsRepo: () => AnnouncementsRepo
+  getLeaderboardRepo: () => LeaderboardRepo
 }
 
 export class Server implements ServerInterface {
@@ -63,6 +65,7 @@ export class Server implements ServerInterface {
     private readonly imageResize: ImageResize,
     private readonly tokensRepo: TokensRepo,
     private readonly announcementsRepo: AnnouncementsRepo,
+    private readonly leaderboardRepo: LeaderboardRepo,
   ) {
     // pass
   }
@@ -99,6 +102,9 @@ export class Server implements ServerInterface {
   }
   getAnnouncementsRepo(): AnnouncementsRepo {
     return this.announcementsRepo
+  }
+  getLeaderboardRepo(): LeaderboardRepo {
+    return this.leaderboardRepo
   }
 
   async persistGame(gameId: string): Promise<void> {
@@ -163,7 +169,7 @@ export class Server implements ServerInterface {
         const ts = Time.timestamp()
         const clientSeq = -1 // client lost connection, so clientSeq doesn't matter
         const clientEvtData = [ Protocol.INPUT_EV_CONNECTION_CLOSE ]
-        const changes = this.gameService.handleInput(gameId, clientId, clientEvtData, ts)
+        const changes = await this.gameService.handleInput(gameId, clientId, clientEvtData, ts)
         const sockets = this.gameSockets.getSockets(gameId)
         if (sockets.length) {
           notify(
@@ -249,7 +255,7 @@ export class Server implements ServerInterface {
               )
             }
 
-            const changes = this.gameService.handleInput(gameId, clientId, clientEvtData, ts)
+            const changes = await this.gameService.handleInput(gameId, clientId, clientEvtData, ts)
             notify(
               [Protocol.EV_SERVER_EVENT, clientId, clientSeq, changes],
               this.gameSockets.getSockets(gameId)

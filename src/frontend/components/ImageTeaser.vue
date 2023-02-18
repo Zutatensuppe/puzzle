@@ -59,13 +59,14 @@ const me = ref<User|null>(null)
 
 const url = computed(() => resizeUrl(props.image.url, 375, 0, 'cover'))
 
-const styles = computed(() => {
-  return {
-    paddingTop: (props.image.height / props.image.width * 100) + '%',
-    backgroundImage: `url('${url.value}')`,
-    backgroundSize: 'cover',
-  }
-})
+const MIN_HEIGHT = 300
+
+const styles = computed(() => ({
+  paddingTop: (Math.max(MIN_HEIGHT, props.image.height) / props.image.width * 100) + '%',
+  backgroundImage: `url('${url.value}')`,
+  backgroundSize: 'cover',
+  backgroundPosition: '50% 50%',
+}))
 
 const date = computed((): string => {
   // TODO: use date format that is same everywhere

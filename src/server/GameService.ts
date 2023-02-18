@@ -10,6 +10,7 @@ import { GameRow, GamesRepo } from './repo/GamesRepo'
 import { PuzzleService } from './PuzzleService'
 import GameCommon, { NEWGAME_MAX_PIECES, NEWGAME_MIN_PIECES } from '../common/GameCommon'
 import Protocol from '../common/Protocol'
+import { LeaderboardRepo } from './repo/LeaderboardRepo'
 
 const log = logger('GameService.js')
 
@@ -35,6 +36,7 @@ export class GameService {
   constructor(
     private readonly repo: GamesRepo,
     private readonly puzzleService: PuzzleService,
+    private readonly leaderboardRepo: LeaderboardRepo,
   ) {
     // pass
   }
@@ -142,9 +144,13 @@ export class GameService {
       finished: game.puzzle.data.finished ? new Date(game.puzzle.data.finished) : null,
       data: JSON.stringify(this.gameToStoreData(game)),
       private: game.private ? 1 : 0,
+      pieces_count: game.puzzle.tiles.length,
     }, {
       id: game.id,
     })
+    await this.repo.updatePlayerRelations(game.id, game.players)
+
+    game.players
     log.info(`[INFO] persisted game ${game.id}`)
   }
 
@@ -266,7 +272,7 @@ export class GameService {
     )
 
     GameCommon.setGame(gameObject.id, gameObject)
-    this.setDirty(gameObject.id)
+    await this.persistGame(gameObject)
 
     return gameObject.id
   }
@@ -285,19 +291,29 @@ export class GameService {
     this.setDirty(gameId)
   }
 
-  handleInput(
+  async handleInput(
     gameId: string,
     playerId: string,
     input: Input,
     ts: Timestamp
-  ): Array<Change> {
+  ): Promise<Change[]> {
     if (GameLog.shouldLog(GameCommon.getFinishTs(gameId), ts)) {
       const idx = GameCommon.getPlayerIndexById(gameId, playerId)
       GameLog.log(gameId, Protocol.LOG_HANDLE_INPUT, idx, input, ts)
     }
-
+    const wasFinished = GameCommon.getFinishTs(gameId)
     const ret = GameCommon.handleInput(gameId, playerId, input, ts)
+    const isFinished = GameCommon.getFinishTs(gameId)
     this.setDirty(gameId)
+    if (!wasFinished && isFinished) {
+      const game = GameCommon.get(gameId)
+      if (game) {
+        // persist game immediately when it was just finished
+        // and also update the leaderboard afterwards
+        await this.persistGame(game)
+        await this.leaderboardRepo.updateLeaderboard()
+      }
+    }
     return ret
   }
 }
