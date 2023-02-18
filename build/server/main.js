@@ -3827,17 +3827,9 @@ class LeaderboardRepo {
     async updateLeaderboards() {
         await this.db.txn(async () => {
             await this.db.run('truncate leaderboard_entries');
-            const relevantUsers = await this.db._getMany(`
-        select u.id from users u
-          inner join user_identity ui on ui.user_id = u.id and ui.provider_name = 'local'
-          inner join accounts a on a.id::text = ui.provider_id and a.status = 'verified'
-        union
-        select u.id from users u
-          inner join user_identity ui on ui.user_id = u.id and ui.provider_name = 'twitch'
-      `);
             for (const lb of this.LEADERBOARDS) {
                 const leaderboardId = await this.db.upsert('leaderboard', { name: lb.name }, { name: lb.name }, 'id');
-                const whereRaw = { user_id: { '$in': relevantUsers.map(row => row.id) } };
+                const whereRaw = {};
                 if (lb.minPieces >= 0) {
                     whereRaw['g.pieces_count'] = whereRaw['g.pieces_count'] || {};
                     whereRaw['g.pieces_count']['$gte'] = lb.minPieces;
@@ -3848,21 +3840,38 @@ class LeaderboardRepo {
                 }
                 const where = this.db._buildWhere(whereRaw);
                 const rows = await this.db._getMany(`
-        select
-          uxg.user_id,
-          count(uxg.game_id)::int as games_count,
-          sum(uxg.pieces_count)::int as pieces_count
-        from user_x_game uxg
-        inner join games g on g.id = uxg.game_id and g.finished is not null and g.private = 0
-        ${where.sql}
-        group by uxg.user_id
-        order by pieces_count desc, games_count desc
-      `, where.values);
+          with relevant_users as (
+            select u.id from users u
+              inner join user_identity ui on ui.user_id = u.id and ui.provider_name = 'local'
+              inner join accounts a on a.id::text = ui.provider_id and a.status = 'verified'
+            union
+            select u.id from users u
+              inner join user_identity ui on ui.user_id = u.id and ui.provider_name = 'twitch'
+          ),
+          tmp as (
+            select
+              uxg.user_id,
+              count(uxg.game_id)::int as games_count,
+              sum(uxg.pieces_count)::int as pieces_count
+            from user_x_game uxg
+            inner join games g on g.id = uxg.game_id and g.finished is not null and g.private = 0
+            ${where.sql}
+            group by uxg.user_id
+          )
+          select
+            u.id as user_id,
+            coalesce(tmp.games_count, 0) as games_count,
+            coalesce(tmp.pieces_count, 0) as pieces_count
+          from relevant_users u
+          left join tmp on tmp.user_id = u.id
+          order by pieces_count desc, games_count desc
+        `, where.values);
                 let i = 1;
                 for (const row of rows) {
                     row.leaderboard_id = leaderboardId;
-                    row.rank = i++;
+                    row.rank = row.pieces_count ? i : 0;
                     this.db.insert('leaderboard_entries', row);
+                    i++;
                 }
             }
         });
@@ -3885,6 +3894,7 @@ class LeaderboardRepo {
           inner join users u on u.id = lbe.user_id
         where
           lbe.leaderboard_id = $1
+          and lbe.pieces_count > 0
         order by
           lbe.pieces_count desc,
           lbe.games_count desc

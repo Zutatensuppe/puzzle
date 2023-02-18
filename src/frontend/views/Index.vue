@@ -51,8 +51,8 @@
             <Leaderboard v-if="leaderboard100" :lb="leaderboard100" />
           </v-window-item>
         </v-window>
-        <div class="mt-2 text-caption text-disabled">
-          ※ only registered users show up on the leaderboard
+        <div class="mt-2 text-disabled" v-if="!me || me.type !== 'user'">
+          <v-btn @click="login" density="comfortable">Login</v-btn> to show up on the leaderboard!
         </div>
       </div>
     </div>
@@ -72,7 +72,7 @@
   </v-container>
 </template>
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, onBeforeUnmount, ref } from 'vue'
 import { useRouter } from 'vue-router';
 import { ApiDataFinishedGames, ApiDataIndexData } from '../../common/Types';
 import RunningGameTeaser from '../components/RunningGameTeaser.vue';
@@ -80,9 +80,22 @@ import FinishedGameTeaser from '../components/FinishedGameTeaser.vue';
 import Pagination from '../components/Pagination.vue';
 import api from '../_api'
 import Leaderboard from '../components/Leaderboard.vue';
+import user, { User } from '../user';
 
 const router = useRouter()
 const data = ref<ApiDataIndexData | null>(null)
+const me = ref<User|null>(null)
+
+const onInit = async () => {
+  me.value = user.getMe()
+  const res = await api.pub.indexData()
+  const json = await res.json() as ApiDataIndexData
+  data.value = json
+}
+
+const login = () => {
+  user.eventBus.emit('triggerLoginOverlay')
+}
 
 const goToGame = ((game: any) => {
   router.push({ name: 'game', params: { id: game.id } })
@@ -116,8 +129,12 @@ const onPagination = async (q: { limit: number, offset: number }) => {
 }
 
 onMounted(async () => {
-  const res = await api.pub.indexData()
-  const json = await res.json() as ApiDataIndexData
-  data.value = json
+  onInit()
+  user.eventBus.on('login', onInit)
+  user.eventBus.on('logout', onInit)
+})
+onBeforeUnmount(() => {
+  user.eventBus.off('login', onInit)
+  user.eventBus.off('logout', onInit)
 })
 </script>
