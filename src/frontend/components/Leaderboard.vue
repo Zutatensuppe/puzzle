@@ -14,7 +14,7 @@
           <v-icon v-if="row.rank === 1" icon="mdi-podium-gold" class="text-amber" />
           <v-icon v-else-if="row.rank === 2" icon="mdi-podium-silver" class="text-blue-grey" />
           <v-icon v-else-if="row.rank === 3" icon="mdi-podium-bronze" class="text-brown" />
-          <span v-else>{{ row.rank + 4 }}</span>
+          <span v-else>{{ row.rank }}</span>
         </td>
         <td>{{ row.user_name }}</td>
         <td>{{ row.games_count }}</td>
