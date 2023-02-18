@@ -14,8 +14,8 @@
       </v-col>
     </v-row>
 
-    <div class="running-games-and-leaderboard">
-      <div class="running-games-container">
+    <div class="running-games-and-leaderboard" :class="`games-count-${data.gamesRunning.items.length}`">
+      <div class="running-games-container" v-if="data.gamesRunning.items.length">
         <h1>Running games</h1>
         <v-container :fluid="true" class="pl-0 pr-0 game-teasers-holder running-games">
           <RunningGameTeaser
@@ -93,7 +93,7 @@ const onInit = async () => {
 }
 
 const login = () => {
-  user.eventBus.emit('triggerLoginOverlay')
+  user.eventBus.emit('triggerLoginDialog')
 }
 
 const goToGame = ((game: any) => {

@@ -27,6 +27,7 @@ import 'vuetify/styles'
 import { createVuetify } from 'vuetify'
 import * as components from 'vuetify/components'
 import * as directives from 'vuetify/directives'
+import { init as initToast } from './toast'
 
 (async () => {
   api.init()
@@ -86,6 +87,7 @@ import * as directives from 'vuetify/directives'
   const app = Vue.createApp(App)
   app.use(router)
   app.use(vuetify)
+  initToast(app)
   app.component('icon', Icon)
   app.mount('#app')
 })()

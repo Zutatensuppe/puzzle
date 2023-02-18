@@ -101,11 +101,23 @@ $bg-color-transparent: rgba(0 0 0 / 70%);
   display: grid;
   grid-template-columns: auto 400px;
   grid-gap: 30px;
+
+  &.games-count-0 {
+    grid-template-columns: auto;
+  }
+
+  &.games-count-1 {
+    grid-template-columns: auto auto;
+  }
 }
 
 @media (max-width: 1300px) {
   .running-games-and-leaderboard {
     grid-template-columns: auto;
+
+    &.games-count-1 {
+      grid-template-columns: auto;
+    }
   }
 }
 
@@ -651,6 +663,7 @@ kbd {
 
 .v-overlay__content {
   border: solid 1px rgba(60 60 60 / 50%);
+  border-radius: 4px;
 }
 
 #canny-iframe {

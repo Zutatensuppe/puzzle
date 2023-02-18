@@ -1,6 +1,6 @@
 {
   "name": "puzzle",
-  "version": "1.29.5",
+  "version": "1.30.0",
   "description": "This is a multiplayer puzzle game running in the browser. See a live version at [jigsaw.hyottoko.club].",
   "repository": {
     "type": "git",
@@ -41,6 +41,7 @@
     "sib-api-v3-sdk": "^8.5.0",
     "vue": "^3.2.31",
     "vue-router": "^4.0.13",
+    "vue3-toastify": "^0.1.0",
     "vuetify": "^3.0.5",
     "ws": "^8.5.0"
   },

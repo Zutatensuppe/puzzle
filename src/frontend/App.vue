@@ -2,7 +2,7 @@
   <v-app id="app" :theme="'dark'">
     <v-layout>
       <v-main>
-        <Nav @show-login="onTriggerLoginOverlay" v-if="!route.meta.ingame" />
+        <Nav v-if="!route.meta.ingame" />
         <LoginDialog
           v-if="!route.meta.ingame && showLogin"
           v-model="showLogin"
@@ -32,14 +32,19 @@ const onInit = () => {
   showLogin.value = false
 }
 
-const onTriggerLoginOverlay = () => {
+const onTriggerLoginDialog = () => {
   loginDialogTab.value = 'login'
   showLogin.value = true
 }
 
+const onCloseLoginDialog = () => {
+  showLogin.value = false
+}
+
 onMounted(async () => {
   user.eventBus.on('login', onInit)
-  user.eventBus.on('triggerLoginOverlay', onTriggerLoginOverlay)
+  user.eventBus.on('triggerLoginDialog', onTriggerLoginDialog)
+  user.eventBus.on('closeLoginDialog', onCloseLoginDialog)
 
   if (window.location.hash) {
     const urlParams = new URLSearchParams(window.location.hash.replace("#","?"));
