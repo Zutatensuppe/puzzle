@@ -2,6 +2,7 @@
   <v-form
     class="registration-form"
     v-model="valid"
+    :disabled="busy"
   >
     <v-text-field
       density="compact"
@@ -14,15 +15,12 @@
       :rules="passwordRules"
     ></v-text-field>
 
-    <v-btn color="success" block :disabled="!valid" @click="doChangePassword">Reset Password</v-btn>
-
-    <div v-if="res && res.error !== false">
-      {{ res.error }}
-    </div>
+    <v-btn color="success" block :disabled="!valid || busy" @click="doChangePassword">Reset Password</v-btn>
   </v-form>
 </template>
 <script setup lang="ts">
 import { ref } from 'vue';
+import { toast } from '../toast';
 import user from '../user';
 
 const props = defineProps<{
@@ -33,10 +31,9 @@ const emit = defineEmits<{
   (e: 'password-changed'): void,
 }>()
 
-const res = ref<{error: string | false} | null>(null)
-
 const password = ref<string>('')
 const valid = ref<boolean>(false)
+const busy = ref<boolean>(false)
 const showPassword = ref<boolean>(false)
 const passwordRules = [
   v => !!v || 'Password is required'
@@ -46,11 +43,17 @@ const doChangePassword = async () => {
   if (!valid.value) {
     return
   }
-  res.value = await user.changePassword(password.value, props.token)
-  if (res.value.error === false) {
+
+  busy.value = true
+  const res = await user.changePassword(password.value, props.token)
+  if (res.error !== false) {
+    toast(res.error, 'error')
+  } else {
     window.location.hash = ''
+    toast('Password changed successfully', 'success')
     emit('password-changed')
   }
+  busy.value = false
 }
 
 </script>

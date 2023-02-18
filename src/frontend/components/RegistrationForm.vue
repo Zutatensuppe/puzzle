@@ -2,6 +2,7 @@
   <v-form
     class="registration-form"
     v-model="valid"
+    :disabled="busy"
   >
     <v-text-field
       density="compact"
@@ -25,21 +26,13 @@
       @keydown.enter.prevent="doRegister"
       :rules="passwordRules"
     ></v-text-field>
-    <v-btn color="success" @click="doRegister" block :disabled="!valid">Create account</v-btn>
-    <v-btn @click="emit('login')" block class="mt-1">Already have an account?</v-btn>
-
-    <div v-if="res">
-      <div v-if="res.error === false">
-        Thank you for registering. Please check your email and click the verify link to complete the registration.
-      </div>
-      <div v-else>
-        {{ res.error }}
-      </div>
-    </div>
+    <v-btn color="success" @click="doRegister" block :disabled="!valid || busy">Create account</v-btn>
+    <v-btn @click="emit('login')" block class="mt-1" :disabled="busy">Already have an account?</v-btn>
   </v-form>
 </template>
 <script setup lang="ts">
 import { ref } from 'vue';
+import { toast } from '../toast';
 import user from '../user';
 
 const emit = defineEmits<{
@@ -52,9 +45,8 @@ const password = ref<string>('')
 
 const showPassword = ref<boolean>(false)
 
-const res = ref<{error: string | false} | null>(null)
-
 const valid = ref<boolean>(false)
+const busy = ref<boolean>(false)
 
 const usernameRules = [
   v => !!v || 'Username is required'
@@ -72,6 +64,15 @@ async function doRegister() {
   if (!valid.value) {
     return
   }
-  res.value = await user.register(username.value, email.value, password.value)
+
+  busy.value = true
+  const res = await user.register(username.value, email.value, password.value)
+  if (res.error) {
+    toast(res.error, 'error')
+  } else {
+    toast('Thank you for registering. Please check your email and click the verify link to complete the registration.', 'success', 10000)
+    user.eventBus.emit('closeLoginDialog')
+  }
+  busy.value = false
 }
 </script>

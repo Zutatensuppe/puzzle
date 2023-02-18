@@ -16,8 +16,6 @@
         <v-window v-model="tab">
           <v-window-item value="login">
             <LoginForm @forgot-password="tab='forgot-password'" @register="tab='register'" />
-            <v-divider class="mt-6 mb-6" />
-            <v-btn color="#6441a5" prepend-icon="mdi-twitch" @click="openTwitchLogin" block>Login via Twitch</v-btn>
           </v-window-item>
 
           <v-window-item value="register">
@@ -38,7 +36,6 @@
 </template>
 <script setup lang="ts">
 import { ref } from 'vue';
-import Util from '../../common/Util';
 import LoginForm from './LoginForm.vue';
 import PasswordResetForm from './PasswordResetForm.vue';
 import PasswordResetRequestForm from './PasswordResetRequestForm.vue';
@@ -58,15 +55,4 @@ if (props.tab) {
 const emit = defineEmits<{
   (e: 'close'): void,
 }>()
-
-const args = {
-  client_id: 'ud669t6lfspxucc6hvn5e5kto8rllb',
-  redirect_uri: `${window.location.protocol}//${window.location.host}/api/auth/twitch/redirect_uri`,
-  response_type: 'code',
-  scope: 'openid user:read:email',
-}
-
-const openTwitchLogin = () => {
-  window.open(`https://id.twitch.tv/oauth2/authorize${Util.asQueryArgs(args)}`)
-}
 </script>

@@ -17,7 +17,7 @@
             <icon icon="ukraine-heart" /> <span class="ml-2 mr-2">Stand with Ukraine</span> <icon icon="ukraine-heart" />
           </v-btn>
           <v-btn class="user-welcome-message" v-if="me && loggedIn" @click="drawerUser = !drawerUser">Hello, {{ me.name }}</v-btn>
-          <v-btn size="small" class="ml-1" v-else @click="emit('show-login')">Login</v-btn>
+          <v-btn size="small" class="ml-1" v-else @click="login">Login</v-btn>
           <v-app-bar-nav-icon class="mr-1" size="small" variant="text" @click.stop="toggleAnnouncements">
             <v-badge :content="unseenAnnouncementCount" color="red-darken-2" v-if="unseenAnnouncementCount">
               <v-icon icon="mdi-bullhorn"></v-icon>
@@ -86,9 +86,9 @@ import announcements from '../announcements'
 import { dateformat } from '../../common/Util'
 import storage from '../storage';
 
-const emit = defineEmits<{
-  (e: 'show-login'): void
-}>()
+const login = () => {
+  user.eventBus.emit('triggerLoginDialog')
+}
 
 const route = useRoute();
 const showNav = computed(() => {
