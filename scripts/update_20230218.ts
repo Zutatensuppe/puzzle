@@ -30,7 +30,7 @@ const db = new Db(config.db.connectStr, config.dir.DB_PATCHES_DIR)
     }
   }
   const repo = new LeaderboardRepo(db)
-  await repo.updateLeaderboard()
+  await repo.updateLeaderboards()
 
   await db.close()
 })()

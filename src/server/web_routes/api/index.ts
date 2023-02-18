@@ -479,11 +479,9 @@ export default function createRouter(
     const gamesRunning: GameInfo[] = runningRows.map((v) => GameToGameInfo(v, ts))
     const gamesFinished: GameInfo[] = finishedRows.map((v) => GameToGameInfo(v, ts))
 
-    const leaderboardTop10 = await server.getLeaderboardRepo().getTop10()
-
     const user: UserRow | null = req.user || null
-    // TODO: improve :)
-    const leaderboardUser = user && req.user_type === 'user' ? await server.getLeaderboardRepo().getByUserId(user.id) : null
+    const userId = user && req.user_type === 'user' ? user.id : 0
+    const leaderboards = await server.getLeaderboardRepo().getTop10(userId)
 
     const indexData: ApiDataIndexData = {
       gamesRunning: {
@@ -494,8 +492,7 @@ export default function createRouter(
         items: gamesFinished,
         pagination: { total: finishedCount, offset: 0, limit: GAMES_PER_PAGE_LIMIT }
       },
-      leaderboardTop10,
-      leaderboardUser,
+      leaderboards,
     }
     res.send(indexData)
   })

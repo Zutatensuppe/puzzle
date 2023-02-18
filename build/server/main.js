@@ -374,71 +374,61 @@ class Db {
                 continue;
             }
             if (typeof where[k] === 'object') {
-                let prop = '$nin';
-                if (prop in where[k]) {
-                    if (where[k][prop].length > 0) {
-                        wheres.push(k + ' NOT IN (' + where[k][prop].map(() => `$${$i++}`) + ')');
-                        values.push(...where[k][prop]);
+                for (const prop of Object.keys(where[k])) {
+                    if (prop === '$nin') {
+                        if (where[k][prop].length > 0) {
+                            wheres.push(k + ' NOT IN (' + where[k][prop].map(() => `$${$i++}`) + ')');
+                            values.push(...where[k][prop]);
+                        }
+                        else {
+                            wheres.push('TRUE');
+                        }
+                        continue;
                     }
-                    else {
-                        wheres.push('TRUE');
+                    if (prop === '$in') {
+                        if (where[k][prop].length > 0) {
+                            wheres.push(k + ' IN (' + where[k][prop].map(() => `$${$i++}`) + ')');
+                            values.push(...where[k][prop]);
+                        }
+                        else {
+                            wheres.push('FALSE');
+                        }
+                        continue;
                     }
-                    continue;
-                }
-                prop = '$in';
-                if (prop in where[k]) {
-                    if (where[k][prop].length > 0) {
-                        wheres.push(k + ' IN (' + where[k][prop].map(() => `$${$i++}`) + ')');
-                        values.push(...where[k][prop]);
-                    }
-                    else {
-                        wheres.push('FALSE');
-                    }
-                    continue;
-                }
-                prop = "$gte";
-                if (prop in where[k]) {
-                    wheres.push(k + ` >= $${$i++}`);
-                    values.push(where[k][prop]);
-                    continue;
-                }
-                prop = "$lte";
-                if (prop in where[k]) {
-                    wheres.push(k + ` <= $${$i++}`);
-                    values.push(where[k][prop]);
-                    continue;
-                }
-                prop = "$lte";
-                if (prop in where[k]) {
-                    wheres.push(k + ` <= $${$i++}`);
-                    values.push(where[k][prop]);
-                    continue;
-                }
-                prop = '$gt';
-                if (prop in where[k]) {
-                    wheres.push(k + ` > $${$i++}`);
-                    values.push(where[k][prop]);
-                    continue;
-                }
-                prop = '$lt';
-                if (prop in where[k]) {
-                    wheres.push(k + ` < $${$i++}`);
-                    values.push(where[k][prop]);
-                    continue;
-                }
-                prop = '$ne';
-                if (prop in where[k]) {
-                    if (where[k][prop] === null) {
-                        wheres.push(k + ` IS NOT NULL`);
-                    }
-                    else {
-                        wheres.push(k + ` != $${$i++}`);
+                    if (prop === '$gte') {
+                        wheres.push(k + ` >= $${$i++}`);
                         values.push(where[k][prop]);
+                        continue;
                     }
-                    continue;
+                    if (prop === '$lte') {
+                        wheres.push(k + ` <= $${$i++}`);
+                        values.push(where[k][prop]);
+                        continue;
+                    }
+                    if (prop === '$gt') {
+                        wheres.push(k + ` > $${$i++}`);
+                        values.push(where[k][prop]);
+                        continue;
+                    }
+                    if (prop === '$lt') {
+                        wheres.push(k + ` < $${$i++}`);
+                        values.push(where[k][prop]);
+                        continue;
+                    }
+                    if (prop === '$ne') {
+                        if (where[k][prop] === null) {
+                            wheres.push(k + ` IS NOT NULL`);
+                        }
+                        else {
+                            wheres.push(k + ` != $${$i++}`);
+                            values.push(where[k][prop]);
+                        }
+                        continue;
+                    }
+                    // TODO: implement rest of mongo like query args ($eq, $lte, $in...)
+                    throw new Error('not implemented: ' + prop + ' ' + JSON.stringify(where[k]));
                 }
-                // TODO: implement rest of mongo like query args ($eq, $lte, $in...)
-                throw new Error('not implemented: ' + JSON.stringify(where[k]));
+                continue;
             }
             wheres.push(k + ` = $${$i++}`);
             values.push(where[k]);
@@ -2365,10 +2355,9 @@ function createRouter$2(server) {
         const finishedCount = await server.getGameService().countPublicFinishedGames();
         const gamesRunning = runningRows.map((v) => GameToGameInfo(v, ts));
         const gamesFinished = finishedRows.map((v) => GameToGameInfo(v, ts));
-        const leaderboardTop10 = await server.getLeaderboardRepo().getTop10();
         const user = req.user || null;
-        // TODO: improve :)
-        const leaderboardUser = user && req.user_type === 'user' ? await server.getLeaderboardRepo().getByUserId(user.id) : null;
+        const userId = user && req.user_type === 'user' ? user.id : 0;
+        const leaderboards = await server.getLeaderboardRepo().getTop10(userId);
         const indexData = {
             gamesRunning: {
                 items: gamesRunning,
@@ -2378,8 +2367,7 @@ function createRouter$2(server) {
                 items: gamesFinished,
                 pagination: { total: finishedCount, offset: 0, limit: GAMES_PER_PAGE_LIMIT }
             },
-            leaderboardTop10,
-            leaderboardUser,
+            leaderboards,
         };
         res.send(indexData);
     });
@@ -3062,7 +3050,7 @@ class GameService {
                 // persist game immediately when it was just finished
                 // and also update the leaderboard afterwards
                 await this.persistGame(game);
-                await this.leaderboardRepo.updateLeaderboard();
+                await this.leaderboardRepo.updateLeaderboards();
             }
         }
         return ret;
@@ -3828,11 +3816,17 @@ class PuzzleService {
 class LeaderboardRepo {
     constructor(db) {
         this.db = db;
+        this.LEADERBOARDS = [
+            { name: 'overall', minPieces: -1, maxPieces: -1 },
+            { name: '1000+', minPieces: 1000, maxPieces: -1 },
+            { name: '500+', minPieces: 500, maxPieces: 999 },
+            { name: '100+', minPieces: 100, maxPieces: 499 },
+        ];
         // pass
     }
-    async updateLeaderboard() {
+    async updateLeaderboards() {
         await this.db.txn(async () => {
-            await this.db.run('truncate leaderboard');
+            await this.db.run('truncate leaderboard_entries');
             const relevantUsers = await this.db._getMany(`
         select u.id from users u
           inner join user_identity ui on ui.user_id = u.id and ui.provider_name = 'local'
@@ -3841,8 +3835,19 @@ class LeaderboardRepo {
         select u.id from users u
           inner join user_identity ui on ui.user_id = u.id and ui.provider_name = 'twitch'
       `);
-            const where = this.db._buildWhere({ user_id: { '$in': relevantUsers.map(row => row.id) } });
-            const rows = await this.db._getMany(`
+            for (const lb of this.LEADERBOARDS) {
+                const leaderboardId = await this.db.upsert('leaderboard', { name: lb.name }, { name: lb.name }, 'id');
+                const whereRaw = { user_id: { '$in': relevantUsers.map(row => row.id) } };
+                if (lb.minPieces >= 0) {
+                    whereRaw['g.pieces_count'] = whereRaw['g.pieces_count'] || {};
+                    whereRaw['g.pieces_count']['$gte'] = lb.minPieces;
+                }
+                if (lb.maxPieces >= 0) {
+                    whereRaw['g.pieces_count'] = whereRaw['g.pieces_count'] || {};
+                    whereRaw['g.pieces_count']['$lte'] = lb.maxPieces;
+                }
+                const where = this.db._buildWhere(whereRaw);
+                const rows = await this.db._getMany(`
         select
           uxg.user_id,
           count(uxg.game_id)::int as games_count,
@@ -3853,33 +3858,46 @@ class LeaderboardRepo {
         group by uxg.user_id
         order by pieces_count desc, games_count desc
       `, where.values);
-            let i = 1;
-            for (const row of rows) {
-                row.rank = i++;
-                this.db.insert('leaderboard', row);
+                let i = 1;
+                for (const row of rows) {
+                    row.leaderboard_id = leaderboardId;
+                    row.rank = i++;
+                    this.db.insert('leaderboard_entries', row);
+                }
             }
         });
     }
-    async getByUserId(userId) {
-        return await this.db._get(`
-      select
-        lb.*, u.name as user_name
-      from leaderboard lb
-        inner join users u on u.id = lb.user_id
-      where lb.user_id = $1
-    `, [userId]);
-    }
-    async getTop10() {
-        return await this.db._getMany(`
-      select
-        lb.*, u.name as user_name
-      from leaderboard lb
-        inner join users u on u.id = lb.user_id
-      order by
-        lb.pieces_count desc,
-        lb.games_count desc
-      limit 10
-    `);
+    async getTop10(userId) {
+        const leaderboards = [];
+        for (const lb of this.LEADERBOARDS) {
+            const leaderboard = await this.db.get('leaderboard', { name: lb.name });
+            const leaderboardUserEntry = userId ? await this.db._get(`
+        select
+          lbe.*, u.name as user_name
+        from leaderboard_entries lbe
+          inner join users u on u.id = lbe.user_id
+        where lbe.user_id = $1 and lbe.leaderboard_id = $2
+      `, [userId, leaderboard.id]) : null;
+            const leaderboardEntries = await this.db._getMany(`
+        select
+          lbe.*, u.name as user_name
+        from leaderboard_entries lbe
+          inner join users u on u.id = lbe.user_id
+        where
+          lbe.leaderboard_id = $1
+        order by
+          lbe.pieces_count desc,
+          lbe.games_count desc
+        limit 10
+      `, [leaderboard.id]);
+            leaderboards.push({
+                id: leaderboard.id,
+                name: leaderboard.name,
+                entries: leaderboardEntries,
+                userEntry: leaderboardUserEntry,
+            });
+        }
+        return leaderboards;
     }
 }
 

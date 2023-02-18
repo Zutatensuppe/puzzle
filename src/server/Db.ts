@@ -96,75 +96,65 @@ class Db {
       }
 
       if (typeof where[k] === 'object') {
-        let prop = '$nin'
-        if (prop in where[k]) {
-          if (where[k][prop].length > 0) {
-            wheres.push(k + ' NOT IN (' + where[k][prop].map(() => `$${$i++}`) + ')')
-            values.push(...where[k][prop])
-          } else {
-            wheres.push('TRUE')
+        for (const prop of Object.keys(where[k])) {
+          if (prop === '$nin') {
+            if (where[k][prop].length > 0) {
+              wheres.push(k + ' NOT IN (' + where[k][prop].map(() => `$${$i++}`) + ')')
+              values.push(...where[k][prop])
+            } else {
+              wheres.push('TRUE')
+            }
+            continue
           }
-          continue
-        }
-        prop = '$in'
-        if (prop in where[k]) {
-          if (where[k][prop].length > 0) {
-            wheres.push(k + ' IN (' + where[k][prop].map(() => `$${$i++}`) + ')')
-            values.push(...where[k][prop])
-          } else {
-            wheres.push('FALSE')
+
+          if (prop === '$in') {
+            if (where[k][prop].length > 0) {
+              wheres.push(k + ' IN (' + where[k][prop].map(() => `$${$i++}`) + ')')
+              values.push(...where[k][prop])
+            } else {
+              wheres.push('FALSE')
+            }
+            continue
           }
-          continue
-        }
 
-        prop = "$gte"
-        if (prop in where[k]) {
-          wheres.push(k + ` >= $${$i++}`)
-          values.push(where[k][prop])
-          continue
-        }
-
-        prop = "$lte"
-        if (prop in where[k]) {
-          wheres.push(k + ` <= $${$i++}`)
-          values.push(where[k][prop])
-          continue
-        }
-
-        prop = "$lte"
-        if (prop in where[k]) {
-          wheres.push(k + ` <= $${$i++}`)
-          values.push(where[k][prop])
-          continue
-        }
-
-        prop = '$gt'
-        if (prop in where[k]) {
-          wheres.push(k + ` > $${$i++}`)
-          values.push(where[k][prop])
-          continue
-        }
-
-        prop = '$lt'
-        if (prop in where[k]) {
-          wheres.push(k + ` < $${$i++}`)
-          values.push(where[k][prop])
-          continue
-        }
-
-        prop = '$ne'
-        if (prop in where[k]) {
-          if (where[k][prop] === null) {
-            wheres.push(k + ` IS NOT NULL`)
-          } else {
-            wheres.push(k + ` != $${$i++}`)
+          if (prop === '$gte') {
+            wheres.push(k + ` >= $${$i++}`)
             values.push(where[k][prop])
+            continue
           }
-          continue
-        }
 
-        // TODO: implement rest of mongo like query args ($eq, $lte, $in...)
-        throw new Error('not implemented: ' + JSON.stringify(where[k]))
+          if (prop === '$lte') {
+            wheres.push(k + ` <= $${$i++}`)
+            values.push(where[k][prop])
+            continue
+          }
+
+          if (prop === '$gt') {
+            wheres.push(k + ` > $${$i++}`)
+            values.push(where[k][prop])
+            continue
+          }
+
+          if (prop === '$lt') {
+            wheres.push(k + ` < $${$i++}`)
+            values.push(where[k][prop])
+            continue
+          }
+
+          if (prop === '$ne') {
+            if (where[k][prop] === null) {
+              wheres.push(k + ` IS NOT NULL`)
+            } else {
+              wheres.push(k + ` != $${$i++}`)
+              values.push(where[k][prop])
+            }
+            continue
+          }
+
+          // TODO: implement rest of mongo like query args ($eq, $lte, $in...)
+          throw new Error('not implemented: ' + prop + ' '+ JSON.stringify(where[k]))
+        }
+        continue
       }
 
       wheres.push(k + ` = $${$i++}`)
