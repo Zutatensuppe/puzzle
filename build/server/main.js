@@ -480,6 +480,19 @@ class Db {
             throw e;
         }
     }
+    async txn(fn) {
+        await this.dbh.query('BEGIN');
+        try {
+            const retval = await fn();
+            await this.dbh.query('COMMIT');
+            return retval;
+        }
+        catch (e) {
+            await this.dbh.query('ROLLBACK');
+            log$7.error(e);
+            return null;
+        }
+    }
     async run(query, params = []) {
         try {
             return await this.dbh.query(query, params);
@@ -2351,6 +2364,10 @@ function createRouter$2(server) {
         const finishedCount = await server.getGameService().countPublicFinishedGames();
         const gamesRunning = runningRows.map((v) => GameToGameInfo(v, ts));
         const gamesFinished = finishedRows.map((v) => GameToGameInfo(v, ts));
+        const leaderboardTop10 = await server.getLeaderboardRepo().getTop10();
+        const user = req.user || null;
+        // TODO: improve :)
+        const leaderboardUser = user && req.user_type === 'user' ? await server.getLeaderboardRepo().getByUserId(user.id) : null;
         const indexData = {
             gamesRunning: {
                 items: gamesRunning,
@@ -2360,6 +2377,8 @@ function createRouter$2(server) {
                 items: gamesFinished,
                 pagination: { total: finishedCount, offset: 0, limit: GAMES_PER_PAGE_LIMIT }
             },
+            leaderboardTop10,
+            leaderboardUser,
         };
         res.send(indexData);
     });
@@ -2599,7 +2618,7 @@ const __dirname = dirname(__filename);
 const indexFile = path.resolve(__dirname, '..', '..', 'build', 'public', 'index.html');
 const log$3 = logger('Server.ts');
 class Server {
-    constructor(db, mail, canny, discord, gameSockets, gameService, users, images, imageResize, tokensRepo, announcementsRepo) {
+    constructor(db, mail, canny, discord, gameSockets, gameService, users, images, imageResize, tokensRepo, announcementsRepo, leaderboardRepo) {
         this.db = db;
         this.mail = mail;
         this.canny = canny;
@@ -2611,6 +2630,7 @@ class Server {
         this.imageResize = imageResize;
         this.tokensRepo = tokensRepo;
         this.announcementsRepo = announcementsRepo;
+        this.leaderboardRepo = leaderboardRepo;
         this.webserver = null;
         this.websocketserver = null;
         // pass
@@ -2647,6 +2667,9 @@ class Server {
     }
     getAnnouncementsRepo() {
         return this.announcementsRepo;
+    }
+    getLeaderboardRepo() {
+        return this.leaderboardRepo;
     }
     async persistGame(gameId) {
         const game = GameCommon.get(gameId);
@@ -2698,7 +2721,7 @@ class Server {
                 const ts = Time.timestamp();
                 const clientSeq = -1; // client lost connection, so clientSeq doesn't matter
                 const clientEvtData = [Protocol.INPUT_EV_CONNECTION_CLOSE];
-                const changes = this.gameService.handleInput(gameId, clientId, clientEvtData, ts);
+                const changes = await this.gameService.handleInput(gameId, clientId, clientEvtData, ts);
                 const sockets = this.gameSockets.getSockets(gameId);
                 if (sockets.length) {
                     notify([Protocol.EV_SERVER_EVENT, clientId, clientSeq, changes], sockets);
@@ -2772,7 +2795,7 @@ class Server {
                                 }
                                 notify([Protocol.EV_SERVER_INIT, Util.encodeGame(game)], [socket]);
                             }
-                            const changes = this.gameService.handleInput(gameId, clientId, clientEvtData, ts);
+                            const changes = await this.gameService.handleInput(gameId, clientId, clientEvtData, ts);
                             notify([Protocol.EV_SERVER_EVENT, clientId, clientSeq, changes], this.gameSockets.getSockets(gameId));
                         }
                         break;
@@ -2840,9 +2863,10 @@ class GameSockets {
 
 const log$1 = logger('GameService.js');
 class GameService {
-    constructor(repo, puzzleService) {
+    constructor(repo, puzzleService, leaderboardRepo) {
         this.repo = repo;
         this.puzzleService = puzzleService;
+        this.leaderboardRepo = leaderboardRepo;
         this.dirtyGames = {};
         // pass
     }
@@ -2932,9 +2956,12 @@ class GameService {
             finished: game.puzzle.data.finished ? new Date(game.puzzle.data.finished) : null,
             data: JSON.stringify(this.gameToStoreData(game)),
             private: game.private ? 1 : 0,
+            pieces_count: game.puzzle.tiles.length,
         }, {
             id: game.id,
         });
+        await this.repo.updatePlayerRelations(game.id, game.players);
+        game.players;
         log$1.info(`[INFO] persisted game ${game.id}`);
     }
     storeDataToGame(storeData, creatorUserId, isPrivate) {
@@ -3003,7 +3030,7 @@ class GameService {
         GameLog.create(gameId, ts);
         GameLog.log(gameObject.id, Protocol.LOG_HEADER, gameObject.gameVersion, gameSettings.tiles, gameSettings.image, ts, gameObject.scoreMode, gameObject.shapeMode, gameObject.snapMode, gameObject.creatorUserId, gameObject.private ? 1 : 0, gameSettings.crop);
         GameCommon.setGame(gameObject.id, gameObject);
-        this.setDirty(gameObject.id);
+        await this.persistGame(gameObject);
         return gameObject.id;
     }
     addPlayer(gameId, playerId, ts) {
@@ -3019,13 +3046,24 @@ class GameService {
         GameCommon.addPlayer(gameId, playerId, ts);
         this.setDirty(gameId);
     }
-    handleInput(gameId, playerId, input, ts) {
+    async handleInput(gameId, playerId, input, ts) {
         if (GameLog.shouldLog(GameCommon.getFinishTs(gameId), ts)) {
             const idx = GameCommon.getPlayerIndexById(gameId, playerId);
             GameLog.log(gameId, Protocol.LOG_HANDLE_INPUT, idx, input, ts);
         }
+        const wasFinished = GameCommon.getFinishTs(gameId);
         const ret = GameCommon.handleInput(gameId, playerId, input, ts);
+        const isFinished = GameCommon.getFinishTs(gameId);
         this.setDirty(gameId);
+        if (!wasFinished && isFinished) {
+            const game = GameCommon.get(gameId);
+            if (game) {
+                // persist game immediately when it was just finished
+                // and also update the leaderboard afterwards
+                await this.persistGame(game);
+                await this.leaderboardRepo.updateLeaderboard();
+            }
+        }
         return ret;
     }
 }
@@ -3061,6 +3099,27 @@ class GamesRepo {
     }
     async upsert(row, where) {
         await this.db.upsert(TABLE$6, row, where);
+    }
+    async updatePlayerRelations(gameId, players) {
+        if (!players.length) {
+            return;
+        }
+        const decodedPlayers = players.map(player => Util.decodePlayer(player));
+        const userRows = await this.db.getMany('users', { client_id: { '$in': decodedPlayers.map(p => p.id) } });
+        for (const p of decodedPlayers) {
+            const userRow = userRows.find(row => row.client_id === p.id);
+            const userId = userRow
+                ? userRow.id
+                : await this.db.insert('users', { client_id: p.id, created: new Date() }, 'id');
+            await this.db.upsert('user_x_game', {
+                user_id: userId,
+                game_id: gameId,
+                pieces_count: p.points,
+            }, {
+                user_id: userId,
+                game_id: gameId,
+            });
+        }
     }
 }
 
@@ -3765,6 +3824,64 @@ class PuzzleService {
     }
 }
 
+class LeaderboardRepo {
+    constructor(db) {
+        this.db = db;
+        // pass
+    }
+    async updateLeaderboard() {
+        await this.db.txn(async () => {
+            await this.db.run('truncate leaderboard');
+            const relevantUsers = await this.db._getMany(`
+        select u.id from users u
+          inner join user_identity ui on ui.user_id = u.id and ui.provider_name = 'local'
+          inner join accounts a on a.id::text = ui.provider_id and a.status = 'verified'
+        union
+        select u.id from users u
+          inner join user_identity ui on ui.user_id = u.id and ui.provider_name = 'twitch'
+      `);
+            const where = this.db._buildWhere({ user_id: { '$in': relevantUsers.map(row => row.id) } });
+            const rows = await this.db._getMany(`
+        select
+          uxg.user_id,
+          count(uxg.game_id)::int as games_count,
+          sum(uxg.pieces_count)::int as pieces_count
+        from user_x_game uxg
+        inner join games g on g.id = uxg.game_id and g.finished is not null and g.private = 0
+        ${where.sql}
+        group by uxg.user_id
+        order by pieces_count desc, games_count desc
+      `, where.values);
+            let i = 1;
+            for (const row of rows) {
+                row.rank = i++;
+                this.db.insert('leaderboard', row);
+            }
+        });
+    }
+    async getByUserId(userId) {
+        return await this.db._get(`
+      select
+        lb.*, u.name as user_name
+      from leaderboard lb
+        inner join users u on u.id = lb.user_id
+      where lb.user_id = $1
+    `, [userId]);
+    }
+    async getTop10() {
+        return await this.db._getMany(`
+      select
+        lb.*, u.name as user_name
+      from leaderboard lb
+        inner join users u on u.id = lb.user_id
+      order by
+        lb.pieces_count desc,
+        lb.games_count desc
+      limit 10
+    `);
+    }
+}
+
 const run = async () => {
     const db = new Db(config.db.connectStr, config.dir.DB_PATCHES_DIR);
     await db.connect();
@@ -3781,8 +3898,9 @@ const run = async () => {
     const tokensRepo = new TokensRepo(db);
     const announcementsRepo = new AnnouncementsRepo(db);
     const puzzleService = new PuzzleService(images);
-    const gameService = new GameService(gamesRepo, puzzleService);
-    const server = new Server(db, mail, canny, discord, gameSockets, gameService, users, images, imageResize, tokensRepo, announcementsRepo);
+    const leaderboardRepo = new LeaderboardRepo(db);
+    const gameService = new GameService(gamesRepo, puzzleService, leaderboardRepo);
+    const server = new Server(db, mail, canny, discord, gameSockets, gameService, users, images, imageResize, tokensRepo, announcementsRepo, leaderboardRepo);
     server.start();
     const log = logger('main.js');
     const memoryUsageHuman = () => {

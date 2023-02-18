@@ -213,6 +213,19 @@ class Db {
     }
   }
 
+  async txn(fn: () => Promise<any>): Promise<any> {
+    await this.dbh.query('BEGIN')
+    try {
+      const retval = await fn()
+      await this.dbh.query('COMMIT')
+      return retval
+    } catch (e) {
+      await this.dbh.query('ROLLBACK')
+      log.error(e)
+      return null
+    }
+  }
+
   async run(query: string, params: Params = []): Promise<pg.QueryResult> {
     try {
       return await this.dbh.query(query, params)

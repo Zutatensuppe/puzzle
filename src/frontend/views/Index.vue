@@ -13,18 +13,31 @@
         </div>
       </v-col>
     </v-row>
-    <h1>Running games</h1>
-    <v-container :fluid="true" class="pl-0 pr-0 game-teasers-holder running-games">
-      <RunningGameTeaser
-        v-for="(g, idx) in data.gamesRunning.items"
-        :game="g"
-        :key="idx"
-        @goToGame="goToGame"
-        @goToReplay="goToReplay"
-      />
-    </v-container>
 
-    <h1>Finished games</h1>
+    <div class="running-games-and-leaderboard">
+      <div class="running-games-container">
+        <h1>Running games</h1>
+        <v-container :fluid="true" class="pl-0 pr-0 game-teasers-holder running-games">
+          <RunningGameTeaser
+            v-for="(g, idx) in data.gamesRunning.items"
+            :game="g"
+            :key="idx"
+            @goToGame="goToGame"
+            @goToReplay="goToReplay"
+          />
+        </v-container>
+      </div>
+
+      <div class="leaderboard-container">
+        <h1>Leaderboard</h1>
+        <Leaderboard :rows="data.leaderboardTop10" :userRow="data.leaderboardUser" />
+        <div class="mt-2 text-caption text-disabled">
+          ※ only registered users show up on the leaderboard
+        </div>
+      </div>
+    </div>
+
+    <h1 class="mt-5">Finished games</h1>
     <Pagination :pagination="data.gamesFinished.pagination" @click="onPagination" />
     <v-container :fluid="true" class="pl-0 pr-0 game-teasers-holder finished-games">
       <FinishedGameTeaser
@@ -46,6 +59,7 @@ import RunningGameTeaser from '../components/RunningGameTeaser.vue';
 import FinishedGameTeaser from '../components/FinishedGameTeaser.vue';
 import Pagination from '../components/Pagination.vue';
 import api from '../_api'
+import Leaderboard from '../components/Leaderboard.vue';
 
 const router = useRouter()
 const data = ref<ApiDataIndexData | null>(null)

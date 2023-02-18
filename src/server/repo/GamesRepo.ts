@@ -1,3 +1,5 @@
+import { EncodedPlayer } from '../../common/Types'
+import Util from '../../common/Util'
 import Db, { WhereRaw } from '../Db'
 
 const TABLE = 'games'
@@ -10,6 +12,7 @@ export interface GameRow {
   finished: Date | null
   data: string
   private: number
+  pieces_count: number
 }
 
 export class GamesRepo {
@@ -59,5 +62,28 @@ export class GamesRepo {
 
   async upsert(row: GameRow, where: WhereRaw): Promise<void> {
     await this.db.upsert(TABLE, row, where)
+  }
+
+  async updatePlayerRelations(gameId: string, players: EncodedPlayer[]): Promise<void> {
+    if (!players.length) {
+      return
+    }
+    const decodedPlayers = players.map(player => Util.decodePlayer(player))
+    const userRows = await this.db.getMany('users', { client_id: { '$in': decodedPlayers.map(p => p.id )}})
+    for (const p of decodedPlayers) {
+      const userRow = userRows.find(row => row.client_id === p.id)
+      const userId = userRow
+        ? userRow.id
+        : await this.db.insert('users', { client_id: p.id, created: new Date() }, 'id')
+
+      await this.db.upsert('user_x_game', {
+        user_id: userId,
+        game_id: gameId,
+        pieces_count: p.points,
+      }, {
+        user_id: userId,
+        game_id: gameId,
+      })
+    }
   }
 }

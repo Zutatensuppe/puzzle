@@ -9,6 +9,7 @@ import Time from '../../../common/Time'
 import Util, { logger, uniqId } from '../../../common/Util'
 import { COOKIE_TOKEN, generateSalt, generateToken, passwordHash } from '../../Auth'
 import { ServerInterface } from '../../Server'
+import { UserRow } from '../../repo/UsersRepo'
 
 const log = logger('web_routes/api/index.ts')
 
@@ -467,7 +468,7 @@ export default function createRouter(
     }
   }
 
-  router.get('/index-data', async (req, res): Promise<void> => {
+  router.get('/index-data', async (req: any, res): Promise<void> => {
     const ts = Time.timestamp()
     // all running rows
     const runningRows = await server.getGameService().getPublicRunningGames(-1, -1)
@@ -478,6 +479,12 @@ export default function createRouter(
     const gamesRunning: GameInfo[] = runningRows.map((v) => GameToGameInfo(v, ts))
     const gamesFinished: GameInfo[] = finishedRows.map((v) => GameToGameInfo(v, ts))
 
+    const leaderboardTop10 = await server.getLeaderboardRepo().getTop10()
+
+    const user: UserRow | null = req.user || null
+    // TODO: improve :)
+    const leaderboardUser = user && req.user_type === 'user' ? await server.getLeaderboardRepo().getByUserId(user.id) : null
+
     const indexData: ApiDataIndexData = {
       gamesRunning: {
         items: gamesRunning,
@@ -487,6 +494,8 @@ export default function createRouter(
         items: gamesFinished,
         pagination: { total: finishedCount, offset: 0, limit: GAMES_PER_PAGE_LIMIT }
       },
+      leaderboardTop10,
+      leaderboardUser,
     }
     res.send(indexData)
   })
@@ -509,7 +518,7 @@ export default function createRouter(
   })
 
   router.post('/save-image', express.json(), async (req: any, res): Promise<void> => {
-    const user = req.user || null
+    const user: UserRow | null = req.user || null
     if (!user || !user.id) {
       res.status(403).send({ ok: false, error: 'forbidden' })
       return
