@@ -31,27 +31,26 @@
       <div class="leaderboard-container">
         <h1>Leaderboard</h1>
         <v-tabs v-model="leaderboardTab">
-          <v-tab value="overall" title="All finished puzzles">Overall</v-tab>
-          <v-tab value="1000+" title="Only puzzles with 1000 and more pieces"><v-icon icon="mdi-puzzle"/> 1000+</v-tab>
-          <v-tab value="500+" title="Only puzzles with 500 - 999 pieces"><v-icon icon="mdi-puzzle"/> 500+</v-tab>
-          <v-tab value="100+" title="Only puzzles with 100 - 499 pieces"><v-icon icon="mdi-puzzle"/> 100+</v-tab>
+          <v-tab value="week">Weekly</v-tab>
+          <v-tab value="month">Monthly</v-tab>
+          <v-tab value="alltime">Alltime</v-tab>
         </v-tabs>
 
         <v-window v-model="leaderboardTab">
-          <v-window-item value="overall">
-            <Leaderboard v-if="leaderboardOverall" :lb="leaderboardOverall" />
+          <v-window-item value="week">
+            <p class="pt-2 pb-2 text-medium-emphasis">Finished puzzles within a week.</p>
+            <Leaderboard v-if="leaderboardWeek" :lb="leaderboardWeek" />
           </v-window-item>
-          <v-window-item value="1000+">
-            <Leaderboard v-if="leaderboard1000" :lb="leaderboard1000" />
+          <v-window-item value="month">
+            <p class="pt-2 pb-2 text-medium-emphasis">Finished puzzles within a month.</p>
+            <Leaderboard v-if="leaderboardMonth" :lb="leaderboardMonth" />
           </v-window-item>
-          <v-window-item value="500+">
-            <Leaderboard v-if="leaderboard500" :lb="leaderboard500" />
-          </v-window-item>
-          <v-window-item value="100+">
-            <Leaderboard v-if="leaderboard100" :lb="leaderboard100" />
+          <v-window-item value="alltime">
+            <p class="pt-2 pb-2 text-medium-emphasis">All finished puzzles.</p>
+            <Leaderboard v-if="leaderboardAlltime" :lb="leaderboardAlltime" />
           </v-window-item>
         </v-window>
-        <div class="mt-2 text-disabled" v-if="!me || me.type !== 'user'">
+        <div class="mt-5 text-disabled" v-if="!me || me.type !== 'user'">
           <v-btn @click="login" density="comfortable">Login</v-btn> to show up on the leaderboard!
         </div>
       </div>
@@ -104,19 +103,16 @@ const goToReplay = ((game: any) => {
   router.push({ name: 'replay', params: { id: game.id } })
 })
 
-const leaderboardTab = ref<string>('overall')
+const leaderboardTab = ref<string>('week')
 
-const leaderboardOverall = computed(() => {
-  return data.value?.leaderboards.find(lb => lb.name === 'overall')
+const leaderboardWeek = computed(() => {
+  return data.value?.leaderboards.find(lb => lb.name === 'week')
 })
-const leaderboard1000 = computed(() => {
-  return data.value?.leaderboards.find(lb => lb.name === '1000+')
+const leaderboardMonth = computed(() => {
+  return data.value?.leaderboards.find(lb => lb.name === 'month')
 })
-const leaderboard500 = computed(() => {
-  return data.value?.leaderboards.find(lb => lb.name === '500+')
-})
-const leaderboard100 = computed(() => {
-  return data.value?.leaderboards.find(lb => lb.name === '100+')
+const leaderboardAlltime = computed(() => {
+  return data.value?.leaderboards.find(lb => lb.name === 'alltime')
 })
 
 const onPagination = async (q: { limit: number, offset: number }) => {

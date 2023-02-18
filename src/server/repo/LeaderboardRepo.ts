@@ -1,5 +1,5 @@
 import { Leaderboard, LeaderboardEntry } from '../../common/Types'
-import Db, { WhereRaw } from '../Db'
+import Db from '../Db'
 
 interface LeaderboardRow {
   id: number
@@ -8,10 +8,9 @@ interface LeaderboardRow {
 
 export class LeaderboardRepo {
   private readonly LEADERBOARDS = [
-    { name: 'overall', minPieces: -1, maxPieces: -1 },
-    { name: '1000+', minPieces: 1000, maxPieces: -1 },
-    { name: '500+', minPieces: 500, maxPieces: 999 },
-    { name: '100+', minPieces: 100, maxPieces: 499 },
+    { name: 'alltime' },
+    { name: 'week' },
+    { name: 'month' },
   ]
 
   constructor(
@@ -26,17 +25,6 @@ export class LeaderboardRepo {
 
       for (const lb of this.LEADERBOARDS) {
         const leaderboardId = await this.db.upsert('leaderboard', { name: lb.name }, { name: lb.name }, 'id')
-        const whereRaw: WhereRaw = {}
-        if (lb.minPieces >= 0) {
-          whereRaw['g.pieces_count'] = whereRaw['g.pieces_count'] || {}
-          whereRaw['g.pieces_count']['$gte'] = lb.minPieces
-        }
-        if (lb.maxPieces >= 0) {
-          whereRaw['g.pieces_count'] = whereRaw['g.pieces_count'] || {}
-          whereRaw['g.pieces_count']['$lte'] = lb.maxPieces
-        }
-
-        const where = this.db._buildWhere(whereRaw)
         const rows = await this.db._getMany(`
           with relevant_users as (
             select u.id from users u
@@ -53,7 +41,13 @@ export class LeaderboardRepo {
               sum(uxg.pieces_count)::int as pieces_count
             from user_x_game uxg
             inner join games g on g.id = uxg.game_id and g.finished is not null and g.private = 0
-            ${where.sql}
+            where
+              uxg.pieces_count > 0
+              ${
+                lb.name === 'week' ? `and g.finished > (current_timestamp - interval '1 week')` :
+                lb.name === 'month' ? `and g.finished > (current_timestamp - interval '1 month')` :
+                ''
+              }
             group by uxg.user_id
           )
           select
@@ -63,7 +57,7 @@ export class LeaderboardRepo {
           from relevant_users u
           left join tmp on tmp.user_id = u.id
           order by pieces_count desc, games_count desc
-        `, where.values)
+        `)
         let i = 1
         for (const row of rows) {
           row.leaderboard_id = leaderboardId
