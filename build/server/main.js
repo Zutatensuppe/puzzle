@@ -375,7 +375,7 @@ class Db {
             }
             if (typeof where[k] === 'object') {
                 let prop = '$nin';
-                if (where[k][prop]) {
+                if (prop in where[k]) {
                     if (where[k][prop].length > 0) {
                         wheres.push(k + ' NOT IN (' + where[k][prop].map(() => `$${$i++}`) + ')');
                         values.push(...where[k][prop]);
@@ -386,7 +386,7 @@ class Db {
                     continue;
                 }
                 prop = '$in';
-                if (where[k][prop]) {
+                if (prop in where[k]) {
                     if (where[k][prop].length > 0) {
                         wheres.push(k + ' IN (' + where[k][prop].map(() => `$${$i++}`) + ')');
                         values.push(...where[k][prop]);
@@ -397,43 +397,44 @@ class Db {
                     continue;
                 }
                 prop = "$gte";
-                if (where[k][prop]) {
+                if (prop in where[k]) {
                     wheres.push(k + ` >= $${$i++}`);
                     values.push(where[k][prop]);
                     continue;
                 }
                 prop = "$lte";
-                if (where[k][prop]) {
+                if (prop in where[k]) {
                     wheres.push(k + ` <= $${$i++}`);
                     values.push(where[k][prop]);
                     continue;
                 }
                 prop = "$lte";
-                if (where[k][prop]) {
+                if (prop in where[k]) {
                     wheres.push(k + ` <= $${$i++}`);
                     values.push(where[k][prop]);
                     continue;
                 }
                 prop = '$gt';
-                if (where[k][prop]) {
+                if (prop in where[k]) {
                     wheres.push(k + ` > $${$i++}`);
                     values.push(where[k][prop]);
                     continue;
                 }
                 prop = '$lt';
-                if (where[k][prop]) {
+                if (prop in where[k]) {
                     wheres.push(k + ` < $${$i++}`);
                     values.push(where[k][prop]);
                     continue;
                 }
                 prop = '$ne';
-                if (where[k][prop] === null) {
-                    wheres.push(k + ` IS NOT NULL`);
-                    continue;
-                }
-                else if (where[k][prop]) {
-                    wheres.push(k + ` != $${$i++}`);
-                    values.push(where[k][prop]);
+                if (prop in where[k]) {
+                    if (where[k][prop] === null) {
+                        wheres.push(k + ` IS NOT NULL`);
+                    }
+                    else {
+                        wheres.push(k + ` != $${$i++}`);
+                        values.push(where[k][prop]);
+                    }
                     continue;
                 }
                 // TODO: implement rest of mongo like query args ($eq, $lte, $in...)
