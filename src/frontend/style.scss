@@ -705,7 +705,15 @@ fieldset {
     width: 1%;
   }
 
-  .user-rank-row td {
-    border-top: 2px solid rgba(var(--v-theme-on-surface), var(--v-disabled-opacity));
+  .user-rank-row {
+    td {
+      background: rgba(var(--v-theme-surface-variant), 20%);
+    }
+
+    &.with-border {
+      td {
+        border-top: 2px solid rgba(var(--v-theme-on-surface), var(--v-disabled-opacity));
+      }
+    }
   }
 }

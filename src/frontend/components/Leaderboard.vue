@@ -9,7 +9,7 @@
       </tr>
     </thead>
     <tbody v-if="lb.entries.length > 0 || lb.userEntry">
-      <tr v-for="(row) in lb.entries">
+      <tr v-for="row in lb.entries" :class="{'user-rank-row': row.user_id === lb.userEntry?.user_id}">
         <td class="text-center">
           <v-icon v-if="row.rank === 1" icon="mdi-podium-gold" class="text-amber" />
           <v-icon v-else-if="row.rank === 2" icon="mdi-podium-silver" class="text-blue-grey" />
@@ -20,9 +20,9 @@
         <td>{{ row.pieces_count }}</td>
         <td>{{ row.games_count }}</td>
       </tr>
-      <tr v-if="lb.userEntry && lb.userEntry.rank > 10" class="user-rank-row">
+      <tr v-if="lb.userEntry && (!lb.userEntry.rank || lb.userEntry.rank > lb.entries.length)" class="user-rank-row with-border">
         <td class="text-center">
-          {{ lb.userEntry.rank }}
+          {{ lb.userEntry.rank || '-' }}
         </td>
         <td>{{ lb.userEntry.user_name }}</td>
         <td>{{ lb.userEntry.pieces_count }}</td>
