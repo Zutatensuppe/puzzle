@@ -4,12 +4,12 @@
       <tr>
         <th>Rank</th>
         <th>User</th>
-        <th>Games</th>
         <th>Pieces</th>
+        <th>Games</th>
       </tr>
     </thead>
-    <tbody>
-      <tr v-for="(row) in rows">
+    <tbody v-if="lb.entries.length > 0 || lb.userEntry">
+      <tr v-for="(row) in lb.entries">
         <td class="text-center">
           <v-icon v-if="row.rank === 1" icon="mdi-podium-gold" class="text-amber" />
           <v-icon v-else-if="row.rank === 2" icon="mdi-podium-silver" class="text-blue-grey" />
@@ -17,25 +17,29 @@
           <span v-else>{{ row.rank }}</span>
         </td>
         <td>{{ row.user_name }}</td>
-        <td>{{ row.games_count }}</td>
         <td>{{ row.pieces_count }}</td>
+        <td>{{ row.games_count }}</td>
       </tr>
-      <tr v-if="userRow && userRow.rank > 10" class="user-rank-row">
+      <tr v-if="lb.userEntry && lb.userEntry.rank > 10" class="user-rank-row">
         <td class="text-center">
-          {{ userRow.rank }}
+          {{ lb.userEntry.rank }}
         </td>
-        <td>{{ userRow.user_name }}</td>
-        <td>{{ userRow.games_count }}</td>
-        <td>{{ userRow.pieces_count }}</td>
+        <td>{{ lb.userEntry.user_name }}</td>
+        <td>{{ lb.userEntry.pieces_count }}</td>
+        <td>{{ lb.userEntry.games_count }}</td>
+      </tr>
+    </tbody>
+    <tbody v-else>
+      <tr>
+        <td colspan="4" class="text-disabled">No entries yet.</td>
       </tr>
     </tbody>
   </v-table>
 </template>
 <script setup lang="ts">
-import { LeaderboardRow } from '../../common/Types'
+import { Leaderboard } from '../../common/Types'
 
 defineProps<{
-  rows: LeaderboardRow[],
-  userRow: LeaderboardRow | null
+  lb: Leaderboard
 }>()
 </script>

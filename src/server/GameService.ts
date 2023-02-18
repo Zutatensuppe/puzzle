@@ -311,7 +311,7 @@ export class GameService {
         // persist game immediately when it was just finished
         // and also update the leaderboard afterwards
         await this.persistGame(game)
-        await this.leaderboardRepo.updateLeaderboard()
+        await this.leaderboardRepo.updateLeaderboards()
       }
     }
     return ret

@@ -30,7 +30,27 @@
 
       <div class="leaderboard-container">
         <h1>Leaderboard</h1>
-        <Leaderboard :rows="data.leaderboardTop10" :userRow="data.leaderboardUser" />
+        <v-tabs v-model="leaderboardTab">
+          <v-tab value="overall" title="All finished puzzles">Overall</v-tab>
+          <v-tab value="1000+" title="Only puzzles with 1000 and more pieces"><v-icon icon="mdi-puzzle"/> 1000+</v-tab>
+          <v-tab value="500+" title="Only puzzles with 500 - 999 pieces"><v-icon icon="mdi-puzzle"/> 500+</v-tab>
+          <v-tab value="100+" title="Only puzzles with 100 - 499 pieces"><v-icon icon="mdi-puzzle"/> 100+</v-tab>
+        </v-tabs>
+
+        <v-window v-model="leaderboardTab">
+          <v-window-item value="overall">
+            <Leaderboard v-if="leaderboardOverall" :lb="leaderboardOverall" />
+          </v-window-item>
+          <v-window-item value="1000+">
+            <Leaderboard v-if="leaderboard1000" :lb="leaderboard1000" />
+          </v-window-item>
+          <v-window-item value="500+">
+            <Leaderboard v-if="leaderboard500" :lb="leaderboard500" />
+          </v-window-item>
+          <v-window-item value="100+">
+            <Leaderboard v-if="leaderboard100" :lb="leaderboard100" />
+          </v-window-item>
+        </v-window>
         <div class="mt-2 text-caption text-disabled">
           ※ only registered users show up on the leaderboard
         </div>
@@ -52,7 +72,7 @@
   </v-container>
 </template>
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router';
 import { ApiDataFinishedGames, ApiDataIndexData } from '../../common/Types';
 import RunningGameTeaser from '../components/RunningGameTeaser.vue';
@@ -69,6 +89,21 @@ const goToGame = ((game: any) => {
 })
 const goToReplay = ((game: any) => {
   router.push({ name: 'replay', params: { id: game.id } })
+})
+
+const leaderboardTab = ref<string>('overall')
+
+const leaderboardOverall = computed(() => {
+  return data.value?.leaderboards.find(lb => lb.name === 'overall')
+})
+const leaderboard1000 = computed(() => {
+  return data.value?.leaderboards.find(lb => lb.name === '1000+')
+})
+const leaderboard500 = computed(() => {
+  return data.value?.leaderboards.find(lb => lb.name === '500+')
+})
+const leaderboard100 = computed(() => {
+  return data.value?.leaderboards.find(lb => lb.name === '100+')
 })
 
 const onPagination = async (q: { limit: number, offset: number }) => {

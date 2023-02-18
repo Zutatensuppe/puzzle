@@ -324,7 +324,15 @@ export interface ApiGamesData {
   pagination: Pagination
 }
 
-export interface LeaderboardRow {
+export interface Leaderboard {
+  id: number
+  name: string
+  entries: LeaderboardEntry[]
+  userEntry: LeaderboardEntry | null
+}
+
+export interface LeaderboardEntry {
+  leaderboard_id: number
   rank: number
   user_id: number
   user_name: string
@@ -335,8 +343,7 @@ export interface LeaderboardRow {
 export interface ApiDataIndexData {
   gamesRunning: ApiGamesData
   gamesFinished: ApiGamesData
-  leaderboardTop10: LeaderboardRow[]
-  leaderboardUser: LeaderboardRow | null
+  leaderboards: Leaderboard[]
 }
 
 export type ApiDataFinishedGames = ApiGamesData
