@@ -44,21 +44,8 @@ export class LeaderboardRepo {
           whereRaw['g.pieces_count'] = whereRaw['g.pieces_count'] || {}
           whereRaw['g.pieces_count']['$lte'] = lb.maxPieces
         }
-        console.log(whereRaw)
 
         const where = this.db._buildWhere(whereRaw)
-        console.log(where)
-        console.log(`
-        select
-          uxg.user_id,
-          count(uxg.game_id)::int as games_count,
-          sum(uxg.pieces_count)::int as pieces_count
-        from user_x_game uxg
-        inner join games g on g.id = uxg.game_id and g.finished is not null and g.private = 0
-        ${where.sql}
-        group by uxg.user_id
-        order by pieces_count desc, games_count desc
-      `)
         const rows = await this.db._getMany(`
         select
           uxg.user_id,
