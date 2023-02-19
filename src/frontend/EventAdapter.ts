@@ -21,8 +21,26 @@ export class EventAdapter {
   private lastMouseRaw: [number, number]|null = null
   private lastMouseWorld: [number, number]|null = null
 
+  private onResize
+  private onMouseDown
+  private onMouseUp
+  private onMouseMove
+  private onWheel
+  private onKeyUp
+  private onKeyDown
+  private onKeyPress
+  private onWndMouseDown
+
   constructor (private game: Game<any>) {
-    // pass
+    this.onResize = this.game.initCenterPuzzle.bind(this.game)
+    this.onMouseDown = this._onMouseDown.bind(this)
+    this.onMouseUp = this._onMouseUp.bind(this)
+    this.onMouseMove = this._onMouseMove.bind(this)
+    this.onWheel = this._onWheel.bind(this)
+    this.onKeyUp = this._onKeyUp.bind(this)
+    this.onKeyDown = this._onKeyDown.bind(this)
+    this.onKeyPress = this._onKeyPress.bind(this)
+    this.onWndMouseDown = this._onWndMouseDown.bind(this)
   }
 
   _toWorldPoint (x: number, y: number): [number, number] {
@@ -165,24 +183,27 @@ export class EventAdapter {
   }
 
   registerEvents () {
-    this.game.getCanvas().addEventListener('mousedown', this._onMouseDown.bind(this))
-    this.game.getCanvas().addEventListener('mouseup', this._onMouseUp.bind(this))
-    this.game.getCanvas().addEventListener('mousemove', this._onMouseMove.bind(this))
-    this.game.getCanvas().addEventListener('wheel', this._onWheel.bind(this))
-    this.game.getWindow().addEventListener('keydown', this._onKeyUp.bind(this))
-    this.game.getWindow().addEventListener('keyup', this._onKeyDown.bind(this))
-    this.game.getWindow().addEventListener('keypress', this._onKeyPress.bind(this))
-    this.game.getWindow().addEventListener('mousedown', this._onWndMouseDown.bind(this))
+    this.game.getWindow().addEventListener('resize', this.onResize)
+    this.game.getCanvas().addEventListener('mousedown', this.onMouseDown)
+    this.game.getCanvas().addEventListener('mouseup', this.onMouseUp)
+    this.game.getCanvas().addEventListener('mousemove', this.onMouseMove)
+    this.game.getCanvas().addEventListener('wheel', this.onWheel)
+    this.game.getWindow().addEventListener('keydown', this.onKeyUp)
+    this.game.getWindow().addEventListener('keyup', this.onKeyDown)
+    this.game.getWindow().addEventListener('keypress', this.onKeyPress)
+    this.game.getWindow().addEventListener('mousedown', this.onWndMouseDown)
   }
+
   unregisterEvents () {
-    this.game.getCanvas().removeEventListener('mousedown', this._onMouseDown.bind(this))
-    this.game.getCanvas().removeEventListener('mouseup', this._onMouseUp.bind(this))
-    this.game.getCanvas().removeEventListener('mousemove', this._onMouseMove.bind(this))
-    this.game.getCanvas().removeEventListener('wheel', this._onWheel.bind(this))
-    this.game.getWindow().removeEventListener('keydown', this._onKeyUp.bind(this))
-    this.game.getWindow().removeEventListener('keyup', this._onKeyDown.bind(this))
-    this.game.getWindow().removeEventListener('keypress', this._onKeyPress.bind(this))
-    this.game.getWindow().removeEventListener('mousedown', this._onWndMouseDown.bind(this))
+    this.game.getWindow().removeEventListener('resize', this.onResize)
+    this.game.getCanvas().removeEventListener('mousedown', this.onMouseDown)
+    this.game.getCanvas().removeEventListener('mouseup', this.onMouseUp)
+    this.game.getCanvas().removeEventListener('mousemove', this.onMouseMove)
+    this.game.getCanvas().removeEventListener('wheel', this.onWheel)
+    this.game.getWindow().removeEventListener('keydown', this.onKeyUp)
+    this.game.getWindow().removeEventListener('keyup', this.onKeyDown)
+    this.game.getWindow().removeEventListener('keypress', this.onKeyPress)
+    this.game.getWindow().removeEventListener('mousedown', this.onWndMouseDown)
   }
 
   createSnapshotEvents (prev: Snapshot, curr: Snapshot) {
