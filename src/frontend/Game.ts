@@ -125,6 +125,10 @@ export abstract class Game<HudType extends Hud> {
 
   abstract unload(): void
 
+  registerEvents(): void {
+    this.evts.registerEvents()
+  }
+
   unregisterEvents(): void {
     this.evts.unregisterEvents()
   }
@@ -189,10 +193,9 @@ export abstract class Game<HudType extends Hud> {
       this.tableHeight,
     )
 
-    this.evts.registerEvents()
+    this.registerEvents()
 
-    this.centerPuzzle()
-    this.viewportSnapshots.snap('center')
+    this.initCenterPuzzle()
 
     this.puzzleStatus = new PuzzleStatus(this)
     this.puzzleStatus.update(this.time())
@@ -204,6 +207,11 @@ export abstract class Game<HudType extends Hud> {
     this.evts.addEvent([Protocol.INPUT_EV_PLAYER_NAME, this.playerSettings.name()])
 
     this.playerCursors.updatePlayerCursorColor(this.playerSettings.color())
+  }
+
+  initCenterPuzzle(): void {
+    this.centerPuzzle()
+    this.viewportSnapshots.snap('center')
   }
 
   initFireworks(): void {
