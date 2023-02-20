@@ -29,22 +29,65 @@ export class ImageResize {
     return sharpImg
   }
 
-  async cropImage(filename: string, crop: Rect): Promise<string | null> {
+  async cropRestrictImage(filename: string, crop: Rect, maxw: number, maxh: number): Promise<string | null> {
     try {
       const baseDir = config.dir.CROP_DIR
-      if (!fs.existsSync(baseDir)) {
-        fs.mkdirSync(baseDir, { recursive: true })
-      }
-      const originalImagePath = `${config.dir.UPLOAD_DIR}/${filename}`
-      const sharpImg = await this.loadSharpImage(originalImagePath)
-      const cropFilename = `${baseDir}/${filename}-${crop.x}_${crop.y}_${crop.w}_${crop.h}.webp`
+      const cropFilename = `${baseDir}/${filename}-${crop.x}_${crop.y}_${crop.w}_${crop.h}_max_${maxw}x${maxh}-q75.webp`
       if (!fs.existsSync(cropFilename)) {
+        if (!fs.existsSync(baseDir)) {
+          fs.mkdirSync(baseDir, { recursive: true })
+        }
+        const originalImagePath = `${config.dir.UPLOAD_DIR}/${filename}`
+        const sharpImg = await this.loadSharpImage(originalImagePath)
         await sharpImg.extract({
           top: crop.y,
           left: crop.x,
           width: crop.w,
           height: crop.h
-        }).toFile(cropFilename)
+        }).resize(maxw, maxh, { fit: 'inside', withoutEnlargement: true }).webp({ quality: 75 }).toFile(cropFilename)
+      }
+      return cropFilename
+    } catch (e) {
+      log.error('error when crop resizing image', filename, e)
+      return null
+    }
+  }
+
+  async restrictImage(filename: string, maxw: number, maxh: number): Promise<string | null> {
+    try {
+      const baseDir = config.dir.RESIZE_DIR
+      const resizeFilename = `${baseDir}/${filename}-max_${maxw}x${maxh}-q75.webp`
+      if (!fs.existsSync(resizeFilename)) {
+        if (!fs.existsSync(baseDir)) {
+          fs.mkdirSync(baseDir, { recursive: true })
+        }
+        const originalImagePath = `${config.dir.UPLOAD_DIR}/${filename}`
+        const sharpImg = await this.loadSharpImage(originalImagePath)
+        await sharpImg.resize(maxw, maxh, { fit: 'inside', withoutEnlargement: true }).webp({ quality: 75 }).toFile(resizeFilename)
+      }
+      return resizeFilename
+    } catch (e) {
+      log.error('error when resizing image', filename, e)
+      return null
+    }
+  }
+
+  async cropImage(filename: string, crop: Rect): Promise<string | null> {
+    try {
+      const baseDir = config.dir.CROP_DIR
+      const cropFilename = `${baseDir}/${filename}-${crop.x}_${crop.y}_${crop.w}_${crop.h}-q75.webp`
+      if (!fs.existsSync(cropFilename)) {
+        if (!fs.existsSync(baseDir)) {
+          fs.mkdirSync(baseDir, { recursive: true })
+        }
+        const originalImagePath = `${config.dir.UPLOAD_DIR}/${filename}`
+        const sharpImg = await this.loadSharpImage(originalImagePath)
+        await sharpImg.extract({
+          top: crop.y,
+          left: crop.x,
+          width: crop.w,
+          height: crop.h
+        }).webp({ quality: 75 }).toFile(cropFilename)
       }
       return cropFilename
     } catch (e) {
@@ -61,15 +104,15 @@ export class ImageResize {
   ): Promise<string | null> {
     try {
       const baseDir = config.dir.RESIZE_DIR
-      if (!fs.existsSync(baseDir)) {
-        fs.mkdirSync(baseDir, { recursive: true })
-      }
-      const originalImagePath = `${config.dir.UPLOAD_DIR}/${filename}`
-      const sharpImg = await this.loadSharpImage(originalImagePath)
-      const resizeFilename = `${baseDir}/${filename}-${w}x${h || 0}-${fit}.webp`
+      const resizeFilename = `${baseDir}/${filename}-${w}x${h || 0}-${fit}-q75.webp`
       if (!fs.existsSync(resizeFilename)) {
+        if (!fs.existsSync(baseDir)) {
+          fs.mkdirSync(baseDir, { recursive: true })
+        }
+        const originalImagePath = `${config.dir.UPLOAD_DIR}/${filename}`
+        const sharpImg = await this.loadSharpImage(originalImagePath)
         log.info(w, h, resizeFilename)
-        await sharpImg.resize(w, h || null, { fit }).toFile(resizeFilename)
+        await sharpImg.resize(w, h || null, { fit }).webp({ quality: 75 }).toFile(resizeFilename)
       }
       return resizeFilename
     } catch (e) {
