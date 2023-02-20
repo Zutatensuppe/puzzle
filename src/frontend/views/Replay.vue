@@ -1,7 +1,5 @@
 <template>
   <div id="replay">
-    <GameImage :game="g" />
-
     <v-dialog v-model="dialog" :class="`overlay-${overlay}`" :persistent="dialogPersistent">
       <SettingsOverlay v-if="g && overlay === 'settings'" :game="g" @dialogChange="onDialogChange" />
       <PreviewOverlay v-if="g && overlay === 'preview'" :game="g" @close="closeDialog" />
@@ -51,7 +49,6 @@ import SettingsOverlay from './../components/SettingsOverlay.vue'
 import CuttingOverlay from './../components/CuttingOverlay.vue'
 import StatusMessages from '../components/StatusMessages.vue'
 import IngameMenu from '../components/IngameMenu.vue'
-import GameImage from '../components/GameImage.vue'
 
 const statusMessages = ref<InstanceType<typeof StatusMessages>>() as Ref<InstanceType<typeof StatusMessages>>
 const players = ref<{ active: Player[], idle: Player[] }>({ active: [], idle: [] })

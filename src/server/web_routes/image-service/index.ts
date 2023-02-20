@@ -50,7 +50,8 @@ export default function createRouter(
         return
       }
 
-      const croppedFilename = await server.getImageResize().cropImage(filename, crop)
+      const maxSize = 1920
+      const croppedFilename = await server.getImageResize().cropResizeImage(filename, crop, maxSize)
       if (!croppedFilename) {
         res.status(500).send('unable to crop image')
         return
@@ -60,6 +61,7 @@ export default function createRouter(
       res.sendFile(p)
       return
     }
+
     // original image
     const p = path.resolve(config.dir.UPLOAD_DIR, filename)
     res.sendFile(p)
