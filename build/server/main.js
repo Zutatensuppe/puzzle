@@ -3161,6 +3161,32 @@ class GamesRepo {
     }
 }
 
+const algorithm = 'aes256';
+const inputEncoding = 'utf8';
+const outputEncoding = 'hex';
+const ivlength = 16; // AES blocksize
+const key = crypto.createHash('md5').update(config.secret).digest("hex");
+const iv = crypto.randomBytes(ivlength);
+const encrypt = (str) => {
+    const cipher = crypto.createCipheriv(algorithm, key, iv);
+    let ciphered = cipher.update(str, inputEncoding, outputEncoding);
+    ciphered += cipher.final(outputEncoding);
+    return iv.toString(outputEncoding) + ':' + ciphered;
+};
+const decrypt = (str) => {
+    const components = str.split(':');
+    const firstPart = components.shift();
+    const iv_from_ciphertext = Buffer.from(firstPart, outputEncoding);
+    const decipher = crypto.createDecipheriv(algorithm, key, iv_from_ciphertext);
+    let deciphered = decipher.update(components.join(':'), outputEncoding, inputEncoding);
+    deciphered += decipher.final(inputEncoding);
+    return deciphered;
+};
+var Crypto = {
+    encrypt,
+    decrypt,
+};
+
 const TABLE$5 = 'accounts';
 class AccountsRepo {
     constructor(db) {
@@ -3168,12 +3194,30 @@ class AccountsRepo {
         // pass
     }
     async insert(account) {
+        if (account.email) {
+            account.email = Crypto.encrypt(account.email);
+        }
         return await this.db.insert(TABLE$5, account, 'id');
     }
     async get(where) {
-        return await this.db.get(TABLE$5, where);
+        if (where.email) {
+            where.email = Crypto.encrypt(where.email);
+        }
+        const account = await this.db.get(TABLE$5, where);
+        if (account) {
+            if (account.email) {
+                account.email = Crypto.decrypt(account.email);
+            }
+        }
+        return account;
     }
     async update(account, where) {
+        if (account.email) {
+            account.email = Crypto.encrypt(account.email);
+        }
+        if (where.email) {
+            where.email = Crypto.encrypt(where.email);
+        }
         await this.db.update('accounts', account, where);
     }
 }
@@ -3202,12 +3246,27 @@ class UserIdentityRepo {
         // pass
     }
     async insert(userIdentity) {
+        if (userIdentity.provider_email) {
+            userIdentity.provider_email = Crypto.encrypt(userIdentity.provider_email);
+        }
         return await this.db.insert(TABLE$3, userIdentity, 'id');
     }
     async get(where) {
-        return await this.db.get(TABLE$3, where);
+        if (where.provider_email) {
+            where.provider_email = Crypto.encrypt(where.provider_email);
+        }
+        const identity = await this.db.get(TABLE$3, where);
+        if (identity) {
+            if (identity.provider_email) {
+                identity.provider_email = Crypto.decrypt(identity.provider_email);
+            }
+        }
+        return identity;
     }
     async update(userIdentity) {
+        if (userIdentity.provider_email) {
+            userIdentity.provider_email = Crypto.encrypt(userIdentity.provider_email);
+        }
         await this.db.update(TABLE$3, userIdentity, { id: userIdentity.id });
     }
 }
@@ -3219,15 +3278,27 @@ class UsersRepo {
         // pass
     }
     async insert(user) {
+        if (user.email) {
+            user.email = Crypto.encrypt(user.email);
+        }
         return await this.db.insert(TABLE$2, user, 'id');
     }
     async update(user) {
+        if (user.email) {
+            user.email = Crypto.encrypt(user.email);
+        }
         await this.db.update(TABLE$2, user, { id: user.id });
     }
     async get(where) {
+        if (where.email) {
+            where.email = Crypto.encrypt(where.email);
+        }
         const user = await this.db.get(TABLE$2, where);
         if (user) {
             user.id = parseInt(user.id, 10);
+            if (user.email) {
+                user.email = Crypto.decrypt(user.email);
+            }
         }
         return user;
     }
