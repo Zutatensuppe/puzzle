@@ -12,8 +12,12 @@ export default function createRouter(
     const filename = req.params.filename
     const query = req.query
 
+    if (!query.mode) {
+      res.status(400).send('invalid mode')
+    }
+
     // RESIZE
-    if (('w' in query && 'h' in query && 'fit' in query)) {
+    if (query.mode === 'resize') {
       const w = parseInt(`${query.w}`, 10)
       const h = parseInt(`${query.h}`, 10)
       const fit = `${query.fit}`
@@ -32,8 +36,64 @@ export default function createRouter(
       return
     }
 
+    // RESTRICT SIZE
+    if (query.mode === 'restrict') {
+      const w = parseInt(`${query.w}`, 10)
+      const h = parseInt(`${query.h}`, 10)
+      if (
+        `${w}` !== query.w ||
+        `${h}` !== query.h
+      ) {
+        res.status(400).send('w and h must be numbers')
+        return
+      }
+
+      const croppedFilename = await server.getImageResize().restrictImage(filename, w, h)
+      if (!croppedFilename) {
+        res.status(500).send('unable to restrict size image')
+        return
+      }
+
+      const p = path.resolve(config.dir.CROP_DIR, croppedFilename)
+      res.sendFile(p)
+      return
+    }
+
+    // CROP with max WIDTH/HEIGHT
+    if (query.mode === 'cropRestrict') {
+      const crop = {
+        x: parseInt(`${query.x}`, 10),
+        y: parseInt(`${query.y}`, 10),
+        w: parseInt(`${query.w}`, 10),
+        h: parseInt(`${query.h}`, 10),
+        mw: parseInt(`${query.mw}`, 10),
+        mh: parseInt(`${query.mh}`, 10),
+      }
+      if (
+        `${crop.x}` !== query.x ||
+        `${crop.y}` !== query.y ||
+        `${crop.w}` !== query.w ||
+        `${crop.h}` !== query.h ||
+        `${crop.mw}` !== query.mw ||
+        `${crop.mh}` !== query.mh
+      ) {
+        res.status(400).send('x, y, w and h must be numbers')
+        return
+      }
+
+      const croppedFilename = await server.getImageResize().cropRestrictImage(filename, crop, 1920, 1920)
+      if (!croppedFilename) {
+        res.status(500).send('unable to crop restrict image')
+        return
+      }
+
+      const p = path.resolve(config.dir.CROP_DIR, croppedFilename)
+      res.sendFile(p)
+      return
+    }
+
     // CROP
-    if (('x' in query && 'y' in query && 'w' in query && 'h' in query)) {
+    if (query.mode === 'crop') {
       const crop = {
         x: parseInt(`${query.x}`, 10),
         y: parseInt(`${query.y}`, 10),
@@ -50,8 +110,7 @@ export default function createRouter(
         return
       }
 
-      const maxSize = 1920
-      const croppedFilename = await server.getImageResize().cropResizeImage(filename, crop, maxSize)
+      const croppedFilename = await server.getImageResize().cropImage(filename, crop)
       if (!croppedFilename) {
         res.status(500).send('unable to crop image')
         return

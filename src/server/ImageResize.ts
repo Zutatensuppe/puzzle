@@ -29,10 +29,10 @@ export class ImageResize {
     return sharpImg
   }
 
-  async cropResizeImage(filename: string, crop: Rect, maxSize: number): Promise<string | null> {
+  async cropRestrictImage(filename: string, crop: Rect, maxw: number, maxh: number): Promise<string | null> {
     try {
       const baseDir = config.dir.CROP_DIR
-      const cropFilename = `${baseDir}/${filename}-${crop.x}_${crop.y}_${crop.w}_${crop.h}_maxSize${maxSize}-q75.webp`
+      const cropFilename = `${baseDir}/${filename}-${crop.x}_${crop.y}_${crop.w}_${crop.h}_max_${maxw}x${maxh}-q75.webp`
       if (!fs.existsSync(cropFilename)) {
         if (!fs.existsSync(baseDir)) {
           fs.mkdirSync(baseDir, { recursive: true })
@@ -44,11 +44,30 @@ export class ImageResize {
           left: crop.x,
           width: crop.w,
           height: crop.h
-        }).resize(1920, 1920, { fit: 'inside', withoutEnlargement: true }).webp({ quality: 75 }).toFile(cropFilename)
+        }).resize(maxw, maxh, { fit: 'inside', withoutEnlargement: true }).webp({ quality: 75 }).toFile(cropFilename)
       }
       return cropFilename
     } catch (e) {
       log.error('error when crop resizing image', filename, e)
+      return null
+    }
+  }
+
+  async restrictImage(filename: string, maxw: number, maxh: number): Promise<string | null> {
+    try {
+      const baseDir = config.dir.RESIZE_DIR
+      const resizeFilename = `${baseDir}/${filename}-max_${maxw}x${maxh}-q75.webp`
+      if (!fs.existsSync(resizeFilename)) {
+        if (!fs.existsSync(baseDir)) {
+          fs.mkdirSync(baseDir, { recursive: true })
+        }
+        const originalImagePath = `${config.dir.UPLOAD_DIR}/${filename}`
+        const sharpImg = await this.loadSharpImage(originalImagePath)
+        await sharpImg.resize(maxw, maxh, { fit: 'inside', withoutEnlargement: true }).webp({ quality: 75 }).toFile(resizeFilename)
+      }
+      return resizeFilename
+    } catch (e) {
+      log.error('error when resizing image', filename, e)
       return null
     }
   }
