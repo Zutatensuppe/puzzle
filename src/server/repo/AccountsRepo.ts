@@ -1,3 +1,4 @@
+import Crypto from '../Crypto'
 import Db, { WhereRaw } from '../Db'
 
 const TABLE = 'accounts'
@@ -17,14 +18,32 @@ export class AccountsRepo {
   }
 
   async insert(account: Partial<AccountRow>): Promise<number> {
+    if (account.email) {
+      account.email = Crypto.encrypt(account.email)
+    }
     return await this.db.insert(TABLE, account, 'id') as number
   }
 
   async get(where: WhereRaw): Promise<AccountRow | null> {
-    return await this.db.get(TABLE, where)
+    if (where.email) {
+      where.email = Crypto.encrypt(where.email)
+    }
+    const account = await this.db.get(TABLE, where)
+    if (account) {
+      if (account.email) {
+        account.email = Crypto.decrypt(account.email)
+      }
+    }
+    return account
   }
 
   async update(account: Partial<AccountRow>, where: WhereRaw): Promise<void> {
+    if (account.email) {
+      account.email = Crypto.encrypt(account.email)
+    }
+    if (where.email) {
+      where.email = Crypto.encrypt(where.email)
+    }
     await this.db.update('accounts', account, where)
   }
 }
