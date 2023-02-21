@@ -2290,10 +2290,9 @@ function createRouter$2(server) {
         res.send({ log, game: game ? Util.encodeGame(game) : null });
     });
     router.get('/newgame-data', async (req, res) => {
-        const q = req.query;
-        const tagSlugs = q.tags ? q.tags.split(',') : [];
+        const requestData = req.query;
         res.send({
-            images: await server.getImages().imagesFromDb(tagSlugs, q.sort, false, 0, IMAGES_PER_PAGE_LIMIT),
+            images: await server.getImages().imagesFromDb(requestData.search, requestData.sort, false, 0, IMAGES_PER_PAGE_LIMIT),
             tags: await server.getImages().getAllTags(),
         });
     });
@@ -2317,15 +2316,14 @@ function createRouter$2(server) {
         });
     });
     router.get('/images', async (req, res) => {
-        const q = req.query;
-        const tagSlugs = q.tags ? q.tags.split(',') : [];
-        const offset = parseInt(`${q.offset}`, 10);
+        const requestData = req.query;
+        const offset = parseInt(`${requestData.offset}`, 10);
         if (isNaN(offset) || offset < 0) {
             res.status(400).send({ error: 'bad offset' });
             return;
         }
         res.send({
-            images: await server.getImages().imagesFromDb(tagSlugs, q.sort, false, offset, IMAGES_PER_PAGE_LIMIT),
+            images: await server.getImages().imagesFromDb(requestData.search, requestData.sort, false, offset, IMAGES_PER_PAGE_LIMIT),
         });
     });
     const GameToGameInfo = (game, ts) => {
@@ -3418,6 +3416,9 @@ class ImagesRepo {
     async getTagsBySlugs(slugs) {
         return await this.db.getMany('categories', { slug: { '$in': slugs } });
     }
+    async getTagsBySearch(search) {
+        return await this.db.getMany('categories', { slug: { '$ilike': search + '%' } });
+    }
     async getTagsByImageId(imageId) {
         const query = `
       select c.id, c.slug, c.title from categories c
@@ -3425,7 +3426,7 @@ class ImagesRepo {
       where ixc.image_id = $1`;
         return await this.db._getMany(query, [imageId]);
     }
-    async getImagesWithCount(tagSlugs, orderBy, isPrivate, offset, limit) {
+    async searchImagesWithCount(search, orderBy, isPrivate, offset, limit) {
         const orderByMap = {
             alpha_asc: [{ title: 1 }, { created: -1 }],
             alpha_desc: [{ title: -1 }, { created: -1 }],
@@ -3434,30 +3435,41 @@ class ImagesRepo {
             game_count_asc: [{ games_count: 1 }, { created: -1 }],
             game_count_desc: [{ games_count: -1 }, { created: -1 }],
         };
-        // TODO: .... clean up
-        const wheresRaw = {};
-        wheresRaw['private'] = isPrivate ? 1 : 0;
-        if (tagSlugs.length > 0) {
-            const c = await this.getTagsBySlugs(tagSlugs);
-            if (!c) {
-                return [];
+        const imageIds = [];
+        // search in tags:
+        const searchClean = search.trim();
+        const searches = searchClean ? searchClean.split(/\s+/) : [];
+        if (searches.length > 0) {
+            for (search of searches) {
+                const tags = await this.getTagsBySearch(search);
+                if (tags) {
+                    const where = this.db._buildWhere({
+                        'category_id': { '$in': tags.map(x => x.id) }
+                    });
+                    const ids = (await this.db._getMany(`
+      select i.id from image_x_category ixc
+      inner join images i on i.id = ixc.image_id ${where.sql};
+      `, where.values)).map(img => img.id);
+                    imageIds.push(...ids);
+                }
             }
-            const where = this.db._buildWhere({
-                'category_id': { '$in': c.map(x => x.id) }
-            });
-            const ids = (await this.db._getMany(`
-  select i.id from image_x_category ixc
-  inner join images i on i.id = ixc.image_id ${where.sql};
-  `, where.values)).map(img => img.id);
-            if (ids.length === 0) {
-                return [];
-            }
-            wheresRaw['images.id'] = { '$in': ids };
         }
         const params = [];
-        params.push(isPrivate ? 1 : 0);
-        const dbWhere = this.db._buildWhere(wheresRaw, params.length + 1);
-        params.push(...dbWhere.values);
+        const ors = [];
+        if (imageIds.length > 0) {
+            ors.push(`images.id IN (${imageIds.join(',')})`);
+        }
+        if (searches.length) {
+            let i = 1;
+            for (search of searches) {
+                ors.push(`users.name ilike $${i++}`);
+                params.push(`%${search}%`);
+                ors.push(`images.title ilike $${i++}`);
+                params.push(`%${search}%`);
+                ors.push(`images.copyright_name ilike $${i++}`);
+                params.push(`%${search}%`);
+            }
+        }
         return await this.db._getMany(`
       WITH counts AS (
         SELECT
@@ -3466,7 +3478,7 @@ class ImagesRepo {
         FROM
           games
         WHERE
-          private = $1
+          private = ${isPrivate ? 1 : 0}
         GROUP BY image_id
       )
       SELECT
@@ -3477,7 +3489,9 @@ class ImagesRepo {
         images
         LEFT JOIN counts ON counts.image_id = images.id
         LEFT JOIN users ON users.id = images.uploader_user_id
-      ${dbWhere.sql}
+      WHERE
+        private = ${isPrivate ? 1 : 0}
+        ${ors.length > 0 ? ` AND (${ors.join(' OR ')})` : ''}
       ${this.db._buildOrderBy(orderByMap[orderBy])}
       ${this.db._buildLimit({ offset, limit })}
     `, params);
@@ -3575,8 +3589,8 @@ class Images {
             copyrightURL: row.copyright_url,
         };
     }
-    async imagesFromDb(tagSlugs, orderBy, isPrivate, offset, limit) {
-        const rows = await this.imagesRepo.getImagesWithCount(tagSlugs, orderBy, isPrivate, offset, limit);
+    async imagesFromDb(search, orderBy, isPrivate, offset, limit) {
+        const rows = await this.imagesRepo.searchImagesWithCount(search, orderBy, isPrivate, offset, limit);
         const images = [];
         for (const row of rows) {
             images.push(await this.imageWithCountToImageInfo(row));
