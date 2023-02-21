@@ -52,21 +52,14 @@ in jigsawpuzzles.io
             { val: 'game_count_asc', title: 'Least plays first'},
           ]"
           @update:modelValue="filtersChanged"
-        ></v-select>
+        />
       </div>
       <div>
-        <template v-if="tags.length > 0">
-          <v-label>Tags:</v-label>
-          <v-chip
-            v-for="(t,idx) in relevantTags"
-            filter
-            :key="idx"
-            @click="toggleTag(t)"
-            :prepend-icon="filters.tags.includes(t.slug) ? 'mdi-check' : undefined"
-            density="compact"
-            class="is-clickable"
-          >{{t.title}} ({{t.total}})</v-chip>
-        </template>
+        <v-text-field
+          density="compact"
+          label="Type in keywords..."
+          v-model="filters.search"
+        />
       </div>
     </v-container>
     <ImageLibrary
@@ -105,21 +98,22 @@ in jigsawpuzzles.io
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue'
+import { onMounted, ref, watch } from 'vue'
 import NewImageDialog from './../components/NewImageDialog.vue'
 import EditImageDialog from './../components/EditImageDialog.vue'
 import NewGameDialog from './../components/NewGameDialog.vue'
-import { GameSettings, ImageInfo, Tag } from '../../common/Types'
+import { GameSettings, ImageInfo, Tag, NewGameDataRequestData, ImagesRequestData } from '../../common/Types'
 import api from '../_api'
+import { XhrRequest } from '../_api/xhr'
 import { useRouter } from 'vue-router'
 import ImageLibrary from './../components/ImageLibrary.vue'
 import Sentinel from '../components/Sentinel.vue'
 
 const router = useRouter()
 
-const filters = ref<{ sort: string, tags: string[] }>({
+const filters = ref<{ sort: string, search: string }>({
   sort: 'date_desc',
-  tags: [],
+  search: '',
 })
 const offset = ref<number>(0)
 
@@ -152,7 +146,7 @@ const newGameForcePrivate = ref<boolean>(false)
 const uploading = ref<'postToGallery' | 'setupGame' | ''>('')
 const uploadProgress = ref<number>(0)
 
-const relevantTags = computed((): Tag[] => tags.value.filter((tag: Tag) => tag.total > 0))
+// const relevantTags = computed((): Tag[] => tags.value.filter((tag: Tag) => tag.total > 0))
 
 const openDialog = (content: string) => {
   dialogContent.value = content
@@ -173,28 +167,26 @@ const autocompleteTags = (input: string, exclude: string[]): string[] => {
     .slice(0, 10)
     .map((tag: Tag) => tag.title)
 }
-const toggleTag = (t: Tag) => {
-  if (filters.value.tags.includes(t.slug)) {
-    filters.value.tags = filters.value.tags.filter(slug => slug !== t.slug)
-  } else {
-    filters.value.tags.push(t.slug)
-  }
-  filtersChanged()
-}
 
 watch(filters, () => {
   filtersChanged()
 }, { deep: true })
 
+const currentRequest = ref<XhrRequest | null>(null)
+
 const loadImages = async () => {
   sentinelActive.value = false
   offset.value = 0
-  const _filters = {
+  const requestData: NewGameDataRequestData = {
     sort: filters.value.sort,
-    tags: filters.value.tags,
-    offset: offset.value,
+    search: filters.value.search,
   }
-  const res = await api.pub.newgameData({ filters: _filters })
+  if (currentRequest.value) {
+    currentRequest.value.abort()
+  }
+  currentRequest.value = api.pub.newgameData(requestData)
+  const res = await currentRequest.value.send()
+  currentRequest.value = null
   const json = await res.json()
   images.value = json.images
   tags.value = json.tags
@@ -276,12 +268,16 @@ const onNewGame = async (gameSettings: GameSettings) => {
 
 const tryLoadMore = async () => {
   offset.value = images.value.length
-  const _filters = {
+  const requestData: ImagesRequestData = {
     sort: filters.value.sort,
-    tags: filters.value.tags,
+    search: filters.value.search,
     offset: offset.value,
   }
-  const res = await api.pub.images({ filters: _filters })
+  if (currentRequest.value) {
+    currentRequest.value.abort()
+  }
+  currentRequest.value = api.pub.images(requestData)
+  const res = await currentRequest.value.send()
   const json = await res.json()
   if (json.images.length === 0) {
     sentinelActive.value = false

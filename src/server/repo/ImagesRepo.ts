@@ -69,6 +69,10 @@ export class ImagesRepo {
     return await this.db.getMany('categories', {slug: {'$in': slugs}})
   }
 
+  async getTagsBySearch(search: string): Promise<TagRow[]> {
+    return await this.db.getMany('categories', {slug: {'$ilike': search + '%'}})
+  }
+
   async getTagsByImageId(imageId: number): Promise<TagRow[]> {
     const query = `
       select c.id, c.slug, c.title from categories c
@@ -77,8 +81,8 @@ export class ImagesRepo {
     return await this.db._getMany(query, [imageId])
   }
 
-  async getImagesWithCount(
-    tagSlugs: string[],
+  async searchImagesWithCount(
+    search: string,
     orderBy: string,
     isPrivate: boolean,
     offset: number,
@@ -93,31 +97,44 @@ export class ImagesRepo {
       game_count_desc: [{ games_count: -1 }, { created: -1 }],
     } as Record<string, OrderBy>
 
-    // TODO: .... clean up
-    const wheresRaw: WhereRaw = {}
-    wheresRaw['private'] = isPrivate ? 1 : 0
-    if (tagSlugs.length > 0) {
-      const c = await this.getTagsBySlugs(tagSlugs)
-      if (!c) {
-        return []
+    const imageIds: number[] = []
+    // search in tags:
+    const searchClean = search.trim()
+    const searches = searchClean ? searchClean.split(/\s+/) : []
+
+    if (searches.length > 0) {
+      for (search of searches) {
+        const tags = await this.getTagsBySearch(search)
+        if (tags) {
+          const where = this.db._buildWhere({
+            'category_id': {'$in': tags.map(x => x.id)}
+          })
+          const ids: number[] = (await this.db._getMany(`
+      select i.id from image_x_category ixc
+      inner join images i on i.id = ixc.image_id ${where.sql};
+      `, where.values)).map(img => img.id)
+          imageIds.push(...ids)
+        }
       }
-      const where = this.db._buildWhere({
-        'category_id': {'$in': c.map(x => x.id)}
-      })
-      const ids: number[] = (await this.db._getMany(`
-  select i.id from image_x_category ixc
-  inner join images i on i.id = ixc.image_id ${where.sql};
-  `, where.values)).map(img => img.id)
-      if (ids.length === 0) {
-        return []
-      }
-      wheresRaw['images.id'] = {'$in': ids}
     }
 
-    const params: any[] = []
-    params.push(isPrivate ? 1 : 0)
-    const dbWhere = this.db._buildWhere(wheresRaw, params.length + 1)
-    params.push(...dbWhere.values)
+    const params: string[] = []
+    const ors: string[] = []
+    if (imageIds.length > 0) {
+      ors.push(`images.id IN (${imageIds.join(',')})`)
+    }
+    if (searches.length) {
+      let i = 1
+      for (search of searches) {
+        ors.push(`users.name ilike $${i++}`)
+        params.push(`%${search}%`)
+        ors.push(`images.title ilike $${i++}`)
+        params.push(`%${search}%`)
+        ors.push(`images.copyright_name ilike $${i++}`)
+        params.push(`%${search}%`)
+      }
+    }
+
     return await this.db._getMany(`
       WITH counts AS (
         SELECT
@@ -126,7 +143,7 @@ export class ImagesRepo {
         FROM
           games
         WHERE
-          private = $1
+          private = ${isPrivate ? 1 : 0}
         GROUP BY image_id
       )
       SELECT
@@ -137,7 +154,9 @@ export class ImagesRepo {
         images
         LEFT JOIN counts ON counts.image_id = images.id
         LEFT JOIN users ON users.id = images.uploader_user_id
-      ${dbWhere.sql}
+      WHERE
+        private = ${isPrivate ? 1 : 0}
+        ${ors.length > 0 ? ` AND (${ors.join(' OR ')})` : ''}
       ${this.db._buildOrderBy(orderByMap[orderBy])}
       ${this.db._buildLimit({ offset, limit })}
     `, params)
