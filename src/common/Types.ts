@@ -407,3 +407,14 @@ export interface ReplayHud extends Hud {
   setReplaySpeed: (v: number) => void
   setReplayPaused: (v: boolean) => void
 }
+
+export interface NewGameDataRequestData {
+  sort: string
+  search: string
+}
+
+export interface ImagesRequestData {
+  sort: string
+  search: string
+  offset: number
+}

@@ -1,4 +1,4 @@
-import { GameSettings, Game as GameType, GameInfo, ApiDataIndexData, ApiDataFinishedGames } from '../../../common/Types'
+import { GameSettings, Game as GameType, GameInfo, ApiDataIndexData, ApiDataFinishedGames, NewGameDataRequestData, ImagesRequestData } from '../../../common/Types'
 import config from '../../Config'
 import express, { Response, Router } from 'express'
 import GameCommon from '../../../common/GameCommon'
@@ -408,10 +408,9 @@ export default function createRouter(
   })
 
   router.get('/newgame-data', async (req, res): Promise<void> => {
-    const q: Record<string, any> = req.query
-    const tagSlugs: string[] = q.tags ? q.tags.split(',') : []
+    const requestData: NewGameDataRequestData = req.query as any
     res.send({
-      images: await server.getImages().imagesFromDb(tagSlugs, q.sort, false, 0, IMAGES_PER_PAGE_LIMIT),
+      images: await server.getImages().imagesFromDb(requestData.search, requestData.sort, false, 0, IMAGES_PER_PAGE_LIMIT),
       tags: await server.getImages().getAllTags(),
     })
   })
@@ -437,15 +436,14 @@ export default function createRouter(
   })
 
   router.get('/images', async (req, res): Promise<void> => {
-    const q: Record<string, any> = req.query
-    const tagSlugs: string[] = q.tags ? q.tags.split(',') : []
-    const offset = parseInt(`${q.offset}`, 10)
+    const requestData: ImagesRequestData = req.query as any
+    const offset = parseInt(`${requestData.offset}`, 10)
     if (isNaN(offset) || offset < 0) {
       res.status(400).send({ error: 'bad offset' })
       return
     }
     res.send({
-      images: await server.getImages().imagesFromDb(tagSlugs, q.sort, false, offset, IMAGES_PER_PAGE_LIMIT),
+      images: await server.getImages().imagesFromDb(requestData.search, requestData.sort, false, offset, IMAGES_PER_PAGE_LIMIT),
     })
   })
 

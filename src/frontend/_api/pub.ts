@@ -1,6 +1,6 @@
-import { GameSettings } from "../../common/Types"
+import { GameSettings, ImagesRequestData, NewGameDataRequestData } from "../../common/Types"
 import Util from "../../common/Util"
-import xhr, { JSON_HEADERS } from "./xhr"
+import xhr, { JSON_HEADERS, XhrRequest } from "./xhr"
 
 const auth = async (email: string, password: string) => {
   return await xhr.post('/api/auth/local', {
@@ -58,12 +58,12 @@ const finishedGames = async (data: { limit: number, offset: number }) => {
   return xhr.get(`/api/finished-games${Util.asQueryArgs(data)}`, {})
 }
 
-const newgameData = async (data: { filters: { sort: string, tags: string[] } }) => {
-  return xhr.get(`/api/newgame-data${Util.asQueryArgs(data.filters)}`, {})
+const newgameData = (data: NewGameDataRequestData): XhrRequest => {
+  return xhr.getRequest(`/api/newgame-data${Util.asQueryArgs(data)}`, {})
 }
 
-const images = async (data: { filters: { sort: string, tags: string[], offset: number } }) => {
-  return xhr.get(`/api/images${Util.asQueryArgs(data.filters)}`, {})
+const images = (data: ImagesRequestData): XhrRequest => {
+  return xhr.getRequest(`/api/images${Util.asQueryArgs(data)}`, {})
 }
 
 const replayData = async (data: { gameId: string, offset: number }) =>{

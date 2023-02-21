@@ -75,13 +75,13 @@ export class Images {
   }
 
   async imagesFromDb(
-    tagSlugs: string[],
+    search: string,
     orderBy: string,
     isPrivate: boolean,
     offset: number,
     limit: number,
   ): Promise<ImageInfo[]> {
-    const rows = await this.imagesRepo.getImagesWithCount(tagSlugs, orderBy, isPrivate, offset, limit)
+    const rows = await this.imagesRepo.searchImagesWithCount(search, orderBy, isPrivate, offset, limit)
     const images = []
     for (const row of rows) {
       images.push(await this.imageWithCountToImageInfo(row))
