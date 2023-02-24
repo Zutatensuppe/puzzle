@@ -34,6 +34,7 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 import Util from '../../common/Util';
+import { toast } from '../toast';
 import user from '../user';
 
 const emit = defineEmits<{
@@ -74,7 +75,18 @@ async function doLogin() {
   }
 
   busy.value = true
-  await user.login(email.value, password.value)
+  const res = await user.login(email.value, password.value)
+  if (res.error) {
+    if (res.error === 'bad email' || res.error === 'bad password') {
+      toast('Invalid login credentials. Please check your email and password. If you\'ve forgotten your password, click \'Forgot Password?\'.', 'error', 7000)
+    } else if (res.error  === 'email not verified') {
+      toast('Your account is not verified. Please check your email\'s for the verification email and click the link in it.', 'error', 7000)
+    } else {
+      toast('An unknown error occured during login. Please try again later.', 'error')
+    }
+  } else {
+    toast('Login successful!', 'success')
+  }
   busy.value = false
 }
 </script>

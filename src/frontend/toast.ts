@@ -5,11 +5,17 @@ import 'vue3-toastify/dist/index.css';
 export const init = (app: App) => {
   app.use(Vue3Toastify, {
     autoClose: 3000,
+    theme: 'dark',
+    position: 'bottom-right',
+    closeButton: false,
   } as ToastContainerOptions)
 }
 
 export const toast = (message: string, type: 'error' | 'success', timeout?: number) => {
-  const options: ToastOptions = { theme: 'dark', autoClose: timeout }
+  const options: ToastOptions = {}
+  if (timeout) {
+    options.autoClose = timeout
+  }
   if (type === 'success') {
     vue3Toast.success(message, options)
   } else {
