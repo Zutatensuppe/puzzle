@@ -20,8 +20,16 @@
       <div class="game-teaser-info secondary" title="Snapping">
         <v-icon icon="mdi-connection"></v-icon> Snapping: {{ snapMode }}
       </div>
-      <div class="game-teaser-click-info">
-        <v-btn color="success" block>{{ joinPuzzleText }}</v-btn>
+
+      <div class="game-teaser-buttons">
+        <v-btn
+          block
+          @click.stop="emit('showImageInfo', game.image)"
+          prepend-icon="mdi-image"
+        >
+          Image info
+        </v-btn>
+        <v-btn color="success" block class="mt-4">{{ joinPuzzleText }}</v-btn>
       </div>
     </div>
   </v-card>
@@ -30,7 +38,7 @@
 import { computed } from 'vue';
 import Time from '../../common/Time'
 import { resizeUrl } from '../../common/ImageService'
-import { GameInfo, ScoreMode, ShapeMode, SnapMode } from '../../common/Types'
+import { GameInfo, ImageInfo, ScoreMode, ShapeMode, SnapMode } from '../../common/Types'
 
 const props = defineProps<{
   game: GameInfo,
@@ -38,10 +46,10 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   (e: 'goToGame', val: GameInfo): void
-  (e: 'goToReplay', val: GameInfo): void
+  (e: 'showImageInfo', val: ImageInfo): void
 }>()
 
-const url = computed(() => resizeUrl(props.game.imageUrl, 620, 496, 'contain'))
+const url = computed(() => resizeUrl(props.game.image.url, 620, 496, 'contain'))
 const style = computed(() => ({ 'background-image': `url("${url.value}")` }))
 
 const joinPuzzleText = computed(() => props.game.finished ? 'View puzzle' : 'Join puzzle')

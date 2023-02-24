@@ -327,7 +327,7 @@ export abstract class Game<HudType extends Hud> {
     return GameCommon.getShapeMode(this.gameId)
   }
 
-  getImage(): ImageInfo | undefined {
+  getImage(): ImageInfo {
     return GameCommon.getPuzzle(this.gameId).info.image
   }
 

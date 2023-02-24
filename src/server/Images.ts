@@ -68,7 +68,7 @@ export class Images {
       width: row.width,
       height: row.height,
       private: !!row.private,
-      gameCount: parseInt(row.games_count, 10),
+      gameCount: row.games_count,
       copyrightName: row.copyright_name,
       copyrightURL: row.copyright_url,
     }

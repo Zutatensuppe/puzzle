@@ -7,6 +7,7 @@ import {
   Change,
   EncodedPiece,
   Game,
+  ImageInfo,
   Input,
   Piece,
   PieceChange,
@@ -960,8 +961,12 @@ function Game_getIdlePlayers(game: Game, ts: number): Player[] {
   return Game_getAllPlayers(game).filter((p: Player) => p.ts < minTs && p.points > 0)
 }
 
+function Game_getImage(game: Game): ImageInfo {
+  return game.puzzle.info.image
+}
+
 function Game_getImageUrl(game: Game): string {
-  const imageUrl = game.puzzle.info.image.url
+  const imageUrl = Game_getImage(game).url
   if (!imageUrl) {
     throw new Error('[2021-07-11] no image url set')
   }
@@ -1023,7 +1028,7 @@ export default {
   Game_getPieceCount,
   Game_getActivePlayers,
   Game_getPlayersWithScore,
-  Game_getImageUrl,
+  Game_getImage,
   Game_getScoreMode,
   Game_getSnapMode,
   Game_getShapeMode,

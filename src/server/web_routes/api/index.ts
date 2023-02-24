@@ -459,7 +459,7 @@ export default function createRouter(
       players: finished
         ? GameCommon.Game_getPlayersWithScore(game).length
         : GameCommon.Game_getActivePlayers(game, ts).length,
-      imageUrl: GameCommon.Game_getImageUrl(game),
+      image: GameCommon.Game_getImage(game),
       snapMode: GameCommon.Game_getSnapMode(game),
       scoreMode: GameCommon.Game_getScoreMode(game),
       shapeMode: GameCommon.Game_getShapeMode(game),

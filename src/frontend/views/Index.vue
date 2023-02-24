@@ -22,8 +22,9 @@
             v-for="(g, idx) in data.gamesRunning.items"
             :game="g"
             :key="idx"
-            @goToGame="goToGame"
-            @goToReplay="goToReplay"
+            @go-to-game="goToGame"
+            @go-to-replay="goToReplay"
+            @show-image-info="showImageInfo"
           />
         </v-container>
       </div>
@@ -63,23 +64,28 @@
         v-for="(g, idx) in data.gamesFinished.items"
         :game="g"
         :key="idx"
-        @goToGame="goToGame"
-        @goToReplay="goToReplay"
+        @go-to-game="goToGame"
+        @go-to-replay="goToReplay"
+        @show-image-info="showImageInfo"
       />
     </v-container>
     <Pagination :pagination="data.gamesFinished.pagination" @click="onPagination" />
   </v-container>
+  <v-dialog v-model="dialog">
+    <ImageInfoDialog v-if="imageInfo" :image="imageInfo" @close="dialog = false" />
+  </v-dialog>
 </template>
 <script setup lang="ts">
 import { computed, onMounted, onBeforeUnmount, ref } from 'vue'
 import { useRouter } from 'vue-router';
-import { ApiDataFinishedGames, ApiDataIndexData } from '../../common/Types';
+import { ApiDataFinishedGames, ApiDataIndexData, GameInfo, ImageInfo } from '../../common/Types';
 import RunningGameTeaser from '../components/RunningGameTeaser.vue';
 import FinishedGameTeaser from '../components/FinishedGameTeaser.vue';
 import Pagination from '../components/Pagination.vue';
 import api from '../_api'
 import Leaderboard from '../components/Leaderboard.vue';
 import user, { User } from '../user';
+import ImageInfoDialog from '../components/ImageInfoDialog.vue';
 
 const router = useRouter()
 const data = ref<ApiDataIndexData | null>(null)
@@ -96,11 +102,18 @@ const login = () => {
   user.eventBus.emit('triggerLoginDialog')
 }
 
-const goToGame = ((game: any) => {
+const goToGame = ((game: GameInfo) => {
   router.push({ name: 'game', params: { id: game.id } })
 })
-const goToReplay = ((game: any) => {
+const goToReplay = ((game: GameInfo) => {
   router.push({ name: 'replay', params: { id: game.id } })
+})
+
+const dialog = ref<boolean>(false)
+const imageInfo = ref<ImageInfo|null>(null)
+const showImageInfo = ((image: ImageInfo) => {
+  dialog.value = true
+  imageInfo.value = image
 })
 
 const leaderboardTab = ref<string>('week')

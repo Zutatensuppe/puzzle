@@ -36,7 +36,7 @@ const run = async () => {
   const announcementsRepo = new AnnouncementsRepo(db)
   const puzzleService = new PuzzleService(images)
   const leaderboardRepo = new LeaderboardRepo(db)
-  const gameService = new GameService(gamesRepo, puzzleService, leaderboardRepo)
+  const gameService = new GameService(gamesRepo, imagesRepo, puzzleService, leaderboardRepo)
 
   const server = new Server(
     db,

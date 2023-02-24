@@ -84,12 +84,21 @@ const manuallyCropped = ref<boolean>(false)
 
 let lastMouseDown: MouseEvent | null = null
 const onMousedown = (ev: MouseEvent) => {
+  if (!props.piecesPreview) {
+    return
+  }
   lastMouseDown = ev
 }
 const onMouseup = (ev: MouseEvent) => {
+  if (!props.piecesPreview) {
+    return
+  }
   lastMouseDown = null
 }
 const onMousemove = (ev: MouseEvent) => {
+  if (!props.piecesPreview) {
+    return
+  }
   if (!lastMouseDown) {
     return
   }
@@ -175,6 +184,10 @@ const redraw = () => {
 const resizeObserver = new ResizeObserver(entries => {
   redraw()
 });
+
+watch(() => props.piecesPreview, () => {
+  redraw()
+})
 
 onMounted(() => {
   resizeObserver.observe(puzzleCropper.value)
