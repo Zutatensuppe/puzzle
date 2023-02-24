@@ -27,7 +27,7 @@ import 'vuetify/styles'
 import { createVuetify } from 'vuetify'
 import * as components from 'vuetify/components'
 import * as directives from 'vuetify/directives'
-import { init as initToast } from './toast'
+import { init as initToast, toast } from './toast'
 
 (async () => {
   api.init()
@@ -39,6 +39,7 @@ import { init as initToast } from './toast'
   // @ts-ignore
   window.handleAuthCallback = async () => {
     await user.init()
+    toast('Login successful!', 'success')
   }
 
   const router = VueRouter.createRouter({
