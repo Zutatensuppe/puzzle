@@ -11,6 +11,7 @@ import { PuzzleService } from './PuzzleService'
 import GameCommon, { NEWGAME_MAX_PIECES, NEWGAME_MIN_PIECES } from '../common/GameCommon'
 import Protocol from '../common/Protocol'
 import { LeaderboardRepo } from './repo/LeaderboardRepo'
+import { ImagesRepo } from './repo/ImagesRepo'
 
 const log = logger('GameService.js')
 
@@ -35,6 +36,7 @@ export class GameService {
 
   constructor(
     private readonly repo: GamesRepo,
+    private readonly imagesRepo: ImagesRepo,
     private readonly puzzleService: PuzzleService,
     private readonly leaderboardRepo: LeaderboardRepo,
   ) {
@@ -51,7 +53,7 @@ export class GameService {
     }
   }
 
-  gameRowToGameObject(gameRow: GameRow): Game | null {
+  async gameRowToGameObject(gameRow: GameRow): Promise<Game | null> {
     let game: GameStoreData
     try {
       game = JSON.parse(gameRow.data)
@@ -75,6 +77,9 @@ export class GameService {
     )
     gameObject.hasReplay = GameLog.hasReplay(gameObject)
     gameObject.crop = game.crop
+
+    const gameCount = await this.imagesRepo.getGameCount(gameObject.puzzle.info.image.id)
+    gameObject.puzzle.info.image.gameCount = gameCount
     return gameObject
   }
 
@@ -85,20 +90,14 @@ export class GameService {
       log.info(`[INFO] game not found: ${gameId}`);
       return null
     }
-
-    const gameObject = this.gameRowToGameObject(gameRow)
-    if (!gameObject) {
-      log.error(`[ERR] unable to turn game row into game object: ${gameRow.id}`);
-      return null
-    }
-
-    return gameObject
+    const gameObjects = await this.gameRowsToGames([gameRow])
+    return gameObjects.length > 0 ? gameObjects[0] : null
   }
 
-  gameRowsToGames (gameRows: GameRow[]): Game[] {
+  async gameRowsToGames (gameRows: GameRow[]): Promise<Game[]> {
     const games: Game[] = []
     for (const gameRow of gameRows) {
-      const gameObject = this.gameRowToGameObject(gameRow)
+      const gameObject = await this.gameRowToGameObject(gameRow)
       if (!gameObject) {
         log.error(`[ERR] unable to turn game row into game object: ${gameRow.id}`);
         continue
@@ -110,12 +109,12 @@ export class GameService {
 
   async getPublicRunningGames(offset: number, limit: number): Promise<Game[]> {
     const rows = await this.repo.getPublicRunningGames(offset, limit)
-    return this.gameRowsToGames(rows)
+    return await this.gameRowsToGames(rows)
   }
 
   async getPublicFinishedGames(offset: number, limit: number): Promise<Game[]> {
     const rows = await this.repo.getPublicFinishedGames(offset, limit)
-    return this.gameRowsToGames(rows)
+    return await this.gameRowsToGames(rows)
   }
 
   async countPublicRunningGames(): Promise<number> {

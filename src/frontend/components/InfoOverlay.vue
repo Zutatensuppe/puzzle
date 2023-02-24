@@ -5,32 +5,35 @@
       <v-table density="compact">
         <tbody>
           <tr>
-            <td><v-icon icon="mdi-subtitles-outline" /> Image Title: </td>
-            <td>{{ image?.title || '<No Title>' }}</td>
+            <td><v-icon icon="mdi-counter" /> Scoring: </td>
+            <td><span :title="snapMode[1]">{{scoreMode[0]}}</span></td>
           </tr>
-          <tr v-if="image?.copyrightURL || image?.copyrightName">
-            <td><v-icon icon="mdi-copyright" /> Image Copyright: </td>
+          <tr>
+            <td><v-icon icon="mdi-shape" /> Shapes: </td>
+            <td><span :title="snapMode[1]">{{shapeMode[0]}}</span></td>
+          </tr>
+          <tr>
+            <td><v-icon icon="mdi-connection" /> Snapping: </td>
+            <td><span :title="snapMode[1]">{{snapMode[0]}}</span></td>
+          </tr>
+        </tbody>
+      </v-table>
+      <h4 class="mt-5">Image</h4>
+      <v-table density="compact">
+        <tbody>
+          <tr><td><v-icon icon="mdi-subtitles-outline" /> Title: </td><td>{{ image.title || '<No Title>' }}</td></tr>
+          <tr v-if="image.copyrightURL || image.copyrightName">
+            <td><v-icon icon="mdi-copyright" /> Copyright: </td>
             <td>
               <a :href="image.copyrightURL" v-if="image.copyrightURL" target="_blank">{{ image.copyrightName || 'Source' }} <v-icon icon="mdi-open-in-new" /></a>
               <span v-else>{{ image.copyrightName }}</span>
             </td>
           </tr>
-          <tr>
-            <td><v-icon icon="mdi-account-arrow-up" /> Image Uploader: </td>
-            <td>{{ image?.uploaderName || '<Unknown>' }}</td>
-          </tr>
-          <tr>
-            <td><v-icon icon="mdi-counter mr-1"></v-icon> Scoring: </td>
-            <td><span :title="snapMode[1]">{{scoreMode[0]}}</span></td>
-          </tr>
-          <tr>
-            <td><v-icon icon="mdi-shape mr-1"></v-icon> Shapes: </td>
-            <td><span :title="snapMode[1]">{{shapeMode[0]}}</span></td>
-          </tr>
-          <tr>
-            <td><v-icon icon="mdi-connection mr-1"></v-icon> Snapping: </td>
-            <td><span :title="snapMode[1]">{{snapMode[0]}}</span></td>
-          </tr>
+          <tr><td><v-icon icon="mdi-account-arrow-up" /> Uploader: </td><td>{{ image.uploaderName || '<Unknown>' }}</td></tr>
+          <tr><td><v-icon icon="mdi-account-arrow-up" /> Upload date: </td><td>{{ date }}</td></tr>
+          <tr><td><v-icon icon="mdi-ruler-square" /> Dimensions: </td><td>{{ image.width }}x{{ image.height }}</td></tr>
+          <tr><td><v-icon icon="mdi-tag" /> Tags: </td><td>{{ image.tags.length ? image.tags.map(t => t.title).join(', ') : '-' }}</td></tr>
+          <tr><td><v-icon icon="mdi-puzzle" /> Game count: </td><td>{{ image.gameCount }}</td></tr>
         </tbody>
       </v-table>
     </v-container>
@@ -47,6 +50,11 @@ const props = defineProps<{
 }>()
 
 const image = props.game.getImage()
+
+const date = computed((): string => {
+  // TODO: use date format that is same everywhere
+  return new Date(image.created).toLocaleDateString()
+})
 
 const scoreMode = computed(() => {
   switch (props.game.getScoreMode()) {

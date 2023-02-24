@@ -307,7 +307,7 @@ export interface GameInfo {
   piecesFinished: number
   piecesTotal: number
   players: number
-  imageUrl: string
+  image: ImageInfo
   snapMode: SnapMode
   scoreMode: ScoreMode
   shapeMode: ShapeMode

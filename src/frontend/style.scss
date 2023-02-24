@@ -168,7 +168,7 @@ $bg-color-transparent: rgba(0 0 0 / 70%);
     padding-top: 80%;
     width: 100%;
     background-color: #222;
-    min-height: 260px;
+    min-height: 310px;
   }
 
   > .v-card__overlay,
@@ -193,7 +193,7 @@ $bg-color-transparent: rgba(0 0 0 / 70%);
     font-size: 15px;
     text-shadow: 1px 1px 3px #000;
 
-    .game-teaser-click-info {
+    .game-teaser-buttons {
       position: absolute;
       bottom: 0;
       left: 0;
@@ -247,7 +247,7 @@ $bg-color-transparent: rgba(0 0 0 / 70%);
       display: none;
     }
 
-    .game-teaser-replay-info {
+    .game-teaser-buttons {
       position: absolute;
       bottom: 0;
       right: 0;
@@ -731,6 +731,18 @@ fieldset {
       td {
         border-top: 2px solid rgba(var(--v-theme-on-surface), var(--v-disabled-opacity));
       }
+    }
+  }
+}
+
+.new-image-dialog,
+.edit-image-dialog,
+.image-info-dialog,
+.new-game-dialog {
+  .v-container {
+    height: 90vh;
+    .v-row {
+      height: 100%;
     }
   }
 }

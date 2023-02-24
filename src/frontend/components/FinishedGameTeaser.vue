@@ -23,14 +23,23 @@
       <div class="game-teaser-click-info">
         <h5>Click to {{ joinPuzzleText }}</h5>
       </div>
-      <div class="game-teaser-replay-info">
+      <div class="game-teaser-buttons">
         <v-btn
+          block
+          size="x-small"
+          class="show-image-info"
+          @click.stop="emit('showImageInfo', game.image)"
+          prepend-icon="mdi-image"
+        >
+          Image info
+        </v-btn>
+        <v-btn
+          block
           v-if="game.hasReplay"
           color="info"
           size="x-small"
-          variant="elevated"
-          class="game-replay"
-          @click.prevent="emit('goToReplay', game)"
+          class="mt-2"
+          @click.stop="emit('goToReplay', game)"
           prepend-icon="mdi-play"
         >
           Watch replay
@@ -43,7 +52,7 @@
 import { computed } from 'vue';
 import { resizeUrl } from '../../common/ImageService';
 import Time from '../../common/Time'
-import { GameInfo, ScoreMode, ShapeMode, SnapMode } from '../../common/Types'
+import { GameInfo, ImageInfo, ScoreMode, ShapeMode, SnapMode } from '../../common/Types'
 
 const props = defineProps<{
   game: GameInfo,
@@ -52,9 +61,10 @@ const props = defineProps<{
 const emit = defineEmits<{
   (e: 'goToGame', val: GameInfo): void
   (e: 'goToReplay', val: GameInfo): void
+  (e: 'showImageInfo', val: ImageInfo): void
 }>()
 
-const url = computed(() => resizeUrl(props.game.imageUrl, 375, 210, 'contain'))
+const url = computed(() => resizeUrl(props.game.image.url, 375, 210, 'contain'))
 const style = computed(() => ({ 'background-image': `url("${url.value}")` }))
 
 const joinPuzzleText = computed(() => props.game.finished ? 'View puzzle' : 'Join puzzle')

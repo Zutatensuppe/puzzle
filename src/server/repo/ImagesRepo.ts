@@ -33,7 +33,7 @@ export interface TagRowWithCount extends TagRow {
 }
 
 export interface ImageRowWithCount extends ImageRow {
-  games_count: string
+  games_count: number
 }
 
 export class ImagesRepo {
@@ -160,6 +160,11 @@ export class ImagesRepo {
       ${this.db._buildOrderBy(orderByMap[orderBy])}
       ${this.db._buildLimit({ offset, limit })}
     `, params)
+  }
+
+  async getGameCount(imageId: number): Promise<number> {
+    const rows = await this.getImagesWithCountByIds([imageId])
+    return rows.length > 0 ? rows[0].games_count : 0
   }
 
   async getImagesWithCountByIds(imageIds: number[]): Promise<ImageRowWithCount[]> {
