@@ -19,23 +19,7 @@
         </tbody>
       </v-table>
       <h4 class="mt-5">Image</h4>
-      <v-table density="compact">
-        <tbody>
-          <tr><td><v-icon icon="mdi-subtitles-outline" /> Title: </td><td>{{ image.title || '<No Title>' }}</td></tr>
-          <tr v-if="image.copyrightURL || image.copyrightName">
-            <td><v-icon icon="mdi-copyright" /> Copyright: </td>
-            <td>
-              <a :href="image.copyrightURL" v-if="image.copyrightURL" target="_blank">{{ image.copyrightName || 'Source' }} <v-icon icon="mdi-open-in-new" /></a>
-              <span v-else>{{ image.copyrightName }}</span>
-            </td>
-          </tr>
-          <tr><td><v-icon icon="mdi-account-arrow-up" /> Uploader: </td><td>{{ image.uploaderName || '<Unknown>' }}</td></tr>
-          <tr><td><v-icon icon="mdi-account-arrow-up" /> Upload date: </td><td>{{ date }}</td></tr>
-          <tr><td><v-icon icon="mdi-ruler-square" /> Dimensions: </td><td>{{ image.width }}x{{ image.height }}</td></tr>
-          <tr><td><v-icon icon="mdi-tag" /> Tags: </td><td>{{ image.tags.length ? image.tags.map(t => t.title).join(', ') : '-' }}</td></tr>
-          <tr><td><v-icon icon="mdi-puzzle" /> Game count: </td><td>{{ image.gameCount }}</td></tr>
-        </tbody>
-      </v-table>
+      <ImageInfoTable :image="image" density="compact" />
     </v-container>
   </v-card>
 </template>
@@ -44,6 +28,7 @@ import { computed } from 'vue'
 import { ScoreMode, ShapeMode, SnapMode } from '../../common/Types'
 import { GamePlay } from '../GamePlay';
 import { GameReplay } from '../GameReplay';
+import ImageInfoTable from './ImageInfoTable.vue';
 
 const props = defineProps<{
   game: GamePlay | GameReplay

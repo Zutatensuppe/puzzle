@@ -27,6 +27,7 @@ import { TokensRepo } from './repo/TokensRepo'
 import { AnnouncementsRepo } from './repo/AnnouncementsRepo'
 import { ImageResize } from './ImageResize'
 import { LeaderboardRepo } from './repo/LeaderboardRepo'
+import { ImagesRepo } from './repo/ImagesRepo'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
@@ -47,6 +48,7 @@ export interface ServerInterface {
   getTokensRepo: () => TokensRepo
   getAnnouncementsRepo: () => AnnouncementsRepo
   getLeaderboardRepo: () => LeaderboardRepo
+  getImagesRepo: () => ImagesRepo
 }
 
 export class Server implements ServerInterface {
@@ -66,6 +68,7 @@ export class Server implements ServerInterface {
     private readonly tokensRepo: TokensRepo,
     private readonly announcementsRepo: AnnouncementsRepo,
     private readonly leaderboardRepo: LeaderboardRepo,
+    private readonly imagesRepo: ImagesRepo,
   ) {
     // pass
   }
@@ -105,6 +108,9 @@ export class Server implements ServerInterface {
   }
   getLeaderboardRepo(): LeaderboardRepo {
     return this.leaderboardRepo
+  }
+  getImagesRepo(): ImagesRepo {
+    return this.imagesRepo
   }
 
   async persistGame(gameId: string): Promise<void> {

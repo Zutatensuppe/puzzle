@@ -747,3 +747,9 @@ fieldset {
     }
   }
 }
+
+.image-info-table {
+  td:first-child {
+    white-space: nowrap;
+  }
+}
