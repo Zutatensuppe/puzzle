@@ -403,6 +403,7 @@ export default function createRouter(
         !!log[0][9], // private
         log[0][10], // crop
       )
+      game.puzzle.info.image.gameCount = await server.getImagesRepo().getGameCount(game.puzzle.info.image.id)
     }
     res.send({ log, game: game ? Util.encodeGame(game) : null })
   })

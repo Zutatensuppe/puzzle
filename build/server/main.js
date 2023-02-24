@@ -2294,6 +2294,7 @@ function createRouter$2(server) {
             true, // hasReplay
             !!log[0][9], // private
             log[0][10]);
+            game.puzzle.info.image.gameCount = await server.getImagesRepo().getGameCount(game.puzzle.info.image.id);
         }
         res.send({ log, game: game ? Util.encodeGame(game) : null });
     });
@@ -2662,7 +2663,7 @@ const __dirname = dirname(__filename);
 const indexFile = path.resolve(__dirname, '..', '..', 'build', 'public', 'index.html');
 const log$3 = logger('Server.ts');
 class Server {
-    constructor(db, mail, canny, discord, gameSockets, gameService, users, images, imageResize, tokensRepo, announcementsRepo, leaderboardRepo) {
+    constructor(db, mail, canny, discord, gameSockets, gameService, users, images, imageResize, tokensRepo, announcementsRepo, leaderboardRepo, imagesRepo) {
         this.db = db;
         this.mail = mail;
         this.canny = canny;
@@ -2675,6 +2676,7 @@ class Server {
         this.tokensRepo = tokensRepo;
         this.announcementsRepo = announcementsRepo;
         this.leaderboardRepo = leaderboardRepo;
+        this.imagesRepo = imagesRepo;
         this.webserver = null;
         this.websocketserver = null;
         // pass
@@ -2714,6 +2716,9 @@ class Server {
     }
     getLeaderboardRepo() {
         return this.leaderboardRepo;
+    }
+    getImagesRepo() {
+        return this.imagesRepo;
     }
     async persistGame(gameId) {
         const game = GameCommon.get(gameId);
@@ -4097,7 +4102,7 @@ const run = async () => {
     const puzzleService = new PuzzleService(images);
     const leaderboardRepo = new LeaderboardRepo(db);
     const gameService = new GameService(gamesRepo, imagesRepo, puzzleService, leaderboardRepo);
-    const server = new Server(db, mail, canny, discord, gameSockets, gameService, users, images, imageResize, tokensRepo, announcementsRepo, leaderboardRepo);
+    const server = new Server(db, mail, canny, discord, gameSockets, gameService, users, images, imageResize, tokensRepo, announcementsRepo, leaderboardRepo, imagesRepo);
     server.start();
     const log = logger('main.js');
     const memoryUsageHuman = () => {

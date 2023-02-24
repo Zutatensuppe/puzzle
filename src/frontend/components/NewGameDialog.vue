@@ -75,23 +75,7 @@
               </v-form>
             </v-window-item>
             <v-window-item value="image-info">
-              <v-table>
-                <tbody>
-                  <tr><td><v-icon icon="mdi-subtitles-outline" /> Title: </td><td>{{ image.title || '<No Title>' }}</td></tr>
-                  <tr v-if="image.copyrightURL || image.copyrightName">
-                    <td><v-icon icon="mdi-copyright" /> Copyright: </td>
-                    <td>
-                      <a :href="image.copyrightURL" v-if="image.copyrightURL" target="_blank">{{ image.copyrightName || 'Source' }} <v-icon icon="mdi-open-in-new" /></a>
-                      <span v-else>{{ image.copyrightName }}</span>
-                    </td>
-                  </tr>
-                  <tr><td><v-icon icon="mdi-account-arrow-up" /> Uploader: </td><td>{{ image.uploaderName || '<Unknown>' }}</td></tr>
-                  <tr><td><v-icon icon="mdi-account-arrow-up" /> Upload date: </td><td>{{ date }}</td></tr>
-                  <tr><td><v-icon icon="mdi-ruler-square" /> Dimensions: </td><td>{{ image.width }}x{{ image.height }}</td></tr>
-                  <tr><td><v-icon icon="mdi-tag" /> Tags: </td><td>{{ image.tags.length ? image.tags.map(t => t.title).join(', ') : '-' }}</td></tr>
-                  <tr><td><v-icon icon="mdi-puzzle" /> Game count: </td><td>{{ image.gameCount }}</td></tr>
-                </tbody>
-              </v-table>
+              <ImageInfoTable :image="image" />
             </v-window-item>
           </v-window>
         </v-col>
@@ -107,6 +91,7 @@ import { NEWGAME_MIN_PIECES, NEWGAME_MAX_PIECES } from './../../common/GameCommo
 import PuzzleCropper from './PuzzleCropper.vue'
 import { determinePuzzleInfo, PuzzleCreationInfo } from '../../common/Puzzle';
 import { Rect } from '../../common/Geometry';
+import ImageInfoTable from './ImageInfoTable.vue';
 
 const props = defineProps<{
   image: ImageInfo
@@ -129,11 +114,6 @@ const snapMode = ref<SnapMode>(SnapMode.NORMAL)
 const crop = ref<Rect>({ x: 0, y: 0, w: props.image.width, h: props.image.height })
 
 const valid = ref<boolean>(true)
-
-const date = computed((): string => {
-  // TODO: use date format that is same everywhere
-  return new Date(props.image.created).toLocaleDateString()
-})
 
 const canStartNewGame = computed((): boolean => {
   if (!valid.value) {

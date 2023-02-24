@@ -51,6 +51,7 @@ const run = async () => {
     tokensRepo,
     announcementsRepo,
     leaderboardRepo,
+    imagesRepo,
   )
   server.start()
 
