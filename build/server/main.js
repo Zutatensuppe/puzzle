@@ -1774,8 +1774,11 @@ function Game_getIdlePlayers(game, ts) {
     const minTs = ts - IDLE_TIMEOUT_SEC * Time.SEC;
     return Game_getAllPlayers(game).filter((p) => p.ts < minTs && p.points > 0);
 }
+function Game_getImage(game) {
+    return game.puzzle.info.image;
+}
 function Game_getImageUrl(game) {
-    const imageUrl = game.puzzle.info.image.url;
+    const imageUrl = Game_getImage(game).url;
     if (!imageUrl) {
         throw new Error('[2021-07-11] no image url set');
     }
@@ -1834,7 +1837,7 @@ var GameCommon = {
     Game_getPieceCount,
     Game_getActivePlayers,
     Game_getPlayersWithScore,
-    Game_getImageUrl,
+    Game_getImage,
     Game_getScoreMode,
     Game_getSnapMode,
     Game_getShapeMode,
@@ -2343,7 +2346,7 @@ function createRouter$2(server) {
             players: finished
                 ? GameCommon.Game_getPlayersWithScore(game).length
                 : GameCommon.Game_getActivePlayers(game, ts).length,
-            imageUrl: GameCommon.Game_getImageUrl(game),
+            image: GameCommon.Game_getImage(game),
             snapMode: GameCommon.Game_getSnapMode(game),
             scoreMode: GameCommon.Game_getScoreMode(game),
             shapeMode: GameCommon.Game_getShapeMode(game),
@@ -2904,8 +2907,9 @@ class GameSockets {
 
 const log$1 = logger('GameService.js');
 class GameService {
-    constructor(repo, puzzleService, leaderboardRepo) {
+    constructor(repo, imagesRepo, puzzleService, leaderboardRepo) {
         this.repo = repo;
+        this.imagesRepo = imagesRepo;
         this.puzzleService = puzzleService;
         this.leaderboardRepo = leaderboardRepo;
         this.dirtyGames = {};
@@ -2919,7 +2923,7 @@ class GameService {
             delete this.dirtyGames[gameId];
         }
     }
-    gameRowToGameObject(gameRow) {
+    async gameRowToGameObject(gameRow) {
         let game;
         try {
             game = JSON.parse(gameRow.data);
@@ -2939,6 +2943,8 @@ class GameService {
         const gameObject = this.storeDataToGame(game, gameRow.creator_user_id, !!gameRow.private);
         gameObject.hasReplay = GameLog.hasReplay(gameObject);
         gameObject.crop = game.crop;
+        const gameCount = await this.imagesRepo.getGameCount(gameObject.puzzle.info.image.id);
+        gameObject.puzzle.info.image.gameCount = gameCount;
         return gameObject;
     }
     async loadGame(gameId) {
@@ -2948,17 +2954,13 @@ class GameService {
             log$1.info(`[INFO] game not found: ${gameId}`);
             return null;
         }
-        const gameObject = this.gameRowToGameObject(gameRow);
-        if (!gameObject) {
-            log$1.error(`[ERR] unable to turn game row into game object: ${gameRow.id}`);
-            return null;
-        }
-        return gameObject;
+        const gameObjects = await this.gameRowsToGames([gameRow]);
+        return gameObjects.length > 0 ? gameObjects[0] : null;
     }
-    gameRowsToGames(gameRows) {
+    async gameRowsToGames(gameRows) {
         const games = [];
         for (const gameRow of gameRows) {
-            const gameObject = this.gameRowToGameObject(gameRow);
+            const gameObject = await this.gameRowToGameObject(gameRow);
             if (!gameObject) {
                 log$1.error(`[ERR] unable to turn game row into game object: ${gameRow.id}`);
                 continue;
@@ -2969,11 +2971,11 @@ class GameService {
     }
     async getPublicRunningGames(offset, limit) {
         const rows = await this.repo.getPublicRunningGames(offset, limit);
-        return this.gameRowsToGames(rows);
+        return await this.gameRowsToGames(rows);
     }
     async getPublicFinishedGames(offset, limit) {
         const rows = await this.repo.getPublicFinishedGames(offset, limit);
-        return this.gameRowsToGames(rows);
+        return await this.gameRowsToGames(rows);
     }
     async countPublicRunningGames() {
         return await this.repo.countPublicRunningGames();
@@ -3501,6 +3503,10 @@ class ImagesRepo {
       ${this.db._buildLimit({ offset, limit })}
     `, params);
     }
+    async getGameCount(imageId) {
+        const rows = await this.getImagesWithCountByIds([imageId]);
+        return rows.length > 0 ? rows[0].games_count : 0;
+    }
     async getImagesWithCountByIds(imageIds) {
         const params = [];
         const dbWhere = this.db._buildWhere({ 'images.id': { '$in': imageIds } });
@@ -3589,7 +3595,7 @@ class Images {
             width: row.width,
             height: row.height,
             private: !!row.private,
-            gameCount: parseInt(row.games_count, 10),
+            gameCount: row.games_count,
             copyrightName: row.copyright_name,
             copyrightURL: row.copyright_url,
         };
@@ -4090,7 +4096,7 @@ const run = async () => {
     const announcementsRepo = new AnnouncementsRepo(db);
     const puzzleService = new PuzzleService(images);
     const leaderboardRepo = new LeaderboardRepo(db);
-    const gameService = new GameService(gamesRepo, puzzleService, leaderboardRepo);
+    const gameService = new GameService(gamesRepo, imagesRepo, puzzleService, leaderboardRepo);
     const server = new Server(db, mail, canny, discord, gameSockets, gameService, users, images, imageResize, tokensRepo, announcementsRepo, leaderboardRepo);
     server.start();
     const log = logger('main.js');
