@@ -107,22 +107,22 @@ export class GameService {
     return games
   }
 
-  async getPublicRunningGames(offset: number, limit: number): Promise<Game[]> {
-    const rows = await this.repo.getPublicRunningGames(offset, limit)
+  async getPublicRunningGames(offset: number, limit: number, userId: number): Promise<Game[]> {
+    const rows = await this.repo.getPublicRunningGames(offset, limit, userId)
     return await this.gameRowsToGames(rows)
   }
 
-  async getPublicFinishedGames(offset: number, limit: number): Promise<Game[]> {
-    const rows = await this.repo.getPublicFinishedGames(offset, limit)
+  async getPublicFinishedGames(offset: number, limit: number, userId: number): Promise<Game[]> {
+    const rows = await this.repo.getPublicFinishedGames(offset, limit, userId)
     return await this.gameRowsToGames(rows)
   }
 
-  async countPublicRunningGames(): Promise<number> {
-    return await this.repo.countPublicRunningGames()
+  async countPublicRunningGames(userId: number): Promise<number> {
+    return await this.repo.countPublicRunningGames(userId)
   }
 
-  async countPublicFinishedGames(): Promise<number> {
-    return await this.repo.countPublicFinishedGames()
+  async countPublicFinishedGames(userId: number): Promise<number> {
+    return await this.repo.countPublicFinishedGames(userId)
   }
 
   async exists(gameId: string): Promise<boolean> {

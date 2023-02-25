@@ -89,7 +89,6 @@ in jigsawpuzzles.io
       <NewGameDialog
         v-if="image && dialogContent==='new-game'"
         :image="image"
-        :forcePrivate="newGameForcePrivate"
         @newGame="onNewGame"
         @tagClick="onTagClick"
         @close="closeDialog"
@@ -144,7 +143,6 @@ const image = ref<ImageInfo>({
 const dialog = ref<boolean>(false)
 const dialogContent = ref<string>('')
 
-const newGameForcePrivate = ref<boolean>(false)
 const uploading = ref<'postToGallery' | 'setupGame' | ''>('')
 const uploadProgress = ref<number>(0)
 
@@ -210,7 +208,6 @@ const onTagClick = (tag: Tag): void => {
 
 const onImageClicked = (newImage: ImageInfo) => {
   image.value = newImage
-  newGameForcePrivate.value = false
   openDialog('new-game')
 }
 
@@ -264,7 +261,6 @@ const setupGameClick = async (data: any) => {
   uploading.value = ''
   loadImages() // load images in background
   image.value = uploadedImage
-  newGameForcePrivate.value = data.isPrivate
   openDialog('new-game')
 }
 

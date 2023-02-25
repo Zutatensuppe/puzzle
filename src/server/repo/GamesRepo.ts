@@ -25,34 +25,52 @@ export class GamesRepo {
     return (gameRow as GameRow) || null
   }
 
-  async getPublicRunningGames(offset: number, limit: number): Promise<GameRow[]> {
-    return await this.db.getMany(
-      TABLE,
-      { private: 0, finished: null },
-      [{ created: -1 }],
-      { limit, offset }
-    ) as GameRow[]
+  async getPublicRunningGames(offset: number, limit: number, userId: number): Promise<GameRow[]> {
+    const limitSql = this.db._buildLimit({ limit, offset })
+    return await this.db._getMany(`
+      SELECT * FROM ${TABLE}
+      WHERE
+        ("private" = 0 OR creator_user_id = $1)
+        AND
+        (finished is null)
+      ORDER BY
+        created DESC
+      ${limitSql}
+    `, [userId]) as GameRow[]
   }
 
-  async getPublicFinishedGames(offset: number, limit: number): Promise<GameRow[]> {
-    return await this.db.getMany(
-      TABLE,
-      { private: 0, finished: { '$ne': null } },
-      [{ finished: -1 }],
-      { limit, offset }
-    ) as GameRow[]
+  async getPublicFinishedGames(offset: number, limit: number, userId: number): Promise<GameRow[]> {
+    const limitSql = this.db._buildLimit({ limit, offset })
+    return await this.db._getMany(`
+      SELECT * FROM ${TABLE}
+      WHERE
+        ("private" = 0 OR creator_user_id = $1)
+        AND
+        (finished is not null)
+      ORDER BY
+        finished DESC
+      ${limitSql}
+    `, [userId]) as GameRow[]
   }
 
-  async countPublicRunningGames(): Promise<number> {
-    return await this.count({ private: 0, finished: null })
+  async countPublicRunningGames(userId: number): Promise<number> {
+    const sql = `SELECT COUNT(*)::int FROM ${TABLE} WHERE
+      ("private" = 0 OR creator_user_id = $1)
+      AND
+      (finished is null)
+    `
+    const row = await this.db._get(sql, [userId])
+    return row.count
   }
 
-  async countPublicFinishedGames(): Promise<number> {
-    return await this.count({ private: 0, finished: { '$ne': null } })
-  }
-
-  async count(where: WhereRaw): Promise<number> {
-    return await this.db.count(TABLE, where)
+  async countPublicFinishedGames(userId: number): Promise<number> {
+    const sql = `SELECT COUNT(*)::int FROM ${TABLE} WHERE
+      ("private" = 0 OR creator_user_id = $1)
+      AND
+      (finished is not null)
+    `
+    const row = await this.db._get(sql, [userId])
+    return row.count
   }
 
   async exists(gameId: string): Promise<boolean> {

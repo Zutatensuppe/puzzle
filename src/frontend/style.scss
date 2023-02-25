@@ -168,7 +168,7 @@ $bg-color-transparent: rgba(0 0 0 / 70%);
     padding-top: 80%;
     width: 100%;
     background-color: #222;
-    min-height: 310px;
+    min-height: 360px;
   }
 
   > .v-card__overlay,
@@ -200,6 +200,13 @@ $bg-color-transparent: rgba(0 0 0 / 70%);
       right: 0;
       padding: 1em;
     }
+  }
+
+  .game-is-private-info {
+    margin-bottom: 10px;
+    background: rgba(122, 85, 165, 0.8);
+    padding: 5px 10px;
+    text-align: center;
   }
 
   &:hover > .v-card__overlay,
@@ -253,6 +260,15 @@ $bg-color-transparent: rgba(0 0 0 / 70%);
       right: 0;
       padding: 1em;
     }
+  }
+
+  .game-is-private-info {
+    position: absolute;
+    right: 1em;
+    top: 1em;
+    background: rgba(122, 85, 165, 1);
+    padding: 3px 5px;
+    text-align: center;
   }
 
   &:hover {
@@ -436,6 +452,11 @@ html.view-replay body { overflow: hidden; }
 
   .imageteaser-title {
     margin-bottom: 1em;
+    line-height: 1.2em;
+  }
+
+  &.image-is-private .imageteaser-title {
+    margin-top: .8em;
   }
 
   .imageteaser-click-info {
@@ -451,6 +472,16 @@ html.view-replay body { overflow: hidden; }
     bottom: 0;
     right: 0;
     padding: 1em;
+  }
+
+  .image-is-private-info {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0;
+    background: rgba(122, 85, 165, 0.8);
+    padding: 5px 10px;
+    text-align: center;
   }
 }
 

@@ -302,6 +302,7 @@ export const DefaultSnapMode = (v: any): SnapMode => {
 export interface GameInfo {
   id: string
   hasReplay: boolean
+  isPrivate: boolean
   started: number
   finished: number
   piecesFinished: number
