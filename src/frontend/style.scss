@@ -204,7 +204,7 @@ $bg-color-transparent: rgba(0 0 0 / 70%);
 
   .game-is-private-info {
     margin-bottom: 10px;
-    background: rgba(122, 85, 165, 0.8);
+    background: rgba(122 85 165 / 80%);
     padding: 5px 10px;
     text-align: center;
   }
@@ -266,7 +266,7 @@ $bg-color-transparent: rgba(0 0 0 / 70%);
     position: absolute;
     right: 1em;
     top: 1em;
-    background: rgba(122, 85, 165, 1);
+    background: rgba(122, 85, 165, 100%);
     padding: 3px 5px;
     text-align: center;
   }
@@ -456,7 +456,7 @@ html.view-replay body { overflow: hidden; }
   }
 
   &.image-is-private .imageteaser-title {
-    margin-top: .8em;
+    margin-top: 0.8em;
   }
 
   .imageteaser-click-info {
@@ -479,7 +479,7 @@ html.view-replay body { overflow: hidden; }
     left: 0;
     right: 0;
     top: 0;
-    background: rgba(122, 85, 165, 0.8);
+    background: rgba(122 85 165 / 80%);
     padding: 5px 10px;
     text-align: center;
   }
