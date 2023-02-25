@@ -12,19 +12,28 @@
       <tr><td><v-icon icon="mdi-account-arrow-up" /> Uploader: </td><td>{{ image.uploaderName || '<Unknown>' }}</td></tr>
       <tr><td><v-icon icon="mdi-account-arrow-up" /> Upload date: </td><td>{{ date }}</td></tr>
       <tr><td><v-icon icon="mdi-ruler-square" /> Dimensions: </td><td>{{ image.width }}x{{ image.height }}</td></tr>
-      <tr><td><v-icon icon="mdi-tag" /> Tags: </td><td>{{ image.tags.length ? image.tags.map(t => t.title).join(', ') : '-' }}</td></tr>
+      <tr v-if="image.tags.length"><td><v-icon icon="mdi-tag" /> Tags: </td><td>
+        <a
+          v-for="(t, idx) in image.tags"
+          @click="emit('tagClick', t)"
+          class="is-clickable mr-1"
+        >{{ t.title }}<span v-if="idx < image.tags.length - 1">,</span></a>
+      </td></tr>
       <tr><td><v-icon icon="mdi-puzzle" /> Game count: </td><td>{{ image.gameCount }}</td></tr>
     </tbody>
   </v-table>
 </template>
 <script setup lang="ts">
 import { computed } from 'vue'
-import { ImageInfo } from '../../common/Types'
+import { ImageInfo, Tag } from '../../common/Types'
 
 const props = defineProps<{
-  image: ImageInfo
+  image: ImageInfo,
 }>()
 
+const emit = defineEmits<{
+  (e: 'tagClick', val: Tag): void
+}>()
 
 const date = computed((): string => {
   // TODO: use date format that is same everywhere

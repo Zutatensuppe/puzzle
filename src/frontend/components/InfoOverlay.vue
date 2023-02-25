@@ -19,16 +19,18 @@
         </tbody>
       </v-table>
       <h4 class="mt-5">Image</h4>
-      <ImageInfoTable :image="image" density="compact" />
+      <ImageInfoTable :image="image" density="compact" @tag-click="onTagClick" />
     </v-container>
   </v-card>
 </template>
 <script setup lang="ts">
 import { computed } from 'vue'
-import { ScoreMode, ShapeMode, SnapMode } from '../../common/Types'
+import { useRouter } from 'vue-router';
+import { ImageSearchSort, ScoreMode, ShapeMode, SnapMode, Tag } from '../../common/Types'
 import { GamePlay } from '../GamePlay';
 import { GameReplay } from '../GameReplay';
 import ImageInfoTable from './ImageInfoTable.vue';
+const router = useRouter()
 
 const props = defineProps<{
   game: GamePlay | GameReplay
@@ -36,10 +38,10 @@ const props = defineProps<{
 
 const image = props.game.getImage()
 
-const date = computed((): string => {
-  // TODO: use date format that is same everywhere
-  return new Date(image.created).toLocaleDateString()
-})
+const onTagClick = (tag: Tag): void => {
+  const location = router.resolve({ name: 'new-game', query: { sort: ImageSearchSort.DATE_DESC, search: tag.title } })
+  window.open(location.href, '_blank')
+}
 
 const scoreMode = computed(() => {
   switch (props.game.getScoreMode()) {

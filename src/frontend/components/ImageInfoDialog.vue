@@ -10,7 +10,7 @@
           </div>
         </v-col>
         <v-col :lg="4" class="area-settings">
-          <ImageInfoTable :image="image" />
+          <ImageInfoTable :image="image" @tag-click="emit('tagClick', $event)" />
           <v-card-actions>
             <v-btn
               variant="elevated"
@@ -23,7 +23,7 @@
   </v-card>
 </template>
 <script setup lang="ts">
-import { ImageInfo } from './../../common/Types'
+import { ImageInfo, Tag } from './../../common/Types'
 import ImageInfoTable from './ImageInfoTable.vue';
 import ResponsiveImage from './ResponsiveImage.vue';
 
@@ -32,6 +32,7 @@ defineProps<{
 }>()
 
 const emit = defineEmits<{
+  (e: 'tagClick', val: Tag): void
   (e: 'close'): void
 }>()
 </script>

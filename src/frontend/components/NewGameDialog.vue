@@ -75,7 +75,7 @@
               </v-form>
             </v-window-item>
             <v-window-item value="image-info">
-              <ImageInfoTable :image="image" />
+              <ImageInfoTable :image="image" @tag-click="emit('tagClick', $event)" />
             </v-window-item>
           </v-window>
         </v-col>
@@ -86,7 +86,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 
-import { GameSettings, ImageInfo, ScoreMode, ShapeMode, SnapMode } from './../../common/Types'
+import { GameSettings, ImageInfo, ScoreMode, ShapeMode, SnapMode, Tag } from './../../common/Types'
 import { NEWGAME_MIN_PIECES, NEWGAME_MAX_PIECES } from './../../common/GameCommon'
 import PuzzleCropper from './PuzzleCropper.vue'
 import { determinePuzzleInfo, PuzzleCreationInfo } from '../../common/Puzzle';
@@ -100,6 +100,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   (e: 'newGame', val: GameSettings): void
+  (e: 'tagClick', val: Tag): void
   (e: 'close'): void
 }>()
 
