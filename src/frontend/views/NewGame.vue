@@ -44,14 +44,13 @@ in jigsawpuzzles.io
           item-title="title"
           item-value="val"
           :items="[
-            { val: 'date_desc', title: 'Newest first'},
-            { val: 'date_asc', title: 'Oldest first'},
-            { val: 'alpha_asc', title: 'A-Z'},
-            { val: 'alpha_desc', title: 'Z-A'},
-            { val: 'game_count_desc', title: 'Most plays first'},
-            { val: 'game_count_asc', title: 'Least plays first'},
+            { val: ImageSearchSort.DATE_DESC, title: 'Newest first'},
+            { val: ImageSearchSort.DATE_ASC, title: 'Oldest first'},
+            { val: ImageSearchSort.ALPHA_ASC, title: 'A-Z'},
+            { val: ImageSearchSort.ALPHA_DESC, title: 'Z-A'},
+            { val: ImageSearchSort.GAME_COUNT_DESC, title: 'Most plays first'},
+            { val: ImageSearchSort.GAME_COUNT_ASC, title: 'Least plays first'},
           ]"
-          @update:modelValue="filtersChanged"
         />
       </div>
       <div>
@@ -98,21 +97,22 @@ in jigsawpuzzles.io
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref, watch } from 'vue'
+import { onMounted, onBeforeUnmount, ref, watch } from 'vue'
 import NewImageDialog from './../components/NewImageDialog.vue'
 import EditImageDialog from './../components/EditImageDialog.vue'
 import NewGameDialog from './../components/NewGameDialog.vue'
-import { GameSettings, ImageInfo, Tag, NewGameDataRequestData, ImagesRequestData } from '../../common/Types'
+import { GameSettings, ImageInfo, Tag, NewGameDataRequestData, ImagesRequestData, ImageSearchSort, isImageSearchSort } from '../../common/Types'
 import api from '../_api'
 import { XhrRequest } from '../_api/xhr'
-import { useRouter } from 'vue-router'
+import { onBeforeRouteUpdate, RouteLocationNormalizedLoaded, useRouter } from 'vue-router'
 import ImageLibrary from './../components/ImageLibrary.vue'
 import Sentinel from '../components/Sentinel.vue'
+import { debounce } from '../util'
 
 const router = useRouter()
 
-const filters = ref<{ sort: string, search: string }>({
-  sort: 'date_desc',
+const filters = ref<{ sort: ImageSearchSort, search: string }>({
+  sort: ImageSearchSort.DATE_DESC,
   search: '',
 })
 const offset = ref<number>(0)
@@ -169,7 +169,7 @@ const autocompleteTags = (input: string, exclude: string[]): string[] => {
 }
 
 watch(filters, () => {
-  filtersChanged()
+  filtersChangedDebounced()
 }, { deep: true })
 
 const currentRequest = ref<XhrRequest | null>(null)
@@ -195,8 +195,13 @@ const loadImages = async () => {
 
 const filtersChanged = async () => {
   await loadImages()
+  router.push({ name: 'new-game', query: {
+    sort: filters.value.sort,
+    search: filters.value.search,
+  }})
   sentinelActive.value = true
 }
+const filtersChangedDebounced = debounce(filtersChanged, 300)
 
 const onImageClicked = (newImage: ImageInfo) => {
   image.value = newImage
@@ -289,7 +294,29 @@ const tryLoadMore = async () => {
   images.value.push(...json.images)
 }
 
+const initFilters = (route: RouteLocationNormalizedLoaded) => {
+  const query = route.query
+  filters.value.search = (query && query.search) ? `${query.search}` : ''
+  filters.value.sort = (query && isImageSearchSort(query.sort)) ? query.sort : ImageSearchSort.DATE_DESC
+}
+
+const popStateDetected = ref<boolean>(false)
+const onPopstate = () => {
+  popStateDetected.value = true
+}
+onBeforeRouteUpdate(async (to, from) => {
+  if (popStateDetected.value) {
+    initFilters(to)
+    popStateDetected.value = false
+  }
+})
+onBeforeUnmount(() => {
+  window.removeEventListener('popstate', onPopstate)
+})
 onMounted(async () => {
+  popStateDetected.value = false
+  window.addEventListener('popstate', onPopstate)
+  initFilters(router.currentRoute.value)
   await loadImages()
 })
 </script>

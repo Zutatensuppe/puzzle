@@ -992,6 +992,15 @@ const DefaultSnapMode = (v) => {
     }
     return SnapMode.NORMAL;
 };
+var ImageSearchSort;
+(function (ImageSearchSort) {
+    ImageSearchSort["ALPHA_ASC"] = "alpha_asc";
+    ImageSearchSort["ALPHA_DESC"] = "alpha_desc";
+    ImageSearchSort["DATE_ASC"] = "date_asc";
+    ImageSearchSort["DATE_DESC"] = "date_desc";
+    ImageSearchSort["GAME_COUNT_ASC"] = "game_count_asc";
+    ImageSearchSort["GAME_COUNT_DESC"] = "game_count_desc";
+})(ImageSearchSort || (ImageSearchSort = {}));
 
 const NEWGAME_MIN_PIECES = 10;
 const NEWGAME_MAX_PIECES = 5000;
@@ -3440,13 +3449,16 @@ class ImagesRepo {
     }
     async searchImagesWithCount(search, orderBy, isPrivate, offset, limit) {
         const orderByMap = {
-            alpha_asc: [{ title: 1 }, { created: -1 }],
-            alpha_desc: [{ title: -1 }, { created: -1 }],
-            date_asc: [{ created: 1 }],
-            date_desc: [{ created: -1 }],
-            game_count_asc: [{ games_count: 1 }, { created: -1 }],
-            game_count_desc: [{ games_count: -1 }, { created: -1 }],
+            [ImageSearchSort.ALPHA_ASC]: [{ title: 1 }, { created: -1 }],
+            [ImageSearchSort.ALPHA_DESC]: [{ title: -1 }, { created: -1 }],
+            [ImageSearchSort.DATE_ASC]: [{ created: 1 }],
+            [ImageSearchSort.DATE_DESC]: [{ created: -1 }],
+            [ImageSearchSort.GAME_COUNT_ASC]: [{ games_count: 1 }, { created: -1 }],
+            [ImageSearchSort.GAME_COUNT_DESC]: [{ games_count: -1 }, { created: -1 }],
         };
+        if (!orderByMap[orderBy]) {
+            return [];
+        }
         const imageIds = [];
         // search in tags:
         const searchClean = search.trim();

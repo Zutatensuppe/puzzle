@@ -1,3 +1,4 @@
+import { ImageSearchSort } from '../../common/Types'
 import Db, { OrderBy, WhereRaw } from '../Db'
 
 const TABLE = 'images'
@@ -89,13 +90,16 @@ export class ImagesRepo {
     limit: number,
   ): Promise<ImageRowWithCount[]> {
     const orderByMap = {
-      alpha_asc: [{ title: 1 }, { created: -1 }],
-      alpha_desc: [{ title: -1 }, { created: -1 }],
-      date_asc: [{ created: 1 }],
-      date_desc: [{ created: -1 }],
-      game_count_asc: [{ games_count: 1 }, { created: -1 }],
-      game_count_desc: [{ games_count: -1 }, { created: -1 }],
+      [ImageSearchSort.ALPHA_ASC]: [{ title: 1 }, { created: -1 }],
+      [ImageSearchSort.ALPHA_DESC]: [{ title: -1 }, { created: -1 }],
+      [ImageSearchSort.DATE_ASC]: [{ created: 1 }],
+      [ImageSearchSort.DATE_DESC]: [{ created: -1 }],
+      [ImageSearchSort.GAME_COUNT_ASC]: [{ games_count: 1 }, { created: -1 }],
+      [ImageSearchSort.GAME_COUNT_DESC]: [{ games_count: -1 }, { created: -1 }],
     } as Record<string, OrderBy>
+    if (!orderByMap[orderBy]) {
+      return []
+    }
 
     const imageIds: number[] = []
     // search in tags:

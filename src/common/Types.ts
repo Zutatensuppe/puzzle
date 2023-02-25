@@ -418,3 +418,23 @@ export interface ImagesRequestData {
   search: string
   offset: number
 }
+
+export enum ImageSearchSort {
+  ALPHA_ASC = 'alpha_asc',
+  ALPHA_DESC = 'alpha_desc',
+  DATE_ASC = 'date_asc',
+  DATE_DESC = 'date_desc',
+  GAME_COUNT_ASC = 'game_count_asc',
+  GAME_COUNT_DESC = 'game_count_desc',
+}
+
+export const isImageSearchSort = (sort: any): sort is ImageSearchSort => {
+  return [
+    'alpha_asc',
+    'alpha_desc',
+    'date_asc',
+    'date_desc',
+    'game_count_asc',
+    'game_count_desc',
+  ].includes(sort)
+}
