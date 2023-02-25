@@ -76,6 +76,7 @@ in jigsawpuzzles.io
         :uploading="uploading"
         @postToGalleryClick="postToGalleryClick"
         @setupGameClick="setupGameClick"
+        @tagClick="onTagClick"
         @close="closeDialog"
         />
       <EditImageDialog
@@ -90,6 +91,7 @@ in jigsawpuzzles.io
         :image="image"
         :forcePrivate="newGameForcePrivate"
         @newGame="onNewGame"
+        @tagClick="onTagClick"
         @close="closeDialog"
       />
     </v-dialog>
@@ -195,13 +197,16 @@ const loadImages = async () => {
 
 const filtersChanged = async () => {
   await loadImages()
-  router.push({ name: 'new-game', query: {
-    sort: filters.value.sort,
-    search: filters.value.search,
-  }})
+  router.push({ name: 'new-game', query: { sort: filters.value.sort, search: filters.value.search }})
   sentinelActive.value = true
 }
 const filtersChangedDebounced = debounce(filtersChanged, 300)
+
+const onTagClick = (tag: Tag): void => {
+  closeDialog()
+  shouldInitFiltersFromRoute.value = true
+  router.push({ name: 'new-game', query: { sort: ImageSearchSort.DATE_DESC, search: tag.title } })
+}
 
 const onImageClicked = (newImage: ImageInfo) => {
   image.value = newImage
@@ -300,21 +305,21 @@ const initFilters = (route: RouteLocationNormalizedLoaded) => {
   filters.value.sort = (query && isImageSearchSort(query.sort)) ? query.sort : ImageSearchSort.DATE_DESC
 }
 
-const popStateDetected = ref<boolean>(false)
+const shouldInitFiltersFromRoute = ref<boolean>(false)
 const onPopstate = () => {
-  popStateDetected.value = true
+  shouldInitFiltersFromRoute.value = true
 }
 onBeforeRouteUpdate(async (to, from) => {
-  if (popStateDetected.value) {
+  if (shouldInitFiltersFromRoute.value) {
     initFilters(to)
-    popStateDetected.value = false
+    shouldInitFiltersFromRoute.value = false
   }
 })
 onBeforeUnmount(() => {
   window.removeEventListener('popstate', onPopstate)
 })
 onMounted(async () => {
-  popStateDetected.value = false
+  shouldInitFiltersFromRoute.value = false
   window.addEventListener('popstate', onPopstate)
   initFilters(router.currentRoute.value)
   await loadImages()

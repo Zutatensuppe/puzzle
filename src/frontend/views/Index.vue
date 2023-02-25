@@ -72,13 +72,13 @@
     <Pagination :pagination="data.gamesFinished.pagination" @click="onPagination" />
   </v-container>
   <v-dialog v-model="dialog">
-    <ImageInfoDialog v-if="imageInfo" :image="imageInfo" @close="dialog = false" />
+    <ImageInfoDialog v-if="imageInfo" :image="imageInfo" @tag-click="onTagClick" @close="dialog = false" />
   </v-dialog>
 </template>
 <script setup lang="ts">
 import { computed, onMounted, onBeforeUnmount, ref } from 'vue'
 import { useRouter } from 'vue-router';
-import { ApiDataFinishedGames, ApiDataIndexData, GameInfo, ImageInfo } from '../../common/Types';
+import { ApiDataFinishedGames, ApiDataIndexData, GameInfo, ImageInfo, ImageSearchSort, Tag } from '../../common/Types';
 import RunningGameTeaser from '../components/RunningGameTeaser.vue';
 import FinishedGameTeaser from '../components/FinishedGameTeaser.vue';
 import Pagination from '../components/Pagination.vue';
@@ -135,6 +135,10 @@ const onPagination = async (q: { limit: number, offset: number }) => {
   const res = await api.pub.finishedGames(q)
   const json = await res.json() as ApiDataFinishedGames
   data.value.gamesFinished = json
+}
+
+const onTagClick = (tag: Tag): void => {
+  router.push({ name: 'new-game', query: { sort: ImageSearchSort.DATE_DESC, search: tag.title } })
 }
 
 onMounted(async () => {
