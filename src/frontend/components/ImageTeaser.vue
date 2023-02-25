@@ -1,6 +1,9 @@
 <template>
-  <v-card class="imageteaser is-clickable" @click="onClick" elevation="10" :style="styles">
+  <v-card class="imageteaser is-clickable" :class="{ 'image-is-private': image.private }" @click="onClick" elevation="10" :style="styles">
     <div class="imageteaser-inner">
+      <div class="imageteaser-info image-is-private-info" v-if="image.private">
+        <v-icon icon="mdi-incognito"></v-icon> Private Image
+      </div>
       <h4 class="imageteaser-title">
         {{ image.title || '<No Title>' }}
       </h4>

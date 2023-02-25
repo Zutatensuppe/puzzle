@@ -55,7 +55,7 @@
                 </div>
                 <div>
                   <v-label><v-icon icon="mdi-incognito mr-1"></v-icon> Privacy</v-label>
-                  <v-checkbox density="comfortable" label="Private Game (Private games won't show up in the game overview)" v-model="isPrivate" :disabled="forcePrivate"></v-checkbox>
+                  <v-checkbox density="comfortable" label="Private Game (Private games won't show up in the public game overview)" v-model="isPrivate" :disabled="forcePrivate"></v-checkbox>
                 </div>
 
                 <v-card-actions>
@@ -95,7 +95,6 @@ import ImageInfoTable from './ImageInfoTable.vue';
 
 const props = defineProps<{
   image: ImageInfo
-  forcePrivate: boolean
 }>()
 
 const emit = defineEmits<{
@@ -106,8 +105,9 @@ const emit = defineEmits<{
 
 const tab = ref<string>('settings')
 
+const forcePrivate = ref<boolean>(props.image.private)
 const pieces = ref<string | number>(1000)
-const isPrivate = ref<boolean>(props.forcePrivate)
+const isPrivate = ref<boolean>(forcePrivate.value)
 const scoreMode = ref<ScoreMode>(ScoreMode.ANY)
 const shapeMode = ref<ShapeMode>(ShapeMode.NORMAL)
 const snapMode = ref<SnapMode>(SnapMode.NORMAL)

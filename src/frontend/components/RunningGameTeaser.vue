@@ -1,7 +1,10 @@
 <template>
-  <v-card class="running-game-teaser" elevation="10" @click="emit('goToGame', game)">
+  <v-card class="running-game-teaser" :class="{ 'game-is-private': game.isPrivate }" elevation="10" @click="emit('goToGame', game)">
     <div class="game-teaser-image" :style="style"></div>
     <div class="game-teaser-inner">
+      <div class="game-teaser-info game-is-private-info" v-if="game.isPrivate">
+        <v-icon icon="mdi-incognito"></v-icon> Private Game
+      </div>
       <div class="game-teaser-info">
         <v-icon icon="mdi-puzzle"></v-icon> {{game.piecesFinished}}/{{game.piecesTotal}} Pieces
       </div>

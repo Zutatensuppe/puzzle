@@ -80,8 +80,9 @@ export class Images {
     isPrivate: boolean,
     offset: number,
     limit: number,
+    userId: number,
   ): Promise<ImageInfo[]> {
-    const rows = await this.imagesRepo.searchImagesWithCount(search, orderBy, isPrivate, offset, limit)
+    const rows = await this.imagesRepo.searchImagesWithCount(search, orderBy, isPrivate, offset, limit, userId)
     const images = []
     for (const row of rows) {
       images.push(await this.imageWithCountToImageInfo(row))

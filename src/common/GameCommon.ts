@@ -909,6 +909,10 @@ function handleInput(
 // functions that operate on given game instance instead of global one
 // -------------------------------------------------------------------
 
+function Game_isPrivate(game: Game): boolean {
+  return game.private
+}
+
 function Game_getStartTs(game: Game): number {
   return game.puzzle.data.started
 }
@@ -1022,6 +1026,7 @@ export default {
   handleInput,
 
   /// operate directly on the game object given
+  Game_isPrivate,
   Game_getStartTs,
   Game_getFinishTs,
   Game_getFinishedPiecesCount,

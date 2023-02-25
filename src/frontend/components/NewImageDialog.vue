@@ -48,7 +48,7 @@
             <TagsInput v-model="tags" :autocompleteTags="autocompleteTags" />
           </fieldset>
           <div>
-            <v-checkbox density="comfortable" label="Private Image (Private images won't show up in the gallery)" v-model="isPrivate"></v-checkbox>
+            <v-checkbox density="comfortable" label="Private Image (Private images won't show up in the public gallery)" v-model="isPrivate"></v-checkbox>
           </div>
 
           <v-card-actions>

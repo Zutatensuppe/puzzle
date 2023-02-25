@@ -32,7 +32,6 @@
     <NewGameDialog
       v-if="image && dialogContent==='new-game'"
       :image="image"
-      :forcePrivate="false"
       @newGame="onNewGame"
       @close="closeDialog"
     />
