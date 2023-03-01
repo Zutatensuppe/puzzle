@@ -50,5 +50,5 @@ export const run = (options: GameLoopOptions): GameLoopInstance => {
 }
 
 export default {
-  run
+  run,
 }

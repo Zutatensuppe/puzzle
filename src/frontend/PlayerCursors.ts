@@ -33,7 +33,7 @@ export class PlayerCursors {
       if (p.color) {
         const mask = p.d ? this.assets.Gfx.GRAB_MASK : this.assets.Gfx.HAND_MASK
         this.cursorImages[key] = await createImageBitmap(
-          Graphics.colorizedCanvas(cursor, mask, p.color)
+          Graphics.colorizedCanvas(cursor, mask, p.color),
         )
       } else {
         this.cursorImages[key] = cursor

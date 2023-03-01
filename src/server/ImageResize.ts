@@ -43,7 +43,7 @@ export class ImageResize {
           top: crop.y,
           left: crop.x,
           width: crop.w,
-          height: crop.h
+          height: crop.h,
         }).resize(maxw, maxh, { fit: 'inside', withoutEnlargement: true }).webp({ quality: 75 }).toFile(cropFilename)
       }
       return cropFilename
@@ -86,7 +86,7 @@ export class ImageResize {
           top: crop.y,
           left: crop.x,
           width: crop.w,
-          height: crop.h
+          height: crop.h,
         }).webp({ quality: 75 }).toFile(cropFilename)
       }
       return cropFilename

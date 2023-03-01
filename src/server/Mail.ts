@@ -41,7 +41,7 @@ class Mail {
     mail.params = {
       username: passwordReset.user.name,
       subject: `Password Reset for ${NAME}`,
-      link: `${BASE_URL}/#password-reset=${passwordReset.token.token}`
+      link: `${BASE_URL}/#password-reset=${passwordReset.token.token}`,
     }
     this.send(mail)
   }
@@ -63,7 +63,7 @@ class Mail {
     mail.params = {
       username: registration.user.name,
       subject: `User Registration on ${NAME}`,
-      link: `${BASE_URL}/api/verify-email/${registration.token.token}`
+      link: `${BASE_URL}/api/verify-email/${registration.token.token}`,
     }
     this.send(mail)
   }

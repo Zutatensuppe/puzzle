@@ -2,7 +2,7 @@ import { DiscordConfig } from '../common/Types'
 
 export class Discord {
   constructor(
-    private config: DiscordConfig
+    private config: DiscordConfig,
   ) {
     // pass
   }
@@ -12,13 +12,13 @@ export class Discord {
       method: 'POST',
       headers: {
         'Accept': 'application/json',
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
       },
       body: JSON.stringify({
         guildId: this.config.announce.guildId,
         channelId: this.config.announce.channelId,
         message: message,
-      })
+      }),
     })
   }
 }

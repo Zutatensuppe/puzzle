@@ -9,7 +9,7 @@ export class ViewportSnapshots {
 
   constructor(
     private evts: EventAdapter,
-    private viewport: Camera
+    private viewport: Camera,
   ) {
     // pass
   }

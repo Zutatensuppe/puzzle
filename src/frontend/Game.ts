@@ -152,7 +152,7 @@ export abstract class Game<HudType extends Hud> {
 
     this.boardPos = {
       x: (this.tableWidth - puzzleWidth) / 2,
-      y: (this.tableHeight - puzzleHeight) / 2
+      y: (this.tableHeight - puzzleHeight) / 2,
     }
     this.boardDim = {
       w: puzzleWidth,
@@ -252,7 +252,7 @@ export abstract class Game<HudType extends Hud> {
     this.viewport.reset()
     this.viewport.move(
       -(this.tableWidth - this.canvas.width) /2,
-      -(this.tableHeight - this.canvas.height) /2
+      -(this.tableHeight - this.canvas.height) /2,
     )
 
     // zoom viewport to fit whole puzzle in
@@ -522,7 +522,7 @@ export abstract class Game<HudType extends Hud> {
       })
       this.ctx.drawImage(bmp,
         0, 0, bmp.width, bmp.height,
-        pos.x, pos.y, dim.w, dim.h
+        pos.x, pos.y, dim.w, dim.h,
       )
     }
     if (window.DEBUG) Debug.checkpoint('pieces done')

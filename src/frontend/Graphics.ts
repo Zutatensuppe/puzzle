@@ -22,7 +22,7 @@ async function loadImageToBitmap(imagePath: string): Promise<ImageBitmap> {
 async function resizeBitmap (
   bitmap: ImageBitmap,
   width: number,
-  height: number
+  height: number,
 ): Promise<ImageBitmap> {
   const c = createCanvas(width, height)
   const ctx = c.getContext('2d') as CanvasRenderingContext2D

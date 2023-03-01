@@ -1,6 +1,6 @@
 import {
   DefaultScoreMode, DefaultShapeMode, DefaultSnapMode, Game, Puzzle,
-  EncodedPlayer, ScoreMode, ShapeMode, SnapMode, ImageInfo, Timestamp, GameSettings, Input, Change
+  EncodedPlayer, ScoreMode, ShapeMode, SnapMode, ImageInfo, Timestamp, GameSettings, Input, Change,
 } from '../common/Types'
 import Util, { logger } from '../common/Util'
 import { Rng, RngSerialized } from '../common/Rng'
@@ -73,7 +73,7 @@ export class GameService {
     const gameObject: Game = this.storeDataToGame(
       game,
       gameRow.creator_user_id,
-      !!gameRow.private
+      !!gameRow.private,
     )
     gameObject.hasReplay = GameLog.hasReplay(gameObject)
     gameObject.crop = game.crop
@@ -294,7 +294,7 @@ export class GameService {
     gameId: string,
     playerId: string,
     input: Input,
-    ts: Timestamp
+    ts: Timestamp,
   ): Promise<Change[]> {
     if (GameLog.shouldLog(GameCommon.getFinishTs(gameId), ts)) {
       const idx = GameCommon.getPlayerIndexById(gameId, playerId)

@@ -164,7 +164,7 @@ export class Server implements ServerInterface {
     }
 
     wss.on('close', async (
-      {socket} : { socket: WebSocket }
+      {socket} : { socket: WebSocket },
     ): Promise<void> => {
       try {
         const proto = socket.protocol.split('|')
@@ -180,7 +180,7 @@ export class Server implements ServerInterface {
         if (sockets.length) {
           notify(
             [Protocol.EV_SERVER_EVENT, clientId, clientSeq, changes],
-            sockets
+            sockets,
           )
         } else {
           this.persistGame(gameId)
@@ -194,7 +194,7 @@ export class Server implements ServerInterface {
     })
 
     wss.on('message', async (
-      {socket, data} : { socket: WebSocket, data: string }
+      {socket, data} : { socket: WebSocket, data: string },
     ): Promise<void> => {
       if (!data) {
         // no data (maybe ping :3)
@@ -225,7 +225,7 @@ export class Server implements ServerInterface {
             }
             notify(
               [Protocol.EV_SERVER_INIT, Util.encodeGame(game)],
-              [socket]
+              [socket],
             )
           } break
 
@@ -257,14 +257,14 @@ export class Server implements ServerInterface {
               }
               notify(
                 [Protocol.EV_SERVER_INIT, Util.encodeGame(game)],
-                [socket]
+                [socket],
               )
             }
 
             const changes = await this.gameService.handleInput(gameId, clientId, clientEvtData, ts)
             notify(
               [Protocol.EV_SERVER_EVENT, clientId, clientSeq, changes],
-              this.gameSockets.getSockets(gameId)
+              this.gameSockets.getSockets(gameId),
             )
           } break
         }
@@ -277,7 +277,7 @@ export class Server implements ServerInterface {
     this.webserver = app.listen(
       port,
       hostname,
-      () => log.log(`server running on http://${hostname}:${port}`)
+      () => log.log(`server running on http://${hostname}:${port}`),
     )
     wss.listen()
     this.websocketserver = wss

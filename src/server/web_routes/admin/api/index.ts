@@ -2,7 +2,7 @@ import express, { NextFunction } from 'express'
 import { ServerInterface } from '../../../Server'
 
 export default function createRouter(
-  server: ServerInterface
+  server: ServerInterface,
 ): express.Router {
   const router = express.Router()
 

@@ -15,7 +15,7 @@ const CURVY_COORDS = [
   38, -5, 20, -20, 50, -20,
   50, -20, 80, -20, 62, -5,
   62, -5, 60, 0, 63, 5,
-  63, 5, 65, 15, 100, 0
+  63, 5, 65, 15, 100, 0,
 ]
 
 function createPathForShape(shape: PieceShape, x: number, y: number, pieceSize: number) {
@@ -99,7 +99,7 @@ export function drawPuzzlePreview(
         Util.decodeShape(shapes.shift() as number),
         imageRect.x + off.x + x * previewPieceSize,
         imageRect.y + off.y + y * previewPieceSize,
-        previewPieceSize
+        previewPieceSize,
       )
       ctx.stroke(path)
     }
@@ -110,7 +110,7 @@ export function drawPuzzlePreview(
 async function createPuzzleTileBitmaps(
   img: ImageBitmap,
   pieces: EncodedPiece[],
-  info: PuzzleInfo
+  info: PuzzleInfo,
 ): Promise<Array<ImageBitmap>> {
   log.log('start createPuzzleTileBitmaps')
   const pieceSize = info.tileSize

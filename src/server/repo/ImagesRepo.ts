@@ -112,7 +112,7 @@ export class ImagesRepo {
         const tags = await this.getTagsBySearch(search)
         if (tags) {
           const where = this.db._buildWhere({
-            'category_id': {'$in': tags.map(x => x.id)}
+            'category_id': {'$in': tags.map(x => x.id)},
           })
           const ids: number[] = (await this.db._getMany(`
       select i.id from image_x_category ixc

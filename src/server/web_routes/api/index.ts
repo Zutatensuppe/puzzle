@@ -36,7 +36,7 @@ export default function createRouter(
     destination: config.dir.UPLOAD_DIR,
     filename: function (req, file, cb) {
       cb(null , `${Util.uniqId()}-${file.originalname}`)
-    }
+    },
   })
   const upload = multer({storage}).single('file')
 
@@ -82,7 +82,7 @@ export default function createRouter(
       client_secret: config.auth.twitch.client_secret,
       code: req.query.code,
       grant_type: 'authorization_code',
-      redirect_uri: ''
+      redirect_uri: '',
     }
     const redirectUris = [
       `https://${config.http.public_hostname}/api/auth/twitch/redirect_uri`,
@@ -112,7 +112,7 @@ export default function createRouter(
         headers: {
           'Client-ID': config.auth.twitch.client_id,
           'Authorization': `Bearer ${tokenData.access_token}`,
-        }
+        },
       })
       if (!userRes.ok) {
         continue
@@ -493,11 +493,11 @@ export default function createRouter(
     const indexData: ApiDataIndexData = {
       gamesRunning: {
         items: gamesRunning,
-        pagination: { total: runningCount, offset: 0, limit: 0 }
+        pagination: { total: runningCount, offset: 0, limit: 0 },
       },
       gamesFinished: {
         items: gamesFinished,
-        pagination: { total: finishedCount, offset: 0, limit: GAMES_PER_PAGE_LIMIT }
+        pagination: { total: finishedCount, offset: 0, limit: GAMES_PER_PAGE_LIMIT },
       },
       leaderboards,
     }
@@ -519,7 +519,7 @@ export default function createRouter(
     const gamesFinished: GameInfo[] = finishedRows.map((v) => GameToGameInfo(v, ts))
     const indexData: ApiDataFinishedGames = {
       items: gamesFinished,
-      pagination: { total: finishedCount, offset: offset, limit: GAMES_PER_PAGE_LIMIT }
+      pagination: { total: finishedCount, offset: offset, limit: GAMES_PER_PAGE_LIMIT },
     }
     res.send(indexData)
   })
@@ -572,7 +572,7 @@ export default function createRouter(
       const user = await server.getUsers().getOrCreateUserByRequest(req)
 
       const dim = await server.getImages().getDimensions(
-        `${config.dir.UPLOAD_DIR}/${req.file.filename}`
+        `${config.dir.UPLOAD_DIR}/${req.file.filename}`,
       )
       // post form, so booleans are submitted as 'true' | 'false'
       const isPrivate = req.body.private === 'false' ? 0 : 1
