@@ -606,7 +606,7 @@ class Mail {
         mail.params = {
             username: passwordReset.user.name,
             subject: `Password Reset for ${NAME}`,
-            link: `${BASE_URL}/#password-reset=${passwordReset.token.token}`
+            link: `${BASE_URL}/#password-reset=${passwordReset.token.token}`,
         };
         this.send(mail);
     }
@@ -627,7 +627,7 @@ class Mail {
         mail.params = {
             username: registration.user.name,
             subject: `User Registration on ${NAME}`,
-            link: `${BASE_URL}/api/verify-email/${registration.token.token}`
+            link: `${BASE_URL}/api/verify-email/${registration.token.token}`,
         };
         this.send(mail);
     }
@@ -668,13 +668,13 @@ class Discord {
             method: 'POST',
             headers: {
                 'Accept': 'application/json',
-                'Content-Type': 'application/json'
+                'Content-Type': 'application/json',
             },
             body: JSON.stringify({
                 guildId: this.config.announce.guildId,
                 channelId: this.config.announce.channelId,
                 message: message,
-            })
+            }),
         });
     }
 }
@@ -1990,7 +1990,7 @@ function createRouter$2(server) {
         destination: config.dir.UPLOAD_DIR,
         filename: function (req, file, cb) {
             cb(null, `${Util.uniqId()}-${file.originalname}`);
-        }
+        },
     });
     const upload = multer({ storage }).single('file');
     const router = express.Router();
@@ -2032,7 +2032,7 @@ function createRouter$2(server) {
             client_secret: config.auth.twitch.client_secret,
             code: req.query.code,
             grant_type: 'authorization_code',
-            redirect_uri: ''
+            redirect_uri: '',
         };
         const redirectUris = [
             `https://${config.http.public_hostname}/api/auth/twitch/redirect_uri`,
@@ -2052,7 +2052,7 @@ function createRouter$2(server) {
                 headers: {
                     'Client-ID': config.auth.twitch.client_id,
                     'Authorization': `Bearer ${tokenData.access_token}`,
-                }
+                },
             });
             if (!userRes.ok) {
                 continue;
@@ -2386,11 +2386,11 @@ function createRouter$2(server) {
         const indexData = {
             gamesRunning: {
                 items: gamesRunning,
-                pagination: { total: runningCount, offset: 0, limit: 0 }
+                pagination: { total: runningCount, offset: 0, limit: 0 },
             },
             gamesFinished: {
                 items: gamesFinished,
-                pagination: { total: finishedCount, offset: 0, limit: GAMES_PER_PAGE_LIMIT }
+                pagination: { total: finishedCount, offset: 0, limit: GAMES_PER_PAGE_LIMIT },
             },
             leaderboards,
         };
@@ -2410,7 +2410,7 @@ function createRouter$2(server) {
         const gamesFinished = finishedRows.map((v) => GameToGameInfo(v, ts));
         const indexData = {
             items: gamesFinished,
-            pagination: { total: finishedCount, offset: offset, limit: GAMES_PER_PAGE_LIMIT }
+            pagination: { total: finishedCount, offset: offset, limit: GAMES_PER_PAGE_LIMIT },
         };
         res.send(indexData);
     });
@@ -3508,7 +3508,7 @@ class ImagesRepo {
                 const tags = await this.getTagsBySearch(search);
                 if (tags) {
                     const where = this.db._buildWhere({
-                        'category_id': { '$in': tags.map(x => x.id) }
+                        'category_id': { '$in': tags.map(x => x.id) },
                     });
                     const ids = (await this.db._getMany(`
       select i.id from image_x_category ixc
@@ -3766,7 +3766,7 @@ class ImageResize {
                     top: crop.y,
                     left: crop.x,
                     width: crop.w,
-                    height: crop.h
+                    height: crop.h,
                 }).resize(maxw, maxh, { fit: 'inside', withoutEnlargement: true }).webp({ quality: 75 }).toFile(cropFilename);
             }
             return cropFilename;
@@ -3809,7 +3809,7 @@ class ImageResize {
                     top: crop.y,
                     left: crop.x,
                     width: crop.w,
-                    height: crop.h
+                    height: crop.h,
                 }).webp({ quality: 75 }).toFile(cropFilename);
             }
             return cropFilename;
