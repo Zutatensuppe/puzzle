@@ -10,18 +10,21 @@
         </tr>
       </thead>
       <tbody>
-        <tr v-for="(item, idx) in groups" :key="idx">
-          <td>{{item.id}}</td>
-          <td>{{item.name}}</td>
+        <tr
+          v-for="(item, idx) in groups"
+          :key="idx"
+        >
+          <td>{{ item.id }}</td>
+          <td>{{ item.name }}</td>
         </tr>
       </tbody>
     </v-table>
   </div>
 </template>
 <script setup lang="ts">
-import { onMounted, ref } from 'vue';
-import user from '../../user';
-import api from '../../_api';
+import { onMounted, ref } from 'vue'
+import user from '../../user'
+import api from '../../_api'
 import Nav from '../components/Nav.vue'
 
 const groups = ref<any[]>([])

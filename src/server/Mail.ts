@@ -1,8 +1,8 @@
 // @ts-ignore
 import SibApiV3Sdk from 'sib-api-v3-sdk'
-import { logger } from '../common/Util';
+import { logger } from '../common/Util'
 
-import { MailConfig, MailServicePasswordResetData, MailServiceRegistrationData } from '../common/Types';
+import { MailConfig, MailServicePasswordResetData, MailServiceRegistrationData } from '../common/Types'
 
 const log = logger('Mail.ts')
 
@@ -21,12 +21,12 @@ class Mail {
     const defaultClient = SibApiV3Sdk.ApiClient.instance
     const apiKey = defaultClient.authentications['api-key']
     apiKey.apiKey = cfg.sendinblue_api_key
-    this.apiInstance = new SibApiV3Sdk.TransactionalEmailsApi();
+    this.apiInstance = new SibApiV3Sdk.TransactionalEmailsApi()
   }
 
   sendPasswordResetMail(passwordReset: MailServicePasswordResetData) {
-    const mail = new SibApiV3Sdk.SendSmtpEmail();
-    mail.subject = "{{params.subject}}";
+    const mail = new SibApiV3Sdk.SendSmtpEmail()
+    mail.subject = '{{params.subject}}'
     mail.htmlContent = `<html><body>
       <h1>Hello {{params.username}}</h1>
       <p>To reset your password for <a href="${BASE_URL}">${NAME}</a>
@@ -41,14 +41,14 @@ class Mail {
     mail.params = {
       username: passwordReset.user.name,
       subject: `Password Reset for ${NAME}`,
-      link: `${BASE_URL}/#password-reset=${passwordReset.token.token}`
+      link: `${BASE_URL}/#password-reset=${passwordReset.token.token}`,
     }
     this.send(mail)
   }
 
   sendRegistrationMail(registration: MailServiceRegistrationData) {
-    const mail = new SibApiV3Sdk.SendSmtpEmail();
-    mail.subject = "{{params.subject}}";
+    const mail = new SibApiV3Sdk.SendSmtpEmail()
+    mail.subject = '{{params.subject}}'
     mail.htmlContent = `<html><body>
       <h1>Hello {{params.username}}</h1>
       <p>Thank you for registering an account at <a href="${BASE_URL}">${NAME}</a>.</p>
@@ -63,7 +63,7 @@ class Mail {
     mail.params = {
       username: registration.user.name,
       subject: `User Registration on ${NAME}`,
-      link: `${BASE_URL}/api/verify-email/${registration.token.token}`
+      link: `${BASE_URL}/api/verify-email/${registration.token.token}`,
     }
     this.send(mail)
   }
@@ -73,7 +73,7 @@ class Mail {
       log.info({ data }, 'API called successfully')
     }, function (error: TransacEmailError) {
       log.error({ error })
-    });
+    })
   }
 }
 

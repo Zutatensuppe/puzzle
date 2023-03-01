@@ -1,6 +1,6 @@
-"use strict"
+'use strict'
 
-import { Rect } from "../common/Geometry"
+import { Rect } from '../common/Geometry'
 
 function createCanvas(width:number = 0, height:number = 0): HTMLCanvasElement {
     const c = document.createElement('canvas')
@@ -22,7 +22,7 @@ async function loadImageToBitmap(imagePath: string): Promise<ImageBitmap> {
 async function resizeBitmap (
   bitmap: ImageBitmap,
   width: number,
-  height: number
+  height: number,
 ): Promise<ImageBitmap> {
   const c = createCanvas(width, height)
   const ctx = c.getContext('2d') as CanvasRenderingContext2D
@@ -45,11 +45,11 @@ function colorizedCanvas(
     ctx1.save()
     ctx1.drawImage(mask, 0, 0)
     ctx1.fillStyle = '#0057B7'
-    ctx1.globalCompositeOperation = "source-in"
+    ctx1.globalCompositeOperation = 'source-in'
     ctx1.fillRect(0, 0, mask.width, blueH)
     ctx1.restore()
     ctx1.save()
-    ctx1.globalCompositeOperation = "destination-over"
+    ctx1.globalCompositeOperation = 'destination-over'
     ctx1.drawImage(bitmap, 0, 0)
     ctx1.restore()
 
@@ -58,11 +58,11 @@ function colorizedCanvas(
     ctx2.save()
     ctx2.drawImage(mask, 0, -blueH)
     ctx2.fillStyle = '#FFDD00'
-    ctx2.globalCompositeOperation = "source-in"
+    ctx2.globalCompositeOperation = 'source-in'
     ctx2.fillRect(0, 0, mask.width, mask.height)
     ctx2.restore()
     ctx2.save()
-    ctx2.globalCompositeOperation = "destination-over"
+    ctx2.globalCompositeOperation = 'destination-over'
     ctx2.drawImage(bitmap, 0, -blueH)
     ctx2.restore()
     ctx1.drawImage(c2, 0, blueH)
@@ -74,11 +74,11 @@ function colorizedCanvas(
   ctx.save()
   ctx.drawImage(mask, 0, 0)
   ctx.fillStyle = color
-  ctx.globalCompositeOperation = "source-in"
+  ctx.globalCompositeOperation = 'source-in'
   ctx.fillRect(0, 0, mask.width, mask.height)
   ctx.restore()
   ctx.save()
-  ctx.globalCompositeOperation = "destination-over"
+  ctx.globalCompositeOperation = 'destination-over'
   ctx.drawImage(bitmap, 0, 0)
   ctx.restore()
   return c

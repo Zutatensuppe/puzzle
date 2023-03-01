@@ -11,8 +11,15 @@
       :data-index="columnIndex"
       :style="style"
     >
-      <div v-for="itemIndex in column" :key="itemIndex" class="masonry-item">
-        <slot :item="items[itemIndex]" :index="itemIndex">
+      <div
+        v-for="itemIndex in column"
+        :key="itemIndex"
+        class="masonry-item"
+      >
+        <slot
+          :item="items[itemIndex]"
+          :index="itemIndex"
+        >
           {{ items[itemIndex] }}
         </slot>
       </div>
@@ -32,7 +39,7 @@ import {
   toRefs,
   watch,
 } from 'vue'
-import { ImageInfo } from '../../common/Types';
+import { ImageInfo } from '../../common/Types'
 
 type Column = number[]
 
@@ -49,7 +56,7 @@ const props = withDefaults(
     gap: 0,
     rtl: false,
     ssrColumns: 0,
-  }
+  },
 )
 
 const { columnWidth, items, gap, rtl, ssrColumns } = toRefs(props)
@@ -70,13 +77,13 @@ const style = computed((): CSSProperties => ({
   flexGrow: 1,
   // @ts-ignore
   height: ['-webkit-max-content', '-moz-max-content', 'max-content'],
-  gap: `${gap}px`,
+  gap: `${gap.value}px`,
 }))
 
 const columnCount = (): number => {
   const count = Math.floor(
     (wall.value.getBoundingClientRect().width + gap.value) /
-      (columnWidth.value + gap.value)
+      (columnWidth.value + gap.value),
   )
   return count > 0 ? count : 1
 }
@@ -88,7 +95,7 @@ const createColumns = (count: number): Column[] => {
 if (ssrColumns.value > 0) {
   const newColumns = createColumns(ssrColumns.value)
   items.value.forEach((_: unknown, i: number) =>
-    newColumns[i % ssrColumns.value].push(i)
+    newColumns[i % ssrColumns.value].push(i),
   )
   columns.value = newColumns
 }
@@ -105,7 +112,7 @@ async function fillColumns(itemIndex: number) {
   const target = columnDivs.reduce((prev, curr) =>
     curr.getBoundingClientRect().height < prev.getBoundingClientRect().height
       ? curr
-      : prev
+      : prev,
   )
   columns.value[+target.dataset.index!].push(itemIndex)
   await fillColumns(itemIndex + 1)

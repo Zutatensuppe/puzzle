@@ -6,41 +6,77 @@ of images. Instead of categories, you can make the system tag-based, like
 in jigsawpuzzles.io
 
 <template>
-  <v-container :fluid="true" class="new-game-view p-0">
+  <v-container
+    :fluid="true"
+    class="new-game-view p-0"
+  >
     <v-row class="mt-2 mb-2">
       <v-col>
-        <div :class="{blurred: dialog}" class="text-center">
+        <div
+          :class="{blurred: dialog}"
+          class="text-center"
+        >
           <v-btn
             class="font-weight-bold mb-1"
-            @click="openDialog('new-image')"
             prepend-icon="mdi-image-plus-outline"
             size="large"
             color="info"
-          >Upload your image</v-btn>
-          <div class="text-disabled">(The image you upload will be added to the public gallery.)</div>
+            @click="openDialog('new-image')"
+          >
+            Upload your image
+          </v-btn>
+          <div class="text-disabled">
+            (The image you upload will be added to the public gallery.)
+          </div>
         </div>
       </v-col>
     </v-row>
-    <v-container :fluid="true" :class="{blurred: dialog }" class="mb-2 d-flex">
-      <h3 class="mr-5">Featured Artists:</h3>
-      <v-btn variant="text" :to="{ name: 'featured-artist', params: { artist: 'LisadiKaprio' }}">
-        <img src="../assets/featured-artist/lisa.png" width="32" height="32"
-        style="border-radius:32px;" class="mr-3" />
+    <v-container
+      :fluid="true"
+      :class="{blurred: dialog }"
+      class="mb-2 d-flex"
+    >
+      <h3 class="mr-5">
+        Featured Artists:
+      </h3>
+      <v-btn
+        variant="text"
+        :to="{ name: 'featured-artist', params: { artist: 'LisadiKaprio' }}"
+      >
+        <img
+          src="../assets/featured-artist/lisa.png"
+          width="32"
+          height="32"
+          style="border-radius:32px;"
+          class="mr-3"
+        >
         LisadiKaprio
       </v-btn>
-      <v-btn variant="text" :to="{ name: 'featured-artist', params: { artist: 'PEAKY_kun' }}">
-        <img src="../assets/featured-artist/peaky.png" width="32" height="32"
-        style="border-radius:32px;" class="mr-3" />
+      <v-btn
+        variant="text"
+        :to="{ name: 'featured-artist', params: { artist: 'PEAKY_kun' }}"
+      >
+        <img
+          src="../assets/featured-artist/peaky.png"
+          width="32"
+          height="32"
+          style="border-radius:32px;"
+          class="mr-3"
+        >
         PEAKY_kun
       </v-btn>
     </v-container>
-    <v-container :fluid="true" :class="{blurred: dialog }" class="filters mb-2">
+    <v-container
+      :fluid="true"
+      :class="{blurred: dialog }"
+      class="filters mb-2"
+    >
       <div>
         <v-select
+          v-model="filters.sort"
           class="sorting"
           density="compact"
           label="Sorting:"
-          v-model="filters.sort"
           item-title="title"
           item-value="val"
           :items="[
@@ -55,9 +91,9 @@ in jigsawpuzzles.io
       </div>
       <div>
         <v-text-field
+          v-model="filters.search"
           density="compact"
           label="Type in keywords..."
-          v-model="filters.search"
         />
       </div>
     </v-container>
@@ -67,30 +103,33 @@ in jigsawpuzzles.io
       @imageClicked="onImageClicked"
       @imageEditClicked="onImageEditClicked"
     />
-    <Sentinel @sighted="tryLoadMore" v-if="sentinelActive" />
+    <Sentinel
+      v-if="sentinelActive"
+      @sighted="tryLoadMore"
+    />
     <v-dialog v-model="dialog">
       <NewImageDialog
         v-if="dialogContent==='new-image'"
-        :autocompleteTags="autocompleteTags"
-        :uploadProgress="uploadProgress"
+        :autocomplete-tags="autocompleteTags"
+        :upload-progress="uploadProgress"
         :uploading="uploading"
         @postToGalleryClick="postToGalleryClick"
         @setupGameClick="setupGameClick"
         @tagClick="onTagClick"
         @close="closeDialog"
-        />
+      />
       <EditImageDialog
         v-if="dialogContent==='edit-image'"
-        :autocompleteTags="autocompleteTags"
+        :autocomplete-tags="autocompleteTags"
         :image="image"
-        @saveClick="onSaveImageClick"
+        @save-click="onSaveImageClick"
         @close="closeDialog"
       />
       <NewGameDialog
         v-if="image && dialogContent==='new-game'"
         :image="image"
-        @newGame="onNewGame"
-        @tagClick="onTagClick"
+        @new-game="onNewGame"
+        @tag-click="onTagClick"
         @close="closeDialog"
       />
     </v-dialog>
@@ -227,7 +266,7 @@ const uploadImage = async (data: any) => {
     isPrivate: data.isPrivate,
     onProgress: (progress: number): void => {
       uploadProgress.value = progress
-    }
+    },
   })
   uploadProgress.value = 1
   return await res.json()

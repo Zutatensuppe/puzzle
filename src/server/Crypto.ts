@@ -1,7 +1,7 @@
 import config from './Config'
 import crypto from 'crypto'
 
-const key = crypto.createHash('md5').update(config.secret).digest("hex")
+const key = crypto.createHash('md5').update(config.secret).digest('hex')
 
 export const encrypt = (str: string): string => {
   return Buffer.from(key + str, 'utf8').toString('base64')

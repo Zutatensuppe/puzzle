@@ -1,4 +1,4 @@
-"use strict"
+'use strict'
 
 import { ClientEvent, EncodedGame, GameEvent, ServerEvent } from '../common/Types'
 import { logger } from '../common/Util'
@@ -64,18 +64,18 @@ function send(message: ClientEvent): void {
 let clientSeq: number
 let events: Record<number, GameEvent>
 
-let timerId: any = 0;
+let timerId: any = 0
 
 function keepAlive(timeout = 20000) {
     if (ws.readyState == ws.OPEN) {
-        ws.send('');
+        ws.send('')
     }
-    timerId = setTimeout(keepAlive, timeout);
+    timerId = setTimeout(keepAlive, timeout)
 }
 
 function cancelKeepAlive() {
     if (timerId) {
-        clearTimeout(timerId);
+        clearTimeout(timerId)
     }
 }
 
@@ -140,7 +140,7 @@ function disconnect(): void {
 function sendClientEvent(evt: GameEvent): void {
   // when sending event, increase number of sent events
   // and add the event locally
-  clientSeq++;
+  clientSeq++
   events[clientSeq] = evt
   send([Protocol.EV_CLIENT_EVENT, clientSeq, events[clientSeq]])
 }

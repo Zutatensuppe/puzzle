@@ -46,7 +46,7 @@ class Rng {
     static serialize(rng) {
         return {
             rand_high: rng.rand_high,
-            rand_low: rng.rand_low
+            rand_low: rng.rand_low,
         };
     }
     static unserialize(rngSerialized) {
@@ -591,7 +591,7 @@ class Mail {
     }
     sendPasswordResetMail(passwordReset) {
         const mail = new SibApiV3Sdk.SendSmtpEmail();
-        mail.subject = "{{params.subject}}";
+        mail.subject = '{{params.subject}}';
         mail.htmlContent = `<html><body>
       <h1>Hello {{params.username}}</h1>
       <p>To reset your password for <a href="${BASE_URL}">${NAME}</a>
@@ -606,13 +606,13 @@ class Mail {
         mail.params = {
             username: passwordReset.user.name,
             subject: `Password Reset for ${NAME}`,
-            link: `${BASE_URL}/#password-reset=${passwordReset.token.token}`
+            link: `${BASE_URL}/#password-reset=${passwordReset.token.token}`,
         };
         this.send(mail);
     }
     sendRegistrationMail(registration) {
         const mail = new SibApiV3Sdk.SendSmtpEmail();
-        mail.subject = "{{params.subject}}";
+        mail.subject = '{{params.subject}}';
         mail.htmlContent = `<html><body>
       <h1>Hello {{params.username}}</h1>
       <p>Thank you for registering an account at <a href="${BASE_URL}">${NAME}</a>.</p>
@@ -627,7 +627,7 @@ class Mail {
         mail.params = {
             username: registration.user.name,
             subject: `User Registration on ${NAME}`,
-            link: `${BASE_URL}/api/verify-email/${registration.token.token}`
+            link: `${BASE_URL}/api/verify-email/${registration.token.token}`,
         };
         this.send(mail);
     }
@@ -668,13 +668,13 @@ class Discord {
             method: 'POST',
             headers: {
                 'Accept': 'application/json',
-                'Content-Type': 'application/json'
+                'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-                "guildId": this.config.announce.guildId,
-                "channelId": this.config.announce.channelId,
-                "message": message,
-            })
+                guildId: this.config.announce.guildId,
+                channelId: this.config.announce.channelId,
+                message: message,
+            }),
         });
     }
 }
@@ -1157,7 +1157,7 @@ const getFinalPiecePos = (gameId, pieceIdx) => {
     const info = GAMES[gameId].puzzle.info;
     const boardPos = {
         x: (info.table.width - info.width) / 2,
-        y: (info.table.height - info.height) / 2
+        y: (info.table.height - info.height) / 2,
     };
     const srcPos = srcPosByPieceIdx(gameId, pieceIdx);
     return Geometry.pointAdd(boardPos, srcPos);
@@ -1915,7 +1915,7 @@ const _log = (gameId, type, ...args) => {
         args[timestampIdx] = ts - idxObj.lastTs;
     }
     const line = JSON.stringify([type, ...args]).slice(1, -1);
-    fs.appendFileSync(idxObj.currentFile, line + "\n");
+    fs.appendFileSync(idxObj.currentFile, line + '\n');
     idxObj.total++;
     idxObj.lastTs = ts;
     fs.writeFileSync(idxfile, JSON.stringify(idxObj));
@@ -1929,7 +1929,7 @@ const get = (gameId, offset = 0) => {
     if (!fs.existsSync(file)) {
         return [];
     }
-    const lines = fs.readFileSync(file, 'utf-8').split("\n");
+    const lines = fs.readFileSync(file, 'utf-8').split('\n');
     const log = lines.filter(line => !!line).map(line => {
         return JSON.parse(`[${line}]`);
     });
@@ -1990,7 +1990,7 @@ function createRouter$2(server) {
         destination: config.dir.UPLOAD_DIR,
         filename: function (req, file, cb) {
             cb(null, `${Util.uniqId()}-${file.originalname}`);
-        }
+        },
     });
     const upload = multer({ storage }).single('file');
     const router = express.Router();
@@ -2032,7 +2032,7 @@ function createRouter$2(server) {
             client_secret: config.auth.twitch.client_secret,
             code: req.query.code,
             grant_type: 'authorization_code',
-            redirect_uri: ''
+            redirect_uri: '',
         };
         const redirectUris = [
             `https://${config.http.public_hostname}/api/auth/twitch/redirect_uri`,
@@ -2052,7 +2052,7 @@ function createRouter$2(server) {
                 headers: {
                     'Client-ID': config.auth.twitch.client_id,
                     'Authorization': `Bearer ${tokenData.access_token}`,
-                }
+                },
             });
             if (!userRes.ok) {
                 continue;
@@ -2386,11 +2386,11 @@ function createRouter$2(server) {
         const indexData = {
             gamesRunning: {
                 items: gamesRunning,
-                pagination: { total: runningCount, offset: 0, limit: 0 }
+                pagination: { total: runningCount, offset: 0, limit: 0 },
             },
             gamesFinished: {
                 items: gamesFinished,
-                pagination: { total: finishedCount, offset: 0, limit: GAMES_PER_PAGE_LIMIT }
+                pagination: { total: finishedCount, offset: 0, limit: GAMES_PER_PAGE_LIMIT },
             },
             leaderboards,
         };
@@ -2410,7 +2410,7 @@ function createRouter$2(server) {
         const gamesFinished = finishedRows.map((v) => GameToGameInfo(v, ts));
         const indexData = {
             items: gamesFinished,
-            pagination: { total: finishedCount, offset: offset, limit: GAMES_PER_PAGE_LIMIT }
+            pagination: { total: finishedCount, offset: offset, limit: GAMES_PER_PAGE_LIMIT },
         };
         res.send(indexData);
     });
@@ -2446,7 +2446,7 @@ function createRouter$2(server) {
         upload(req, res, async (err) => {
             if (err) {
                 log$4.log('/api/upload/', 'error', err);
-                res.status(400).send("Something went wrong!");
+                res.status(400).send('Something went wrong!');
                 return;
             }
             log$4.info('req.file.filename', req.file.filename);
@@ -3220,7 +3220,7 @@ class GamesRepo {
     }
 }
 
-const key = crypto.createHash('md5').update(config.secret).digest("hex");
+const key = crypto.createHash('md5').update(config.secret).digest('hex');
 const encrypt = (str) => {
     return Buffer.from(key + str, 'utf8').toString('base64');
 };
@@ -3508,7 +3508,7 @@ class ImagesRepo {
                 const tags = await this.getTagsBySearch(search);
                 if (tags) {
                     const where = this.db._buildWhere({
-                        'category_id': { '$in': tags.map(x => x.id) }
+                        'category_id': { '$in': tags.map(x => x.id) },
                     });
                     const ids = (await this.db._getMany(`
       select i.id from image_x_category ixc
@@ -3766,7 +3766,7 @@ class ImageResize {
                     top: crop.y,
                     left: crop.x,
                     width: crop.w,
-                    height: crop.h
+                    height: crop.h,
                 }).resize(maxw, maxh, { fit: 'inside', withoutEnlargement: true }).webp({ quality: 75 }).toFile(cropFilename);
             }
             return cropFilename;
@@ -3809,7 +3809,7 @@ class ImageResize {
                     top: crop.y,
                     left: crop.x,
                     width: crop.w,
-                    height: crop.h
+                    height: crop.h,
                 }).webp({ quality: 75 }).toFile(cropFilename);
             }
             return cropFilename;

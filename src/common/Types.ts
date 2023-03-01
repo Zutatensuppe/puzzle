@@ -1,5 +1,5 @@
-import { Point, Rect } from "./Geometry"
-import { Rng, RngSerialized } from "./Rng"
+import { Point, Rect } from './Geometry'
+import { Rng, RngSerialized } from './Rng'
 
 // @see https://stackoverflow.com/a/59906630/392905
 type ArrayLengthMutationKeys = 'splice' | 'push' | 'pop' | 'shift' | 'unshift' | number

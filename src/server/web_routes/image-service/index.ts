@@ -1,8 +1,8 @@
-import express, { Request, Response, Router } from "express";
-import path from "path";
+import express, { Request, Response, Router } from 'express'
+import path from 'path'
 import config from '../../Config'
-import sharp from "sharp";
-import { ServerInterface } from "../../Server";
+import sharp from 'sharp'
+import { ServerInterface } from '../../Server'
 
 export default function createRouter(
   server: ServerInterface,

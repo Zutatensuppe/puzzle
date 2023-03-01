@@ -1,13 +1,21 @@
 <template>
   <div class="ingame-color-picker">
-    <ColorPicker v-model="pickerVal" @open="emit('open')" @close="emit('close')" />
-    <Slider v-model="sliderVal" class="mb-2" :swatches="swatches" />
+    <ColorPicker
+      v-model="pickerVal"
+      @open="emit('open')"
+      @close="emit('close')"
+    />
+    <Slider
+      v-model="sliderVal"
+      class="mb-2"
+      :swatches="swatches"
+    />
   </div>
 </template>
 <script setup lang="ts">
-import { Slider } from '@ckpack/vue-color';
-import { ref, watch } from 'vue';
-import ColorPicker from './ColorPicker.vue';
+import { Slider } from '@ckpack/vue-color'
+import { ref, watch } from 'vue'
+import ColorPicker from './ColorPicker.vue'
 
 const props = defineProps<{
   modelValue: string

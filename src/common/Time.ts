@@ -5,7 +5,7 @@ const HOUR = MIN * 60
 const DAY = HOUR * 24
 
 export const timestamp = (): number => {
-  const d = new Date();
+  const d = new Date()
   return Date.UTC(
     d.getUTCFullYear(),
     d.getUTCMonth(),
@@ -34,7 +34,7 @@ export const durationStr = (duration: number): string => {
 
 export const timeDiffStr = (
   from: number,
-  to: number
+  to: number,
 ): string => durationStr(to - from)
 
 export default {

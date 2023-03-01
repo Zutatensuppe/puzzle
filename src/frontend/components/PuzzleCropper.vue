@@ -1,16 +1,24 @@
 <template>
-  <div class="puzzle-cropper" ref="puzzleCropper">
-    <canvas ref="canvas" @mousedown="onMousedown" @mousemove="onMousemove" @mouseup="onMouseup" />
+  <div
+    ref="puzzleCropper"
+    class="puzzle-cropper"
+  >
+    <canvas
+      ref="canvas"
+      @mousedown="onMousedown"
+      @mousemove="onMousemove"
+      @mouseup="onMouseup"
+    />
   </div>
 </template>
 <script setup lang="ts">
-import { onMounted, onBeforeUnmount, ref, Ref, watch } from 'vue';
-import { Dim, Point, Rect } from '../../common/Geometry';
-import { clamp } from '../../common/Util';
-import { PuzzleCreationInfo } from '../../common/Puzzle';
-import { ImageInfo, ShapeMode } from '../../common/Types';
+import { onMounted, onBeforeUnmount, ref, Ref, watch } from 'vue'
+import { Dim, Point, Rect } from '../../common/Geometry'
+import { clamp } from '../../common/Util'
+import { PuzzleCreationInfo } from '../../common/Puzzle'
+import { ImageInfo, ShapeMode } from '../../common/Types'
 import { drawPuzzlePreview } from '../PuzzleGraphics'
-import { NEWGAME_MAX_PIECES, NEWGAME_MIN_PIECES } from '../../common/GameCommon';
+import { NEWGAME_MAX_PIECES, NEWGAME_MIN_PIECES } from '../../common/GameCommon'
 
 const props = defineProps<{
   image: ImageInfo,
@@ -176,14 +184,14 @@ const redraw = () => {
       props.shapeMode,
       ctx,
       imgDrawRect,
-      offset.value
+      offset.value,
     )
   }
 }
 
-const resizeObserver = new ResizeObserver(entries => {
+const resizeObserver = new ResizeObserver(_entries => {
   redraw()
-});
+})
 
 watch(() => props.piecesPreview, () => {
   redraw()
@@ -193,7 +201,7 @@ onMounted(() => {
   resizeObserver.observe(puzzleCropper.value)
 
   image.src = props.image.url
-  image.onload = (ev: Event) => {
+  image.onload = (_ev: Event) => {
     centerCrop()
     emitCropChange()
     redraw()

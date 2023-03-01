@@ -13,10 +13,10 @@ export class Rng {
   }
 
   random (min: number, max: number): number {
-    this.rand_high = ((this.rand_high << 16) + (this.rand_high >> 16) + this.rand_low) & 0xffffffff;
-    this.rand_low = (this.rand_low + this.rand_high) & 0xffffffff;
-    const n = (this.rand_high >>> 0) / 0xffffffff;
-    return (min + n * (max-min+1))|0;
+    this.rand_high = ((this.rand_high << 16) + (this.rand_high >> 16) + this.rand_low) & 0xffffffff
+    this.rand_low = (this.rand_low + this.rand_high) & 0xffffffff
+    const n = (this.rand_high >>> 0) / 0xffffffff
+    return (min + n * (max-min+1))|0
   }
 
   // get one random item from the given array
@@ -39,7 +39,7 @@ export class Rng {
   static serialize (rng: Rng): RngSerialized {
     return {
       rand_high: rng.rand_high,
-      rand_low: rng.rand_low
+      rand_low: rng.rand_low,
     }
   }
 

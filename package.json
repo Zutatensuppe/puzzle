@@ -1,6 +1,6 @@
 {
   "name": "puzzle",
-  "version": "1.36.0",
+  "version": "1.36.1",
   "description": "This is a multiplayer puzzle game running in the browser. See a live version at [jigsaw.hyottoko.club].",
   "repository": {
     "type": "git",
@@ -65,6 +65,7 @@
     "compression": "^1.7.4",
     "copyfiles": "^2.4.1",
     "eslint": "^8.10.0",
+    "eslint-plugin-vue": "^9.9.0",
     "rollup": "^2.70.0",
     "rollup-plugin-typescript2": "^0.31.2",
     "rollup-plugin-vue": "^6.0.0",

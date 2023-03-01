@@ -1,27 +1,34 @@
 <template>
   <v-form
-    class="registration-form"
     v-model="valid"
+    class="registration-form"
     :disabled="busy"
   >
     <v-text-field
+      v-model="password"
       density="compact"
       label="Password"
-      v-model="password"
       :append-inner-icon="showPassword ? 'mdi-eye' : 'mdi-eye-off'"
       :type="showPassword ? 'text' : 'password'"
+      :rules="passwordRules"
       @click:append-inner="showPassword = !showPassword"
       @keydown.enter.prevent="doChangePassword"
-      :rules="passwordRules"
-    ></v-text-field>
+    />
 
-    <v-btn color="success" block :disabled="!valid || busy" @click="doChangePassword">Reset Password</v-btn>
+    <v-btn
+      color="success"
+      block
+      :disabled="!valid || busy"
+      @click="doChangePassword"
+    >
+      Reset Password
+    </v-btn>
   </v-form>
 </template>
 <script setup lang="ts">
-import { ref } from 'vue';
-import { toast } from '../toast';
-import user from '../user';
+import { ref } from 'vue'
+import { toast } from '../toast'
+import user from '../user'
 
 const props = defineProps<{
   token: string,
@@ -36,7 +43,7 @@ const valid = ref<boolean>(false)
 const busy = ref<boolean>(false)
 const showPassword = ref<boolean>(false)
 const passwordRules = [
-  v => !!v || 'Password is required'
+  v => !!v || 'Password is required',
 ]
 
 const doChangePassword = async () => {

@@ -1,26 +1,36 @@
 <template>
-  <div class="pagination d-flex" v-if="totalPages > 1">
+  <div
+    v-if="totalPages > 1"
+    class="pagination d-flex"
+  >
     <v-btn
       size="small"
       :disabled="currentPage <= 1 ? true : undefined"
       @click="onPageClick(currentPage - 1)"
-    ><v-icon icon="mdi-chevron-left"></v-icon></v-btn>
+    >
+      <v-icon icon="mdi-chevron-left" />
+    </v-btn>
     <v-btn
-      v-for="page in paginationItems"
+      v-for="(page, idx) in paginationItems"
+      :key="idx"
       size="small"
       :disabled="page === currentPage ? true : undefined"
       @click="onPageClick(page)"
-    >{{ page }}</v-btn>
+    >
+      {{ page }}
+    </v-btn>
     <v-btn
       size="small"
       :disabled="currentPage === totalPages ? true : undefined"
       @click="onPageClick(currentPage + 1)"
-    ><v-icon icon="mdi-chevron-right"></v-icon></v-btn>
+    >
+      <v-icon icon="mdi-chevron-right" />
+    </v-btn>
   </div>
 </template>
 <script setup lang="ts">
-import { computed, onMounted } from 'vue';
-import { Pagination } from '../../common/Types';
+import { computed } from 'vue'
+import { Pagination } from '../../common/Types'
 
 // TODO: limit the number of page links that are generated
 

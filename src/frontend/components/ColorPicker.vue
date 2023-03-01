@@ -1,11 +1,19 @@
 <template>
   <div class="color-picker">
-    <div class="current-color" @click="openPicker" :style="currentColorStyle"></div>
-    <div class="color-picker-background" v-if="showingPicker">
+    <div
+      class="current-color"
+      :style="currentColorStyle"
+      @click="openPicker"
+    />
+    <div
+      v-if="showingPicker"
+      class="color-picker-background"
+    >
       <Photoshop
         v-model="valTemp"
         @ok="onPickerOk"
-        @cancel="onPickerCancel" />
+        @cancel="onPickerCancel"
+      />
     </div>
   </div>
 </template>

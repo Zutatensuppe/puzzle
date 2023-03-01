@@ -1,6 +1,6 @@
-import { Dim, Point, Rect } from "../common/Geometry"
-import { Assets } from "./Assets"
-import Graphics from "./Graphics"
+import { Dim, Point, Rect } from '../common/Geometry'
+import { Assets } from './Assets'
+import Graphics from './Graphics'
 
 export class PuzzleTable {
   private images: Record<string, CanvasImageSource> = {}
@@ -41,25 +41,25 @@ export class PuzzleTable {
         0,
         0,
         adjustedBounds.w,
-        border.h
+        border.h,
       )
       tableCtx.fillRect(
         0,
         0 + border.h,
         border.w,
-        adjustedBounds.h - 2 * border.h
+        adjustedBounds.h - 2 * border.h,
       )
       tableCtx.fillRect(
         0 + adjustedBounds.w - border.w,
         0 + border.h,
         border.w,
-        adjustedBounds.h - 2 * border.h
+        adjustedBounds.h - 2 * border.h,
       )
       tableCtx.fillRect(
         0,
         0 + adjustedBounds.h - border.h,
         adjustedBounds.w,
-        border.w
+        border.w,
       )
     }
 
@@ -74,25 +74,25 @@ export class PuzzleTable {
         ratio * (boardX - border.w),
         ratio * (boardY - border.h),
         ratio * (this.boardDim.w + 2 * border.w),
-        ratio * border.h
+        ratio * border.h,
       )
       tableCtx.fillRect(
         ratio * (boardX - border.w),
         ratio * boardY,
         ratio * border.h,
-        ratio * this.boardDim.h
+        ratio * this.boardDim.h,
       )
       tableCtx.fillRect(
         ratio * (boardX + this.boardDim.w),
         ratio * (boardY),
         ratio * border.w,
-        ratio * this.boardDim.h
+        ratio * this.boardDim.h,
       )
       tableCtx.fillRect(
         ratio * (boardX - border.w),
         ratio * (boardY + this.boardDim.h),
         ratio * (this.boardDim.w + 2 * border.w),
-        ratio * border.h
+        ratio * border.h,
       )
     }
 
@@ -103,7 +103,7 @@ export class PuzzleTable {
         ratio * boardX,
         ratio * boardY,
         ratio * this.boardDim.w,
-        ratio * this.boardDim.h
+        ratio * this.boardDim.h,
       )
     }
 

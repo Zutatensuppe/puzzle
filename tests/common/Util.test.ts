@@ -72,7 +72,7 @@ describe('Util', () => {
     const testCases = [
       {
         player: { id: 'bla', x: 1, y: 2, d: 0, name: 'name', color: 'color', bgcolor: 'bgcolor', points: 5, ts: 6 } as Player,
-        encoded: ['bla', 1, 2, 0, 'name', 'color', 'bgcolor', 5, 6] as EncodedPlayer
+        encoded: ['bla', 1, 2, 0, 'name', 'color', 'bgcolor', 5, 6] as EncodedPlayer,
       },
     ]
 
@@ -108,6 +108,22 @@ describe('Util', () => {
       tilesX: 0,
       tilesY: 0,
       shapes: [],
+      image: {
+        id: 0,
+        uploaderName: '',
+        uploaderUserId: 0,
+        filename: '',
+        url: '',
+        copyrightName: '',
+        copyrightURL: '',
+        title: '',
+        tags: [],
+        created: 0,
+        gameCount: 0,
+        height: 0,
+        width: 0,
+        private: false,
+      },
     }
     const puzzle: Puzzle = {
       tiles: [],
@@ -160,11 +176,27 @@ describe('Util', () => {
       tilesX: 0,
       tilesY: 0,
       shapes: [],
+      image: {
+        id: 0,
+        uploaderName: '',
+        uploaderUserId: 0,
+        filename: '',
+        url: '',
+        copyrightName: '',
+        copyrightURL: '',
+        title: '',
+        tags: [],
+        created: 0,
+        gameCount: 0,
+        height: 0,
+        width: 0,
+        private: false,
+      },
     }
 
     it('works', () => {
-      expect(Util.coordByPieceIdxDeprecated(puzzleInfo, 5)).toStrictEqual({ "x": 1, "y": 2 })
-      expect(Util.coordByPieceIdxDeprecated(puzzleInfo, 999)).toStrictEqual({ "x": 1, "y": 499 })
+      expect(Util.coordByPieceIdxDeprecated(puzzleInfo, 5)).toStrictEqual({ 'x': 1, 'y': 2 })
+      expect(Util.coordByPieceIdxDeprecated(puzzleInfo, 999)).toStrictEqual({ 'x': 1, 'y': 499 })
     })
   })
 

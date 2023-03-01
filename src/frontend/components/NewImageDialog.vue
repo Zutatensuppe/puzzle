@@ -4,20 +4,36 @@
 
     <v-container :fluid="true">
       <v-row>
-        <v-col :lg="8"
+        <v-col
+          :lg="8"
           :class="{'no-image': !previewUrl, droppable: droppable}"
+          style="min-height: 50vh;"
           @drop="onDrop"
           @dragover="onDragover"
           @dragleave="onDragleave"
-          style="min-height: 50vh;">
-          <div class="drop-target"></div>
-          <div v-if="previewUrl" class="has-image" style="min-height: 50vh;">
-            <v-btn variant="elevated" @click="previewUrl=''" icon="mdi-close" size="x-small"></v-btn>
+        >
+          <div class="drop-target" />
+          <div
+            v-if="previewUrl"
+            class="has-image"
+            style="min-height: 50vh;"
+          >
+            <v-btn
+              variant="elevated"
+              icon="mdi-close"
+              size="x-small"
+              @click="previewUrl=''"
+            />
             <ResponsiveImage :src="previewUrl" />
           </div>
           <div v-else>
             <label class="upload">
-              <input type="file" style="display: none" @change="onFileSelect" accept="image/*" />
+              <input
+                type="file"
+                style="display: none"
+                accept="image/*"
+                @change="onFileSelect"
+              >
               <div class="upload-content">
                 To upload an image, choose one of the following methods:
                 <ul>
@@ -34,25 +50,55 @@
             </label>
           </div>
         </v-col>
-        <v-col :lg="4" class="area-settings">
+        <v-col
+          :lg="4"
+          class="area-settings"
+        >
           <div>
-            <v-text-field density="compact" v-model="title" placeholder="eg. Girl with flowers" @focus="inputFocused = true" @blur="inputFocused=false" label="Title" />
+            <v-text-field
+              v-model="title"
+              density="compact"
+              placeholder="eg. Girl with flowers"
+              label="Title"
+              @focus="inputFocused = true"
+              @blur="inputFocused=false"
+            />
           </div>
           <fieldset>
             <legend>Source</legend>
-            <v-text-field density="compact" v-model="copyrightName" placeholder="eg. Artist Name" @focus="inputFocused = true" @blur="inputFocused=false" label="Creator" />
-            <v-text-field density="compact" v-model="copyrightURL" placeholder="eg. https://example.net/" @focus="inputFocused = true" @blur="inputFocused=false" label="URL" />
+            <v-text-field
+              v-model="copyrightName"
+              density="compact"
+              placeholder="eg. Artist Name"
+              label="Creator"
+              @focus="inputFocused = true"
+              @blur="inputFocused=false"
+            />
+            <v-text-field
+              v-model="copyrightURL"
+              density="compact"
+              placeholder="eg. https://example.net/"
+              label="URL"
+              @focus="inputFocused = true"
+              @blur="inputFocused=false"
+            />
           </fieldset>
           <fieldset>
             <legend>Tags</legend>
-            <TagsInput v-model="tags" :autocompleteTags="autocompleteTags" />
+            <TagsInput
+              v-model="tags"
+              :autocomplete-tags="autocompleteTags"
+            />
           </fieldset>
           <div>
-            <v-checkbox density="comfortable" label="Private Image (Private images won't show up in the public gallery)" v-model="isPrivate"></v-checkbox>
+            <v-checkbox
+              v-model="isPrivate"
+              density="comfortable"
+              label="Private Image (Private images won't show up in the public gallery)"
+            />
           </div>
 
           <v-card-actions>
-
             <!-- isPrivate -->
             <template v-if="isPrivate">
               <v-btn
@@ -61,15 +107,19 @@
                 :disabled="true"
                 prepend-icon="mdi-timer-sand-empty"
                 color="success"
-              >Uploading ({{uploadProgressPercent}}%)</v-btn>
+              >
+                Uploading ({{ uploadProgressPercent }}%)
+              </v-btn>
               <v-btn
                 v-else
                 variant="elevated"
                 :disabled="!canClick"
-                @click="setupGameClick"
                 prepend-icon="mdi-puzzle"
                 color="success"
-              >Set up game</v-btn>
+                @click="setupGameClick"
+              >
+                Set up game
+              </v-btn>
             </template>
 
             <!-- not isPrivate -->
@@ -80,15 +130,19 @@
                 :disabled="true"
                 prepend-icon="mdi-timer-sand-empty"
                 color="success"
-              >Uploading ({{uploadProgressPercent}}%)</v-btn>
+              >
+                Uploading ({{ uploadProgressPercent }}%)
+              </v-btn>
               <v-btn
                 v-else
                 variant="elevated"
                 :disabled="!canClick"
-                @click="postToGallery"
                 prepend-icon="mdi-image"
                 color="success"
-              >Post to gallery</v-btn>
+                @click="postToGallery"
+              >
+                Post to gallery
+              </v-btn>
 
               <v-btn
                 v-if="uploading === 'setupGame'"
@@ -96,22 +150,28 @@
                 :disabled="true"
                 prepend-icon="mdi-timer-sand-empty"
                 color="success"
-              >Uploading ({{uploadProgressPercent}}%)</v-btn>
+              >
+                Uploading ({{ uploadProgressPercent }}%)
+              </v-btn>
               <v-btn
                 v-else
                 variant="elevated"
                 :disabled="!canClick"
-                @click="setupGameClick"
                 prepend-icon="mdi-puzzle"
                 color="success"
-              >Post to gallery <br /> + set up game</v-btn>
+                @click="setupGameClick"
+              >
+                Post to gallery <br> + set up game
+              </v-btn>
             </template>
 
             <v-btn
               variant="elevated"
-              @click="emit('close')"
               color="error"
-            >Cancel</v-btn>
+              @click="emit('close')"
+            >
+              Cancel
+            </v-btn>
           </v-card-actions>
         </v-col>
       </v-row>
@@ -120,10 +180,10 @@
 </template>
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref } from 'vue'
-import { FrontendGameSettings as FrontendNewImageEventData } from '../../common/Types';
+import { FrontendGameSettings as FrontendNewImageEventData } from '../../common/Types'
 import { logger } from '../../common/Util'
 import TagsInput from '../components/TagsInput.vue'
-import ResponsiveImage from './ResponsiveImage.vue';
+import ResponsiveImage from './ResponsiveImage.vue'
 
 const log = logger('NewImageDialog.vue')
 
@@ -144,8 +204,8 @@ const imageElementToCanvas = async (imageElement: HTMLImageElement): Promise<HTM
 
 const imageUrlToImageElement = async (src: string): Promise<HTMLImageElement> => {
   return new Promise ((resolve, reject) => {
-    const tmpImg = new Image();
-    tmpImg.crossOrigin = "anonymous";
+    const tmpImg = new Image()
+    tmpImg.crossOrigin = 'anonymous'
     tmpImg.onload = () => {
       resolve(tmpImg)
     }
@@ -175,7 +235,7 @@ function dataURLtoBlob(dataurl: string): Blob | null {
 const props = defineProps<{
   autocompleteTags: (input: string, exclude: string[]) => string[]
   uploadProgress: number
-  uploading: "" | "postToGallery" | "setupGame"
+  uploading: '' | 'postToGallery' | 'setupGame'
 }>()
 
 const emit = defineEmits<{
@@ -236,7 +296,7 @@ const onPaste = async (evt: ClipboardEvent): Promise<void> => {
   const imageUrl = evt.clipboardData.getData('text')
   if (imageUrl) {
     if (inputFocused.value) {
-      return;
+      return
     }
     if (imageUrl.match(/^https?:\/\//)) {
       // need to proxy because of X-Origin
@@ -274,15 +334,15 @@ const onPaste = async (evt: ClipboardEvent): Promise<void> => {
 
   // check if an image was pasted
   const file = evt.clipboardData.files[0]
-  if (!file) return;
+  if (!file) return
   preview(file)
 }
 
 const onFileSelect = (evt: Event) => {
   const target = (evt.target as HTMLInputElement)
-  if (!target.files) return;
+  if (!target.files) return
   const file = target.files[0]
-  if (!file) return;
+  if (!file) return
 
   preview(file)
 }

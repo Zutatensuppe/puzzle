@@ -1,4 +1,4 @@
-"use strict"
+'use strict'
 
 interface GameLoopOptions {
   fps?: number
@@ -50,5 +50,5 @@ export const run = (options: GameLoopOptions): GameLoopInstance => {
 }
 
 export default {
-  run
+  run,
 }

@@ -1,4 +1,4 @@
-"use strict"
+'use strict'
 
 import { Rng } from '../common/Rng'
 
@@ -210,7 +210,7 @@ class Controller {
     while (this.explodedBombs.length > 0) {
       const bomb = this.explodedBombs.shift()
       if (!bomb) {
-        break;
+        break
       }
       bomb.update()
       if (bomb.alive) {

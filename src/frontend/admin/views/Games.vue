@@ -17,7 +17,10 @@
         </tr>
       </thead>
       <tbody>
-        <tr v-for="(item, idx) in games" :key="idx">
+        <tr
+          v-for="(item, idx) in games"
+          :key="idx"
+        >
           <td>{{ item.id }}</td>
           <td>{{ item.creator_user_id || '-' }}</td>
           <td>{{ item.image_id }}</td>
@@ -26,17 +29,22 @@
           <td>{{ item.finished }}</td>
           <td>{{ item.private ? '✓' : '✖' }}</td>
 
-          <td><span @click="onDelete(item)" class="is-clickable">DELETE</span></td>
+          <td>
+            <span
+              class="is-clickable"
+              @click="onDelete(item)"
+            >DELETE</span>
+          </td>
         </tr>
       </tbody>
     </v-table>
   </div>
 </template>
 <script setup lang="ts">
-import { onMounted, ref } from 'vue';
-import { resizeUrl } from '../../../common/ImageService';
-import user from '../../user';
-import api from '../../_api';
+import { onMounted, ref } from 'vue'
+import { resizeUrl } from '../../../common/ImageService'
+import user from '../../user'
+import api from '../../_api'
 import Nav from '../components/Nav.vue'
 
 const games = ref<any[]>([])

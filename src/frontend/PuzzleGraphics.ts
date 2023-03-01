@@ -1,4 +1,4 @@
-"use strict"
+'use strict'
 
 import Geometry, { Dim, Point, Rect } from '../common/Geometry'
 import Graphics from './Graphics'
@@ -15,7 +15,7 @@ const CURVY_COORDS = [
   38, -5, 20, -20, 50, -20,
   50, -20, 80, -20, 62, -5,
   62, -5, 60, 0, 63, 5,
-  63, 5, 65, 15, 100, 0
+  63, 5, 65, 15, 100, 0,
 ]
 
 function createPathForShape(shape: PieceShape, x: number, y: number, pieceSize: number) {
@@ -32,7 +32,7 @@ function createPathForShape(shape: PieceShape, x: number, y: number, pieceSize: 
       const p1 = Geometry.pointAdd(topLeftEdge, { x: CURVY_COORDS[i * 6 + 0] * pieceRatio, y: shape.top * CURVY_COORDS[i * 6 + 1] * pieceRatio })
       const p2 = Geometry.pointAdd(topLeftEdge, { x: CURVY_COORDS[i * 6 + 2] * pieceRatio, y: shape.top * CURVY_COORDS[i * 6 + 3] * pieceRatio })
       const p3 = Geometry.pointAdd(topLeftEdge, { x: CURVY_COORDS[i * 6 + 4] * pieceRatio, y: shape.top * CURVY_COORDS[i * 6 + 5] * pieceRatio })
-      path.bezierCurveTo(p1.x, p1.y, p2.x, p2.y, p3.x, p3.y);
+      path.bezierCurveTo(p1.x, p1.y, p2.x, p2.y, p3.x, p3.y)
     }
   } else {
     path.lineTo(topRightEdge.x, topRightEdge.y)
@@ -42,7 +42,7 @@ function createPathForShape(shape: PieceShape, x: number, y: number, pieceSize: 
       const p1 = Geometry.pointAdd(topRightEdge, { x: -shape.right * CURVY_COORDS[i * 6 + 1] * pieceRatio, y: CURVY_COORDS[i * 6 + 0] * pieceRatio })
       const p2 = Geometry.pointAdd(topRightEdge, { x: -shape.right * CURVY_COORDS[i * 6 + 3] * pieceRatio, y: CURVY_COORDS[i * 6 + 2] * pieceRatio })
       const p3 = Geometry.pointAdd(topRightEdge, { x: -shape.right * CURVY_COORDS[i * 6 + 5] * pieceRatio, y: CURVY_COORDS[i * 6 + 4] * pieceRatio })
-      path.bezierCurveTo(p1.x, p1.y, p2.x, p2.y, p3.x, p3.y);
+      path.bezierCurveTo(p1.x, p1.y, p2.x, p2.y, p3.x, p3.y)
     }
   } else {
     path.lineTo(bottomRightEdge.x, bottomRightEdge.y)
@@ -52,7 +52,7 @@ function createPathForShape(shape: PieceShape, x: number, y: number, pieceSize: 
       const p1 = Geometry.pointSub(bottomRightEdge, { x: CURVY_COORDS[i * 6 + 0] * pieceRatio, y: shape.bottom * CURVY_COORDS[i * 6 + 1] * pieceRatio })
       const p2 = Geometry.pointSub(bottomRightEdge, { x: CURVY_COORDS[i * 6 + 2] * pieceRatio, y: shape.bottom * CURVY_COORDS[i * 6 + 3] * pieceRatio })
       const p3 = Geometry.pointSub(bottomRightEdge, { x: CURVY_COORDS[i * 6 + 4] * pieceRatio, y: shape.bottom * CURVY_COORDS[i * 6 + 5] * pieceRatio })
-      path.bezierCurveTo(p1.x, p1.y, p2.x, p2.y, p3.x, p3.y);
+      path.bezierCurveTo(p1.x, p1.y, p2.x, p2.y, p3.x, p3.y)
     }
   } else {
     path.lineTo(bottomLeftEdge.x, bottomLeftEdge.y)
@@ -62,7 +62,7 @@ function createPathForShape(shape: PieceShape, x: number, y: number, pieceSize: 
       const p1 = Geometry.pointSub(bottomLeftEdge, { x: -shape.left * CURVY_COORDS[i * 6 + 1] * pieceRatio, y: CURVY_COORDS[i * 6 + 0] * pieceRatio })
       const p2 = Geometry.pointSub(bottomLeftEdge, { x: -shape.left * CURVY_COORDS[i * 6 + 3] * pieceRatio, y: CURVY_COORDS[i * 6 + 2] * pieceRatio })
       const p3 = Geometry.pointSub(bottomLeftEdge, { x: -shape.left * CURVY_COORDS[i * 6 + 5] * pieceRatio, y: CURVY_COORDS[i * 6 + 4] * pieceRatio })
-      path.bezierCurveTo(p1.x, p1.y, p2.x, p2.y, p3.x, p3.y);
+      path.bezierCurveTo(p1.x, p1.y, p2.x, p2.y, p3.x, p3.y)
     }
   } else {
     path.lineTo(topLeftEdge.x, topLeftEdge.y)
@@ -99,7 +99,7 @@ export function drawPuzzlePreview(
         Util.decodeShape(shapes.shift() as number),
         imageRect.x + off.x + x * previewPieceSize,
         imageRect.y + off.y + y * previewPieceSize,
-        previewPieceSize
+        previewPieceSize,
       )
       ctx.stroke(path)
     }
@@ -110,7 +110,7 @@ export function drawPuzzlePreview(
 async function createPuzzleTileBitmaps(
   img: ImageBitmap,
   pieces: EncodedPiece[],
-  info: PuzzleInfo
+  info: PuzzleInfo,
 ): Promise<Array<ImageBitmap>> {
   log.log('start createPuzzleTileBitmaps')
   const pieceSize = info.tileSize
@@ -192,10 +192,10 @@ async function createPuzzleTileBitmaps(
     ctx.clip(path)
     ctx.strokeStyle = 'rgba(0,0,0,.4)'
     ctx.lineWidth = 0
-    ctx.shadowColor = "black";
-    ctx.shadowBlur = 2;
-    ctx.shadowOffsetX = -1;
-    ctx.shadowOffsetY = -1;
+    ctx.shadowColor = 'black'
+    ctx.shadowBlur = 2
+    ctx.shadowOffsetX = -1
+    ctx.shadowOffsetY = -1
     ctx.stroke(path)
     ctx.restore()
 
@@ -206,10 +206,10 @@ async function createPuzzleTileBitmaps(
     ctx.clip(path)
     ctx.strokeStyle = 'rgba(255,255,255,.4)'
     ctx.lineWidth = 0
-    ctx.shadowColor = "white";
-    ctx.shadowBlur = 2;
-    ctx.shadowOffsetX = 1;
-    ctx.shadowOffsetY = 1;
+    ctx.shadowColor = 'white'
+    ctx.shadowBlur = 2
+    ctx.shadowOffsetX = 1
+    ctx.shadowOffsetY = 1
     ctx.stroke(path)
     ctx.restore()
 

@@ -89,6 +89,7 @@ import { init as initToast, toast } from './toast'
   app.use(router)
   app.use(vuetify)
   initToast(app)
-  app.component('icon', Icon)
+  // eslint-disable-next-line
+  app.component('Icon', Icon)
   app.mount('#app')
 })()

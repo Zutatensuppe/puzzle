@@ -19,7 +19,7 @@ import Mail from './Mail'
 import { Canny } from './Canny'
 import { Discord } from './Discord'
 import Db from './Db'
-import { Server as HttpServer } from 'http';
+import { Server as HttpServer } from 'http'
 import path, { dirname } from 'path'
 import { fileURLToPath } from 'url'
 import { Images } from './Images'
@@ -152,10 +152,10 @@ export class Server implements ServerInterface {
     app.use('/', express.static(config.dir.PUBLIC_DIR))
 
     app.all('*', async (req: any, res) => {
-      res.sendFile(indexFile);
+      res.sendFile(indexFile)
     })
 
-    const wss = new WebSocketServer(config.ws);
+    const wss = new WebSocketServer(config.ws)
 
     const notify = (data: ServerEvent, sockets: Array<WebSocket>): void => {
       for (const socket of sockets) {
@@ -164,7 +164,7 @@ export class Server implements ServerInterface {
     }
 
     wss.on('close', async (
-      {socket} : { socket: WebSocket }
+      {socket} : { socket: WebSocket },
     ): Promise<void> => {
       try {
         const proto = socket.protocol.split('|')
@@ -180,11 +180,11 @@ export class Server implements ServerInterface {
         if (sockets.length) {
           notify(
             [Protocol.EV_SERVER_EVENT, clientId, clientSeq, changes],
-            sockets
+            sockets,
           )
         } else {
           this.persistGame(gameId)
-          log.info(`[INFO] unloading game: ${gameId}`);
+          log.info(`[INFO] unloading game: ${gameId}`)
           GameCommon.unsetGame(gameId)
         }
 
@@ -194,11 +194,11 @@ export class Server implements ServerInterface {
     })
 
     wss.on('message', async (
-      {socket, data} : { socket: WebSocket, data: string }
+      {socket, data} : { socket: WebSocket, data: string },
     ): Promise<void> => {
       if (!data) {
         // no data (maybe ping :3)
-        return;
+        return
       }
       try {
         const proto = socket.protocol.split('|')
@@ -225,7 +225,7 @@ export class Server implements ServerInterface {
             }
             notify(
               [Protocol.EV_SERVER_INIT, Util.encodeGame(game)],
-              [socket]
+              [socket],
             )
           } break
 
@@ -257,14 +257,14 @@ export class Server implements ServerInterface {
               }
               notify(
                 [Protocol.EV_SERVER_INIT, Util.encodeGame(game)],
-                [socket]
+                [socket],
               )
             }
 
             const changes = await this.gameService.handleInput(gameId, clientId, clientEvtData, ts)
             notify(
               [Protocol.EV_SERVER_EVENT, clientId, clientSeq, changes],
-              this.gameSockets.getSockets(gameId)
+              this.gameSockets.getSockets(gameId),
             )
           } break
         }
@@ -277,7 +277,7 @@ export class Server implements ServerInterface {
     this.webserver = app.listen(
       port,
       hostname,
-      () => log.log(`server running on http://${hostname}:${port}`)
+      () => log.log(`server running on http://${hostname}:${port}`),
     )
     wss.listen()
     this.websocketserver = wss

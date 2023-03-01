@@ -1,7 +1,7 @@
-import mitt from 'mitt';
-import api from "./_api";
+import mitt from 'mitt'
+import api from './_api'
 import storage from './storage'
-import xhr from './_api/xhr';
+import xhr from './_api/xhr'
 
 export interface User {
   id: number
@@ -13,7 +13,7 @@ export interface User {
   groups: string[]
 }
 
-let me: null | User = null;
+let me: null | User = null
 export const eventBus = mitt()
 
 async function init(): Promise<void> {
@@ -32,21 +32,21 @@ async function init(): Promise<void> {
 }
 
 async function logout(): Promise<{ error: string | false }> {
-  const res = await api.pub.logout();
-  const data = await res.json();
+  const res = await api.pub.logout()
+  const data = await res.json()
   if (data.success) {
     await init()
     return { error: false }
   }
 
-  return { error: "[2021-09-25 18:36]" }
+  return { error: '[2021-09-25 18:36]' }
 }
 
 async function login(
   email: string,
   password: string,
 ): Promise<{ error: string | false }> {
-  const res = await api.pub.auth(email, password);
+  const res = await api.pub.auth(email, password)
   if (res.status === 200) {
     await init()
     return { error: false }
@@ -56,7 +56,7 @@ async function login(
     return { error: (await res.json()).reason }
   }
 
-  return { error: "Unknown error" }
+  return { error: 'Unknown error' }
 }
 
 async function register(
@@ -64,7 +64,7 @@ async function register(
   email: string,
   password: string,
 ): Promise<{ error: string | false }> {
-  const res = await api.pub.register(username, email, password);
+  const res = await api.pub.register(username, email, password)
   if (res.status === 200) {
     return { error: false }
   }
@@ -74,13 +74,13 @@ async function register(
     return { error: (await res.json()).reason }
   }
 
-  return { error: "Unknown error" }
+  return { error: 'Unknown error' }
 }
 
 async function sendPasswordResetEmail(
   email: string,
 ): Promise<{ error: string | false }> {
-  const res = await api.pub.sendPasswordResetEmail(email);
+  const res = await api.pub.sendPasswordResetEmail(email)
   if (res.status === 200) {
     return { error: false }
   }
@@ -90,14 +90,14 @@ async function sendPasswordResetEmail(
     return { error: (await res.json()).reason }
   }
 
-  return { error: "Unknown error" }
+  return { error: 'Unknown error' }
 }
 
 async function changePassword(
   password: string,
   token: string,
 ): Promise<{ error: string | false }> {
-  const res = await api.pub.changePassword(password, token);
+  const res = await api.pub.changePassword(password, token)
   if (res.status === 200) {
     return { error: false }
   }
@@ -106,7 +106,7 @@ async function changePassword(
     return { error: (await res.json()).reason }
   }
 
-  return { error: "Unknown error" }
+  return { error: 'Unknown error' }
 }
 
 export default {

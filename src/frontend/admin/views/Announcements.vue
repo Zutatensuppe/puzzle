@@ -2,9 +2,17 @@
   <div>
     <Nav />
     <div>
-      <v-text-field v-model="title" label="Title"></v-text-field>
-      <v-textarea v-model="message" label="Message"></v-textarea>
-      <v-btn @click="publish">Publish</v-btn>
+      <v-text-field
+        v-model="title"
+        label="Title"
+      />
+      <v-textarea
+        v-model="message"
+        label="Message"
+      />
+      <v-btn @click="publish">
+        Publish
+      </v-btn>
     </div>
     <h1>Announcements</h1>
     <v-table>
@@ -17,7 +25,10 @@
         </tr>
       </thead>
       <tbody>
-        <tr v-for="(item, idx) in announcements" :key="idx">
+        <tr
+          v-for="(item, idx) in announcements"
+          :key="idx"
+        >
           <td>{{ item.id }}</td>
           <td>{{ item.created }}</td>
           <td>{{ item.title }}</td>
@@ -28,9 +39,9 @@
   </div>
 </template>
 <script setup lang="ts">
-import { onMounted, ref } from 'vue';
-import user from '../../user';
-import api from '../../_api';
+import { onMounted, ref } from 'vue'
+import user from '../../user'
+import api from '../../_api'
 import Nav from '../components/Nav.vue'
 
 const announcements = ref<any[]>([])

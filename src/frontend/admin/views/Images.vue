@@ -22,31 +22,39 @@
         </tr>
       </thead>
       <tbody>
-        <tr v-for="(item, idx) in images" :key="idx">
-          <td>{{item.id}}</td>
-          <td>{{item.uploader_user_id || '-'}}</td>
-          <td>{{item.created}}</td>
+        <tr
+          v-for="(item, idx) in images"
+          :key="idx"
+        >
+          <td>{{ item.id }}</td>
+          <td>{{ item.uploader_user_id || '-' }}</td>
+          <td>{{ item.created }}</td>
           <th><img :src="resizeUrl(`/image-service/image/${item.filename}`, 150, 100, 'contain')"></th>
-          <td>{{item.filename}}</td>
-          <td>{{item.filename_original}}</td>
-          <td>{{item.title}}</td>
-          <td>{{item.width}}</td>
-          <td>{{item.height}}</td>
-          <td>{{item.private ? '✓' : '✖'}}</td>
-          <td>{{item.copyright_name}}</td>
-          <td>{{item.copyright_url}}</td>
+          <td>{{ item.filename }}</td>
+          <td>{{ item.filename_original }}</td>
+          <td>{{ item.title }}</td>
+          <td>{{ item.width }}</td>
+          <td>{{ item.height }}</td>
+          <td>{{ item.private ? '✓' : '✖' }}</td>
+          <td>{{ item.copyright_name }}</td>
+          <td>{{ item.copyright_url }}</td>
 
-          <td><span @click="onDelete(item)" class="is-clickable">DELETE</span></td>
+          <td>
+            <span
+              class="is-clickable"
+              @click="onDelete(item)"
+            >DELETE</span>
+          </td>
         </tr>
       </tbody>
     </v-table>
   </div>
 </template>
 <script setup lang="ts">
-import { onMounted, ref } from 'vue';
-import { resizeUrl } from '../../../common/ImageService';
-import user from '../../user';
-import api from '../../_api';
+import { onMounted, ref } from 'vue'
+import { resizeUrl } from '../../../common/ImageService'
+import user from '../../user'
+import api from '../../_api'
 import Nav from '../components/Nav.vue'
 
 const images = ref<any[]>([])

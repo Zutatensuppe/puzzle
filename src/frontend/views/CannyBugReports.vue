@@ -7,5 +7,5 @@
 </template>
 
 <script setup lang="ts">
-import CannyWidget from '../components/CannyWidget.vue';
+import CannyWidget from '../components/CannyWidget.vue'
 </script>

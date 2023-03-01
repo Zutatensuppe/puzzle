@@ -1,49 +1,72 @@
 <template>
-  <v-card class="imageteaser is-clickable" :class="{ 'image-is-private': image.private }" @click="onClick" elevation="10" :style="styles">
+  <v-card
+    class="imageteaser is-clickable"
+    :class="{ 'image-is-private': image.private }"
+    elevation="10"
+    :style="styles"
+    @click="onClick"
+  >
     <div class="imageteaser-inner">
-      <div class="imageteaser-info image-is-private-info" v-if="image.private">
-        <v-icon icon="mdi-incognito"></v-icon> Private Image
+      <div
+        v-if="image.private"
+        class="imageteaser-info image-is-private-info"
+      >
+        <v-icon icon="mdi-incognito" /> Private Image
       </div>
       <h4 class="imageteaser-title">
         {{ image.title || '<No Title>' }}
       </h4>
-      <div class="imageteaser-info" v-if="image.copyrightName || image.copyrightURL">
-        <v-icon icon="mdi-copyright"></v-icon>
-        <a :href="image.copyrightURL" v-if="image.copyrightURL" target="_blank" class="ml-1">{{ image.copyrightName || 'Source' }} <v-icon icon="mdi-open-in-new" /></a>
-        <span class="ml-1" v-else>{{ image.copyrightName }}</span>
+      <div
+        v-if="image.copyrightName || image.copyrightURL"
+        class="imageteaser-info"
+      >
+        <v-icon icon="mdi-copyright" />
+        <a
+          v-if="image.copyrightURL"
+          :href="image.copyrightURL"
+          target="_blank"
+          class="ml-1"
+        >{{ image.copyrightName || 'Source' }} <v-icon icon="mdi-open-in-new" /></a>
+        <span
+          v-else
+          class="ml-1"
+        >{{ image.copyrightName }}</span>
       </div>
       <div class="imageteaser-info">
-        <v-icon icon="mdi-motion-play"></v-icon> {{ image.gameCount }}x plays
+        <v-icon icon="mdi-motion-play" /> {{ image.gameCount }}x plays
       </div>
       <div class="imageteaser-info">
-        <v-icon icon="mdi-calendar-month"></v-icon> {{ date }}
+        <v-icon icon="mdi-calendar-month" /> {{ date }}
       </div>
       <div class="imageteaser-info">
-        <v-icon icon="mdi-ruler-square"></v-icon> {{ image.width }}x{{ image.height }}
+        <v-icon icon="mdi-ruler-square" /> {{ image.width }}x{{ image.height }}
       </div>
-      <div class="imageteaser-info" v-if="image.tags.length">
-        <v-icon icon="mdi-tag"></v-icon> {{ image.tags.map(t => t.title).join(', ') }}
+      <div
+        v-if="image.tags.length"
+        class="imageteaser-info"
+      >
+        <v-icon icon="mdi-tag" /> {{ image.tags.map(t => t.title).join(', ') }}
       </div>
       <div class="imageteaser-click-info">
         <h5>Click to setup a game</h5>
       </div>
       <div class="imageteaser-actions">
         <v-btn
-          variant="text"
           v-if="canEdit"
-          @click.stop="onEditClick"
+          variant="text"
           icon="mdi-pencil"
           size="x-small"
           class="imageteaser-edit"
-        ></v-btn>
+          @click.stop="onEditClick"
+        />
       </div>
     </div>
   </v-card>
 </template>
 <script setup lang="ts">
 import { computed, onMounted, onBeforeUnmount, ref } from 'vue'
-import { resizeUrl } from '../../common/ImageService';
-import { ImageInfo } from '../../common/Types';
+import { resizeUrl } from '../../common/ImageService'
+import { ImageInfo } from '../../common/Types'
 import user, { User } from '../user'
 
 const props = withDefaults(defineProps<{

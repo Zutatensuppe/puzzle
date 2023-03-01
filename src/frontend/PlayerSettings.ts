@@ -1,7 +1,7 @@
-import { MODE_REPLAY } from "./GameMode";
-import storage from "./storage";
+import { MODE_REPLAY } from './GameMode'
+import storage from './storage'
 import GameCommon from './../common/GameCommon'
-import { Game } from "./Game";
+import { Game } from './Game'
 
 const SETTINGS = {
   SOUND_VOLUME: 'sound_volume',

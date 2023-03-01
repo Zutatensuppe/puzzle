@@ -1,12 +1,18 @@
 <template>
-  <div class="status-messages" v-if="messages.length">
-    <div v-for="(msg,idx) in messages" :key="idx">
-      {{msg}}
+  <div
+    v-if="messages.length"
+    class="status-messages"
+  >
+    <div
+      v-for="(msg,idx) in messages"
+      :key="idx"
+    >
+      {{ msg }}
     </div>
   </div>
 </template>
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref } from 'vue'
 
 const messages = ref<string[]>([])
 

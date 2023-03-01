@@ -1,6 +1,6 @@
 import {
   DefaultScoreMode, DefaultShapeMode, DefaultSnapMode, Game, Puzzle,
-  EncodedPlayer, ScoreMode, ShapeMode, SnapMode, ImageInfo, Timestamp, GameSettings, Input, Change
+  EncodedPlayer, ScoreMode, ShapeMode, SnapMode, ImageInfo, Timestamp, GameSettings, Input, Change,
 } from '../common/Types'
 import Util, { logger } from '../common/Util'
 import { Rng, RngSerialized } from '../common/Rng'
@@ -73,7 +73,7 @@ export class GameService {
     const gameObject: Game = this.storeDataToGame(
       game,
       gameRow.creator_user_id,
-      !!gameRow.private
+      !!gameRow.private,
     )
     gameObject.hasReplay = GameLog.hasReplay(gameObject)
     gameObject.crop = game.crop
@@ -84,10 +84,10 @@ export class GameService {
   }
 
   async loadGame(gameId: string): Promise<Game | null> {
-    log.info(`[INFO] loading game: ${gameId}`);
+    log.info(`[INFO] loading game: ${gameId}`)
     const gameRow = await this.repo.getGameRowById(gameId)
     if (!gameRow) {
-      log.info(`[INFO] game not found: ${gameId}`);
+      log.info(`[INFO] game not found: ${gameId}`)
       return null
     }
     const gameObjects = await this.gameRowsToGames([gameRow])
@@ -99,7 +99,7 @@ export class GameService {
     for (const gameRow of gameRows) {
       const gameObject = await this.gameRowToGameObject(gameRow)
       if (!gameObject) {
-        log.error(`[ERR] unable to turn game row into game object: ${gameRow.id}`);
+        log.error(`[ERR] unable to turn game row into game object: ${gameRow.id}`)
         continue
       }
       games.push(gameObject)
@@ -191,7 +191,7 @@ export class GameService {
       snapMode: game.snapMode,
       hasReplay: game.hasReplay,
       crop: game.crop,
-    };
+    }
   }
 
   async createGameObject(
@@ -234,7 +234,7 @@ export class GameService {
     if (gameSettings.tiles < NEWGAME_MIN_PIECES || gameSettings.tiles > NEWGAME_MAX_PIECES) {
       throw new Error(`Target pieces count must be between ${NEWGAME_MIN_PIECES} and ${NEWGAME_MAX_PIECES}`)
     }
-    let gameId;
+    let gameId
     do {
       gameId = Util.uniqId()
     } while (await this.exists(gameId))
@@ -294,7 +294,7 @@ export class GameService {
     gameId: string,
     playerId: string,
     input: Input,
-    ts: Timestamp
+    ts: Timestamp,
   ): Promise<Change[]> {
     if (GameLog.shouldLog(GameCommon.getFinishTs(gameId), ts)) {
       const idx = GameCommon.getPlayerIndexById(gameId, playerId)

@@ -74,7 +74,7 @@ const _log = (gameId: string, type: number, ...args: Array<any>): void => {
     args[timestampIdx] = ts - idxObj.lastTs
   }
   const line = JSON.stringify([type, ...args]).slice(1, -1)
-  fs.appendFileSync(idxObj.currentFile, line + "\n")
+  fs.appendFileSync(idxObj.currentFile, line + '\n')
 
   idxObj.total++
   idxObj.lastTs = ts
@@ -95,7 +95,7 @@ const get = (
     return []
   }
 
-  const lines = fs.readFileSync(file, 'utf-8').split("\n")
+  const lines = fs.readFileSync(file, 'utf-8').split('\n')
   const log = lines.filter(line => !!line).map(line => {
     return JSON.parse(`[${line}]`)
   })

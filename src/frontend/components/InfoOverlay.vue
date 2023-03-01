@@ -6,30 +6,36 @@
         <tbody>
           <tr>
             <td><v-icon icon="mdi-counter" /> Scoring: </td>
-            <td><span :title="snapMode[1]">{{scoreMode[0]}}</span></td>
+            <td><span :title="snapMode[1]">{{ scoreMode[0] }}</span></td>
           </tr>
           <tr>
             <td><v-icon icon="mdi-shape" /> Shapes: </td>
-            <td><span :title="snapMode[1]">{{shapeMode[0]}}</span></td>
+            <td><span :title="snapMode[1]">{{ shapeMode[0] }}</span></td>
           </tr>
           <tr>
             <td><v-icon icon="mdi-connection" /> Snapping: </td>
-            <td><span :title="snapMode[1]">{{snapMode[0]}}</span></td>
+            <td><span :title="snapMode[1]">{{ snapMode[0] }}</span></td>
           </tr>
         </tbody>
       </v-table>
-      <h4 class="mt-5">Image</h4>
-      <ImageInfoTable :image="image" density="compact" @tag-click="onTagClick" />
+      <h4 class="mt-5">
+        Image
+      </h4>
+      <ImageInfoTable
+        :image="image"
+        density="compact"
+        @tag-click="onTagClick"
+      />
     </v-container>
   </v-card>
 </template>
 <script setup lang="ts">
 import { computed } from 'vue'
-import { useRouter } from 'vue-router';
+import { useRouter } from 'vue-router'
 import { ImageSearchSort, ScoreMode, ShapeMode, SnapMode, Tag } from '../../common/Types'
-import { GamePlay } from '../GamePlay';
-import { GameReplay } from '../GameReplay';
-import ImageInfoTable from './ImageInfoTable.vue';
+import { GamePlay } from '../GamePlay'
+import { GameReplay } from '../GameReplay'
+import ImageInfoTable from './ImageInfoTable.vue'
 const router = useRouter()
 
 const props = defineProps<{

@@ -1,24 +1,38 @@
 <template>
   <v-form
-    class="password-reset-request-form"
     v-model="valid"
+    class="password-reset-request-form"
     :disabled="busy"
   >
     <v-text-field
+      v-model="email"
       density="compact"
       label="E-Mail"
-      v-model="email"
       :rules="emailRules"
-    ></v-text-field>
+    />
 
-    <v-btn color="success" block :disabled="!valid || busy" @click="doSendPasswordResetEmail">Reset Password</v-btn>
-    <v-btn @click="emit('login')" block class="mt-1" :disabled="busy">Back to login</v-btn>
+    <v-btn
+      color="success"
+      block
+      :disabled="!valid || busy"
+      @click="doSendPasswordResetEmail"
+    >
+      Reset Password
+    </v-btn>
+    <v-btn
+      block
+      class="mt-1"
+      :disabled="busy"
+      @click="emit('login')"
+    >
+      Back to login
+    </v-btn>
   </v-form>
 </template>
 <script setup lang="ts">
-import { ref } from 'vue';
-import { toast } from '../toast';
-import user from '../user';
+import { ref } from 'vue'
+import { toast } from '../toast'
+import user from '../user'
 
 const emit = defineEmits<{
   (e: 'login'): void
@@ -30,7 +44,7 @@ const valid = ref<boolean>(false)
 const busy = ref<boolean>(false)
 
 const emailRules = [
-  v => !!v && /^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/.test(v) || 'E-mail must be valid'
+  v => !!v && /^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/.test(v) || 'E-mail must be valid',
 ]
 
 async function doSendPasswordResetEmail() {

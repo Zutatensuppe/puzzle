@@ -1,8 +1,8 @@
-import storage from "../storage"
+import storage from '../storage'
 
 export const JSON_HEADERS = {
   'Accept': 'application/json',
-  'Content-Type': 'application/json'
+  'Content-Type': 'application/json',
 }
 
 export interface Response {
@@ -22,7 +22,7 @@ export class XhrRequest {
   constructor(
     private readonly method: string,
     private readonly url: string,
-    private readonly options: Options
+    private readonly options: Options,
   ) {
     // pass
   }
@@ -38,7 +38,7 @@ export class XhrRequest {
 
       this.xhr.setRequestHeader('Client-Id', xhrClientId)
 
-      this.xhr.addEventListener('load', function (_ev: ProgressEvent<XMLHttpRequestEventTarget>
+      this.xhr.addEventListener('load', function (_ev: ProgressEvent<XMLHttpRequestEventTarget>,
         ) {
         resolve({
           status: this.status,
@@ -70,7 +70,7 @@ let xhrClientId: string = ''
 const request = async (
   method: string,
   url: string,
-  options: Options
+  options: Options,
 ): Promise<Response> => {
   const r = new XhrRequest(method, url, options)
   return await r.send()

@@ -7,7 +7,7 @@ import { logger } from '../common/Util'
 
 const log = logger('Db.ts')
 
-const mutex = new Mutex();
+const mutex = new Mutex()
 
 /**
  * TODO: create a more specific type for OrderBy.
@@ -246,7 +246,7 @@ class Db {
   async get(
     table: string,
     whereRaw: WhereRaw = {},
-    orderBy: OrderBy = []
+    orderBy: OrderBy = [],
   ): Promise<any> {
     const where = this._buildWhere(whereRaw)
     const orderBySql = this._buildOrderBy(orderBy)
@@ -291,7 +291,7 @@ class Db {
     table: string,
     data: Data,
     check: WhereRaw,
-    idcol: string | null = null
+    idcol: string | null = null,
   ): Promise<any> {
     return mutex.runExclusive(async () => {
       if (!await this.exists(table, check)) {

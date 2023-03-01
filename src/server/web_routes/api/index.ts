@@ -35,10 +35,10 @@ export default function createRouter(
   const storage = multer.diskStorage({
     destination: config.dir.UPLOAD_DIR,
     filename: function (req, file, cb) {
-      cb(null , `${Util.uniqId()}-${file.originalname}`);
-    }
+      cb(null , `${Util.uniqId()}-${file.originalname}`)
+    },
   })
-  const upload = multer({storage}).single('file');
+  const upload = multer({storage}).single('file')
 
   const router = express.Router()
   router.get('/me', async (req: any, res): Promise<void> => {
@@ -82,7 +82,7 @@ export default function createRouter(
       client_secret: config.auth.twitch.client_secret,
       code: req.query.code,
       grant_type: 'authorization_code',
-      redirect_uri: ''
+      redirect_uri: '',
     }
     const redirectUris = [
       `https://${config.http.public_hostname}/api/auth/twitch/redirect_uri`,
@@ -112,7 +112,7 @@ export default function createRouter(
         headers: {
           'Client-ID': config.auth.twitch.client_id,
           'Authorization': `Bearer ${tokenData.access_token}`,
-        }
+        },
       })
       if (!userRes.ok) {
         continue
@@ -493,11 +493,11 @@ export default function createRouter(
     const indexData: ApiDataIndexData = {
       gamesRunning: {
         items: gamesRunning,
-        pagination: { total: runningCount, offset: 0, limit: 0 }
+        pagination: { total: runningCount, offset: 0, limit: 0 },
       },
       gamesFinished: {
         items: gamesFinished,
-        pagination: { total: finishedCount, offset: 0, limit: GAMES_PER_PAGE_LIMIT }
+        pagination: { total: finishedCount, offset: 0, limit: GAMES_PER_PAGE_LIMIT },
       },
       leaderboards,
     }
@@ -519,7 +519,7 @@ export default function createRouter(
     const gamesFinished: GameInfo[] = finishedRows.map((v) => GameToGameInfo(v, ts))
     const indexData: ApiDataFinishedGames = {
       items: gamesFinished,
-      pagination: { total: finishedCount, offset: offset, limit: GAMES_PER_PAGE_LIMIT }
+      pagination: { total: finishedCount, offset: offset, limit: GAMES_PER_PAGE_LIMIT },
     }
     res.send(indexData)
   })
@@ -556,14 +556,14 @@ export default function createRouter(
 
   router.get('/proxy', (req: any, res): void => {
     log.info('proxy request for url:', req.query.url)
-    request(req.query.url).pipe(res);
+    request(req.query.url).pipe(res)
   })
 
   router.post('/upload', (req: any, res): void => {
     upload(req, res, async (err: any): Promise<void> => {
       if (err) {
         log.log('/api/upload/', 'error', err)
-        res.status(400).send("Something went wrong!")
+        res.status(400).send('Something went wrong!')
         return
       }
 
@@ -572,10 +572,10 @@ export default function createRouter(
       const user = await server.getUsers().getOrCreateUserByRequest(req)
 
       const dim = await server.getImages().getDimensions(
-        `${config.dir.UPLOAD_DIR}/${req.file.filename}`
+        `${config.dir.UPLOAD_DIR}/${req.file.filename}`,
       )
       // post form, so booleans are submitted as 'true' | 'false'
-      const isPrivate = req.body.private === 'false' ? 0 : 1;
+      const isPrivate = req.body.private === 'false' ? 0 : 1
       const imageId = await server.getImages().insertImage({
         uploader_user_id: user.id,
         filename: req.file.filename,

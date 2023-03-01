@@ -1,5 +1,5 @@
-import { assert, describe, it } from "vitest";
-import { determinePuzzleInfo } from "../../src/common/Puzzle";
+import { assert, describe, it } from 'vitest'
+import { determinePuzzleInfo } from '../../src/common/Puzzle'
 
 describe('determinePuzzleInfo', () => {
   [

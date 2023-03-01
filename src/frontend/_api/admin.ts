@@ -1,4 +1,4 @@
-import xhr, { JSON_HEADERS } from "./xhr"
+import xhr, { JSON_HEADERS } from './xhr'
 
 const getGames = async () => {
   const res = await xhr.get('/admin/api/games', {})
