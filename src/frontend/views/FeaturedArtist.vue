@@ -1,5 +1,9 @@
 <template>
-  <v-container v-if="artist" :fluid="true" class="featured-artist-view p-0">
+  <v-container
+    v-if="artist"
+    :fluid="true"
+    class="featured-artist-view p-0"
+  >
     <div class="featured-artist-content">
       <v-card class="pa-5 mb-5 d-flex">
         <div class="justify-start flex-grow-1 mr-5 pr-5">
@@ -8,20 +12,32 @@
         </div>
         <div class="justify-end featured-artist-links ml-5">
           <h3>Links</h3>
-          <div v-for="link in artist.links">
-            <a :href="link.url" target="_blank">{{ link.title }}</a>
+          <div
+            v-for="(link, idx) in artist.links"
+            :key="idx"
+          >
+            <a
+              :href="link.url"
+              target="_blank"
+            >{{ link.title }}</a>
           </div>
         </div>
       </v-card>
 
-      <h3 v-if="collections.length > 0">Collections</h3>
-      <v-card class="pa-5 mb-5" v-for="collection of collections">
+      <h3 v-if="collections.length > 0">
+        Collections
+      </h3>
+      <v-card
+        v-for="(collection, idx) of collections"
+        :key="idx"
+        class="pa-5 mb-5"
+      >
         <div>
           <h4>{{ collection.name }}</h4>
           <ImageLibrary
             :images="collection.images"
             :edit="false"
-            @imageClicked="onImageClicked"
+            @image-clicked="onImageClicked"
           />
         </div>
       </v-card>
@@ -32,18 +48,18 @@
     <NewGameDialog
       v-if="image && dialogContent==='new-game'"
       :image="image"
-      @newGame="onNewGame"
+      @new-game="onNewGame"
       @close="closeDialog"
     />
   </v-dialog>
 </template>
 <script setup lang="ts">
-import { onMounted, ref } from 'vue';
-import { useRoute, useRouter } from 'vue-router';
-import { GameSettings, ImageInfo } from '../../common/Types';
-import ImageLibrary from '../components/ImageLibrary.vue';
-import NewGameDialog from '../components/NewGameDialog.vue';
-import api from '../_api';
+import { onMounted, ref } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import { GameSettings, ImageInfo } from '../../common/Types'
+import ImageLibrary from '../components/ImageLibrary.vue'
+import NewGameDialog from '../components/NewGameDialog.vue'
+import api from '../_api'
 
 const route = useRoute()
 const router = useRouter()

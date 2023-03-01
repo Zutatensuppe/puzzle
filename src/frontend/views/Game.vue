@@ -1,9 +1,24 @@
 <template>
   <div id="game">
-    <v-dialog v-model="dialog" :class="`overlay-${overlay}`" :persistent="dialogPersistent">
-      <SettingsOverlay v-if="g && overlay === 'settings'" :game="g" @dialogChange="onDialogChange" />
-      <PreviewOverlay v-if="g && overlay === 'preview'" :game="g" @close="closeDialog" />
-      <InfoOverlay v-if="g && overlay === 'info'" :game="g" />
+    <v-dialog
+      v-model="dialog"
+      :class="`overlay-${overlay}`"
+      :persistent="dialogPersistent"
+    >
+      <SettingsOverlay
+        v-if="g && overlay === 'settings'"
+        :game="g"
+        @dialog-change="onDialogChange"
+      />
+      <PreviewOverlay
+        v-if="g && overlay === 'preview'"
+        :game="g"
+        @close="closeDialog"
+      />
+      <InfoOverlay
+        v-if="g && overlay === 'info'"
+        :game="g"
+      />
       <HelpOverlay v-if="overlay === 'help'" />
     </v-dialog>
 
@@ -11,26 +26,40 @@
 
     <ConnectionOverlay
       v-if="!cuttingPuzzle"
-      :connectionState="connectionState"
+      :connection-state="connectionState"
       @reconnect="reconnect"
-      />
+    />
 
-    <div class="menu-left" v-if="showInterface">
+    <div
+      v-if="showInterface"
+      class="menu-left"
+    >
       <PuzzleStatus :status="status" />
-      <div class="switch-game-replay" v-if="g?.hasReplay()">
-        <router-link :to="{ name: 'replay', params: { id: g.getGameId() } }"><icon icon="replay" /> Watch replay</router-link>
+      <div
+        v-if="g?.hasReplay()"
+        class="switch-game-replay"
+      >
+        <router-link :to="{ name: 'replay', params: { id: g.getGameId() } }">
+          <icon icon="replay" /> Watch replay
+        </router-link>
       </div>
     </div>
 
-    <IngameMenu v-if="showInterface" @open-dialog="openDialog" />
+    <IngameMenu
+      v-if="showInterface"
+      @open-dialog="openDialog"
+    />
 
-    <div class="menu-right" v-if="showInterface">
+    <div
+      v-if="showInterface"
+      class="menu-right"
+    >
       <Scores :players="players" />
     </div>
 
     <StatusMessages ref="statusMessages" />
 
-    <canvas ref="canvasEl"></canvas>
+    <canvas ref="canvasEl" />
   </div>
 </template>
 <script setup lang="ts">

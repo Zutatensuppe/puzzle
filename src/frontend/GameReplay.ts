@@ -1,4 +1,4 @@
-"use strict"
+'use strict'
 
 import GameCommon from '../common/GameCommon'
 import Protocol from '../common/Protocol'

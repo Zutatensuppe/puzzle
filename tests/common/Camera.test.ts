@@ -9,7 +9,7 @@ it('test input stuff', () => {
   let actual: any
   let _last_mouse_down: any = null
 
-  let evts: any[] = [];
+  let evts: any[] = []
 
   const setEvents = (newevts: any[]) => {
     evts = newevts.map(evt => {

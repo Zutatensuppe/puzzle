@@ -1,4 +1,4 @@
-import Util from "../common/Util"
+import Util from '../common/Util'
 
 const set = (setting: string, value: string): void => {
   localStorage.setItem(setting, value)

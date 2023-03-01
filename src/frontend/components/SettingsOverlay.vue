@@ -4,70 +4,123 @@
       <h4>Settings</h4>
       <div>
         <v-label>Background Color</v-label>
-        <IngameColorPicker v-model="background" @open="onColorPickerOpen" @close="onColorPickerClose" />
+        <IngameColorPicker
+          v-model="background"
+          @open="onColorPickerOpen"
+          @close="onColorPickerClose"
+        />
       </div>
 
       <div>
         <div class="d-flex">
           <v-label>Table</v-label>
-          <v-checkbox-btn v-model="showTable" label="Show Table" density="comfortable"></v-checkbox-btn>
+          <v-checkbox-btn
+            v-model="showTable"
+            label="Show Table"
+            density="comfortable"
+          />
         </div>
-        <v-radio-group v-model="tableTexture" v-if="showTable" inline density="comfortable" hide-details>
-          <v-radio label="Dark" value="dark"></v-radio>
-          <v-radio label="Brown" value="brown"></v-radio>
-          <v-radio label="Light" value="light"></v-radio>
+        <v-radio-group
+          v-if="showTable"
+          v-model="tableTexture"
+          inline
+          density="comfortable"
+          hide-details
+        >
+          <v-radio
+            label="Dark"
+            value="dark"
+          />
+          <v-radio
+            label="Brown"
+            value="brown"
+          />
+          <v-radio
+            label="Light"
+            value="light"
+          />
         </v-radio-group>
       </div>
 
       <div>
         <div class="d-flex">
           <v-label>Player Color</v-label>
-          <v-checkbox v-model="isUkraineColor" density="comfortable" hide-details>
-            <template v-slot:label>
+          <v-checkbox
+            v-model="isUkraineColor"
+            density="comfortable"
+            hide-details
+          >
+            <template #label>
               <icon icon="ukraine-heart" />
             </template>
           </v-checkbox>
         </div>
-        <IngameColorPicker v-model="color" v-if="!isUkraineColor" @open="onColorPickerOpen" @close="onColorPickerClose" />
+        <IngameColorPicker
+          v-if="!isUkraineColor"
+          v-model="color"
+          @open="onColorPickerOpen"
+          @close="onColorPickerClose"
+        />
       </div>
 
       <div>
         <v-label>Player Name</v-label>
-        <v-text-field hide-details maxLength="16" v-model="name" density="compact"></v-text-field>
+        <v-text-field
+          v-model="name"
+          hide-details
+          max-length="16"
+          density="compact"
+        />
 
-        <v-checkbox density="comfortable" hide-details v-model="showPlayerNames" label="Show other player names on their hands"></v-checkbox>
+        <v-checkbox
+          v-model="showPlayerNames"
+          density="comfortable"
+          hide-details
+          label="Show other player names on their hands"
+        />
       </div>
 
       <div>
         <v-label>Sounds</v-label>
 
-        <v-checkbox density="comfortable" hide-details v-model="soundsEnabled" label="Sounds enabled"></v-checkbox>
-        <v-checkbox density="comfortable" hide-details :disabled="!soundsEnabled" v-model="otherPlayerClickSoundEnabled" label="Piece connect sounds of others"></v-checkbox>
-
-        <v-slider
+        <v-checkbox
+          v-model="soundsEnabled"
+          density="comfortable"
+          hide-details
+          label="Sounds enabled"
+        />
+        <v-checkbox
+          v-model="otherPlayerClickSoundEnabled"
+          density="comfortable"
           hide-details
           :disabled="!soundsEnabled"
+          label="Piece connect sounds of others"
+        />
+
+        <v-slider
           v-model="soundsVolume"
-          @update:modelValue="updateVolume"
+          hide-details
+          :disabled="!soundsEnabled"
           step="1"
           label="Volume"
+          @update:modelValue="updateVolume"
         >
-          <template v-slot:prepend>
+          <template #prepend>
             <v-btn
               size="x-small"
               variant="text"
               icon="mdi-volume-minus"
               @click="decreaseVolume"
-            ></v-btn>
+            />
           </template>
 
-          <template v-slot:append>
+          <template #append>
             <v-btn
               size="x-small"
               variant="text"
               icon="mdi-volume-plus"
               @click="increaseVolume"
-            ></v-btn>
+            />
           </template>
         </v-slider>
       </div>
@@ -76,10 +129,10 @@
 </template>
 <script setup lang="ts">
 import { ref, watch } from 'vue'
-import { GamePlay } from '../GamePlay';
-import { GameReplay } from '../GameReplay';
+import { GamePlay } from '../GamePlay'
+import { GameReplay } from '../GameReplay'
 
-import IngameColorPicker from './IngameColorPicker.vue';
+import IngameColorPicker from './IngameColorPicker.vue'
 
 const props = defineProps<{
   game: GamePlay | GameReplay

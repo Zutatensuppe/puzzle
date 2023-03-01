@@ -1,4 +1,4 @@
-import _api from "./_api"
+import _api from './_api'
 
 let conf: {
   WS_ADDRESS: string

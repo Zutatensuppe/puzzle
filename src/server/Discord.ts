@@ -1,4 +1,4 @@
-import { DiscordConfig } from "../common/Types";
+import { DiscordConfig } from '../common/Types'
 
 export class Discord {
   constructor(
@@ -15,9 +15,9 @@ export class Discord {
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        "guildId": this.config.announce.guildId,
-        "channelId": this.config.announce.channelId,
-        "message": message,
+        guildId: this.config.announce.guildId,
+        channelId: this.config.announce.channelId,
+        message: message,
       })
     })
   }

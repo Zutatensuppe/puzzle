@@ -1,4 +1,4 @@
-import Graphics from "./Graphics"
+import Graphics from './Graphics'
 
 // @ts-ignore
 import grabMask from './assets/gfx/grab_mask.png'

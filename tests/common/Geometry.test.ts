@@ -1,4 +1,4 @@
-import Geometry from "../../src/common/Geometry"
+import Geometry from '../../src/common/Geometry'
 import { describe, expect, it } from 'vitest'
 
 describe('Geometry.ts', () => {

@@ -1,6 +1,6 @@
-import { GameSettings, ImagesRequestData, NewGameDataRequestData } from "../../common/Types"
-import Util from "../../common/Util"
-import xhr, { JSON_HEADERS, XhrRequest } from "./xhr"
+import { GameSettings, ImagesRequestData, NewGameDataRequestData } from '../../common/Types'
+import Util from '../../common/Util'
+import xhr, { JSON_HEADERS, XhrRequest } from './xhr'
 
 const auth = async (email: string, password: string) => {
   return await xhr.post('/api/auth/local', {
@@ -95,8 +95,8 @@ const getArtistData = async (data: { name: string }) => {
 }
 
 const upload = async (data: { file: File, title: string, copyrightName: string, copyrightURL: string, tags: string[], isPrivate: boolean, onProgress: (progress: number) => void }) => {
-  const formData = new FormData();
-  formData.append('file', data.file, data.file.name);
+  const formData = new FormData()
+  formData.append('file', data.file, data.file.name)
   formData.append('title', data.title)
   formData.append('copyrightName', data.copyrightName)
   formData.append('copyrightURL', data.copyrightURL)

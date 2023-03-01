@@ -1,8 +1,11 @@
 <template>
-  <div :style="style" :title="title"></div>
+  <div
+    :style="style"
+    :title="title"
+  />
 </template>
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed } from 'vue'
 
 const props = withDefaults(defineProps<{
   src: string

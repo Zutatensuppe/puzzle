@@ -1,6 +1,6 @@
 import jwt from 'jsonwebtoken'
-import { CannyConfig } from '../common/Types';
-import { UserRow } from './repo/UsersRepo';
+import { CannyConfig } from '../common/Types'
+import { UserRow } from './repo/UsersRepo'
 
 export class Canny {
   constructor(private config: CannyConfig) {
@@ -15,7 +15,7 @@ export class Canny {
       email: user.email,
       id: user.id,
       name: user.name,
-    };
-    return jwt.sign(userData, this.config.sso_private_key, { algorithm: 'HS256' });
+    }
+    return jwt.sign(userData, this.config.sso_private_key, { algorithm: 'HS256' })
   }
 }

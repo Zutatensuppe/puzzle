@@ -1,8 +1,8 @@
-import Protocol from "../common/Protocol"
-import { GameEvent } from "../common/Types"
-import { Camera, Snapshot } from "./Camera"
-import { Game } from "./Game"
-import { MODE_REPLAY } from "./GameMode"
+import Protocol from '../common/Protocol'
+import { GameEvent } from '../common/Types'
+import { Camera, Snapshot } from './Camera'
+import { Game } from './Game'
+import { MODE_REPLAY } from './GameMode'
 
 export class EventAdapter {
   private events: Array<GameEvent> = []
@@ -169,7 +169,7 @@ export class EventAdapter {
           // store or restore pos+zoom in slot i
           const evt = ev.shiftKey ? Protocol.INPUT_EV_STORE_POS : Protocol.INPUT_EV_RESTORE_POS
           this.addEvent([evt, i])
-          break;
+          break
         }
       }
     }

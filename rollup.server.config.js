@@ -1,5 +1,5 @@
 // rollup.config.js
-import typescript from 'rollup-plugin-typescript2';
+import typescript from 'rollup-plugin-typescript2'
 
 export default {
   input: 'src/server/main.ts',
@@ -8,23 +8,23 @@ export default {
     format: 'es',
   },
   external: [
-    "async-mutex",
-    "compression",
-    "cookie-parser",
-    "crypto",
-    "exif",
-    "express",
-    "fs",
-    "multer",
-    "path",
-    "pg",
-    "probe-image-size",
-    "request",
-    "sib-api-v3-sdk",
-    "sharp",
-    "url",
-    "v8",
-    "ws",
+    'async-mutex',
+    'compression',
+    'cookie-parser',
+    'crypto',
+    'exif',
+    'express',
+    'fs',
+    'multer',
+    'path',
+    'pg',
+    'probe-image-size',
+    'request',
+    'sib-api-v3-sdk',
+    'sharp',
+    'url',
+    'v8',
+    'ws',
   ],
   plugins: [typescript()],
-};
+}

@@ -1,41 +1,66 @@
 <template>
   <v-form
-    class="login-form"
     v-model="valid"
+    class="login-form"
     :disabled="busy"
   >
     <v-text-field
+      v-model="email"
       density="compact"
       label="E-Mail"
-      v-model="email"
       :rules="emailRules"
-    ></v-text-field>
+    />
     <v-text-field
+      v-model="password"
       density="compact"
       label="Password"
-      v-model="password"
       :append-inner-icon="showPassword ? 'mdi-eye' : 'mdi-eye-off'"
       :type="showPassword ? 'text' : 'password'"
+      :rules="passwordRules"
       @click:append-inner="showPassword = !showPassword"
       @keydown.enter.prevent="doLogin"
-      :rules="passwordRules"
-    ></v-text-field>
+    />
     <div class="d-flex justify-space-between">
-      <v-btn @click="emit('forgot-password')" :disabled="busy">Forgot password?</v-btn>
-      <v-btn color="success" @click="doLogin" :disabled="!valid || busy">Login</v-btn>
+      <v-btn
+        :disabled="busy"
+        @click="emit('forgot-password')"
+      >
+        Forgot password?
+      </v-btn>
+      <v-btn
+        color="success"
+        :disabled="!valid || busy"
+        @click="doLogin"
+      >
+        Login
+      </v-btn>
     </div>
     <div class="d-flex align-center justify-center mt-5">
-      No account yet? <v-btn @click="emit('register')" class="ml-5" :disabled="busy">Create one</v-btn>
+      No account yet? <v-btn
+        class="ml-5"
+        :disabled="busy"
+        @click="emit('register')"
+      >
+        Create one
+      </v-btn>
     </div>
   </v-form>
   <v-divider class="mt-6 mb-6" />
-  <v-btn color="#6441a5" prepend-icon="mdi-twitch" @click="openTwitchLogin" block :disabled="busy">Login via Twitch</v-btn>
+  <v-btn
+    color="#6441a5"
+    prepend-icon="mdi-twitch"
+    block
+    :disabled="busy"
+    @click="openTwitchLogin"
+  >
+    Login via Twitch
+  </v-btn>
 </template>
 <script setup lang="ts">
-import { ref } from 'vue';
-import Util from '../../common/Util';
-import { toast } from '../toast';
-import user from '../user';
+import { ref } from 'vue'
+import Util from '../../common/Util'
+import { toast } from '../toast'
+import user from '../user'
 
 const emit = defineEmits<{
   (e: 'forgot-password'): void
@@ -51,11 +76,11 @@ const valid = ref<boolean>(false)
 const busy = ref<boolean>(false)
 
 const passwordRules = [
-  v => !!v || 'Password is required'
+  v => !!v || 'Password is required',
 ]
 
 const emailRules = [
-  v => !!v && /^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/.test(v) || 'E-mail must be valid'
+  v => !!v && /^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/.test(v) || 'E-mail must be valid',
 ]
 
 const args = {

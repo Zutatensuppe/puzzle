@@ -19,7 +19,7 @@ import {
   ScoreMode,
   ShapeMode,
   SnapMode,
-  Timestamp
+  Timestamp,
 } from './Types'
 import Util from './Util'
 
@@ -58,7 +58,7 @@ function unsetGame(gameId: string): void {
 }
 
 function getPlayerIndexById(gameId: string, playerId: string): number {
-  let i = 0;
+  let i = 0
   for (const player of GAMES[gameId].players) {
     if (Util.decodePlayer(player).id === playerId) {
       return i
@@ -86,7 +86,7 @@ function getPlayer(gameId: string, playerId: string): Player|null {
 function setPlayer(
   gameId: string,
   playerId: string,
-  player: Player
+  player: Player,
 ): void {
   const idx = getPlayerIndexById(gameId, playerId)
   if (idx === -1) {
@@ -165,7 +165,7 @@ function getPiecesSortedByZIndex(gameId: string): Piece[] {
 function changePlayer(
   gameId: string,
   playerId: string,
-  change: PlayerChange
+  change: PlayerChange,
 ): void {
   const player = getPlayer(gameId, playerId)
   if (player === null) {
@@ -189,7 +189,7 @@ function changeData(gameId: string, change: PuzzleDataChange): void {
 function changePiece(
   gameId: string,
   pieceIdx: number,
-  change: PieceChange
+  change: PieceChange,
 ): void {
   for (const k of Object.keys(change)) {
     const piece = Util.decodePiece(GAMES[gameId].puzzle.tiles[pieceIdx])
@@ -222,7 +222,7 @@ const getFinalPiecePos = (gameId: string, pieceIdx: number): Point => {
   const info = GAMES[gameId].puzzle.info
   const boardPos = {
     x: (info.table.width - info.width) / 2,
-    y: (info.table.height - info.height) / 2
+    y: (info.table.height - info.height) / 2,
   }
   const srcPos = srcPosByPieceIdx(gameId, pieceIdx)
   return Geometry.pointAdd(boardPos, srcPos)
@@ -276,7 +276,7 @@ const getFirstOwnedPieceIdx = (gameId: string, playerId: string): number => {
 
 const getFirstOwnedPiece = (
   gameId: string,
-  playerId: string
+  playerId: string,
 ): EncodedPiece|null => {
   const idx = getFirstOwnedPieceIdx(gameId, playerId)
   return idx < 0 ? null : GAMES[gameId].puzzle.tiles[idx]
@@ -359,7 +359,7 @@ const movePieceDiff = (gameId: string, pieceIdx: number, diff: Point): void => {
 const movePiecesDiff = (
   gameId: string,
   pieceIdxs: Array<number>,
-  diff: Point
+  diff: Point,
 ): boolean => {
   const gameVersion = getVersion(gameId)
   if (gameVersion >= 3) {
@@ -371,7 +371,7 @@ const movePiecesDiff = (
 const movePiecesDiff_v2 = (
   gameId: string,
   pieceIdxs: Array<number>,
-  diff: Point
+  diff: Point,
 ): boolean => {
   const drawSize = getPieceDrawSize(gameId)
   const bounds = getBounds(gameId)
@@ -403,7 +403,7 @@ const movePiecesDiff_v2 = (
 const movePiecesDiff_v3 = (
   gameId: string,
   pieceIdxs: Array<number>,
-  diff: Point
+  diff: Point,
 ): boolean => {
   const bounds = getBounds(gameId)
   const off = getPieceDrawSize(gameId) + (2 * getPieceDrawOffset(gameId))
@@ -453,7 +453,7 @@ const finishPieces = (gameId: string, pieceIdxs: Array<number>): void => {
 const setPiecesOwner = (
   gameId: string,
   pieceIdxs: Array<number>,
-  owner: string|number
+  owner: string|number,
 ): void => {
   for (const pieceIdx of pieceIdxs) {
     changePiece(gameId, pieceIdx, { owner })
@@ -539,7 +539,7 @@ const getPlayerPoints = (gameId: string, playerId: string): number => {
 const areGrouped = (
   gameId: string,
   pieceIdx1: number,
-  pieceIdx2: number
+  pieceIdx2: number,
 ): boolean => {
   const g1 = getPieceGroup(gameId, pieceIdx1)
   const g2 = getPieceGroup(gameId, pieceIdx2)
@@ -630,7 +630,7 @@ function handleInput(
   const groupPieces = (
     gameId: string,
     pieceIdx1: number,
-    pieceIdx2: number
+    pieceIdx2: number,
   ): void => {
     const pieces = GAMES[gameId].puzzle.tiles
     const group1 = getPieceGroup(gameId, pieceIdx1)
@@ -814,7 +814,7 @@ function handleInput(
           gameId: string,
           pieceIdx: number,
           otherPieceIdx: number,
-          off: Array<number>
+          off: Array<number>,
         ): boolean => {
           const info = GAMES[gameId].puzzle.info
           if (otherPieceIdx < 0) {
@@ -826,7 +826,7 @@ function handleInput(
           const piecePos = getPiecePos(gameId, pieceIdx)
           const dstPos = Geometry.pointAdd(
             getPiecePos(gameId, otherPieceIdx),
-            {x: off[0] * info.tileSize, y: off[1] * info.tileSize}
+            {x: off[0] * info.tileSize, y: off[1] * info.tileSize},
           )
           if (Geometry.pointDistance(piecePos, dstPos) < info.snapDistance) {
             const diff = Geometry.pointSub(dstPos, piecePos)

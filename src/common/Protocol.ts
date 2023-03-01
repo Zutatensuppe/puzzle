@@ -38,7 +38,7 @@ EV_SERVER_INIT: event sent to one client after that client
         // client to build client side of the game
 ]
 */
-const GAME_VERSION = 4; // must be increased whenever there is an incompatible change
+const GAME_VERSION = 4 // must be increased whenever there is an incompatible change
 
 const EV_SERVER_EVENT = 1
 const EV_SERVER_INIT = 4

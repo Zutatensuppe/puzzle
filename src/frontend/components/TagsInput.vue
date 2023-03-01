@@ -11,15 +11,20 @@
       @keydown.enter.prevent="add"
       @keydown.tab.prevent="add"
       @keyup="onKeyUp"
-    ></v-autocomplete>
-    <div v-if="values.length > 0" class="mt-4 d-flex">
+    />
+    <div
+      v-if="values.length > 0"
+      class="mt-4 d-flex"
+    >
       <v-chip
         v-for="(tag,idx) in values"
         :key="idx"
         class="is-clickable mr-2"
-        @click="rm(tag)"
         append-icon="mdi-close"
-      >{{tag}}</v-chip>
+        @click="rm(tag)"
+      >
+        {{ tag }}
+      </v-chip>
     </div>
   </div>
 </template>
@@ -44,7 +49,7 @@ const onKeyUp = () => {
   if (input.value && props.autocompleteTags) {
     autocompleteValues.value = props.autocompleteTags(
       input.value,
-      values.value
+      values.value,
     )
   }
 }

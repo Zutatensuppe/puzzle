@@ -1,12 +1,18 @@
 <template>
   <div class="puzzle-status">
     <div>
-      <icon icon="puzzle-piece" /> {{status.piecesDone}}/{{status.piecesTotal}}
+      <icon icon="puzzle-piece" /> {{ status.piecesDone }}/{{ status.piecesTotal }}
     </div>
     <div>
-      <icon icon="clock" v-if="!status.finished" />
-      <icon icon="flag" v-else />
-      {{durationStr}}
+      <icon
+        v-if="!status.finished"
+        icon="clock"
+      />
+      <icon
+        v-else
+        icon="flag"
+      />
+      {{ durationStr }}
     </div>
   </div>
 </template>

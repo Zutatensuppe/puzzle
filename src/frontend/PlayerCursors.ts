@@ -1,6 +1,6 @@
-import { Player } from "../common/Types";
-import { Assets } from "./Assets";
-import Graphics from "./Graphics";
+import { Player } from '../common/Types'
+import { Assets } from './Assets'
+import Graphics from './Graphics'
 
 export class PlayerCursors {
 

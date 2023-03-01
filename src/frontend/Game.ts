@@ -1,4 +1,4 @@
-"use strict"
+'use strict'
 
 import { GameLoopInstance, run } from './gameloop'
 import { Camera } from './Camera'
@@ -337,8 +337,8 @@ export abstract class Game<HudType extends Hud> {
     const _evClientSeq = msg[2]
     const evChanges = msg[3]
 
-    let rerender: boolean = false;
-    let otherPlayerPiecesConnected: boolean = false;
+    let rerender: boolean = false
+    let otherPlayerPiecesConnected: boolean = false
 
     for (const [changeType, changeData] of evChanges) {
       switch (changeType) {
@@ -348,22 +348,22 @@ export abstract class Game<HudType extends Hud> {
             GameCommon.setPlayer(this.gameId, p.id, p)
             rerender = true
           }
-        } break;
+        } break
         case Protocol.CHANGE_PIECE: {
           const piece = Util.decodePiece(changeData)
           GameCommon.setPiece(this.gameId, piece.idx, piece)
           rerender = true
-        } break;
+        } break
         case Protocol.CHANGE_DATA: {
           GameCommon.setPuzzleData(this.gameId, changeData)
           rerender = true
-        } break;
+        } break
         case Protocol.PLAYER_SNAP: {
           const snapPlayerId = changeData
           if (snapPlayerId !== this.clientId) {
             otherPlayerPiecesConnected = true
           }
-        } break;
+        } break
       }
     }
     if (

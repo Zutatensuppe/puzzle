@@ -5,36 +5,67 @@
     <v-container :fluid="true">
       <v-row>
         <v-col :lg="8">
-          <div class="has-image" style="min-height: 50vh;">
-            <ResponsiveImage :src="image.url" :title="image.title" />
+          <div
+            class="has-image"
+            style="min-height: 50vh;"
+          >
+            <ResponsiveImage
+              :src="image.url"
+              :title="image.title"
+            />
           </div>
         </v-col>
-        <v-col :lg="4" class="area-settings">
+        <v-col
+          :lg="4"
+          class="area-settings"
+        >
           <div>
-            <v-text-field density="compact" v-model="title" placeholder="eg. Flower by @artist" label="Title" />
+            <v-text-field
+              v-model="title"
+              density="compact"
+              placeholder="eg. Flower by @artist"
+              label="Title"
+            />
           </div>
           <fieldset>
             <legend>Source</legend>
-            <v-text-field density="compact" v-model="copyrightName" placeholder="eg. Artist Name" label="Creator" />
-            <v-text-field density="compact" v-model="copyrightURL" placeholder="eg. https://example.net/" label="URL" />
+            <v-text-field
+              v-model="copyrightName"
+              density="compact"
+              placeholder="eg. Artist Name"
+              label="Creator"
+            />
+            <v-text-field
+              v-model="copyrightURL"
+              density="compact"
+              placeholder="eg. https://example.net/"
+              label="URL"
+            />
           </fieldset>
           <fieldset>
             <legend>Tags</legend>
-            <TagsInput v-model="tags" :autocompleteTags="autocompleteTags" />
+            <TagsInput
+              v-model="tags"
+              :autocomplete-tags="autocompleteTags"
+            />
           </fieldset>
 
           <v-card-actions>
             <v-btn
               variant="elevated"
               color="success"
-              @click="saveImage"
               prepend-icon="mdi-image"
-            >Save image</v-btn>
+              @click="saveImage"
+            >
+              Save image
+            </v-btn>
             <v-btn
               color="error"
               variant="elevated"
               @click="emit('close')"
-            >Cancel</v-btn>
+            >
+              Cancel
+            </v-btn>
           </v-card-actions>
         </v-col>
       </v-row>

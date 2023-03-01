@@ -8,7 +8,7 @@
           <tr><td><icon icon="arrow-down" /> Move down:</td><td><div><kbd>S</kbd>/<kbd>↓</kbd>/<icon icon="mouse-left" /></div></td></tr>
           <tr><td><icon icon="arrow-left" /> Move left:</td><td><div><kbd>A</kbd>/<kbd>←</kbd>/<icon icon="mouse-left" /></div></td></tr>
           <tr><td><icon icon="arrow-right" /> Move right:</td><td><div><kbd>D</kbd>/<kbd>→</kbd>/<icon icon="mouse-left" /></div></td></tr>
-          <tr><td></td><td><div>Move faster by holding <kbd>Shift</kbd></div></td></tr>
+          <tr><td /><td><div>Move faster by holding <kbd>Shift</kbd></div></td></tr>
 
           <tr><td><icon icon="zoom-in" /> Zoom in:</td><td><div><kbd>E</kbd>/<icon icon="mouse-wheel" /></div></td></tr>
           <tr><td><icon icon="zoom-out" /> Zoom out:</td><td><div><kbd>Q</kbd>/<icon icon="mouse-wheel" /></div></td></tr>

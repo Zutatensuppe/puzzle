@@ -1,5 +1,5 @@
-import api from "./_api";
-import { Announcement } from '../common/Types';
+import api from './_api'
+import { Announcement } from '../common/Types'
 
 let announcements: Announcement[] = []
 async function init(): Promise<void> {

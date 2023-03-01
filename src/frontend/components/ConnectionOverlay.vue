@@ -1,14 +1,32 @@
 <template>
-  <v-dialog class="overlay-connection" v-model="show">
+  <v-dialog
+    v-model="show"
+    class="overlay-connection"
+  >
     <v-card>
       <v-container :fluid="true">
-        <div v-if="lostConnection" class="d-flex justify-center mb-2">
+        <div
+          v-if="lostConnection"
+          class="d-flex justify-center mb-2"
+        >
           <h4>CONNECTION LOST</h4>
         </div>
-        <div v-if="lostConnection" class="d-flex justify-center">
-          <v-btn color="info" @click="emit('reconnect')" prepend-icon="mdi-wifi">Reconnect</v-btn>
+        <div
+          v-if="lostConnection"
+          class="d-flex justify-center"
+        >
+          <v-btn
+            color="info"
+            prepend-icon="mdi-wifi"
+            @click="emit('reconnect')"
+          >
+            Reconnect
+          </v-btn>
         </div>
-        <div v-if="connecting" class="d-flex justify-center">
+        <div
+          v-if="connecting"
+          class="d-flex justify-center"
+        >
           Connecting...
         </div>
       </v-container>
@@ -16,8 +34,8 @@
   </v-dialog>
 </template>
 <script setup lang="ts">
-import { computed } from 'vue';
-import Communication from '../Communication';
+import { computed } from 'vue'
+import Communication from '../Communication'
 
 const emit = defineEmits<{
   (e: 'reconnect'): void

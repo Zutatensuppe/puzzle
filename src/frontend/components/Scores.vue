@@ -2,22 +2,30 @@
   <div class="scores">
     <div>Scores</div>
     <table>
-      <tr v-for="(p, idx) in actives" :key="idx" :style="playerStyle(p)">
+      <tr
+        v-for="(p, idx) in actives"
+        :key="idx"
+        :style="playerStyle(p)"
+      >
         <td><icon icon="lightning" /></td>
-        <td>{{p.name || '<No name>'}}</td>
-        <td>{{p.points}}</td>
+        <td>{{ p.name || '<No name>' }}</td>
+        <td>{{ p.points }}</td>
       </tr>
-      <tr v-for="(p, idx) in idles" :key="idx" :style="playerStyle(p)">
+      <tr
+        v-for="(p, idx) in idles"
+        :key="idx"
+        :style="playerStyle(p)"
+      >
         <td><icon icon="zzz" /></td>
-        <td>{{p.name || '<No name>'}}</td>
-        <td>{{p.points}}</td>
+        <td>{{ p.name || '<No name>' }}</td>
+        <td>{{ p.points }}</td>
       </tr>
     </table>
   </div>
 </template>
 <script setup lang="ts">
 import { computed, StyleValue } from 'vue'
-import { Player } from '../../common/Types';
+import { Player } from '../../common/Types'
 
 const props = defineProps<{
   players: {

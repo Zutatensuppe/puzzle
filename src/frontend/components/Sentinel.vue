@@ -1,10 +1,13 @@
 <template>
-  <div class="sentinel" ref="el"></div>
+  <div
+    ref="el"
+    class="sentinel"
+  />
 </template>
 <script setup lang="ts">
-import { onMounted, onUnmounted, Ref, ref } from 'vue';
+import { onMounted, onUnmounted, Ref, ref } from 'vue'
 
-import { logger } from '../../common/Util';
+import { logger } from '../../common/Util'
 
 const log = logger('Sentinel.vue')
 log.disable()
@@ -35,13 +38,13 @@ const isInViewport = (element) => {
   if (!element) {
     return false
   }
-  const rect = element.getBoundingClientRect();
+  const rect = element.getBoundingClientRect()
   return (
     (rect.top + OFFSET) >= 0 &&
     (rect.left + OFFSET) >= 0 &&
     (rect.bottom - OFFSET) <= (window.innerHeight || document.documentElement.clientHeight) &&
     (rect.right - OFFSET) <= (window.innerWidth || document.documentElement.clientWidth)
-  );
+  )
 }
 
 let interval: any = null
@@ -53,7 +56,7 @@ let observer = new IntersectionObserver((entries: IntersectionObserverEntry[]) =
   }
 }, {
   rootMargin: `${OFFSET}px`,
-  threshold: 1.0
+  threshold: 1.0,
 })
 onMounted(() => {
   log.info('start observing')

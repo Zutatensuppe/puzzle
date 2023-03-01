@@ -1,4 +1,4 @@
-import xhr from "./xhr"
+import xhr from './xhr'
 import admin from './admin'
 import pub from './pub'
 

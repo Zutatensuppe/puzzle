@@ -28,13 +28,13 @@ const doit = (idxfile: string): void => {
     total: 0,
     lastTs: 0,
     currentFile: currentFile,
-    perFile: idxOld.perFile
+    perFile: idxOld.perFile,
   }
 
   let firstTs = 0
   while (fs.existsSync(currentFile)) {
     idxNew.currentFile = currentFile
-    const log = fs.readFileSync(currentFile, 'utf-8').split("\n")
+    const log = fs.readFileSync(currentFile, 'utf-8').split('\n')
     const newLines = []
     const lines = log.filter(line => !!line).map(line => {
       return JSON.parse(line)
@@ -54,7 +54,7 @@ const doit = (idxfile: string): void => {
       }
       idxNew.total++
     }
-    fs.writeFileSync(idxNew.currentFile, newLines.join("\n") + "\n")
+    fs.writeFileSync(idxNew.currentFile, newLines.join('\n') + '\n')
     currentFile = filename(gameId, idxNew.total)
   }
 
@@ -62,7 +62,7 @@ const doit = (idxfile: string): void => {
   console.log('done: ' + gameId)
 }
 
-let indexfiles = fs.readdirSync(config.dir.DATA_DIR)
+const indexfiles = fs.readdirSync(config.dir.DATA_DIR)
   .filter(f => f.toLowerCase().match(/^log_[a-z0-9]+\.idx\.log$/))
 
 

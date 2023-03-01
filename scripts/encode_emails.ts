@@ -1,4 +1,4 @@
-import { logger } from '../src/common/Util';
+import { logger } from '../src/common/Util'
 import config from '../src/server/Config'
 import Db from '../src/server/Db'
 import Crypto from '../src/server/Crypto'

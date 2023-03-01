@@ -89,6 +89,6 @@ import { init as initToast, toast } from './toast'
   app.use(router)
   app.use(vuetify)
   initToast(app)
-  app.component('icon', Icon)
+  app.component('Icon', Icon)
   app.mount('#app')
 })()

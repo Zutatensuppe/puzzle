@@ -13,21 +13,36 @@
         </tr>
       </thead>
       <tbody>
-        <tr v-for="(item, idx) in users" :key="idx">
+        <tr
+          v-for="(item, idx) in users"
+          :key="idx"
+        >
           <td>{{ item.id }}</td>
           <td>{{ item.created }}</td>
           <td>{{ item.client_id }}</td>
-          <td><template v-if="item.name">{{ item.name }}</template><template v-else>-</template></td>
-          <td><template v-if="item.email">{{ item.email }}</template><template v-else>-</template></td>
+          <td>
+            <template v-if="item.name">
+              {{ item.name }}
+            </template><template v-else>
+              -
+            </template>
+          </td>
+          <td>
+            <template v-if="item.email">
+              {{ item.email }}
+            </template><template v-else>
+              -
+            </template>
+          </td>
         </tr>
       </tbody>
     </v-table>
   </div>
 </template>
 <script setup lang="ts">
-import { onMounted, ref } from 'vue';
-import user from '../../user';
-import api from '../../_api';
+import { onMounted, ref } from 'vue'
+import user from '../../user'
+import api from '../../_api'
 import Nav from '../components/Nav.vue'
 
 const users = ref<any[]>([])

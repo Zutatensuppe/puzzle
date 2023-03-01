@@ -1,5 +1,8 @@
 <template>
-  <i class="icon" :class="`icon-${icon}`"></i>
+  <i
+    class="icon"
+    :class="`icon-${icon}`"
+  />
 </template>
 <script setup lang="ts">
 defineProps<{

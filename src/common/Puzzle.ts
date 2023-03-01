@@ -1,7 +1,7 @@
-import { Dim } from "./Geometry"
-import { Rng } from "./Rng"
-import { EncodedPieceShape, PieceShape, ShapeMode } from "./Types"
-import Util from "./Util"
+import { Dim } from './Geometry'
+import { Rng } from './Rng'
+import { EncodedPieceShape, PieceShape, ShapeMode } from './Types'
+import Util from './Util'
 
 export interface PuzzleCreationInfo {
   width: number
@@ -21,7 +21,7 @@ export const PIECE_SIZE = 64
 
 const determinePiecesXY = (
   dim: Dim,
-  desiredPieceCount: number
+  desiredPieceCount: number,
 ): { countHorizontal: number, countVertical: number } => {
   if (desiredPieceCount <= 0 || isNaN(desiredPieceCount)) {
     return { countHorizontal: 0, countVertical: 0 }
@@ -45,7 +45,7 @@ const determinePiecesXY = (
 
 export const determinePuzzleInfo = (
   dim: Dim,
-  desiredPieceCount: number
+  desiredPieceCount: number,
 ): PuzzleCreationInfo => {
   const { countHorizontal, countVertical } = determinePiecesXY(dim, desiredPieceCount)
   const pieceCount = countHorizontal * countVertical
@@ -53,7 +53,7 @@ export const determinePuzzleInfo = (
   const width = countHorizontal * pieceSize
   const height = countVertical * pieceSize
 
-  const pieceMarginWidth = pieceSize * .5;
+  const pieceMarginWidth = pieceSize * .5
   const pieceDrawSize = Math.round(pieceSize + pieceMarginWidth * 2)
 
   return {
@@ -84,7 +84,7 @@ function determineTabs (shapeMode: ShapeMode): number[] {
 export function determinePuzzlePieceShapes(
   rng: Rng,
   info: PuzzleCreationInfo,
-  shapeMode: ShapeMode
+  shapeMode: ShapeMode,
 ): Array<EncodedPieceShape> {
   const tabs: number[] = determineTabs(shapeMode)
   const shapes: Array<PieceShape> = new Array(info.pieceCount)

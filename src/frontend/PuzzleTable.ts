@@ -1,6 +1,6 @@
-import { Dim, Point, Rect } from "../common/Geometry"
-import { Assets } from "./Assets"
-import Graphics from "./Graphics"
+import { Dim, Point, Rect } from '../common/Geometry'
+import { Assets } from './Assets'
+import Graphics from './Graphics'
 
 export class PuzzleTable {
   private images: Record<string, CanvasImageSource> = {}

@@ -5,12 +5,12 @@
   </div>
 </template>
 <script setup lang="ts">
-import { onMounted, ref } from 'vue';
-import user from '../../user';
+import { onMounted, ref } from 'vue'
+import user from '../../user'
 import Nav from '../components/Nav.vue'
-import LoginForm from '../../components/LoginForm.vue';
+import LoginForm from '../../components/LoginForm.vue'
 
-const loggedIn = ref<boolean>(false);
+const loggedIn = ref<boolean>(false)
 onMounted(async () => {
   const me = user.getMe()
   loggedIn.value = !!(me && me.type === 'user')

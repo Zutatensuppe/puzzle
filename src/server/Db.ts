@@ -7,7 +7,7 @@ import { logger } from '../common/Util'
 
 const log = logger('Db.ts')
 
-const mutex = new Mutex();
+const mutex = new Mutex()
 
 /**
  * TODO: create a more specific type for OrderBy.

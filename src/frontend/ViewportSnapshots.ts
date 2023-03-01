@@ -1,10 +1,10 @@
-import { Camera, Snapshot } from "./Camera";
-import { EventAdapter } from "./EventAdapter";
+import { Camera, Snapshot } from './Camera'
+import { EventAdapter } from './EventAdapter'
 
 export class ViewportSnapshots {
   public static readonly LAST = 'last'
 
-  private viewportToggleSlot: string = '';
+  private viewportToggleSlot: string = ''
   private viewportSnapshots: Record<string, Snapshot> = {}
 
   constructor(

@@ -1,36 +1,83 @@
 <template>
   <div id="replay">
-    <v-dialog v-model="dialog" :class="`overlay-${overlay}`" :persistent="dialogPersistent">
-      <SettingsOverlay v-if="g && overlay === 'settings'" :game="g" @dialogChange="onDialogChange" />
-      <PreviewOverlay v-if="g && overlay === 'preview'" :game="g" @close="closeDialog" />
-      <InfoOverlay v-if="g && overlay === 'info'" :game="g" />
+    <v-dialog
+      v-model="dialog"
+      :class="`overlay-${overlay}`"
+      :persistent="dialogPersistent"
+    >
+      <SettingsOverlay
+        v-if="g && overlay === 'settings'"
+        :game="g"
+        @dialog-change="onDialogChange"
+      />
+      <PreviewOverlay
+        v-if="g && overlay === 'preview'"
+        :game="g"
+        @close="closeDialog"
+      />
+      <InfoOverlay
+        v-if="g && overlay === 'info'"
+        :game="g"
+      />
       <HelpOverlay v-if="overlay === 'help'" />
     </v-dialog>
 
     <CuttingOverlay v-model="cuttingPuzzle" />
 
-    <div class="menu-left" v-if="showInterface">
+    <div
+      v-if="showInterface"
+      class="menu-left"
+    >
       <PuzzleStatus :status="status" />
-      <div class="playback-control" v-if="g">
-        <div>{{replayText}}</div>
-        <button class="btn" @click="onSpeedUp"><icon icon="speed-up" /></button>
-        <button class="btn" @click="onSpeedDown"><icon icon="speed-down" /></button>
-        <button class="btn" @click="onTogglePause"><icon icon="pause" /></button>
+      <div
+        v-if="g"
+        class="playback-control"
+      >
+        <div>{{ replayText }}</div>
+        <button
+          class="btn"
+          @click="onSpeedUp"
+        >
+          <icon icon="speed-up" />
+        </button>
+        <button
+          class="btn"
+          @click="onSpeedDown"
+        >
+          <icon icon="speed-down" />
+        </button>
+        <button
+          class="btn"
+          @click="onTogglePause"
+        >
+          <icon icon="pause" />
+        </button>
       </div>
-      <div class="switch-game-replay" v-if="g">
-        <router-link :to="{ name: 'game', params: { id: g.getGameId() } }"><icon icon="puzzle-piece" /> To the game</router-link>
+      <div
+        v-if="g"
+        class="switch-game-replay"
+      >
+        <router-link :to="{ name: 'game', params: { id: g.getGameId() } }">
+          <icon icon="puzzle-piece" /> To the game
+        </router-link>
       </div>
     </div>
 
-    <IngameMenu v-if="showInterface" @open-dialog="openDialog" />
+    <IngameMenu
+      v-if="showInterface"
+      @open-dialog="openDialog"
+    />
 
-    <div class="menu-right" v-if="showInterface">
+    <div
+      v-if="showInterface"
+      class="menu-right"
+    >
       <Scores :players="players" />
     </div>
 
     <StatusMessages ref="statusMessages" />
 
-    <canvas ref="canvasEl"></canvas>
+    <canvas ref="canvasEl" />
   </div>
 </template>
 <script setup lang="ts">

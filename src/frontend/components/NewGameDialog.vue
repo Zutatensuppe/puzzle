@@ -5,77 +5,141 @@
     <v-container :fluid="true">
       <v-row>
         <v-col :lg="8">
-          <div class="has-image" style="min-height: 50vh;">
+          <div
+            class="has-image"
+            style="min-height: 50vh;"
+          >
             <PuzzleCropper
               :image="image"
               :puzzle-creation-info="puzzleCreationInfo"
               :shape-mode="shapeMode"
               :pieces-preview="tab === 'settings'"
-              @crop-update="onCropUpdate" />
+              @crop-update="onCropUpdate"
+            />
           </div>
         </v-col>
-        <v-col :lg="4" class="area-settings">
+        <v-col
+          :lg="4"
+          class="area-settings"
+        >
           <v-tabs v-model="tab">
-            <v-tab value="settings">Settings</v-tab>
-            <v-tab value="image-info">Image Info</v-tab>
+            <v-tab value="settings">
+              Settings
+            </v-tab>
+            <v-tab value="image-info">
+              Image Info
+            </v-tab>
           </v-tabs>
 
           <v-window v-model="tab">
             <v-window-item value="settings">
-              <v-form ref="form" v-model="valid">
+              <v-form
+                ref="form"
+                v-model="valid"
+              >
                 <fieldset>
                   <legend>Pieces Amount</legend>
-                  <v-text-field type="number" step="100" min="0" max="5000" density="compact" v-model="pieces" :rules="[numberRule]" class="pieces-input">
-                  </v-text-field>
+                  <v-text-field
+                    v-model="pieces"
+                    type="number"
+                    step="100"
+                    min="0"
+                    max="5000"
+                    density="compact"
+                    :rules="[numberRule]"
+                    class="pieces-input"
+                  />
                   <span>
                     Resulting pieces: {{ valid ? puzzleCreationInfo.pieceCount : '-' }}
                   </span>
                 </fieldset>
                 <div>
-                  <v-label><v-icon icon="mdi-counter mr-1"></v-icon> Scoring</v-label>
-                  <v-radio-group v-model="scoreMode" density="comfortable">
-                    <v-radio label="Any (Score when pieces are connected to each other or on final location)" :value="1"></v-radio>
-                    <v-radio label="Final (Score when pieces are put to their final location)" :value="0"></v-radio>
+                  <v-label><v-icon icon="mdi-counter mr-1" /> Scoring</v-label>
+                  <v-radio-group
+                    v-model="scoreMode"
+                    density="comfortable"
+                  >
+                    <v-radio
+                      label="Any (Score when pieces are connected to each other or on final location)"
+                      :value="1"
+                    />
+                    <v-radio
+                      label="Final (Score when pieces are put to their final location)"
+                      :value="0"
+                    />
                   </v-radio-group>
                 </div>
                 <div>
-                  <v-label><v-icon icon="mdi-shape mr-1"></v-icon> Shapes</v-label>
-                  <v-radio-group v-model="shapeMode" density="comfortable">
-                    <v-radio label="Normal" :value="0"></v-radio>
-                    <v-radio label="Any (Flat pieces can occur anywhere)" :value="1"></v-radio>
-                    <v-radio label="Flat (All pieces flat on all sides)" :value="2"></v-radio>
+                  <v-label><v-icon icon="mdi-shape mr-1" /> Shapes</v-label>
+                  <v-radio-group
+                    v-model="shapeMode"
+                    density="comfortable"
+                  >
+                    <v-radio
+                      label="Normal"
+                      :value="0"
+                    />
+                    <v-radio
+                      label="Any (Flat pieces can occur anywhere)"
+                      :value="1"
+                    />
+                    <v-radio
+                      label="Flat (All pieces flat on all sides)"
+                      :value="2"
+                    />
                   </v-radio-group>
                 </div>
                 <div>
-                  <v-label><v-icon icon="mdi-connection mr-1"></v-icon> Snapping</v-label>
-                  <v-radio-group v-model="snapMode" density="comfortable">
-                    <v-radio label="Normal (Pieces snap to final destination and to each other)" :value="0"></v-radio>
-                    <v-radio label="Real (Pieces snap only to corners, already snapped pieces and to each other)" :value="1"></v-radio>
+                  <v-label><v-icon icon="mdi-connection mr-1" /> Snapping</v-label>
+                  <v-radio-group
+                    v-model="snapMode"
+                    density="comfortable"
+                  >
+                    <v-radio
+                      label="Normal (Pieces snap to final destination and to each other)"
+                      :value="0"
+                    />
+                    <v-radio
+                      label="Real (Pieces snap only to corners, already snapped pieces and to each other)"
+                      :value="1"
+                    />
                   </v-radio-group>
                 </div>
                 <div>
-                  <v-label><v-icon icon="mdi-incognito mr-1"></v-icon> Privacy</v-label>
-                  <v-checkbox density="comfortable" label="Private Game (Private games won't show up in the public game overview)" v-model="isPrivate" :disabled="forcePrivate"></v-checkbox>
+                  <v-label><v-icon icon="mdi-incognito mr-1" /> Privacy</v-label>
+                  <v-checkbox
+                    v-model="isPrivate"
+                    density="comfortable"
+                    label="Private Game (Private games won't show up in the public game overview)"
+                    :disabled="forcePrivate"
+                  />
                 </div>
 
                 <v-card-actions>
                   <v-btn
                     variant="elevated"
                     :disabled="!canStartNewGame"
-                    @click="onNewGameClick"
                     prepend-icon="mdi-puzzle"
                     color="success"
-                  >Generate Puzzle</v-btn>
+                    @click="onNewGameClick"
+                  >
+                    Generate Puzzle
+                  </v-btn>
                   <v-btn
                     variant="elevated"
-                    @click="emit('close')"
                     color="error"
-                  >Cancel</v-btn>
+                    @click="emit('close')"
+                  >
+                    Cancel
+                  </v-btn>
                 </v-card-actions>
               </v-form>
             </v-window-item>
             <v-window-item value="image-info">
-              <ImageInfoTable :image="image" @tag-click="emit('tagClick', $event)" />
+              <ImageInfoTable
+                :image="image"
+                @tag-click="emit('tagClick', $event)"
+              />
             </v-window-item>
           </v-window>
         </v-col>
@@ -89,9 +153,9 @@ import { computed, onMounted, ref } from 'vue'
 import { GameSettings, ImageInfo, ScoreMode, ShapeMode, SnapMode, Tag } from './../../common/Types'
 import { NEWGAME_MIN_PIECES, NEWGAME_MAX_PIECES } from './../../common/GameCommon'
 import PuzzleCropper from './PuzzleCropper.vue'
-import { determinePuzzleInfo, PuzzleCreationInfo } from '../../common/Puzzle';
-import { Rect } from '../../common/Geometry';
-import ImageInfoTable from './ImageInfoTable.vue';
+import { determinePuzzleInfo, PuzzleCreationInfo } from '../../common/Puzzle'
+import { Rect } from '../../common/Geometry'
+import ImageInfoTable from './ImageInfoTable.vue'
 
 const props = defineProps<{
   image: ImageInfo
