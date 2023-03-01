@@ -46,7 +46,7 @@ class Rng {
     static serialize(rng) {
         return {
             rand_high: rng.rand_high,
-            rand_low: rng.rand_low
+            rand_low: rng.rand_low,
         };
     }
     static unserialize(rngSerialized) {
@@ -591,7 +591,7 @@ class Mail {
     }
     sendPasswordResetMail(passwordReset) {
         const mail = new SibApiV3Sdk.SendSmtpEmail();
-        mail.subject = "{{params.subject}}";
+        mail.subject = '{{params.subject}}';
         mail.htmlContent = `<html><body>
       <h1>Hello {{params.username}}</h1>
       <p>To reset your password for <a href="${BASE_URL}">${NAME}</a>
@@ -612,7 +612,7 @@ class Mail {
     }
     sendRegistrationMail(registration) {
         const mail = new SibApiV3Sdk.SendSmtpEmail();
-        mail.subject = "{{params.subject}}";
+        mail.subject = '{{params.subject}}';
         mail.htmlContent = `<html><body>
       <h1>Hello {{params.username}}</h1>
       <p>Thank you for registering an account at <a href="${BASE_URL}">${NAME}</a>.</p>
@@ -671,9 +671,9 @@ class Discord {
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({
-                "guildId": this.config.announce.guildId,
-                "channelId": this.config.announce.channelId,
-                "message": message,
+                guildId: this.config.announce.guildId,
+                channelId: this.config.announce.channelId,
+                message: message,
             })
         });
     }
@@ -1157,7 +1157,7 @@ const getFinalPiecePos = (gameId, pieceIdx) => {
     const info = GAMES[gameId].puzzle.info;
     const boardPos = {
         x: (info.table.width - info.width) / 2,
-        y: (info.table.height - info.height) / 2
+        y: (info.table.height - info.height) / 2,
     };
     const srcPos = srcPosByPieceIdx(gameId, pieceIdx);
     return Geometry.pointAdd(boardPos, srcPos);
@@ -1915,7 +1915,7 @@ const _log = (gameId, type, ...args) => {
         args[timestampIdx] = ts - idxObj.lastTs;
     }
     const line = JSON.stringify([type, ...args]).slice(1, -1);
-    fs.appendFileSync(idxObj.currentFile, line + "\n");
+    fs.appendFileSync(idxObj.currentFile, line + '\n');
     idxObj.total++;
     idxObj.lastTs = ts;
     fs.writeFileSync(idxfile, JSON.stringify(idxObj));
@@ -1929,7 +1929,7 @@ const get = (gameId, offset = 0) => {
     if (!fs.existsSync(file)) {
         return [];
     }
-    const lines = fs.readFileSync(file, 'utf-8').split("\n");
+    const lines = fs.readFileSync(file, 'utf-8').split('\n');
     const log = lines.filter(line => !!line).map(line => {
         return JSON.parse(`[${line}]`);
     });
@@ -2446,7 +2446,7 @@ function createRouter$2(server) {
         upload(req, res, async (err) => {
             if (err) {
                 log$4.log('/api/upload/', 'error', err);
-                res.status(400).send("Something went wrong!");
+                res.status(400).send('Something went wrong!');
                 return;
             }
             log$4.info('req.file.filename', req.file.filename);
@@ -3220,7 +3220,7 @@ class GamesRepo {
     }
 }
 
-const key = crypto.createHash('md5').update(config.secret).digest("hex");
+const key = crypto.createHash('md5').update(config.secret).digest('hex');
 const encrypt = (str) => {
     return Buffer.from(key + str, 'utf8').toString('base64');
 };
