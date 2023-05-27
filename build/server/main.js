@@ -2440,7 +2440,13 @@ function createRouter$2(server) {
     });
     router.get('/proxy', (req, res) => {
         log$4.info('proxy request for url:', req.query.url);
-        request(req.query.url).pipe(res);
+        request(req.query.url).on('error', (e) => {
+            log$4.error(e);
+            res.status(400).send({ ok: false });
+        }).pipe(res).on('error', (e) => {
+            log$4.error(e);
+            res.status(400).send({ ok: false });
+        });
     });
     router.post('/upload', (req, res) => {
         upload(req, res, async (err) => {
