@@ -1,0 +1,46 @@
+name: on_release
+
+on:
+  release:
+    types:
+      - published
+
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - run: npm run setup
+      - run: npm run build
+
+      - name: Install SSH Key
+        uses: shimataro/ssh-key-action@v2
+        with:
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          known_hosts: unnecessary
+
+      - name: Adding Known Hosts
+        run: ssh-keyscan -H ${{ secrets.SSH_HOST }}  >> ~/.ssh/known_hosts
+
+      - name: Deploy with rsync
+        run: scp ./dist/build.zip ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:~/workspace/puzzle
+
+      - name: Deploy
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            cd ~/workspace/puzzle
+            mkdir build_tmp
+            mv build.zip build_tmp
+            cd build_tmp
+            unzip build.zip
+            cd ..
+            mv build build_old
+            mv build_tmp build
+            rm -rf build_old
+            sudo ./restart.sh
