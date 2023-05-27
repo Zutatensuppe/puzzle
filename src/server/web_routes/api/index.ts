@@ -556,7 +556,13 @@ export default function createRouter(
 
   router.get('/proxy', (req: any, res): void => {
     log.info('proxy request for url:', req.query.url)
-    request(req.query.url).pipe(res)
+    request(req.query.url).on('error', (e) => {
+      log.error(e)
+      res.status(400).send({ ok: false })
+    }).pipe(res).on('error', (e) => {
+      log.error(e)
+      res.status(400).send({ ok: false })
+    })
   })
 
   router.post('/upload', (req: any, res): void => {

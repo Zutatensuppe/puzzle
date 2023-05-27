@@ -184,6 +184,7 @@ import { FrontendGameSettings as FrontendNewImageEventData } from '../../common/
 import { logger } from '../../common/Util'
 import TagsInput from '../components/TagsInput.vue'
 import ResponsiveImage from './ResponsiveImage.vue'
+import { toast } from '../toast'
 
 const log = logger('NewImageDialog.vue')
 
@@ -308,10 +309,12 @@ const onPaste = async (evt: ClipboardEvent): Promise<void> => {
         } else {
           // url could not be transformed into a blob.
           console.error('unable to transform image data url into blob')
+          toast('Unable to load image from this website, please download and upload the image manually.', 'error')
         }
       } catch (e) {
         // url could not be transformed into a blob.
         console.error('unable to transform image http url into blob', e)
+        toast('Unable to load image from this website, please download and upload the image manually.', 'error')
       }
     } else if (imageUrl.match(/^data:image\/([a-z]+);base64,/)) {
       try {
