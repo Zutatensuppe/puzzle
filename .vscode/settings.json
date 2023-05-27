@@ -2,5 +2,6 @@
   "editor.codeActionsOnSave": {
     "source.fixAll.eslint": true
   },
-  "eslint.validate": ["typescript", "javascript"]
+  "eslint.validate": ["typescript", "javascript"],
+  "eslint.workingDirectories": ["frontend", "server", "common"]
 }

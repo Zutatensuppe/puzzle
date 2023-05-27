@@ -1,0 +1,21 @@
+{
+  "compilerOptions": {
+    "target": "es2020",
+    "module": "es2020",
+
+    "allowSyntheticDefaultImports": true,
+
+    "strict": true,
+    "moduleResolution": "node",
+    "paths": {
+      "~common/*": ["../common/src/*"]
+    },
+    "rootDirs": [
+      "src",
+      "../common/src"
+    ]
+  },
+  "include": [
+    "src/**/*.ts", "src/**/*.d.ts", "../common/src/*"
+  ]
+}
