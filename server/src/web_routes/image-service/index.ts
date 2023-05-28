@@ -1,7 +1,6 @@
 import express, { Request, Response, Router } from 'express'
 import path from 'path'
 import config from '../../Config'
-import sharp from 'sharp'
 import { ServerInterface } from '../../Server'
 
 export default function createRouter(
@@ -25,7 +24,11 @@ export default function createRouter(
         res.status(400).send('x, y must be numbers')
         return
       }
-      const resizedFilename = await server.getImageResize().resizeImage(filename, w, h, fit as keyof sharp.FitEnum)
+      if (fit !== 'contain' && fit !== 'cover') {
+        res.status(400).send(`fit must be 'contain' or 'cover'`)
+        return
+      }
+      const resizedFilename = await server.getImageResize().resizeImage(filename, w, h, fit)
       if (!resizedFilename) {
         res.status(500).send('unable to resize image')
         return
