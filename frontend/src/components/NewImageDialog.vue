@@ -188,6 +188,16 @@ import { toast } from '../toast'
 
 const log = logger('NewImageDialog.vue')
 
+const fileToBlob = async (imageFile: File): Promise<Blob | null> => {
+  return new Promise<Blob | null>((resolve) => {
+    const r = new FileReader()
+    r.readAsDataURL(imageFile)
+    r.onload = async (ev: any) => {
+      resolve(await imageUrlToBlob(ev.target.result))
+    }
+  })
+}
+
 const imageUrlToBlob = async (imageUrl: string): Promise<Blob | null> => {
   const imageElement = await imageUrlToImageElement(imageUrl)
   const canvasElement = await imageElementToCanvas(imageElement)
@@ -395,19 +405,24 @@ const setupGameClick = () => {
   reset()
 }
 
-const onDrop = (evt: DragEvent): boolean => {
+const onDrop = async (evt: DragEvent): Promise<boolean> => {
   droppable.value = false
   const img = imageFromDragEvt(evt)
   if (!img) {
     return false
   }
-  const f = img.getAsFile()
-  if (!f) {
+  evt.preventDefault()
+  const file = img.getAsFile()
+  if (!file) {
+    toast('Image could not be loaded (Error 1)', 'error')
     return false
   }
-  file.value = f
+  const f = await fileToBlob(file)
+  if (!f) {
+    toast('Image could not be loaded (Error 2)', 'error')
+    return false
+  }
   preview(f)
-  evt.preventDefault()
   return false
 }
 
