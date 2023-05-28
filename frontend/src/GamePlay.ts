@@ -9,7 +9,7 @@ import Util from '../../common/src/Util'
 
 export class GamePlay extends Game<Hud> {
 
-  private updateStatusInterval: number | null = null
+  private updateStatusInterval: NodeJS.Timeout | null = null
 
   async connect(): Promise<void> {
     Communication.onConnectionStateChange((state) => {

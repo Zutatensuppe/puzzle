@@ -71,25 +71,25 @@ $bg-color-transparent: rgba(0 0 0 / 70%);
   grid-gap: 10px;
 }
 
-@media (max-width: 1650px) {
+@media (width <= 1650px) {
   .finished-games {
     grid-template-columns: auto auto auto auto;
   }
 }
 
-@media (max-width: 1300px) {
+@media (width <= 1300px) {
   .finished-games {
     grid-template-columns: auto auto auto;
   }
 }
 
-@media (max-width: 1000px) {
+@media (width <= 1000px) {
   .finished-games {
     grid-template-columns: auto auto;
   }
 }
 
-@media (max-width: 700px) {
+@media (width <= 700px) {
   .finished-games {
     grid-template-columns: auto;
   }
@@ -109,7 +109,7 @@ $bg-color-transparent: rgba(0 0 0 / 70%);
   }
 }
 
-@media (max-width: 1300px) {
+@media (width <= 1300px) {
   .running-games-and-leaderboard {
     grid-template-columns: auto;
 
@@ -128,19 +128,19 @@ $bg-color-transparent: rgba(0 0 0 / 70%);
   grid-template-columns: auto !important;
 }
 
-@media (max-width: 1500px) {
+@media (width <= 1500px) {
   .running-games {
     grid-template-columns: auto auto;
   }
 }
 
-@media (max-width: 1300px) {
+@media (width <= 1300px) {
   .running-games {
     grid-template-columns: auto auto;
   }
 }
 
-@media (max-width: 1000px) {
+@media (width <= 1000px) {
   .running-games {
     grid-template-columns: auto;
   }
@@ -227,10 +227,7 @@ $bg-color-transparent: rgba(0 0 0 / 70%);
 
   .game-teaser-inner {
     position: absolute;
-    left: 0;
-    right: 0;
-    top: 0;
-    bottom: 0;
+    inset: 0;
     background: rgba(0 0 0 / 10%);
     padding: 1em;
     font-size: 13px;
@@ -440,10 +437,7 @@ html.view-replay body { overflow: hidden; }
 
   .imageteaser-inner {
     position: absolute;
-    left: 0;
-    right: 0;
-    top: 0;
-    bottom: 0;
+    inset: 0;
     background: rgba(0 0 0 / 10%);
     padding: 1em;
   }
@@ -515,10 +509,7 @@ html.view-replay body { overflow: hidden; }
 
 .upload {
   position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
+  inset: 0;
   cursor: pointer;
 
   .upload-content {
@@ -572,10 +563,7 @@ kbd {
 .v-dialog.overlay-preview {
   .v-overlay__content {
     position: absolute;
-    top: 0;
-    left: 0;
-    bottom: 0;
-    right: 0;
+    inset: 0;
     transform: none;
     padding: 0;
     border: 0;
@@ -587,17 +575,11 @@ kbd {
 
     .v-card {
       position: absolute;
-      top: 0;
-      left: 0;
-      bottom: 0;
-      right: 0;
+      inset: 0;
     }
 
     .preview {
-      top: 20px;
-      left: 20px;
-      bottom: 20px;
-      right: 20px;
+      inset: 20px;
       position: absolute;
       z-index: 100;
 
