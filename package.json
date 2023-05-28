@@ -7,12 +7,23 @@
     "setup:frontend": "cd frontend && npm ci",
     "setup:server": "cd server && npm ci",
     "setup": "npm ci && npm run setup:common && npm run setup:frontend && npm run setup:server",
+
     "build:frontend": "cd frontend && npm run build",
     "build:server": "cd server && npm run build",
     "build:versionfile": "git rev-parse --short HEAD > build/version.txt",
     "build:app": "npm run build:frontend && npm run build:server && npm run build:versionfile",
     "build:archive": "rimraf dist/build.zip && 7z a -mx0 dist/build.zip ./build/* ./db",
-    "build": "npm run build:app && npm run build:archive"
+    "build": "npm run build:app && npm run build:archive",
+
+    "lint:common": "cd common && npm run lint",
+    "lint:frontend": "cd frontend && npm run lint",
+    "lint:server": "cd server && npm run lint",
+    "lint": "npm run lint:common && npm run lint:frontend && npm run lint:server",
+
+    "test:common": "cd common && npm run test",
+    "test:frontend": "cd frontend && npm run test",
+    "test:server": "cd server && npm run test",
+    "test": "npm run test:common && npm run test:frontend && npm run test:server"
   },
   "author": "Zutatensuppe",
   "license": "ISC",

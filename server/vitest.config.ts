@@ -1,4 +1,4 @@
-process.env.APP_CONFIG='config.example.json'
+process.env.APP_CONFIG='../config.example.json'
 
 export default {
 }
