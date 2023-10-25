@@ -193,10 +193,6 @@ export class Server implements ServerInterface {
     wss.on('message', async (
       {socket, data} : { socket: WebSocket, data: string },
     ): Promise<void> => {
-      if (!data) {
-        // no data (maybe ping :3)
-        return
-      }
       try {
         const proto = socket.protocol.split('|')
         const clientId = proto[0]

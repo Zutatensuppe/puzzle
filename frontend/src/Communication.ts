@@ -65,18 +65,30 @@ let clientSeq: number
 let events: Record<number, GameEvent>
 
 let timerId: any = 0
+let gotPong: boolean = false
+let pongWaitTimerId: any = 0
 
 function keepAlive(timeout = 20000) {
-    if (ws.readyState == ws.OPEN) {
-        ws.send('')
+  if (ws && ws.readyState == ws.OPEN) {
+    gotPong = false
+    ws.send('PING')
+    if (pongWaitTimerId) {
+      clearTimeout(pongWaitTimerId)
     }
-    timerId = setTimeout(keepAlive, timeout)
+    pongWaitTimerId = setTimeout(() => {
+      if (!gotPong && ws) {
+        // close without custom disconnect, to trigger reconnect
+        ws.close()
+      }
+    }, 1000) // server should answer more quickly in reality
+  }
+  timerId = setTimeout(keepAlive, timeout)
 }
 
 function cancelKeepAlive() {
-    if (timerId) {
-        clearTimeout(timerId)
-    }
+  if (timerId) {
+    clearTimeout(timerId)
+  }
 }
 
 function connect(
@@ -90,9 +102,18 @@ function connect(
     ws.onopen = () => {
       setConnectionState(CONN_STATE_CONNECTED)
       send([Protocol.EV_CLIENT_INIT])
-      keepAlive()
     }
     ws.onmessage = (e: MessageEvent) => {
+      if (e.data === 'SERVER_INIT') {
+        keepAlive()
+        return
+      }
+
+      if (e.data === 'PONG') {
+        gotPong = true
+        return
+      }
+
       const msg: ServerEvent = JSON.parse(e.data)
       const msgType = msg[0]
       if (msgType === Protocol.EV_SERVER_INIT) {

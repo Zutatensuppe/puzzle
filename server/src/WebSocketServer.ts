@@ -60,12 +60,19 @@ class WebSocketServer {
       }
       socket.on('message', (data: WebSocket.Data) => {
         const strData = String(data)
+        if (strData === 'PING') {
+          socket.send('PONG')
+          return
+        }
+
         log.log(`ws`, socket.protocol, strData)
         this.evt.dispatch('message', {socket, data: strData})
       })
       socket.on('close', () => {
         this.evt.dispatch('close', {socket})
       })
+
+      socket.send('SERVER_INIT')
     })
   }
 
