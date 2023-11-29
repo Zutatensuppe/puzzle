@@ -55,8 +55,7 @@ export abstract class Game<HudType extends Hud> {
   private fireworks!: FireworksInterface
   private renderer!: Renderer
 
-  private tableWidth: number = 0
-  private tableHeight: number = 0
+  private tableDim!: Dim
   private boardDim!: Dim
 
   private isInterfaceVisible: boolean = true
@@ -142,8 +141,9 @@ export abstract class Game<HudType extends Hud> {
 
     const puzzleWidth = GameCommon.getPuzzleWidth(this.gameId)
     const puzzleHeight = GameCommon.getPuzzleHeight(this.gameId)
-    this.tableWidth = GameCommon.getTableWidth(this.gameId)
-    this.tableHeight = GameCommon.getTableHeight(this.gameId)
+    const tableWidth = GameCommon.getTableWidth(this.gameId)
+    const tableHeight = GameCommon.getTableHeight(this.gameId)
+    this.tableDim = { w: tableWidth, h: tableHeight }
     this.boardDim = { w: puzzleWidth, h: puzzleHeight }
     this.evts = new EventAdapter(this)
     this.viewportSnapshots = new ViewportSnapshots(this.evts, this.viewport)
@@ -155,26 +155,15 @@ export abstract class Game<HudType extends Hud> {
     this.hud.setPuzzleCut()
 
     this.renderer = new Renderer(this.gameId, this.canvas, this.viewport, this.fireworks)
-    await this.renderer.init(graphics)
+    const windowDim = { w: window.innerWidth, h: window.innerHeight }
+    await this.renderer.init(windowDim, graphics)
     const puzzleTable = new PuzzleTable(this.gameId, this.assets, graphics)
     await puzzleTable.init()
     this.renderer.puzzleTable = puzzleTable
 
-    // initialize some view data
-    // this global data will change according to input events
-
-    // theoretically we need to recalculate this when window resizes
-    // but it probably doesnt matter so much
-    this.viewport.calculateZoomCapping(
-      window.innerWidth,
-      window.innerHeight,
-      this.tableWidth,
-      this.tableHeight,
-    )
-
     this.registerEvents()
 
-    this.initCenterPuzzle()
+    this.initViewport()
 
     this.puzzleStatus = new PuzzleStatus(this)
     this.puzzleStatus.update(this.time())
@@ -188,8 +177,17 @@ export abstract class Game<HudType extends Hud> {
     this.playerCursors.updatePlayerCursorColor(this.playerSettings.color())
   }
 
-  initCenterPuzzle(): void {
-    this.centerPuzzle()
+  initViewport(): void {
+    // initialize some view data
+    // this global data will change according to input events
+
+    // theoretically we need to recalculate this when window resizes
+    // but it probably doesnt matter so much
+
+    const windowDim = { w: window.innerWidth, h: window.innerHeight }
+    this.viewport.calculateZoomCapping(windowDim, this.tableDim)
+    const canvasDim = { w: this.canvas.width, h: this.canvas.height }
+    this.viewport.centerFit(canvasDim, this.tableDim, this.boardDim)
     this.viewportSnapshots.snap('center')
   }
 
@@ -224,29 +222,6 @@ export abstract class Game<HudType extends Hud> {
 
   shouldDrawPlayer(player: Player): boolean {
     return player.id !== this.clientId
-  }
-
-  centerPuzzle(): void {
-    // center on the puzzle
-    this.viewport.reset()
-    this.viewport.move(
-      -(this.tableWidth - this.canvas.width) /2,
-      -(this.tableHeight - this.canvas.height) /2,
-    )
-
-    // zoom viewport to fit whole puzzle in
-    const x = this.viewport.worldDimToViewportRaw(this.boardDim)
-    const border = 20
-    const targetW = this.canvas.width - (border * 2)
-    const targetH = this.canvas.height - (border * 2)
-    if (
-      (x.w > targetW || x.h > targetH)
-      || (x.w < targetW && x.h < targetH)
-    ) {
-      const zoom = Math.min(targetW / x.w, targetH / x.h)
-      const center = { x: this.canvas.width / 2, y: this.canvas.height / 2 }
-      this.viewport.setZoom(zoom, center)
-    }
   }
 
   justFinished(): boolean {

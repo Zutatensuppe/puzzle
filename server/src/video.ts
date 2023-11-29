@@ -1,6 +1,6 @@
 // http://localhost:5173/replay/li7cstret0s2ijzjjuh
 
-import { Game, Piece, Player, ReplayData, Timestamp } from '../../common/src/Types'
+import { Game, PLAYER_SETTINGS_DEFAULTS, Piece, Player, ReplayData, Timestamp } from '../../common/src/Types'
 import { createCanvas, CanvasRenderingContext2D } from 'canvas'
 // @ts-ignore
 import { polyfillPath2D } from 'path2d-polyfill'
@@ -22,6 +22,7 @@ polyfillPath2D(global)
 
 const BASE_URL = 'http://localhost:5173'
 const OUT_DIR = __dirname + '/out'
+const DIM = { w: 1024, h: 768 }
 
 const loadLog = async () => {
   // load via api
@@ -54,32 +55,17 @@ const loadLog = async () => {
 
 const createImages = async (game: Game, completeLog: any[]) => {
   const gameId = game.id
-
-  const canvas = createCanvas(1024, 768)
-
+  const canvas = createCanvas(DIM.w, DIM.h) as unknown as HTMLCanvasElement
   const graphics = new Graphics(BASE_URL)
   const assets = new Assets()
   await assets.init(graphics)
-  const playerCursors = new PlayerCursors(
-    canvas as unknown as HTMLCanvasElement,
-    assets,
-    graphics,
-  )
+  const playerCursors = new PlayerCursors(canvas, assets, graphics)
   const viewport = new Camera()
-
   GameCommon.setGame(gameId, game)
-  const fireworks = new fireworksController(
-    canvas as unknown as HTMLCanvasElement,
-    GameCommon.getRng(gameId),
-  )
-  const renderer = new Renderer(
-    gameId,
-    canvas as unknown as HTMLCanvasElement,
-    viewport,
-    fireworks,
-  )
-  await renderer.init(graphics)
-
+  const rng = GameCommon.getRng(gameId)
+  const fireworks = new fireworksController(canvas, rng)
+  const renderer = new Renderer(gameId, canvas, viewport, fireworks)
+  await renderer.init(DIM, graphics)
   const puzzleTable = new PuzzleTable(gameId, assets, graphics)
   await puzzleTable.init()
   renderer.puzzleTable = puzzleTable
@@ -88,15 +74,15 @@ const createImages = async (game: Game, completeLog: any[]) => {
   let gameTs = parseInt(completeLog[0][4], 10)
 
   const playerSettings = {
-    background: '#ababab',
-    showTable: true,
-    tableTexture: 'dark',
-    color: '#ffffff',
-    name: 'none',
-    soundsEnabled: false,
-    otherPlayerClickSoundEnabled: false,
-    soundsVolume: 0,
-    showPlayerNames: true,
+    background: PLAYER_SETTINGS_DEFAULTS.COLOR_BACKGROUND,
+    showTable: PLAYER_SETTINGS_DEFAULTS.SHOW_TABLE,
+    tableTexture: PLAYER_SETTINGS_DEFAULTS.TABLE_TEXTURE,
+    color: PLAYER_SETTINGS_DEFAULTS.PLAYER_COLOR,
+    name: PLAYER_SETTINGS_DEFAULTS.PLAYER_NAME,
+    soundsEnabled: PLAYER_SETTINGS_DEFAULTS.SOUND_ENABLED,
+    otherPlayerClickSoundEnabled: PLAYER_SETTINGS_DEFAULTS.OTHER_PLAYER_CLICK_SOUND_ENABLED,
+    soundsVolume: PLAYER_SETTINGS_DEFAULTS.SOUND_VOLUME,
+    showPlayerNames: PLAYER_SETTINGS_DEFAULTS.SHOW_PLAYER_NAMES,
   }
 
   let i = 1

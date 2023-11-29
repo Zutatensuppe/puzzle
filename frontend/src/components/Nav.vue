@@ -20,7 +20,7 @@
         </div>
         <div class="justify-center">
           <img
-            src="./../assets/gfx/icon.png"
+            src="./../../../common/src/assets/gfx/icon.png"
             class="mr-4"
             :class="{ index: route.name === 'index' }"
           >

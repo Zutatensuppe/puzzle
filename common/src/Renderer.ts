@@ -15,8 +15,7 @@ export class Renderer {
   private bitmaps!: ImageBitmap[]
   public puzzleTable!: PuzzleTableInterface
 
-  private tableWidth: number = 0
-  private tableHeight: number = 0
+  private tableDim!: Dim
   private tableBounds!: Rect
   private boardPos!: Point
   private boardDim!: Dim
@@ -35,12 +34,15 @@ export class Renderer {
     const pieceDrawSize = GameCommon.getPieceDrawSize(this.gameId)
     const puzzleWidth = GameCommon.getPuzzleWidth(this.gameId)
     const puzzleHeight = GameCommon.getPuzzleHeight(this.gameId)
-    this.tableWidth = GameCommon.getTableWidth(this.gameId)
-    this.tableHeight = GameCommon.getTableHeight(this.gameId)
-
+    const tableWidth = GameCommon.getTableWidth(this.gameId)
+    const tableHeight = GameCommon.getTableHeight(this.gameId)
+    this.tableDim = {
+      w: tableWidth,
+      h: tableHeight,
+    }
     this.boardPos = {
-      x: (this.tableWidth - puzzleWidth) / 2,
-      y: (this.tableHeight - puzzleHeight) / 2,
+      x: (this.tableDim.w - puzzleWidth) / 2,
+      y: (this.tableDim.h - puzzleHeight) / 2,
     }
     this.boardDim = {
       w: puzzleWidth,
@@ -53,38 +55,18 @@ export class Renderer {
     this.tableBounds = GameCommon.getBounds(this.gameId)
   }
 
-  async init (graphics: GraphicsInterface) {
+  async init (windowDim: Dim, graphics: GraphicsInterface) {
     this.bitmaps = await PuzzleGraphics.loadPuzzleBitmaps(
       GameCommon.getPuzzle(this.gameId),
       GameCommon.getImageUrl(this.gameId),
       graphics,
     )
-    this.viewport.calculateZoomCapping(
-      1024,
-      768,
-      this.tableWidth,
-      this.tableHeight,
+    this.viewport.calculateZoomCapping(windowDim, this.tableDim)
+    this.viewport.centerFit(
+      { w: this.canvas.width, h: this.canvas.height },
+      this.tableDim,
+      this.boardDim,
     )
-    // center on the puzzle
-    this.viewport.reset()
-    this.viewport.move(
-      -(this.tableWidth - this.canvas.width) /2,
-      -(this.tableHeight - this.canvas.height) /2,
-    )
-
-    // zoom viewport to fit whole puzzle in
-    const x = this.viewport.worldDimToViewportRaw(this.boardDim)
-    const border = 20
-    const targetW = this.canvas.width - (border * 2)
-    const targetH = this.canvas.height - (border * 2)
-    if (
-      (x.w > targetW || x.h > targetH)
-      || (x.w < targetW && x.h < targetH)
-    ) {
-      const zoom = Math.min(targetW / x.w, targetH / x.h)
-      const center = { x: this.canvas.width / 2, y: this.canvas.height / 2 }
-      this.viewport.setZoom(zoom, center)
-    }
   }
 
   async render (
