@@ -243,11 +243,27 @@ export interface Player {
   ts: Timestamp
 }
 
+export interface PlayerSettingsData {
+  background: string
+  showTable: boolean
+  tableTexture: string
+  color: string
+  name: string
+  soundsEnabled: boolean
+  otherPlayerClickSoundEnabled: boolean
+  soundsVolume: number
+  showPlayerNames: boolean
+}
+
 export interface PuzzleStatus {
   finished: boolean
   duration: number
   piecesDone: number
   piecesTotal: number
+}
+
+export interface PuzzleStatusInterface {
+  update(ts: number): void
 }
 
 export interface PlayerChange {
@@ -260,6 +276,13 @@ export interface PlayerChange {
   bgcolor?: string|null
   points?: number
   ts?: Timestamp
+}
+
+export interface FireworksInterface {
+  init(): void
+  update(): void
+  render(): void
+  resize(): void
 }
 
 export enum ScoreMode {
@@ -438,4 +461,45 @@ export const isImageSearchSort = (sort: any): sort is ImageSearchSort => {
     'game_count_asc',
     'game_count_desc',
   ].includes(sort)
+}
+
+export interface GraphicsInterface {
+  createCanvas: (width: number, height: number) => any // HTMLCanvasElement | Canvas
+  loadImageToBitmap: (puzzleImageUrl: string) => any // ImageBitmap
+  resizeBitmap: (bitmap: any, width: number, height: number) => any // ImageBitmap
+  createImageBitmapFromCanvas: (canvas: any) => any // ImageBitmap
+  repeat: (bitmap: any, rect: Rect, scale: number) => any // HTMLCanvasElement
+  colorizedCanvas (bitmap: any, mask: any, color: string): any // HTMLCanvasElement
+}
+
+export interface PlayerCursorsInterface {
+  readonly CURSOR_W: number
+  readonly CURSOR_W_2: number
+  readonly CURSOR_H: number
+  readonly CURSOR_H_2: number
+
+  get (p: Player): Promise<ImageBitmap>
+}
+
+export interface AssetsInterface {
+  Audio: {
+    CLICK: HTMLAudioElement | null
+    CLICK_2: HTMLAudioElement | null
+  }
+  Gfx: {
+    GRAB: ImageBitmap
+    HAND: ImageBitmap
+    GRAB_MASK: ImageBitmap
+    HAND_MASK: ImageBitmap
+  }
+  Textures: {
+    WOOD_DARK: ImageBitmap
+    WOOD_LIGHT: ImageBitmap
+    OAK_BROWN: ImageBitmap
+  }
+}
+
+export interface PuzzleTableInterface {
+  init(): Promise<void>
+  getImage(textureName: string): CanvasImageSource | undefined
 }

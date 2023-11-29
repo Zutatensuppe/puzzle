@@ -1,24 +1,50 @@
 'use strict'
 
+import fs from 'fs'
 import { Rect } from './Geometry'
-import { GraphicsInterface } from '../../common/src/Types'
+import { createCanvas as cCreateCanvas, Canvas, Image } from 'canvas'
+import { GraphicsInterface } from './Types'
 
 export class Graphics implements GraphicsInterface {
+  constructor(
+    private readonly baseUrl: string,
+  ) {
+    // pass
+  }
   createCanvas(width:number = 0, height:number = 0): HTMLCanvasElement {
-      const c = document.createElement('canvas')
-      c.width = width
-      c.height = height
-      return c
+    return cCreateCanvas(width, height) as unknown as HTMLCanvasElement
+  }
+
+  private async bufferToImageBitmap (buffer: ArrayBuffer): Promise<ImageBitmap> {
+    const img = new Image()
+    await new Promise<void>(rs => {
+      img.onload = rs
+      img.src = Buffer.from(buffer)
+    })
+    return img as unknown as ImageBitmap
+  }
+
+  async createImageBitmapFromCanvas (canvas: HTMLCanvasElement): Promise<ImageBitmap> {
+    const ab = (canvas as unknown as Canvas).toBuffer('image/png')
+    return await this.bufferToImageBitmap(ab)
+  }
+
+  async createImageBitmapFromBlob (blob: Blob): Promise<ImageBitmap> {
+    const ab = await blob.arrayBuffer()
+    return await this.bufferToImageBitmap(ab)
   }
 
   async loadImageToBitmap(imagePath: string): Promise<ImageBitmap> {
-    return new Promise((resolve) => {
-      const img = new Image()
-      img.onload = () => {
-        createImageBitmap(img).then(resolve)
-      }
-      img.src = imagePath
-    })
+    if (imagePath.startsWith('/image-service/')) {
+      const blob = await fetch(this.baseUrl + imagePath).then(res => res.blob())
+      const bitmap = await this.createImageBitmapFromBlob(blob)
+      return bitmap
+    }
+
+    const buff = fs.readFileSync(imagePath)
+    const blob = new Blob([buff])
+    const bitmap = await this.createImageBitmapFromBlob(blob)
+    return bitmap
   }
 
   async resizeBitmap (
@@ -29,7 +55,8 @@ export class Graphics implements GraphicsInterface {
     const c = this.createCanvas(width, height)
     const ctx = c.getContext('2d') as CanvasRenderingContext2D
     ctx.drawImage(bitmap, 0, 0, bitmap.width, bitmap.height, 0, 0, width, height)
-    return await createImageBitmap(c)
+    const resizedBitmap = await this.createImageBitmapFromCanvas(c)
+    return resizedBitmap
   }
 
   colorizedCanvas(
@@ -112,9 +139,5 @@ export class Graphics implements GraphicsInterface {
       }
     }
     return c
-  }
-
-  async createImageBitmapFromCanvas(c: HTMLCanvasElement) {
-    return await createImageBitmap(c)
   }
 }

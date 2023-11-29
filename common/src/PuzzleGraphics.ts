@@ -1,11 +1,10 @@
 'use strict'
 
-import Geometry, { Dim, Point, Rect } from '../../common/src/Geometry'
-import Graphics from './Graphics'
-import Util, { logger } from './../../common/src/Util'
-import { Puzzle, PuzzleInfo, PieceShape, EncodedPiece, ShapeMode } from './../../common/src/Types'
-import { determinePuzzlePieceShapes, PuzzleCreationInfo } from '../../common/src/Puzzle'
-import { Rng } from '../../common/src/Rng'
+import Geometry, { Dim, Point, Rect } from './Geometry'
+import Util, { logger } from './Util'
+import { Puzzle, PuzzleInfo, PieceShape, EncodedPiece, ShapeMode, GraphicsInterface } from './Types'
+import { determinePuzzlePieceShapes, PuzzleCreationInfo } from './Puzzle'
+import { Rng } from './Rng'
 
 const log = logger('PuzzleGraphics.js')
 
@@ -111,6 +110,7 @@ async function createPuzzleTileBitmaps(
   img: ImageBitmap,
   pieces: EncodedPiece[],
   info: PuzzleInfo,
+  graphics: GraphicsInterface,
 ): Promise<Array<ImageBitmap>> {
   log.log('start createPuzzleTileBitmaps')
   const pieceSize = info.tileSize
@@ -128,10 +128,10 @@ async function createPuzzleTileBitmaps(
     return paths[key]
   }
 
-  const c = Graphics.createCanvas(pieceDrawSize, pieceDrawSize)
+  const c = graphics.createCanvas(pieceDrawSize, pieceDrawSize)
   const ctx = c.getContext('2d') as CanvasRenderingContext2D
 
-  const c2 = Graphics.createCanvas(pieceDrawSize, pieceDrawSize)
+  const c2 = graphics.createCanvas(pieceDrawSize, pieceDrawSize)
   const ctx2 = c2.getContext('2d') as CanvasRenderingContext2D
 
   for (const p of pieces) {
@@ -236,7 +236,7 @@ async function createPuzzleTileBitmaps(
     ctx2.restore()
     ctx.drawImage(c2, 0, 0)
 
-    bitmaps[piece.idx] = await createImageBitmap(c)
+    bitmaps[piece.idx] = await graphics.createImageBitmapFromCanvas(c)
   }
 
   log.log('end createPuzzleTileBitmaps')
@@ -253,15 +253,19 @@ function srcRectByIdx(puzzleInfo: PuzzleInfo, idx: number): Rect {
   }
 }
 
-async function loadPuzzleBitmaps(puzzle: Puzzle, puzzleImageUrl: string): Promise<Array<ImageBitmap>> {
+async function loadPuzzleBitmaps(
+  puzzle: Puzzle,
+  puzzleImageUrl: string,
+  graphics: GraphicsInterface,
+): Promise<Array<ImageBitmap>> {
   // load bitmap, to determine the original size of the image
-  const bmp = await Graphics.loadImageToBitmap(puzzleImageUrl)
+  const bmp = await graphics.loadImageToBitmap(puzzleImageUrl)
 
   // creation of tile bitmaps
   // then create the final puzzle bitmap
   // NOTE: this can decrease OR increase in size!
-  const bmpResized = await Graphics.resizeBitmap(bmp, puzzle.info.width, puzzle.info.height)
-  return await createPuzzleTileBitmaps(bmpResized, puzzle.tiles, puzzle.info)
+  const bmpResized = await graphics.resizeBitmap(bmp, puzzle.info.width, puzzle.info.height)
+  return await createPuzzleTileBitmaps(bmpResized, puzzle.tiles, puzzle.info, graphics)
 }
 
 export default {

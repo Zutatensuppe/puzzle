@@ -1,4 +1,4 @@
-import { Dim, Point } from '../../common/src/Geometry'
+import { Dim, Point } from './Geometry'
 
 let MIN_ZOOM = .1
 const MAX_ZOOM = 6

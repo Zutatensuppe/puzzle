@@ -1,17 +1,32 @@
-import { Dim, Point, Rect } from '../../common/src/Geometry'
-import { Assets } from './Assets'
-import Graphics from './Graphics'
+import { Dim, Point, Rect } from './Geometry'
+import GameCommon from './GameCommon'
+import { AssetsInterface, GraphicsInterface } from './Types'
 
 export class PuzzleTable {
   private images: Record<string, CanvasImageSource> = {}
+  private bounds: Rect
+  private boardPos: Point
+  private boardDim: Dim
 
   constructor(
-    private bounds: Rect,
-    private assets: Assets,
-    private boardPos: Point,
-    private boardDim: Dim,
+    gameId: string,
+    private assets: AssetsInterface,
+    private graphics: GraphicsInterface,
   ) {
-    // pass
+    this.bounds = GameCommon.getBounds(gameId)
+    const tableWidth = GameCommon.getTableWidth(gameId)
+    const tableHeight = GameCommon.getTableHeight(gameId)
+    const puzzleWidth = GameCommon.getPuzzleWidth(gameId)
+    const puzzleHeight = GameCommon.getPuzzleHeight(gameId)
+
+    this.boardPos = {
+      x: (tableWidth - puzzleWidth) / 2,
+      y: (tableHeight - puzzleHeight) / 2,
+    }
+    this.boardDim = {
+      w: puzzleWidth,
+      h: puzzleHeight,
+    }
   }
 
   async init() {
@@ -25,7 +40,7 @@ export class PuzzleTable {
   }
 
   async _createTableGfx (bitmap: ImageBitmap, isDark: boolean): Promise<CanvasImageSource> {
-    const tableCanvas = Graphics.repeat(bitmap, this.bounds, 3)
+    const tableCanvas = this.graphics.repeat(bitmap, this.bounds, 3)
 
     const adjustedBounds: Dim = { w: tableCanvas.width, h: tableCanvas.height }
     const ratio = adjustedBounds.w /this.bounds.w
@@ -107,6 +122,6 @@ export class PuzzleTable {
       )
     }
 
-    return await createImageBitmap(tableCanvas)
+    return await this.graphics.createImageBitmapFromCanvas(tableCanvas)
   }
 }

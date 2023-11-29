@@ -2,6 +2,7 @@ import { MODE_REPLAY } from './GameMode'
 import storage from './storage'
 import GameCommon from '../../common/src/GameCommon'
 import { Game } from './Game'
+import { PlayerSettingsData } from '../../common/src/Types'
 
 const SETTINGS = {
   SOUND_VOLUME: 'sound_volume',
@@ -25,18 +26,6 @@ const DEFAULTS = {
   PLAYER_COLOR: '#ffffff',
   PLAYER_NAME: 'anon',
   SHOW_PLAYER_NAMES: true,
-}
-
-interface PlayerSettingsData {
-  background: string
-  showTable: boolean
-  tableTexture: string
-  color: string
-  name: string
-  soundsEnabled: boolean
-  otherPlayerClickSoundEnabled: boolean
-  soundsVolume: number
-  showPlayerNames: boolean
 }
 
 export class PlayerSettings {
@@ -67,6 +56,10 @@ export class PlayerSettings {
       this.settings.name = GameCommon.getPlayerName(this.game.getGameId(), this.game.getClientId())
         || storage.getStr(SETTINGS.PLAYER_NAME, DEFAULTS.PLAYER_NAME)
     }
+  }
+
+  getSettings(): PlayerSettingsData {
+    return this.settings
   }
 
   showStatusMessage(what: string, value: any = undefined) {

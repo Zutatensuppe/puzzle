@@ -906,6 +906,37 @@ function handleInput(
   return changes
 }
 
+function handleLogEntry(
+  gameId: string,
+  logEntry: any[],
+  ts: Timestamp,
+): boolean {
+  const entry = logEntry
+  if (entry[0] === Protocol.LOG_ADD_PLAYER) {
+    const playerId = entry[1]
+    addPlayer(gameId, playerId, ts)
+    return true
+  }
+  if (entry[0] === Protocol.LOG_UPDATE_PLAYER) {
+    const playerId = getPlayerIdByIndex(gameId, entry[1])
+    if (!playerId) {
+      throw '[ 2021-05-17 player not found (update player) ]'
+    }
+    addPlayer(gameId, playerId, ts)
+    return true
+  }
+  if (entry[0] === Protocol.LOG_HANDLE_INPUT) {
+    const playerId = getPlayerIdByIndex(gameId, entry[1])
+    if (!playerId) {
+      throw '[ 2021-05-17 player not found (handle input) ]'
+    }
+    const input = entry[2]
+    handleInput(gameId, playerId, input, ts)
+    return true
+  }
+  return false
+}
+
 // functions that operate on given game instance instead of global one
 // -------------------------------------------------------------------
 
@@ -1024,6 +1055,7 @@ export default {
   getSnapMode,
   getShapeMode,
   handleInput,
+  handleLogEntry,
 
   /// operate directly on the game object given
   Game_isPrivate,

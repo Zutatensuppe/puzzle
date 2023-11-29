@@ -1,7 +1,8 @@
 import GameCommon from '../../common/src/GameCommon'
 import { Game } from './Game'
+import { PuzzleStatusInterface } from '../../common/src/Types'
 
-export class PuzzleStatus {
+export class PuzzleStatus implements PuzzleStatusInterface {
   constructor(private game: Game<any>) {
     // pass
   }

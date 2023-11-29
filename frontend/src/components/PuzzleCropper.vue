@@ -17,7 +17,7 @@ import { Dim, Point, Rect } from '../../../common/src/Geometry'
 import { clamp } from '../../../common/src/Util'
 import { PuzzleCreationInfo } from '../../../common/src/Puzzle'
 import { ImageInfo, ShapeMode } from '../../../common/src/Types'
-import { drawPuzzlePreview } from '../PuzzleGraphics'
+import { drawPuzzlePreview } from '../../../common/src/PuzzleGraphics'
 import { NEWGAME_MAX_PIECES, NEWGAME_MIN_PIECES } from '../../../common/src/GameCommon'
 
 const props = defineProps<{

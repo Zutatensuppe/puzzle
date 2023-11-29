@@ -7,6 +7,7 @@
     "build:app": "esbuild --sourcemap src/main.ts --external:pg-native --platform=node --bundle --minify --outfile=../build/server/main.js",
     "build": "npm run build:app && npm run build:copyassets",
     "start": "ts-node-dev --respawn src/main.ts",
+    "video": "ts-node-dev src/video.ts",
     "lint": "tsc --noEmit && eslint src",
     "test": "vitest --run"
   },
@@ -14,6 +15,7 @@
   "license": "ISC",
   "dependencies": {
     "async-mutex": "^0.4.0",
+    "canvas": "^2.11.2",
     "compression": "^1.7.4",
     "cookie-parser": "^1.4.6",
     "dotenv": "^16.0.3",
@@ -23,6 +25,7 @@
     "jimp": "^0.22.8",
     "jsonwebtoken": "^9.0.0",
     "multer": "^1.4.5-lts.1",
+    "path2d-polyfill": "^2.0.1",
     "pg": "^8.11.0",
     "probe-image-size": "^7.2.3",
     "request": "^2.88.2",

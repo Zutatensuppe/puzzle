@@ -1,6 +1,6 @@
 import Protocol from '../../common/src/Protocol'
 import { GameEvent } from '../../common/src/Types'
-import { Camera, Snapshot } from './Camera'
+import { Camera, Snapshot } from '../../common/src/Camera'
 import { Game } from './Game'
 import { MODE_REPLAY } from './GameMode'
 

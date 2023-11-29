@@ -1,6 +1,7 @@
 'use strict'
 
-import { Rng } from '../../common/src/Rng'
+import { Rng } from './Rng'
+import { FireworksInterface } from './Types'
 
 let minVx = -10
 let deltaVx = 20
@@ -148,7 +149,7 @@ class Particle {
   }
 }
 
-class Controller {
+class Controller implements FireworksInterface {
   canvas: HTMLCanvasElement
   rng: Rng
   ctx: CanvasRenderingContext2D
@@ -164,10 +165,6 @@ class Controller {
     this.readyBombs = []
     this.explodedBombs = []
     this.particles = []
-
-    window.addEventListener('resize', () => {
-      this.resize()
-    })
   }
 
   setSpeedParams(): void {
