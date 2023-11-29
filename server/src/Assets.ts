@@ -25,16 +25,16 @@ export class Assets implements AssetsInterface{
     }
 
     this.Gfx = {
-      GRAB: await graphics.loadImageToBitmap(__dirname + '/../../common/src/assets/gfx/grab.png'),
-      HAND: await graphics.loadImageToBitmap(__dirname + '/../../common/src/assets/gfx/hand.png'),
-      GRAB_MASK: await graphics.loadImageToBitmap(__dirname + '/../../common/src/assets/gfx/grab_mask.png'),
-      HAND_MASK: await graphics.loadImageToBitmap(__dirname + '/../../common/src/assets/gfx/hand_mask.png'),
+      GRAB: await graphics.loadImageToBitmap(__dirname + '/../../frontend/src/assets/gfx/grab.png'),
+      HAND: await graphics.loadImageToBitmap(__dirname + '/../../frontend/src/assets/gfx/hand.png'),
+      GRAB_MASK: await graphics.loadImageToBitmap(__dirname + '/../../frontend/src/assets/gfx/grab_mask.png'),
+      HAND_MASK: await graphics.loadImageToBitmap(__dirname + '/../../frontend/src/assets/gfx/hand_mask.png'),
     }
 
     this.Textures = {
-      WOOD_DARK: await graphics.loadImageToBitmap(__dirname + '/../../common/src/assets/textures/wood-dark.jpg'),
-      WOOD_LIGHT: await graphics.loadImageToBitmap(__dirname + '/../../common/src/assets/textures/wood-light.jpg'),
-      OAK_BROWN: await graphics.loadImageToBitmap(__dirname + '/../../common/src/assets/textures/Oak-none-3275x2565mm-Architextures.jpg'),
+      WOOD_DARK: await graphics.loadImageToBitmap(__dirname + '/../../frontend/src/assets/textures/wood-dark.jpg'),
+      WOOD_LIGHT: await graphics.loadImageToBitmap(__dirname + '/../../frontend/src/assets/textures/wood-light.jpg'),
+      OAK_BROWN: await graphics.loadImageToBitmap(__dirname + '/../../frontend/src/assets/textures/Oak-none-3275x2565mm-Architextures.jpg'),
     }
   }
 }

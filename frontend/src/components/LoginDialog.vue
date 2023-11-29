@@ -7,7 +7,7 @@
       <v-card-title class="pl-6 pr-6">
         <div class="d-flex">
           <img
-            src="./../../../common/src/assets/gfx/icon.png"
+            src="./../assets/gfx/icon.png"
             width="32"
             height="32"
             class="mr-1"
