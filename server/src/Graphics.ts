@@ -36,7 +36,8 @@ export class Graphics implements GraphicsInterface {
 
   async loadImageToBitmap(imagePath: string): Promise<ImageBitmap> {
     if (imagePath.startsWith('/image-service/')) {
-      const blob = await fetch(this.baseUrl + imagePath).then(res => res.blob())
+      const res = await fetch(this.baseUrl + imagePath)
+      const blob = await res.blob()
       const bitmap = await this.createImageBitmapFromBlob(blob)
       return bitmap
     }

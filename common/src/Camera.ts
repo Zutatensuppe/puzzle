@@ -32,6 +32,7 @@ export class Camera {
     canvasDim: Dim,
     tableDim: Dim,
     boardDim: Dim,
+    border: number,
   ): void {
     this.reset()
     this.move(
@@ -41,7 +42,6 @@ export class Camera {
 
     // zoom viewport to fit whole puzzle in
     const x = this.worldDimToViewportRaw(boardDim)
-    const border = 20
     const targetW = canvasDim.w - (border * 2)
     const targetH = canvasDim.h - (border * 2)
     if (

@@ -260,6 +260,34 @@ const getBounds_v3 = (gameId: string): Rect => {
   }
 }
 
+const getPiecesBounds = (gameId: string): Rect => {
+  if (GAMES[gameId].puzzle.tiles.length === 0) {
+    throw new Error('[2023-11-29] no pieces in puzzle')
+  }
+
+  let piece: Piece = Util.decodePiece(GAMES[gameId].puzzle.tiles[0])
+
+  let minX = piece.pos.x
+  let minY = piece.pos.y
+  let maxX = piece.pos.x
+  let maxY = piece.pos.y
+  for (let i = 1; i < GAMES[gameId].puzzle.tiles.length; i++) {
+    piece = Util.decodePiece(GAMES[gameId].puzzle.tiles[i])
+    if (piece.pos.x < minX) minX = piece.pos.x
+    if (piece.pos.x > maxX) maxX = piece.pos.x
+    if (piece.pos.y < minY) minY = piece.pos.y
+    if (piece.pos.y > maxY) maxY = piece.pos.y
+  }
+  const drawOffset = getPieceDrawOffset(gameId)
+  const drawSize = getPieceDrawSize(gameId)
+  return {
+    x: minX + drawOffset,
+    y: minY + drawOffset,
+    w: maxX - minX + drawSize,
+    h: maxY - minY + drawSize,
+  }
+}
+
 const getPieceZIndex = (gameId: string, pieceIdx: number): number => {
   return getPiece(gameId, pieceIdx).z
 }
@@ -1049,6 +1077,7 @@ export default {
   getPieceDrawOffset,
   getPieceDrawSize,
   getFinalPiecePos,
+  getPiecesBounds,
   getStartTs,
   getFinishTs,
   getScoreMode,

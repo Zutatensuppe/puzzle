@@ -5,10 +5,13 @@ import { FireworksInterface, FixedLengthArray, GraphicsInterface, Piece, Player,
 // import fireworksController from './Fireworks'
 import { Camera } from './Camera'
 import PuzzleGraphics from './PuzzleGraphics'
+import { logger } from './Util'
 
-let BUFF: any = null
+const log = logger('Renderer.ts')
+
 export class Renderer {
   public debug: boolean = false
+  public boundingBoxes: boolean = false
 
   // private fireworks!: fireworksController
   private ctx: CanvasRenderingContext2D
@@ -22,11 +25,15 @@ export class Renderer {
   private pieceDim!: Dim
   private pieceDrawOffset!: number
 
+  // we can cache the whole background when we are in lockMovement mode
+  private backgroundCache: ImageData | null = null
+
   constructor(
     protected readonly gameId: string,
     protected readonly canvas: HTMLCanvasElement,
     protected readonly viewport: Camera,
     protected readonly fireworks: FireworksInterface,
+    protected readonly lockMovement: boolean,
   ) {
     this.ctx = this.canvas.getContext('2d') as CanvasRenderingContext2D
 
@@ -55,17 +62,11 @@ export class Renderer {
     this.tableBounds = GameCommon.getBounds(this.gameId)
   }
 
-  async init (windowDim: Dim, graphics: GraphicsInterface) {
+  async init (graphics: GraphicsInterface) {
     this.bitmaps = await PuzzleGraphics.loadPuzzleBitmaps(
       GameCommon.getPuzzle(this.gameId),
       GameCommon.getImageUrl(this.gameId),
       graphics,
-    )
-    this.viewport.calculateZoomCapping(windowDim, this.tableDim)
-    this.viewport.centerFit(
-      { w: this.canvas.width, h: this.canvas.height },
-      this.tableDim,
-      this.boardDim,
     )
   }
 
@@ -84,7 +85,10 @@ export class Renderer {
 
     if (this.debug) Debug.checkpoint_start(0)
 
-    if (!BUFF) {
+    if (this.backgroundCache) {
+      this.ctx.putImageData(this.backgroundCache, 0, 0)
+      if (this.debug) Debug.checkpoint('clear/table/board done')
+    } else {
       // CLEAR CTX
       // ---------------------------------------------------------------
       this.ctx.fillStyle = settings.background
@@ -101,28 +105,28 @@ export class Renderer {
           pos = this.viewport.worldToViewportRaw(this.tableBounds)
           dim = this.viewport.worldDimToViewportRaw(this.tableBounds)
           this.ctx.drawImage(tableImg, pos.x, pos.y, dim.w, dim.h)
+        } else {
+          log.info('unable to get table image', settings.tableTexture)
         }
       }
       if (this.debug) Debug.checkpoint('table done')
+
+
+      // DRAW BOARD
       // ---------------------------------------------------------------
-      BUFF = this.ctx.getImageData(0, 0, this.canvas.width, this.canvas.height)
-    } else {
-      this.ctx.putImageData(BUFF, 0, 0)
+      if (!settings.showTable) {
+        pos = this.viewport.worldToViewportRaw(this.boardPos)
+        dim = this.viewport.worldDimToViewportRaw(this.boardDim)
+        this.ctx.fillStyle = 'rgba(255, 255, 255, .3)'
+        this.ctx.fillRect(pos.x, pos.y, dim.w, dim.h)
+      }
+      if (this.debug) Debug.checkpoint('board done')
+      // ---------------------------------------------------------------
+
+      if (this.lockMovement) {
+        this.backgroundCache = this.ctx.getImageData(0, 0, this.canvas.width, this.canvas.height)
+      }
     }
-    if (this.debug) Debug.checkpoint('table done')
-
-
-    // DRAW BOARD
-    // ---------------------------------------------------------------
-    if (!settings.showTable) {
-      pos = this.viewport.worldToViewportRaw(this.boardPos)
-      dim = this.viewport.worldDimToViewportRaw(this.boardDim)
-      this.ctx.fillStyle = 'rgba(255, 255, 255, .3)'
-      this.ctx.fillRect(pos.x, pos.y, dim.w, dim.h)
-    }
-    if (this.debug) Debug.checkpoint('board done')
-    // ---------------------------------------------------------------
-
 
     // DRAW PIECES
     // ---------------------------------------------------------------
@@ -144,6 +148,7 @@ export class Renderer {
         0, 0, bmp.width, bmp.height,
         pos.x, pos.y, dim.w, dim.h,
       )
+      if (this.boundingBoxes) this.ctx.strokeRect(pos.x, pos.y, dim.w, dim.h)
     }
     if (this.debug) Debug.checkpoint('pieces done')
     // ---------------------------------------------------------------
@@ -158,6 +163,7 @@ export class Renderer {
         bmp = await playerCursors.get(p)
         pos = this.viewport.worldToViewport(p)
         this.ctx.drawImage(bmp, pos.x - playerCursors.CURSOR_W_2, pos.y - playerCursors.CURSOR_H_2)
+        if (this.boundingBoxes) this.ctx.strokeRect(pos.x - bmp.width / 2, pos.y - bmp.height / 2, bmp.width, bmp.height)
         if (settings.showPlayerNames) {
           // performance:
           // not drawing text directly here, to have less ctx

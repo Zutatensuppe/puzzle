@@ -154,9 +154,8 @@ export abstract class Game<HudType extends Hud> {
     this.canvas.classList.add('loaded')
     this.hud.setPuzzleCut()
 
-    this.renderer = new Renderer(this.gameId, this.canvas, this.viewport, this.fireworks)
-    const windowDim = { w: window.innerWidth, h: window.innerHeight }
-    await this.renderer.init(windowDim, graphics)
+    this.renderer = new Renderer(this.gameId, this.canvas, this.viewport, this.fireworks, false)
+    await this.renderer.init(graphics)
     const puzzleTable = new PuzzleTable(this.gameId, this.assets, graphics)
     await puzzleTable.init()
     this.renderer.puzzleTable = puzzleTable
@@ -187,7 +186,7 @@ export abstract class Game<HudType extends Hud> {
     const windowDim = { w: window.innerWidth, h: window.innerHeight }
     this.viewport.calculateZoomCapping(windowDim, this.tableDim)
     const canvasDim = { w: this.canvas.width, h: this.canvas.height }
-    this.viewport.centerFit(canvasDim, this.tableDim, this.boardDim)
+    this.viewport.centerFit(canvasDim, this.tableDim, this.boardDim, 20)
     this.viewportSnapshots.snap('center')
   }
 
