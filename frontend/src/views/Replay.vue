@@ -61,6 +61,25 @@
           <icon icon="puzzle-piece" /> To the game
         </router-link>
       </div>
+      <v-btn
+        v-if="!isRecording"
+        prepend-icon="mdi-record-circle"
+        size="x-small"
+        @click="startRecording"
+      >
+        RECORD
+      </v-btn>
+      <v-btn
+        v-else
+        size="x-small"
+        prepend-icon="mdi-stop"
+        @click="stopRecording"
+      >
+        STOP RECORDING
+      </v-btn>
+      <div
+        ref="videoHolder"
+      />
     </div>
 
     <IngameMenu
@@ -106,7 +125,7 @@ const status = ref<PuzzleStatusType>({
   piecesTotal: 0,
 })
 const dialog = ref<boolean>(false)
-const dialogPersistent = ref<boolean|undefined>(undefined)
+const dialogPersistent = ref<boolean | undefined>(undefined)
 const overlay = ref<string>('')
 const connectionState = ref<number>(0)
 const cuttingPuzzle = ref<boolean>(true)
@@ -139,6 +158,66 @@ const onResize = (): void => {
   if (g.value) {
     g.value.requireRerender()
   }
+}
+
+const videoHolder = ref<HTMLDivElement>()
+let mediaRecorder: MediaRecorder | null = null
+let recordedChunks: any[] = []
+const mediaRecorderToStop = ref<boolean>(false)
+const isRecording = ref<boolean>(false)
+const startRecording = () => {
+  if (!videoHolder.value) {
+    return
+  }
+  isRecording.value = true
+  videoHolder.value.innerHTML = ''
+  const stream = canvasEl.value.captureStream(25 /*fps*/)
+  mediaRecorder = new MediaRecorder(stream, {
+    mimeType: 'video/webm; codecs=vp9',
+  })
+
+  recordedChunks = []
+
+  //ondataavailable will fire in interval of `time || 4000 ms`
+  mediaRecorder.start(1000)
+
+  mediaRecorder.ondataavailable = function (event) {
+    console.log('this.ondataavailable')
+    recordedChunks.push(event.data)
+    if (mediaRecorderToStop.value) {
+      mediaRecorder?.stop()
+    }
+  }
+
+  mediaRecorder.onstop = function () {
+    isRecording.value = false
+    mediaRecorderToStop.value = false
+
+    if (!videoHolder.value) {
+      return
+    }
+
+    var blob = new Blob(recordedChunks, { type: 'video/webm' })
+    var url = URL.createObjectURL(blob)
+
+    // play it on another video element
+    var video$ = document.createElement('video')
+    video$.setAttribute('src', url)
+    video$.setAttribute('controls', 'controls')
+    video$.setAttribute('style', 'max-width: 300px')
+    videoHolder.value.appendChild(video$)
+
+    // download it
+    var link$ = document.createElement('a')
+    link$.setAttribute('download','recordingVideo')
+    link$.setAttribute('href', url)
+    link$.setAttribute('style', 'display: block')
+    link$.innerText = 'Download Video'
+    videoHolder.value.appendChild(link$)
+  }
+}
+const stopRecording = () => {
+  mediaRecorderToStop.value = true
 }
 
 const sendEvents = (newValue: boolean, newOverlay: string, oldOverlay: string) => {

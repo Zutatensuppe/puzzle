@@ -24,21 +24,19 @@ const log = logger('video.ts')
 global.CanvasRenderingContext2D = CanvasRenderingContext2D
 polyfillPath2D(global)
 
-const BASE_URL = 'https://jigsaw.hyottoko.club'
 const OUT_DIR = __dirname + '/out'
 const DIM = { w: 1024, h: 768 }
 const SPEED = 30
 
-const loadLog = async () => {
+const loadLog = async (gameId: string, baseUrl: string) => {
   // load via api
   const size = 10_000
   let offset = 0
-  const gameId = 'lon9euamflw4ubx3hfm'
   const completeLog: any[] = []
   let logTmp = []
   let game: Game | null = null
   do {
-    const res = await fetch(BASE_URL + '/api/replay-data?' + new URLSearchParams({ size: `${size}`, offset: `${offset}`, gameId }))
+    const res = await fetch(baseUrl + '/api/replay-data?' + new URLSearchParams({ size: `${size}`, offset: `${offset}`, gameId }))
     const data = await res.json() as ReplayData
     logTmp = data.log
     if (logTmp.length === 0) {
@@ -57,10 +55,10 @@ const loadLog = async () => {
   return { game, completeLog }
 }
 
-const createImages = async (game: Game, completeLog: any[]) => {
+const createImages = async (game: Game, outDir: string, baseUrl: string, completeLog: any[]) => {
   const gameId = game.id
   const canvas = createCanvas(DIM.w, DIM.h) as unknown as HTMLCanvasElement
-  const graphics = new Graphics(BASE_URL)
+  const graphics = new Graphics(baseUrl)
 
   log.info('initializing assets')
   const assets = new Assets()
@@ -146,7 +144,7 @@ const createImages = async (game: Game, completeLog: any[]) => {
 
         const data = canvas.toDataURL('image/jpeg', 60)
         fs.writeFileSync(
-          `${OUT_DIR}/test_${currTs}.jpeg`,
+          `${outDir}/${currTs}.jpeg`,
           new Buffer(data.split(',')[1], 'base64'),
         )
         console.log(`FRAME created. ${i+1}/${completeLog.length}`)
@@ -156,22 +154,22 @@ const createImages = async (game: Game, completeLog: any[]) => {
   }
 }
 
-const createImageListForFfmpeg = async () => {
+const createImageListForFfmpeg = async (outDir: string) => {
   const fileList = []
-  for (const f of fs.readdirSync(OUT_DIR, { withFileTypes: true })) {
+  for (const f of fs.readdirSync(outDir, { withFileTypes: true })) {
     if (f.name.endsWith('.jpeg')) {
       fileList.push('file ' + f.path.replace(/\\/g, '/') + '/' + f.name)
       fileList.push('duration 1')
     }
   }
-  const listFile = `${OUT_DIR}/out.txt`
+  const listFile = `${outDir}/out.txt`
   fs.writeFileSync(listFile, fileList.join('\n'))
   return listFile
 }
 
-const createVideo = async (listFile: string) => {
+const createVideo = async (listFile: string, outDir: string) => {
   return new Promise<string>((resolve, reject) => {
-    const outFile = `${OUT_DIR}/out.mp4`
+    const outFile = `${outDir}/out.mp4`
     // ffmpeg -r 30 -f concat -safe 0 -i 'out.txt' -c:v libx264 -pix_fmt yuv420p out.mp4
     const ffmpeg = spawn('ffmpeg', [
       '-y', // overwrite file if exists
@@ -205,8 +203,23 @@ const createVideo = async (listFile: string) => {
 }
 
 (async () => {
-  const { game, completeLog } = await loadLog()
-  await createImages(game, completeLog)
-  const listFile = await createImageListForFfmpeg()
-  await createVideo(listFile)
+  const url = process.argv[2]
+  if (!url) {
+    return
+  }
+  const m = url.match(/(https?:\/\/[^/]+)\/(g|replay)\/([a-z0-9]+)$/)
+  if (!m) {
+    return
+  }
+  const gameId = m[3]
+  const baseUrl = m[1]
+
+  const outDir = OUT_DIR + '/' + gameId
+  if (!fs.existsSync(outDir)) {
+    fs.mkdirSync(outDir, { recursive: true })
+  }
+  const { game, completeLog } = await loadLog(gameId, baseUrl)
+  await createImages(game, outDir, baseUrl, completeLog)
+  const listFile = await createImageListForFfmpeg(outDir)
+  await createVideo(listFile, outDir)
 })()

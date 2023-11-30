@@ -120,11 +120,11 @@ export abstract class Game<HudType extends Hud> {
 
   registerEvents(): void {
     this.evts.registerEvents()
-    window.addEventListener('resize', this.fireworks.resize)
+    window.addEventListener('resize', this.fireworks.onResize)
   }
 
   unregisterEvents(): void {
-    window.removeEventListener('resize', this.fireworks.resize)
+    window.removeEventListener('resize', this.fireworks.onResize)
     this.evts.unregisterEvents()
   }
 
