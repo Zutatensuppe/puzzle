@@ -30,17 +30,17 @@ export class PuzzleTable {
   }
 
   async init() {
-    this.images['dark'] = await this._createTableGfx(this.assets.Textures.WOOD_DARK, true)
-    this.images['light'] = await this._createTableGfx(this.assets.Textures.WOOD_LIGHT, false)
-    this.images['brown'] = await this._createTableGfx(this.assets.Textures.OAK_BROWN, true)
+    this.images['dark'] = await this._createTableGfx(this.assets.Textures.WOOD_DARK, 1.5, true)
+    this.images['light'] = await this._createTableGfx(this.assets.Textures.WOOD_LIGHT, 1.5, false)
+    this.images['brown'] = await this._createTableGfx(this.assets.Textures.OAK_BROWN, 2.5, true)
   }
 
   getImage(textureName: string): CanvasImageSource | undefined {
     return this.images[textureName]
   }
 
-  async _createTableGfx (bitmap: ImageBitmap, isDark: boolean): Promise<CanvasImageSource> {
-    const tableCanvas = this.graphics.repeat(bitmap, this.bounds, 3)
+  async _createTableGfx (bitmap: ImageBitmap, scale: number, isDark: boolean): Promise<CanvasImageSource> {
+    const tableCanvas = this.graphics.repeat(bitmap, this.bounds, scale)
 
     const adjustedBounds: Dim = { w: tableCanvas.width, h: tableCanvas.height }
     const ratio = adjustedBounds.w /this.bounds.w
