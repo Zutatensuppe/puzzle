@@ -50,7 +50,7 @@
           class="btn"
           @click="onTogglePause"
         >
-          <icon icon="pause" />
+          <icon :icon="replay.paused ? 'replay' : 'pause'" />
         </button>
       </div>
       <div
@@ -61,25 +61,94 @@
           <icon icon="puzzle-piece" /> To the game
         </router-link>
       </div>
-      <v-btn
-        v-if="!isRecording"
-        prepend-icon="mdi-record-circle"
-        size="x-small"
-        @click="startRecording"
-      >
-        RECORD
-      </v-btn>
-      <v-btn
-        v-else
-        size="x-small"
-        prepend-icon="mdi-stop"
-        @click="stopRecording"
-      >
-        STOP RECORDING
-      </v-btn>
-      <div
-        ref="videoHolder"
-      />
+    </div>
+
+
+    <div
+      v-if="showInterface"
+      class="menu-right-bottom"
+      :class="showTimelapseInterface ? 'menu-is-expanded' : ''"
+    >
+      <span
+        class="is-clickable"
+        @click="showTimelapseInterface = !showTimelapseInterface"
+      >Timelapse Video</span>
+      <div v-if="showTimelapseInterface">
+        <fieldset class="pb-0 pt-0">
+          <legend>Autostart Replay</legend>
+          <v-checkbox
+            v-model="autostartReplay"
+            hide-details
+            label="Active"
+            density="compact"
+          />
+          <v-text-field
+            v-if="autostartReplay"
+            v-model="autostartReplayDelay"
+            type="number"
+            label="Delay (ms)"
+            density="compact"
+          />
+        </fieldset>
+        <fieldset class="pb-0 pt-0">
+          <legend>Autostop Replay</legend>
+          <v-checkbox
+            v-model="autostopReplay"
+            hide-details
+            label="Active"
+            density="compact"
+          />
+        </fieldset>
+        <fieldset class="pb-0 pt-0">
+          <legend>Autostop Recording</legend>
+          <v-checkbox
+            v-model="autostopRecording"
+            hide-details
+            label="Active"
+            density="compact"
+          />
+          <v-text-field
+            v-if="autostopRecording"
+            v-model="autostopRecordingDelay"
+            type="number"
+            label="Delay (ms)"
+            density="compact"
+          />
+        </fieldset>
+        <div class="mb-2">
+          <v-btn
+            v-if="!isRecording"
+            prepend-icon="mdi-record-circle"
+            size="small"
+            @click="startRecording"
+          >
+            RECORD
+          </v-btn>
+          <v-btn
+            v-else
+            size="small"
+            prepend-icon="mdi-stop"
+            @click="stopRecording"
+          >
+            STOP RECORDING
+          </v-btn>
+        </div>
+        <div
+          v-if="videoUrl"
+          class="mb-2"
+        >
+          <video
+            :src="videoUrl"
+            controls
+            style="max-width: 100%"
+          />
+          <a
+            :href="videoUrl"
+            style="display: block"
+            download="replay"
+          >Download Video</a>
+        </div>
+      </div>
     </div>
 
     <IngameMenu
@@ -160,17 +229,27 @@ const onResize = (): void => {
   }
 }
 
-const videoHolder = ref<HTMLDivElement>()
 let mediaRecorder: MediaRecorder | null = null
 let recordedChunks: any[] = []
 const mediaRecorderToStop = ref<boolean>(false)
 const isRecording = ref<boolean>(false)
+const videoUrl = ref<string>('')
+const autostopRecording = ref<boolean>(true)
+const autostopRecordingDelay = ref<number>(1000)
+const autostartReplay = ref<boolean>(true)
+const autostartReplayDelay = ref<boolean>(250)
+const autostopReplay = ref<boolean>(true)
+const showTimelapseInterface = ref<boolean>(false)
 const startRecording = () => {
-  if (!videoHolder.value) {
+  if (!g.value) {
     return
   }
   isRecording.value = true
-  videoHolder.value.innerHTML = ''
+  videoUrl.value = ''
+  if (autostartReplay.value) {
+    g.value.unpause()
+  }
+
   const stream = canvasEl.value.captureStream(25 /*fps*/)
   mediaRecorder = new MediaRecorder(stream, {
     mimeType: 'video/webm; codecs=vp9',
@@ -180,7 +259,6 @@ const startRecording = () => {
 
   //ondataavailable will fire in interval of `time || 4000 ms`
   mediaRecorder.start(1000)
-
   mediaRecorder.ondataavailable = function (event) {
     console.log('this.ondataavailable')
     recordedChunks.push(event.data)
@@ -192,28 +270,15 @@ const startRecording = () => {
   mediaRecorder.onstop = function () {
     isRecording.value = false
     mediaRecorderToStop.value = false
-
-    if (!videoHolder.value) {
+    if (!g.value) {
       return
     }
+    if (autostopReplay.value) {
+      g.value.pause()
+    }
 
-    var blob = new Blob(recordedChunks, { type: 'video/webm' })
-    var url = URL.createObjectURL(blob)
-
-    // play it on another video element
-    var video$ = document.createElement('video')
-    video$.setAttribute('src', url)
-    video$.setAttribute('controls', 'controls')
-    video$.setAttribute('style', 'max-width: 300px')
-    videoHolder.value.appendChild(video$)
-
-    // download it
-    var link$ = document.createElement('a')
-    link$.setAttribute('download','recordingVideo')
-    link$.setAttribute('href', url)
-    link$.setAttribute('style', 'display: block')
-    link$.innerText = 'Download Video'
-    videoHolder.value.appendChild(link$)
+    const blob = new Blob(recordedChunks, { type: 'video/webm' })
+    videoUrl.value = URL.createObjectURL(blob)
   }
 }
 const stopRecording = () => {
@@ -320,6 +385,17 @@ const hud: ReplayHud = {
   },
   setReplayPaused: (v: boolean) => {
     replay.value.paused = v
+  },
+  setReplayFinished: () => {
+    if (isRecording.value && autostopRecording.value) {
+      if (autostopRecordingDelay.value > 0) {
+        setTimeout(() => {
+          stopRecording()
+        }, autostopRecordingDelay.value)
+      } else {
+        stopRecording()
+      }
+    }
   },
 }
 

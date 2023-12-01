@@ -454,6 +454,7 @@ export interface Hud {
 export interface ReplayHud extends Hud {
   setReplaySpeed: (v: number) => void
   setReplayPaused: (v: boolean) => void
+  setReplayFinished: () => void
 }
 
 export interface NewGameDataRequestData {

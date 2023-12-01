@@ -15,7 +15,7 @@ export class GameReplay extends Game<ReplayHud> {
   private logPointer: number = 0
   private speeds: number[] = [0.5, 1, 2, 5, 10, 20, 50, 100, 250, 500]
   private speedIdx: number = 1
-  private paused: boolean = false
+  private paused: boolean = true
   private lastRealTs: number = 0
   private lastGameTs: number = 0
   private gameStartTs: number = 0
@@ -172,6 +172,8 @@ export class GameReplay extends Game<ReplayHud> {
 
     if (!this.final) {
       this.to = setTimeout(this.next.bind(this), 50)
+    } else {
+      this.hud.setReplayFinished()
     }
   }
 
@@ -193,6 +195,20 @@ export class GameReplay extends Game<ReplayHud> {
 
   togglePause() {
     this.replayOnPauseToggle()
+  }
+
+  unpause() {
+    if (!this.paused) {
+      return
+    }
+    this.togglePause()
+  }
+
+  pause() {
+    if (this.paused) {
+      return
+    }
+    this.togglePause()
   }
 
   async init(): Promise<void> {

@@ -393,6 +393,20 @@ h5 {
   box-shadow: 0 0 10px 0 rgba(0 0 0 / 70%);
 }
 
+.menu-right-bottom {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  background: $bg-color-transparent;
+  padding: 5px;
+  border: solid 1px black;
+  box-shadow: 0 0 10px 0 rgba(0 0 0 / 70%);
+
+  &.menu-is-expanded {
+    width: 320px;
+  }
+}
+
 .menu {
   position: absolute;
   top: 0;
