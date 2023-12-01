@@ -306,7 +306,7 @@ export interface FireworksInterface {
   init(): void
   update(): void
   render(): void
-  resize(): void
+  resizeBound: () => void // bound function
 }
 
 export enum ScoreMode {

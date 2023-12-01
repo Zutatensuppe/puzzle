@@ -156,11 +156,14 @@ class Controller implements FireworksInterface {
   readyBombs: Array<Bomb>
   explodedBombs: Array<Bomb>
   particles: Array<Particle>
+
+  public resizeBound: () => void
+
   constructor(canvas: HTMLCanvasElement, rng: Rng) {
     this.canvas = canvas
     this.rng = rng
     this.ctx = this.canvas.getContext('2d') as CanvasRenderingContext2D
-    this.resize()
+    this.resizeBound = this.resize.bind(this)
 
     this.readyBombs = []
     this.explodedBombs = []
@@ -184,7 +187,7 @@ class Controller implements FireworksInterface {
     deltaVx = 2 * vx
   }
 
-  resize(): void {
+  private resize(): void {
     this.setSpeedParams()
   }
 
