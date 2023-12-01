@@ -212,7 +212,7 @@ export class GameService {
     const rng = new Rng(seed)
     return {
       id: gameId,
-      gameVersion: gameVersion,
+      gameVersion,
       creatorUserId,
       rng: { type: 'Rng', obj: rng },
       puzzle: await this.puzzleService.createPuzzle(rng, targetPieceCount, image, ts, shapeMode, gameVersion),

@@ -1,6 +1,6 @@
 import Protocol from '../../common/src/Protocol'
 import { GameEvent } from '../../common/src/Types'
-import { Camera, Snapshot } from './Camera'
+import { Camera, Snapshot } from '../../common/src/Camera'
 import { Game } from './Game'
 import { MODE_REPLAY } from './GameMode'
 
@@ -32,7 +32,7 @@ export class EventAdapter {
   private onWndMouseDown
 
   constructor (private game: Game<any>) {
-    this.onResize = this.game.initCenterPuzzle.bind(this.game)
+    this.onResize = this.game.initViewport.bind(this.game)
     this.onMouseDown = this._onMouseDown.bind(this)
     this.onMouseUp = this._onMouseUp.bind(this)
     this.onMouseMove = this._onMouseMove.bind(this)

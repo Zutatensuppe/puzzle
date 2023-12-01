@@ -1,4 +1,4 @@
-import { Dim, Point } from '../../common/src/Geometry'
+import { Dim, Point } from './Geometry'
 
 let MIN_ZOOM = .1
 const MAX_ZOOM = 6
@@ -23,9 +23,35 @@ export class Camera {
     }
   }
 
-  calculateZoomCapping(windowWidth: number, windowHeight: number, tableWidth: number, tableHeight: number): void {
+  calculateZoomCapping(windowDim: Dim, tableDim: Dim): void {
     // min zoom still may never go below .1
-    MIN_ZOOM = Math.max(.1, windowWidth/tableWidth, windowHeight/tableHeight)
+    MIN_ZOOM = Math.max(.1, windowDim.w/tableDim.w, windowDim.h/tableDim.h)
+  }
+
+  centerFit(
+    canvasDim: Dim,
+    tableDim: Dim,
+    boardDim: Dim,
+    border: number,
+  ): void {
+    this.reset()
+    this.move(
+      -(tableDim.w - canvasDim.w) /2,
+      -(tableDim.h - canvasDim.h) /2,
+    )
+
+    // zoom viewport to fit whole puzzle in
+    const x = this.worldDimToViewportRaw(boardDim)
+    const targetW = canvasDim.w - (border * 2)
+    const targetH = canvasDim.h - (border * 2)
+    if (
+      (x.w > targetW || x.h > targetH)
+      || (x.w < targetW && x.h < targetH)
+    ) {
+      const zoom = Math.min(targetW / x.w, targetH / x.h)
+      const center = { x: canvasDim.w / 2, y: canvasDim.h / 2 }
+      this.setZoom(zoom, center)
+    }
   }
 
   snapshot(): Snapshot {

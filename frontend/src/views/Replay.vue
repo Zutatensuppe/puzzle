@@ -50,7 +50,7 @@
           class="btn"
           @click="onTogglePause"
         >
-          <icon icon="pause" />
+          <icon :icon="replay.paused ? 'replay' : 'pause'" />
         </button>
       </div>
       <div
@@ -60,6 +60,94 @@
         <router-link :to="{ name: 'game', params: { id: g.getGameId() } }">
           <icon icon="puzzle-piece" /> To the game
         </router-link>
+      </div>
+    </div>
+
+
+    <div
+      v-if="showInterface"
+      class="menu-right-bottom"
+      :class="showTimelapseInterface ? 'menu-is-expanded' : ''"
+    >
+      <span
+        class="is-clickable"
+        @click="showTimelapseInterface = !showTimelapseInterface"
+      >Timelapse Video</span>
+      <div v-if="showTimelapseInterface">
+        <fieldset class="pb-0 pt-0">
+          <legend>Autostart Replay</legend>
+          <v-checkbox
+            v-model="autostartReplay"
+            hide-details
+            label="Active"
+            density="compact"
+          />
+          <v-text-field
+            v-if="autostartReplay"
+            v-model="autostartReplayDelay"
+            type="number"
+            label="Delay (ms)"
+            density="compact"
+          />
+        </fieldset>
+        <fieldset class="pb-0 pt-0">
+          <legend>Autostop Replay</legend>
+          <v-checkbox
+            v-model="autostopReplay"
+            hide-details
+            label="Active"
+            density="compact"
+          />
+        </fieldset>
+        <fieldset class="pb-0 pt-0">
+          <legend>Autostop Recording</legend>
+          <v-checkbox
+            v-model="autostopRecording"
+            hide-details
+            label="Active"
+            density="compact"
+          />
+          <v-text-field
+            v-if="autostopRecording"
+            v-model="autostopRecordingDelay"
+            type="number"
+            label="Delay (ms)"
+            density="compact"
+          />
+        </fieldset>
+        <div class="mb-2">
+          <v-btn
+            v-if="!isRecording"
+            prepend-icon="mdi-record-circle"
+            size="small"
+            @click="startRecording"
+          >
+            RECORD
+          </v-btn>
+          <v-btn
+            v-else
+            size="small"
+            prepend-icon="mdi-stop"
+            @click="stopRecording"
+          >
+            STOP RECORDING
+          </v-btn>
+        </div>
+        <div
+          v-if="videoUrl"
+          class="mb-2"
+        >
+          <video
+            :src="videoUrl"
+            controls
+            style="max-width: 100%"
+          />
+          <a
+            :href="videoUrl"
+            style="display: block"
+            download="replay"
+          >Download Video</a>
+        </div>
       </div>
     </div>
 
@@ -106,7 +194,7 @@ const status = ref<PuzzleStatusType>({
   piecesTotal: 0,
 })
 const dialog = ref<boolean>(false)
-const dialogPersistent = ref<boolean|undefined>(undefined)
+const dialogPersistent = ref<boolean | undefined>(undefined)
 const overlay = ref<string>('')
 const connectionState = ref<number>(0)
 const cuttingPuzzle = ref<boolean>(true)
@@ -139,6 +227,62 @@ const onResize = (): void => {
   if (g.value) {
     g.value.requireRerender()
   }
+}
+
+let mediaRecorder: MediaRecorder | null = null
+let recordedChunks: any[] = []
+const mediaRecorderToStop = ref<boolean>(false)
+const isRecording = ref<boolean>(false)
+const videoUrl = ref<string>('')
+const autostopRecording = ref<boolean>(true)
+const autostopRecordingDelay = ref<number>(1000)
+const autostartReplay = ref<boolean>(true)
+const autostartReplayDelay = ref<number>(250)
+const autostopReplay = ref<boolean>(true)
+const showTimelapseInterface = ref<boolean>(false)
+const startRecording = () => {
+  if (!g.value) {
+    return
+  }
+  isRecording.value = true
+  videoUrl.value = ''
+  if (autostartReplay.value) {
+    g.value.unpause()
+  }
+
+  const stream = canvasEl.value.captureStream(25 /*fps*/)
+  mediaRecorder = new MediaRecorder(stream, {
+    mimeType: 'video/webm; codecs=vp9',
+  })
+
+  recordedChunks = []
+
+  //ondataavailable will fire in interval of `time || 4000 ms`
+  mediaRecorder.start(1000)
+  mediaRecorder.ondataavailable = function (event) {
+    console.log('this.ondataavailable')
+    recordedChunks.push(event.data)
+    if (mediaRecorderToStop.value) {
+      mediaRecorder?.stop()
+    }
+  }
+
+  mediaRecorder.onstop = function () {
+    isRecording.value = false
+    mediaRecorderToStop.value = false
+    if (!g.value) {
+      return
+    }
+    if (autostopReplay.value) {
+      g.value.pause()
+    }
+
+    const blob = new Blob(recordedChunks, { type: 'video/webm' })
+    videoUrl.value = URL.createObjectURL(blob)
+  }
+}
+const stopRecording = () => {
+  mediaRecorderToStop.value = true
 }
 
 const sendEvents = (newValue: boolean, newOverlay: string, oldOverlay: string) => {
@@ -241,6 +385,17 @@ const hud: ReplayHud = {
   },
   setReplayPaused: (v: boolean) => {
     replay.value.paused = v
+  },
+  setReplayFinished: () => {
+    if (isRecording.value && autostopRecording.value) {
+      if (autostopRecordingDelay.value > 0) {
+        setTimeout(() => {
+          stopRecording()
+        }, autostopRecordingDelay.value)
+      } else {
+        stopRecording()
+      }
+    }
   },
 }
 

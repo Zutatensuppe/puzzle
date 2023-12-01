@@ -1,9 +1,6 @@
-import { Player } from '../../common/src/Types'
-import { Assets } from './Assets'
-import Graphics from './Graphics'
+import { AssetsInterface, GraphicsInterface, Player } from './Types'
 
 export class PlayerCursors {
-
   private cursorImages: Record<string, ImageBitmap> = {}
 
   private cursorDown: string = ''
@@ -17,7 +14,8 @@ export class PlayerCursors {
 
   constructor(
     private canvas: HTMLCanvasElement,
-    private assets: Assets,
+    private assets: AssetsInterface,
+    private graphics: GraphicsInterface,
   ) {
     // all cursors must be of the same dimensions
     this.CURSOR_W = assets.Gfx.GRAB.width
@@ -32,8 +30,8 @@ export class PlayerCursors {
       const cursor = p.d ? this.assets.Gfx.GRAB : this.assets.Gfx.HAND
       if (p.color) {
         const mask = p.d ? this.assets.Gfx.GRAB_MASK : this.assets.Gfx.HAND_MASK
-        this.cursorImages[key] = await createImageBitmap(
-          Graphics.colorizedCanvas(cursor, mask, p.color),
+        this.cursorImages[key] = await this.graphics.createImageBitmapFromCanvas(
+          this.graphics.colorizedCanvas(cursor, mask, p.color),
         )
       } else {
         this.cursorImages[key] = cursor
@@ -48,8 +46,8 @@ export class PlayerCursors {
     this.canvas.style.cursor = `url('${url}') ${this.CURSOR_W_2} ${this.CURSOR_H_2}, ${fallback}`
   }
   updatePlayerCursorColor(color: string) {
-    this.cursorDown = Graphics.colorizedCanvas(this.assets.Gfx.GRAB, this.assets.Gfx.GRAB_MASK, color).toDataURL()
-    this.cursor = Graphics.colorizedCanvas(this.assets.Gfx.HAND, this.assets.Gfx.HAND_MASK, color).toDataURL()
+    this.cursorDown = this.graphics.colorizedCanvas(this.assets.Gfx.GRAB, this.assets.Gfx.GRAB_MASK, color).toDataURL()
+    this.cursor = this.graphics.colorizedCanvas(this.assets.Gfx.HAND, this.assets.Gfx.HAND_MASK, color).toDataURL()
     this.updatePlayerCursorState(this.cursorState)
   }
 }

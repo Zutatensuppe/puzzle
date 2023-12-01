@@ -1,16 +1,14 @@
 'use strict'
 
 import { GameLoopInstance, run } from './gameloop'
-import { Camera } from './Camera'
-import Debug from './Debug'
+import { Camera } from '../../common/src/Camera'
 import Util, { logger } from '../../common/src/Util'
 import GameCommon from '../../common/src/GameCommon'
-import fireworksController from './Fireworks'
+import fireworksController from '../../common/src/Fireworks'
 import Protocol from '../../common/src/Protocol'
 import Time from '../../common/src/Time'
-import { Dim, Point, Rect } from '../../common/src/Geometry'
+import { Dim } from '../../common/src/Geometry'
 import {
-  FixedLengthArray,
   Player,
   Piece,
   ServerEvent,
@@ -20,18 +18,21 @@ import {
   ShapeMode,
   GameEvent,
   ImageInfo,
+  FireworksInterface,
 } from '../../common/src/Types'
 import { Assets } from './Assets'
 import { EventAdapter } from './EventAdapter'
-import { PuzzleTable } from './PuzzleTable'
+import { PuzzleTable } from '../../common/src/PuzzleTable'
 import { ViewportSnapshots } from './ViewportSnapshots'
-import PuzzleGraphics from './PuzzleGraphics'
 import { PlayerSettings } from './PlayerSettings'
 import { Sounds } from './Sounds'
 import { PuzzleStatus } from './PuzzleStatus'
-import { PlayerCursors } from './PlayerCursors'
+import { PlayerCursors } from '../../common/src/PlayerCursors'
 import _api from './_api'
 import { MODE_PLAY } from './GameMode'
+import { Graphics } from './Graphics'
+import { Renderer } from '../../common/src/Renderer'
+
 declare global {
   interface Window {
       DEBUG?: boolean
@@ -42,8 +43,6 @@ const log = logger('Game.ts')
 
 export abstract class Game<HudType extends Hud> {
   protected rerender: boolean = true
-  private ctx: CanvasRenderingContext2D
-  private bitmaps!: ImageBitmap[]
 
   private assets: Assets
   protected sounds!: Sounds
@@ -53,16 +52,11 @@ export abstract class Game<HudType extends Hud> {
   private viewportSnapshots!: ViewportSnapshots
   protected playerSettings!: PlayerSettings
   protected puzzleStatus!: PuzzleStatus
-  private puzzleTable!: PuzzleTable
-  private fireworks!: fireworksController
+  private fireworks!: FireworksInterface
+  private renderer!: Renderer
 
-  private tableWidth: number = 0
-  private tableHeight: number = 0
-  private tableBounds!: Rect
-  private boardPos!: Point
+  private tableDim!: Dim
   private boardDim!: Dim
-  private pieceDim!: Dim
-  private pieceDrawOffset!: number
 
   private isInterfaceVisible: boolean = true
   private isPreviewVisible: boolean = false
@@ -83,7 +77,6 @@ export abstract class Game<HudType extends Hud> {
   ) {
     if (typeof window.DEBUG === 'undefined') window.DEBUG = false
 
-    this.ctx = this.canvas.getContext('2d') as CanvasRenderingContext2D
     this.assets = new Assets()
     this.viewport = new Camera()
   }
@@ -127,9 +120,11 @@ export abstract class Game<HudType extends Hud> {
 
   registerEvents(): void {
     this.evts.registerEvents()
+    window.addEventListener('resize', this.fireworks.resizeBound)
   }
 
   unregisterEvents(): void {
+    window.removeEventListener('resize', this.fireworks.resizeBound)
     this.evts.unregisterEvents()
   }
 
@@ -140,38 +135,16 @@ export abstract class Game<HudType extends Hud> {
   async initBaseProps(): Promise<void> {
     this.initFireworks()
 
-    await this.assets.init()
-    this.playerCursors = new PlayerCursors(this.canvas, this.assets)
+    const graphics = new Graphics()
+    await this.assets.init(graphics)
+    this.playerCursors = new PlayerCursors(this.canvas, this.assets, graphics)
 
-    this.pieceDrawOffset = GameCommon.getPieceDrawOffset(this.gameId)
-    const pieceDrawSize = GameCommon.getPieceDrawSize(this.gameId)
     const puzzleWidth = GameCommon.getPuzzleWidth(this.gameId)
     const puzzleHeight = GameCommon.getPuzzleHeight(this.gameId)
-    this.tableWidth = GameCommon.getTableWidth(this.gameId)
-    this.tableHeight = GameCommon.getTableHeight(this.gameId)
-
-    this.boardPos = {
-      x: (this.tableWidth - puzzleWidth) / 2,
-      y: (this.tableHeight - puzzleHeight) / 2,
-    }
-    this.boardDim = {
-      w: puzzleWidth,
-      h: puzzleHeight,
-    }
-    this.pieceDim = {
-      w: pieceDrawSize,
-      h: pieceDrawSize,
-    }
-
-    this.tableBounds = GameCommon.getBounds(this.gameId)
-    this.puzzleTable = new PuzzleTable(this.tableBounds, this.assets, this.boardPos, this.boardDim)
-    await this.puzzleTable.init()
-
-    this.bitmaps = await PuzzleGraphics.loadPuzzleBitmaps(
-      GameCommon.getPuzzle(this.gameId),
-      GameCommon.getImageUrl(this.gameId),
-    )
-
+    const tableWidth = GameCommon.getTableWidth(this.gameId)
+    const tableHeight = GameCommon.getTableHeight(this.gameId)
+    this.tableDim = { w: tableWidth, h: tableHeight }
+    this.boardDim = { w: puzzleWidth, h: puzzleHeight }
     this.evts = new EventAdapter(this)
     this.viewportSnapshots = new ViewportSnapshots(this.evts, this.viewport)
     this.playerSettings = new PlayerSettings(this)
@@ -181,21 +154,14 @@ export abstract class Game<HudType extends Hud> {
     this.canvas.classList.add('loaded')
     this.hud.setPuzzleCut()
 
-    // initialize some view data
-    // this global data will change according to input events
-
-    // theoretically we need to recalculate this when window resizes
-    // but it probably doesnt matter so much
-    this.viewport.calculateZoomCapping(
-      window.innerWidth,
-      window.innerHeight,
-      this.tableWidth,
-      this.tableHeight,
-    )
+    const puzzleTable = new PuzzleTable(this.gameId, this.assets, graphics)
+    await puzzleTable.init()
+    this.renderer = new Renderer(this.gameId, this.canvas, this.viewport, this.fireworks, puzzleTable, false)
+    await this.renderer.init(graphics)
 
     this.registerEvents()
 
-    this.initCenterPuzzle()
+    this.initViewport()
 
     this.puzzleStatus = new PuzzleStatus(this)
     this.puzzleStatus.update(this.time())
@@ -209,8 +175,17 @@ export abstract class Game<HudType extends Hud> {
     this.playerCursors.updatePlayerCursorColor(this.playerSettings.color())
   }
 
-  initCenterPuzzle(): void {
-    this.centerPuzzle()
+  initViewport(): void {
+    // initialize some view data
+    // this global data will change according to input events
+
+    // theoretically we need to recalculate this when window resizes
+    // but it probably doesnt matter so much
+
+    const windowDim = { w: window.innerWidth, h: window.innerHeight }
+    this.viewport.calculateZoomCapping(windowDim, this.tableDim)
+    const canvasDim = { w: this.canvas.width, h: this.canvas.height }
+    this.viewport.centerFit(canvasDim, this.tableDim, this.boardDim, 20)
     this.viewportSnapshots.snap('center')
   }
 
@@ -245,29 +220,6 @@ export abstract class Game<HudType extends Hud> {
 
   shouldDrawPlayer(player: Player): boolean {
     return player.id !== this.clientId
-  }
-
-  centerPuzzle(): void {
-    // center on the puzzle
-    this.viewport.reset()
-    this.viewport.move(
-      -(this.tableWidth - this.canvas.width) /2,
-      -(this.tableHeight - this.canvas.height) /2,
-    )
-
-    // zoom viewport to fit whole puzzle in
-    const x = this.viewport.worldDimToViewportRaw(this.boardDim)
-    const border = 20
-    const targetW = this.canvas.width - (border * 2)
-    const targetH = this.canvas.height - (border * 2)
-    if (
-      (x.w > targetW || x.h > targetH)
-      || (x.w < targetW && x.h < targetH)
-    ) {
-      const zoom = Math.min(targetW / x.w, targetH / x.h)
-      const center = { x: this.canvas.width / 2, y: this.canvas.height / 2 }
-      this.viewport.setZoom(zoom, center)
-    }
   }
 
   justFinished(): boolean {
@@ -463,108 +415,16 @@ export abstract class Game<HudType extends Hud> {
       return
     }
 
-    const ts = this.time()
-
-    let pos: Point
-    let dim: Dim
-    let bmp: ImageBitmap
-
-    if (window.DEBUG) Debug.checkpoint_start(0)
-
-    // CLEAR CTX
-    // ---------------------------------------------------------------
-    this.ctx.fillStyle = this.playerSettings.background()
-    this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height)
-    if (window.DEBUG) Debug.checkpoint('clear done')
-    // ---------------------------------------------------------------
-
-
-    // DRAW TABLE
-    // ---------------------------------------------------------------
-    if (this.playerSettings.showTable()) {
-      const tableImg = this.puzzleTable.getImage(this.playerSettings.tableTexture())
-      if (tableImg) {
-        pos = this.viewport.worldToViewportRaw(this.tableBounds)
-        dim = this.viewport.worldDimToViewportRaw(this.tableBounds)
-        this.ctx.drawImage(tableImg, pos.x, pos.y, dim.w, dim.h)
-      }
-    }
-    if (window.DEBUG) Debug.checkpoint('table done')
-    // ---------------------------------------------------------------
-
-
-    // DRAW BOARD
-    // ---------------------------------------------------------------
-    if (!this.playerSettings.showTable()) {
-      pos = this.viewport.worldToViewportRaw(this.boardPos)
-      dim = this.viewport.worldDimToViewportRaw(this.boardDim)
-      this.ctx.fillStyle = 'rgba(255, 255, 255, .3)'
-      this.ctx.fillRect(pos.x, pos.y, dim.w, dim.h)
-    }
-    if (window.DEBUG) Debug.checkpoint('board done')
-    // ---------------------------------------------------------------
-
-
-    // DRAW PIECES
-    // ---------------------------------------------------------------
-    const pieces = GameCommon.getPiecesSortedByZIndex(this.gameId)
-    if (window.DEBUG) Debug.checkpoint('get pieces done')
-
-    dim = this.viewport.worldDimToViewportRaw(this.pieceDim)
-    for (const piece of pieces) {
-      if (!this.shouldDrawPiece(piece)) {
-        continue
-      }
-      bmp = this.bitmaps[piece.idx]
-      pos = this.viewport.worldToViewportRaw({
-        x: this.pieceDrawOffset + piece.pos.x,
-        y: this.pieceDrawOffset + piece.pos.y,
-      })
-      this.ctx.drawImage(bmp,
-        0, 0, bmp.width, bmp.height,
-        pos.x, pos.y, dim.w, dim.h,
-      )
-    }
-    if (window.DEBUG) Debug.checkpoint('pieces done')
-    // ---------------------------------------------------------------
-
-
-    // DRAW PLAYERS
-    // ---------------------------------------------------------------
-    const texts: Array<FixedLengthArray<[string, number, number]>> = []
-    // Cursors
-    for (const p of GameCommon.getActivePlayers(this.gameId, ts)) {
-      if (this.shouldDrawPlayer(p)) {
-        bmp = await this.playerCursors.get(p)
-        pos = this.viewport.worldToViewport(p)
-        this.ctx.drawImage(bmp, pos.x - this.playerCursors.CURSOR_W_2, pos.y - this.playerCursors.CURSOR_H_2)
-        if (this.playerSettings.showPlayerNames()) {
-          // performance:
-          // not drawing text directly here, to have less ctx
-          // switches between drawImage and fillTxt
-          texts.push([`${p.name} (${p.points})`, pos.x, pos.y + this.playerCursors.CURSOR_H])
-        }
-      }
-    }
-
-    // Names
-    this.ctx.fillStyle = 'white'
-    this.ctx.textAlign = 'center'
-    for (const [txt, x, y] of texts) {
-      this.ctx.fillText(txt, x, y)
-    }
-
-    if (window.DEBUG) Debug.checkpoint('players done')
-
-    // propagate HUD changes
-    // ---------------------------------------------------------------
-    this.puzzleStatus.update(ts)
-    if (window.DEBUG) Debug.checkpoint('HUD done')
-    // ---------------------------------------------------------------
-
-    if (this.justFinished()) {
-      this.fireworks.render()
-    }
+    this.renderer.debug = window.DEBUG ? true : false
+    this.renderer.render(
+      this.time(),
+      this.playerSettings.getSettings(),
+      this.playerCursors,
+      this.puzzleStatus,
+      (piece: Piece) => this.shouldDrawPiece(piece),
+      (player: Player) => this.shouldDrawPlayer(player),
+      this.justFinished(),
+    )
 
     this.rerender = false
   }

@@ -260,6 +260,34 @@ const getBounds_v3 = (gameId: string): Rect => {
   }
 }
 
+const getPiecesBounds = (gameId: string): Rect => {
+  if (GAMES[gameId].puzzle.tiles.length === 0) {
+    throw new Error('[2023-11-29] no pieces in puzzle')
+  }
+
+  let piece: Piece = Util.decodePiece(GAMES[gameId].puzzle.tiles[0])
+
+  let minX = piece.pos.x
+  let minY = piece.pos.y
+  let maxX = piece.pos.x
+  let maxY = piece.pos.y
+  for (let i = 1; i < GAMES[gameId].puzzle.tiles.length; i++) {
+    piece = Util.decodePiece(GAMES[gameId].puzzle.tiles[i])
+    if (piece.pos.x < minX) minX = piece.pos.x
+    if (piece.pos.x > maxX) maxX = piece.pos.x
+    if (piece.pos.y < minY) minY = piece.pos.y
+    if (piece.pos.y > maxY) maxY = piece.pos.y
+  }
+  const drawOffset = getPieceDrawOffset(gameId)
+  const drawSize = getPieceDrawSize(gameId)
+  return {
+    x: minX + drawOffset,
+    y: minY + drawOffset,
+    w: maxX - minX + drawSize,
+    h: maxY - minY + drawSize,
+  }
+}
+
 const getPieceZIndex = (gameId: string, pieceIdx: number): number => {
   return getPiece(gameId, pieceIdx).z
 }
@@ -906,6 +934,37 @@ function handleInput(
   return changes
 }
 
+function handleLogEntry(
+  gameId: string,
+  logEntry: any[],
+  ts: Timestamp,
+): boolean {
+  const entry = logEntry
+  if (entry[0] === Protocol.LOG_ADD_PLAYER) {
+    const playerId = entry[1]
+    addPlayer(gameId, playerId, ts)
+    return true
+  }
+  if (entry[0] === Protocol.LOG_UPDATE_PLAYER) {
+    const playerId = getPlayerIdByIndex(gameId, entry[1])
+    if (!playerId) {
+      throw '[ 2021-05-17 player not found (update player) ]'
+    }
+    addPlayer(gameId, playerId, ts)
+    return true
+  }
+  if (entry[0] === Protocol.LOG_HANDLE_INPUT) {
+    const playerId = getPlayerIdByIndex(gameId, entry[1])
+    if (!playerId) {
+      throw '[ 2021-05-17 player not found (handle input) ]'
+    }
+    const input = entry[2]
+    handleInput(gameId, playerId, input, ts)
+    return true
+  }
+  return false
+}
+
 // functions that operate on given game instance instead of global one
 // -------------------------------------------------------------------
 
@@ -1018,12 +1077,14 @@ export default {
   getPieceDrawOffset,
   getPieceDrawSize,
   getFinalPiecePos,
+  getPiecesBounds,
   getStartTs,
   getFinishTs,
   getScoreMode,
   getSnapMode,
   getShapeMode,
   handleInput,
+  handleLogEntry,
 
   /// operate directly on the game object given
   Game_isPrivate,

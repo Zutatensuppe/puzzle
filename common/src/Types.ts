@@ -243,11 +243,51 @@ export interface Player {
   ts: Timestamp
 }
 
+export interface PlayerSettingsData {
+  background: string
+  showTable: boolean
+  tableTexture: string
+  color: string
+  name: string
+  soundsEnabled: boolean
+  otherPlayerClickSoundEnabled: boolean
+  soundsVolume: number
+  showPlayerNames: boolean
+}
+
+export const PLAYER_SETTINGS = {
+  SOUND_VOLUME: 'sound_volume',
+  SOUND_ENABLED: 'sound_enabled',
+  OTHER_PLAYER_CLICK_SOUND_ENABLED: 'other_player_click_sound_enabled',
+  COLOR_BACKGROUND: 'bg_color',
+  SHOW_TABLE: 'show_table',
+  TABLE_TEXTURE: 'table_texture',
+  PLAYER_COLOR: 'player_color',
+  PLAYER_NAME: 'player_name',
+  SHOW_PLAYER_NAMES: 'show_player_names',
+}
+
+export const PLAYER_SETTINGS_DEFAULTS = {
+  SOUND_VOLUME: 100,
+  SOUND_ENABLED: true,
+  OTHER_PLAYER_CLICK_SOUND_ENABLED: true,
+  COLOR_BACKGROUND: '#222222',
+  SHOW_TABLE: true,
+  TABLE_TEXTURE: 'dark',
+  PLAYER_COLOR: '#ffffff',
+  PLAYER_NAME: 'anon',
+  SHOW_PLAYER_NAMES: true,
+}
+
 export interface PuzzleStatus {
   finished: boolean
   duration: number
   piecesDone: number
   piecesTotal: number
+}
+
+export interface PuzzleStatusInterface {
+  update(ts: number): void
 }
 
 export interface PlayerChange {
@@ -260,6 +300,13 @@ export interface PlayerChange {
   bgcolor?: string|null
   points?: number
   ts?: Timestamp
+}
+
+export interface FireworksInterface {
+  init(): void
+  update(): void
+  render(): void
+  resizeBound: () => void // bound function
 }
 
 export enum ScoreMode {
@@ -407,6 +454,7 @@ export interface Hud {
 export interface ReplayHud extends Hud {
   setReplaySpeed: (v: number) => void
   setReplayPaused: (v: boolean) => void
+  setReplayFinished: () => void
 }
 
 export interface NewGameDataRequestData {
@@ -438,4 +486,45 @@ export const isImageSearchSort = (sort: any): sort is ImageSearchSort => {
     'game_count_asc',
     'game_count_desc',
   ].includes(sort)
+}
+
+export interface GraphicsInterface {
+  createCanvas: (width: number, height: number) => any // HTMLCanvasElement | Canvas
+  loadImageToBitmap: (puzzleImageUrl: string) => any // ImageBitmap
+  resizeBitmap: (bitmap: any, width: number, height: number) => any // ImageBitmap
+  createImageBitmapFromCanvas: (canvas: any) => any // ImageBitmap
+  repeat: (bitmap: any, rect: Rect, scale: number) => any // HTMLCanvasElement
+  colorizedCanvas (bitmap: any, mask: any, color: string): any // HTMLCanvasElement
+}
+
+export interface PlayerCursorsInterface {
+  readonly CURSOR_W: number
+  readonly CURSOR_W_2: number
+  readonly CURSOR_H: number
+  readonly CURSOR_H_2: number
+
+  get (p: Player): Promise<ImageBitmap>
+}
+
+export interface AssetsInterface {
+  Audio: {
+    CLICK: HTMLAudioElement | null
+    CLICK_2: HTMLAudioElement | null
+  }
+  Gfx: {
+    GRAB: ImageBitmap
+    HAND: ImageBitmap
+    GRAB_MASK: ImageBitmap
+    HAND_MASK: ImageBitmap
+  }
+  Textures: {
+    WOOD_DARK: ImageBitmap
+    WOOD_LIGHT: ImageBitmap
+    OAK_BROWN: ImageBitmap
+  }
+}
+
+export interface PuzzleTableInterface {
+  init(): Promise<void>
+  getImage(textureName: string): CanvasImageSource | undefined
 }

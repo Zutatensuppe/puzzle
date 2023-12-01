@@ -1,4 +1,4 @@
-import { Camera, Snapshot } from './Camera'
+import { Camera, Snapshot } from '../../common/src/Camera'
 import { EventAdapter } from './EventAdapter'
 
 export class ViewportSnapshots {

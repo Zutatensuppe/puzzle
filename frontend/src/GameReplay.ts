@@ -15,7 +15,7 @@ export class GameReplay extends Game<ReplayHud> {
   private logPointer: number = 0
   private speeds: number[] = [0.5, 1, 2, 5, 10, 20, 50, 100, 250, 500]
   private speedIdx: number = 1
-  private paused: boolean = false
+  private paused: boolean = true
   private lastRealTs: number = 0
   private lastGameTs: number = 0
   private gameStartTs: number = 0
@@ -119,33 +119,6 @@ export class GameReplay extends Game<ReplayHud> {
     }
   }
 
-  private handleLogEntry(logEntry: any[], ts: Timestamp) {
-    const entry = logEntry
-    if (entry[0] === Protocol.LOG_ADD_PLAYER) {
-      const playerId = entry[1]
-      GameCommon.addPlayer(this.gameId, playerId, ts)
-      return true
-    }
-    if (entry[0] === Protocol.LOG_UPDATE_PLAYER) {
-      const playerId = GameCommon.getPlayerIdByIndex(this.gameId, entry[1])
-      if (!playerId) {
-        throw '[ 2021-05-17 player not found (update player) ]'
-      }
-      GameCommon.addPlayer(this.gameId, playerId, ts)
-      return true
-    }
-    if (entry[0] === Protocol.LOG_HANDLE_INPUT) {
-      const playerId = GameCommon.getPlayerIdByIndex(this.gameId, entry[1])
-      if (!playerId) {
-        throw '[ 2021-05-17 player not found (handle input) ]'
-      }
-      const input = entry[2]
-      GameCommon.handleInput(this.gameId, playerId, input, ts)
-      return true
-    }
-    return false
-  }
-
   private async next() {
     if (this.logPointer + 1 >= this.log.length) {
       await this.queryNextReplayBatch()
@@ -187,7 +160,7 @@ export class GameReplay extends Game<ReplayHud> {
         break
       }
       this.gameTs = currTs
-      if (this.handleLogEntry(nextLogEntry, nextTs)) {
+      if (GameCommon.handleLogEntry(this.gameId, nextLogEntry, nextTs)) {
         this.requireRerender()
       }
       this.logPointer = nextIdx
@@ -199,6 +172,8 @@ export class GameReplay extends Game<ReplayHud> {
 
     if (!this.final) {
       this.to = setTimeout(this.next.bind(this), 50)
+    } else {
+      this.hud.setReplayFinished()
     }
   }
 
@@ -220,6 +195,20 @@ export class GameReplay extends Game<ReplayHud> {
 
   togglePause() {
     this.replayOnPauseToggle()
+  }
+
+  unpause() {
+    if (!this.paused) {
+      return
+    }
+    this.togglePause()
+  }
+
+  pause() {
+    if (this.paused) {
+      return
+    }
+    this.togglePause()
   }
 
   async init(): Promise<void> {
