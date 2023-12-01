@@ -12,10 +12,8 @@ export class Renderer {
   public debug: boolean = false
   public boundingBoxes: boolean = false
 
-  // private fireworks!: fireworksController
   private ctx: CanvasRenderingContext2D
   private bitmaps!: ImageBitmap[]
-  public puzzleTable!: PuzzleTableInterface
 
   private tableDim!: Dim
   private tableBounds!: Rect
@@ -32,6 +30,7 @@ export class Renderer {
     protected readonly canvas: HTMLCanvasElement,
     protected readonly viewport: Camera,
     protected readonly fireworks: FireworksInterface,
+    protected readonly puzzleTable: PuzzleTableInterface,
     protected readonly lockMovement: boolean,
   ) {
     this.ctx = this.canvas.getContext('2d') as CanvasRenderingContext2D

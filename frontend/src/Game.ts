@@ -154,11 +154,10 @@ export abstract class Game<HudType extends Hud> {
     this.canvas.classList.add('loaded')
     this.hud.setPuzzleCut()
 
-    this.renderer = new Renderer(this.gameId, this.canvas, this.viewport, this.fireworks, false)
-    await this.renderer.init(graphics)
     const puzzleTable = new PuzzleTable(this.gameId, this.assets, graphics)
     await puzzleTable.init()
-    this.renderer.puzzleTable = puzzleTable
+    this.renderer = new Renderer(this.gameId, this.canvas, this.viewport, this.fireworks, puzzleTable, false)
+    await this.renderer.init(graphics)
 
     this.registerEvents()
 

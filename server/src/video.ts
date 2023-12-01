@@ -71,8 +71,13 @@ const createImages = async (game: Game, outDir: string, baseUrl: string, complet
   const rng = GameCommon.getRng(gameId)
   const fireworks = new fireworksController(canvas, rng)
 
+  log.info('initializing puzzleTable')
+  const puzzleTable = new PuzzleTable(gameId, assets, graphics)
+  await puzzleTable.init()
+  log.info('puzzleTable inited')
+
   log.info('initializing renderer')
-  const renderer = new Renderer(gameId, canvas, viewport, fireworks, true)
+  const renderer = new Renderer(gameId, canvas, viewport, fireworks, puzzleTable, true)
   await renderer.init(graphics)
   log.info('renderer inited')
 
@@ -98,13 +103,6 @@ const createImages = async (game: Game, outDir: string, baseUrl: string, complet
     boardDim,
     20,
   )
-
-  log.info('initializing puzzleTable')
-  const puzzleTable = new PuzzleTable(gameId, assets, graphics)
-  await puzzleTable.init()
-  log.info('puzzleTable inited')
-
-  renderer.puzzleTable = puzzleTable
 
   // GO THROUGH COMPLETE LOG
   let gameTs = parseInt(completeLog[0][4], 10)
