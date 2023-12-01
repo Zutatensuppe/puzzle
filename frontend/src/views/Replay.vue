@@ -237,7 +237,7 @@ const videoUrl = ref<string>('')
 const autostopRecording = ref<boolean>(true)
 const autostopRecordingDelay = ref<number>(1000)
 const autostartReplay = ref<boolean>(true)
-const autostartReplayDelay = ref<boolean>(250)
+const autostartReplayDelay = ref<number>(250)
 const autostopReplay = ref<boolean>(true)
 const showTimelapseInterface = ref<boolean>(false)
 const startRecording = () => {
