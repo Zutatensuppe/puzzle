@@ -1,6 +1,6 @@
 // http://localhost:5173/replay/li7cstret0s2ijzjjuh
 
-import { Game, PLAYER_SETTINGS_DEFAULTS, Piece, Player, ReplayData, Timestamp } from '../../common/src/Types'
+import { Game, PLAYER_SETTINGS_DEFAULTS, Piece, Player, PlayerSettingsData, ReplayData, Timestamp } from '../../common/src/Types'
 import { createCanvas, CanvasRenderingContext2D } from 'canvas'
 // @ts-ignore
 import { polyfillPath2D } from 'path2d-polyfill'
@@ -60,6 +60,21 @@ const createImages = async (game: Game, outDir: string, baseUrl: string, complet
   const canvas = createCanvas(DIM.w, DIM.h) as unknown as HTMLCanvasElement
   const graphics = new Graphics(baseUrl)
 
+  const playerSettings: PlayerSettingsData = {
+    background: PLAYER_SETTINGS_DEFAULTS.COLOR_BACKGROUND,
+    showTable: PLAYER_SETTINGS_DEFAULTS.SHOW_TABLE,
+    tableTexture: PLAYER_SETTINGS_DEFAULTS.TABLE_TEXTURE,
+    useCustomTableTexture: PLAYER_SETTINGS_DEFAULTS.USE_CUSTOM_TABLE_TEXTURE,
+    customTableTexture: PLAYER_SETTINGS_DEFAULTS.CUSTOM_TABLE_TEXTURE,
+    customTableTextureScale: PLAYER_SETTINGS_DEFAULTS.CUSTOM_TABLE_TEXTURE_SCALE,
+    color: PLAYER_SETTINGS_DEFAULTS.PLAYER_COLOR,
+    name: PLAYER_SETTINGS_DEFAULTS.PLAYER_NAME,
+    soundsEnabled: PLAYER_SETTINGS_DEFAULTS.SOUND_ENABLED,
+    otherPlayerClickSoundEnabled: PLAYER_SETTINGS_DEFAULTS.OTHER_PLAYER_CLICK_SOUND_ENABLED,
+    soundsVolume: PLAYER_SETTINGS_DEFAULTS.SOUND_VOLUME,
+    showPlayerNames: PLAYER_SETTINGS_DEFAULTS.SHOW_PLAYER_NAMES,
+  }
+
   log.info('initializing assets')
   const assets = new Assets()
   await assets.init(graphics)
@@ -72,8 +87,8 @@ const createImages = async (game: Game, outDir: string, baseUrl: string, complet
   const fireworks = new fireworksController(canvas, rng)
 
   log.info('initializing puzzleTable')
-  const puzzleTable = new PuzzleTable(gameId, assets, graphics)
-  await puzzleTable.init()
+  const puzzleTable = new PuzzleTable(gameId, graphics)
+  await puzzleTable.loadTexture(playerSettings)
   log.info('puzzleTable inited')
 
   log.info('initializing renderer')
@@ -106,18 +121,6 @@ const createImages = async (game: Game, outDir: string, baseUrl: string, complet
 
   // GO THROUGH COMPLETE LOG
   let gameTs = parseInt(completeLog[0][4], 10)
-
-  const playerSettings = {
-    background: PLAYER_SETTINGS_DEFAULTS.COLOR_BACKGROUND,
-    showTable: PLAYER_SETTINGS_DEFAULTS.SHOW_TABLE,
-    tableTexture: PLAYER_SETTINGS_DEFAULTS.TABLE_TEXTURE,
-    color: PLAYER_SETTINGS_DEFAULTS.PLAYER_COLOR,
-    name: PLAYER_SETTINGS_DEFAULTS.PLAYER_NAME,
-    soundsEnabled: PLAYER_SETTINGS_DEFAULTS.SOUND_ENABLED,
-    otherPlayerClickSoundEnabled: PLAYER_SETTINGS_DEFAULTS.OTHER_PLAYER_CLICK_SOUND_ENABLED,
-    soundsVolume: PLAYER_SETTINGS_DEFAULTS.SOUND_VOLUME,
-    showPlayerNames: PLAYER_SETTINGS_DEFAULTS.SHOW_PLAYER_NAMES,
-  }
 
   let entry = null
   for (let i = 0; i < completeLog.length; i++) {

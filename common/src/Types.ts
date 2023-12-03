@@ -247,6 +247,9 @@ export interface PlayerSettingsData {
   background: string
   showTable: boolean
   tableTexture: string
+  useCustomTableTexture: boolean
+  customTableTexture: string
+  customTableTextureScale: number
   color: string
   name: string
   soundsEnabled: boolean
@@ -262,6 +265,9 @@ export const PLAYER_SETTINGS = {
   COLOR_BACKGROUND: 'bg_color',
   SHOW_TABLE: 'show_table',
   TABLE_TEXTURE: 'table_texture',
+  USE_CUSTOM_TABLE_TEXTURE: 'use_custom_table_texture',
+  CUSTOM_TABLE_TEXTURE: 'custom_table_texture',
+  CUSTOM_TABLE_TEXTURE_SCALE: 'custom_table_texture_scale',
   PLAYER_COLOR: 'player_color',
   PLAYER_NAME: 'player_name',
   SHOW_PLAYER_NAMES: 'show_player_names',
@@ -274,6 +280,9 @@ export const PLAYER_SETTINGS_DEFAULTS = {
   COLOR_BACKGROUND: '#222222',
   SHOW_TABLE: true,
   TABLE_TEXTURE: 'dark',
+  USE_CUSTOM_TABLE_TEXTURE: false,
+  CUSTOM_TABLE_TEXTURE: '',
+  CUSTOM_TABLE_TEXTURE_SCALE: 1.0,
   PLAYER_COLOR: '#ffffff',
   PLAYER_NAME: 'anon',
   SHOW_PLAYER_NAMES: true,
@@ -517,14 +526,9 @@ export interface AssetsInterface {
     GRAB_MASK: ImageBitmap
     HAND_MASK: ImageBitmap
   }
-  Textures: {
-    WOOD_DARK: ImageBitmap
-    WOOD_LIGHT: ImageBitmap
-    OAK_BROWN: ImageBitmap
-  }
 }
 
 export interface PuzzleTableInterface {
-  init(): Promise<void>
-  getImage(textureName: string): CanvasImageSource | undefined
+  loadTexture(settings: PlayerSettingsData): Promise<CanvasImageSource | null>
+  getImage(settings: PlayerSettingsData): CanvasImageSource | null
 }

@@ -19,6 +19,7 @@ import {
   GameEvent,
   ImageInfo,
   FireworksInterface,
+  PlayerSettingsData,
 } from '../../common/src/Types'
 import { Assets } from './Assets'
 import { EventAdapter } from './EventAdapter'
@@ -154,8 +155,8 @@ export abstract class Game<HudType extends Hud> {
     this.canvas.classList.add('loaded')
     this.hud.setPuzzleCut()
 
-    const puzzleTable = new PuzzleTable(this.gameId, this.assets, graphics)
-    await puzzleTable.init()
+    const puzzleTable = new PuzzleTable(this.gameId, graphics)
+    await puzzleTable.loadTexture(this.playerSettings.getSettings())
     this.renderer = new Renderer(this.gameId, this.canvas, this.viewport, this.fireworks, puzzleTable, false)
     await this.renderer.init(graphics)
 
@@ -216,6 +217,11 @@ export abstract class Game<HudType extends Hud> {
       this.fireworks.update()
       this.requireRerender()
     }
+  }
+
+  async loadTableTexture(settings: PlayerSettingsData): Promise<void> {
+    await this.renderer.loadTableTexture(settings)
+    this.requireRerender()
   }
 
   shouldDrawPlayer(player: Player): boolean {
@@ -462,6 +468,18 @@ export abstract class Game<HudType extends Hud> {
   }
 
   changeTableTexture(_value: string): void {
+    this.requireRerender()
+  }
+
+  changeUseCustomTableTexture(_value: boolean): void {
+    this.requireRerender()
+  }
+
+  changeCustomTableTexture(_value: string): void {
+    this.requireRerender()
+  }
+
+  changeCustomTableTextureScale(_value: number): void {
     this.requireRerender()
   }
 

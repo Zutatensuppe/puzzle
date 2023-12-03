@@ -68,6 +68,10 @@ export class Renderer {
     )
   }
 
+  async loadTableTexture (settings: PlayerSettingsData): Promise<void> {
+    await this.puzzleTable.loadTexture(settings)
+  }
+
   async render (
     ts: Timestamp,
     settings: PlayerSettingsData,
@@ -98,13 +102,15 @@ export class Renderer {
       // DRAW TABLE
       // ---------------------------------------------------------------
       if (settings.showTable) {
-        const tableImg = this.puzzleTable.getImage(settings.tableTexture)
+        const tableImg = this.puzzleTable.getImage(settings)
         if (tableImg) {
           pos = this.viewport.worldToViewportRaw(this.tableBounds)
           dim = this.viewport.worldDimToViewportRaw(this.tableBounds)
           this.ctx.drawImage(tableImg, pos.x, pos.y, dim.w, dim.h)
         } else {
-          log.info('unable to get table image', settings.tableTexture)
+          // not logging, otherwise there would be too many log entries
+          // in case the player uses a broken custom texture
+          // log.info('unable to get table image', settings.tableTexture)
         }
       }
       if (this.debug) Debug.checkpoint('table done')

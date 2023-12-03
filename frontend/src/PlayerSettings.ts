@@ -20,6 +20,9 @@ export class PlayerSettings {
     this.settings.showPlayerNames = storage.getBool(PLAYER_SETTINGS.SHOW_PLAYER_NAMES, PLAYER_SETTINGS_DEFAULTS.SHOW_PLAYER_NAMES)
     this.settings.showTable = storage.getBool(PLAYER_SETTINGS.SHOW_TABLE, PLAYER_SETTINGS_DEFAULTS.SHOW_TABLE)
     this.settings.tableTexture = storage.getStr(PLAYER_SETTINGS.TABLE_TEXTURE, PLAYER_SETTINGS_DEFAULTS.TABLE_TEXTURE)
+    this.settings.useCustomTableTexture = storage.getBool(PLAYER_SETTINGS.USE_CUSTOM_TABLE_TEXTURE, PLAYER_SETTINGS_DEFAULTS.USE_CUSTOM_TABLE_TEXTURE)
+    this.settings.customTableTexture = storage.getStr(PLAYER_SETTINGS.CUSTOM_TABLE_TEXTURE, PLAYER_SETTINGS_DEFAULTS.CUSTOM_TABLE_TEXTURE)
+    this.settings.customTableTextureScale = storage.getFloat(PLAYER_SETTINGS.CUSTOM_TABLE_TEXTURE_SCALE, PLAYER_SETTINGS_DEFAULTS.CUSTOM_TABLE_TEXTURE_SCALE)
     if (this.game.getMode() === MODE_REPLAY) {
       this.settings.background = storage.getStr(PLAYER_SETTINGS.COLOR_BACKGROUND, PLAYER_SETTINGS_DEFAULTS.COLOR_BACKGROUND)
       this.settings.color = storage.getStr(PLAYER_SETTINGS.PLAYER_COLOR, PLAYER_SETTINGS_DEFAULTS.PLAYER_COLOR)
@@ -32,6 +35,21 @@ export class PlayerSettings {
       this.settings.name = GameCommon.getPlayerName(this.game.getGameId(), this.game.getClientId())
         || storage.getStr(PLAYER_SETTINGS.PLAYER_NAME, PLAYER_SETTINGS_DEFAULTS.PLAYER_NAME)
     }
+  }
+
+  apply(data: PlayerSettingsData) {
+    this.setShowTable(data.showTable)
+    this.setTableTexture(data.tableTexture)
+    this.setUseCustomTableTexture(data.useCustomTableTexture)
+    this.setCustomTableTexture(data.customTableTexture)
+    this.setCustomTableTextureScale(data.customTableTextureScale)
+    this.setBackground(data.background)
+    this.setColor(data.color)
+    this.setName(data.name)
+    this.setSoundsEnabled(data.soundsEnabled)
+    this.setOtherPlayerClickSoundEnabled(data.otherPlayerClickSoundEnabled)
+    this.setSoundsVolume(data.soundsVolume)
+    this.setShowPlayerNames(data.showPlayerNames)
   }
 
   getSettings(): PlayerSettingsData {
@@ -59,6 +77,39 @@ export class PlayerSettings {
       storage.setStr(PLAYER_SETTINGS.TABLE_TEXTURE, value)
       this.showStatusMessage('Table texture', value)
       this.game.changeTableTexture(value)
+      return true
+    }
+    return false
+  }
+
+  setUseCustomTableTexture(value: boolean) {
+    if (this.settings.useCustomTableTexture !== value) {
+      this.settings.useCustomTableTexture = value
+      storage.setBool(PLAYER_SETTINGS.USE_CUSTOM_TABLE_TEXTURE, value)
+      this.showStatusMessage('Use custom table texture', value)
+      this.game.changeUseCustomTableTexture(value)
+      return true
+    }
+    return false
+  }
+
+  setCustomTableTexture(value: string) {
+    if (this.settings.customTableTexture !== value) {
+      this.settings.customTableTexture = value
+      storage.setStr(PLAYER_SETTINGS.CUSTOM_TABLE_TEXTURE, value)
+      this.showStatusMessage('Custom table texture', value)
+      this.game.changeCustomTableTexture(value)
+      return true
+    }
+    return false
+  }
+
+  setCustomTableTextureScale(value: number) {
+    if (this.settings.customTableTextureScale !== value) {
+      this.settings.customTableTextureScale = value
+      storage.setFloat(PLAYER_SETTINGS.CUSTOM_TABLE_TEXTURE_SCALE, value)
+      this.showStatusMessage('Custom table texture scale', value)
+      this.game.changeCustomTableTextureScale(value)
       return true
     }
     return false
@@ -159,14 +210,6 @@ export class PlayerSettings {
     this.showStatusMessage('Table', value)
   }
 
-  showTable() {
-    return this.settings.showTable
-  }
-
-  tableTexture() {
-    return this.settings.tableTexture
-  }
-
   soundsVolume() {
     return this.settings.soundsVolume
   }
@@ -189,9 +232,5 @@ export class PlayerSettings {
 
   soundsEnabled() {
     return this.settings.soundsEnabled
-  }
-
-  showPlayerNames() {
-    return this.settings.showPlayerNames
   }
 }

@@ -1,16 +1,18 @@
 import { Dim, Point, Rect } from './Geometry'
 import GameCommon from './GameCommon'
-import { AssetsInterface, GraphicsInterface } from './Types'
+import { GraphicsInterface, PlayerSettingsData, PuzzleTableInterface } from './Types'
+import { logger } from './Util'
 
-export class PuzzleTable {
-  private images: Record<string, CanvasImageSource> = {}
+const log = logger('PuzzleTable.ts')
+
+export class PuzzleTable implements PuzzleTableInterface {
+  private images: Record<string, ImageBitmap | null> = {}
   private bounds: Rect
   private boardPos: Point
   private boardDim: Dim
 
   constructor(
     gameId: string,
-    private assets: AssetsInterface,
     private graphics: GraphicsInterface,
   ) {
     this.bounds = GameCommon.getBounds(gameId)
@@ -29,22 +31,60 @@ export class PuzzleTable {
     }
   }
 
-  async init() {
-    this.images['dark'] = await this._createTableGfx(this.assets.Textures.WOOD_DARK, true)
-    this.images['light'] = await this._createTableGfx(this.assets.Textures.WOOD_LIGHT, false)
-    this.images['brown'] = await this._createTableGfx(this.assets.Textures.OAK_BROWN, true)
+  async loadTexture(settings: PlayerSettingsData): Promise<ImageBitmap | null> {
+    const textureNameOrUrl = settings.useCustomTableTexture ? settings.customTableTexture : settings.tableTexture
+    if (!textureNameOrUrl) {
+      return null
+    }
+    const scale = settings.useCustomTableTexture ? settings.customTableTextureScale : 1 // determined later, but always fixed for cache key
+    const cacheKey = textureNameOrUrl + '___' + scale
+    if (this.images[cacheKey]) {
+      return this.images[cacheKey]
+    }
+    if (this.images[cacheKey] === null) {
+      return null
+    }
+
+    this.images[cacheKey] = null
+
+    const map: Record<string, { url: string, scale: number, isDark: boolean }> = {
+      dark: { url: '/assets/textures/wood-dark.jpg', scale: 1.5, isDark: true },
+      light: { url: '/assets/textures/wood-light.jpg', scale: 1.5, isDark: false },
+      brown: { url: '/assets/textures/Oak-none-3275x2565mm-Architextures.jpg', scale: 2.5, isDark: true },
+      aiwood: { url: '/assets/textures/ai-wood.png', scale: 1.5, isDark: true },
+    }
+
+    const obj = textureNameOrUrl in map
+      ? map[textureNameOrUrl]
+      // TODO: dark or light could be determined by the image? or another setting prop
+      : { url: textureNameOrUrl, scale, isDark: false }
+    try {
+      const bitmap = await this.graphics.loadImageToBitmap(obj.url)
+      const texture = await this._createTableGfx(bitmap, obj.scale, obj.isDark)
+      this.images[cacheKey] = texture
+      return this.images[cacheKey]
+    } catch (e) {
+      log.error('unable to load', obj.url)
+      log.error(e)
+      return null
+    }
   }
 
-  getImage(textureName: string): CanvasImageSource | undefined {
-    return this.images[textureName]
+  getImage(settings: PlayerSettingsData): ImageBitmap | null {
+    const textureNameOrUrl = settings.useCustomTableTexture ? settings.customTableTexture : settings.tableTexture
+    const scale = settings.useCustomTableTexture ? settings.customTableTextureScale : 1 // determined later, but always fixed for cache key
+    const cacheKey = textureNameOrUrl + '___' + scale
+    return this.images[cacheKey] || null
   }
 
-  async _createTableGfx (bitmap: ImageBitmap, isDark: boolean): Promise<CanvasImageSource> {
-    const tableCanvas = this.graphics.repeat(bitmap, this.bounds, 3)
-
+  async _createTableGfx(
+    bitmap: ImageBitmap,
+    scale: number,
+    isDark: boolean,
+  ): Promise<ImageBitmap> {
+    const tableCanvas = this.graphics.repeat(bitmap, this.bounds, scale)
     const adjustedBounds: Dim = { w: tableCanvas.width, h: tableCanvas.height }
-    const ratio = adjustedBounds.w /this.bounds.w
-
+    const ratio = adjustedBounds.w / this.bounds.w
     const tableCtx = tableCanvas.getContext('2d') as CanvasRenderingContext2D
 
     // darken the outer edges of the table a bit

@@ -17,8 +17,21 @@ const getInt = (setting: string, def: number): number => {
   if (value === null) {
     return def
   }
-  const vol = parseInt(value, 10)
-  return isNaN(vol) ? def : vol
+  const val = parseInt(value, 10)
+  return isNaN(val) ? def : val
+}
+
+const setFloat = (setting: string, val: number): void => {
+  set(setting, `${val}`)
+}
+
+const getFloat = (setting: string, def: number): number => {
+  const value = get(setting)
+  if (value === null) {
+    return def
+  }
+  const val = parseFloat(value)
+  return isNaN(val) ? def : val
 }
 
 const setBool = (setting: string, val: boolean): void => {
@@ -57,6 +70,8 @@ const uniq = (str: string) => {
 export default {
   setInt,
   getInt,
+  setFloat,
+  getFloat,
   setBool,
   getBool,
   setStr,
