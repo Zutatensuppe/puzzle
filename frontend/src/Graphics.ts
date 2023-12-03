@@ -12,10 +12,13 @@ export class Graphics implements GraphicsInterface {
   }
 
   async loadImageToBitmap(imagePath: string): Promise<ImageBitmap> {
-    return new Promise((resolve) => {
+    return new Promise((resolve, reject) => {
       const img = new Image()
       img.onload = () => {
         createImageBitmap(img).then(resolve)
+      }
+      img.onerror = (e) => {
+        reject(e)
       }
       img.src = imagePath
     })
@@ -102,9 +105,14 @@ export class Graphics implements GraphicsInterface {
       w = h * rect.w / rect.h
     }
 
+    // adjusted ratio of bitmap drawn, in case canvas was bigger than
+    // the max canvas size
+    const hratio = rect.h > max ? max / rect.h : 1
+    const wratio = rect.w > max ? max / rect.w : 1
+
     const c = this.createCanvas(w, h)
-    const bmw = bitmap.width * scale
-    const bmh = bitmap.height * scale
+    const bmw = Math.round(Math.max(bitmap.width * wratio * scale, 100))
+    const bmh = Math.round(Math.max(bitmap.height * hratio * scale, 100))
     const ctx = c.getContext('2d') as CanvasRenderingContext2D
     for (let x = 0; x < c.width; x+=bmw) {
       for (let y = 0; y < c.height; y+=bmh) {

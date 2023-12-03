@@ -11,11 +11,6 @@ export class Assets implements AssetsInterface{
     GRAB_MASK: ImageBitmap
     HAND_MASK: ImageBitmap
   }
-  public Textures!: {
-    WOOD_DARK: ImageBitmap
-    WOOD_LIGHT: ImageBitmap
-    OAK_BROWN: ImageBitmap
-  }
 
   async init (graphics: GraphicsInterface) {
     // TODO: parallel loading
@@ -29,12 +24,6 @@ export class Assets implements AssetsInterface{
       HAND: await graphics.loadImageToBitmap(__dirname + '/../../frontend/src/assets/gfx/hand.png'),
       GRAB_MASK: await graphics.loadImageToBitmap(__dirname + '/../../frontend/src/assets/gfx/grab_mask.png'),
       HAND_MASK: await graphics.loadImageToBitmap(__dirname + '/../../frontend/src/assets/gfx/hand_mask.png'),
-    }
-
-    this.Textures = {
-      WOOD_DARK: await graphics.loadImageToBitmap(__dirname + '/../../frontend/src/assets/textures/wood-dark.jpg'),
-      WOOD_LIGHT: await graphics.loadImageToBitmap(__dirname + '/../../frontend/src/assets/textures/wood-light.jpg'),
-      OAK_BROWN: await graphics.loadImageToBitmap(__dirname + '/../../frontend/src/assets/textures/Oak-none-3275x2565mm-Architextures.jpg'),
     }
   }
 }

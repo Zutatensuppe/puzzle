@@ -5,7 +5,7 @@
       <div>
         <v-label>Background Color</v-label>
         <IngameColorPicker
-          v-model="background"
+          v-model="playerSettings.background"
           @open="onColorPickerOpen"
           @close="onColorPickerClose"
         />
@@ -15,14 +15,20 @@
         <div class="d-flex">
           <v-label>Table</v-label>
           <v-checkbox-btn
-            v-model="showTable"
+            v-model="playerSettings.showTable"
             label="Show Table"
+            density="comfortable"
+          />
+          <v-checkbox-btn
+            v-if="playerSettings.showTable"
+            v-model="playerSettings.useCustomTableTexture"
+            label="Custom Texture"
             density="comfortable"
           />
         </div>
         <v-radio-group
-          v-if="showTable"
-          v-model="tableTexture"
+          v-if="playerSettings.showTable && !playerSettings.useCustomTableTexture"
+          v-model="playerSettings.tableTexture"
           inline
           density="comfortable"
           hide-details
@@ -39,7 +45,24 @@
             label="Light"
             value="light"
           />
+          <v-radio
+            label="AI WOOD"
+            value="aiwood"
+          />
         </v-radio-group>
+        <v-text-field
+          v-if="playerSettings.showTable && playerSettings.useCustomTableTexture"
+          v-model="playerSettings.customTableTexture"
+          density="compact"
+          label="Custom texture URL"
+        />
+        <v-text-field
+          v-if="playerSettings.showTable && playerSettings.useCustomTableTexture"
+          v-model="playerSettings.customTableTextureScale"
+          type="number"
+          density="compact"
+          label="Custom texture scale"
+        />
       </div>
 
       <div>
@@ -57,7 +80,7 @@
         </div>
         <IngameColorPicker
           v-if="!isUkraineColor"
-          v-model="color"
+          v-model="playerSettings.color"
           @open="onColorPickerOpen"
           @close="onColorPickerClose"
         />
@@ -66,14 +89,14 @@
       <div>
         <v-label>Player Name</v-label>
         <v-text-field
-          v-model="name"
+          v-model="playerSettings.name"
           hide-details
           max-length="16"
           density="compact"
         />
 
         <v-checkbox
-          v-model="showPlayerNames"
+          v-model="playerSettings.showPlayerNames"
           density="comfortable"
           hide-details
           label="Show other player names on their hands"
@@ -84,23 +107,23 @@
         <v-label>Sounds</v-label>
 
         <v-checkbox
-          v-model="soundsEnabled"
+          v-model="playerSettings.soundsEnabled"
           density="comfortable"
           hide-details
           label="Sounds enabled"
         />
         <v-checkbox
-          v-model="otherPlayerClickSoundEnabled"
+          v-model="playerSettings.otherPlayerClickSoundEnabled"
           density="comfortable"
           hide-details
-          :disabled="!soundsEnabled"
+          :disabled="!playerSettings.soundsEnabled"
           label="Piece connect sounds of others"
         />
 
         <v-slider
-          v-model="soundsVolume"
+          v-model="playerSettings.soundsVolume"
           hide-details
-          :disabled="!soundsEnabled"
+          :disabled="!playerSettings.soundsEnabled"
           step="1"
           label="Volume"
           @update:modelValue="updateVolume"
@@ -133,6 +156,7 @@ import { GamePlay } from '../GamePlay'
 import { GameReplay } from '../GameReplay'
 
 import IngameColorPicker from './IngameColorPicker.vue'
+import { PlayerSettingsData } from '../../../common/src/Types'
 
 const props = defineProps<{
   game: GamePlay | GameReplay
@@ -142,16 +166,8 @@ const emit = defineEmits<{
   (e: 'dialogChange', val: any[]): void
 }>()
 
-const showTable = ref<boolean>(props.game.getPlayerSettings().showTable())
-const tableTexture = ref<string>(props.game.getPlayerSettings().tableTexture())
-const background = ref<string>(props.game.getPlayerSettings().background())
-const color = ref<string>(props.game.getPlayerSettings().color())
-const isUkraineColor = ref<boolean>(color.value === 'ukraine')
-const name = ref<string>(props.game.getPlayerSettings().name())
-const soundsEnabled = ref<boolean>(props.game.getPlayerSettings().soundsEnabled())
-const otherPlayerClickSoundEnabled = ref<boolean>(props.game.getPlayerSettings().otherPlayerClickSoundEnabled())
-const soundsVolume = ref<number>(props.game.getPlayerSettings().soundsVolume())
-const showPlayerNames = ref<boolean>(props.game.getPlayerSettings().showPlayerNames())
+const playerSettings = ref<PlayerSettingsData>(JSON.parse(JSON.stringify(props.game.getPlayerSettings().getSettings())))
+const isUkraineColor = ref<boolean>(playerSettings.value.color === 'ukraine')
 
 const onColorPickerOpen = () => {
   emit('dialogChange', [
@@ -165,48 +181,33 @@ const onColorPickerClose = () => {
 }
 
 const updateVolume = (newVolume: number): void => {
-  soundsVolume.value = newVolume
+  playerSettings.value.soundsVolume = newVolume
 }
 const decreaseVolume = (): void => {
-  soundsVolume.value = Math.max(0, soundsVolume.value - 5)
+  playerSettings.value.soundsVolume = Math.max(0, playerSettings.value.soundsVolume - 5)
 }
 const increaseVolume = (): void => {
-  soundsVolume.value = Math.min(100, soundsVolume.value + 5)
+  playerSettings.value.soundsVolume = Math.min(100, playerSettings.value.soundsVolume + 5)
 }
 
 // TODO: emit changes only when relevant value changed
 const emitChanges = (): void => {
-  props.game.getPlayerSettings().setShowTable(showTable.value)
-  props.game.getPlayerSettings().setTableTexture(tableTexture.value)
-  props.game.getPlayerSettings().setBackground(background.value)
-  props.game.getPlayerSettings().setColor(isUkraineColor.value ? 'ukraine' : color.value)
-  props.game.getPlayerSettings().setName(name.value)
-  props.game.getPlayerSettings().setSoundsEnabled(soundsEnabled.value)
-  props.game.getPlayerSettings().setOtherPlayerClickSoundEnabled(otherPlayerClickSoundEnabled.value)
-  props.game.getPlayerSettings().setSoundsVolume(soundsVolume.value)
-  props.game.getPlayerSettings().setShowPlayerNames(showPlayerNames.value)
+  const newSettings = JSON.parse(JSON.stringify(playerSettings.value))
+  if (typeof newSettings.background !== 'string') {
+    newSettings.background = newSettings.background.hex
+  }
+  if (typeof newSettings.color !== 'string') {
+    newSettings.color = newSettings.color.hex
+  }
+  if (isUkraineColor.value) {
+    newSettings.color = 'ukraine'
+  }
+  props.game.getPlayerSettings().apply(newSettings)
+  props.game.loadTableTexture(newSettings)
 }
 
 watch(isUkraineColor, emitChanges)
-watch(background, (newVal: any) => {
-  if (typeof newVal !== 'string') {
-    background.value = newVal.hex
-  } else {
-    emitChanges()
-  }
-})
-watch(showTable, emitChanges)
-watch(tableTexture, emitChanges)
-watch(color, (newVal: any) => {
-  if (typeof newVal !== 'string') {
-    color.value = newVal.hex
-  } else {
-    emitChanges()
-  }
-})
-watch(name, emitChanges)
-watch(soundsEnabled, emitChanges)
-watch(otherPlayerClickSoundEnabled, emitChanges)
-watch(soundsVolume, emitChanges)
-watch(showPlayerNames, emitChanges)
+watch(playerSettings, () => {
+  emitChanges()
+}, { deep: true })
 </script>
