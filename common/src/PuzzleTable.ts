@@ -64,6 +64,7 @@ export class PuzzleTable implements PuzzleTableInterface {
       this.images[cacheKey] = texture
       return this.images[cacheKey]
     } catch (e) {
+      log.error('unable to load', obj.url)
       log.error(e)
       return null
     }
