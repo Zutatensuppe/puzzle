@@ -59,14 +59,14 @@ watch(() => props.modelValue, (value: string) => {
 watch(sliderVal, (value: any) => {
   const emitValue = typeof value === 'string' ? value : value.hex
   if (props.modelValue !== emitValue) {
-    emit('update:modelValue', value)
+    emit('update:modelValue', emitValue)
   }
 }, { deep: true })
 
 watch(pickerVal, (value: any) => {
   const emitValue = typeof value === 'string' ? value : value.hex
   if (props.modelValue !== emitValue) {
-    emit('update:modelValue', value)
+    emit('update:modelValue', emitValue)
   }
 }, { deep: true })
 </script>

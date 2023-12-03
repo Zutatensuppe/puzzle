@@ -192,13 +192,7 @@ const increaseVolume = (): void => {
 
 // TODO: emit changes only when relevant value changed
 const emitChanges = (): void => {
-  const newSettings = JSON.parse(JSON.stringify(playerSettings.value))
-  if (typeof newSettings.background !== 'string') {
-    newSettings.background = newSettings.background.hex
-  }
-  if (typeof newSettings.color !== 'string') {
-    newSettings.color = newSettings.color.hex
-  }
+  const newSettings: PlayerSettingsData = JSON.parse(JSON.stringify(playerSettings.value))
   if (isUkraineColor.value) {
     newSettings.color = 'ukraine'
   }
