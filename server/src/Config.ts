@@ -9,9 +9,9 @@ const log = logger('Config.ts')
 
 const BASE_DIR = process.env.BASE_DIR
 const DATA_DIR = `${BASE_DIR}/data`
-const UPLOAD_DIR = `${BASE_DIR}/data/uploads`
-const CROP_DIR = `${BASE_DIR}/data/uploads/c`
-const RESIZE_DIR = `${BASE_DIR}/data/uploads/r`
+const UPLOAD_DIR = `${DATA_DIR}/uploads`
+const CROP_DIR = `${UPLOAD_DIR}/c`
+const RESIZE_DIR = `${UPLOAD_DIR}/r`
 const UPLOAD_URL = `/uploads`
 const PUBLIC_DIR = process.env.PUBLIC_DIR || `${BASE_DIR}/build/public`
 const DB_PATCHES_DIR = process.env.DB_PATCHES_DIR || `${BASE_DIR}/db/dbpatches`
