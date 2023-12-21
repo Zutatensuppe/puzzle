@@ -19,6 +19,7 @@ export class Assets implements AssetsInterface {
     CLICK: HTMLAudioElement
     CLICK_2: HTMLAudioElement
   }
+
   public Gfx!: {
     GRAB: ImageBitmap
     HAND: ImageBitmap

@@ -1,9 +1,9 @@
 'use strict'
 
 import GameCommon from '../../common/src/GameCommon'
-import Protocol from '../../common/src/Protocol'
+import { GAME_EVENT_TYPE, LOG_TYPE } from '../../common/src/Protocol'
 import Time from '../../common/src/Time'
-import { Game as GameType, GameEvent, Player, ReplayData, ReplayHud, Timestamp } from '../../common/src/Types'
+import { Game as GameType, GameEvent, Player, ReplayData, ReplayHud, Timestamp, HeaderLogEntry, LogEntry } from '../../common/src/Types'
 import Util from '../../common/src/Util'
 import { Game } from './Game'
 import { MODE_REPLAY } from './GameMode'
@@ -11,7 +11,7 @@ import _api from './_api'
 
 export class GameReplay extends Game<ReplayHud> {
   private final: boolean = false
-  private log: any[] = []
+  private log: LogEntry[] = []
   private logPointer: number = 0
   private speeds: number[] = [0.5, 1, 2, 5, 10, 20, 50, 100, 250, 500]
   private speedIdx: number = 1
@@ -22,7 +22,7 @@ export class GameReplay extends Game<ReplayHud> {
   private skipNonActionPhases: boolean = true
   private dataOffset: number = 0
   private gameTs!: number
-  private to: NodeJS.Timeout | null = null
+  private to: number | null = null
 
   getMode(): string {
     return MODE_REPLAY
@@ -68,8 +68,9 @@ export class GameReplay extends Game<ReplayHud> {
     const gameObject: GameType = Util.decodeGame(replay.game)
     GameCommon.setGame(gameObject.id, gameObject)
 
+    const header = replay.log[0] as HeaderLogEntry
     this.lastRealTs = Time.timestamp()
-    this.gameStartTs = parseInt(replay.log[0][4], 10)
+    this.gameStartTs = header[4]
     this.lastGameTs = this.gameStartTs
 
     this.gameTs = this.lastGameTs
@@ -108,11 +109,11 @@ export class GameReplay extends Game<ReplayHud> {
     // LOCAL ONLY CHANGES
     // -------------------------------------------------------------
     const type = evt[0]
-    if (type === Protocol.INPUT_EV_REPLAY_TOGGLE_PAUSE) {
+    if (type === GAME_EVENT_TYPE.INPUT_EV_REPLAY_TOGGLE_PAUSE) {
       this.replayOnPauseToggle()
-    } else if (type === Protocol.INPUT_EV_REPLAY_SPEED_DOWN) {
+    } else if (type === GAME_EVENT_TYPE.INPUT_EV_REPLAY_SPEED_DOWN) {
       this.replayOnSpeedDown()
-    } else if (type === Protocol.INPUT_EV_REPLAY_SPEED_UP) {
+    } else if (type === GAME_EVENT_TYPE.INPUT_EV_REPLAY_SPEED_UP) {
       this.replayOnSpeedUp()
     } else {
       this.handleLocalEvent(evt)
@@ -144,13 +145,13 @@ export class GameReplay extends Game<ReplayHud> {
       }
       const currLogEntry = this.log[this.logPointer]
       const currTs: Timestamp = this.gameTs + (
-        currLogEntry[0] === Protocol.LOG_HEADER
+        currLogEntry[0] === LOG_TYPE.HEADER
         ? 0
-        : currLogEntry[currLogEntry.length - 1]
+        : (currLogEntry[currLogEntry.length - 1] as Timestamp)
       )
 
       const nextLogEntry = this.log[nextIdx]
-      const diffToNext = nextLogEntry[nextLogEntry.length - 1]
+      const diffToNext = nextLogEntry[nextLogEntry.length - 1] as Timestamp
       const nextTs: Timestamp = currTs + diffToNext
       if (nextTs > maxGameTs) {
         // next log entry is too far into the future

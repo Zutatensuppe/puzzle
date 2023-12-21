@@ -1,8 +1,8 @@
 'use strict'
 
-import { ClientEvent, EncodedGame, GameEvent, ServerEvent } from '../../common/src/Types'
+import { CONN_STATE, ClientEvent, EncodedGame, EncodedGameLegacy, GameEvent, ServerEvent, ServerUpdateEvent } from '../../common/src/Types'
 import { logger } from '../../common/src/Util'
-import Protocol from '../../common/src/Protocol'
+import { CLIENT_EVENT_TYPE, SERVER_EVENT_TYPE } from '../../common/src/Protocol'
 import { GamePlay } from './GamePlay'
 
 const log = logger('Communication.js')
@@ -10,16 +10,10 @@ const log = logger('Communication.js')
 const CODE_GOING_AWAY = 1001
 const CODE_CUSTOM_DISCONNECT = 4000
 
-const CONN_STATE_NOT_CONNECTED = 0 // not connected yet
-const CONN_STATE_DISCONNECTED = 1 // not connected, but was connected before
-const CONN_STATE_CONNECTED = 2 // connected
-const CONN_STATE_CONNECTING = 3 // connecting
-const CONN_STATE_CLOSED = 4 // not connected (closed on purpose)
-
 let ws: WebSocket
 
-let missedMessages: ServerEvent[] = []
-let changesCallback = (msg: ServerEvent) => {
+let missedMessages: ServerUpdateEvent[] = []
+let changesCallback = (msg: ServerUpdateEvent) => {
   missedMessages.push(msg)
 }
 
@@ -28,7 +22,7 @@ let connectionStateChangeCallback = (state: number) => {
   missedStateChanges.push(state)
 }
 
-function onServerChange(callback: (msg: ServerEvent) => void): void {
+function onServerUpdate(callback: (msg: ServerUpdateEvent) => void): void {
   changesCallback = callback
   for (const missedMessage of missedMessages) {
     changesCallback(missedMessage)
@@ -44,7 +38,7 @@ function onConnectionStateChange(callback: (state: number) => void): void {
   missedStateChanges = []
 }
 
-let connectionState = CONN_STATE_NOT_CONNECTED
+let connectionState = CONN_STATE.NOT_CONNECTED
 const setConnectionState = (state: number): void => {
   if (connectionState !== state) {
     connectionState = state
@@ -52,7 +46,7 @@ const setConnectionState = (state: number): void => {
   }
 }
 function send(message: ClientEvent): void {
-  if (connectionState === CONN_STATE_CONNECTED) {
+  if (connectionState === CONN_STATE.CONNECTED) {
     try {
       ws.send(JSON.stringify(message))
     } catch (e) {
@@ -93,15 +87,15 @@ function cancelKeepAlive() {
 
 function connect(
   game: GamePlay,
-): Promise<EncodedGame> {
+): Promise<EncodedGame | EncodedGameLegacy> {
   clientSeq = 0
   events = {}
-  setConnectionState(CONN_STATE_CONNECTING)
+  setConnectionState(CONN_STATE.CONNECTING)
   return new Promise(resolve => {
     ws = new WebSocket(game.getWsAddres(), game.getClientId() + '|' + game.getGameId())
     ws.onopen = () => {
-      setConnectionState(CONN_STATE_CONNECTED)
-      send([Protocol.EV_CLIENT_INIT])
+      setConnectionState(CONN_STATE.CONNECTED)
+      send([CLIENT_EVENT_TYPE.INIT])
     }
     ws.onmessage = (e: MessageEvent) => {
       if (e.data === 'SERVER_INIT') {
@@ -116,10 +110,10 @@ function connect(
 
       const msg: ServerEvent = JSON.parse(e.data)
       const msgType = msg[0]
-      if (msgType === Protocol.EV_SERVER_INIT) {
+      if (msgType === SERVER_EVENT_TYPE.INIT) {
         const game = msg[1]
         resolve(game)
-      } else if (msgType === Protocol.EV_SERVER_EVENT) {
+      } else if (msgType === SERVER_EVENT_TYPE.UPDATE) {
         const msgClientId = msg[1]
         const msgClientSeq = msg[2]
         if (msgClientId === game.getClientId() && events[msgClientSeq]) {
@@ -135,16 +129,16 @@ function connect(
 
     ws.onerror = () => {
       cancelKeepAlive()
-      setConnectionState(CONN_STATE_DISCONNECTED)
+      setConnectionState(CONN_STATE.DISCONNECTED)
       throw `[ 2021-05-15 onerror ]`
     }
 
     ws.onclose = (e: CloseEvent) => {
       cancelKeepAlive()
       if (e.code === CODE_CUSTOM_DISCONNECT || e.code === CODE_GOING_AWAY) {
-        setConnectionState(CONN_STATE_CLOSED)
+        setConnectionState(CONN_STATE.CLOSED)
       } else {
-        setConnectionState(CONN_STATE_DISCONNECTED)
+        setConnectionState(CONN_STATE.DISCONNECTED)
       }
     }
   })
@@ -163,20 +157,14 @@ function sendClientEvent(evt: GameEvent): void {
   // and add the event locally
   clientSeq++
   events[clientSeq] = evt
-  send([Protocol.EV_CLIENT_EVENT, clientSeq, events[clientSeq]])
+  send([CLIENT_EVENT_TYPE.UPDATE, clientSeq, events[clientSeq]])
 }
 
 export default {
   connect,
   disconnect,
   sendClientEvent,
-  onServerChange,
+  onServerUpdate,
   onConnectionStateChange,
   CODE_CUSTOM_DISCONNECT,
-
-  CONN_STATE_NOT_CONNECTED,
-  CONN_STATE_DISCONNECTED,
-  CONN_STATE_CLOSED,
-  CONN_STATE_CONNECTED,
-  CONN_STATE_CONNECTING,
 }

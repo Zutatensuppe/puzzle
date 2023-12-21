@@ -1,4 +1,5 @@
 import { Point, Rect } from './Geometry'
+import { SERVER_EVENT_TYPE, LOG_TYPE, CLIENT_EVENT_TYPE, CHANGE_TYPE, GAME_EVENT_TYPE } from './Protocol'
 import { Rng, RngSerialized } from './Rng'
 
 // @see https://stackoverflow.com/a/59906630/392905
@@ -10,13 +11,66 @@ export type FixedLengthArray<T extends any[]> =
 
 export type Timestamp = number
 
-export type Input = any
-export type Change = Array<any>
+export type ChangePiece = [CHANGE_TYPE.PIECE, EncodedPiece]
+export type ChangePlayer = [CHANGE_TYPE.PLAYER, EncodedPlayer]
+export type ChangeData = [CHANGE_TYPE.DATA, PuzzleData]
+export type ChangePlayerSnap = [CHANGE_TYPE.PLAYER_SNAP, string]
+export type Change = ChangePiece | ChangePlayer | ChangeData | ChangePlayerSnap
 
-export type GameEvent = Array<any>
+export type GameEventInputMouseDown = [GAME_EVENT_TYPE.INPUT_EV_MOUSE_DOWN, number, number]
+export type GameEventInputMouseUp = [GAME_EVENT_TYPE.INPUT_EV_MOUSE_UP, number, number]
+export type GameEventInputMouseMove = [GAME_EVENT_TYPE.INPUT_EV_MOUSE_MOVE, number, number, number, number, 0 | 1]
+export type GameEventInputZoomIn = [GAME_EVENT_TYPE.INPUT_EV_ZOOM_IN, number, number]
+export type GameEventInputZoomOut = [GAME_EVENT_TYPE.INPUT_EV_ZOOM_OUT, number, number]
+export type GameEventInputBgColor = [GAME_EVENT_TYPE.INPUT_EV_BG_COLOR, string]
+export type GameEventInputPlayerColor = [GAME_EVENT_TYPE.INPUT_EV_PLAYER_COLOR, string]
+export type GameEventInputPlayerName = [GAME_EVENT_TYPE.INPUT_EV_PLAYER_NAME, string]
+export type GameEventInputMove = [GAME_EVENT_TYPE.INPUT_EV_MOVE, number, number]
+export type GameEventInputTogglePreview = [GAME_EVENT_TYPE.INPUT_EV_TOGGLE_PREVIEW]
+export type GameEventInputToggleSounds = [GAME_EVENT_TYPE.INPUT_EV_TOGGLE_SOUNDS]
+export type GameEventInputReplayTogglePause = [GAME_EVENT_TYPE.INPUT_EV_REPLAY_TOGGLE_PAUSE]
+export type GameEventInputReplaySpeedUp = [GAME_EVENT_TYPE.INPUT_EV_REPLAY_SPEED_UP]
+export type GameEventInputReplaySpeedDown = [GAME_EVENT_TYPE.INPUT_EV_REPLAY_SPEED_DOWN]
+export type GameEventInputTogglePlayerNames = [GAME_EVENT_TYPE.INPUT_EV_TOGGLE_PLAYER_NAMES]
+export type GameEventInputCenterFitPuzzle = [GAME_EVENT_TYPE.INPUT_EV_CENTER_FIT_PUZZLE]
+export type GameEventInputToggleFixedPieces = [GAME_EVENT_TYPE.INPUT_EV_TOGGLE_FIXED_PIECES]
+export type GameEventInputToggleLoosePieces = [GAME_EVENT_TYPE.INPUT_EV_TOGGLE_LOOSE_PIECES]
+export type GameEventInputStorePos = [GAME_EVENT_TYPE.INPUT_EV_STORE_POS, number]
+export type GameEventInputRestorePos = [GAME_EVENT_TYPE.INPUT_EV_RESTORE_POS, number]
+export type GameEventInputConnectionClose = [GAME_EVENT_TYPE.INPUT_EV_CONNECTION_CLOSE]
+export type GameEventInputToggleTable = [GAME_EVENT_TYPE.INPUT_EV_TOGGLE_TABLE]
+export type GameEventInputToggleInterface = [GAME_EVENT_TYPE.INPUT_EV_TOGGLE_INTERFACE]
+export type GameEvent = GameEventInputMouseDown
+  | GameEventInputMouseUp
+  | GameEventInputMouseMove
+  | GameEventInputZoomIn
+  | GameEventInputZoomOut
+  | GameEventInputBgColor
+  | GameEventInputPlayerColor
+  | GameEventInputPlayerName
+  | GameEventInputMove
+  | GameEventInputTogglePreview
+  | GameEventInputToggleSounds
+  | GameEventInputReplayTogglePause
+  | GameEventInputReplaySpeedUp
+  | GameEventInputReplaySpeedDown
+  | GameEventInputTogglePlayerNames
+  | GameEventInputCenterFitPuzzle
+  | GameEventInputToggleFixedPieces
+  | GameEventInputToggleLoosePieces
+  | GameEventInputStorePos
+  | GameEventInputRestorePos
+  | GameEventInputConnectionClose
+  | GameEventInputToggleTable
+  | GameEventInputToggleInterface
 
-export type ServerEvent = Array<any>
-export type ClientEvent = Array<any>
+export type ServerInitEvent = [SERVER_EVENT_TYPE.INIT, EncodedGame | EncodedGameLegacy]
+export type ServerUpdateEvent = [SERVER_EVENT_TYPE.UPDATE, string, number, Change[]]
+export type ServerEvent = ServerInitEvent | ServerUpdateEvent
+
+export type ClientInitEvent = [CLIENT_EVENT_TYPE.INIT]
+export type ClientUpdateEvent = [CLIENT_EVENT_TYPE.UPDATE, number, GameEvent]
+export type ClientEvent = ClientInitEvent | ClientUpdateEvent
 
 export type EncodedPlayer = FixedLengthArray<[
   string,
@@ -79,8 +133,43 @@ export type EncodedGame = FixedLengthArray<[
   Rect, // crop
 ]>
 
+export type HeaderLogEntry = [
+  LOG_TYPE.HEADER,
+  number, // gameObject.gameVersion,
+  number, // gameSettings.tiles,
+  ImageInfo, // gameSettings.image,
+  Timestamp, // ts,
+  ScoreMode, // gameObject.scoreMode,
+  ShapeMode, // gameObject.shapeMode,
+  SnapMode, // gameObject.snapMode,
+  number | null, // gameObject.creatorUserId,
+  1 | 0, // gameObject.private ? 1 : 0,
+  Rect | undefined, // gameSettings.crop,
+]
+
+export type AddPlayerLogEntry = [
+  LOG_TYPE.ADD_PLAYER,
+  string, // playerId,
+  Timestamp, // ts
+]
+
+export type UpdatePlayerLogEntry = [
+  LOG_TYPE.UPDATE_PLAYER,
+  number, // idx,
+  Timestamp, // ts
+]
+
+export type HandleGameEventLogEntry = [
+  LOG_TYPE.GAME_EVENT,
+  number, // idx,
+  GameEvent, // input,
+  Timestamp, // ts
+]
+
+export type LogEntry = HeaderLogEntry | HandleGameEventLogEntry | UpdatePlayerLogEntry | AddPlayerLogEntry
+
 export interface ReplayData {
-  log: any[],
+  log: LogEntry[],
   game: EncodedGame|null
 }
 
@@ -288,7 +377,7 @@ export const PLAYER_SETTINGS_DEFAULTS = {
   SHOW_PLAYER_NAMES: true,
 }
 
-export interface PuzzleStatus {
+export interface GameStatus {
   finished: boolean
   duration: number
   piecesDone: number
@@ -334,21 +423,21 @@ export enum SnapMode {
   REAL = 1,
 }
 
-export const DefaultScoreMode = (v: any): ScoreMode => {
+export const DefaultScoreMode = (v: unknown): ScoreMode => {
   if (v === ScoreMode.FINAL || v === ScoreMode.ANY) {
     return v
   }
   return ScoreMode.FINAL
 }
 
-export const DefaultShapeMode = (v: any): ShapeMode => {
+export const DefaultShapeMode = (v: unknown): ShapeMode => {
   if (v === ShapeMode.NORMAL || v === ShapeMode.ANY || v === ShapeMode.FLAT) {
     return v
   }
   return ShapeMode.NORMAL
 }
 
-export const DefaultSnapMode = (v: any): SnapMode => {
+export const DefaultSnapMode = (v: unknown): SnapMode => {
   if (v === SnapMode.NORMAL || v === SnapMode.REAL) {
     return v
   }
@@ -450,11 +539,24 @@ export interface MailService {
   sendRegistrationMail: (data: MailServiceRegistrationData) => any
 }
 
+export interface GamePlayers {
+  active: Player[]
+  idle: Player[]
+}
+
+export enum CONN_STATE {
+  NOT_CONNECTED = 0, // not connected yet
+  DISCONNECTED = 1, // not connected, but was connected before
+  CONNECTED = 2, // connected
+  CONNECTING = 3, // connecting
+  CLOSED = 4, // not connected (closed on purpose)
+}
+
 export interface Hud {
   setPuzzleCut: () => void
-  setPlayers: (v: any) => void
-  setStatus: (v: any) => void
-  setConnectionState: (v: any) => void
+  setPlayers: (v: GamePlayers) => void
+  setStatus: (v: GameStatus) => void
+  setConnectionState: (v: CONN_STATE) => void
   togglePreview: (v: boolean) => void
   toggleInterface: (v: boolean) => void
   addStatusMessage: (what: string, value: any) => void
@@ -486,8 +588,8 @@ export enum ImageSearchSort {
   GAME_COUNT_DESC = 'game_count_desc',
 }
 
-export const isImageSearchSort = (sort: any): sort is ImageSearchSort => {
-  return [
+export const isImageSearchSort = (sort: unknown): sort is ImageSearchSort => {
+  return typeof sort === 'string' && [
     'alpha_asc',
     'alpha_desc',
     'date_asc',
@@ -498,12 +600,13 @@ export const isImageSearchSort = (sort: any): sort is ImageSearchSort => {
 }
 
 export interface GraphicsInterface {
-  createCanvas: (width: number, height: number) => any // HTMLCanvasElement | Canvas
-  loadImageToBitmap: (puzzleImageUrl: string) => any // ImageBitmap
-  resizeBitmap: (bitmap: any, width: number, height: number) => any // ImageBitmap
-  createImageBitmapFromCanvas: (canvas: any) => any // ImageBitmap
-  repeat: (bitmap: any, rect: Rect, scale: number) => any // HTMLCanvasElement
-  colorizedCanvas (bitmap: any, mask: any, color: string): any // HTMLCanvasElement
+  createCanvas: (width: number, height: number) => HTMLCanvasElement
+  loadImageToBitmap: (puzzleImageUrl: string) => Promise<ImageBitmap>
+  resizeBitmap: (bitmap: ImageBitmap, width: number, height: number) => Promise<ImageBitmap>
+  bitmapToImageString: (bitmap: ImageBitmap) => string
+  createImageBitmapFromCanvas: (canvas: HTMLCanvasElement) => Promise<ImageBitmap>
+  repeat: (bitmap: ImageBitmap, rect: Rect, scale: number) => HTMLCanvasElement
+  colorizedCanvas (bitmap: ImageBitmap, mask: ImageBitmap, color: string): HTMLCanvasElement
 }
 
 export interface PlayerCursorsInterface {
@@ -529,6 +632,6 @@ export interface AssetsInterface {
 }
 
 export interface PuzzleTableInterface {
-  loadTexture(settings: PlayerSettingsData): Promise<CanvasImageSource | null>
-  getImage(settings: PlayerSettingsData): CanvasImageSource | null
+  loadTexture(gameId: string, settings: PlayerSettingsData): Promise<CanvasImageSource | null>
+  getImage(gameId: string, settings: PlayerSettingsData): CanvasImageSource | null
 }

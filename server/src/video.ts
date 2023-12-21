@@ -1,6 +1,6 @@
 // http://localhost:5173/replay/li7cstret0s2ijzjjuh
 
-import { Game, PLAYER_SETTINGS_DEFAULTS, Piece, Player, PlayerSettingsData, ReplayData, Timestamp } from '../../common/src/Types'
+import { Game, HeaderLogEntry, LogEntry, PLAYER_SETTINGS_DEFAULTS, Piece, Player, PlayerSettingsData, ReplayData, Timestamp } from '../../common/src/Types'
 import { createCanvas, CanvasRenderingContext2D } from 'canvas'
 // @ts-ignore
 import { polyfillPath2D } from 'path2d-polyfill'
@@ -8,7 +8,7 @@ import fs from 'fs'
 import { Graphics } from './Graphics'
 import { Assets } from './Assets'
 import GameCommon from '../../common/src/GameCommon'
-import Protocol from '../../common/src/Protocol'
+import { LOG_TYPE } from '../../common/src/Protocol'
 import { Renderer } from '../../common/src/Renderer'
 import { PlayerCursors } from '../../common/src/PlayerCursors'
 import { Camera } from '../../common/src/Camera'
@@ -55,7 +55,7 @@ const loadLog = async (gameId: string, baseUrl: string) => {
   return { game, completeLog }
 }
 
-const createImages = async (game: Game, outDir: string, baseUrl: string, completeLog: any[]) => {
+const createImages = async (game: Game, outDir: string, baseUrl: string, completeLog: LogEntry[]) => {
   const gameId = game.id
   const canvas = createCanvas(DIM.w, DIM.h) as unknown as HTMLCanvasElement
   const graphics = new Graphics(baseUrl)
@@ -87,8 +87,8 @@ const createImages = async (game: Game, outDir: string, baseUrl: string, complet
   const fireworks = new fireworksController(canvas, rng)
 
   log.info('initializing puzzleTable')
-  const puzzleTable = new PuzzleTable(gameId, graphics)
-  await puzzleTable.loadTexture(playerSettings)
+  const puzzleTable = new PuzzleTable(graphics)
+  await puzzleTable.loadTexture(gameId, playerSettings)
   log.info('puzzleTable inited')
 
   log.info('initializing renderer')
@@ -97,12 +97,8 @@ const createImages = async (game: Game, outDir: string, baseUrl: string, complet
   log.info('renderer inited')
 
   const piecesBounds = GameCommon.getPiecesBounds(gameId)
-  const tableWidth = GameCommon.getTableWidth(gameId)
-  const tableHeight = GameCommon.getTableHeight(gameId)
-  const puzzleWidth = GameCommon.getPuzzleWidth(gameId)
-  const puzzleHeight = GameCommon.getPuzzleHeight(gameId)
-  const boardDim = { w: puzzleWidth, h: puzzleHeight }
-  const tableDim = { w: tableWidth, h: tableHeight }
+  const boardDim = GameCommon.getBoardDim(gameId)
+  const tableDim = GameCommon.getTableDim(gameId)
 
   // center of puzzle
   const center = { x: tableDim.w / 2, y: tableDim.h / 2 }
@@ -120,15 +116,14 @@ const createImages = async (game: Game, outDir: string, baseUrl: string, complet
   )
 
   // GO THROUGH COMPLETE LOG
-  let gameTs = parseInt(completeLog[0][4], 10)
+  const header = completeLog[0] as HeaderLogEntry
+  let gameTs = header[4]
 
   let entry = null
   for (let i = 0; i < completeLog.length; i++) {
     entry = completeLog[i]
     const currTs: Timestamp = gameTs + (
-      entry[0] === Protocol.LOG_HEADER
-        ? 0
-        : entry[entry.length - 1]
+      entry[0] === LOG_TYPE.HEADER ? 0 : (entry[entry.length - 1] as Timestamp)
     )
     if (GameCommon.handleLogEntry(gameId, entry, currTs)) {
       if (i % SPEED === 0 || i + 1 === completeLog.length) {

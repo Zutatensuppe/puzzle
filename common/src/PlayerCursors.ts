@@ -45,6 +45,7 @@ export class PlayerCursors {
     const [url, fallback] = d ? [this.cursorDown, 'grab'] : [this.cursor, 'default']
     this.canvas.style.cursor = `url('${url}') ${this.CURSOR_W_2} ${this.CURSOR_H_2}, ${fallback}`
   }
+
   updatePlayerCursorColor(color: string) {
     this.cursorDown = this.graphics.colorizedCanvas(this.assets.Gfx.GRAB, this.assets.Gfx.GRAB_MASK, color).toDataURL()
     this.cursor = this.graphics.colorizedCanvas(this.assets.Gfx.HAND, this.assets.Gfx.HAND_MASK, color).toDataURL()

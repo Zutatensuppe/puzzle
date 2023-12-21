@@ -35,7 +35,7 @@
 </template>
 <script setup lang="ts">
 import { computed } from 'vue'
-import Communication from '../Communication'
+import { CONN_STATE } from '../../../common/src/Types'
 
 const emit = defineEmits<{
   (e: 'reconnect'): void
@@ -43,15 +43,15 @@ const emit = defineEmits<{
 }>()
 
 const props = defineProps<{
-  connectionState: number
+  connectionState: CONN_STATE
 }>()
 
 const lostConnection = computed((): boolean => {
-  return props.connectionState === Communication.CONN_STATE_DISCONNECTED
+  return props.connectionState === CONN_STATE.DISCONNECTED
 })
 
 const connecting = computed((): boolean => {
-  return props.connectionState === Communication.CONN_STATE_CONNECTING
+  return props.connectionState === CONN_STATE.CONNECTING
 })
 
 const show = computed((): boolean => {

@@ -24,7 +24,9 @@ export class Graphics implements GraphicsInterface {
     return img as unknown as ImageBitmap
   }
 
-  async createImageBitmapFromCanvas (canvas: HTMLCanvasElement): Promise<ImageBitmap> {
+  async createImageBitmapFromCanvas (
+    canvas: HTMLCanvasElement,
+  ): Promise<ImageBitmap> {
     const ab = (canvas as unknown as Canvas).toBuffer('image/png')
     return await this.bufferToImageBitmap(ab)
   }

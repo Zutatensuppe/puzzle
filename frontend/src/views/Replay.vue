@@ -170,7 +170,7 @@
 </template>
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, Ref, ref, watch } from 'vue'
-import { ReplayHud, Player, PuzzleStatus as PuzzleStatusType } from '../../../common/src/Types'
+import { ReplayHud, GameStatus, GamePlayers, CONN_STATE } from '../../../common/src/Types'
 import { GameReplay } from './../GameReplay'
 import { useRoute } from 'vue-router'
 import api from '../_api'
@@ -186,13 +186,8 @@ import StatusMessages from '../components/StatusMessages.vue'
 import IngameMenu from '../components/IngameMenu.vue'
 
 const statusMessages = ref<InstanceType<typeof StatusMessages>>() as Ref<InstanceType<typeof StatusMessages>>
-const players = ref<{ active: Player[], idle: Player[] }>({ active: [], idle: [] })
-const status = ref<PuzzleStatusType>({
-  finished: false,
-  duration: 0,
-  piecesDone: 0,
-  piecesTotal: 0,
-})
+const players = ref<GamePlayers>({ active: [], idle: [] })
+const status = ref<GameStatus>({ finished: false, duration: 0, piecesDone: 0, piecesTotal: 0 })
 const dialog = ref<boolean>(false)
 const dialogPersistent = ref<boolean | undefined>(undefined)
 const overlay = ref<string>('')
@@ -360,13 +355,13 @@ const hud: ReplayHud = {
   setPuzzleCut: () => {
     cuttingPuzzle.value = false
   },
-  setPlayers: (v: any) => {
+  setPlayers: (v: GamePlayers) => {
     players.value = v
   },
-  setStatus: (v: any) => {
+  setStatus: (v: GameStatus) => {
     status.value = v
   },
-  setConnectionState: (v: any) => {
+  setConnectionState: (v: CONN_STATE) => {
     connectionState.value = v
   },
   togglePreview: (v: boolean) => {
@@ -376,7 +371,7 @@ const hud: ReplayHud = {
       closeDialog()
     }
   },
-  toggleInterface: (v: any) => {
+  toggleInterface: (v: boolean) => {
     showInterface.value = !!v
   },
   addStatusMessage: (what: string, value: any) => statusMessages.value.addMessage(what, value),

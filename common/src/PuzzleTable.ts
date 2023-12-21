@@ -1,51 +1,38 @@
-import { Dim, Point, Rect } from './Geometry'
 import GameCommon from './GameCommon'
+import { Dim, Point, Rect } from './Geometry'
 import { GraphicsInterface, PlayerSettingsData, PuzzleTableInterface } from './Types'
 import { logger } from './Util'
 
 const log = logger('PuzzleTable.ts')
 
-export class PuzzleTable implements PuzzleTableInterface {
-  private images: Record<string, ImageBitmap | null> = {}
-  private bounds: Rect
-  private boardPos: Point
-  private boardDim: Dim
+const cache: Record<string, ImageBitmap | null> = {}
 
+export class PuzzleTable implements PuzzleTableInterface {
   constructor(
-    gameId: string,
     private graphics: GraphicsInterface,
   ) {
-    this.bounds = GameCommon.getBounds(gameId)
-    const tableWidth = GameCommon.getTableWidth(gameId)
-    const tableHeight = GameCommon.getTableHeight(gameId)
-    const puzzleWidth = GameCommon.getPuzzleWidth(gameId)
-    const puzzleHeight = GameCommon.getPuzzleHeight(gameId)
-
-    this.boardPos = {
-      x: (tableWidth - puzzleWidth) / 2,
-      y: (tableHeight - puzzleHeight) / 2,
-    }
-    this.boardDim = {
-      w: puzzleWidth,
-      h: puzzleHeight,
-    }
+    // pass
   }
 
-  async loadTexture(settings: PlayerSettingsData): Promise<ImageBitmap | null> {
+  async loadTexture(gameId: string, settings: PlayerSettingsData): Promise<ImageBitmap | null> {
     const textureNameOrUrl = settings.useCustomTableTexture ? settings.customTableTexture : settings.tableTexture
     if (!textureNameOrUrl) {
       return null
     }
     const scale = settings.useCustomTableTexture ? settings.customTableTextureScale : 1 // determined later, but always fixed for cache key
-    const cacheKey = textureNameOrUrl + '___' + scale
-    if (this.images[cacheKey]) {
-      return this.images[cacheKey]
+    const cacheKey = gameId + '___' + textureNameOrUrl + '___' + scale
+    if (cache[cacheKey]) {
+      return cache[cacheKey]
     }
-    if (this.images[cacheKey] === null) {
+    if (cache[cacheKey] === null) {
       return null
     }
 
-    this.images[cacheKey] = null
+    cache[cacheKey] = null
+
+    const bounds = GameCommon.getBounds(gameId)
+    const boardPos = GameCommon.getBoardPos(gameId)
+    const boardDim = GameCommon.getBoardDim(gameId)
 
     const map: Record<string, { url: string, scale: number, isDark: boolean }> = {
       dark: { url: '/assets/textures/wood-dark.jpg', scale: 1.5, isDark: true },
@@ -60,9 +47,9 @@ export class PuzzleTable implements PuzzleTableInterface {
       : { url: textureNameOrUrl, scale, isDark: false }
     try {
       const bitmap = await this.graphics.loadImageToBitmap(obj.url)
-      const texture = await this._createTableGfx(bitmap, obj.scale, obj.isDark)
-      this.images[cacheKey] = texture
-      return this.images[cacheKey]
+      const texture = await this._createTableGfx(bounds, boardPos, boardDim, bitmap, obj.scale, obj.isDark)
+      cache[cacheKey] = texture
+      return cache[cacheKey]
     } catch (e) {
       log.error('unable to load', obj.url)
       log.error(e)
@@ -70,21 +57,24 @@ export class PuzzleTable implements PuzzleTableInterface {
     }
   }
 
-  getImage(settings: PlayerSettingsData): ImageBitmap | null {
+  getImage(gameId: string, settings: PlayerSettingsData): ImageBitmap | null {
     const textureNameOrUrl = settings.useCustomTableTexture ? settings.customTableTexture : settings.tableTexture
     const scale = settings.useCustomTableTexture ? settings.customTableTextureScale : 1 // determined later, but always fixed for cache key
-    const cacheKey = textureNameOrUrl + '___' + scale
-    return this.images[cacheKey] || null
+    const cacheKey = gameId + '___' + textureNameOrUrl + '___' + scale
+    return cache[cacheKey] || null
   }
 
   async _createTableGfx(
+    bounds: Rect,
+    boardPos: Point,
+    boardDim: Dim,
     bitmap: ImageBitmap,
     scale: number,
     isDark: boolean,
   ): Promise<ImageBitmap> {
-    const tableCanvas = this.graphics.repeat(bitmap, this.bounds, scale)
+    const tableCanvas = this.graphics.repeat(bitmap, bounds, scale)
     const adjustedBounds: Dim = { w: tableCanvas.width, h: tableCanvas.height }
-    const ratio = adjustedBounds.w / this.bounds.w
+    const ratio = adjustedBounds.w / bounds.w
     const tableCtx = tableCanvas.getContext('2d') as CanvasRenderingContext2D
 
     // darken the outer edges of the table a bit
@@ -118,8 +108,8 @@ export class PuzzleTable implements PuzzleTableInterface {
       )
     }
 
-    const boardX = -this.bounds.x + this.boardPos.x
-    const boardY = -this.bounds.y + this.boardPos.y
+    const boardX = -bounds.x + boardPos.x
+    const boardY = -bounds.y + boardPos.y
 
     // darken the place where the puzzle should be at the end a bit
     {
@@ -128,25 +118,25 @@ export class PuzzleTable implements PuzzleTableInterface {
       tableCtx.fillRect(
         ratio * (boardX - border.w),
         ratio * (boardY - border.h),
-        ratio * (this.boardDim.w + 2 * border.w),
+        ratio * (boardDim.w + 2 * border.w),
         ratio * border.h,
       )
       tableCtx.fillRect(
         ratio * (boardX - border.w),
         ratio * boardY,
         ratio * border.h,
-        ratio * this.boardDim.h,
+        ratio * boardDim.h,
       )
       tableCtx.fillRect(
-        ratio * (boardX + this.boardDim.w),
+        ratio * (boardX + boardDim.w),
         ratio * (boardY),
         ratio * border.w,
-        ratio * this.boardDim.h,
+        ratio * boardDim.h,
       )
       tableCtx.fillRect(
         ratio * (boardX - border.w),
-        ratio * (boardY + this.boardDim.h),
-        ratio * (this.boardDim.w + 2 * border.w),
+        ratio * (boardY + boardDim.h),
+        ratio * (boardDim.w + 2 * border.w),
         ratio * border.h,
       )
     }
@@ -157,8 +147,8 @@ export class PuzzleTable implements PuzzleTableInterface {
       tableCtx.fillRect(
         ratio * boardX,
         ratio * boardY,
-        ratio * this.boardDim.w,
-        ratio * this.boardDim.h,
+        ratio * boardDim.w,
+        ratio * boardDim.h,
       )
     }
 
