@@ -50,6 +50,13 @@ export class Graphics implements GraphicsInterface {
     return bitmap
   }
 
+  bitmapToImageString(bitmap: ImageBitmap): string {
+    const c = this.createCanvas(bitmap.width, bitmap.height)
+    const ctx = c.getContext('2d') as CanvasRenderingContext2D
+    ctx.drawImage(bitmap, 0, 0)
+    return c.toDataURL()
+  }
+
   async resizeBitmap (
     bitmap: ImageBitmap,
     width: number,
