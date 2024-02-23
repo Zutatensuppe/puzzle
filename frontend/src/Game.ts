@@ -7,7 +7,6 @@ import GameCommon from '../../common/src/GameCommon'
 import fireworksController from '../../common/src/Fireworks'
 import { CHANGE_TYPE, GAME_EVENT_TYPE } from '../../common/src/Protocol'
 import Time from '../../common/src/Time'
-import { Dim } from '../../common/src/Geometry'
 import {
   Player,
   Piece,
