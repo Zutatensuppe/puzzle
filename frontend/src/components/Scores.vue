@@ -36,13 +36,13 @@ const props = defineProps<{
 
 const actives = computed((): Array<any> => {
   // TODO: dont sort in place
-  props.players.active.sort((a: any, b: any) => b.points - a.points)
+  props.players.active.sort((a: Player, b: Player) => b.points - a.points)
   return props.players.active
 })
 
 const idles = computed((): Array<any> => {
   // TODO: dont sort in place
-  props.players.idle.sort((a: any, b: any) => b.points - a.points)
+  props.players.idle.sort((a: Player, b: Player) => b.points - a.points)
   return props.players.idle
 })
 

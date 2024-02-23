@@ -1,4 +1,4 @@
-import Protocol from '../../common/src/Protocol'
+import { GAME_EVENT_TYPE } from '../../common/src/Protocol'
 import { GameEvent } from '../../common/src/Types'
 import { Camera, Snapshot } from '../../common/src/Camera'
 import { Game } from './Game'
@@ -88,7 +88,7 @@ export class EventAdapter {
     this.lastMouseRaw = [ev.offsetX, ev.offsetY]
     if (ev.button === 0) {
       this.mouseDown = true
-      this.addEvent([Protocol.INPUT_EV_MOUSE_DOWN, ...this.lastMouseWorld])
+      this.addEvent([GAME_EVENT_TYPE.INPUT_EV_MOUSE_DOWN, ...this.lastMouseWorld])
     }
   }
 
@@ -97,7 +97,7 @@ export class EventAdapter {
     this.lastMouseRaw = [ev.offsetX, ev.offsetY]
     if (ev.button === 0) {
       this.mouseDown = false
-      this.addEvent([Protocol.INPUT_EV_MOUSE_UP, ...this.lastMouseWorld])
+      this.addEvent([GAME_EVENT_TYPE.INPUT_EV_MOUSE_UP, ...this.lastMouseWorld])
     }
   }
 
@@ -110,7 +110,7 @@ export class EventAdapter {
       -(this.lastMouseRaw[0] - ev.offsetX),
       -(this.lastMouseRaw[1] - ev.offsetY),
     )
-    this.addEvent([Protocol.INPUT_EV_MOUSE_MOVE, ...this.lastMouseWorld, ...diffWorld, this.mouseDown ? 1 : 0])
+    this.addEvent([GAME_EVENT_TYPE.INPUT_EV_MOUSE_MOVE, ...this.lastMouseWorld, ...diffWorld, this.mouseDown ? 1 : 0])
     this.lastMouseRaw = [ev.offsetX, ev.offsetY]
   }
 
@@ -118,8 +118,8 @@ export class EventAdapter {
     this.lastMouseWorld = this._mousePos(ev)
     if (this.game.getViewport().canZoom(ev.deltaY < 0 ? 'in' : 'out')) {
       const evt = ev.deltaY < 0
-        ? Protocol.INPUT_EV_ZOOM_IN
-        : Protocol.INPUT_EV_ZOOM_OUT
+        ? GAME_EVENT_TYPE.INPUT_EV_ZOOM_IN
+        : GAME_EVENT_TYPE.INPUT_EV_ZOOM_OUT
       this.addEvent([evt, ...this.lastMouseWorld])
     }
   }
@@ -139,35 +139,35 @@ export class EventAdapter {
 
     if (this.game.getMode() === MODE_REPLAY) {
       if (ev.code === 'KeyI') {
-        this.addEvent([Protocol.INPUT_EV_REPLAY_SPEED_UP])
+        this.addEvent([GAME_EVENT_TYPE.INPUT_EV_REPLAY_SPEED_UP])
       } else if (ev.code === 'KeyO') {
-        this.addEvent([Protocol.INPUT_EV_REPLAY_SPEED_DOWN])
+        this.addEvent([GAME_EVENT_TYPE.INPUT_EV_REPLAY_SPEED_DOWN])
       } else if (ev.code === 'KeyP') {
-        this.addEvent([Protocol.INPUT_EV_REPLAY_TOGGLE_PAUSE])
+        this.addEvent([GAME_EVENT_TYPE.INPUT_EV_REPLAY_TOGGLE_PAUSE])
       }
     }
 
     if (ev.code === 'KeyH') {
-      this.addEvent([Protocol.INPUT_EV_TOGGLE_INTERFACE])
+      this.addEvent([GAME_EVENT_TYPE.INPUT_EV_TOGGLE_INTERFACE])
     } else if (ev.code === 'Space') {
-      this.addEvent([Protocol.INPUT_EV_TOGGLE_PREVIEW])
+      this.addEvent([GAME_EVENT_TYPE.INPUT_EV_TOGGLE_PREVIEW])
     } else if (ev.code === 'KeyF') {
-      this.addEvent([Protocol.INPUT_EV_TOGGLE_FIXED_PIECES])
+      this.addEvent([GAME_EVENT_TYPE.INPUT_EV_TOGGLE_FIXED_PIECES])
     } else if (ev.code === 'KeyG') {
-      this.addEvent([Protocol.INPUT_EV_TOGGLE_LOOSE_PIECES])
+      this.addEvent([GAME_EVENT_TYPE.INPUT_EV_TOGGLE_LOOSE_PIECES])
     } else if (ev.code === 'KeyM') {
-      this.addEvent([Protocol.INPUT_EV_TOGGLE_SOUNDS])
+      this.addEvent([GAME_EVENT_TYPE.INPUT_EV_TOGGLE_SOUNDS])
     } else if (ev.code === 'KeyN') {
-      this.addEvent([Protocol.INPUT_EV_TOGGLE_PLAYER_NAMES])
+      this.addEvent([GAME_EVENT_TYPE.INPUT_EV_TOGGLE_PLAYER_NAMES])
     } else if (ev.code === 'KeyT') {
-      this.addEvent([Protocol.INPUT_EV_TOGGLE_TABLE])
+      this.addEvent([GAME_EVENT_TYPE.INPUT_EV_TOGGLE_TABLE])
     } else if (ev.code === 'KeyC') {
-      this.addEvent([Protocol.INPUT_EV_CENTER_FIT_PUZZLE])
+      this.addEvent([GAME_EVENT_TYPE.INPUT_EV_CENTER_FIT_PUZZLE])
     } else {
       for (let i = 0; i <= 9; i++) {
         if (ev.code === `Digit${i}`) {
           // store or restore pos+zoom in slot i
-          const evt = ev.shiftKey ? Protocol.INPUT_EV_STORE_POS : Protocol.INPUT_EV_RESTORE_POS
+          const evt = ev.shiftKey ? GAME_EVENT_TYPE.INPUT_EV_STORE_POS : GAME_EVENT_TYPE.INPUT_EV_RESTORE_POS
           this.addEvent([evt, i])
           break
         }
@@ -216,8 +216,8 @@ export class EventAdapter {
     const diffWorld = [
       -(prevWorld.x - currWorld.x),
       -(prevWorld.y - currWorld.y),
-    ]
-    this.addEvent([Protocol.INPUT_EV_MOUSE_MOVE, ...this.lastMouseWorld, ...diffWorld, this.mouseDown ? 1 : 0])
+    ] as const
+    this.addEvent([GAME_EVENT_TYPE.INPUT_EV_MOUSE_MOVE, ...this.lastMouseWorld, ...diffWorld, this.mouseDown ? 1 : 0])
   }
 
   addEvent (event: GameEvent) {
@@ -239,7 +239,7 @@ export class EventAdapter {
     if (w !== 0 || h !== 0) {
       const amount = (this.SHIFT ? 24 : 12) * Math.sqrt(this.game.getViewport().getCurrentZoom())
       const pos = this.game.getViewport().viewportDimToWorld({w: w * amount, h: h * amount})
-      this.addEvent([Protocol.INPUT_EV_MOVE, pos.w, pos.h])
+      this.addEvent([GAME_EVENT_TYPE.INPUT_EV_MOVE, pos.w, pos.h])
       if (this.lastMouseWorld) {
         this.lastMouseWorld[0] -= pos.w
         this.lastMouseWorld[1] -= pos.h
@@ -251,12 +251,12 @@ export class EventAdapter {
     } else if (this.ZOOM_IN) {
       if (this.game.getViewport().canZoom('in')) {
         const target = this.lastMouseWorld || this._canvasCenter()
-        this.addEvent([Protocol.INPUT_EV_ZOOM_IN, ...target])
+        this.addEvent([GAME_EVENT_TYPE.INPUT_EV_ZOOM_IN, ...target])
       }
     } else if (this.ZOOM_OUT) {
       if (this.game.getViewport().canZoom('out')) {
         const target = this.lastMouseWorld || this._canvasCenter()
-        this.addEvent([Protocol.INPUT_EV_ZOOM_OUT, ...target])
+        this.addEvent([GAME_EVENT_TYPE.INPUT_EV_ZOOM_OUT, ...target])
       }
     }
   }

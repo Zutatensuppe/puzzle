@@ -1,7 +1,7 @@
 import fs from 'fs'
-import Protocol from '../../common/src/Protocol'
+import { LOG_TYPE } from '../../common/src/Protocol'
 import Time from '../../common/src/Time'
-import { DefaultScoreMode, DefaultShapeMode, DefaultSnapMode, Game, Timestamp } from '../../common/src/Types'
+import { DefaultScoreMode, DefaultShapeMode, DefaultSnapMode, Game, LogEntry, Timestamp } from '../../common/src/Types'
 import { logger } from './../../common/src/Util'
 import config from './Config'
 
@@ -56,7 +56,7 @@ function hasReplay(game: Game): boolean {
   return true
 }
 
-const _log = (gameId: string, type: number, ...args: Array<any>): void => {
+const _log = (gameId: string, logRow: LogEntry): void => {
   const idxfile = idxname(gameId)
   if (!fs.existsSync(idxfile)) {
     return
@@ -67,13 +67,15 @@ const _log = (gameId: string, type: number, ...args: Array<any>): void => {
     idxObj.currentFile = filename(gameId, idxObj.total)
   }
 
-  const timestampIdx = type === Protocol.LOG_HEADER ? 3 : (args.length - 1)
-  const ts: Timestamp = args[timestampIdx]
-  if (type !== Protocol.LOG_HEADER) {
+  const type = logRow[0]
+  const timestampIdx = type === LOG_TYPE.HEADER? 4 : (logRow.length - 1)
+  const ts: Timestamp = logRow[timestampIdx] as Timestamp
+  if (type !== LOG_TYPE.HEADER) {
     // for everything but header save the diff to last log entry
-    args[timestampIdx] = ts - idxObj.lastTs
+    logRow[timestampIdx] = ts - idxObj.lastTs
   }
-  const line = JSON.stringify([type, ...args]).slice(1, -1)
+
+  const line = JSON.stringify(logRow).slice(1, -1)
   fs.appendFileSync(idxObj.currentFile, line + '\n')
 
   idxObj.total++
@@ -84,7 +86,7 @@ const _log = (gameId: string, type: number, ...args: Array<any>): void => {
 const get = (
   gameId: string,
   offset: number = 0,
-): any[] => {
+): LogEntry[] => {
   const idxfile = idxname(gameId)
   if (!fs.existsSync(idxfile)) {
     return []

@@ -1,14 +1,15 @@
-import Geometry, { Point, Rect } from './Geometry'
+import Geometry, { Dim, Point, Rect } from './Geometry'
 import { cropUrl } from './ImageService'
-import Protocol from './Protocol'
+import { CHANGE_TYPE, GAME_EVENT_TYPE, LOG_TYPE } from './Protocol'
 import { Rng } from './Rng'
 import Time from './Time'
 import {
   Change,
   EncodedPiece,
   Game,
+  GameEvent,
   ImageInfo,
-  Input,
+  LogEntry,
   Piece,
   PieceChange,
   Player,
@@ -582,6 +583,37 @@ const getTableHeight = (gameId: string): number => {
   return GAMES[gameId].puzzle.info.table.height
 }
 
+const getTableDim = (gameId: string): Dim => {
+  return {
+    w: GAMES[gameId].puzzle.info.table.width,
+    h: GAMES[gameId].puzzle.info.table.height,
+  }
+}
+
+const getBoardDim = (gameId: string): Dim => {
+  return {
+    w: GAMES[gameId].puzzle.info.width,
+    h: GAMES[gameId].puzzle.info.height,
+  }
+}
+
+const getPieceDim = (gameId: string): Dim => {
+  const pieceDrawSize = getPieceDrawSize(gameId)
+  return {
+    w: pieceDrawSize,
+    h: pieceDrawSize,
+  }
+}
+
+const getBoardPos = (gameId: string): Point => {
+  const tableDim = getTableDim(gameId)
+  const boardDim = getBoardDim(gameId)
+  return {
+    x: (tableDim.w - boardDim.w) / 2,
+    y: (tableDim.h - boardDim.h) / 2,
+  }
+}
+
 const getPuzzle = (gameId: string): Puzzle => {
   return GAMES[gameId].puzzle
 }
@@ -614,10 +646,10 @@ const maySnapToFinal = (gameId: string, pieceIdxs: number[]): boolean => {
   return true
 }
 
-function handleInput(
+function handleGameEvent(
   gameId: string,
   playerId: string,
-  input: Input,
+  gameEvent: GameEvent,
   ts: Timestamp,
 ): Array<Change> {
   const puzzle = GAMES[gameId].puzzle
@@ -625,12 +657,12 @@ function handleInput(
   const changes: Array<Change> = []
 
   const _dataChange = (): void => {
-    changes.push([Protocol.CHANGE_DATA, puzzle.data])
+    changes.push([CHANGE_TYPE.DATA, puzzle.data])
   }
 
   const _pieceChange = (pieceIdx: number): void => {
     changes.push([
-      Protocol.CHANGE_PIECE,
+      CHANGE_TYPE.PIECE,
       Util.encodePiece(getPiece(gameId, pieceIdx)),
     ])
   }
@@ -646,10 +678,7 @@ function handleInput(
     if (!player) {
       return
     }
-    changes.push([
-      Protocol.CHANGE_PLAYER,
-      Util.encodePlayer(player),
-    ])
+    changes.push([CHANGE_TYPE.PLAYER, Util.encodePlayer(player)])
   }
 
   let anySnapped: boolean = false
@@ -700,8 +729,8 @@ function handleInput(
     }
   }
 
-  const type = input[0]
-  if (type === Protocol.INPUT_EV_CONNECTION_CLOSE) {
+  const type = gameEvent[0]
+  if (type === GAME_EVENT_TYPE.INPUT_EV_CONNECTION_CLOSE) {
     // player lost connection, so un-own all their pieces
     const pieceIdx = getFirstOwnedPieceIdx(gameId, playerId)
     if (pieceIdx >= 0) {
@@ -709,21 +738,21 @@ function handleInput(
       setPiecesOwner(gameId, pieceIdxs, 0)
       _pieceChanges(pieceIdxs)
     }
-  } else if (type === Protocol.INPUT_EV_BG_COLOR) {
-    const bgcolor = input[1]
+  } else if (type === GAME_EVENT_TYPE.INPUT_EV_BG_COLOR) {
+    const bgcolor = gameEvent[1]
     changePlayer(gameId, playerId, { bgcolor, ts })
     _playerChange()
-  } else if (type === Protocol.INPUT_EV_PLAYER_COLOR) {
-    const color = input[1]
+  } else if (type === GAME_EVENT_TYPE.INPUT_EV_PLAYER_COLOR) {
+    const color = gameEvent[1]
     changePlayer(gameId, playerId, { color, ts })
     _playerChange()
-  } else if (type === Protocol.INPUT_EV_PLAYER_NAME) {
-    const name = `${input[1]}`.substr(0, 16)
+  } else if (type === GAME_EVENT_TYPE.INPUT_EV_PLAYER_NAME) {
+    const name = `${gameEvent[1]}`.substr(0, 16)
     changePlayer(gameId, playerId, { name, ts })
     _playerChange()
-  } else if (type === Protocol.INPUT_EV_MOVE) {
-    const diffX = input[1]
-    const diffY = input[2]
+  } else if (type === GAME_EVENT_TYPE.INPUT_EV_MOVE) {
+    const diffX = gameEvent[1]
+    const diffY = gameEvent[2]
     const player = getPlayer(gameId, playerId)
     if (player) {
       const x = player.x - diffX
@@ -741,9 +770,9 @@ function handleInput(
         }
       }
     }
-  } else if (type === Protocol.INPUT_EV_MOUSE_DOWN) {
-    const x = input[1]
-    const y = input[2]
+  } else if (type === GAME_EVENT_TYPE.INPUT_EV_MOUSE_DOWN) {
+    const x = gameEvent[1]
+    const y = gameEvent[2]
     const pos = {x, y}
 
     changePlayer(gameId, playerId, { d: 1, ts })
@@ -759,10 +788,10 @@ function handleInput(
       setPiecesOwner(gameId, tileIdxs, playerId)
       _pieceChanges(tileIdxs)
     }
-  } else if (type === Protocol.INPUT_EV_MOUSE_MOVE) {
-    const x = input[1]
-    const y = input[2]
-    const down = input[5]
+  } else if (type === GAME_EVENT_TYPE.INPUT_EV_MOUSE_MOVE) {
+    const x = gameEvent[1]
+    const y = gameEvent[2]
+    const down = gameEvent[5]
 
     if (!down) {
       // player is just moving the hand
@@ -775,10 +804,10 @@ function handleInput(
         changePlayer(gameId, playerId, {ts})
         _playerChange()
       } else {
-        const x = input[1]
-        const y = input[2]
-        const diffX = input[3]
-        const diffY = input[4]
+        const x = gameEvent[1]
+        const y = gameEvent[2]
+        const diffX = gameEvent[3]
+        const diffY = gameEvent[4]
 
         // player is moving a piece (and hand)
         changePlayer(gameId, playerId, {x, y, ts})
@@ -793,7 +822,7 @@ function handleInput(
         }
       }
     }
-  } else if (type === Protocol.INPUT_EV_MOUSE_UP) {
+  } else if (type === GAME_EVENT_TYPE.INPUT_EV_MOUSE_UP) {
     const d = 0 // mouse down = false
 
     const pieceIdx = getFirstOwnedPieceIdx(gameId, playerId)
@@ -910,14 +939,14 @@ function handleInput(
       changePlayer(gameId, playerId, { d, ts })
       _playerChange()
     }
-  } else if (type === Protocol.INPUT_EV_ZOOM_IN) {
-    const x = input[1]
-    const y = input[2]
+  } else if (type === GAME_EVENT_TYPE.INPUT_EV_ZOOM_IN) {
+    const x = gameEvent[1]
+    const y = gameEvent[2]
     changePlayer(gameId, playerId, { x, y, ts })
     _playerChange()
-  } else if (type === Protocol.INPUT_EV_ZOOM_OUT) {
-    const x = input[1]
-    const y = input[2]
+  } else if (type === GAME_EVENT_TYPE.INPUT_EV_ZOOM_OUT) {
+    const x = gameEvent[1]
+    const y = gameEvent[2]
     changePlayer(gameId, playerId, { x, y, ts })
     _playerChange()
   } else {
@@ -926,26 +955,23 @@ function handleInput(
   }
 
   if (anySnapped) {
-    changes.push([
-      Protocol.PLAYER_SNAP,
-      playerId,
-    ])
+    changes.push([CHANGE_TYPE.PLAYER_SNAP, playerId])
   }
   return changes
 }
 
 function handleLogEntry(
   gameId: string,
-  logEntry: any[],
+  logEntry: LogEntry,
   ts: Timestamp,
 ): boolean {
   const entry = logEntry
-  if (entry[0] === Protocol.LOG_ADD_PLAYER) {
+  if (entry[0] === LOG_TYPE.ADD_PLAYER) {
     const playerId = entry[1]
     addPlayer(gameId, playerId, ts)
     return true
   }
-  if (entry[0] === Protocol.LOG_UPDATE_PLAYER) {
+  if (entry[0] === LOG_TYPE.UPDATE_PLAYER) {
     const playerId = getPlayerIdByIndex(gameId, entry[1])
     if (!playerId) {
       throw '[ 2021-05-17 player not found (update player) ]'
@@ -953,13 +979,13 @@ function handleLogEntry(
     addPlayer(gameId, playerId, ts)
     return true
   }
-  if (entry[0] === Protocol.LOG_HANDLE_INPUT) {
+  if (entry[0] === LOG_TYPE.GAME_EVENT) {
     const playerId = getPlayerIdByIndex(gameId, entry[1])
     if (!playerId) {
       throw '[ 2021-05-17 player not found (handle input) ]'
     }
     const input = entry[2]
-    handleInput(gameId, playerId, input, ts)
+    handleGameEvent(gameId, playerId, input, ts)
     return true
   }
   return false
@@ -1068,6 +1094,10 @@ export default {
   getBounds,
   getTableWidth,
   getTableHeight,
+  getTableDim,
+  getBoardDim,
+  getBoardPos,
+  getPieceDim,
   getPuzzle,
   getRng,
   getPuzzleWidth,
@@ -1083,7 +1113,7 @@ export default {
   getScoreMode,
   getSnapMode,
   getShapeMode,
-  handleInput,
+  handleGameEvent,
   handleLogEntry,
 
   /// operate directly on the game object given

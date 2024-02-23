@@ -1,7 +1,7 @@
-import vite from 'vite'
+import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
 
-export default vite.defineConfig({
+export default defineConfig({
   plugins: [ vue() ],
   root: './src',
   build: {

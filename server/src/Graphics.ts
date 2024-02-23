@@ -24,7 +24,9 @@ export class Graphics implements GraphicsInterface {
     return img as unknown as ImageBitmap
   }
 
-  async createImageBitmapFromCanvas (canvas: HTMLCanvasElement): Promise<ImageBitmap> {
+  async createImageBitmapFromCanvas (
+    canvas: HTMLCanvasElement,
+  ): Promise<ImageBitmap> {
     const ab = (canvas as unknown as Canvas).toBuffer('image/png')
     return await this.bufferToImageBitmap(ab)
   }
@@ -46,6 +48,13 @@ export class Graphics implements GraphicsInterface {
     const blob = new Blob([buff])
     const bitmap = await this.createImageBitmapFromBlob(blob)
     return bitmap
+  }
+
+  bitmapToImageString(bitmap: ImageBitmap): string {
+    const c = this.createCanvas(bitmap.width, bitmap.height)
+    const ctx = c.getContext('2d') as CanvasRenderingContext2D
+    ctx.drawImage(bitmap, 0, 0)
+    return c.toDataURL()
   }
 
   async resizeBitmap (

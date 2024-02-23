@@ -5,13 +5,11 @@ import { Camera } from '../../common/src/Camera'
 import Util, { logger } from '../../common/src/Util'
 import GameCommon from '../../common/src/GameCommon'
 import fireworksController from '../../common/src/Fireworks'
-import Protocol from '../../common/src/Protocol'
+import { CHANGE_TYPE, GAME_EVENT_TYPE } from '../../common/src/Protocol'
 import Time from '../../common/src/Time'
-import { Dim } from '../../common/src/Geometry'
 import {
   Player,
   Piece,
-  ServerEvent,
   Hud,
   ScoreMode,
   SnapMode,
@@ -20,6 +18,9 @@ import {
   ImageInfo,
   FireworksInterface,
   PlayerSettingsData,
+  ServerUpdateEvent,
+  GamePlayers,
+  GameStatus,
 } from '../../common/src/Types'
 import { Assets } from './Assets'
 import { EventAdapter } from './EventAdapter'
@@ -55,9 +56,6 @@ export abstract class Game<HudType extends Hud> {
   protected puzzleStatus!: PuzzleStatus
   private fireworks!: FireworksInterface
   private renderer!: Renderer
-
-  private tableDim!: Dim
-  private boardDim!: Dim
 
   private isInterfaceVisible: boolean = true
   private isPreviewVisible: boolean = false
@@ -140,25 +138,19 @@ export abstract class Game<HudType extends Hud> {
     await this.assets.init(graphics)
     this.playerCursors = new PlayerCursors(this.canvas, this.assets, graphics)
 
-    const puzzleWidth = GameCommon.getPuzzleWidth(this.gameId)
-    const puzzleHeight = GameCommon.getPuzzleHeight(this.gameId)
-    const tableWidth = GameCommon.getTableWidth(this.gameId)
-    const tableHeight = GameCommon.getTableHeight(this.gameId)
-    this.tableDim = { w: tableWidth, h: tableHeight }
-    this.boardDim = { w: puzzleWidth, h: puzzleHeight }
     this.evts = new EventAdapter(this)
     this.viewportSnapshots = new ViewportSnapshots(this.evts, this.viewport)
     this.playerSettings = new PlayerSettings(this)
     this.playerSettings.init()
     this.sounds = new Sounds(this.assets, this.playerSettings)
 
-    this.canvas.classList.add('loaded')
-    this.hud.setPuzzleCut()
-
-    const puzzleTable = new PuzzleTable(this.gameId, graphics)
-    await puzzleTable.loadTexture(this.playerSettings.getSettings())
+    const puzzleTable = new PuzzleTable(graphics)
+    await puzzleTable.loadTexture(this.gameId, this.playerSettings.getSettings())
     this.renderer = new Renderer(this.gameId, this.canvas, this.viewport, this.fireworks, puzzleTable, false)
     await this.renderer.init(graphics)
+
+    this.canvas.classList.add('loaded')
+    this.hud.setPuzzleCut()
 
     this.registerEvents()
 
@@ -169,9 +161,9 @@ export abstract class Game<HudType extends Hud> {
 
     this.initFinishState()
 
-    this.evts.addEvent([Protocol.INPUT_EV_BG_COLOR, this.playerSettings.background()])
-    this.evts.addEvent([Protocol.INPUT_EV_PLAYER_COLOR, this.playerSettings.color()])
-    this.evts.addEvent([Protocol.INPUT_EV_PLAYER_NAME, this.playerSettings.name()])
+    this.evts.addEvent([GAME_EVENT_TYPE.INPUT_EV_BG_COLOR, this.playerSettings.background()])
+    this.evts.addEvent([GAME_EVENT_TYPE.INPUT_EV_PLAYER_COLOR, this.playerSettings.color()])
+    this.evts.addEvent([GAME_EVENT_TYPE.INPUT_EV_PLAYER_NAME, this.playerSettings.name()])
 
     this.playerCursors.updatePlayerCursorColor(this.playerSettings.color())
   }
@@ -182,11 +174,13 @@ export abstract class Game<HudType extends Hud> {
 
     // theoretically we need to recalculate this when window resizes
     // but it probably doesnt matter so much
+    const tableDim = GameCommon.getTableDim(this.gameId)
+    const boardDim = GameCommon.getBoardDim(this.gameId)
 
     const windowDim = { w: window.innerWidth, h: window.innerHeight }
-    this.viewport.calculateZoomCapping(windowDim, this.tableDim)
+    this.viewport.calculateZoomCapping(windowDim, tableDim)
     const canvasDim = { w: this.canvas.width, h: this.canvas.height }
-    this.viewport.centerFit(canvasDim, this.tableDim, this.boardDim, 20)
+    this.viewport.centerFit(canvasDim, tableDim, boardDim, 20)
     this.viewportSnapshots.snap('center')
   }
 
@@ -265,11 +259,11 @@ export abstract class Game<HudType extends Hud> {
     this.evts.setHotkeys(value)
   }
 
-  changeStatus(value: any): void {
+  changeStatus(value: GameStatus): void {
     this.hud.setStatus(value)
   }
 
-  changePlayers(value: any): void {
+  changePlayers(value: GamePlayers): void {
     this.hud.setPlayers(value)
   }
 
@@ -289,7 +283,7 @@ export abstract class Game<HudType extends Hud> {
     return GameCommon.getPuzzle(this.gameId).info.image
   }
 
-  onServerEvent(msg: ServerEvent): void {
+  onServerUpdateEvent(msg: ServerUpdateEvent): void {
     const _msgType = msg[0]
     const _evClientId = msg[1]
     const _evClientSeq = msg[2]
@@ -300,23 +294,23 @@ export abstract class Game<HudType extends Hud> {
 
     for (const [changeType, changeData] of evChanges) {
       switch (changeType) {
-        case Protocol.CHANGE_PLAYER: {
+        case CHANGE_TYPE.PLAYER: {
           const p = Util.decodePlayer(changeData)
           if (p.id !== this.clientId) {
             GameCommon.setPlayer(this.gameId, p.id, p)
             rerender = true
           }
         } break
-        case Protocol.CHANGE_PIECE: {
+        case CHANGE_TYPE.PIECE: {
           const piece = Util.decodePiece(changeData)
           GameCommon.setPiece(this.gameId, piece.idx, piece)
           rerender = true
         } break
-        case Protocol.CHANGE_DATA: {
+        case CHANGE_TYPE.DATA: {
           GameCommon.setPuzzleData(this.gameId, changeData)
           rerender = true
         } break
-        case Protocol.PLAYER_SNAP: {
+        case CHANGE_TYPE.PLAYER_SNAP: {
           const snapPlayerId = changeData
           if (snapPlayerId !== this.clientId) {
             otherPlayerPiecesConnected = true
@@ -339,7 +333,7 @@ export abstract class Game<HudType extends Hud> {
 
   onUpdate(): void {
     // handle key downs once per onUpdate
-    // this will create Protocol.INPUT_EV_MOVE events if something
+    // this will create GAME_EVENT_TYPE.INPUT_EV_MOVE events if something
     // relevant is pressed
     this.evts.createKeyEvents()
 
@@ -354,12 +348,12 @@ export abstract class Game<HudType extends Hud> {
 
   handleLocalEvent(evt: GameEvent): boolean {
     const type = evt[0]
-    if (type === Protocol.INPUT_EV_MOVE) {
+    if (type === GAME_EVENT_TYPE.INPUT_EV_MOVE) {
       const dim = this.viewport.worldDimToViewportRaw({ w: evt[1], h: evt[2] })
       this.requireRerender()
       this.viewport.move(dim.w, dim.h)
       this.viewportSnapshots.remove(ViewportSnapshots.LAST)
-    } else if (type === Protocol.INPUT_EV_MOUSE_MOVE) {
+    } else if (type === GAME_EVENT_TYPE.INPUT_EV_MOUSE_MOVE) {
       const down = evt[5]
       if (down && !GameCommon.getFirstOwnedPiece(this.gameId, this.clientId)) {
         // move the cam
@@ -368,45 +362,45 @@ export abstract class Game<HudType extends Hud> {
         this.viewport.move(diff.w, diff.h)
         this.viewportSnapshots.remove(ViewportSnapshots.LAST)
       }
-    } else if (type === Protocol.INPUT_EV_PLAYER_COLOR) {
+    } else if (type === GAME_EVENT_TYPE.INPUT_EV_PLAYER_COLOR) {
       this.playerCursors.updatePlayerCursorColor(evt[1])
-    } else if (type === Protocol.INPUT_EV_MOUSE_DOWN) {
+    } else if (type === GAME_EVENT_TYPE.INPUT_EV_MOUSE_DOWN) {
       this.playerCursors.updatePlayerCursorState(true)
-    } else if (type === Protocol.INPUT_EV_MOUSE_UP) {
+    } else if (type === GAME_EVENT_TYPE.INPUT_EV_MOUSE_UP) {
       this.playerCursors.updatePlayerCursorState(false)
-    } else if (type === Protocol.INPUT_EV_ZOOM_IN) {
+    } else if (type === GAME_EVENT_TYPE.INPUT_EV_ZOOM_IN) {
       const pos = { x: evt[1], y: evt[2] }
       this.requireRerender()
       this.viewport.zoom('in', this.viewport.worldToViewportRaw(pos))
       this.viewportSnapshots.remove(ViewportSnapshots.LAST)
-    } else if (type === Protocol.INPUT_EV_ZOOM_OUT) {
+    } else if (type === GAME_EVENT_TYPE.INPUT_EV_ZOOM_OUT) {
       const pos = { x: evt[1], y: evt[2] }
       this.requireRerender()
       this.viewport.zoom('out', this.viewport.worldToViewportRaw(pos))
       this.viewportSnapshots.remove(ViewportSnapshots.LAST)
-    } else if (type === Protocol.INPUT_EV_TOGGLE_INTERFACE) {
+    } else if (type === GAME_EVENT_TYPE.INPUT_EV_TOGGLE_INTERFACE) {
       this.emitToggleInterface()
-    } else if (type === Protocol.INPUT_EV_TOGGLE_PREVIEW) {
+    } else if (type === GAME_EVENT_TYPE.INPUT_EV_TOGGLE_PREVIEW) {
       this.emitTogglePreview()
-    } else if (type === Protocol.INPUT_EV_TOGGLE_SOUNDS) {
+    } else if (type === GAME_EVENT_TYPE.INPUT_EV_TOGGLE_SOUNDS) {
       this.playerSettings.toggleSoundsEnabled()
-    } else if (type === Protocol.INPUT_EV_TOGGLE_PLAYER_NAMES) {
+    } else if (type === GAME_EVENT_TYPE.INPUT_EV_TOGGLE_PLAYER_NAMES) {
       this.playerSettings.togglePlayerNames()
-    } else if (type === Protocol.INPUT_EV_TOGGLE_FIXED_PIECES) {
+    } else if (type === GAME_EVENT_TYPE.INPUT_EV_TOGGLE_FIXED_PIECES) {
       this.toggleViewFixedPieces()
-    } else if (type === Protocol.INPUT_EV_TOGGLE_LOOSE_PIECES) {
+    } else if (type === GAME_EVENT_TYPE.INPUT_EV_TOGGLE_LOOSE_PIECES) {
       this.toggleViewLoosePieces()
-    } else if (type === Protocol.INPUT_EV_TOGGLE_TABLE) {
+    } else if (type === GAME_EVENT_TYPE.INPUT_EV_TOGGLE_TABLE) {
       this.playerSettings.toggleShowTable()
-    } else if (type === Protocol.INPUT_EV_CENTER_FIT_PUZZLE) {
+    } else if (type === GAME_EVENT_TYPE.INPUT_EV_CENTER_FIT_PUZZLE) {
       const slot = 'center'
       const handled = this.viewportSnapshots.handle(slot)
       this.showStatusMessage(handled ? `Restored position "${handled}"` : `Position "${slot}" not set`)
-    } else if (type === Protocol.INPUT_EV_STORE_POS) {
+    } else if (type === GAME_EVENT_TYPE.INPUT_EV_STORE_POS) {
       const slot: string = `${evt[1]}`
       this.viewportSnapshots.snap(slot)
       this.showStatusMessage(`Stored position ${slot}`)
-    } else if (type === Protocol.INPUT_EV_RESTORE_POS) {
+    } else if (type === GAME_EVENT_TYPE.INPUT_EV_RESTORE_POS) {
       const slot: string = `${evt[1]}`
       const handled = this.viewportSnapshots.handle(slot)
       this.showStatusMessage(handled ? `Restored position "${handled}"` : `Position "${slot}" not set`)
@@ -464,7 +458,7 @@ export abstract class Game<HudType extends Hud> {
   }
 
   bgChange(value: string): void {
-    this.evts.addEvent([Protocol.INPUT_EV_BG_COLOR, value])
+    this.evts.addEvent([GAME_EVENT_TYPE.INPUT_EV_BG_COLOR, value])
   }
 
   changeTableTexture(_value: string): void {
@@ -488,11 +482,11 @@ export abstract class Game<HudType extends Hud> {
   }
 
   changeColor(value: string): void {
-    this.evts.addEvent([Protocol.INPUT_EV_PLAYER_COLOR, value])
+    this.evts.addEvent([GAME_EVENT_TYPE.INPUT_EV_PLAYER_COLOR, value])
   }
 
   changeName(value: string): void {
-    this.evts.addEvent([Protocol.INPUT_EV_PLAYER_NAME, value])
+    this.evts.addEvent([GAME_EVENT_TYPE.INPUT_EV_PLAYER_NAME, value])
   }
 
   changeSoundsVolume(_value: number): void {

@@ -1,4 +1,4 @@
-import { GameSettings, Game as GameType, GameInfo, ApiDataIndexData, ApiDataFinishedGames, NewGameDataRequestData, ImagesRequestData } from '../../../../common/src/Types'
+import { GameSettings, Game as GameType, GameInfo, ApiDataIndexData, ApiDataFinishedGames, NewGameDataRequestData, ImagesRequestData, HeaderLogEntry } from '../../../../common/src/Types'
 import config from '../../Config'
 import express, { Response, Router } from 'express'
 import GameCommon from '../../../../common/src/GameCommon'
@@ -388,20 +388,21 @@ export default function createRouter(
     const log = GameLog.get(gameId, offset)
     let game: GameType|null = null
     if (offset === 0) {
+      const header = log[0] as HeaderLogEntry
       // also need the game
       game = await server.getGameService().createGameObject(
         gameId,
-        log[0][1], // gameVersion
-        log[0][2], // targetPieceCount
-        log[0][3], // must be ImageInfo
-        log[0][4], // ts (of game creation)
-        log[0][5], // scoreMode
-        log[0][6], // shapeMode
-        log[0][7], // snapMode
-        log[0][8], // creatorUserId
+        header[1], // gameVersion
+        header[2], // targetPieceCount
+        header[3], // must be ImageInfo
+        header[4], // ts (of game creation)
+        header[5], // scoreMode
+        header[6], // shapeMode
+        header[7], // snapMode
+        header[8], // creatorUserId
         true,      // hasReplay
-        !!log[0][9], // private
-        log[0][10], // crop
+        !!header[9], // private
+        header[10], // crop
       )
       game.puzzle.info.image.gameCount = await server.getImagesRepo().getGameCount(game.puzzle.info.image.id)
     }

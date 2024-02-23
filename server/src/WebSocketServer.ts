@@ -1,5 +1,6 @@
 import WebSocket, { WebSocketServer as WsServer } from 'ws'
 import { logger } from '../../common/src/Util'
+import { ServerEvent } from './Types'
 
 const log = logger('WebSocketServer.js')
 
@@ -82,7 +83,7 @@ class WebSocketServer {
     }
   }
 
-  notifyOne (data: any, socket: WebSocket): void {
+  notifyOne (data: ServerEvent, socket: WebSocket): void {
     socket.send(JSON.stringify(data))
   }
 }

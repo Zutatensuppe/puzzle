@@ -63,7 +63,7 @@
   </div>
 </template>
 <script setup lang="ts">
-import { Hud, Player, PuzzleStatus as PuzzleStatusType } from '../../../common/src/Types'
+import { Hud, GameStatus, GamePlayers, CONN_STATE } from '../../../common/src/Types'
 import { GamePlay } from '../GamePlay'
 import { onMounted, onUnmounted, Ref, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
@@ -81,17 +81,12 @@ import StatusMessages from '../components/StatusMessages.vue'
 import IngameMenu from '../components/IngameMenu.vue'
 
 const statusMessages = ref<InstanceType<typeof StatusMessages>>() as Ref<InstanceType<typeof StatusMessages>>
-const players = ref<{ active: Player[], idle: Player[] }>({ active: [], idle: [] })
-const status = ref<PuzzleStatusType>({
-  finished: false,
-  duration: 0,
-  piecesDone: 0,
-  piecesTotal: 0,
-})
+const players = ref<GamePlayers>({ active: [], idle: [] })
+const status = ref<GameStatus>({ finished: false, duration: 0, piecesDone: 0, piecesTotal: 0 })
 const dialog = ref<boolean>(false)
 const dialogPersistent = ref<boolean|undefined>(undefined)
 const overlay = ref<string>('')
-const connectionState = ref<number>(0)
+const connectionState = ref<CONN_STATE>(CONN_STATE.NOT_CONNECTED)
 const cuttingPuzzle = ref<boolean>(true)
 const showInterface = ref<boolean>(true)
 const canvasEl = ref<HTMLCanvasElement>() as Ref<HTMLCanvasElement>
@@ -177,13 +172,13 @@ const hud: Hud = {
   setPuzzleCut: () => {
     cuttingPuzzle.value = false
   },
-  setPlayers: (v: any) => {
+  setPlayers: (v: GamePlayers) => {
     players.value = v
   },
-  setStatus: (v: any) => {
+  setStatus: (v: GameStatus) => {
     status.value = v
   },
-  setConnectionState: (v: any) => {
+  setConnectionState: (v: CONN_STATE) => {
     connectionState.value = v
   },
   togglePreview: (v: boolean) => {

@@ -8,6 +8,8 @@ import { logger } from './Util'
 
 const log = logger('Renderer.ts')
 
+const bitmapsCache: Record<string, ImageBitmap[]> = {}
+
 export class Renderer {
   public debug: boolean = false
   public boundingBoxes: boolean = false
@@ -15,7 +17,6 @@ export class Renderer {
   private ctx: CanvasRenderingContext2D
   private bitmaps!: ImageBitmap[]
 
-  private tableDim!: Dim
   private tableBounds!: Rect
   private boardPos!: Point
   private boardDim!: Dim
@@ -36,40 +37,25 @@ export class Renderer {
     this.ctx = this.canvas.getContext('2d') as CanvasRenderingContext2D
 
     this.pieceDrawOffset = GameCommon.getPieceDrawOffset(this.gameId)
-    const pieceDrawSize = GameCommon.getPieceDrawSize(this.gameId)
-    const puzzleWidth = GameCommon.getPuzzleWidth(this.gameId)
-    const puzzleHeight = GameCommon.getPuzzleHeight(this.gameId)
-    const tableWidth = GameCommon.getTableWidth(this.gameId)
-    const tableHeight = GameCommon.getTableHeight(this.gameId)
-    this.tableDim = {
-      w: tableWidth,
-      h: tableHeight,
-    }
-    this.boardPos = {
-      x: (this.tableDim.w - puzzleWidth) / 2,
-      y: (this.tableDim.h - puzzleHeight) / 2,
-    }
-    this.boardDim = {
-      w: puzzleWidth,
-      h: puzzleHeight,
-    }
-    this.pieceDim = {
-      w: pieceDrawSize,
-      h: pieceDrawSize,
-    }
+    this.boardDim = GameCommon.getBoardDim(this.gameId)
+    this.boardPos = GameCommon.getBoardPos(this.gameId)
+    this.pieceDim = GameCommon.getPieceDim(this.gameId)
     this.tableBounds = GameCommon.getBounds(this.gameId)
   }
 
   async init (graphics: GraphicsInterface) {
-    this.bitmaps = await PuzzleGraphics.loadPuzzleBitmaps(
-      GameCommon.getPuzzle(this.gameId),
-      GameCommon.getImageUrl(this.gameId),
-      graphics,
-    )
+    if (!bitmapsCache[this.gameId]) {
+      bitmapsCache[this.gameId] = await PuzzleGraphics.loadPuzzleBitmaps(
+        GameCommon.getPuzzle(this.gameId),
+        GameCommon.getImageUrl(this.gameId),
+        graphics,
+      )
+    }
+    this.bitmaps = bitmapsCache[this.gameId]
   }
 
   async loadTableTexture (settings: PlayerSettingsData): Promise<void> {
-    await this.puzzleTable.loadTexture(settings)
+    await this.puzzleTable.loadTexture(this.gameId, settings)
   }
 
   async render (
@@ -102,7 +88,7 @@ export class Renderer {
       // DRAW TABLE
       // ---------------------------------------------------------------
       if (settings.showTable) {
-        const tableImg = this.puzzleTable.getImage(settings)
+        const tableImg = this.puzzleTable.getImage(this.gameId, settings)
         if (tableImg) {
           pos = this.viewport.worldToViewportRaw(this.tableBounds)
           dim = this.viewport.worldDimToViewportRaw(this.tableBounds)

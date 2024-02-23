@@ -2,13 +2,13 @@ import WebSocketServer from './WebSocketServer'
 import WebSocket from 'ws'
 import express, { NextFunction } from 'express'
 import compression from 'compression'
-import Protocol from '../../common/src/Protocol'
+import { CLIENT_EVENT_TYPE, GAME_EVENT_TYPE, SERVER_EVENT_TYPE } from '../../common/src/Protocol'
 import Util, { logger } from '../../common/src/Util'
 import { GameSockets } from './GameSockets'
 import Time from '../../common/src/Time'
 import config from './Config'
 import GameCommon from '../../common/src/GameCommon'
-import { ServerEvent, Game as GameType } from '../../common/src/Types'
+import { ServerEvent, Game as GameType, ClientEvent, GameEventInputConnectionClose } from '../../common/src/Types'
 import { GameService } from './GameService'
 import createApiRouter from './web_routes/api'
 import createAdminApiRouter from './web_routes/admin/api'
@@ -111,7 +111,7 @@ export class Server implements ServerInterface {
   }
 
   async persistGame(gameId: string): Promise<void> {
-    const game: GameType|null = GameCommon.get(gameId)
+    const game: GameType | null = GameCommon.get(gameId)
     if (!game) {
       log.error(`[ERROR] unable to persist non existing game ${gameId}`)
       return
@@ -161,7 +161,7 @@ export class Server implements ServerInterface {
     }
 
     wss.on('close', async (
-      {socket} : { socket: WebSocket },
+      { socket }: { socket: WebSocket },
     ): Promise<void> => {
       try {
         const proto = socket.protocol.split('|')
@@ -171,12 +171,12 @@ export class Server implements ServerInterface {
 
         const ts = Time.timestamp()
         const clientSeq = -1 // client lost connection, so clientSeq doesn't matter
-        const clientEvtData = [ Protocol.INPUT_EV_CONNECTION_CLOSE ]
-        const changes = await this.gameService.handleInput(gameId, clientId, clientEvtData, ts)
+        const gameEvent: GameEventInputConnectionClose = [GAME_EVENT_TYPE.INPUT_EV_CONNECTION_CLOSE]
+        const changes = await this.gameService.handleGameEvent(gameId, clientId, gameEvent, ts)
         const sockets = this.gameSockets.getSockets(gameId)
         if (sockets.length) {
           notify(
-            [Protocol.EV_SERVER_EVENT, clientId, clientSeq, changes],
+            [SERVER_EVENT_TYPE.UPDATE, clientId, clientSeq, changes],
             sockets,
           )
         } else {
@@ -191,16 +191,16 @@ export class Server implements ServerInterface {
     })
 
     wss.on('message', async (
-      {socket, data} : { socket: WebSocket, data: string },
+      { socket, data }: { socket: WebSocket, data: string },
     ): Promise<void> => {
       try {
         const proto = socket.protocol.split('|')
         const clientId = proto[0]
         const gameId = proto[1]
-        const msg = JSON.parse(data)
+        const msg = JSON.parse(data) as ClientEvent
         const msgType = msg[0]
         switch (msgType) {
-          case Protocol.EV_CLIENT_INIT: {
+          case CLIENT_EVENT_TYPE.INIT: {
             if (!GameCommon.loaded(gameId)) {
               const gameObject = await this.gameService.loadGame(gameId)
               if (!gameObject) {
@@ -212,17 +212,14 @@ export class Server implements ServerInterface {
             this.gameService.addPlayer(gameId, clientId, ts)
             this.gameSockets.addSocket(gameId, socket)
 
-            const game: GameType|null = GameCommon.get(gameId)
+            const game: GameType | null = GameCommon.get(gameId)
             if (!game) {
               throw `[game ${gameId} does not exist (anymore)... ]`
             }
-            notify(
-              [Protocol.EV_SERVER_INIT, Util.encodeGame(game)],
-              [socket],
-            )
+            notify([SERVER_EVENT_TYPE.INIT, Util.encodeGame(game)], [socket])
           } break
 
-          case Protocol.EV_CLIENT_EVENT: {
+          case CLIENT_EVENT_TYPE.UPDATE: {
             if (!GameCommon.loaded(gameId)) {
               const gameObject = await this.gameService.loadGame(gameId)
               if (!gameObject) {
@@ -231,7 +228,7 @@ export class Server implements ServerInterface {
               GameCommon.setGame(gameObject.id, gameObject)
             }
             const clientSeq = msg[1]
-            const clientEvtData = msg[2]
+            const gameEvent = msg[2]
             const ts = Time.timestamp()
 
             let sendGame = false
@@ -244,19 +241,16 @@ export class Server implements ServerInterface {
               sendGame = true
             }
             if (sendGame) {
-              const game: GameType|null = GameCommon.get(gameId)
+              const game: GameType | null = GameCommon.get(gameId)
               if (!game) {
                 throw `[game ${gameId} does not exist (anymore)... ]`
               }
-              notify(
-                [Protocol.EV_SERVER_INIT, Util.encodeGame(game)],
-                [socket],
-              )
+              notify([SERVER_EVENT_TYPE.INIT, Util.encodeGame(game)], [socket])
             }
 
-            const changes = await this.gameService.handleInput(gameId, clientId, clientEvtData, ts)
+            const changes = await this.gameService.handleGameEvent(gameId, clientId, gameEvent, ts)
             notify(
-              [Protocol.EV_SERVER_EVENT, clientId, clientSeq, changes],
+              [SERVER_EVENT_TYPE.UPDATE, clientId, clientSeq, changes],
               this.gameSockets.getSockets(gameId),
             )
           } break

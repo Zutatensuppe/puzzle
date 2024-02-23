@@ -1,22 +1,22 @@
 'use strict'
 
 import GameCommon from '../../common/src/GameCommon'
-import Protocol from '../../common/src/Protocol'
-import { Game as GameType, EncodedGame, Hud, ServerEvent, GameEvent } from '../../common/src/Types'
+import { CHANGE_TYPE } from '../../common/src/Protocol'
+import { Game as GameType, EncodedGame, Hud, GameEvent, EncodedGameLegacy, ServerUpdateEvent } from '../../common/src/Types'
 import { Game } from './Game'
 import Communication from './Communication'
 import Util from '../../common/src/Util'
 
 export class GamePlay extends Game<Hud> {
 
-  private updateStatusInterval: NodeJS.Timeout | null = null
+  private updateStatusInterval: number | null = null
 
   async connect(): Promise<void> {
     Communication.onConnectionStateChange((state) => {
       this.hud.setConnectionState(state)
     })
 
-    const game: EncodedGame = await Communication.connect(this)
+    const game: EncodedGame | EncodedGameLegacy = await Communication.connect(this)
     const gameObject: GameType = Util.decodeGame(game)
     GameCommon.setGame(gameObject.id, gameObject)
 
@@ -40,9 +40,9 @@ export class GamePlay extends Game<Hud> {
     // LOCAL + SERVER CHANGES
     // -------------------------------------------------------------
     const ts = this.time()
-    const changes = GameCommon.handleInput(this.gameId, this.clientId, evt, ts)
+    const changes = GameCommon.handleGameEvent(this.gameId, this.clientId, evt, ts)
     if (this.playerSettings.soundsEnabled()) {
-      if (changes.find(change => change[0] === Protocol.PLAYER_SNAP)) {
+      if (changes.find(change => change[0] === CHANGE_TYPE.PLAYER_SNAP)) {
         this.sounds.playPieceConnected()
       }
     }
@@ -59,8 +59,8 @@ export class GamePlay extends Game<Hud> {
   }
 
   private initServerEventCallbacks(): void {
-    Communication.onServerChange((msg: ServerEvent) => {
-      this.onServerEvent(msg)
+    Communication.onServerUpdate((msg: ServerUpdateEvent) => {
+      this.onServerUpdateEvent(msg)
     })
   }
 

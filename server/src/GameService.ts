@@ -1,6 +1,6 @@
 import {
   DefaultScoreMode, DefaultShapeMode, DefaultSnapMode, Game, Puzzle,
-  EncodedPlayer, ScoreMode, ShapeMode, SnapMode, ImageInfo, Timestamp, GameSettings, Input, Change,
+  EncodedPlayer, ScoreMode, ShapeMode, SnapMode, ImageInfo, Timestamp, GameSettings, Change, GameEvent,
 } from '../../common/src/Types'
 import Util, { logger } from '../../common/src/Util'
 import { Rng, RngSerialized } from '../../common/src/Rng'
@@ -9,7 +9,7 @@ import { Rect } from '../../common/src/Geometry'
 import { GameRow, GamesRepo } from './repo/GamesRepo'
 import { PuzzleService } from './PuzzleService'
 import GameCommon, { NEWGAME_MAX_PIECES, NEWGAME_MIN_PIECES } from '../../common/src/GameCommon'
-import Protocol from '../../common/src/Protocol'
+import { GAME_VERSION, LOG_TYPE } from '../../common/src/Protocol'
 import { LeaderboardRepo } from './repo/LeaderboardRepo'
 import { ImagesRepo } from './repo/ImagesRepo'
 
@@ -203,10 +203,10 @@ export class GameService {
     scoreMode: ScoreMode,
     shapeMode: ShapeMode,
     snapMode: SnapMode,
-    creatorUserId: number|null,
+    creatorUserId: number | null,
     hasReplay: boolean,
     isPrivate: boolean,
-    crop: Rect,
+    crop: Rect | undefined,
   ): Promise<Game> {
     const seed = Util.hash(gameId + ' ' + ts)
     const rng = new Rng(seed)
@@ -241,7 +241,7 @@ export class GameService {
 
     const gameObject = await this.createGameObject(
       gameId,
-      Protocol.GAME_VERSION,
+      GAME_VERSION,
       gameSettings.tiles,
       gameSettings.image,
       ts,
@@ -257,17 +257,19 @@ export class GameService {
     GameLog.create(gameId, ts)
     GameLog.log(
       gameObject.id,
-      Protocol.LOG_HEADER,
-      gameObject.gameVersion,
-      gameSettings.tiles,
-      gameSettings.image,
-      ts,
-      gameObject.scoreMode,
-      gameObject.shapeMode,
-      gameObject.snapMode,
-      gameObject.creatorUserId,
-      gameObject.private ? 1 : 0,
-      gameSettings.crop,
+      [
+        LOG_TYPE.HEADER,
+        gameObject.gameVersion,
+        gameSettings.tiles,
+        gameSettings.image,
+        ts,
+        gameObject.scoreMode,
+        gameObject.shapeMode,
+        gameObject.snapMode,
+        gameObject.creatorUserId,
+        gameObject.private ? 1 : 0,
+        gameSettings.crop,
+      ],
     )
 
     GameCommon.setGame(gameObject.id, gameObject)
@@ -280,9 +282,9 @@ export class GameService {
     if (GameLog.shouldLog(GameCommon.getFinishTs(gameId), ts)) {
       const idx = GameCommon.getPlayerIndexById(gameId, playerId)
       if (idx === -1) {
-        GameLog.log(gameId, Protocol.LOG_ADD_PLAYER, playerId, ts)
+        GameLog.log(gameId, [LOG_TYPE.ADD_PLAYER, playerId, ts])
       } else {
-        GameLog.log(gameId, Protocol.LOG_UPDATE_PLAYER, idx, ts)
+        GameLog.log(gameId, [LOG_TYPE.UPDATE_PLAYER, idx, ts])
       }
     }
 
@@ -290,18 +292,18 @@ export class GameService {
     this.setDirty(gameId)
   }
 
-  async handleInput(
+  async handleGameEvent(
     gameId: string,
     playerId: string,
-    input: Input,
+    gameEvent: GameEvent,
     ts: Timestamp,
   ): Promise<Change[]> {
     if (GameLog.shouldLog(GameCommon.getFinishTs(gameId), ts)) {
       const idx = GameCommon.getPlayerIndexById(gameId, playerId)
-      GameLog.log(gameId, Protocol.LOG_HANDLE_INPUT, idx, input, ts)
+      GameLog.log(gameId, [LOG_TYPE.GAME_EVENT, idx, gameEvent, ts])
     }
     const wasFinished = GameCommon.getFinishTs(gameId)
-    const ret = GameCommon.handleInput(gameId, playerId, input, ts)
+    const ret = GameCommon.handleGameEvent(gameId, playerId, gameEvent, ts)
     const isFinished = GameCommon.getFinishTs(gameId)
     this.setDirty(gameId)
     if (!wasFinished && isFinished) {
