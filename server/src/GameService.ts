@@ -83,6 +83,20 @@ export class GameService {
     return gameObject
   }
 
+  async ensureLoaded(gameId: string): Promise<boolean> {
+    if (GameCommon.loaded(gameId)) {
+      return true
+    }
+
+    const gameObject = await this.loadGame(gameId)
+    if (gameObject) {
+      GameCommon.setGame(gameObject.id, gameObject)
+      return true
+    }
+
+    return false
+  }
+
   async loadGame(gameId: string): Promise<Game | null> {
     log.info(`[INFO] loading game: ${gameId}`)
     const gameRow = await this.repo.getGameRowById(gameId)

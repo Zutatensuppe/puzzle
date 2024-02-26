@@ -1,6 +1,6 @@
 import WebSocketServer from './WebSocketServer'
 import WebSocket from 'ws'
-import express, { NextFunction } from 'express'
+import express, { NextFunction, Request, Response } from 'express'
 import compression from 'compression'
 import { CLIENT_EVENT_TYPE, GAME_EVENT_TYPE, SERVER_EVENT_TYPE } from '../../common/src/Protocol'
 import Util, { logger } from '../../common/src/Util'
@@ -27,8 +27,20 @@ import { AnnouncementsRepo } from './repo/AnnouncementsRepo'
 import { ImageResize } from './ImageResize'
 import { LeaderboardRepo } from './repo/LeaderboardRepo'
 import { ImagesRepo } from './repo/ImagesRepo'
+import fs from 'fs'
 
 const indexFile = path.resolve(config.dir.PUBLIC_DIR, 'index.html')
+const indexFileContents = fs.readFileSync(indexFile, 'utf-8')
+
+const sendHtml = (res: Response, tmpl: string, data: Record<string, string> = {}): void => {
+  let str = tmpl
+  for (const key of Object.keys(data)) {
+    str = str.replace(key, data[key])
+  }
+
+  res.setHeader('Content-Type', 'text/html')
+  res.send(str)
+}
 
 const log = logger('Server.ts')
 
@@ -148,8 +160,35 @@ export class Server implements ServerInterface {
     app.use('/uploads/', express.static(config.dir.UPLOAD_DIR))
     app.use('/', express.static(config.dir.PUBLIC_DIR))
 
+    app.get('/g/:id', async (req: Request, res: Response) => {
+      const gameId = req.params.id
+      const loaded = await this.gameService.ensureLoaded(gameId)
+      if (!loaded) {
+        res.status(404).send('Game not found')
+        return
+      }
+
+      sendHtml(res, indexFileContents, {
+        '<!-- og:image -->': '<meta property="og:image" content="'+  GameCommon.getImageUrl(gameId) +'" />',
+      })
+    })
+
+    app.get('/replay/:id', async (req: Request, res: Response) => {
+      const gameId = req.params.id
+      const loaded = await this.gameService.ensureLoaded(gameId)
+      if (!loaded) {
+        res.status(404).send('Game not found')
+        return
+      }
+
+      sendHtml(res, indexFileContents, {
+        '<!-- og:image -->': '<meta property="og:image" content="'+  GameCommon.getImageUrl(gameId) +'" />',
+      })
+    })
+
     app.all('*', async (req: any, res) => {
-      res.sendFile(indexFile)
+      res.setHeader('Content-Type', 'text/html')
+      sendHtml(res, indexFileContents)
     })
 
     const wss = new WebSocketServer(config.ws)
@@ -201,12 +240,9 @@ export class Server implements ServerInterface {
         const msgType = msg[0]
         switch (msgType) {
           case CLIENT_EVENT_TYPE.INIT: {
-            if (!GameCommon.loaded(gameId)) {
-              const gameObject = await this.gameService.loadGame(gameId)
-              if (!gameObject) {
-                throw `[game ${gameId} does not exist... ]`
-              }
-              GameCommon.setGame(gameObject.id, gameObject)
+            const loaded = await this.gameService.ensureLoaded(gameId)
+            if (!loaded) {
+              throw `[game ${gameId} does not exist... ]`
             }
             const ts = Time.timestamp()
             this.gameService.addPlayer(gameId, clientId, ts)
@@ -220,12 +256,9 @@ export class Server implements ServerInterface {
           } break
 
           case CLIENT_EVENT_TYPE.UPDATE: {
-            if (!GameCommon.loaded(gameId)) {
-              const gameObject = await this.gameService.loadGame(gameId)
-              if (!gameObject) {
-                throw `[game ${gameId} does not exist... ]`
-              }
-              GameCommon.setGame(gameObject.id, gameObject)
+            const loaded = await this.gameService.ensureLoaded(gameId)
+            if (!loaded) {
+              throw `[game ${gameId} does not exist... ]`
             }
             const clientSeq = msg[1]
             const gameEvent = msg[2]
