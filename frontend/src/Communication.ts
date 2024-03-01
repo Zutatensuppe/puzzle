@@ -16,7 +16,7 @@ let missedMessages: ServerUpdateEvent[] = []
 let changesCallback = (msg: ServerUpdateEvent) => {
   missedMessages.push(msg)
 }
-let syncCallback = (evt: ServerSyncEvent) => {
+let syncCallback = (_evt: ServerSyncEvent) => {
   // noop
 }
 

@@ -96,16 +96,9 @@ const createImages = async (game: Game, outDir: string, baseUrl: string, complet
   await renderer.init(graphics)
   log.info('renderer inited')
 
-  const piecesBounds = GameCommon.getPiecesBounds(gameId)
   const boardDim = GameCommon.getBoardDim(gameId)
   const tableDim = GameCommon.getTableDim(gameId)
 
-  // center of puzzle
-  const center = { x: tableDim.w / 2, y: tableDim.h / 2 }
-  const maxYDiff = Math.max(Math.abs(center.y - piecesBounds.y), Math.abs(piecesBounds.y + piecesBounds.h - center.y))
-  const maxXDiff = Math.max(Math.abs(center.x - piecesBounds.x), Math.abs(piecesBounds.x + piecesBounds.w - center.x))
-
-  const border = Math.max(maxYDiff - (boardDim.h / 2), maxXDiff - (boardDim.w / 2))
   // console.log(border)
   viewport.calculateZoomCapping(DIM, tableDim)
   viewport.centerFit(
