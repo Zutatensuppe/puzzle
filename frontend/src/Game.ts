@@ -21,6 +21,9 @@ import {
   ServerUpdateEvent,
   GamePlayers,
   GameStatus,
+  RegisteredMap,
+  AssetsInterface,
+  GraphicsInterface,
 } from '../../common/src/Types'
 import { Assets } from './Assets'
 import { EventAdapter } from './EventAdapter'
@@ -47,6 +50,7 @@ export abstract class Game<HudType extends Hud> {
   protected rerender: boolean = true
 
   private assets: Assets
+  private graphics: GraphicsInterface
   protected sounds!: Sounds
   private viewport: Camera
   private evts!: EventAdapter
@@ -69,7 +73,7 @@ export abstract class Game<HudType extends Hud> {
 
   constructor(
     protected readonly gameId: string,
-    protected readonly clientId: string,
+    protected clientId: string,
     private readonly wsAddress: string,
     protected readonly canvas: HTMLCanvasElement,
     protected readonly hud: HudType,
@@ -77,7 +81,14 @@ export abstract class Game<HudType extends Hud> {
     if (typeof window.DEBUG === 'undefined') window.DEBUG = false
 
     this.assets = new Assets()
+    this.graphics = new Graphics()
     this.viewport = new Camera()
+  }
+
+  async reinit(clientId: string): Promise<void> {
+    this.clientId = clientId
+    this.unload()
+    await this.init()
   }
 
   shouldDrawPiece (piece: Piece): boolean {
@@ -134,9 +145,8 @@ export abstract class Game<HudType extends Hud> {
   async initBaseProps(): Promise<void> {
     this.initFireworks()
 
-    const graphics = new Graphics()
-    await this.assets.init(graphics)
-    this.playerCursors = new PlayerCursors(this.canvas, this.assets, graphics)
+    await this.assets.init(this.graphics)
+    this.playerCursors = new PlayerCursors(this.canvas, this.assets, this.graphics)
 
     this.evts = new EventAdapter(this)
     this.viewportSnapshots = new ViewportSnapshots(this.evts, this.viewport)
@@ -144,10 +154,10 @@ export abstract class Game<HudType extends Hud> {
     this.playerSettings.init()
     this.sounds = new Sounds(this.assets, this.playerSettings)
 
-    const puzzleTable = new PuzzleTable(graphics)
+    const puzzleTable = new PuzzleTable(this.graphics)
     await puzzleTable.loadTexture(this.gameId, this.playerSettings.getSettings())
     this.renderer = new Renderer(this.gameId, this.canvas, this.viewport, this.fireworks, puzzleTable, false)
-    await this.renderer.init(graphics)
+    await this.renderer.init(this.graphics)
 
     this.canvas.classList.add('loaded')
     this.hud.setPuzzleCut()
@@ -263,8 +273,8 @@ export abstract class Game<HudType extends Hud> {
     this.hud.setStatus(value)
   }
 
-  changePlayers(value: GamePlayers): void {
-    this.hud.setPlayers(value)
+  changePlayers(value: GamePlayers, registeredMap: RegisteredMap): void {
+    this.hud.setPlayers(value, registeredMap)
   }
 
   getScoreMode(): ScoreMode {
@@ -281,6 +291,14 @@ export abstract class Game<HudType extends Hud> {
 
   getImage(): ImageInfo {
     return GameCommon.getPuzzle(this.gameId).info.image
+  }
+
+  getAssets(): AssetsInterface {
+    return this.assets
+  }
+
+  getGraphics(): GraphicsInterface {
+    return this.graphics
   }
 
   onServerUpdateEvent(msg: ServerUpdateEvent): void {

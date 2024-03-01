@@ -62,6 +62,16 @@ $bg-color-transparent: rgba(0 0 0 / 70%);
   &.icon-ukraine-heart { background-image: url("assets/icons/ukraine_heart.png"); }
 }
 
+.view-game,
+.view-replay {
+  body {
+    .icon {
+      top: -2px;
+      position: relative;
+    }
+  }
+}
+
 .game-teasers-holder {
   display: grid;
 }
@@ -558,7 +568,21 @@ kbd {
 .v-dialog.overlay-info,
 .v-dialog.overlay-settings {
   .v-overlay__content {
-    max-width: 440px;
+    max-width: 600px;
+  }
+}
+
+.v-dialog.overlay-settings {
+  .headline {
+    flex: 1;
+    justify-content: center;
+  }
+
+  .headline > div,
+  .headline > h4 {
+    flex: 1;
+    display: flex;
+    align-items: center;
   }
 }
 

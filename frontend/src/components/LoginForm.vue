@@ -61,6 +61,7 @@ import { ref } from 'vue'
 import Util from '../../../common/src/Util'
 import { toast } from '../toast'
 import user from '../user'
+import { testEmailValid } from '../util'
 
 const emit = defineEmits<{
   (e: 'forgot-password'): void
@@ -80,7 +81,7 @@ const passwordRules = [
 ]
 
 const emailRules = [
-  v => !!v && /^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/.test(v) || 'E-mail must be valid',
+  v => !!v && testEmailValid(v) || 'E-mail must be valid',
 ]
 
 const args = {

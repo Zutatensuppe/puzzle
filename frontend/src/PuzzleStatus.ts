@@ -1,6 +1,7 @@
 import GameCommon from '../../common/src/GameCommon'
 import { Game } from './Game'
 import { PuzzleStatusInterface } from '../../common/src/Types'
+import { playerToBasicPlayerInfo } from '../../common/src/Util'
 
 export class PuzzleStatus implements PuzzleStatusInterface {
   constructor(private game: Game<any>) {
@@ -19,8 +20,8 @@ export class PuzzleStatus implements PuzzleStatusInterface {
     })
 
     this.game.changePlayers({
-      active: GameCommon.getActivePlayers(this.game.getGameId(), ts),
-      idle: GameCommon.getIdlePlayers(this.game.getGameId(), ts),
-    })
+      active: GameCommon.getActivePlayers(this.game.getGameId(), ts).map(playerToBasicPlayerInfo),
+      idle: GameCommon.getIdlePlayers(this.game.getGameId(), ts).map(playerToBasicPlayerInfo),
+    }, GameCommon.getRegisteredMap(this.game.getGameId()))
   }
 }

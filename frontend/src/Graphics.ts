@@ -61,7 +61,7 @@ export class Graphics implements GraphicsInterface {
       ctx1.fillRect(0, 0, mask.width, blueH)
       ctx1.restore()
       ctx1.save()
-      ctx1.globalCompositeOperation = 'destination-over'
+      ctx1.globalCompositeOperation = 'source-over'
       ctx1.drawImage(bitmap, 0, 0)
       ctx1.restore()
 
@@ -74,7 +74,7 @@ export class Graphics implements GraphicsInterface {
       ctx2.fillRect(0, 0, mask.width, mask.height)
       ctx2.restore()
       ctx2.save()
-      ctx2.globalCompositeOperation = 'destination-over'
+      ctx2.globalCompositeOperation = 'source-over'
       ctx2.drawImage(bitmap, 0, -blueH)
       ctx2.restore()
       ctx1.drawImage(c2, 0, blueH)
@@ -90,7 +90,7 @@ export class Graphics implements GraphicsInterface {
     ctx.fillRect(0, 0, mask.width, mask.height)
     ctx.restore()
     ctx.save()
-    ctx.globalCompositeOperation = 'destination-over'
+    ctx.globalCompositeOperation = 'source-over'
     ctx.drawImage(bitmap, 0, 0)
     ctx.restore()
     return c

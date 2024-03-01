@@ -33,6 +33,7 @@
 import { ref } from 'vue'
 import { toast } from '../toast'
 import user from '../user'
+import { testEmailValid } from '../util'
 
 const emit = defineEmits<{
   (e: 'login'): void
@@ -44,7 +45,7 @@ const valid = ref<boolean>(false)
 const busy = ref<boolean>(false)
 
 const emailRules = [
-  v => !!v && /^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/.test(v) || 'E-mail must be valid',
+  v => !!v && testEmailValid(v) || 'E-mail must be valid',
 ]
 
 async function doSendPasswordResetEmail() {

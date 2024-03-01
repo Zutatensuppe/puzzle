@@ -157,10 +157,14 @@
     />
 
     <div
-      v-if="showInterface"
+      v-if="showInterface && g"
       class="menu-right"
     >
-      <Scores :players="players" />
+      <Scores
+        :players="players"
+        :registered-map="registeredMap"
+        :game="g"
+      />
     </div>
 
     <StatusMessages ref="statusMessages" />
@@ -170,7 +174,7 @@
 </template>
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, Ref, ref, watch } from 'vue'
-import { ReplayHud, GameStatus, GamePlayers, CONN_STATE } from '../../../common/src/Types'
+import { ReplayHud, GameStatus, GamePlayers, CONN_STATE, RegisteredMap } from '../../../common/src/Types'
 import { GameReplay } from './../GameReplay'
 import { useRoute } from 'vue-router'
 import api from '../_api'
@@ -184,6 +188,7 @@ import SettingsOverlay from './../components/SettingsOverlay.vue'
 import CuttingOverlay from './../components/CuttingOverlay.vue'
 import StatusMessages from '../components/StatusMessages.vue'
 import IngameMenu from '../components/IngameMenu.vue'
+import isEqual from 'lodash/isEqual'
 
 const statusMessages = ref<InstanceType<typeof StatusMessages>>() as Ref<InstanceType<typeof StatusMessages>>
 const players = ref<GamePlayers>({ active: [], idle: [] })
@@ -195,6 +200,7 @@ const connectionState = ref<number>(0)
 const cuttingPuzzle = ref<boolean>(true)
 const showInterface = ref<boolean>(true)
 const canvasEl = ref<HTMLCanvasElement>() as Ref<HTMLCanvasElement>
+const registeredMap = ref<RegisteredMap>({})
 
 const g = ref<GameReplay | null>(null)
 
@@ -355,8 +361,14 @@ const hud: ReplayHud = {
   setPuzzleCut: () => {
     cuttingPuzzle.value = false
   },
-  setPlayers: (v: GamePlayers) => {
-    players.value = v
+  setPlayers: (v: GamePlayers, r: RegisteredMap) => {
+    if (!isEqual(v, players.value)) {
+      players.value = v
+      console.log('updating players')
+    }
+    if (!isEqual(r, registeredMap.value)) {
+      registeredMap.value = r
+    }
   },
   setStatus: (v: GameStatus) => {
     status.value = v

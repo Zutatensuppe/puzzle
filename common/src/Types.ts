@@ -66,7 +66,8 @@ export type GameEvent = GameEventInputMouseDown
 
 export type ServerInitEvent = [SERVER_EVENT_TYPE.INIT, EncodedGame | EncodedGameLegacy]
 export type ServerUpdateEvent = [SERVER_EVENT_TYPE.UPDATE, string, number, Change[]]
-export type ServerEvent = ServerInitEvent | ServerUpdateEvent
+export type ServerSyncEvent = [SERVER_EVENT_TYPE.SYNC, EncodedGame | EncodedGameLegacy]
+export type ServerEvent = ServerInitEvent | ServerUpdateEvent | ServerSyncEvent
 
 export type ClientInitEvent = [CLIENT_EVENT_TYPE.INIT]
 export type ClientUpdateEvent = [CLIENT_EVENT_TYPE.UPDATE, number, GameEvent]
@@ -83,6 +84,8 @@ export type EncodedPlayer = FixedLengthArray<[
   number,
   Timestamp,
 ]>
+
+export type RegisteredMap = Record<string, boolean>
 
 export type EncodedPiece = FixedLengthArray<[
   number,
@@ -131,6 +134,7 @@ export type EncodedGame = FixedLengthArray<[
   number, // gameVersion
   boolean, // private
   Rect, // crop
+  RegisteredMap,
 ]>
 
 export type HeaderLogEntry = [
@@ -198,6 +202,7 @@ export interface Game {
   private: boolean
   hasReplay: boolean
   crop?: Rect
+  registeredMap: RegisteredMap
 }
 
 export interface Image {
@@ -330,6 +335,13 @@ export interface Player {
   bgcolor: string|null
   points: number
   ts: Timestamp
+}
+
+export interface BasicPlayerInfo {
+  id: string
+  name: string|null
+  color: string|null
+  points: number
 }
 
 export interface PlayerSettingsData {
@@ -540,8 +552,8 @@ export interface MailService {
 }
 
 export interface GamePlayers {
-  active: Player[]
-  idle: Player[]
+  active: BasicPlayerInfo[]
+  idle: BasicPlayerInfo[]
 }
 
 export enum CONN_STATE {
@@ -554,7 +566,7 @@ export enum CONN_STATE {
 
 export interface Hud {
   setPuzzleCut: () => void
-  setPlayers: (v: GamePlayers) => void
+  setPlayers: (v: GamePlayers, r: RegisteredMap) => void
   setStatus: (v: GameStatus) => void
   setConnectionState: (v: CONN_STATE) => void
   togglePreview: (v: boolean) => void
@@ -615,7 +627,7 @@ export interface PlayerCursorsInterface {
   readonly CURSOR_H: number
   readonly CURSOR_H_2: number
 
-  get (p: Player): Promise<ImageBitmap>
+  get (p: BasicPlayerInfo): Promise<ImageBitmap>
 }
 
 export interface AssetsInterface {
@@ -628,6 +640,9 @@ export interface AssetsInterface {
     HAND: ImageBitmap
     GRAB_MASK: ImageBitmap
     HAND_MASK: ImageBitmap
+    badgeMask: ImageBitmap
+    badgeOver: ImageBitmap
+    badgeAnon: ImageBitmap
   }
 }
 

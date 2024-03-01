@@ -1,19 +1,74 @@
 <template>
   <v-card>
     <v-container :fluid="true">
-      <h4>Settings</h4>
-      <div>
-        <v-label>Background Color</v-label>
+      <div class="headline d-flex">
+        <h4 class="justify-start">
+          Settings
+        </h4>
+        <div class="justify-end">
+          <div
+            v-if="me && loggedIn"
+            class="user-welcome-message"
+          >
+            Hello, {{ me.name }}
+            <v-btn
+              @click="logout"
+            >
+              Logout
+            </v-btn>
+          </div>
+          <v-btn
+            v-else
+            size="small"
+            class="ml-1"
+            @click="login"
+          >
+            Login
+          </v-btn>
+        </div>
+      </div>
+
+      <fieldset>
+        <legend>Player</legend>
+
+        <v-text-field
+          v-model="playerSettings.name"
+          hide-details
+          max-length="16"
+          density="compact"
+          label="Display Name"
+        />
+
+        <v-checkbox
+          v-model="playerSettings.showPlayerNames"
+          density="comfortable"
+          hide-details
+          label="Show other player names on their hands"
+        />
+
+        <div class="d-flex">
+          <v-label>Color</v-label>
+          <v-checkbox
+            v-model="isUkraineColor"
+            density="comfortable"
+            hide-details
+          >
+            <template #label>
+              <icon icon="ukraine-heart" />
+            </template>
+          </v-checkbox>
+        </div>
         <IngameColorPicker
-          v-model="playerSettings.background"
+          v-if="!isUkraineColor"
+          v-model="playerSettings.color"
           @open="onColorPickerOpen"
           @close="onColorPickerClose"
         />
-      </div>
+      </fieldset>
 
-      <div>
+      <fieldset>
+        <legend>Table</legend>
         <div class="d-flex">
-          <v-label>Table</v-label>
           <v-checkbox-btn
             v-model="playerSettings.showTable"
             label="Show Table"
@@ -63,48 +118,17 @@
           density="compact"
           label="Custom texture scale"
         />
-      </div>
 
-      <div>
-        <div class="d-flex">
-          <v-label>Player Color</v-label>
-          <v-checkbox
-            v-model="isUkraineColor"
-            density="comfortable"
-            hide-details
-          >
-            <template #label>
-              <icon icon="ukraine-heart" />
-            </template>
-          </v-checkbox>
-        </div>
+        <v-label>Background Color</v-label>
         <IngameColorPicker
-          v-if="!isUkraineColor"
-          v-model="playerSettings.color"
+          v-model="playerSettings.background"
           @open="onColorPickerOpen"
           @close="onColorPickerClose"
         />
-      </div>
+      </fieldset>
 
-      <div>
-        <v-label>Player Name</v-label>
-        <v-text-field
-          v-model="playerSettings.name"
-          hide-details
-          max-length="16"
-          density="compact"
-        />
-
-        <v-checkbox
-          v-model="playerSettings.showPlayerNames"
-          density="comfortable"
-          hide-details
-          label="Show other player names on their hands"
-        />
-      </div>
-
-      <div>
-        <v-label>Sounds</v-label>
+      <fieldset>
+        <legend>Sounds</legend>
 
         <v-checkbox
           v-model="playerSettings.soundsEnabled"
@@ -126,7 +150,7 @@
           :disabled="!playerSettings.soundsEnabled"
           step="1"
           label="Volume"
-          @update:modelValue="updateVolume"
+          @update:model-value="updateVolume"
         >
           <template #prepend>
             <v-btn
@@ -146,17 +170,18 @@
             />
           </template>
         </v-slider>
-      </div>
+      </fieldset>
     </v-container>
   </v-card>
 </template>
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { GamePlay } from '../GamePlay'
 import { GameReplay } from '../GameReplay'
 
 import IngameColorPicker from './IngameColorPicker.vue'
 import { PlayerSettingsData } from '../../../common/src/Types'
+import user, { User } from '../user'
 
 const props = defineProps<{
   game: GamePlay | GameReplay
@@ -199,6 +224,35 @@ const emitChanges = (): void => {
   props.game.getPlayerSettings().apply(newSettings)
   props.game.loadTableTexture(newSettings)
 }
+
+const me = ref<User|null>(null)
+
+const loggedIn = computed(() => {
+  return !!(me.value && me.value.type === 'user')
+})
+
+async function logout() {
+  await user.logout()
+}
+
+const onInit = () => {
+  me.value = user.getMe()
+}
+
+const login = () => {
+  user.eventBus.emit('triggerLoginDialog')
+}
+
+onMounted(() => {
+  onInit()
+  user.eventBus.on('login', onInit)
+  user.eventBus.on('logout', onInit)
+})
+
+onBeforeUnmount(() => {
+  user.eventBus.off('login', onInit)
+  user.eventBus.off('logout', onInit)
+})
 
 watch(isUkraineColor, emitChanges)
 watch(playerSettings, () => {

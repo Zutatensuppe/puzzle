@@ -67,6 +67,7 @@ export class GameReplay extends Game<ReplayHud> {
     }
     const gameObject: GameType = Util.decodeGame(replay.game)
     GameCommon.setGame(gameObject.id, gameObject)
+    GameCommon.setRegisteredMap(gameObject.id, gameObject.registeredMap)
 
     const header = replay.log[0] as HeaderLogEntry
     this.lastRealTs = Time.timestamp()

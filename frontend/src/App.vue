@@ -7,7 +7,7 @@
       <v-main>
         <Nav v-if="!route.meta.ingame" />
         <LoginDialog
-          v-if="!route.meta.ingame && showLogin"
+          v-if="showLogin"
           v-model="showLogin"
           :tab="loginDialogTab"
           :token="passwordResetToken"
