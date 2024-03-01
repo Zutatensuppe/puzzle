@@ -17,6 +17,7 @@ import {
   Puzzle,
   PuzzleData,
   PuzzleDataChange,
+  RegisteredMap,
   ScoreMode,
   ShapeMode,
   SnapMode,
@@ -46,12 +47,16 @@ function __createPlayerObject(id: string, ts: Timestamp): Player {
     color: null, // '#ffffff'
     bgcolor: null, // '#222222'
     points: 0,
-    ts: ts,
+    ts,
   }
 }
 
 function setGame(gameId: string, game: Game): void {
   GAMES[gameId] = game
+}
+
+function setRegisteredMap(gameId: string, registeredMap: RegisteredMap): void {
+  GAMES[gameId].registeredMap = registeredMap
 }
 
 function unsetGame(gameId: string): void {
@@ -110,7 +115,7 @@ function playerExists(gameId: string, playerId: string): boolean {
   return idx !== -1
 }
 
-function getActivePlayers(gameId: string, ts: number): Array<Player> {
+function getActivePlayers(gameId: string, ts: number): Player[] {
   return Game_getActivePlayers(GAMES[gameId], ts)
 }
 
@@ -118,7 +123,15 @@ function getIdlePlayers(gameId: string, ts: number): Player[] {
   return Game_getIdlePlayers(GAMES[gameId], ts)
 }
 
-function addPlayer(gameId: string, playerId: string, ts: Timestamp): void {
+function getRegisteredMap(gameId: string): RegisteredMap {
+  return Game_getRegisteredMap(GAMES[gameId])
+}
+
+function addPlayer(
+  gameId: string,
+  playerId: string,
+  ts: Timestamp,
+): void {
   if (!playerExists(gameId, playerId)) {
     setPlayer(gameId, playerId, __createPlayerObject(playerId, ts))
   } else {
@@ -1050,6 +1063,10 @@ function Game_getIdlePlayers(game: Game, ts: number): Player[] {
   return Game_getAllPlayers(game).filter((p: Player) => p.ts < minTs && p.points > 0)
 }
 
+function Game_getRegisteredMap(game: Game): RegisteredMap {
+  return game.registeredMap
+}
+
 function Game_getImage(game: Game): ImageInfo {
   return game.puzzle.info.image
 }
@@ -1071,11 +1088,13 @@ function Game_isFinished(game: Game): boolean {
 
 export default {
   setGame,
+  setRegisteredMap,
   unsetGame,
   loaded,
   playerExists,
   getActivePlayers,
   getIdlePlayers,
+  getRegisteredMap,
   addPlayer,
   getFinishedPiecesCount,
   getPieceCount,

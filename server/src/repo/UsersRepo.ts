@@ -35,6 +35,10 @@ export class UsersRepo {
     await this.db.update(TABLE, user, { id: user.id })
   }
 
+  async getMany(where: WhereRaw): Promise<UserRow[]> {
+    return await this.db.getMany(TABLE, where)
+  }
+
   async get(where: WhereRaw): Promise<UserRow | null> {
     if (where.email) {
       where.email = Crypto.encrypt(where.email)
@@ -48,6 +52,7 @@ export class UsersRepo {
     }
     return user
   }
+
   async getGroupsByUserId(userId: number): Promise<UserGroupRow[]> {
     const relations = await this.db.getMany('user_x_user_group', { user_id: userId })
     const groupIds = relations.map(r => r.user_group_id)

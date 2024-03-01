@@ -51,10 +51,14 @@
     />
 
     <div
-      v-if="showInterface"
+      v-if="showInterface && g"
       class="menu-right"
     >
-      <Scores :players="players" />
+      <Scores
+        :players="players"
+        :registered-map="registeredMap"
+        :game="g"
+      />
     </div>
 
     <StatusMessages ref="statusMessages" />
@@ -63,7 +67,7 @@
   </div>
 </template>
 <script setup lang="ts">
-import { Hud, GameStatus, GamePlayers, CONN_STATE } from '../../../common/src/Types'
+import { Hud, GameStatus, GamePlayers, CONN_STATE, RegisteredMap } from '../../../common/src/Types'
 import { GamePlay } from '../GamePlay'
 import { onMounted, onUnmounted, Ref, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
@@ -79,6 +83,8 @@ import Scores from './../components/Scores.vue'
 import SettingsOverlay from './../components/SettingsOverlay.vue'
 import StatusMessages from '../components/StatusMessages.vue'
 import IngameMenu from '../components/IngameMenu.vue'
+import user from '../user'
+import isEqual from 'lodash/isEqual'
 
 const statusMessages = ref<InstanceType<typeof StatusMessages>>() as Ref<InstanceType<typeof StatusMessages>>
 const players = ref<GamePlayers>({ active: [], idle: [] })
@@ -90,6 +96,7 @@ const connectionState = ref<CONN_STATE>(CONN_STATE.NOT_CONNECTED)
 const cuttingPuzzle = ref<boolean>(true)
 const showInterface = ref<boolean>(true)
 const canvasEl = ref<HTMLCanvasElement>() as Ref<HTMLCanvasElement>
+const registeredMap = ref<RegisteredMap>({})
 
 const g = ref<GamePlay | null>(null)
 const route = useRoute()
@@ -172,8 +179,13 @@ const hud: Hud = {
   setPuzzleCut: () => {
     cuttingPuzzle.value = false
   },
-  setPlayers: (v: GamePlayers) => {
-    players.value = v
+  setPlayers: (v: GamePlayers, r: RegisteredMap) => {
+    if (!isEqual(v, players.value)) {
+      players.value = v
+    }
+    if (!isEqual(r, registeredMap.value)) {
+      registeredMap.value = r
+    }
   },
   setStatus: (v: GameStatus) => {
     status.value = v
@@ -194,10 +206,18 @@ const hud: Hud = {
   addStatusMessage: (what: string, value: any) => statusMessages.value.addMessage(what, value),
 }
 
+const onLoginStateChange = async () => {
+  if (g.value) {
+    await g.value.reinit(api.clientId())
+  }
+}
+
 onMounted(async () => {
   if (!route.params.id) {
     return
   }
+  user.eventBus.on('login', onLoginStateChange)
+  user.eventBus.on('logout', onLoginStateChange)
 
   canvasEl.value.width = window.innerWidth
   canvasEl.value.height = window.innerHeight
@@ -221,5 +241,8 @@ onUnmounted(() => {
     g.value = null
   }
   window.removeEventListener('resize', onResize)
+
+  user.eventBus.off('login', onLoginStateChange)
+  user.eventBus.off('logout', onLoginStateChange)
 })
 </script>

@@ -1,6 +1,6 @@
 'use strict'
 
-import { CONN_STATE, ClientEvent, EncodedGame, EncodedGameLegacy, GameEvent, ServerEvent, ServerUpdateEvent } from '../../common/src/Types'
+import { CONN_STATE, ClientEvent, EncodedGame, EncodedGameLegacy, GameEvent, ServerEvent, ServerSyncEvent, ServerUpdateEvent } from '../../common/src/Types'
 import { logger } from '../../common/src/Util'
 import { CLIENT_EVENT_TYPE, SERVER_EVENT_TYPE } from '../../common/src/Protocol'
 import { GamePlay } from './GamePlay'
@@ -16,10 +16,17 @@ let missedMessages: ServerUpdateEvent[] = []
 let changesCallback = (msg: ServerUpdateEvent) => {
   missedMessages.push(msg)
 }
+let syncCallback = (_evt: ServerSyncEvent) => {
+  // noop
+}
 
 let missedStateChanges: Array<number> = []
 let connectionStateChangeCallback = (state: number) => {
   missedStateChanges.push(state)
+}
+
+function onServerSync(callback: (evt: ServerSyncEvent) => void): void {
+  syncCallback = callback
 }
 
 function onServerUpdate(callback: (msg: ServerUpdateEvent) => void): void {
@@ -113,6 +120,8 @@ function connect(
       if (msgType === SERVER_EVENT_TYPE.INIT) {
         const game = msg[1]
         resolve(game)
+      } else if (msgType === SERVER_EVENT_TYPE.SYNC) {
+        syncCallback(msg)
       } else if (msgType === SERVER_EVENT_TYPE.UPDATE) {
         const msgClientId = msg[1]
         const msgClientSeq = msg[2]
@@ -165,6 +174,7 @@ export default {
   disconnect,
   sendClientEvent,
   onServerUpdate,
+  onServerSync,
   onConnectionStateChange,
   CODE_CUSTOM_DISCONNECT,
 }

@@ -2,58 +2,39 @@
   <div class="scores">
     <div>Scores</div>
     <table>
-      <tr
+      <ScoreRow
         v-for="(p, idx) in actives"
         :key="idx"
-        :style="playerStyle(p)"
-      >
-        <td><icon icon="lightning" /></td>
-        <td>{{ p.name || '<No name>' }}</td>
-        <td>{{ p.points }}</td>
-      </tr>
-      <tr
+        :player="p"
+        :active="true"
+        :registered-map="registeredMap"
+        :game="game"
+      />
+      <ScoreRow
         v-for="(p, idx) in idles"
         :key="idx"
-        :style="playerStyle(p)"
-      >
-        <td><icon icon="zzz" /></td>
-        <td>{{ p.name || '<No name>' }}</td>
-        <td>{{ p.points }}</td>
-      </tr>
+        :player="p"
+        :active="false"
+        :registered-map="registeredMap"
+        :game="game"
+      />
     </table>
   </div>
 </template>
 <script setup lang="ts">
-import { computed, StyleValue } from 'vue'
-import { Player } from '../../../common/src/Types'
+import { computed } from 'vue'
+import { BasicPlayerInfo, RegisteredMap, GamePlayers } from '../../../common/src/Types'
+import { GamePlay } from '../GamePlay'
+import { GameReplay } from '../GameReplay'
+import ScoreRow from './ScoreRow.vue'
+import sortBy from 'lodash/sortBy'
 
 const props = defineProps<{
-  players: {
-    active: Player[],
-    idle: Player[],
-  },
+  players: GamePlayers,
+  registeredMap: RegisteredMap,
+  game: GamePlay | GameReplay,
 }>()
 
-const actives = computed((): Array<any> => {
-  // TODO: dont sort in place
-  props.players.active.sort((a: Player, b: Player) => b.points - a.points)
-  return props.players.active
-})
-
-const idles = computed((): Array<any> => {
-  // TODO: dont sort in place
-  props.players.idle.sort((a: Player, b: Player) => b.points - a.points)
-  return props.players.idle
-})
-
-const playerStyle = (p: Player) => {
-  if (p.color === 'ukraine') {
-    return {
-      'backgroundImage': 'linear-gradient(180deg, rgba(0,87,183,1) 0%, rgba(0,87,183,1) 50%, rgba(255,221,0,1) 50%)',
-      '-webkit-background-clip': 'text',
-      '-webkit-text-fill-color': 'transparent',
-    } as StyleValue
-  }
-  return { color: p.color } as StyleValue
-}
+const actives = computed((): BasicPlayerInfo[] => sortBy(props.players.active, (p: BasicPlayerInfo) => -p.points))
+const idles = computed((): BasicPlayerInfo[] => sortBy(props.players.idle, (p: BasicPlayerInfo) => -p.points))
 </script>

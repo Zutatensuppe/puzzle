@@ -252,7 +252,11 @@ export class Server implements ServerInterface {
             if (!game) {
               throw `[game ${gameId} does not exist (anymore)... ]`
             }
-            notify([SERVER_EVENT_TYPE.INIT, Util.encodeGame(game)], [socket])
+            game.registeredMap = await this.gameService.generateRegisteredMap(game)
+
+            const encodedGame = Util.encodeGame(game)
+            notify([SERVER_EVENT_TYPE.INIT, encodedGame], [socket])
+            notify([SERVER_EVENT_TYPE.SYNC, encodedGame], this.gameSockets.getSockets(gameId).filter(s => s !== socket))
           } break
 
           case CLIENT_EVENT_TYPE.UPDATE: {
@@ -278,7 +282,11 @@ export class Server implements ServerInterface {
               if (!game) {
                 throw `[game ${gameId} does not exist (anymore)... ]`
               }
-              notify([SERVER_EVENT_TYPE.INIT, Util.encodeGame(game)], [socket])
+
+              game.registeredMap = await this.gameService.generateRegisteredMap(game)
+              const encodedGame = Util.encodeGame(game)
+              notify([SERVER_EVENT_TYPE.INIT, encodedGame], [socket])
+              notify([SERVER_EVENT_TYPE.SYNC, encodedGame], this.gameSockets.getSockets(gameId).filter(s => s !== socket))
             }
 
             const changes = await this.gameService.handleGameEvent(gameId, clientId, gameEvent, ts)

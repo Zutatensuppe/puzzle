@@ -1,6 +1,6 @@
 import {
   DefaultScoreMode, DefaultShapeMode, DefaultSnapMode, Game, Puzzle,
-  EncodedPlayer, ScoreMode, ShapeMode, SnapMode, ImageInfo, Timestamp, GameSettings, Change, GameEvent,
+  EncodedPlayer, ScoreMode, ShapeMode, SnapMode, ImageInfo, Timestamp, GameSettings, Change, GameEvent, RegisteredMap,
 } from '../../common/src/Types'
 import Util, { logger } from '../../common/src/Util'
 import { Rng, RngSerialized } from '../../common/src/Rng'
@@ -12,6 +12,7 @@ import GameCommon, { NEWGAME_MAX_PIECES, NEWGAME_MIN_PIECES } from '../../common
 import { GAME_VERSION, LOG_TYPE } from '../../common/src/Protocol'
 import { LeaderboardRepo } from './repo/LeaderboardRepo'
 import { ImagesRepo } from './repo/ImagesRepo'
+import { UsersRepo } from './repo/UsersRepo'
 
 const log = logger('GameService.js')
 
@@ -36,6 +37,7 @@ export class GameService {
 
   constructor(
     private readonly repo: GamesRepo,
+    private readonly usersRepo: UsersRepo,
     private readonly imagesRepo: ImagesRepo,
     private readonly puzzleService: PuzzleService,
     private readonly leaderboardRepo: LeaderboardRepo,
@@ -77,10 +79,28 @@ export class GameService {
     )
     gameObject.hasReplay = GameLog.hasReplay(gameObject)
     gameObject.crop = game.crop
+    gameObject.registeredMap = await this.generateRegisteredMap(gameObject)
 
     const gameCount = await this.imagesRepo.getGameCount(gameObject.puzzle.info.image.id)
     gameObject.puzzle.info.image.gameCount = gameCount
     return gameObject
+  }
+
+  async generateRegisteredMap(gameObject: Game): Promise<RegisteredMap> {
+    if (!gameObject) {
+      return {}
+    }
+
+    const registeredMap: RegisteredMap = {}
+    const users = await this.usersRepo.getMany({
+      client_id: {'$in': gameObject.players.map(player => player[0])},
+    })
+    for (const user of users) {
+      if (user.email) {
+        registeredMap[user.client_id] = true
+      }
+    }
+    return registeredMap
   }
 
   async ensureLoaded(gameId: string): Promise<boolean> {
@@ -187,6 +207,7 @@ export class GameService {
       snapMode: DefaultSnapMode(storeData.snapMode),
       hasReplay: !!storeData.hasReplay,
       private: isPrivate,
+      registeredMap: {},
     }
   }
 
@@ -237,6 +258,7 @@ export class GameService {
       hasReplay,
       private: isPrivate,
       crop,
+      registeredMap: {},
     }
   }
 

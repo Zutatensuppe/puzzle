@@ -17,6 +17,7 @@ import { AnnouncementsRepo } from './repo/AnnouncementsRepo'
 import { ImageResize } from './ImageResize'
 import { PuzzleService } from './PuzzleService'
 import { LeaderboardRepo } from './repo/LeaderboardRepo'
+import { UsersRepo } from './repo/UsersRepo'
 
 const run = async () => {
   const db = new Db(config.db.connectStr, config.dir.DB_PATCHES_DIR)
@@ -30,13 +31,14 @@ const run = async () => {
   const gamesRepo = new GamesRepo(db)
   const imagesRepo = new ImagesRepo(db)
   const users = new Users(db)
+  const usersRepo = new UsersRepo(db)
   const images = new Images(imagesRepo)
   const imageResize = new ImageResize(images)
   const tokensRepo = new TokensRepo(db)
   const announcementsRepo = new AnnouncementsRepo(db)
   const puzzleService = new PuzzleService(images)
   const leaderboardRepo = new LeaderboardRepo(db)
-  const gameService = new GameService(gamesRepo, imagesRepo, puzzleService, leaderboardRepo)
+  const gameService = new GameService(gamesRepo, usersRepo, imagesRepo, puzzleService, leaderboardRepo)
 
   const server = new Server(
     db,

@@ -2,7 +2,7 @@
 
 import GameCommon from '../../common/src/GameCommon'
 import { CHANGE_TYPE } from '../../common/src/Protocol'
-import { Game as GameType, EncodedGame, Hud, GameEvent, EncodedGameLegacy, ServerUpdateEvent } from '../../common/src/Types'
+import { Game as GameType, EncodedGame, Hud, GameEvent, EncodedGameLegacy, ServerUpdateEvent, ServerSyncEvent } from '../../common/src/Types'
 import { Game } from './Game'
 import Communication from './Communication'
 import Util from '../../common/src/Util'
@@ -61,6 +61,12 @@ export class GamePlay extends Game<Hud> {
   private initServerEventCallbacks(): void {
     Communication.onServerUpdate((msg: ServerUpdateEvent) => {
       this.onServerUpdateEvent(msg)
+    })
+    Communication.onServerSync((msg: ServerSyncEvent) => {
+      // TODO: sync complete game instead of just the registeredMap?
+      const game: EncodedGame | EncodedGameLegacy = msg[1]
+      const gameObject: GameType = Util.decodeGame(game)
+      GameCommon.setRegisteredMap(gameObject.id, gameObject.registeredMap)
     })
   }
 

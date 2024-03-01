@@ -14,3 +14,7 @@ export function debounce<F extends (...args: any[]) => any>(func: F, wait: numbe
     }, wait)
   }
 }
+
+export const testEmailValid = (email: string) => {
+  return /^\w+([.-]\w+)*@\w+([.-]\w+)*(\.\w+)+$/.test(email)
+}

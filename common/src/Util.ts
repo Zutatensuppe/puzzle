@@ -1,5 +1,6 @@
 import { PuzzleCreationInfo } from './Puzzle'
 import {
+  BasicPlayerInfo,
   EncodedGame,
   EncodedGameLegacy,
   EncodedPiece,
@@ -141,6 +142,7 @@ function encodeGame(data: Game): EncodedGame | EncodedGameLegacy {
     data.gameVersion,
     data.private,
     data.crop,
+    data.registeredMap,
   ] : [
     data.id,
     data.rng.type || '',
@@ -155,6 +157,15 @@ function encodeGame(data: Game): EncodedGame | EncodedGameLegacy {
     data.gameVersion,
     data.private,
   ]
+}
+
+export const playerToBasicPlayerInfo = (p: Player): BasicPlayerInfo => {
+  return {
+    id: p.id,
+    color: p.color,
+    name: p.name,
+    points: p.points,
+  }
 }
 
 const isEncodedGameLegacy = (data: EncodedGame | EncodedGameLegacy): data is EncodedGameLegacy => {
@@ -178,6 +189,7 @@ function decodeGame(data: EncodedGame | EncodedGameLegacy): Game {
       hasReplay: data[9],
       gameVersion: data[10],
       private: data[11],
+      registeredMap: {},
     }
   }
 
@@ -197,6 +209,7 @@ function decodeGame(data: EncodedGame | EncodedGameLegacy): Game {
     gameVersion: data[10],
     private: data[11],
     crop: data[12],
+    registeredMap: data[13],
   }
 }
 

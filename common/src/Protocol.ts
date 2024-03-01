@@ -43,6 +43,7 @@ export const GAME_VERSION = 4 // must be increased whenever there is an incompat
 export enum SERVER_EVENT_TYPE {
   UPDATE = 1,
   INIT = 4,
+  SYNC = 5,
 }
 
 export enum CLIENT_EVENT_TYPE {

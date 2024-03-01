@@ -405,6 +405,11 @@ export default function createRouter(
         header[10], // crop
       )
       game.puzzle.info.image.gameCount = await server.getImagesRepo().getGameCount(game.puzzle.info.image.id)
+      // load registeredMap from the final game state
+      const gameObj = await server.getGameService().loadGame(gameId)
+      if (gameObj) {
+        game.registeredMap = await server.getGameService().generateRegisteredMap(gameObj)
+      }
     }
     res.send({ log, game: game ? Util.encodeGame(game) : null })
   })
