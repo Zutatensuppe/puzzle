@@ -12,7 +12,11 @@ import badgeMask from './assets/gfx/badge_mask.png'
 // @ts-ignore
 import badgeOver from './assets/gfx/badge_over.png'
 // @ts-ignore
+import badgeOverIdle from './assets/gfx/badge_over_idle.png'
+// @ts-ignore
 import badgeAnon from './assets/gfx/badge_anon.png'
+// @ts-ignore
+import badgeAnonIdle from './assets/gfx/badge_anon_idle.png'
 
 // @ts-ignore
 import click from './assets/sounds/click.mp3'
@@ -34,7 +38,9 @@ export class Assets implements AssetsInterface {
     HAND_MASK: ImageBitmap
     badgeMask: ImageBitmap
     badgeOver: ImageBitmap
+    badgeOverIdle: ImageBitmap
     badgeAnon: ImageBitmap
+    badgeAnonIdle: ImageBitmap
   }
 
   async init (graphics: GraphicsInterface) {
@@ -51,7 +57,9 @@ export class Assets implements AssetsInterface {
       HAND_MASK: await graphics.loadImageToBitmap(handMask),
       badgeMask: await graphics.loadImageToBitmap(badgeMask),
       badgeOver: await graphics.loadImageToBitmap(badgeOver),
+      badgeOverIdle: await graphics.loadImageToBitmap(badgeOverIdle),
       badgeAnon: await graphics.loadImageToBitmap(badgeAnon),
+      badgeAnonIdle: await graphics.loadImageToBitmap(badgeAnonIdle),
     }
   }
 }

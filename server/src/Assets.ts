@@ -12,7 +12,9 @@ export class Assets implements AssetsInterface{
     HAND_MASK: ImageBitmap
     badgeMask: ImageBitmap
     badgeOver: ImageBitmap
+    badgeOverIdle: ImageBitmap
     badgeAnon: ImageBitmap
+    badgeAnonIdle: ImageBitmap
   }
 
   async init (graphics: GraphicsInterface) {
@@ -29,7 +31,9 @@ export class Assets implements AssetsInterface{
       HAND_MASK: await graphics.loadImageToBitmap(__dirname + '/../../frontend/src/assets/gfx/hand_mask.png'),
       badgeMask: await graphics.loadImageToBitmap(__dirname + '/../../frontend/src/assets/gfx/badge_mask.png'),
       badgeOver: await graphics.loadImageToBitmap(__dirname + '/../../frontend/src/assets/gfx/badge_over.png'),
+      badgeOverIdle: await graphics.loadImageToBitmap(__dirname + '/../../frontend/src/assets/gfx/badge_over_idle.png'),
       badgeAnon: await graphics.loadImageToBitmap(__dirname + '/../../frontend/src/assets/gfx/badge_anon.png'),
+      badgeAnonIdle: await graphics.loadImageToBitmap(__dirname + '/../../frontend/src/assets/gfx/badge_anon_idle.png'),
     }
   }
 }
