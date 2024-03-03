@@ -32,10 +32,18 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useRouter } from 'vue-router'
-import { ImageSearchSort, ScoreMode, ShapeMode, SnapMode, Tag } from '../../../common/src/Types'
+import { ImageSearchSort, Tag } from '../../../common/src/Types'
 import { GamePlay } from '../GamePlay'
 import { GameReplay } from '../GameReplay'
 import ImageInfoTable from './ImageInfoTable.vue'
+import {
+  scoreModeDescriptionToString,
+  scoreModeToString,
+  shapeModeDescriptionToString,
+  shapeModeToString,
+  snapModeDescriptionToString,
+  snapModeToString,
+} from '../../../common/src/Util'
 const router = useRouter()
 
 const props = defineProps<{
@@ -50,30 +58,18 @@ const onTagClick = (tag: Tag): void => {
 }
 
 const scoreMode = computed(() => {
-  switch (props.game.getScoreMode()) {
-    case ScoreMode.ANY: return ['Any', 'Score when pieces are connected to each other or on final location']
-    case ScoreMode.FINAL:
-    default: return ['Final', 'Score when pieces are put to their final location']
-  }
+  const m = props.game.getScoreMode()
+  return [scoreModeToString(m), scoreModeDescriptionToString(m)]
 })
 
 const shapeMode = computed(() => {
-  switch (props.game.getShapeMode()) {
-    case ShapeMode.FLAT: return ['Flat', 'All pieces flat on all sides']
-    case ShapeMode.ANY: return ['Any', 'Flat pieces can occur anywhere']
-    case ShapeMode.NORMAL:
-    default:
-      return ['Normal', '']
-  }
+  const m = props.game.getShapeMode()
+  return [shapeModeToString(m), shapeModeDescriptionToString(m)]
 })
 
 const snapMode = computed(() => {
-  switch (props.game.getSnapMode()) {
-    case SnapMode.REAL: return ['Real', 'Pieces snap only to corners, already snapped pieces and to each other']
-    case SnapMode.NORMAL:
-    default:
-      return ['Normal', 'Pieces snap to final destination and to each other']
-  }
+  const m = props.game.getSnapMode()
+  return [snapModeToString(m), snapModeDescriptionToString(m)]
 })
 </script>
 <style scoped>

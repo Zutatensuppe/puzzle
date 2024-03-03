@@ -32,13 +32,32 @@ export default function createRouter(
     res.cookie(COOKIE_TOKEN, token, { maxAge: 356 * Time.DAY, httpOnly: true })
   }
 
+  const basename = (file: Express.Multer.File) => {
+    return `${Util.uniqId()}-${Util.hash(file.originalname)}`
+  }
+
+  const extension = (file: Express.Multer.File) => {
+    switch (file.mimetype) {
+      case 'image/png': return '.png'
+      case 'image/jpeg': return '.jpeg'
+      case 'image/webp': return '.webp'
+      case 'image/gif': return '.gif'
+      case 'image/svg+xml': return '.svg'
+      default: {
+        // try to keep original filename
+        const m = file.filename.match(/\.[a-z]+$/)
+        return m ? m[0] : '.unknown'
+      }
+    }
+  }
+
   const storage = multer.diskStorage({
     destination: config.dir.UPLOAD_DIR,
     filename: function (req, file, cb) {
-      cb(null , `${Util.uniqId()}-${file.originalname}`)
+      cb(null, `${basename(file)}${extension(file)}`)
     },
   })
-  const upload = multer({storage}).single('file')
+  const upload = multer({ storage }).single('file')
 
   const router = express.Router()
   router.get('/me', async (req: any, res): Promise<void> => {
@@ -386,7 +405,7 @@ export default function createRouter(
       return
     }
     const log = GameLog.get(gameId, offset)
-    let game: GameType|null = null
+    let game: GameType | null = null
     if (offset === 0) {
       const header = log[0] as HeaderLogEntry
       // also need the game
@@ -433,9 +452,9 @@ export default function createRouter(
       return
     }
     const rel1 = await server.getDb().getMany('artist_x_collection', { artist_id: artist.id })
-    const collections = await server.getDb().getMany('collection', { id: { '$in': rel1.map((r: any) => r.collection_id )}})
-    const rel2 = await server.getDb().getMany('collection_x_image', { collection_id: { '$in': collections.map((r: any) => r.id )}})
-    const items = await server.getImages().imagesByIdsFromDb(rel2.map((r: any) => r.image_id ))
+    const collections = await server.getDb().getMany('collection', { id: { '$in': rel1.map((r: any) => r.collection_id) } })
+    const rel2 = await server.getDb().getMany('collection_x_image', { collection_id: { '$in': collections.map((r: any) => r.id) } })
+    const items = await server.getImages().imagesByIdsFromDb(rel2.map((r: any) => r.image_id))
     collections.forEach(c => {
       c.images = items.filter(image => rel2.find(r => r.collection_id === c.id && r.image_id === image.id) ? true : false)
     })

@@ -1,23 +1,13 @@
 <template>
-  <div>
+  <v-container>
     <Nav />
     <h1>Images</h1>
-    <v-table>
+    <v-table density="compact">
       <thead>
         <tr>
-          <th>Id</th>
-          <th>Uploader</th>
-          <th>Created</th>
           <th>Preview</th>
-          <th>Filename</th>
-          <th>Filename Original</th>
-          <th>Title</th>
-          <th>Width</th>
-          <th>Height</th>
-          <th>Private</th>
-          <th>Copyright Name</th>
-          <th>Copyright URL</th>
-
+          <th>Infos</th>
+          <th>Games</th>
           <th>Actions</th>
         </tr>
       </thead>
@@ -26,19 +16,33 @@
           v-for="(item, idx) in images"
           :key="idx"
         >
-          <td>{{ item.id }}</td>
-          <td>{{ item.uploader_user_id || '-' }}</td>
-          <td>{{ item.created }}</td>
-          <th><img :src="resizeUrl(`/image-service/image/${item.filename}`, 150, 100, 'contain')"></th>
-          <td>{{ item.filename }}</td>
-          <td>{{ item.filename_original }}</td>
-          <td>{{ item.title }}</td>
-          <td>{{ item.width }}</td>
-          <td>{{ item.height }}</td>
-          <td>{{ item.private ? '✓' : '✖' }}</td>
-          <td>{{ item.copyright_name }}</td>
-          <td>{{ item.copyright_url }}</td>
-
+          <th>
+            <a
+              :href="`/uploads/${item.filename}`"
+              target="_blank"
+            ><img :src="resizeUrl(`/image-service/image/${item.filename}`, 150, 100, 'contain')"></a>
+          </th>
+          <td>
+            <div class="d-flex ga-3">
+              <span class="text-disabled">Title:</span> {{ item.title || '-' }}
+              <span class="text-disabled">Dimensions:</span> {{ item.width }}×{{ item.height }}
+              <span class="text-disabled">Private:</span> {{ item.private ? '✓' : '✖' }}
+            </div>
+            <div class="d-flex ga-3">
+              <span class="text-disabled">Id:</span> {{ item.id }}
+              <span class="text-disabled">Uploader:</span> {{ item.uploader_user_id || '-' }}
+              <span class="text-disabled">Created:</span> {{ item.created }}
+            </div>
+            <div class="d-flex ga-3">
+              <span class="text-disabled">Filename:</span> {{ item.filename || '-' }}
+              <span class="text-disabled">Original Filename:</span> {{ item.filename_original || '-' }}
+            </div>
+            <div class="d-flex ga-3">
+              <span class="text-disabled">Copyright-Name:</span> {{ item.copyright_name || '-' }}
+              <span class="text-disabled">Copyright-URL:</span> {{ item.copyright_url || '-' }}
+            </div>
+          </td>
+          <td>{{ item.game_count }}</td>
           <td>
             <span
               class="is-clickable"
@@ -48,7 +52,7 @@
         </tr>
       </tbody>
     </v-table>
-  </div>
+  </v-container>
 </template>
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'

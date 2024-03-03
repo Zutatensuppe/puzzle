@@ -1,17 +1,12 @@
 <template>
-  <div>
+  <v-container>
     <Nav />
     <h1>Games</h1>
-    <v-table>
+    <v-table density="compact">
       <thead>
         <tr>
-          <th>Id</th>
-          <th>Creator</th>
-          <th>Image Id</th>
-          <th>Image Preview</th>
-          <th>Created</th>
-          <th>Finished</th>
-          <th>Private</th>
+          <th>Preview</th>
+          <th>Infos</th>
 
           <th>Actions</th>
         </tr>
@@ -21,13 +16,37 @@
           v-for="(item, idx) in games"
           :key="idx"
         >
-          <td>{{ item.id }}</td>
-          <td>{{ item.creator_user_id || '-' }}</td>
-          <td>{{ item.image_id }}</td>
-          <th><img :src="resizeUrl(`/image-service/image/${item.image.filename}`, 150, 100, 'contain')"></th>
-          <td>{{ item.created }}</td>
-          <td>{{ item.finished }}</td>
-          <td>{{ item.private ? '✓' : '✖' }}</td>
+          <th>
+            <a
+              :href="`/uploads/${item.image.filename}`"
+              target="_blank"
+            ><img :src="resizeUrl(`/image-service/image/${item.image.filename}`, 150, 100, 'contain')">
+            </a>
+          </th>
+          <td>
+            <div class="d-flex ga-3">
+              <span class="text-disabled">Id:</span> <a
+                :href="`/g/${item.id}`"
+                target="_blank"
+              >{{ item.id }}</a>
+              <span class="text-disabled">Image-Id: </span> {{ item.image_id }}
+              <span class="text-disabled">Private:</span> {{ item.private ? true : false }}
+            </div>
+            <div class="d-flex ga-3">
+              <span class="text-disabled">Creator:</span> {{ item.creator_user_id || '-' }}
+              <span class="text-disabled">Created:</span> {{ item.created }}
+              <span class="text-disabled">Finished:</span> {{ item.finished || '-' }}
+            </div>
+            <div class="d-flex ga-3">
+              <span class="text-disabled">Pieces:</span> {{ item.pieces_count }}
+              <span class="text-disabled">Game Version:</span> {{ gameVersion(item) }}
+              <span class="text-disabled">Has Replay:</span> {{ gameHasReplay(item) }}
+              <span class="text-disabled">Score Mode:</span> {{ gameScoreMode(item) }}
+              <span class="text-disabled">Shape Mode:</span> {{ gameShapeMode(item) }}
+              <span class="text-disabled">Snap Mode:</span> {{ gameSnapMode(item) }}
+            </div>
+            <div class="d-flex ga-3" />
+          </td>
 
           <td>
             <span
@@ -38,7 +57,7 @@
         </tr>
       </tbody>
     </v-table>
-  </div>
+  </v-container>
 </template>
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
@@ -46,8 +65,30 @@ import { resizeUrl } from '../../../../common/src/ImageService'
 import user from '../../user'
 import api from '../../_api'
 import Nav from '../components/Nav.vue'
+import { scoreModeToString, shapeModeToString, snapModeToString } from '../../../../common/src/Util'
 
 const games = ref<any[]>([])
+
+const gameVersion = (game: any) => {
+  const parsed = JSON.parse(game.data)
+  return parsed.gameVersion || '-'
+}
+const gameHasReplay = (game: any) => {
+  const parsed = JSON.parse(game.data)
+  return parsed.hasReplay || '-'
+}
+const gameScoreMode = (game: any) => {
+  const parsed = JSON.parse(game.data)
+  return snapModeToString(parsed.scoreMode)
+}
+const gameShapeMode = (game: any) => {
+  const parsed = JSON.parse(game.data)
+  return scoreModeToString(parsed.shapeMode)
+}
+const gameSnapMode = (game: any) => {
+  const parsed = JSON.parse(game.data)
+  return shapeModeToString(parsed.snapMode)
+}
 
 const onDelete = async (game: any) => {
   if (!confirm(`Really delete game ${game.id}?`)) {

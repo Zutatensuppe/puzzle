@@ -67,7 +67,8 @@
 import { computed } from 'vue'
 import Time from '../../../common/src/Time'
 import { resizeUrl } from '../../../common/src/ImageService'
-import { GameInfo, ImageInfo, ScoreMode, ShapeMode, SnapMode } from '../../../common/src/Types'
+import { GameInfo, ImageInfo } from '../../../common/src/Types'
+import { scoreModeToString, shapeModeToString, snapModeToString } from '../../../common/src/Util'
 
 const props = defineProps<{
   game: GameInfo,
@@ -83,32 +84,11 @@ const style = computed(() => ({ 'background-image': `url("${url.value}")` }))
 
 const joinPuzzleText = computed(() => props.game.finished ? 'View puzzle' : 'Join puzzle')
 
-const snapMode = computed(() => {
-  switch (props.game.snapMode) {
-    case SnapMode.REAL: return 'Real'
-    case SnapMode.NORMAL:
-    default:
-      return 'Normal'
-  }
-})
+const snapMode = computed(() => snapModeToString(props.game.snapMode))
 
-const scoreMode = computed(() => {
-  switch (props.game.scoreMode) {
-    case ScoreMode.ANY: return 'Any'
-    case ScoreMode.FINAL:
-    default: return 'Final'
-  }
-})
+const scoreMode = computed(() => scoreModeToString(props.game.scoreMode))
 
-const shapeMode = computed(() => {
-  switch (props.game.shapeMode) {
-    case ShapeMode.FLAT: return 'Flat'
-    case ShapeMode.ANY: return 'Any'
-    case ShapeMode.NORMAL:
-    default:
-      return 'Normal'
-  }
-})
+const shapeMode = computed(() => shapeModeToString(props.game.shapeMode))
 
 const time = (start: number, end: number) => {
   const from = start

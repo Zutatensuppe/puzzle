@@ -60,12 +60,12 @@
                     density="comfortable"
                   >
                     <v-radio
-                      label="Any (Score when pieces are connected to each other or on final location)"
-                      :value="1"
+                      :label="`${scoreModeToString(ScoreMode.ANY)} (${scoreModeDescriptionToString(ScoreMode.ANY)})`"
+                      :value="ScoreMode.ANY"
                     />
                     <v-radio
-                      label="Final (Score when pieces are put to their final location)"
-                      :value="0"
+                      :label="`${scoreModeToString(ScoreMode.FINAL)} (${scoreModeDescriptionToString(ScoreMode.FINAL)})`"
+                      :value="ScoreMode.FINAL"
                     />
                   </v-radio-group>
                 </div>
@@ -76,16 +76,16 @@
                     density="comfortable"
                   >
                     <v-radio
-                      label="Normal"
-                      :value="0"
+                      :label="`${shapeModeToString(ShapeMode.NORMAL)} (${shapeModeDescriptionToString(ShapeMode.NORMAL)})`"
+                      :value="ShapeMode.NORMAL"
                     />
                     <v-radio
-                      label="Any (Flat pieces can occur anywhere)"
-                      :value="1"
+                      :label="`${shapeModeToString(ShapeMode.ANY)} (${shapeModeDescriptionToString(ShapeMode.ANY)})`"
+                      :value="ShapeMode.ANY"
                     />
                     <v-radio
-                      label="Flat (All pieces flat on all sides)"
-                      :value="2"
+                      :label="`${shapeModeToString(ShapeMode.FLAT)} (${shapeModeDescriptionToString(ShapeMode.FLAT)})`"
+                      :value="ShapeMode.FLAT"
                     />
                   </v-radio-group>
                 </div>
@@ -96,12 +96,12 @@
                     density="comfortable"
                   >
                     <v-radio
-                      label="Normal (Pieces snap to final destination and to each other)"
-                      :value="0"
+                      :label="`${snapModeToString(SnapMode.NORMAL)} (${snapModeDescriptionToString(SnapMode.NORMAL)})`"
+                      :value="SnapMode.NORMAL"
                     />
                     <v-radio
-                      label="Real (Pieces snap only to corners, already snapped pieces and to each other)"
-                      :value="1"
+                      :label="`${snapModeToString(SnapMode.REAL)} (${snapModeDescriptionToString(SnapMode.REAL)})`"
+                      :value="SnapMode.REAL"
                     />
                   </v-radio-group>
                 </div>
@@ -156,6 +156,14 @@ import PuzzleCropper from './PuzzleCropper.vue'
 import { determinePuzzleInfo, PuzzleCreationInfo } from '../../../common/src/Puzzle'
 import { Rect } from '../../../common/src/Geometry'
 import ImageInfoTable from './ImageInfoTable.vue'
+import {
+  scoreModeDescriptionToString,
+  scoreModeToString,
+  shapeModeDescriptionToString,
+  shapeModeToString,
+  snapModeDescriptionToString,
+  snapModeToString,
+} from '../../../common/src/Util'
 
 const props = defineProps<{
   image: ImageInfo

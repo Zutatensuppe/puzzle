@@ -56,7 +56,12 @@ export default function createRouter(
   })
 
   router.get('/images', async (req, res) => {
-    const items = await server.getDb().getMany('images', undefined, [{ id: -1 }])
+    const items = await server.getDb()._getMany(`
+      select i.*, count(g.id) as game_count
+      from images i left join games g on g.image_id = i.id
+      group by i.id
+      order by i.id desc;
+    `)
     res.send(items)
   })
 

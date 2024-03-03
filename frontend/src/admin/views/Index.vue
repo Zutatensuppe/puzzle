@@ -1,8 +1,8 @@
 <template>
-  <div>
+  <v-container>
     <Nav v-if="loggedIn" />
     <LoginForm v-if="!loggedIn" />
-  </div>
+  </v-container>
 </template>
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
