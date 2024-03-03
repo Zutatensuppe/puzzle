@@ -2,18 +2,6 @@
   <tr :style="style">
     <td>
       <icon
-        v-if="active"
-        icon="lightning"
-        title="Active"
-      />
-      <icon
-        v-else
-        icon="zzz"
-        title="Idle"
-      />
-    </td>
-    <td class="pl-1">
-      <icon
         :style="iconStyle"
         :title="iconTitle"
       />
@@ -63,11 +51,15 @@ const getColoredBadge = (color: string): string => {
   const graphics = props.game.getGraphics()
   const assets = props.game.getAssets()
   let url = ''
-  let key = 'color_' + color
+  let key = 'color_' + color + '_' + (props.active ? 'active' : 'idle')
   if (key in badgeMap) {
     url = badgeMap[key]
   } else {
-    badgeMap[key] = graphics.colorizedCanvas(assets.Gfx.badgeOver, assets.Gfx.badgeMask, props.player.color || '#ffffff').toDataURL()
+    if (props.active) {
+      badgeMap[key] = graphics.colorizedCanvas(assets.Gfx.badgeOver, assets.Gfx.badgeMask, props.player.color || '#ffffff').toDataURL()
+    } else {
+      badgeMap[key] = graphics.colorizedCanvas(assets.Gfx.badgeOverIdle, assets.Gfx.badgeMask, props.player.color || '#ffffff').toDataURL()
+    }
     url = badgeMap[key]
   }
   return url
@@ -77,11 +69,15 @@ const getAnonBadge = (): string => {
   const graphics = props.game.getGraphics()
   const assets = props.game.getAssets()
   let url = ''
-  let key = 'anon'
+  let key = 'anon_' + (props.active ? 'active' : 'idle')
   if (key in badgeMap) {
     url = badgeMap[key]
   } else {
-    badgeMap[key] = graphics.bitmapToImageString(assets.Gfx.badgeAnon)
+    if (props.active) {
+      badgeMap[key] = graphics.bitmapToImageString(assets.Gfx.badgeAnon)
+    } else {
+      badgeMap[key] = graphics.bitmapToImageString(assets.Gfx.badgeAnonIdle)
+    }
     url = badgeMap[key]
   }
   return url
@@ -97,10 +93,10 @@ const iconStyle = computed(() => {
 })
 
 const iconTitle = computed(() => {
-  const name = (props.player.name || 'This player')
+  const active = (props.active ? 'Active' : 'Idle')
   if (!props.registeredMap[props.player.id]) {
-    return name + ' is an anonymous user.'
+    return active + ', anonymous user'
   }
-  return name + ' is a registered user. ♥'
+  return active + ', registered user ♥'
 })
 </script>

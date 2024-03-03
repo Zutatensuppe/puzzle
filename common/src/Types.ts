@@ -642,7 +642,9 @@ export interface AssetsInterface {
     HAND_MASK: ImageBitmap
     badgeMask: ImageBitmap
     badgeOver: ImageBitmap
+    badgeOverIdle: ImageBitmap
     badgeAnon: ImageBitmap
+    badgeAnonIdle: ImageBitmap
   }
 }
 
