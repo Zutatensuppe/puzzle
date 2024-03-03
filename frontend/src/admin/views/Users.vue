@@ -1,8 +1,8 @@
 <template>
-  <div>
+  <v-container>
     <Nav />
     <h1>Users</h1>
-    <v-table>
+    <v-table density="compact">
       <thead>
         <tr>
           <th>Id</th>
@@ -37,7 +37,7 @@
         </tr>
       </tbody>
     </v-table>
-  </div>
+  </v-container>
 </template>
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'

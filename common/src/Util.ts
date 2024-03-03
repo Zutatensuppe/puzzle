@@ -11,6 +11,9 @@ import {
   PieceShape,
   Player,
   PuzzleInfo,
+  ScoreMode,
+  ShapeMode,
+  SnapMode,
 } from './Types'
 import { Point } from './Geometry'
 import { Rng } from './Rng'
@@ -274,6 +277,55 @@ export const dateformat = (
 
 export const clamp = (val: number, min: number, max: number): number => {
   return Math.max(min, Math.min(max, val))
+}
+
+export const snapModeToString = (m: SnapMode) => {
+  switch (m) {
+    case SnapMode.REAL: return 'Real'
+    case SnapMode.NORMAL:
+    default: return 'Normal'
+  }
+}
+export const snapModeDescriptionToString = (m: SnapMode) => {
+  switch (m) {
+    case SnapMode.REAL: return 'Pieces snap only to corners, already snapped pieces and to each other'
+    case SnapMode.NORMAL:
+    default: return 'Pieces snap to final destination and to each other'
+  }
+}
+
+export const scoreModeToString = (m: ScoreMode) => {
+  switch (m) {
+    case ScoreMode.ANY: return 'Any'
+    case ScoreMode.FINAL:
+    default: return 'Final'
+  }
+}
+
+export const scoreModeDescriptionToString = (m: ScoreMode) => {
+  switch (m) {
+    case ScoreMode.ANY: return 'Score when pieces are connected to each other or on final location'
+    case ScoreMode.FINAL:
+    default: return 'Score when pieces are put to their final location'
+  }
+}
+
+export const shapeModeToString = (m: ShapeMode) => {
+  switch (m) {
+    case ShapeMode.FLAT: return 'Flat'
+    case ShapeMode.ANY: return 'Any'
+    case ShapeMode.NORMAL:
+    default: return 'Normal'
+  }
+}
+
+export const shapeModeDescriptionToString = (m: ShapeMode) => {
+  switch (m) {
+    case ShapeMode.FLAT: return 'All pieces flat on all sides'
+    case ShapeMode.ANY: return 'Flat pieces can occur anywhere'
+    case ShapeMode.NORMAL:
+    default: return 'Normal pieces, flat only on the outside'
+  }
 }
 
 export default {
