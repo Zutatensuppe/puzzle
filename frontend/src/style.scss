@@ -167,25 +167,29 @@ $bg-color-transparent: rgba(0 0 0 / 70%);
   overflow: visible;
   margin-right: 220px;
 
-  .game-teaser-image {
+  .game-teaser-image-holder {
     display: block;
-    background-repeat: no-repeat;
-    background-position: center;
-    background-size: cover;
     position: relative;
     padding-top: 80%;
     width: 100%;
-    background-color: #222;
     min-height: 360px;
+  }
+
+  .game-teaser-image {
+    position: absolute;
+    inset: 0;
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: cover;
   }
 
   > .v-card__overlay,
   .game-teaser-image {
-    transition: transform 0.2s ease-in;
-    -moz-transition: transform 0.2s ease-in;
-    -ms-transition: transform 0.2s ease-in;
-    -o-transition: transform 0.2s ease-in;
-    -webkit-transition: transform 0.2s ease-in;
+    transition: transform 0.2s ease-in, opacity 0.2s ease-in;
+    -moz-transition: transform 0.2s ease-in, opacity 0.2s ease-in;
+    -ms-transition: transform 0.2s ease-in, opacity 0.2s ease-in;
+    -o-transition: transform 0.2s ease-in, opacity 0.2s ease-in;
+    -webkit-transition: transform 0.2s ease-in, opacity 0.2s ease-in;
     border-radius: 4px;
   }
 
@@ -220,6 +224,14 @@ $bg-color-transparent: rgba(0 0 0 / 70%);
   &:hover > .v-card__overlay,
   &:hover .game-teaser-image {
     transform: scale(1.1);
+  }
+
+  .game-teaser-image.state-hovered {
+    opacity: 0;
+  }
+
+  &:hover .game-teaser-image.state-hovered {
+    opacity: 1;
   }
 }
 
@@ -801,4 +813,10 @@ fieldset {
   td:first-child {
     white-space: nowrap;
   }
+}
+
+.offscreen {
+  position: absolute !important;
+  left: -9999px;
+  top: -9999px;
 }

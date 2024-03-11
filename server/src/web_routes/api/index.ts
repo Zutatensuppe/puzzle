@@ -104,7 +104,7 @@ export default function createRouter(
       redirect_uri: '',
     }
     const redirectUris = [
-      `https://${config.http.public_hostname}/api/auth/twitch/redirect_uri`,
+      `${config.http.publicBaseUrl}/api/auth/twitch/redirect_uri`,
       `${req.protocol}://${req.headers.host}/api/auth/twitch/redirect_uri`,
     ]
     for (const redirectUri of redirectUris) {
@@ -428,6 +428,7 @@ export default function createRouter(
       const gameObj = await server.getGameService().loadGame(gameId)
       if (gameObj) {
         game.registeredMap = await server.getGameService().generateRegisteredMap(gameObj)
+        game.state.imageSnapshots = GameCommon.Game_getImageSnapshots(gameObj)
       }
     }
     res.send({ log, game: game ? Util.encodeGame(game) : null })
@@ -493,6 +494,7 @@ export default function createRouter(
         ? GameCommon.Game_getPlayersWithScore(game).length
         : GameCommon.Game_getActivePlayers(game, ts).length,
       image: GameCommon.Game_getImage(game),
+      imageSnapshots: GameCommon.Game_getImageSnapshots(game),
       snapMode: GameCommon.Game_getSnapMode(game),
       scoreMode: GameCommon.Game_getScoreMode(game),
       shapeMode: GameCommon.Game_getShapeMode(game),

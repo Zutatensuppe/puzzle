@@ -1,6 +1,6 @@
 import {
   DefaultScoreMode, DefaultShapeMode, DefaultSnapMode, Game, Puzzle,
-  EncodedPlayer, ScoreMode, ShapeMode, SnapMode, ImageInfo, Timestamp, GameSettings, Change, GameEvent, RegisteredMap,
+  EncodedPlayer, ScoreMode, ShapeMode, SnapMode, ImageInfo, Timestamp, GameSettings, Change, GameEvent, RegisteredMap, ImageSnapshots, PersistOptions,
 } from '../../common/src/Types'
 import Util, { logger } from '../../common/src/Util'
 import { Rng, RngSerialized } from '../../common/src/Rng'
@@ -13,6 +13,7 @@ import { GAME_VERSION, LOG_TYPE } from '../../common/src/Protocol'
 import { LeaderboardRepo } from './repo/LeaderboardRepo'
 import { ImagesRepo } from './repo/ImagesRepo'
 import { UsersRepo } from './repo/UsersRepo'
+import { updateCurrentImageSnapshot } from './ImageSnapshotCreator'
 
 const log = logger('GameService.js')
 
@@ -24,6 +25,9 @@ interface GameStoreData {
     obj: RngSerialized
   }
   puzzle: Puzzle
+  state?: {
+    imageSnapshots: ImageSnapshots
+  }
   players: EncodedPlayer[]
   scoreMode: ScoreMode
   shapeMode: ShapeMode
@@ -167,8 +171,9 @@ export class GameService {
     return Object.keys(this.dirtyGames)
   }
 
-  async persistGame(game: Game): Promise<void> {
+  async persistGame(game: Game, opts: PersistOptions): Promise<void> {
     this.setClean(game.id)
+    await updateCurrentImageSnapshot(game.id, opts.imageSnapshotMode)
     await this.repo.upsert({
       id: game.id,
       creator_user_id: game.creatorUserId,
@@ -183,7 +188,6 @@ export class GameService {
     })
     await this.repo.updatePlayerRelations(game.id, game.players)
 
-    game.players
     log.info(`[INFO] persisted game ${game.id}`)
   }
 
@@ -205,6 +209,9 @@ export class GameService {
       scoreMode: DefaultScoreMode(storeData.scoreMode),
       shapeMode: DefaultShapeMode(storeData.shapeMode),
       snapMode: DefaultSnapMode(storeData.snapMode),
+      state: {
+        imageSnapshots: storeData.state ? storeData.state.imageSnapshots : { current: null },
+      },
       hasReplay: !!storeData.hasReplay,
       private: isPrivate,
       registeredMap: {},
@@ -220,6 +227,7 @@ export class GameService {
         obj: Rng.serialize(game.rng.obj),
       },
       puzzle: game.puzzle,
+      state: game.state,
       players: game.players,
       scoreMode: game.scoreMode,
       shapeMode: game.shapeMode,
@@ -251,6 +259,9 @@ export class GameService {
       creatorUserId,
       rng: { type: 'Rng', obj: rng },
       puzzle: await this.puzzleService.createPuzzle(rng, targetPieceCount, image, ts, shapeMode, gameVersion),
+      state: {
+        imageSnapshots: { current: null },
+      },
       players: [],
       scoreMode,
       shapeMode,
@@ -309,7 +320,7 @@ export class GameService {
     )
 
     GameCommon.setGame(gameObject.id, gameObject)
-    await this.persistGame(gameObject)
+    await this.persistGame(gameObject, { imageSnapshotMode: 'simple'})
 
     return gameObject.id
   }
@@ -347,7 +358,7 @@ export class GameService {
       if (game) {
         // persist game immediately when it was just finished
         // and also update the leaderboard afterwards
-        await this.persistGame(game)
+        await this.persistGame(game, { imageSnapshotMode: 'none' })
         await this.leaderboardRepo.updateLeaderboards()
       }
     }

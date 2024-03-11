@@ -1,7 +1,13 @@
-import { AssetsInterface, GraphicsInterface, Player } from './Types'
+import {
+  AssetsInterface,
+  GraphicsInterface,
+  Player,
+  PlayerCursorsInterface,
+} from './Types'
 
-export class PlayerCursors {
-  private cursorImages: Record<string, ImageBitmap> = {}
+export class PlayerCursors implements PlayerCursorsInterface
+{
+  private cursorImages: Record<string, ImageBitmap | HTMLCanvasElement> = {}
 
   private cursorDown: string = ''
   private cursor: string = ''
@@ -24,15 +30,13 @@ export class PlayerCursors {
     this.CURSOR_H_2 = Math.round(this.CURSOR_H / 2)
   }
 
-  async get (p: Player): Promise<ImageBitmap> {
+  async get (p: Player): Promise<ImageBitmap | HTMLCanvasElement> {
     const key = p.color + ' ' + p.d
     if (!this.cursorImages[key]) {
       const cursor = p.d ? this.assets.Gfx.GRAB : this.assets.Gfx.HAND
       if (p.color) {
         const mask = p.d ? this.assets.Gfx.GRAB_MASK : this.assets.Gfx.HAND_MASK
-        this.cursorImages[key] = await this.graphics.createImageBitmapFromCanvas(
-          this.graphics.colorizedCanvas(cursor, mask, p.color),
-        )
+        this.cursorImages[key] = this.graphics.colorizedCanvas(cursor, mask, p.color)
       } else {
         this.cursorImages[key] = cursor
       }

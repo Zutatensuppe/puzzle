@@ -5,7 +5,7 @@ import { logger } from './Util'
 
 const log = logger('PuzzleTable.ts')
 
-const cache: Record<string, ImageBitmap | null> = {}
+const cache: Record<string, HTMLCanvasElement | null> = {}
 
 export class PuzzleTable implements PuzzleTableInterface {
   constructor(
@@ -14,12 +14,19 @@ export class PuzzleTable implements PuzzleTableInterface {
     // pass
   }
 
-  async loadTexture(gameId: string, settings: PlayerSettingsData): Promise<ImageBitmap | null> {
-    const textureNameOrUrl = settings.useCustomTableTexture ? settings.customTableTexture : settings.tableTexture
+  async loadTexture(
+    gameId: string,
+    settings: PlayerSettingsData,
+  ): Promise<HTMLCanvasElement | null> {
+    const textureNameOrUrl = settings.useCustomTableTexture
+      ? settings.customTableTexture
+      : settings.tableTexture
     if (!textureNameOrUrl) {
       return null
     }
-    const scale = settings.useCustomTableTexture ? settings.customTableTextureScale : 1 // determined later, but always fixed for cache key
+    const scale = settings.useCustomTableTexture
+      ? settings.customTableTextureScale
+      : 1 // determined later, but always fixed for cache key
     const cacheKey = gameId + '___' + textureNameOrUrl + '___' + scale
     if (cache[cacheKey]) {
       return cache[cacheKey]
@@ -57,7 +64,10 @@ export class PuzzleTable implements PuzzleTableInterface {
     }
   }
 
-  getImage(gameId: string, settings: PlayerSettingsData): ImageBitmap | null {
+  getImage(
+    gameId: string,
+    settings: PlayerSettingsData,
+  ): HTMLCanvasElement | null {
     const textureNameOrUrl = settings.useCustomTableTexture ? settings.customTableTexture : settings.tableTexture
     const scale = settings.useCustomTableTexture ? settings.customTableTextureScale : 1 // determined later, but always fixed for cache key
     const cacheKey = gameId + '___' + textureNameOrUrl + '___' + scale
@@ -71,7 +81,7 @@ export class PuzzleTable implements PuzzleTableInterface {
     bitmap: ImageBitmap,
     scale: number,
     isDark: boolean,
-  ): Promise<ImageBitmap> {
+  ): Promise<HTMLCanvasElement> {
     const tableCanvas = this.graphics.repeat(bitmap, bounds, scale)
     const adjustedBounds: Dim = { w: tableCanvas.width, h: tableCanvas.height }
     const ratio = adjustedBounds.w / bounds.w
@@ -152,6 +162,6 @@ export class PuzzleTable implements PuzzleTableInterface {
       )
     }
 
-    return await this.graphics.createImageBitmapFromCanvas(tableCanvas)
+    return tableCanvas
   }
 }

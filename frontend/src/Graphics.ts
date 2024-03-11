@@ -4,6 +4,36 @@ import { Rect } from './Geometry'
 import { GraphicsInterface } from '../../common/src/Types'
 
 export class Graphics implements GraphicsInterface {
+  grayscaledCanvas(
+    bitmap: HTMLCanvasElement,
+    background: string,
+    opacity: number,
+  ): HTMLCanvasElement {
+    const c = this.createCanvas(bitmap.width, bitmap.height)
+    const ctx = c.getContext('2d') as CanvasRenderingContext2D
+    ctx.drawImage(bitmap, 0, 0)
+    const imgData = ctx.getImageData(0, 0, c.width, c.height)
+    const data = imgData.data
+    for (let i = 0; i < data.length; i += 4) {
+      const avg = (data[i] + data[i + 1] + data[i + 2]) / 3
+      data[i] = avg
+      data[i + 1] = avg
+      data[i + 2] = avg
+    }
+    ctx.putImageData(imgData, 0, 0)
+
+    const c2 = this.createCanvas(bitmap.width, bitmap.height)
+    const ctx2 = c2.getContext('2d') as CanvasRenderingContext2D
+    ctx2.fillStyle = background
+    ctx2.fillRect(0, 0, c2.width, c2.height)
+    ctx2.save()
+    ctx2.globalAlpha = opacity
+    ctx2.drawImage(c, 0, 0, c2.width, c2.height)
+    ctx2.restore()
+
+    return c2
+  }
+
   createCanvas(width:number = 0, height:number = 0): HTMLCanvasElement {
       const c = document.createElement('canvas')
       c.width = width
@@ -31,15 +61,15 @@ export class Graphics implements GraphicsInterface {
     return c.toDataURL()
   }
 
-  async resizeBitmap (
+  resizeBitmap (
     bitmap: ImageBitmap,
     width: number,
     height: number,
-  ): Promise<ImageBitmap> {
+  ): HTMLCanvasElement {
     const c = this.createCanvas(width, height)
     const ctx = c.getContext('2d') as CanvasRenderingContext2D
     ctx.drawImage(bitmap, 0, 0, bitmap.width, bitmap.height, 0, 0, width, height)
-    return await createImageBitmap(c)
+    return c
   }
 
   colorizedCanvas(
@@ -127,9 +157,5 @@ export class Graphics implements GraphicsInterface {
       }
     }
     return c
-  }
-
-  async createImageBitmapFromCanvas(c: HTMLCanvasElement) {
-    return await createImageBitmap(c)
   }
 }

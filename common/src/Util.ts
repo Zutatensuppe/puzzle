@@ -146,6 +146,7 @@ function encodeGame(data: Game): EncodedGame | EncodedGameLegacy {
     data.private,
     data.crop,
     data.registeredMap,
+    data.state.imageSnapshots,
   ] : [
     data.id,
     data.rng.type || '',
@@ -193,6 +194,11 @@ function decodeGame(data: EncodedGame | EncodedGameLegacy): Game {
       gameVersion: data[10],
       private: data[11],
       registeredMap: {},
+      state: {
+        imageSnapshots: {
+          current: null,
+        },
+      },
     }
   }
 
@@ -203,6 +209,9 @@ function decodeGame(data: EncodedGame | EncodedGameLegacy): Game {
       obj: Rng.unserialize(data[2]),
     },
     puzzle: data[3],
+    state: {
+      imageSnapshots: data[14],
+    },
     players: data[4],
     scoreMode: data[5],
     shapeMode: data[6],
