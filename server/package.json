@@ -3,8 +3,8 @@
   "version": "0.0.0",
   "description": "",
   "scripts": {
-    "build:copyassets": "cpx \"node_modules/@img/**/*\" ../build/server/node_modules/@img",
-    "build:app": "esbuild --sourcemap src/main.ts --external:pg-native --platform=node --bundle --minify --outfile=../build/server/main.js",
+    "build:copyassets": "cpx \"node_modules/@img/**/*\" ../build/server/node_modules/@img && cpx \"node_modules/canvas/**/*\" ../build/server/node_modules/canvas",
+    "build:app": "esbuild --sourcemap src/main.ts --external:pg-native --external:canvas --platform=node --bundle --minify --outfile=../build/server/main.js",
     "build": "npm run build:app && npm run build:copyassets",
     "start": "ts-node-dev --respawn src/main.ts",
     "video": "ts-node-dev src/video.ts",
