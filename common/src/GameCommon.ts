@@ -9,6 +9,7 @@ import {
   Game,
   GameEvent,
   ImageInfo,
+  ImageSnapshots,
   LogEntry,
   Piece,
   PieceChange,
@@ -58,6 +59,11 @@ function setGame(gameId: string, game: Game): void {
 function setRegisteredMap(gameId: string, registeredMap: RegisteredMap): void {
   GAMES[gameId].registeredMap = registeredMap
 }
+
+function setImageSnapshots(gameId: string, imageSnapshots: ImageSnapshots): void {
+  GAMES[gameId].state.imageSnapshots = imageSnapshots
+}
+
 
 function unsetGame(gameId: string): void {
   delete GAMES[gameId]
@@ -1071,6 +1077,10 @@ function Game_getImage(game: Game): ImageInfo {
   return game.puzzle.info.image
 }
 
+function Game_getImageSnapshots(game: Game): ImageSnapshots {
+  return game.state.imageSnapshots
+}
+
 function Game_getImageUrl(game: Game): string {
   const imageUrl = Game_getImage(game).url
   if (!imageUrl) {
@@ -1089,6 +1099,7 @@ function Game_isFinished(game: Game): boolean {
 export default {
   setGame,
   setRegisteredMap,
+  setImageSnapshots,
   unsetGame,
   loaded,
   playerExists,
@@ -1144,6 +1155,7 @@ export default {
   Game_getActivePlayers,
   Game_getPlayersWithScore,
   Game_getImage,
+  Game_getImageSnapshots,
   Game_getScoreMode,
   Game_getSnapMode,
   Game_getShapeMode,

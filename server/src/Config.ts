@@ -21,7 +21,7 @@ export interface Config {
     connectStr: string
   }
   http: {
-    public_hostname: string,
+    publicBaseUrl: string,
     hostname: string
     port: number
   }

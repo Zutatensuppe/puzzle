@@ -8,7 +8,7 @@ import { GameSockets } from './GameSockets'
 import Time from '../../common/src/Time'
 import config from './Config'
 import GameCommon from '../../common/src/GameCommon'
-import { ServerEvent, Game as GameType, ClientEvent, GameEventInputConnectionClose } from '../../common/src/Types'
+import { ServerEvent, Game as GameType, ClientEvent, GameEventInputConnectionClose, PersistOptions } from '../../common/src/Types'
 import { GameService } from './GameService'
 import createApiRouter from './web_routes/api'
 import createAdminApiRouter from './web_routes/admin/api'
@@ -122,18 +122,18 @@ export class Server implements ServerInterface {
     return this.imagesRepo
   }
 
-  async persistGame(gameId: string): Promise<void> {
+  async persistGame(gameId: string, opts: PersistOptions): Promise<void> {
     const game: GameType | null = GameCommon.get(gameId)
     if (!game) {
       log.error(`[ERROR] unable to persist non existing game ${gameId}`)
       return
     }
-    await this.gameService.persistGame(game)
+    await this.gameService.persistGame(game, opts)
   }
 
   async persistGames(): Promise<void> {
     for (const gameId of this.gameService.dirtyGameIds()) {
-      await this.persistGame(gameId)
+      await this.persistGame(gameId, { imageSnapshotMode: 'current' })
     }
   }
 
@@ -219,7 +219,7 @@ export class Server implements ServerInterface {
             sockets,
           )
         } else {
-          this.persistGame(gameId)
+          await this.persistGame(gameId, { imageSnapshotMode: 'none' })
           log.info(`[INFO] unloading game: ${gameId}`)
           GameCommon.unsetGame(gameId)
         }

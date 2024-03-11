@@ -135,6 +135,7 @@ export type EncodedGame = FixedLengthArray<[
   boolean, // private
   Rect, // crop
   RegisteredMap,
+  ImageSnapshots,
 ]>
 
 export type HeaderLogEntry = [
@@ -203,6 +204,9 @@ export interface Game {
   hasReplay: boolean
   crop?: Rect
   registeredMap: RegisteredMap
+  state: {
+    imageSnapshots: ImageSnapshots
+  }
 }
 
 export interface Image {
@@ -456,6 +460,14 @@ export const DefaultSnapMode = (v: unknown): SnapMode => {
   return SnapMode.NORMAL
 }
 
+export interface ImageSnapshot {
+  url: string
+}
+
+export interface ImageSnapshots {
+  current: ImageSnapshot | null
+}
+
 export interface GameInfo {
   id: string
   hasReplay: boolean
@@ -466,6 +478,7 @@ export interface GameInfo {
   piecesTotal: number
   players: number
   image: ImageInfo
+  imageSnapshots: ImageSnapshots
   snapMode: SnapMode
   scoreMode: ScoreMode
   shapeMode: ShapeMode
@@ -614,9 +627,9 @@ export const isImageSearchSort = (sort: unknown): sort is ImageSearchSort => {
 export interface GraphicsInterface {
   createCanvas: (width: number, height: number) => HTMLCanvasElement
   loadImageToBitmap: (puzzleImageUrl: string) => Promise<ImageBitmap>
-  resizeBitmap: (bitmap: ImageBitmap, width: number, height: number) => Promise<ImageBitmap>
+  resizeBitmap: (bitmap: ImageBitmap, width: number, height: number) => HTMLCanvasElement
+  grayscaledCanvas: (bitmap: HTMLCanvasElement, background: string, opacity: number) => HTMLCanvasElement
   bitmapToImageString: (bitmap: ImageBitmap) => string
-  createImageBitmapFromCanvas: (canvas: HTMLCanvasElement) => Promise<ImageBitmap>
   repeat: (bitmap: ImageBitmap, rect: Rect, scale: number) => HTMLCanvasElement
   colorizedCanvas (bitmap: ImageBitmap, mask: ImageBitmap, color: string): HTMLCanvasElement
 }
@@ -627,7 +640,13 @@ export interface PlayerCursorsInterface {
   readonly CURSOR_H: number
   readonly CURSOR_H_2: number
 
-  get (p: BasicPlayerInfo): Promise<ImageBitmap>
+  get (p: BasicPlayerInfo): Promise<ImageBitmap | HTMLCanvasElement>
+}
+
+export type ImageSnapshotMode = 'none' | 'simple' | 'current'
+
+export interface PersistOptions {
+  imageSnapshotMode: ImageSnapshotMode
 }
 
 export interface AssetsInterface {

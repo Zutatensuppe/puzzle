@@ -2,8 +2,15 @@
 
 import fs from 'fs'
 import { Rect } from './Geometry'
-import { createCanvas as cCreateCanvas, Canvas, Image } from 'canvas'
+import { createCanvas as cCreateCanvas, Canvas, Image, CanvasRenderingContext2D as cCanvasRenderingContext2D } from 'canvas'
 import { GraphicsInterface } from './Types'
+
+// @ts-ignore
+import { polyfillPath2D } from 'path2d-polyfill'
+
+// @ts-ignore
+global.CanvasRenderingContext2D = cCanvasRenderingContext2D
+polyfillPath2D(global)
 
 export class Graphics implements GraphicsInterface {
   constructor(
@@ -15,38 +22,63 @@ export class Graphics implements GraphicsInterface {
     return cCreateCanvas(width, height) as unknown as HTMLCanvasElement
   }
 
-  private async bufferToImageBitmap (buffer: ArrayBuffer): Promise<ImageBitmap> {
+  private async bufferToImageBitmap (buffer: ArrayBuffer, imagePath: string): Promise<ImageBitmap> {
     const img = new Image()
-    await new Promise<void>(rs => {
-      img.onload = rs
+    await new Promise<void>(resolve => {
+      img.onload = resolve
       img.src = Buffer.from(buffer)
     })
     return img as unknown as ImageBitmap
   }
 
-  async createImageBitmapFromCanvas (
-    canvas: HTMLCanvasElement,
-  ): Promise<ImageBitmap> {
-    const ab = (canvas as unknown as Canvas).toBuffer('image/png')
-    return await this.bufferToImageBitmap(ab)
+  grayscaledCanvas(
+    bitmap: HTMLCanvasElement,
+    background: string,
+    opacity: number,
+  ): HTMLCanvasElement {
+    const c = this.createCanvas(bitmap.width, bitmap.height)
+    const ctx = c.getContext('2d') as CanvasRenderingContext2D
+    ctx.drawImage(bitmap, 0, 0)
+    const imgData = ctx.getImageData(0, 0, c.width, c.height)
+    const data = imgData.data
+    for (let i = 0; i < data.length; i += 4) {
+      const avg = (data[i] + data[i + 1] + data[i + 2]) / 3
+      data[i] = avg
+      data[i + 1] = avg
+      data[i + 2] = avg
+    }
+    ctx.putImageData(imgData, 0, 0)
+
+    const c2 = this.createCanvas(bitmap.width, bitmap.height)
+    const ctx2 = c2.getContext('2d') as CanvasRenderingContext2D
+    ctx2.fillStyle = background
+    ctx2.fillRect(0, 0, c2.width, c2.height)
+    ctx2.save()
+    ctx2.globalAlpha = opacity
+    ctx2.drawImage(c, 0, 0, c2.width, c2.height)
+    ctx2.restore()
+    return c2
   }
 
-  async createImageBitmapFromBlob (blob: Blob): Promise<ImageBitmap> {
+  private async createImageBitmapFromBlob (blob: Blob, imagePath: string): Promise<ImageBitmap> {
     const ab = await blob.arrayBuffer()
-    return await this.bufferToImageBitmap(ab)
+    const bitmap = await this.bufferToImageBitmap(ab, imagePath)
+    return bitmap
   }
 
   async loadImageToBitmap(imagePath: string): Promise<ImageBitmap> {
     if (imagePath.startsWith('/image-service/')) {
-      const res = await fetch(this.baseUrl + imagePath)
+      let url = this.baseUrl + imagePath
+      url = url.includes('?') ? url + '&format=png' : url + '?format=png'
+      const res = await fetch(url)
       const blob = await res.blob()
-      const bitmap = await this.createImageBitmapFromBlob(blob)
+      const bitmap = await this.createImageBitmapFromBlob(blob, imagePath)
       return bitmap
     }
 
     const buff = fs.readFileSync(imagePath)
     const blob = new Blob([buff])
-    const bitmap = await this.createImageBitmapFromBlob(blob)
+    const bitmap = await this.createImageBitmapFromBlob(blob, imagePath)
     return bitmap
   }
 
@@ -57,16 +89,15 @@ export class Graphics implements GraphicsInterface {
     return c.toDataURL()
   }
 
-  async resizeBitmap (
+  resizeBitmap (
     bitmap: ImageBitmap,
     width: number,
     height: number,
-  ): Promise<ImageBitmap> {
+  ): HTMLCanvasElement {
     const c = this.createCanvas(width, height)
     const ctx = c.getContext('2d') as CanvasRenderingContext2D
     ctx.drawImage(bitmap, 0, 0, bitmap.width, bitmap.height, 0, 0, width, height)
-    const resizedBitmap = await this.createImageBitmapFromCanvas(c)
-    return resizedBitmap
+    return c
   }
 
   colorizedCanvas(

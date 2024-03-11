@@ -106,18 +106,18 @@ export function drawPuzzlePreview(
   ctx.restore()
 }
 
-async function createPuzzleTileBitmaps(
-  img: ImageBitmap,
+function createPuzzlePieces(
+  img: HTMLCanvasElement,
   pieces: EncodedPiece[],
   info: PuzzleInfo,
   graphics: GraphicsInterface,
-): Promise<Array<ImageBitmap>> {
-  log.log('start createPuzzleTileBitmaps')
+): HTMLCanvasElement[] {
+  log.log('start createPuzzlePieces')
   const pieceSize = info.tileSize
   const pieceMarginWidth = info.tileMarginWidth
   const pieceDrawSize = info.tileDrawSize
 
-  const bitmaps: Array<ImageBitmap> = new Array(pieces.length)
+  const bitmaps: HTMLCanvasElement[] = new Array(pieces.length)
 
   const paths: Record<number, Path2D> = {}
   function pathForShape(shape: PieceShape) {
@@ -128,13 +128,11 @@ async function createPuzzleTileBitmaps(
     return paths[key]
   }
 
-  const c = graphics.createCanvas(pieceDrawSize, pieceDrawSize)
-  const ctx = c.getContext('2d') as CanvasRenderingContext2D
-
-  const c2 = graphics.createCanvas(pieceDrawSize, pieceDrawSize)
-  const ctx2 = c2.getContext('2d') as CanvasRenderingContext2D
-
   for (const p of pieces) {
+    const c = graphics.createCanvas(pieceDrawSize, pieceDrawSize)
+    const ctx = c.getContext('2d') as CanvasRenderingContext2D
+    const c2 = graphics.createCanvas(pieceDrawSize, pieceDrawSize)
+    const ctx2 = c2.getContext('2d') as CanvasRenderingContext2D
     const piece = Util.decodePiece(p)
     const srcRect = srcRectByIdx(info, piece.idx)
     const path = pathForShape(Util.decodeShape(info.shapes[piece.idx]))
@@ -236,10 +234,10 @@ async function createPuzzleTileBitmaps(
     ctx2.restore()
     ctx.drawImage(c2, 0, 0)
 
-    bitmaps[piece.idx] = await graphics.createImageBitmapFromCanvas(c)
+    bitmaps[piece.idx] = c
   }
 
-  log.log('end createPuzzleTileBitmaps')
+  log.log('end createPuzzlePieces')
   return bitmaps
 }
 
@@ -253,21 +251,24 @@ function srcRectByIdx(puzzleInfo: PuzzleInfo, idx: number): Rect {
   }
 }
 
-async function loadPuzzleBitmaps(
+async function loadPuzzleBitmap(
   puzzle: Puzzle,
   puzzleImageUrl: string,
   graphics: GraphicsInterface,
-): Promise<Array<ImageBitmap>> {
-  // load bitmap, to determine the original size of the image
+): Promise<HTMLCanvasElement> {
   const bmp = await graphics.loadImageToBitmap(puzzleImageUrl)
+  return graphics.resizeBitmap(bmp, puzzle.info.width, puzzle.info.height)
+}
 
-  // creation of tile bitmaps
-  // then create the final puzzle bitmap
-  // NOTE: this can decrease OR increase in size!
-  const bmpResized = await graphics.resizeBitmap(bmp, puzzle.info.width, puzzle.info.height)
-  return await createPuzzleTileBitmaps(bmpResized, puzzle.tiles, puzzle.info, graphics)
+function loadPuzzleBitmaps(
+  puzzleBitmap: HTMLCanvasElement,
+  puzzle: Puzzle,
+  graphics: GraphicsInterface,
+): HTMLCanvasElement[] {
+  return createPuzzlePieces(puzzleBitmap, puzzle.tiles, puzzle.info, graphics)
 }
 
 export default {
+  loadPuzzleBitmap,
   loadPuzzleBitmaps,
 }

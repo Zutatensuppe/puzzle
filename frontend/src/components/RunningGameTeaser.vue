@@ -5,10 +5,18 @@
     elevation="10"
     @click="emit('goToGame', game)"
   >
-    <div
-      class="game-teaser-image"
-      :style="style"
-    />
+    <div class="game-teaser-image-holder">
+      <div
+        class="game-teaser-image state-normal"
+        :style="style"
+      />
+      <div
+        v-if="styleHovered"
+        class="game-teaser-image state-hovered"
+        :style="styleHovered"
+      />
+    </div>
+
     <div class="game-teaser-inner">
       <div
         v-if="game.isPrivate"
@@ -23,7 +31,7 @@
         <v-icon icon="mdi-account-group" /> {{ game.players }} Active Player{{ game.players === 1 ? '' : 's' }}
       </div>
       <div class="game-teaser-info secondary">
-        <v-icon icon="mdi-timer-outline" /> {{ time(game.started, game.finished) }}
+        <v-icon icon="mdi-timer-outline" /> {{ time }}
       </div>
       <div
         class="game-teaser-info secondary"
@@ -79,8 +87,18 @@ const emit = defineEmits<{
   (e: 'showImageInfo', val: ImageInfo): void
 }>()
 
-const url = computed(() => resizeUrl(props.game.image.url, 620, 496, 'contain'))
-const style = computed(() => ({ 'background-image': `url("${url.value}")` }))
+const style = computed(() => {
+  const url = props.game.imageSnapshots.current
+    ? props.game.imageSnapshots.current.url
+    : props.game.image.url
+  return { 'background-image': `url("${resizeUrl(url, 620, 496, 'contain')}")` }
+})
+const styleHovered = computed(() => {
+  // when there is a snapshot, we show the full image on hover! this is
+  // not a mistake here
+  const url = props.game.imageSnapshots.current ? props.game.image.url : null
+  return url ? { 'background-image': `url("${resizeUrl(url, 620, 496, 'contain')}")` } : null
+})
 
 const joinPuzzleText = computed(() => props.game.finished ? 'View puzzle' : 'Join puzzle')
 
@@ -90,10 +108,10 @@ const scoreMode = computed(() => scoreModeToString(props.game.scoreMode))
 
 const shapeMode = computed(() => shapeModeToString(props.game.shapeMode))
 
-const time = (start: number, end: number) => {
+const time = ((start: number, end: number) => {
   const from = start
   const to = end || Time.timestamp()
   const timeDiffStr = Time.timeDiffStr(from, to)
   return `${timeDiffStr}`
-}
+})(props.game.started, props.game.finished)
 </script>

@@ -156,7 +156,7 @@ export abstract class Game<HudType extends Hud> {
 
     const puzzleTable = new PuzzleTable(this.graphics)
     await puzzleTable.loadTexture(this.gameId, this.playerSettings.getSettings())
-    this.renderer = new Renderer(this.gameId, this.canvas, this.viewport, this.fireworks, puzzleTable, false)
+    this.renderer = new Renderer(this.gameId, this.canvas, this.viewport, this.fireworks, puzzleTable, false, false, true)
     await this.renderer.init(this.graphics)
 
     this.canvas.classList.add('loaded')
