@@ -2,7 +2,7 @@
 
 import fs from 'fs'
 import { Rect } from './Geometry'
-import { createCanvas as cCreateCanvas, Canvas, Image, CanvasRenderingContext2D as cCanvasRenderingContext2D } from 'canvas'
+import { createCanvas as cCreateCanvas, Image, CanvasRenderingContext2D as cCanvasRenderingContext2D } from 'canvas'
 import { GraphicsInterface } from './Types'
 
 // @ts-ignore
@@ -22,7 +22,7 @@ export class Graphics implements GraphicsInterface {
     return cCreateCanvas(width, height) as unknown as HTMLCanvasElement
   }
 
-  private async bufferToImageBitmap (buffer: ArrayBuffer, imagePath: string): Promise<ImageBitmap> {
+  private async bufferToImageBitmap (buffer: ArrayBuffer): Promise<ImageBitmap> {
     const img = new Image()
     await new Promise<void>(resolve => {
       img.onload = resolve
@@ -60,9 +60,9 @@ export class Graphics implements GraphicsInterface {
     return c2
   }
 
-  private async createImageBitmapFromBlob (blob: Blob, imagePath: string): Promise<ImageBitmap> {
+  private async createImageBitmapFromBlob (blob: Blob): Promise<ImageBitmap> {
     const ab = await blob.arrayBuffer()
-    const bitmap = await this.bufferToImageBitmap(ab, imagePath)
+    const bitmap = await this.bufferToImageBitmap(ab)
     return bitmap
   }
 
@@ -72,13 +72,13 @@ export class Graphics implements GraphicsInterface {
       url = url.includes('?') ? url + '&format=png' : url + '?format=png'
       const res = await fetch(url)
       const blob = await res.blob()
-      const bitmap = await this.createImageBitmapFromBlob(blob, imagePath)
+      const bitmap = await this.createImageBitmapFromBlob(blob)
       return bitmap
     }
 
     const buff = fs.readFileSync(imagePath)
     const blob = new Blob([buff])
-    const bitmap = await this.createImageBitmapFromBlob(blob, imagePath)
+    const bitmap = await this.createImageBitmapFromBlob(blob)
     return bitmap
   }
 
