@@ -225,9 +225,11 @@ $bg-color-transparent: rgba(0 0 0 / 70%);
   &:hover .game-teaser-image {
     transform: scale(1.1);
   }
+
   .game-teaser-image.state-hovered {
     opacity: 0;
   }
+
   &:hover .game-teaser-image.state-hovered {
     opacity: 1;
   }
