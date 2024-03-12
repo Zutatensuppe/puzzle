@@ -1,6 +1,6 @@
 import {
   DefaultScoreMode, DefaultShapeMode, DefaultSnapMode, Game, Puzzle,
-  EncodedPlayer, ScoreMode, ShapeMode, SnapMode, ImageInfo, Timestamp, GameSettings, Change, GameEvent, RegisteredMap, ImageSnapshots, PersistOptions,
+  EncodedPlayer, ScoreMode, ShapeMode, SnapMode, ImageInfo, Timestamp, GameSettings, Change, GameEvent, RegisteredMap, ImageSnapshots,
 } from '../../common/src/Types'
 import Util, { logger } from '../../common/src/Util'
 import { Rng, RngSerialized } from '../../common/src/Rng'
@@ -13,7 +13,6 @@ import { GAME_VERSION, LOG_TYPE } from '../../common/src/Protocol'
 import { LeaderboardRepo } from './repo/LeaderboardRepo'
 import { ImagesRepo } from './repo/ImagesRepo'
 import { UsersRepo } from './repo/UsersRepo'
-import { updateCurrentImageSnapshot } from './ImageSnapshotCreator'
 
 const log = logger('GameService.js')
 
@@ -107,6 +106,18 @@ export class GameService {
     return registeredMap
   }
 
+  getLastActionFromGameRow(gameRow: GameRow): Timestamp {
+    if (gameRow.data) {
+      try {
+        const game: GameStoreData = JSON.parse(gameRow.data)
+        return Math.max(0, ...game.players.map(p => p[8]))
+      } catch {
+        return 0
+      }
+    }
+    return 0
+  }
+
   async ensureLoaded(gameId: string): Promise<boolean> {
     if (GameCommon.loaded(gameId)) {
       return true
@@ -145,14 +156,12 @@ export class GameService {
     return games
   }
 
-  async getPublicRunningGames(offset: number, limit: number, userId: number): Promise<Game[]> {
-    const rows = await this.repo.getPublicRunningGames(offset, limit, userId)
-    return await this.gameRowsToGames(rows)
+  async getPublicRunningGames(offset: number, limit: number, userId: number): Promise<GameRow[]> {
+    return await this.repo.getPublicRunningGames(offset, limit, userId)
   }
 
-  async getPublicFinishedGames(offset: number, limit: number, userId: number): Promise<Game[]> {
-    const rows = await this.repo.getPublicFinishedGames(offset, limit, userId)
-    return await this.gameRowsToGames(rows)
+  async getPublicFinishedGames(offset: number, limit: number, userId: number): Promise<GameRow[]> {
+    return await this.repo.getPublicFinishedGames(offset, limit, userId)
   }
 
   async countPublicRunningGames(userId: number): Promise<number> {
@@ -171,9 +180,8 @@ export class GameService {
     return Object.keys(this.dirtyGames)
   }
 
-  async persistGame(game: Game, opts: PersistOptions): Promise<void> {
+  async persistGame(game: Game): Promise<void> {
     this.setClean(game.id)
-    await updateCurrentImageSnapshot(game.id, opts.imageSnapshotMode)
     await this.repo.upsert({
       id: game.id,
       creator_user_id: game.creatorUserId,
@@ -183,6 +191,7 @@ export class GameService {
       data: JSON.stringify(this.gameToStoreData(game)),
       private: game.private ? 1 : 0,
       pieces_count: game.puzzle.tiles.length,
+      // the image_snapshot_url is not updated here, this is intended!
     }, {
       id: game.id,
     })
@@ -209,9 +218,6 @@ export class GameService {
       scoreMode: DefaultScoreMode(storeData.scoreMode),
       shapeMode: DefaultShapeMode(storeData.shapeMode),
       snapMode: DefaultSnapMode(storeData.snapMode),
-      state: {
-        imageSnapshots: storeData.state ? storeData.state.imageSnapshots : { current: null },
-      },
       hasReplay: !!storeData.hasReplay,
       private: isPrivate,
       registeredMap: {},
@@ -227,7 +233,6 @@ export class GameService {
         obj: Rng.serialize(game.rng.obj),
       },
       puzzle: game.puzzle,
-      state: game.state,
       players: game.players,
       scoreMode: game.scoreMode,
       shapeMode: game.shapeMode,
@@ -259,9 +264,6 @@ export class GameService {
       creatorUserId,
       rng: { type: 'Rng', obj: rng },
       puzzle: await this.puzzleService.createPuzzle(rng, targetPieceCount, image, ts, shapeMode, gameVersion),
-      state: {
-        imageSnapshots: { current: null },
-      },
       players: [],
       scoreMode,
       shapeMode,
@@ -320,7 +322,7 @@ export class GameService {
     )
 
     GameCommon.setGame(gameObject.id, gameObject)
-    await this.persistGame(gameObject, { imageSnapshotMode: 'simple'})
+    await this.persistGame(gameObject)
 
     return gameObject.id
   }
@@ -358,7 +360,7 @@ export class GameService {
       if (game) {
         // persist game immediately when it was just finished
         // and also update the leaderboard afterwards
-        await this.persistGame(game, { imageSnapshotMode: 'none' })
+        await this.persistGame(game)
         await this.leaderboardRepo.updateLeaderboards()
       }
     }

@@ -1,7 +1,7 @@
 import Debug from './Debug'
 import GameCommon from './GameCommon'
 import { Dim, Point, Rect } from './Geometry'
-import { FireworksInterface, FixedLengthArray, GraphicsInterface, Piece, Player, PlayerCursorsInterface, PlayerSettingsData, PuzzleStatusInterface, PuzzleTableInterface, Timestamp } from './Types'
+import { FireworksInterface, FixedLengthArray, Game, GraphicsInterface, Piece, Player, PlayerCursorsInterface, PlayerSettingsData, PuzzleStatusInterface, PuzzleTableInterface, Timestamp } from './Types'
 import { Camera } from './Camera'
 import PuzzleGraphics from './PuzzleGraphics'
 import { logger } from './Util'
@@ -35,33 +35,36 @@ export class Renderer {
     protected readonly puzzleTable: PuzzleTableInterface | null,
     protected readonly lockMovement: boolean,
     protected readonly drawPreview: boolean,
-    protected readonly drawPieces: boolean,
+    protected readonly game: Game | null,
   ) {
     this.ctx = this.canvas.getContext('2d') as CanvasRenderingContext2D
 
-    this.pieceDrawOffset = GameCommon.getPieceDrawOffset(this.gameId)
-    this.boardDim = GameCommon.getBoardDim(this.gameId)
-    this.boardPos = GameCommon.getBoardPos(this.gameId)
-    this.pieceDim = GameCommon.getPieceDim(this.gameId)
-    this.tableBounds = GameCommon.getBounds(this.gameId)
+    this.pieceDrawOffset = this.game ? GameCommon.Game_getPieceDrawOffset(this.game) : GameCommon.getPieceDrawOffset(this.gameId)
+    this.boardDim = this.game ? GameCommon.Game_getBoardDim(this.game) : GameCommon.getBoardDim(this.gameId)
+    this.boardPos = this.game ? GameCommon.Game_getBoardPos(this.game) : GameCommon.getBoardPos(this.gameId)
+    this.pieceDim = this.game ? GameCommon.Game_getPieceDim(this.game) : GameCommon.getPieceDim(this.gameId)
+    this.tableBounds = this.game ? GameCommon.Game_getBounds(this.game) : GameCommon.getBounds(this.gameId)
   }
 
   async init (graphics: GraphicsInterface) {
     if (!puzzleBitmapCache[this.gameId]) {
+      // log.log('loading puzzle bitmap', this.gameId)
       puzzleBitmapCache[this.gameId] = await PuzzleGraphics.loadPuzzleBitmap(
-        GameCommon.getPuzzle(this.gameId),
-        GameCommon.getImageUrl(this.gameId),
+        this.game ? GameCommon.Game_getPuzzle(this.game): GameCommon.getPuzzle(this.gameId),
+        this.game ? GameCommon.Game_getImageUrl(this.game): GameCommon.getImageUrl(this.gameId),
         graphics,
       )
     }
-    if (this.drawPieces && !pieceBitmapsCache[this.gameId]) {
+    if (!pieceBitmapsCache[this.gameId]) {
+      // log.log('loading piece bitmaps', this.gameId)
       pieceBitmapsCache[this.gameId] = PuzzleGraphics.loadPuzzleBitmaps(
         puzzleBitmapCache[this.gameId],
-        GameCommon.getPuzzle(this.gameId),
+        this.game ? GameCommon.Game_getPuzzle(this.game): GameCommon.getPuzzle(this.gameId),
         graphics,
       )
     }
     if (this.drawPreview && !puzzleBitmapGrayscaled[this.gameId]) {
+      // log.log('loading grayscaled puzzle bitmap', this.gameId)
       const bmpGrayscaled = graphics.grayscaledCanvas(
         puzzleBitmapCache[this.gameId],
         '#444444',
@@ -143,27 +146,25 @@ export class Renderer {
 
     // DRAW PIECES
     // ---------------------------------------------------------------
-    if (this.drawPieces) {
-      const pieces = GameCommon.getPiecesSortedByZIndex(this.gameId)
-      if (this.debug) Debug.checkpoint('get pieces done')
+    const pieces = this.game ? GameCommon.Game_getPiecesSortedByZIndex(this.game) : GameCommon.getPiecesSortedByZIndex(this.gameId)
+    if (this.debug) Debug.checkpoint('get pieces done')
 
-      dim = this.viewport.worldDimToViewportRaw(this.pieceDim)
-      for (const piece of pieces) {
-        if (!shouldDrawPiece(piece)) {
-          continue
-        }
-        canvas = pieceBitmapsCache[this.gameId][piece.idx]
-        pos = this.viewport.worldToViewportRaw({
-          x: this.pieceDrawOffset + piece.pos.x,
-          y: this.pieceDrawOffset + piece.pos.y,
-        })
-
-        this.ctx.drawImage(canvas,
-          0, 0, canvas.width, canvas.height,
-          pos.x, pos.y, dim.w, dim.h,
-        )
-        if (this.boundingBoxes) this.ctx.strokeRect(pos.x, pos.y, dim.w, dim.h)
+    dim = this.viewport.worldDimToViewportRaw(this.pieceDim)
+    for (const piece of pieces) {
+      if (!shouldDrawPiece(piece)) {
+        continue
       }
+      canvas = pieceBitmapsCache[this.gameId][piece.idx]
+      pos = this.viewport.worldToViewportRaw({
+        x: this.pieceDrawOffset + piece.pos.x,
+        y: this.pieceDrawOffset + piece.pos.y,
+      })
+
+      this.ctx.drawImage(canvas,
+        0, 0, canvas.width, canvas.height,
+        pos.x, pos.y, dim.w, dim.h,
+      )
+      if (this.boundingBoxes) this.ctx.strokeRect(pos.x, pos.y, dim.w, dim.h)
     }
     if (this.debug) Debug.checkpoint('pieces done')
     // ---------------------------------------------------------------
@@ -174,7 +175,8 @@ export class Renderer {
     if (playerCursors) {
       const texts: FixedLengthArray<[string, number, number]>[] = []
       // Cursors
-      for (const p of GameCommon.getActivePlayers(this.gameId, ts)) {
+      const players = this.game ? GameCommon.Game_getActivePlayers(this.game, ts) : GameCommon.getActivePlayers(this.gameId, ts)
+      for (const p of players) {
         if (shouldDrawPlayer(p)) {
           bmp = await playerCursors.get(p)
           pos = this.viewport.worldToViewport(p)

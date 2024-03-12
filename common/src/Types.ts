@@ -135,7 +135,6 @@ export type EncodedGame = FixedLengthArray<[
   boolean, // private
   Rect, // crop
   RegisteredMap,
-  ImageSnapshots,
 ]>
 
 export type HeaderLogEntry = [
@@ -204,9 +203,6 @@ export interface Game {
   hasReplay: boolean
   crop?: Rect
   registeredMap: RegisteredMap
-  state: {
-    imageSnapshots: ImageSnapshots
-  }
 }
 
 export interface Image {
@@ -641,12 +637,6 @@ export interface PlayerCursorsInterface {
   readonly CURSOR_H_2: number
 
   get (p: BasicPlayerInfo): Promise<ImageBitmap | HTMLCanvasElement>
-}
-
-export type ImageSnapshotMode = 'none' | 'simple' | 'current'
-
-export interface PersistOptions {
-  imageSnapshotMode: ImageSnapshotMode
 }
 
 export interface AssetsInterface {

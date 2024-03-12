@@ -80,11 +80,27 @@ const run = async () => {
   }
   persistInterval = setTimeout(doPersist, config.persistence.interval)
 
+  // persist games in fixed interval
+  let updateImageSnapshotsInterval: any = null
+  const doUpdateImageSnapshots = async () => {
+    log.log('Updating image snapshots...')
+    try {
+      await server.updateImageSnapshots()
+    } catch (e) {
+      log.error('error when updating image snapshots', e)
+    }
+    updateImageSnapshotsInterval = setTimeout(doUpdateImageSnapshots, 1 * 60 * 1000)
+  }
+  doUpdateImageSnapshots()
+
   const gracefulShutdown = async (signal: string): Promise<void> => {
     log.log(`${signal} received...`)
 
     log.log('clearing persist interval...')
     clearInterval(persistInterval)
+
+    log.log('clearing image snapshot interval...')
+    clearInterval(updateImageSnapshotsInterval)
 
     log.log('Persisting games...')
     await server.persistGames()

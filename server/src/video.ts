@@ -92,7 +92,7 @@ const createImages = async (game: Game, outDir: string, baseUrl: string, complet
   log.info('puzzleTable inited')
 
   log.info('initializing renderer')
-  const renderer = new Renderer(gameId, canvas, viewport, fireworks, puzzleTable, true, false, true)
+  const renderer = new Renderer(gameId, canvas, viewport, fireworks, puzzleTable, true, false, null)
   await renderer.init(graphics)
   log.info('renderer inited')
 

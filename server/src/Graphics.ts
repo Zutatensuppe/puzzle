@@ -7,6 +7,8 @@ import { GraphicsInterface } from './Types'
 
 // @ts-ignore
 import { polyfillPath2D } from 'path2d-polyfill'
+import sharp from 'sharp'
+import config from './Config'
 
 // @ts-ignore
 global.CanvasRenderingContext2D = cCanvasRenderingContext2D
@@ -24,9 +26,11 @@ export class Graphics implements GraphicsInterface {
 
   private async bufferToImageBitmap (buffer: ArrayBuffer): Promise<ImageBitmap> {
     const img = new Image()
-    await new Promise<void>(resolve => {
+    const buf = await sharp(buffer).jpeg().toBuffer()
+    await new Promise<void>((resolve, reject) => {
       img.onload = resolve
-      img.src = Buffer.from(buffer)
+      img.onerror = reject
+      img.src = buf
     })
     return img as unknown as ImageBitmap
   }
@@ -67,6 +71,7 @@ export class Graphics implements GraphicsInterface {
   }
 
   async loadImageToBitmap(imagePath: string): Promise<ImageBitmap> {
+    imagePath = decodeURIComponent(imagePath)
     if (imagePath.startsWith('/image-service/')) {
       let url = this.baseUrl + imagePath
       url = url.includes('?') ? url + '&format=png' : url + '?format=png'
@@ -76,6 +81,9 @@ export class Graphics implements GraphicsInterface {
       return bitmap
     }
 
+    imagePath = imagePath.startsWith('/uploads/')
+      ? config.dir.UPLOAD_DIR + imagePath.substring('/uploads'.length)
+      : imagePath
     const buff = fs.readFileSync(imagePath)
     const blob = new Blob([buff])
     const bitmap = await this.createImageBitmapFromBlob(blob)

@@ -13,6 +13,7 @@ export interface GameRow {
   data: string
   private: number
   pieces_count: number
+  image_snapshot_url: string | null
 }
 
 export class GamesRepo {
@@ -78,7 +79,7 @@ export class GamesRepo {
     return !!gameRow
   }
 
-  async upsert(row: GameRow, where: WhereRaw): Promise<void> {
+  async upsert(row: Partial<GameRow>, where: WhereRaw): Promise<void> {
     await this.db.upsert(TABLE, row, where)
   }
 

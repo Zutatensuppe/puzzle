@@ -10,6 +10,7 @@ import Util, { logger, uniqId } from '../../../../common/src/Util'
 import { COOKIE_TOKEN, generateSalt, generateToken, passwordHash } from '../../Auth'
 import { ServerInterface } from '../../Server'
 import { UserRow } from '../../repo/UsersRepo'
+import { GameRow } from '../../repo/GamesRepo'
 
 const log = logger('web_routes/api/index.ts')
 
@@ -428,7 +429,6 @@ export default function createRouter(
       const gameObj = await server.getGameService().loadGame(gameId)
       if (gameObj) {
         game.registeredMap = await server.getGameService().generateRegisteredMap(gameObj)
-        game.state.imageSnapshots = GameCommon.Game_getImageSnapshots(gameObj)
       }
     }
     res.send({ log, game: game ? Util.encodeGame(game) : null })
@@ -480,7 +480,11 @@ export default function createRouter(
     })
   })
 
-  const GameToGameInfo = (game: GameType, ts: number): GameInfo => {
+  const GameToGameInfo = async (gameRow: GameRow, ts: number): Promise<GameInfo> => {
+    const game = await server.getGameService().gameRowToGameObject(gameRow)
+    if (!game) {
+      throw new Error('invalid game row')
+    }
     const finished = GameCommon.Game_getFinishTs(game)
     return {
       id: game.id,
@@ -494,7 +498,9 @@ export default function createRouter(
         ? GameCommon.Game_getPlayersWithScore(game).length
         : GameCommon.Game_getActivePlayers(game, ts).length,
       image: GameCommon.Game_getImage(game),
-      imageSnapshots: GameCommon.Game_getImageSnapshots(game),
+      imageSnapshots: gameRow.image_snapshot_url
+        ? { current: { url: gameRow.image_snapshot_url } }
+        : { current: null },
       snapMode: GameCommon.Game_getSnapMode(game),
       scoreMode: GameCommon.Game_getScoreMode(game),
       shapeMode: GameCommon.Game_getShapeMode(game),
@@ -512,8 +518,14 @@ export default function createRouter(
     const finishedRows = await server.getGameService().getPublicFinishedGames(0, GAMES_PER_PAGE_LIMIT, userId)
     const finishedCount = await server.getGameService().countPublicFinishedGames(userId)
 
-    const gamesRunning: GameInfo[] = runningRows.map((v) => GameToGameInfo(v, ts))
-    const gamesFinished: GameInfo[] = finishedRows.map((v) => GameToGameInfo(v, ts))
+    const gamesRunning: GameInfo[] = []
+    const gamesFinished: GameInfo[] = []
+    for (const row of runningRows) {
+      gamesRunning.push(await GameToGameInfo(row, ts))
+    }
+    for (const row of finishedRows) {
+      gamesFinished.push(await GameToGameInfo(row, ts))
+    }
 
     const leaderboards = await server.getLeaderboardRepo().getTop10(userId)
 
@@ -543,7 +555,10 @@ export default function createRouter(
     const ts = Time.timestamp()
     const finishedRows = await server.getGameService().getPublicFinishedGames(offset, GAMES_PER_PAGE_LIMIT, userId)
     const finishedCount = await server.getGameService().countPublicFinishedGames(userId)
-    const gamesFinished: GameInfo[] = finishedRows.map((v) => GameToGameInfo(v, ts))
+    const gamesFinished: GameInfo[] = []
+    for (const row of finishedRows) {
+      gamesFinished.push(await GameToGameInfo(row, ts))
+    }
     const indexData: ApiDataFinishedGames = {
       items: gamesFinished,
       pagination: { total: finishedCount, offset: offset, limit: GAMES_PER_PAGE_LIMIT },

@@ -1,4 +1,4 @@
-import { ImageSnapshotMode, PLAYER_SETTINGS_DEFAULTS, Piece, Player, PlayerSettingsData } from '../../common/src/Types'
+import { Game, PLAYER_SETTINGS_DEFAULTS, Piece, Player, PlayerSettingsData } from '../../common/src/Types'
 import { createCanvas } from 'canvas'
 import fs from 'fs'
 import { Graphics } from './Graphics'
@@ -8,15 +8,15 @@ import { Camera } from '../../common/src/Camera'
 import { logger } from '../../common/src/Util'
 import config from './Config'
 
-const log = logger('video.ts')
+const log = logger('ImageSnapshotCreator.ts')
 
-export const updateCurrentImageSnapshot = async (gameId: string, snapshotMode: ImageSnapshotMode) => {
-  if (snapshotMode === 'none') {
-    return
-  }
-
-  const boardDim = GameCommon.getBoardDim(gameId)
-  const tableDim = GameCommon.getTableDim(gameId)
+export const updateCurrentImageSnapshot = async (
+  game: Game,
+  dir: string,
+  filename: string,
+): Promise<string> => {
+  const boardDim = GameCommon.Game_getBoardDim(game)
+  const tableDim = GameCommon.Game_getTableDim(game)
   const canvas = createCanvas(boardDim.w, boardDim.h) as unknown as HTMLCanvasElement
   const graphics = new Graphics(config.http.publicBaseUrl)
 
@@ -38,8 +38,7 @@ export const updateCurrentImageSnapshot = async (gameId: string, snapshotMode: I
   const viewport = new Camera()
 
   log.info('initializing renderer')
-  const drawPieces = snapshotMode === 'simple' ? false : true
-  const renderer = new Renderer(gameId, canvas, viewport, null, null, true, true, drawPieces)
+  const renderer = new Renderer(game.id, canvas, viewport, null, null, true, true, game)
   await renderer.init(graphics)
   log.info('renderer inited')
 
@@ -51,12 +50,9 @@ export const updateCurrentImageSnapshot = async (gameId: string, snapshotMode: I
     0,
   )
 
-  const currTs = new Date().getTime()
-  const dir = `${config.dir.UPLOAD_DIR}/image_snapshots`
-  const filename = `${gameId}_${currTs}.jpeg`
   // create image
   await renderer.render(
-    currTs,
+    new Date().getTime(),
     playerSettings,
     null,
     { update: (_ts: number) => { return } },
@@ -74,7 +70,5 @@ export const updateCurrentImageSnapshot = async (gameId: string, snapshotMode: I
     new Buffer(data.split(',')[1], 'base64'),
   )
 
-  GameCommon.setImageSnapshots(gameId, { current: {
-    url: `/uploads/image_snapshots/${filename}`,
-  }})
+  return `/uploads/image_snapshots/${filename}`
 }

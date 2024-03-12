@@ -8,7 +8,7 @@ import { GameSockets } from './GameSockets'
 import Time from '../../common/src/Time'
 import config from './Config'
 import GameCommon from '../../common/src/GameCommon'
-import { ServerEvent, Game as GameType, ClientEvent, GameEventInputConnectionClose, PersistOptions } from '../../common/src/Types'
+import { ServerEvent, Game as GameType, ClientEvent, GameEventInputConnectionClose } from '../../common/src/Types'
 import { GameService } from './GameService'
 import createApiRouter from './web_routes/api'
 import createAdminApiRouter from './web_routes/admin/api'
@@ -28,6 +28,7 @@ import { ImageResize } from './ImageResize'
 import { LeaderboardRepo } from './repo/LeaderboardRepo'
 import { ImagesRepo } from './repo/ImagesRepo'
 import fs from 'fs'
+import { updateCurrentImageSnapshot } from './ImageSnapshotCreator'
 
 const indexFile = path.resolve(config.dir.PUBLIC_DIR, 'index.html')
 const indexFileContents = fs.readFileSync(indexFile, 'utf-8')
@@ -122,18 +123,49 @@ export class Server implements ServerInterface {
     return this.imagesRepo
   }
 
-  async persistGame(gameId: string, opts: PersistOptions): Promise<void> {
+  async persistGame(gameId: string): Promise<void> {
     const game: GameType | null = GameCommon.get(gameId)
     if (!game) {
       log.error(`[ERROR] unable to persist non existing game ${gameId}`)
       return
     }
-    await this.gameService.persistGame(game, opts)
+    await this.gameService.persistGame(game)
   }
 
   async persistGames(): Promise<void> {
     for (const gameId of this.gameService.dirtyGameIds()) {
-      await this.persistGame(gameId, { imageSnapshotMode: 'current' })
+      await this.persistGame(gameId)
+    }
+  }
+
+  async updateImageSnapshots(): Promise<void> {
+
+    const games = await this.db.getMany('games', { finished: null }, [{ created: -1 }])
+
+    for (const game of games) {
+      log.info(`updating image snapshot for game ${game.id}...`)
+      const ts = this.gameService.getLastActionFromGameRow(game)
+      const dir = `${config.dir.UPLOAD_DIR}/image_snapshots`
+      const filename = `${game.id}_${ts}.jpeg`
+      if (fs.existsSync(`${dir}/${filename}`)) {
+        log.info(`nothing to do`)
+        continue
+      }
+
+      const gameObj = await this.gameService.gameRowToGameObject(game)
+      if (!gameObj) {
+        log.error(`unable to turn row into game object`)
+        continue
+      }
+      let url: string
+      try {
+        url = await updateCurrentImageSnapshot(gameObj, dir, filename)
+      } catch (e) {
+        log.error(e)
+        continue
+      }
+
+      await this.db.update('games', { image_snapshot_url: url }, { id: game.id })
     }
   }
 
@@ -219,7 +251,7 @@ export class Server implements ServerInterface {
             sockets,
           )
         } else {
-          await this.persistGame(gameId, { imageSnapshotMode: 'none' })
+          await this.persistGame(gameId)
           log.info(`[INFO] unloading game: ${gameId}`)
           GameCommon.unsetGame(gameId)
         }

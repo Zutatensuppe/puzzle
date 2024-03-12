@@ -9,7 +9,6 @@ import {
   Game,
   GameEvent,
   ImageInfo,
-  ImageSnapshots,
   LogEntry,
   Piece,
   PieceChange,
@@ -59,11 +58,6 @@ function setGame(gameId: string, game: Game): void {
 function setRegisteredMap(gameId: string, registeredMap: RegisteredMap): void {
   GAMES[gameId].registeredMap = registeredMap
 }
-
-function setImageSnapshots(gameId: string, imageSnapshots: ImageSnapshots): void {
-  GAMES[gameId].state.imageSnapshots = imageSnapshots
-}
-
 
 function unsetGame(gameId: string): void {
   delete GAMES[gameId]
@@ -170,7 +164,7 @@ function getShapeMode(gameId: string): ShapeMode {
 }
 
 function getVersion(gameId: string): number {
-  return GAMES[gameId].gameVersion
+  return Game_getVersion(GAMES[gameId])
 }
 
 function getFinishedPiecesCount(gameId: string): number {
@@ -178,8 +172,7 @@ function getFinishedPiecesCount(gameId: string): number {
 }
 
 function getPiecesSortedByZIndex(gameId: string): Piece[] {
-  const pieces = GAMES[gameId].puzzle.tiles.map(Util.decodePiece)
-  return pieces.sort((t1, t2) => t1.z - t2.z)
+  return Game_getPiecesSortedByZIndex(GAMES[gameId])
 }
 
 function changePlayer(
@@ -255,20 +248,16 @@ const getPiecePos = (gameId: string, pieceIdx: number): Point => {
 
 // TODO: instead, just make the table bigger and use that :)
 const getBounds = (gameId: string): Rect => {
-  const gameVersion = getVersion(gameId)
-  if (gameVersion <= 3) {
-    return getBounds_v3(gameId)
-  }
-  return getBounds_v4(gameId)
+  return Game_getBounds(GAMES[gameId])
 }
 
-const getBounds_v4 = (gameId: string): Rect => {
-  return { x: 0, y: 0, w: getTableWidth(gameId), h: getTableHeight(gameId) }
+const Game_getBounds_v4 = (game: Game): Rect => {
+  return { x: 0, y: 0, w: Game_getTableWidth(game), h: Game_getTableHeight(game) }
 }
 
-const getBounds_v3 = (gameId: string): Rect => {
-  const tw = getTableWidth(gameId)
-  const th = getTableHeight(gameId)
+const Game_getBounds_v3 = (game: Game): Rect => {
+  const tw = Game_getTableWidth(game)
+  const th = Game_getTableHeight(game)
 
   const overX = Math.round(tw / 4)
   const overY = Math.round(th / 4)
@@ -331,11 +320,11 @@ const getFirstOwnedPiece = (
 }
 
 const getPieceDrawOffset = (gameId: string): number => {
-  return GAMES[gameId].puzzle.info.tileDrawOffset
+  return Game_getPieceDrawOffset(GAMES[gameId])
 }
 
 const getPieceDrawSize = (gameId: string): number => {
-  return GAMES[gameId].puzzle.info.tileDrawSize
+  return Game_getPieceDrawSize(GAMES[gameId])
 }
 
 const getStartTs = (gameId: string): Timestamp => {
@@ -595,46 +584,31 @@ const areGrouped = (
 }
 
 const getTableWidth = (gameId: string): number => {
-  return GAMES[gameId].puzzle.info.table.width
+  return Game_getTableWidth(GAMES[gameId])
 }
 
 const getTableHeight = (gameId: string): number => {
-  return GAMES[gameId].puzzle.info.table.height
+  return Game_getTableHeight(GAMES[gameId])
 }
 
 const getTableDim = (gameId: string): Dim => {
-  return {
-    w: GAMES[gameId].puzzle.info.table.width,
-    h: GAMES[gameId].puzzle.info.table.height,
-  }
+  return Game_getTableDim(GAMES[gameId])
 }
 
 const getBoardDim = (gameId: string): Dim => {
-  return {
-    w: GAMES[gameId].puzzle.info.width,
-    h: GAMES[gameId].puzzle.info.height,
-  }
+  return Game_getBoardDim(GAMES[gameId])
 }
 
 const getPieceDim = (gameId: string): Dim => {
-  const pieceDrawSize = getPieceDrawSize(gameId)
-  return {
-    w: pieceDrawSize,
-    h: pieceDrawSize,
-  }
+  return Game_getPieceDim(GAMES[gameId])
 }
 
 const getBoardPos = (gameId: string): Point => {
-  const tableDim = getTableDim(gameId)
-  const boardDim = getBoardDim(gameId)
-  return {
-    x: (tableDim.w - boardDim.w) / 2,
-    y: (tableDim.h - boardDim.h) / 2,
-  }
+  return Game_getBoardPos(GAMES[gameId])
 }
 
 const getPuzzle = (gameId: string): Puzzle => {
-  return GAMES[gameId].puzzle
+  return Game_getPuzzle(GAMES[gameId])
 }
 
 const getRng = (gameId: string): Rng => {
@@ -1025,6 +999,73 @@ function Game_getFinishTs(game: Game): number {
   return game.puzzle.data.finished
 }
 
+function Game_getTableDim(game: Game): Dim {
+  return {
+    w: game.puzzle.info.table.width,
+    h: game.puzzle.info.table.height,
+  }
+}
+function Game_getBoardDim(game: Game): Dim {
+  return {
+    w: game.puzzle.info.width,
+    h: game.puzzle.info.height,
+  }
+}
+
+function Game_getPieceDrawOffset(game: Game) {
+  return game.puzzle.info.tileDrawOffset
+}
+
+function Game_getPieceDrawSize(game: Game) {
+  return game.puzzle.info.tileDrawSize
+}
+
+function Game_getBoardPos(game: Game) {
+  const tableDim = Game_getTableDim(game)
+  const boardDim = Game_getBoardDim(game)
+  return {
+    x: (tableDim.w - boardDim.w) / 2,
+    y: (tableDim.h - boardDim.h) / 2,
+  }
+}
+
+function Game_getPieceDim(game: Game) {
+  const pieceDrawSize = Game_getPieceDrawSize(game)
+  return {
+    w: pieceDrawSize,
+    h: pieceDrawSize,
+  }
+}
+
+function Game_getVersion(game: Game): number {
+  return game.gameVersion
+}
+
+function Game_getBounds(game: Game) {
+  const gameVersion = Game_getVersion(game)
+  if (gameVersion <= 3) {
+    return Game_getBounds_v3(game)
+  }
+  return Game_getBounds_v4(game)
+}
+
+const Game_getTableWidth = (game: Game): number => {
+  return game.puzzle.info.table.width
+}
+
+const Game_getTableHeight = (game: Game): number => {
+  return game.puzzle.info.table.height
+}
+
+function Game_getPiecesSortedByZIndex(game: Game): Piece[] {
+  const pieces = game.puzzle.tiles.map(Util.decodePiece)
+  return pieces.sort((t1, t2) => t1.z - t2.z)
+}
+
+function Game_getPuzzle(game: Game): Puzzle {
+  return game.puzzle
+}
+
 function Game_getFinishedPiecesCount(game: Game): number {
   let count = 0
   for (const t of game.puzzle.tiles) {
@@ -1077,10 +1118,6 @@ function Game_getImage(game: Game): ImageInfo {
   return game.puzzle.info.image
 }
 
-function Game_getImageSnapshots(game: Game): ImageSnapshots {
-  return game.state.imageSnapshots
-}
-
 function Game_getImageUrl(game: Game): string {
   const imageUrl = Game_getImage(game).url
   if (!imageUrl) {
@@ -1099,7 +1136,6 @@ function Game_isFinished(game: Game): boolean {
 export default {
   setGame,
   setRegisteredMap,
-  setImageSnapshots,
   unsetGame,
   loaded,
   playerExists,
@@ -1147,6 +1183,14 @@ export default {
   handleLogEntry,
 
   /// operate directly on the game object given
+  Game_getTableDim,
+  Game_getBoardDim,
+  Game_getPieceDrawOffset,
+  Game_getBoardPos,
+  Game_getPieceDim,
+  Game_getBounds,
+  Game_getPiecesSortedByZIndex,
+  Game_getPuzzle,
   Game_isPrivate,
   Game_getStartTs,
   Game_getFinishTs,
@@ -1155,7 +1199,7 @@ export default {
   Game_getActivePlayers,
   Game_getPlayersWithScore,
   Game_getImage,
-  Game_getImageSnapshots,
+  Game_getImageUrl,
   Game_getScoreMode,
   Game_getSnapMode,
   Game_getShapeMode,
