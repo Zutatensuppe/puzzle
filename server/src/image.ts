@@ -74,7 +74,7 @@ const createImages = async (game: Game, outDir: string, baseUrl: string, complet
   const viewport = new Camera()
 
   log.info('initializing renderer')
-  const renderer = new Renderer(gameId, canvas, viewport, null, null, true, true, true)
+  const renderer = new Renderer(gameId, canvas, viewport, null, null, true, true, null)
   await renderer.init(graphics)
   log.info('renderer inited')
 
