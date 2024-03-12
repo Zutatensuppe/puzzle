@@ -1,7 +1,7 @@
 import Debug from './Debug'
 import GameCommon from './GameCommon'
 import { Dim, Point, Rect } from './Geometry'
-import { FireworksInterface, FixedLengthArray, Game, GraphicsInterface, Piece, Player, PlayerCursorsInterface, PlayerSettingsData, PuzzleStatusInterface, PuzzleTableInterface, Timestamp } from './Types'
+import { FireworksInterface, FixedLengthArray, GraphicsInterface, Piece, Player, PlayerCursorsInterface, PlayerSettingsData, PuzzleStatusInterface, PuzzleTableInterface, Timestamp } from './Types'
 import { Camera } from './Camera'
 import PuzzleGraphics from './PuzzleGraphics'
 import { logger } from './Util'
@@ -16,8 +16,6 @@ export class Renderer {
   public debug: boolean = false
   public boundingBoxes: boolean = false
 
-  private ctx: CanvasRenderingContext2D
-
   private tableBounds!: Rect
   private boardPos!: Point
   private boardDim!: Dim
@@ -29,29 +27,23 @@ export class Renderer {
 
   constructor(
     protected readonly gameId: string,
-    protected readonly canvas: HTMLCanvasElement,
-    protected readonly viewport: Camera,
     protected readonly fireworks: FireworksInterface | null,
     protected readonly puzzleTable: PuzzleTableInterface | null,
     protected readonly lockMovement: boolean,
-    protected readonly drawPreview: boolean,
-    protected readonly game: Game | null,
   ) {
-    this.ctx = this.canvas.getContext('2d') as CanvasRenderingContext2D
-
-    this.pieceDrawOffset = this.game ? GameCommon.Game_getPieceDrawOffset(this.game) : GameCommon.getPieceDrawOffset(this.gameId)
-    this.boardDim = this.game ? GameCommon.Game_getBoardDim(this.game) : GameCommon.getBoardDim(this.gameId)
-    this.boardPos = this.game ? GameCommon.Game_getBoardPos(this.game) : GameCommon.getBoardPos(this.gameId)
-    this.pieceDim = this.game ? GameCommon.Game_getPieceDim(this.game) : GameCommon.getPieceDim(this.gameId)
-    this.tableBounds = this.game ? GameCommon.Game_getBounds(this.game) : GameCommon.getBounds(this.gameId)
+    this.pieceDrawOffset = GameCommon.getPieceDrawOffset(this.gameId)
+    this.boardDim = GameCommon.getBoardDim(this.gameId)
+    this.boardPos = GameCommon.getBoardPos(this.gameId)
+    this.pieceDim = GameCommon.getPieceDim(this.gameId)
+    this.tableBounds = GameCommon.getBounds(this.gameId)
   }
 
   async init (graphics: GraphicsInterface) {
     if (!puzzleBitmapCache[this.gameId]) {
       // log.log('loading puzzle bitmap', this.gameId)
       puzzleBitmapCache[this.gameId] = await PuzzleGraphics.loadPuzzleBitmap(
-        this.game ? GameCommon.Game_getPuzzle(this.game): GameCommon.getPuzzle(this.gameId),
-        this.game ? GameCommon.Game_getImageUrl(this.game): GameCommon.getImageUrl(this.gameId),
+        GameCommon.getPuzzle(this.gameId),
+        GameCommon.getImageUrl(this.gameId),
         graphics,
       )
     }
@@ -59,16 +51,16 @@ export class Renderer {
       // log.log('loading piece bitmaps', this.gameId)
       pieceBitmapsCache[this.gameId] = PuzzleGraphics.loadPuzzleBitmaps(
         puzzleBitmapCache[this.gameId],
-        this.game ? GameCommon.Game_getPuzzle(this.game): GameCommon.getPuzzle(this.gameId),
+        GameCommon.getPuzzle(this.gameId),
         graphics,
       )
     }
-    if (this.drawPreview && !puzzleBitmapGrayscaled[this.gameId]) {
+    if (!puzzleBitmapGrayscaled[this.gameId]) {
       // log.log('loading grayscaled puzzle bitmap', this.gameId)
       const bmpGrayscaled = graphics.grayscaledCanvas(
         puzzleBitmapCache[this.gameId],
-        '#444444',
-        0.5,
+        'black',
+        0.3,
       )
       puzzleBitmapGrayscaled[this.gameId] = bmpGrayscaled
     }
@@ -81,6 +73,9 @@ export class Renderer {
   }
 
   async render (
+    canvas: HTMLCanvasElement,
+    ctx: CanvasRenderingContext2D,
+    viewport: Camera,
     ts: Timestamp,
     settings: PlayerSettingsData,
     playerCursors: PlayerCursorsInterface | null,
@@ -88,22 +83,23 @@ export class Renderer {
     shouldDrawPiece: (piece: Piece) => boolean,
     shouldDrawPlayer: (player: Player) => boolean,
     renderFireworks: boolean,
+    renderPreview: boolean,
   ) {
     let pos: Point
     let dim: Dim
     let bmp: ImageBitmap | HTMLCanvasElement
-    let canvas: HTMLCanvasElement
+    let tmpCanvas: HTMLCanvasElement
 
     if (this.debug) Debug.checkpoint_start(0)
 
     if (this.backgroundCache) {
-      this.ctx.putImageData(this.backgroundCache, 0, 0)
+      ctx.putImageData(this.backgroundCache, 0, 0)
       if (this.debug) Debug.checkpoint('clear/table/board done')
     } else {
       // CLEAR CTX
       // ---------------------------------------------------------------
-      this.ctx.fillStyle = settings.background
-      this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height)
+      ctx.fillStyle = settings.background
+      ctx.fillRect(0, 0, canvas.width, canvas.height)
       if (this.debug) Debug.checkpoint('clear done')
       // ---------------------------------------------------------------
 
@@ -113,9 +109,9 @@ export class Renderer {
       if (settings.showTable && this.puzzleTable) {
         const tableImg = this.puzzleTable.getImage(this.gameId, settings)
         if (tableImg) {
-          pos = this.viewport.worldToViewportRaw(this.tableBounds)
-          dim = this.viewport.worldDimToViewportRaw(this.tableBounds)
-          this.ctx.drawImage(tableImg, pos.x, pos.y, dim.w, dim.h)
+          pos = viewport.worldToViewportRaw(this.tableBounds)
+          dim = viewport.worldDimToViewportRaw(this.tableBounds)
+          ctx.drawImage(tableImg, pos.x, pos.y, dim.w, dim.h)
         } else {
           // not logging, otherwise there would be too many log entries
           // in case the player uses a broken custom texture
@@ -126,45 +122,45 @@ export class Renderer {
 
       // DRAW PREVIEW or BOARD
       // ---------------------------------------------------------------
-      if (this.drawPreview) {
-        pos = this.viewport.worldToViewportRaw(this.boardPos)
-        dim = this.viewport.worldDimToViewportRaw(this.boardDim)
-        this.ctx.drawImage(puzzleBitmapGrayscaled[this.gameId], pos.x, pos.y, dim.w, dim.h)
+      if (renderPreview) {
+        pos = viewport.worldToViewportRaw(this.boardPos)
+        dim = viewport.worldDimToViewportRaw(this.boardDim)
+        ctx.drawImage(puzzleBitmapGrayscaled[this.gameId], pos.x, pos.y, dim.w, dim.h)
       } else if (!settings.showTable || !this.puzzleTable) {
-        pos = this.viewport.worldToViewportRaw(this.boardPos)
-        dim = this.viewport.worldDimToViewportRaw(this.boardDim)
-        this.ctx.fillStyle = 'rgba(255, 255, 255, .3)'
-        this.ctx.fillRect(pos.x, pos.y, dim.w, dim.h)
+        pos = viewport.worldToViewportRaw(this.boardPos)
+        dim = viewport.worldDimToViewportRaw(this.boardDim)
+        ctx.fillStyle = 'rgba(255, 255, 255, .3)'
+        ctx.fillRect(pos.x, pos.y, dim.w, dim.h)
       }
       if (this.debug) Debug.checkpoint('preview/board done')
       // ---------------------------------------------------------------
 
       if (this.lockMovement) {
-        this.backgroundCache = this.ctx.getImageData(0, 0, this.canvas.width, this.canvas.height)
+        this.backgroundCache = ctx.getImageData(0, 0, canvas.width, canvas.height)
       }
     }
 
     // DRAW PIECES
     // ---------------------------------------------------------------
-    const pieces = this.game ? GameCommon.Game_getPiecesSortedByZIndex(this.game) : GameCommon.getPiecesSortedByZIndex(this.gameId)
+    const pieces = GameCommon.getPiecesSortedByZIndex(this.gameId)
     if (this.debug) Debug.checkpoint('get pieces done')
 
-    dim = this.viewport.worldDimToViewportRaw(this.pieceDim)
+    dim = viewport.worldDimToViewportRaw(this.pieceDim)
     for (const piece of pieces) {
       if (!shouldDrawPiece(piece)) {
         continue
       }
-      canvas = pieceBitmapsCache[this.gameId][piece.idx]
-      pos = this.viewport.worldToViewportRaw({
+      tmpCanvas = pieceBitmapsCache[this.gameId][piece.idx]
+      pos = viewport.worldToViewportRaw({
         x: this.pieceDrawOffset + piece.pos.x,
         y: this.pieceDrawOffset + piece.pos.y,
       })
 
-      this.ctx.drawImage(canvas,
-        0, 0, canvas.width, canvas.height,
+      ctx.drawImage(tmpCanvas,
+        0, 0, tmpCanvas.width, tmpCanvas.height,
         pos.x, pos.y, dim.w, dim.h,
       )
-      if (this.boundingBoxes) this.ctx.strokeRect(pos.x, pos.y, dim.w, dim.h)
+      if (this.boundingBoxes) ctx.strokeRect(pos.x, pos.y, dim.w, dim.h)
     }
     if (this.debug) Debug.checkpoint('pieces done')
     // ---------------------------------------------------------------
@@ -175,13 +171,13 @@ export class Renderer {
     if (playerCursors) {
       const texts: FixedLengthArray<[string, number, number]>[] = []
       // Cursors
-      const players = this.game ? GameCommon.Game_getActivePlayers(this.game, ts) : GameCommon.getActivePlayers(this.gameId, ts)
+      const players = GameCommon.getActivePlayers(this.gameId, ts)
       for (const p of players) {
         if (shouldDrawPlayer(p)) {
           bmp = await playerCursors.get(p)
-          pos = this.viewport.worldToViewport(p)
-          this.ctx.drawImage(bmp, pos.x - playerCursors.CURSOR_W_2, pos.y - playerCursors.CURSOR_H_2)
-          if (this.boundingBoxes) this.ctx.strokeRect(pos.x - bmp.width / 2, pos.y - bmp.height / 2, bmp.width, bmp.height)
+          pos = viewport.worldToViewport(p)
+          ctx.drawImage(bmp, pos.x - playerCursors.CURSOR_W_2, pos.y - playerCursors.CURSOR_H_2)
+          if (this.boundingBoxes) ctx.strokeRect(pos.x - bmp.width / 2, pos.y - bmp.height / 2, bmp.width, bmp.height)
           if (settings.showPlayerNames) {
             // performance:
             // not drawing text directly here, to have less ctx
@@ -192,10 +188,10 @@ export class Renderer {
       }
 
       // Names
-      this.ctx.fillStyle = 'white'
-      this.ctx.textAlign = 'center'
+      ctx.fillStyle = 'white'
+      ctx.textAlign = 'center'
       for (const [txt, x, y] of texts) {
-        this.ctx.fillText(txt, x, y)
+        ctx.fillText(txt, x, y)
       }
     }
     if (this.debug) Debug.checkpoint('players done')

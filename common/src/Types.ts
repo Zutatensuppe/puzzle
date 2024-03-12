@@ -71,7 +71,8 @@ export type ServerEvent = ServerInitEvent | ServerUpdateEvent | ServerSyncEvent
 
 export type ClientInitEvent = [CLIENT_EVENT_TYPE.INIT]
 export type ClientUpdateEvent = [CLIENT_EVENT_TYPE.UPDATE, number, GameEvent]
-export type ClientEvent = ClientInitEvent | ClientUpdateEvent
+export type ClientImageSnapshotEvent = [CLIENT_EVENT_TYPE.IMAGE_SNAPSHOT, string, number]
+export type ClientEvent = ClientInitEvent | ClientUpdateEvent | ClientImageSnapshotEvent
 
 export type EncodedPlayer = FixedLengthArray<[
   string,
@@ -660,4 +661,10 @@ export interface AssetsInterface {
 export interface PuzzleTableInterface {
   loadTexture(gameId: string, settings: PlayerSettingsData): Promise<CanvasImageSource | null>
   getImage(gameId: string, settings: PlayerSettingsData): CanvasImageSource | null
+}
+
+export interface HandleGameEventResult {
+  changes: Change[]
+  anySnapped: boolean
+  anyDropped: boolean
 }

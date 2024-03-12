@@ -49,6 +49,7 @@ export enum SERVER_EVENT_TYPE {
 export enum CLIENT_EVENT_TYPE {
   UPDATE = 2,
   INIT = 3,
+  IMAGE_SNAPSHOT = 6,
 }
 
 export enum LOG_TYPE {

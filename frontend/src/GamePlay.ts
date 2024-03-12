@@ -1,15 +1,16 @@
 'use strict'
 
 import GameCommon from '../../common/src/GameCommon'
-import { CHANGE_TYPE } from '../../common/src/Protocol'
 import { Game as GameType, EncodedGame, Hud, GameEvent, EncodedGameLegacy, ServerUpdateEvent, ServerSyncEvent } from '../../common/src/Types'
 import { Game } from './Game'
 import Communication from './Communication'
 import Util from '../../common/src/Util'
+import { updateCurrentImageSnapshot } from './ImageSnapshotCreator'
 
 export class GamePlay extends Game<Hud> {
 
   private updateStatusInterval: number | null = null
+  private lastSentImageSnapshotTs: number = 0
 
   async connect(): Promise<void> {
     Communication.onConnectionStateChange((state) => {
@@ -40,15 +41,23 @@ export class GamePlay extends Game<Hud> {
     // LOCAL + SERVER CHANGES
     // -------------------------------------------------------------
     const ts = this.time()
-    const changes = GameCommon.handleGameEvent(this.gameId, this.clientId, evt, ts)
-    if (this.playerSettings.soundsEnabled()) {
-      if (changes.find(change => change[0] === CHANGE_TYPE.PLAYER_SNAP)) {
-        this.sounds.playPieceConnected()
-      }
-    }
-    if (changes.length > 0) {
+    const ret = GameCommon.handleGameEvent(this.gameId, this.clientId, evt, ts)
+    if (ret.changes.length > 0) {
       this.requireRerender()
     }
+    if (ret.anySnapped && this.playerSettings.soundsEnabled()) {
+      this.sounds.playPieceConnected()
+    }
+    if (ret.anyDropped) {
+      // limit sending a new snapshot to every 5 seconds
+      if (ts - this.lastSentImageSnapshotTs > 5000) {
+        updateCurrentImageSnapshot(this.gameId, this.renderer).then((canvas) => {
+          Communication.sendImageSnapshot(canvas.toDataURL('image/jpeg', 75), ts)
+        })
+        this.lastSentImageSnapshotTs = ts
+      }
+    }
+
     Communication.sendClientEvent(evt)
   }
 

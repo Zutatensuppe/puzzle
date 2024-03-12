@@ -169,10 +169,15 @@ function sendClientEvent(evt: GameEvent): void {
   send([CLIENT_EVENT_TYPE.UPDATE, clientSeq, events[clientSeq]])
 }
 
+function sendImageSnapshot(imageData: string, ts: number): void {
+  send([CLIENT_EVENT_TYPE.IMAGE_SNAPSHOT, imageData, ts])
+}
+
 export default {
   connect,
   disconnect,
   sendClientEvent,
+  sendImageSnapshot,
   onServerUpdate,
   onServerSync,
   onConnectionStateChange,
