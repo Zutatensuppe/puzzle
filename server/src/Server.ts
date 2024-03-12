@@ -28,7 +28,7 @@ import { ImageResize } from './ImageResize'
 import { LeaderboardRepo } from './repo/LeaderboardRepo'
 import { ImagesRepo } from './repo/ImagesRepo'
 import fs from 'fs'
-import { updateCurrentImageSnapshot } from './ImageSnapshotCreator'
+import sharp from 'sharp'
 
 const indexFile = path.resolve(config.dir.PUBLIC_DIR, 'index.html')
 const indexFileContents = fs.readFileSync(indexFile, 'utf-8')
@@ -138,37 +138,6 @@ export class Server implements ServerInterface {
     }
   }
 
-  async updateImageSnapshots(): Promise<void> {
-
-    const games = await this.db.getMany('games', { finished: null }, [{ created: -1 }])
-
-    for (const game of games) {
-      log.info(`updating image snapshot for game ${game.id}...`)
-      const ts = this.gameService.getLastActionFromGameRow(game)
-      const dir = `${config.dir.UPLOAD_DIR}/image_snapshots`
-      const filename = `${game.id}_${ts}.jpeg`
-      if (fs.existsSync(`${dir}/${filename}`)) {
-        log.info(`nothing to do`)
-        continue
-      }
-
-      const gameObj = await this.gameService.gameRowToGameObject(game)
-      if (!gameObj) {
-        log.error(`unable to turn row into game object`)
-        continue
-      }
-      let url: string
-      try {
-        url = await updateCurrentImageSnapshot(gameObj, dir, filename)
-      } catch (e) {
-        log.error(e)
-        continue
-      }
-
-      await this.db.update('games', { image_snapshot_url: url }, { id: game.id })
-    }
-  }
-
   start() {
     const port = config.http.port
     const hostname = config.http.hostname
@@ -243,11 +212,11 @@ export class Server implements ServerInterface {
         const ts = Time.timestamp()
         const clientSeq = -1 // client lost connection, so clientSeq doesn't matter
         const gameEvent: GameEventInputConnectionClose = [GAME_EVENT_TYPE.INPUT_EV_CONNECTION_CLOSE]
-        const changes = await this.gameService.handleGameEvent(gameId, clientId, gameEvent, ts)
+        const ret = await this.gameService.handleGameEvent(gameId, clientId, gameEvent, ts)
         const sockets = this.gameSockets.getSockets(gameId)
         if (sockets.length) {
           notify(
-            [SERVER_EVENT_TYPE.UPDATE, clientId, clientSeq, changes],
+            [SERVER_EVENT_TYPE.UPDATE, clientId, clientSeq, ret.changes],
             sockets,
           )
         } else {
@@ -272,6 +241,7 @@ export class Server implements ServerInterface {
         const msgType = msg[0]
         switch (msgType) {
           case CLIENT_EVENT_TYPE.INIT: {
+            log.log(`ws`, socket.protocol, msgType)
             const loaded = await this.gameService.ensureLoaded(gameId)
             if (!loaded) {
               throw `[game ${gameId} does not exist... ]`
@@ -292,6 +262,7 @@ export class Server implements ServerInterface {
           } break
 
           case CLIENT_EVENT_TYPE.UPDATE: {
+            log.log(`ws`, socket.protocol, msgType)
             const loaded = await this.gameService.ensureLoaded(gameId)
             if (!loaded) {
               throw `[game ${gameId} does not exist... ]`
@@ -321,11 +292,45 @@ export class Server implements ServerInterface {
               notify([SERVER_EVENT_TYPE.SYNC, encodedGame], this.gameSockets.getSockets(gameId).filter(s => s !== socket))
             }
 
-            const changes = await this.gameService.handleGameEvent(gameId, clientId, gameEvent, ts)
+            const ret = await this.gameService.handleGameEvent(gameId, clientId, gameEvent, ts)
             notify(
-              [SERVER_EVENT_TYPE.UPDATE, clientId, clientSeq, changes],
+              [SERVER_EVENT_TYPE.UPDATE, clientId, clientSeq, ret.changes],
               this.gameSockets.getSockets(gameId),
             )
+          } break
+          case CLIENT_EVENT_TYPE.IMAGE_SNAPSHOT: {
+            log.log(`ws`, socket.protocol, msgType)
+            // store the snapshot and update the game table
+            const imageBase64Str = msg[1]
+            const ts = parseInt(`${msg[2]}`, 10)
+            if (isNaN(ts)) {
+              // do nothing
+              break
+            }
+
+            const dir = `${config.dir.UPLOAD_DIR}/image_snapshots`
+            const filename = `${gameId}_${ts}.jpeg`
+            if (fs.existsSync(`${dir}/${filename}`)) {
+              log.info(`image already exists`)
+              break
+            }
+
+            if (!fs.existsSync(dir)) {
+              fs.mkdirSync(dir, { recursive: true })
+            }
+
+            const imageData = imageBase64Str.split(';base64,').pop() as string
+            try {
+              const imgBuffer = Buffer.from(imageData, 'base64')
+              await sharp(imgBuffer).jpeg({ quality: 75 }).toFile(`${dir}/${filename}`)
+            } catch (e) {
+              log.error('unable to store image', e)
+              break
+            }
+
+            const url = `/uploads/image_snapshots/${filename}`
+            await this.db.update('games', { image_snapshot_url: url }, { id: gameId })
+            console.log('stored image')
           } break
         }
       } catch (e) {

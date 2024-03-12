@@ -1,6 +1,6 @@
 import {
   DefaultScoreMode, DefaultShapeMode, DefaultSnapMode, Game, Puzzle,
-  EncodedPlayer, ScoreMode, ShapeMode, SnapMode, ImageInfo, Timestamp, GameSettings, Change, GameEvent, RegisteredMap, ImageSnapshots,
+  EncodedPlayer, ScoreMode, ShapeMode, SnapMode, ImageInfo, Timestamp, GameSettings, GameEvent, RegisteredMap, ImageSnapshots, HandleGameEventResult,
 } from '../../common/src/Types'
 import Util, { logger } from '../../common/src/Util'
 import { Rng, RngSerialized } from '../../common/src/Rng'
@@ -346,7 +346,7 @@ export class GameService {
     playerId: string,
     gameEvent: GameEvent,
     ts: Timestamp,
-  ): Promise<Change[]> {
+  ): Promise<HandleGameEventResult> {
     if (GameLog.shouldLog(GameCommon.getFinishTs(gameId), ts)) {
       const idx = GameCommon.getPlayerIndexById(gameId, playerId)
       GameLog.log(gameId, [LOG_TYPE.GAME_EVENT, idx, gameEvent, ts])

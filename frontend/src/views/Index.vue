@@ -38,7 +38,6 @@
             :key="idx"
             :game="g"
             @go-to-game="goToGame"
-            @go-to-replay="goToReplay"
             @show-image-info="showImageInfo"
           />
         </v-container>

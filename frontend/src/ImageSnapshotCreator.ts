@@ -1,24 +1,21 @@
-import { Game, PLAYER_SETTINGS_DEFAULTS, Piece, Player, PlayerSettingsData } from '../../common/src/Types'
-import { createCanvas } from 'canvas'
-import fs from 'fs'
-import { Graphics } from './Graphics'
+import { PLAYER_SETTINGS_DEFAULTS, Piece, Player, PlayerSettingsData } from '../../common/src/Types'
 import GameCommon from '../../common/src/GameCommon'
 import { Renderer } from '../../common/src/Renderer'
 import { Camera } from '../../common/src/Camera'
 import { logger } from '../../common/src/Util'
-import config from './Config'
 
 const log = logger('ImageSnapshotCreator.ts')
 
 export const updateCurrentImageSnapshot = async (
-  game: Game,
-  dir: string,
-  filename: string,
-): Promise<string> => {
-  const boardDim = GameCommon.Game_getBoardDim(game)
-  const tableDim = GameCommon.Game_getTableDim(game)
-  const canvas = createCanvas(boardDim.w, boardDim.h) as unknown as HTMLCanvasElement
-  const graphics = new Graphics(config.http.publicBaseUrl)
+  gameId: string,
+  renderer: Renderer,
+): Promise<HTMLCanvasElement> => {
+  const boardDim = GameCommon.getBoardDim(gameId)
+  const tableDim = GameCommon.getTableDim(gameId)
+
+  const canvas = document.createElement('canvas')
+  canvas.width = boardDim.w
+  canvas.height = boardDim.h
 
   const playerSettings: PlayerSettingsData = {
     background: PLAYER_SETTINGS_DEFAULTS.COLOR_BACKGROUND,
@@ -36,12 +33,6 @@ export const updateCurrentImageSnapshot = async (
   }
 
   const viewport = new Camera()
-
-  log.info('initializing renderer')
-  const renderer = new Renderer(game.id, canvas, viewport, null, null, true, true, game)
-  await renderer.init(graphics)
-  log.info('renderer inited')
-
   viewport.calculateZoomCapping(boardDim, tableDim)
   viewport.centerFit(
     { w: canvas.width, h: canvas.height },
@@ -51,24 +42,19 @@ export const updateCurrentImageSnapshot = async (
   )
 
   // create image
+  const ctx = canvas.getContext('2d') as CanvasRenderingContext2D
   await renderer.render(
+    canvas,
+    ctx,
+    viewport,
     new Date().getTime(),
     playerSettings,
     null,
     { update: (_ts: number) => { return } },
     (_piece: Piece) => true,
-    (_player: Player) => true,
+    (_player: Player) => false,
     false,
+    true,
   )
-  const data = canvas.toDataURL('image/jpeg', 75)
-
-  if (!fs.existsSync(dir)) {
-    fs.mkdirSync(dir, { recursive: true })
-  }
-  fs.writeFileSync(
-    `${dir}/${filename}`,
-    new Buffer(data.split(',')[1], 'base64'),
-  )
-
-  return `/uploads/image_snapshots/${filename}`
+  return canvas
 }

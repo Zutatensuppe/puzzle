@@ -59,7 +59,8 @@ export abstract class Game<HudType extends Hud> {
   protected playerSettings!: PlayerSettings
   protected puzzleStatus!: PuzzleStatus
   private fireworks!: FireworksInterface
-  private renderer!: Renderer
+  protected renderer!: Renderer
+  protected ctx: CanvasRenderingContext2D
 
   private isInterfaceVisible: boolean = true
   private isPreviewVisible: boolean = false
@@ -80,6 +81,7 @@ export abstract class Game<HudType extends Hud> {
   ) {
     if (typeof window.DEBUG === 'undefined') window.DEBUG = false
 
+    this.ctx = canvas.getContext('2d') as CanvasRenderingContext2D
     this.assets = new Assets()
     this.graphics = new Graphics()
     this.viewport = new Camera()
@@ -156,7 +158,7 @@ export abstract class Game<HudType extends Hud> {
 
     const puzzleTable = new PuzzleTable(this.graphics)
     await puzzleTable.loadTexture(this.gameId, this.playerSettings.getSettings())
-    this.renderer = new Renderer(this.gameId, this.canvas, this.viewport, this.fireworks, puzzleTable, false, false, null)
+    this.renderer = new Renderer(this.gameId, this.fireworks, puzzleTable, false)
     await this.renderer.init(this.graphics)
 
     this.canvas.classList.add('loaded')
@@ -435,6 +437,9 @@ export abstract class Game<HudType extends Hud> {
 
     this.renderer.debug = window.DEBUG ? true : false
     this.renderer.render(
+      this.canvas,
+      this.ctx,
+      this.viewport,
       this.time(),
       this.playerSettings.getSettings(),
       this.playerCursors,
@@ -442,6 +447,7 @@ export abstract class Game<HudType extends Hud> {
       (piece: Piece) => this.shouldDrawPiece(piece),
       (player: Player) => this.shouldDrawPlayer(player),
       this.justFinished(),
+      false,
     )
 
     this.rerender = false

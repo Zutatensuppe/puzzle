@@ -8,6 +8,7 @@ import {
   EncodedPiece,
   Game,
   GameEvent,
+  HandleGameEventResult,
   ImageInfo,
   LogEntry,
   Piece,
@@ -644,7 +645,7 @@ function handleGameEvent(
   playerId: string,
   gameEvent: GameEvent,
   ts: Timestamp,
-): Array<Change> {
+): HandleGameEventResult {
   const puzzle = GAMES[gameId].puzzle
 
   const changes: Array<Change> = []
@@ -675,6 +676,7 @@ function handleGameEvent(
   }
 
   let anySnapped: boolean = false
+  let anyDropped: boolean = false
 
   // put both pieces (and their grouped pieces) in the same group
   const groupPieces = (
@@ -730,6 +732,7 @@ function handleGameEvent(
       const pieceIdxs = getGroupedPieceIdxs(gameId, pieceIdx)
       setPiecesOwner(gameId, pieceIdxs, 0)
       _pieceChanges(pieceIdxs)
+      anyDropped = true
     }
   } else if (type === GAME_EVENT_TYPE.INPUT_EV_BG_COLOR) {
     const bgcolor = gameEvent[1]
@@ -824,6 +827,7 @@ function handleGameEvent(
       const pieceIdxs = getGroupedPieceIdxs(gameId, pieceIdx)
       setPiecesOwner(gameId, pieceIdxs, 0)
       _pieceChanges(pieceIdxs)
+      anyDropped = true
 
       // Check if the piece was dropped near the final location
       const piecePos = getPiecePos(gameId, pieceIdx)
@@ -950,7 +954,7 @@ function handleGameEvent(
   if (anySnapped) {
     changes.push([CHANGE_TYPE.PLAYER_SNAP, playerId])
   }
-  return changes
+  return { changes, anySnapped, anyDropped }
 }
 
 function handleLogEntry(
