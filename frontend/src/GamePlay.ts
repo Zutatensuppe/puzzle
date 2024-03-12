@@ -5,12 +5,13 @@ import { Game as GameType, EncodedGame, Hud, GameEvent, EncodedGameLegacy, Serve
 import { Game } from './Game'
 import Communication from './Communication'
 import Util from '../../common/src/Util'
-import { updateCurrentImageSnapshot } from './ImageSnapshotCreator'
+import { createImageSnapshot } from './ImageSnapshotCreator'
 
 export class GamePlay extends Game<Hud> {
 
   private updateStatusInterval: number | null = null
   private lastSentImageSnapshotTs: number = 0
+  private snapshotsIntervalMs: number = 60000
 
   async connect(): Promise<void> {
     Communication.onConnectionStateChange((state) => {
@@ -49,12 +50,11 @@ export class GamePlay extends Game<Hud> {
       this.sounds.playPieceConnected()
     }
     if (ret.anyDropped) {
-      // limit sending a new snapshot to every 5 seconds
-      if (ts - this.lastSentImageSnapshotTs > 5000) {
-        updateCurrentImageSnapshot(this.gameId, this.renderer).then((canvas) => {
+      if (ts - this.lastSentImageSnapshotTs > this.snapshotsIntervalMs) {
+        this.lastSentImageSnapshotTs = ts
+        createImageSnapshot(this.gameId, this.renderer).then((canvas) => {
           Communication.sendImageSnapshot(canvas.toDataURL('image/jpeg', 75), ts)
         })
-        this.lastSentImageSnapshotTs = ts
       }
     }
 

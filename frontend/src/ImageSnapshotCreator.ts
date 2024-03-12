@@ -6,7 +6,7 @@ import { logger } from '../../common/src/Util'
 
 const log = logger('ImageSnapshotCreator.ts')
 
-export const updateCurrentImageSnapshot = async (
+export const createImageSnapshot = async (
   gameId: string,
   renderer: Renderer,
 ): Promise<HTMLCanvasElement> => {
