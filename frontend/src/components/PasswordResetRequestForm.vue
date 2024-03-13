@@ -7,7 +7,7 @@
     <v-text-field
       v-model="email"
       density="compact"
-      label="E-Mail"
+      label="E-mail"
       :rules="emailRules"
     />
 
@@ -19,10 +19,12 @@
     >
       Reset Password
     </v-btn>
+    <TextDivider text="Or did you remember?" />
     <v-btn
       block
       class="mt-1"
       :disabled="busy"
+      prepend-icon="mdi-heart"
       @click="emit('login')"
     >
       Back to login
@@ -34,6 +36,7 @@ import { ref } from 'vue'
 import { toast } from '../toast'
 import user from '../user'
 import { testEmailValid } from '../util'
+import TextDivider from './TextDivider.vue'
 
 const emit = defineEmits<{
   (e: 'login'): void

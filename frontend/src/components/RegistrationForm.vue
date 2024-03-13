@@ -13,7 +13,7 @@
     <v-text-field
       v-model="email"
       density="compact"
-      label="E-Mail"
+      label="E-mail"
       :rules="emailRules"
     />
     <v-text-field
@@ -34,13 +34,15 @@
     >
       Create account
     </v-btn>
+    <TextDivider text="Already have an account?" />
     <v-btn
       block
       class="mt-1"
       :disabled="busy"
+      prepend-icon="mdi-heart"
       @click="emit('login')"
     >
-      Already have an account?
+      Login now
     </v-btn>
   </v-form>
 </template>
@@ -49,6 +51,7 @@ import { ref } from 'vue'
 import { toast } from '../toast'
 import user from '../user'
 import { testEmailValid } from '../util'
+import TextDivider from './TextDivider.vue'
 
 const emit = defineEmits<{
   (e: 'login'): void

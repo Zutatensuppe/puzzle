@@ -24,6 +24,7 @@ import { useRoute } from 'vue-router'
 import LoginDialog from './components/LoginDialog.vue'
 import Nav from './components/Nav.vue'
 import user from './user'
+import { toast } from './toast'
 
 const route = useRoute()
 
@@ -51,11 +52,15 @@ onMounted(async () => {
 
   if (window.location.hash) {
     const urlParams = new URLSearchParams(window.location.hash.replace('#','?'))
-    const t = urlParams.get('password-reset')
-    if (t) {
+    const passwordResetTokenValue = urlParams.get('password-reset')
+    if (passwordResetTokenValue) {
       loginDialogTab.value = 'reset-password'
       showLogin.value = true
-      passwordResetToken.value= t
+      passwordResetToken.value= passwordResetTokenValue
+    }
+    const emailVerified = urlParams.get('email-verified')
+    if (emailVerified) {
+      toast('Thank you for verifying your e-mail address! You should already be logged in.', 'success', 7000)
     }
   }
 })

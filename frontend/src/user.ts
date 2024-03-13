@@ -2,6 +2,7 @@ import mitt from 'mitt'
 import api from './_api'
 import storage from './storage'
 import xhr from './_api/xhr'
+import { PLAYER_SETTINGS } from '../../common/src/Types'
 
 export interface User {
   id: number
@@ -21,17 +22,32 @@ async function init(): Promise<void> {
   const res = await api.pub.me()
   me = res.status === 200 ? (await res.json()) : null
   if (me) {
-    console.log('loggedin')
+    console.log('logged in (maybe guest)')
     xhr.setClientId(me.clientId)
     eventBus.emit('login')
   } else {
-    console.log('loggedout')
+    console.log('not logged in')
     xhr.setClientId(storage.uniq('ID'))
     eventBus.emit('logout')
   }
 }
 
 async function logout(): Promise<{ error: string | false }> {
+  // remove all relevant data on logout
+  storage.remove('ID')
+  storage.remove('lastSeenAnnouncement')
+  storage.remove(PLAYER_SETTINGS.SOUND_VOLUME)
+  storage.remove(PLAYER_SETTINGS.SOUND_ENABLED)
+  storage.remove(PLAYER_SETTINGS.OTHER_PLAYER_CLICK_SOUND_ENABLED)
+  storage.remove(PLAYER_SETTINGS.COLOR_BACKGROUND)
+  storage.remove(PLAYER_SETTINGS.SHOW_TABLE)
+  storage.remove(PLAYER_SETTINGS.TABLE_TEXTURE)
+  storage.remove(PLAYER_SETTINGS.USE_CUSTOM_TABLE_TEXTURE)
+  storage.remove(PLAYER_SETTINGS.CUSTOM_TABLE_TEXTURE)
+  storage.remove(PLAYER_SETTINGS.CUSTOM_TABLE_TEXTURE_SCALE)
+  storage.remove(PLAYER_SETTINGS.PLAYER_COLOR)
+  storage.remove(PLAYER_SETTINGS.PLAYER_NAME)
+  storage.remove(PLAYER_SETTINGS.SHOW_PLAYER_NAMES)
   const res = await api.pub.logout()
   const data = await res.json()
   if (data.success) {

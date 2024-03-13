@@ -261,7 +261,6 @@ const startRecording = () => {
   //ondataavailable will fire in interval of `time || 4000 ms`
   mediaRecorder.start(1000)
   mediaRecorder.ondataavailable = function (event) {
-    console.log('this.ondataavailable')
     recordedChunks.push(event.data)
     if (mediaRecorderToStop.value) {
       mediaRecorder?.stop()
@@ -364,7 +363,6 @@ const hud: ReplayHud = {
   setPlayers: (v: GamePlayers, r: RegisteredMap) => {
     if (!isEqual(v, players.value)) {
       players.value = v
-      console.log('updating players')
     }
     if (!isEqual(r, registeredMap.value)) {
       registeredMap.value = r

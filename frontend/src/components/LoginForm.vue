@@ -1,4 +1,14 @@
 <template>
+  <v-btn
+    color="#6441a5"
+    prepend-icon="mdi-twitch"
+    block
+    :disabled="busy"
+    @click="openTwitchLogin"
+  >
+    Login via Twitch
+  </v-btn>
+  <TextDivider text="Or login with your e-mail" />
   <v-form
     v-model="valid"
     class="login-form"
@@ -7,7 +17,7 @@
     <v-text-field
       v-model="email"
       density="compact"
-      label="E-Mail"
+      label="E-mail"
       :rules="emailRules"
     />
     <v-text-field
@@ -35,26 +45,16 @@
         Login
       </v-btn>
     </div>
-    <div class="d-flex align-center justify-center mt-5">
-      No account yet? <v-btn
-        class="ml-5"
-        :disabled="busy"
-        @click="emit('register')"
-      >
-        Create one
-      </v-btn>
-    </div>
+    <TextDivider text="No account yet?" />
+    <v-btn
+      :disabled="busy"
+      block
+      prepend-icon="mdi-heart"
+      @click="emit('register')"
+    >
+      Create an account now
+    </v-btn>
   </v-form>
-  <v-divider class="mt-6 mb-6" />
-  <v-btn
-    color="#6441a5"
-    prepend-icon="mdi-twitch"
-    block
-    :disabled="busy"
-    @click="openTwitchLogin"
-  >
-    Login via Twitch
-  </v-btn>
 </template>
 <script setup lang="ts">
 import { ref } from 'vue'
@@ -62,6 +62,8 @@ import Util from '../../../common/src/Util'
 import { toast } from '../toast'
 import user from '../user'
 import { testEmailValid } from '../util'
+import TextDivider from './TextDivider.vue'
+import xhr from '../_api/xhr'
 
 const emit = defineEmits<{
   (e: 'forgot-password'): void
@@ -89,6 +91,7 @@ const args = {
   redirect_uri: `${window.location.protocol}//${window.location.host}/api/auth/twitch/redirect_uri`,
   response_type: 'code',
   scope: 'openid user:read:email',
+  state: xhr.clientId(),
 }
 
 const openTwitchLogin = () => {

@@ -20,11 +20,47 @@ export class Users {
   private userIdentityRepo: UserIdentityRepo
   private tokensRepo: TokensRepo
 
-  constructor(db: Db) {
+  constructor(
+    private db: Db,
+  ) {
     this.usersRepo = new UsersRepo(db)
     this.accountsRepo = new AccountsRepo(db)
     this.userIdentityRepo = new UserIdentityRepo(db)
     this.tokensRepo = new TokensRepo(db)
+  }
+
+  async usernameTaken(username: string): Promise<boolean> {
+    const row = await this.db._get(`
+      with relevant_users as (
+        select u.name from users u
+          inner join user_identity ui on ui.user_id = u.id and ui.provider_name = 'local'
+          inner join accounts a on a.id::text = ui.provider_id and a.status = 'verified'
+        union
+        select u.name from users u
+          inner join user_identity ui on ui.user_id = u.id and ui.provider_name = 'twitch'
+      )
+      select * from relevant_users where name = $1 limit 1
+    `, [username])
+    return row !== null
+  }
+
+  async clientIdTaken(clientId: string): Promise<boolean> {
+    const row = await this.db._get(`
+      with relevant_users as (
+        select u.client_id from users u
+          inner join user_identity ui on ui.user_id = u.id and ui.provider_name = 'local'
+          inner join accounts a on a.id::text = ui.provider_id and a.status = 'verified'
+        union
+        select u.client_id from users u
+          inner join user_identity ui on ui.user_id = u.id and ui.provider_name = 'twitch'
+      )
+      select * from relevant_users where client_id = $1 limit 1
+    `, [clientId])
+    return row !== null
+  }
+
+  async emailTaken(emailPlain: string): Promise<boolean> {
+    return await this.getAccountByEmailPlain(emailPlain) !== null
   }
 
   async setAccountVerified(accountId: number): Promise<void> {
@@ -51,6 +87,10 @@ export class Users {
 
   async getIdentity(where: WhereRaw): Promise<IdentityRow | null> {
     return await this.userIdentityRepo.get(where)
+  }
+
+  async getAccountByEmailPlain(emailPlain: string): Promise<AccountRow | null> {
+    return await this.getAccount({ email: emailPlain })
   }
 
   async getAccount(where: WhereRaw): Promise<AccountRow | null> {

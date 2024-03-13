@@ -74,18 +74,23 @@ npm run server
 Start the dev database (postgres) via:
 
 ```shell
-npm run dev-services
+docker-compose up
 ```
 
-For development it makes sense to run both `dev-server` and `dev-frontend`
+For development it makes sense to run both the dev server and dev frontend
 in separate shells.
 
 ```shell
-npm run dev-server
-npm run dev-frontend
+cd server
+npm start
 ```
 
-The dev-frontend script will output something like:
+```shell
+cd frontend
+npm start
+```
+
+The frontend script will output something like:
 
 ```shell
   vite v2.3.3 dev server running at:
