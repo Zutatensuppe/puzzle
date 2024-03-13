@@ -8,6 +8,10 @@ const get = (setting: string): any => {
   return localStorage.getItem(setting)
 }
 
+const remove = (setting: string): any => {
+  return localStorage.removeItem(setting)
+}
+
 const setInt = (setting: string, val: number): void => {
   set(setting, `${val}`)
 }
@@ -77,4 +81,5 @@ export default {
   setStr,
   getStr,
   uniq,
+  remove,
 }

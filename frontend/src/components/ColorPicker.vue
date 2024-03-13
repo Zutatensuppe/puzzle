@@ -49,7 +49,6 @@ const openPicker = () => {
   emit('open')
 }
 const onPickerOk = () => {
-  console.log(valTemp)
   val.value = (valTemp.value as any).hex
   showingPicker.value = false
   emit('close')

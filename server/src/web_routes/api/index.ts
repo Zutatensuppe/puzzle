@@ -28,6 +28,17 @@ export default function createRouter(
   server: ServerInterface,
 ): Router {
 
+  const determineNewUserClientId = async (originalClientId: string): Promise<string> => {
+    // if a client id is given, we will use it, if it doesnt
+    // correspond to a registered user. this way, guests will
+    // continue to have their client id after logging in.
+    // this will make them show up on leaderboards and keep scores in
+    // puzzles they have puzzled as guests
+    return originalClientId && !await server.getUsers().clientIdTaken(originalClientId)
+      ? originalClientId
+      : uniqId()
+  }
+
   const addAuthToken = async (userId: number, res: Response): Promise<void> => {
     const token = await server.getUsers().addAuthToken(userId)
     res.cookie(COOKIE_TOKEN, token, { maxAge: 356 * Time.DAY, httpOnly: true })
@@ -82,7 +93,6 @@ export default function createRouter(
   // login via twitch (callback url called from twitch after authentication)
   router.get('/auth/twitch/redirect_uri', async (req: any, res): Promise<void> => {
     if (!req.query.code) {
-
       // in error case:
       // http://localhost:3000/
       // ?error=access_denied
@@ -139,10 +149,13 @@ export default function createRouter(
       }
 
       const userData = await userRes.json()
+      const provider_name = 'twitch'
+      const provider_id = userData.data[0].id
+      const provider_email = userData.data[0].email
 
       const identity = await server.getUsers().getIdentity({
-        provider_name: 'twitch',
-        provider_id: userData.data[0].id,
+        provider_name,
+        provider_id,
       })
 
       let user = null
@@ -156,8 +169,8 @@ export default function createRouter(
         user = await server.getUsers().createUser({
           name: userData.data[0].display_name,
           created: new Date(),
-          client_id: uniqId(),
-          email: userData.data[0].email,
+          client_id: await determineNewUserClientId(req.query.state || ''),
+          email: provider_email,
         })
       } else {
         let updateNeeded = false
@@ -166,7 +179,7 @@ export default function createRouter(
           updateNeeded = true
         }
         if (!user.email) {
-          user.email = userData.data[0].email
+          user.email = provider_email
           updateNeeded = true
         }
         if (updateNeeded) {
@@ -177,8 +190,9 @@ export default function createRouter(
       if (!identity) {
         server.getUsers().createIdentity({
           user_id: user.id,
-          provider_name: 'twitch',
-          provider_id: userData.data[0].id,
+          provider_name,
+          provider_id,
+          provider_email,
         })
       } else {
         let updateNeeded = false
@@ -188,7 +202,7 @@ export default function createRouter(
           updateNeeded = true
         }
         if (!identity.provider_email) {
-          identity.provider_email = userData.data[0].email
+          identity.provider_email = provider_email
           updateNeeded = true
         }
         if (updateNeeded) {
@@ -208,7 +222,7 @@ export default function createRouter(
   router.post('/auth/local', express.json(), async (req, res): Promise<void> => {
     const emailPlain = req.body.email
     const passwordPlain = req.body.password
-    const account = await server.getUsers().getAccount({ email: emailPlain })
+    const account = await server.getUsers().getAccountByEmailPlain(emailPlain)
     if (!account) {
       res.status(401).send({ reason: 'bad email' })
       return
@@ -265,11 +279,14 @@ export default function createRouter(
   })
 
   router.post('/send-password-reset-email', express.json(), async (req: any, res): Promise<void> => {
-    const emailRaw = `${req.body.email}`
+    // we always respond with success, so that the user cannot
+    // as easily guess if an email is registered or not
 
-    const account = await server.getUsers().getAccount({ email: emailRaw })
+    const emailPlain = `${req.body.email}`
+    const account = await server.getUsers().getAccountByEmailPlain(emailPlain)
     if (!account) {
-      res.status(400).send({ reason: 'no such email' })
+      // res.status(400).send({ reason: 'no such email' })
+      res.send({ success: true })
       return
     }
     const identity = await server.getUsers().getIdentity({
@@ -277,14 +294,16 @@ export default function createRouter(
       provider_id: account.id,
     })
     if (!identity) {
-      res.status(400).send({ reason: 'no such identity' })
+      // res.status(400).send({ reason: 'no such identity' })
+      res.send({ success: true })
       return
     }
     const user = await server.getUsers().getUser({
       id: identity.user_id,
     })
     if (!user) {
-      res.status(400).send({ reason: 'no such user' })
+      // res.status(400).send({ reason: 'no such user' })
+      res.send({ success: true })
       return
     }
 
@@ -292,20 +311,28 @@ export default function createRouter(
     // TODO: dont misuse token table user id <> account id
     const tokenRow = { user_id: account.id, token, type: 'password-reset' }
     await server.getTokensRepo().insert(tokenRow)
-    server.getMail().sendPasswordResetMail({ user: { name: user.name, email: emailRaw }, token: tokenRow })
+    server.getMail().sendPasswordResetMail({ user: { name: user.name, email: emailPlain }, token: tokenRow })
     res.send({ success: true })
   })
 
   router.post('/register', express.json(), async (req: any, res): Promise<void> => {
     const salt = generateSalt()
 
+    const client_id = await determineNewUserClientId(req.user ? req.user.client_id: '')
+
     const emailRaw = `${req.body.email}`
     const passwordRaw = `${req.body.password}`
     const usernameRaw = `${req.body.username}`
 
-    // TODO: check if username already taken
-    // TODO: check if email already taken
-    //       return status 409 in both cases
+    if (await server.getUsers().usernameTaken(usernameRaw)) {
+      res.status(409).send({ reason: 'username already taken' })
+      return
+    }
+
+    if (await server.getUsers().emailTaken(emailRaw)) {
+      res.status(409).send({ reason: 'email already taken' })
+      return
+    }
 
     const account = await server.getUsers().createAccount({
       created: new Date(),
@@ -315,12 +342,20 @@ export default function createRouter(
       status: 'verification_pending',
     })
 
-    const user = await server.getUsers().createUser({
-      created: new Date(),
-      name: usernameRaw,
-      email: emailRaw,
-      client_id: uniqId(),
-    })
+    let user = await server.getUsers().getUser({ client_id })
+    if (user) {
+      // update user
+      user.email = emailRaw
+      user.name = usernameRaw
+      await server.getUsers().updateUser(user)
+    } else {
+      user = await server.getUsers().createUser({
+        created: new Date(),
+        name: usernameRaw,
+        email: emailRaw,
+        client_id,
+      })
+    }
 
     await server.getUsers().createIdentity({
       user_id: user.id,
@@ -368,8 +403,7 @@ export default function createRouter(
     // make the user logged in and redirect to startpage
     await addAuthToken(identity.user_id, res)
 
-    // TODO: add parameter/hash so that user will get a message 'thanks for verifying the email'
-    res.redirect(302, '/')
+    res.redirect(302, '/#email-verified=true')
   })
 
   router.post('/logout', async (req: any, res): Promise<void> => {

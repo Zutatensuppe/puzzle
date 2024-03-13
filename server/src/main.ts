@@ -24,7 +24,7 @@ const run = async () => {
   await db.connect()
   await db.patch()
 
-  const mail = new Mail(config.mail)
+  const mail = new Mail(config.mail, config.http.publicBaseUrl)
   const canny = new Canny(config.canny)
   const discord = new Discord(config.discord)
   const gameSockets = new GameSockets()
