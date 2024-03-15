@@ -22,7 +22,7 @@ async function init(): Promise<void> {
   const res = await api.pub.me()
   me = res.status === 200 ? (await res.json()) : null
   if (me) {
-    console.log('logged in (maybe guest)')
+    console.log('logged in (reg or guest)')
     xhr.setClientId(me.clientId)
     eventBus.emit('login')
   } else {
