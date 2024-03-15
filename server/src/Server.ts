@@ -159,6 +159,12 @@ export class Server implements ServerInterface {
     app.use('/api', createApiRouter(this))
     app.use('/image-service', createImageServiceRouter(this))
     app.use('/uploads/', express.static(config.dir.UPLOAD_DIR))
+
+    app.get('/', async (req: any, res) => {
+      sendHtml(res, indexFileContents, {
+        '<!-- og:image -->': '<meta property="og:image" content="/assets/textures/poster.webp" />',
+      })
+    })
     app.use('/', express.static(config.dir.PUBLIC_DIR))
 
     app.get('/g/:id', async (req: Request, res: Response) => {
@@ -188,8 +194,9 @@ export class Server implements ServerInterface {
     })
 
     app.all('*', async (req: any, res) => {
-      res.setHeader('Content-Type', 'text/html')
-      sendHtml(res, indexFileContents)
+      sendHtml(res, indexFileContents, {
+        '<!-- og:image -->': '<meta property="og:image" content="/assets/textures/poster.webp" />',
+      })
     })
 
     const wss = new WebSocketServer(config.ws)
