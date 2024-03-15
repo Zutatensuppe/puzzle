@@ -37,6 +37,7 @@ import _api from './_api'
 import { MODE_PLAY } from './GameMode'
 import { Graphics } from './Graphics'
 import { Renderer } from '../../common/src/Renderer'
+import debug from './debug'
 
 declare global {
   interface Window {
@@ -79,8 +80,6 @@ export abstract class Game<HudType extends Hud> {
     protected readonly canvas: HTMLCanvasElement,
     protected readonly hud: HudType,
   ) {
-    if (typeof window.DEBUG === 'undefined') window.DEBUG = false
-
     this.ctx = canvas.getContext('2d') as CanvasRenderingContext2D
     this.assets = new Assets()
     this.graphics = new Graphics()
@@ -435,7 +434,7 @@ export abstract class Game<HudType extends Hud> {
       return
     }
 
-    this.renderer.debug = window.DEBUG ? true : false
+    this.renderer.debug = debug.isDebugEnabled()
     this.renderer.render(
       this.canvas,
       this.ctx,

@@ -15,9 +15,7 @@ const checkpoint_start = (mindiff: number): void => {
 const checkpoint = (label: string): void => {
   const now = performance.now()
   const diff = now - _pt
-  if (diff > _mindiff) {
-    log.log(label + ': ' + (diff))
-  }
+  log.log(label + ': ' + (diff))
   _pt = now
 }
 

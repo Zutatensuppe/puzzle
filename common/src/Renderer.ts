@@ -94,7 +94,7 @@ export class Renderer {
 
     if (this.backgroundCache) {
       ctx.putImageData(this.backgroundCache, 0, 0)
-      if (this.debug) Debug.checkpoint('clear/table/board done')
+      if (this.debug) Debug.checkpoint('clear/table/board done - cached')
     } else {
       // CLEAR CTX
       // ---------------------------------------------------------------
@@ -184,6 +184,9 @@ export class Renderer {
             // switches between drawImage and fillTxt
             texts.push([`${p.name} (${p.points})`, pos.x, pos.y + playerCursors.CURSOR_H])
           }
+          if (this.debug) Debug.checkpoint(`drew player ${p.name} at ${pos.x},${pos.y}`)
+        } else {
+          if (this.debug) Debug.checkpoint(`skipped player ${p.name}`)
         }
       }
 
@@ -193,8 +196,10 @@ export class Renderer {
       for (const [txt, x, y] of texts) {
         ctx.fillText(txt, x, y)
       }
+      if (this.debug) Debug.checkpoint('players done')
+    } else {
+      if (this.debug) Debug.checkpoint('players skipped')
     }
-    if (this.debug) Debug.checkpoint('players done')
 
     // propagate HUD changes
     // ---------------------------------------------------------------

@@ -20,6 +20,7 @@ import AdminUsers from './admin/views/Users.vue'
 import AdminImages from './admin/views/Images.vue'
 import AdminGroups from './admin/views/Groups.vue'
 import AdminAnnouncements from './admin/views/Announcements.vue'
+import debug from './debug'
 import api from './_api'
 import config from './config'
 
@@ -30,6 +31,7 @@ import * as directives from 'vuetify/directives'
 import { init as initToast, toast } from './toast'
 
 (async () => {
+  debug.init()
   api.init()
 
   await user.init()
