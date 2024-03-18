@@ -28,7 +28,7 @@ import { ImageResize } from './ImageResize'
 import { LeaderboardRepo } from './repo/LeaderboardRepo'
 import { ImagesRepo } from './repo/ImagesRepo'
 import fs from 'fs'
-import sharp from 'sharp'
+import { storeImageSnapshot } from './ImageSnapshots'
 
 const indexFile = path.resolve(config.dir.PUBLIC_DIR, 'index.html')
 const indexFileContents = fs.readFileSync(indexFile, 'utf-8')
@@ -314,30 +314,7 @@ export class Server implements ServerInterface {
               // do nothing
               break
             }
-
-            const dir = `${config.dir.UPLOAD_DIR}/image_snapshots`
-            const filename = `${gameId}_${ts}.jpeg`
-            if (fs.existsSync(`${dir}/${filename}`)) {
-              log.info(`image already exists`)
-              break
-            }
-
-            if (!fs.existsSync(dir)) {
-              fs.mkdirSync(dir, { recursive: true })
-            }
-
-            const imageData = imageBase64Str.split(';base64,').pop() as string
-            try {
-              const imgBuffer = Buffer.from(imageData, 'base64')
-              await sharp(imgBuffer).jpeg({ quality: 75 }).toFile(`${dir}/${filename}`)
-            } catch (e) {
-              log.error('unable to store image', e)
-              break
-            }
-
-            const url = `/uploads/image_snapshots/${filename}`
-            await this.db.update('games', { image_snapshot_url: url }, { id: gameId })
-            console.log('stored image')
+            storeImageSnapshot(imageBase64Str, gameId, ts, this.db)
           } break
         }
       } catch (e) {
