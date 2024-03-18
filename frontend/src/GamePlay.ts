@@ -5,13 +5,14 @@ import { Game as GameType, EncodedGame, Hud, GameEvent, EncodedGameLegacy, Serve
 import { Game } from './Game'
 import Communication from './Communication'
 import Util from '../../common/src/Util'
+import Time from '../../common/src/Time'
 import { createImageSnapshot } from './ImageSnapshotCreator'
 
 export class GamePlay extends Game<Hud> {
 
   private updateStatusInterval: number | null = null
   private lastSentImageSnapshotTs: number = 0
-  private snapshotsIntervalMs: number = 60000
+  private snapshotsIntervalMs: number = 5 * Time.MIN
 
   async connect(): Promise<void> {
     Communication.onConnectionStateChange((state) => {
