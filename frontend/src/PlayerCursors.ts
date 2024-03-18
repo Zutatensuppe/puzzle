@@ -1,11 +1,8 @@
-import {
-  AssetsInterface,
-  GraphicsInterface,
-  Player,
-  PlayerCursorsInterface,
-} from './Types'
+import { Assets } from './Assets'
+import { Player } from '../../common/src/Types'
+import { Graphics } from './Graphics'
 
-export class PlayerCursors implements PlayerCursorsInterface
+export class PlayerCursors
 {
   private cursorImages: Record<string, ImageBitmap | HTMLCanvasElement> = {}
 
@@ -20,8 +17,8 @@ export class PlayerCursors implements PlayerCursorsInterface
 
   constructor(
     private canvas: HTMLCanvasElement,
-    private assets: AssetsInterface,
-    private graphics: GraphicsInterface,
+    private assets: Assets,
+    private graphics: Graphics,
   ) {
     // all cursors must be of the same dimensions
     this.CURSOR_W = assets.Gfx.GRAB.width

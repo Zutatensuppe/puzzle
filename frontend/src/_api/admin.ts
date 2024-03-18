@@ -15,6 +15,18 @@ const getUsers = async () => {
   return await res.json()
 }
 
+const mergeClientIdsIntoUser = async (
+  userId: number,
+  clientIds: string[],
+  dry: boolean,
+) => {
+  const res = await xhr.post('/admin/api/users/_merge_client_ids_into_user', {
+    headers: JSON_HEADERS,
+    body: JSON.stringify({ userId, clientIds, dry }),
+  })
+  return await res.json()
+}
+
 const getAnnouncements = async () => {
   const res = await xhr.get('/admin/api/announcements', {})
   return await res.json()
@@ -52,4 +64,5 @@ export default {
   getImages,
   deleteImage,
   getGroups,
+  mergeClientIdsIntoUser,
 }

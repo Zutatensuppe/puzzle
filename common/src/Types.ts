@@ -621,50 +621,17 @@ export const isImageSearchSort = (sort: unknown): sort is ImageSearchSort => {
   ].includes(sort)
 }
 
-export interface GraphicsInterface {
-  createCanvas: (width: number, height: number) => HTMLCanvasElement
-  loadImageToBitmap: (puzzleImageUrl: string) => Promise<ImageBitmap>
-  resizeBitmap: (bitmap: ImageBitmap, width: number, height: number) => HTMLCanvasElement
-  grayscaledCanvas: (bitmap: HTMLCanvasElement, background: string, opacity: number) => HTMLCanvasElement
-  bitmapToImageString: (bitmap: ImageBitmap) => string
-  repeat: (bitmap: ImageBitmap, rect: Rect, scale: number) => HTMLCanvasElement
-  colorizedCanvas (bitmap: ImageBitmap, mask: ImageBitmap, color: string): HTMLCanvasElement
-}
-
-export interface PlayerCursorsInterface {
-  readonly CURSOR_W: number
-  readonly CURSOR_W_2: number
-  readonly CURSOR_H: number
-  readonly CURSOR_H_2: number
-
-  get (p: BasicPlayerInfo): Promise<ImageBitmap | HTMLCanvasElement>
-}
-
-export interface AssetsInterface {
-  Audio: {
-    CLICK: HTMLAudioElement | null
-    CLICK_2: HTMLAudioElement | null
-  }
-  Gfx: {
-    GRAB: ImageBitmap
-    HAND: ImageBitmap
-    GRAB_MASK: ImageBitmap
-    HAND_MASK: ImageBitmap
-    badgeMask: ImageBitmap
-    badgeOver: ImageBitmap
-    badgeOverIdle: ImageBitmap
-    badgeAnon: ImageBitmap
-    badgeAnonIdle: ImageBitmap
-  }
-}
-
-export interface PuzzleTableInterface {
-  loadTexture(gameId: string, settings: PlayerSettingsData): Promise<CanvasImageSource | null>
-  getImage(gameId: string, settings: PlayerSettingsData): CanvasImageSource | null
-}
-
 export interface HandleGameEventResult {
   changes: Change[]
   anySnapped: boolean
   anyDropped: boolean
+}
+
+export interface MergeClientIdsIntoUserResult {
+  dry: boolean
+  updatedGameIds: string[]
+  updatedImageIds: number[]
+  removedUserIds: number[]
+  userIdsWithIdentities: number[]
+  userIdsWithoutIdentities: number[]
 }
