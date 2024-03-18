@@ -1,9 +1,8 @@
 'use strict'
 
 import { Rect } from './Geometry'
-import { GraphicsInterface } from '../../common/src/Types'
 
-export class Graphics implements GraphicsInterface {
+export class Graphics {
   grayscaledCanvas(
     bitmap: HTMLCanvasElement,
     background: string,
