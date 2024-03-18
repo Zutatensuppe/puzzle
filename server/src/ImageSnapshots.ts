@@ -9,9 +9,9 @@ const log = logger('ImageSnapshots.ts')
 const tryRm = (f: string) => {
   try {
     fs.unlinkSync(f)
-    console.log('removed image: ', f)
+    log.info('removed image: ', f)
   } catch (e) {
-    console.log('failed to remove image: ', e)
+    log.error('failed to remove image: ', e)
   }
 }
 
@@ -38,8 +38,7 @@ export const storeImageSnapshot = async (imageBase64Str: string, gameId: string,
 
   const url = `/uploads/image_snapshots/${filename}`
   await db.update('games', { image_snapshot_url: url }, { id: gameId })
-  console.log('stored image')
-
+  log.info('stored image')
 
   // cleanup previous versions of the image...
   fs.readdirSync(imgSnapshotDir).forEach((file) => {

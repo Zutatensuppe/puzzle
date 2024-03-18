@@ -314,7 +314,7 @@ export class Server implements ServerInterface {
               // do nothing
               break
             }
-            storeImageSnapshot(imageBase64Str, gameId, ts, this.db)
+            void storeImageSnapshot(imageBase64Str, gameId, ts, this.db)
           } break
         }
       } catch (e) {
