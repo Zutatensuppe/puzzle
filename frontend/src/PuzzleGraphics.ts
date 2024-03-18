@@ -1,10 +1,11 @@
 'use strict'
 
-import Geometry, { Dim, Point, Rect } from './Geometry'
-import Util, { logger } from './Util'
-import { Puzzle, PuzzleInfo, PieceShape, EncodedPiece, ShapeMode, GraphicsInterface } from './Types'
-import { determinePuzzlePieceShapes, PuzzleCreationInfo } from './Puzzle'
-import { Rng } from './Rng'
+import Geometry, { Dim, Point, Rect } from '../../common/src/Geometry'
+import Util, { logger } from '../../common/src/Util'
+import { Puzzle, PuzzleInfo, PieceShape, EncodedPiece, ShapeMode } from '../../common/src/Types'
+import { determinePuzzlePieceShapes, PuzzleCreationInfo } from '../../common/src/Puzzle'
+import { Rng } from '../../common/src/Rng'
+import { Graphics } from './Graphics'
 
 const log = logger('PuzzleGraphics.js')
 
@@ -110,7 +111,7 @@ function createPuzzlePieces(
   img: HTMLCanvasElement,
   pieces: EncodedPiece[],
   info: PuzzleInfo,
-  graphics: GraphicsInterface,
+  graphics: Graphics,
 ): HTMLCanvasElement[] {
   log.log('start createPuzzlePieces')
   const pieceSize = info.tileSize
@@ -254,7 +255,7 @@ function srcRectByIdx(puzzleInfo: PuzzleInfo, idx: number): Rect {
 async function loadPuzzleBitmap(
   puzzle: Puzzle,
   puzzleImageUrl: string,
-  graphics: GraphicsInterface,
+  graphics: Graphics,
 ): Promise<HTMLCanvasElement> {
   const bmp = await graphics.loadImageToBitmap(puzzleImageUrl)
   return graphics.resizeBitmap(bmp, puzzle.info.width, puzzle.info.height)
@@ -263,7 +264,7 @@ async function loadPuzzleBitmap(
 function loadPuzzleBitmaps(
   puzzleBitmap: HTMLCanvasElement,
   puzzle: Puzzle,
-  graphics: GraphicsInterface,
+  graphics: Graphics,
 ): HTMLCanvasElement[] {
   return createPuzzlePieces(puzzleBitmap, puzzle.tiles, puzzle.info, graphics)
 }

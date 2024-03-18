@@ -1,12 +1,12 @@
 'use strict'
 
-import { GameLoopInstance, run } from './gameloop'
 import { Camera } from '../../common/src/Camera'
-import Util, { logger } from '../../common/src/Util'
-import GameCommon from '../../common/src/GameCommon'
-import fireworksController from '../../common/src/Fireworks'
 import { CHANGE_TYPE, GAME_EVENT_TYPE } from '../../common/src/Protocol'
+import { GameLoopInstance, run } from './gameloop'
+import fireworksController from '../../common/src/Fireworks'
+import GameCommon from '../../common/src/GameCommon'
 import Time from '../../common/src/Time'
+import Util, { logger } from '../../common/src/Util'
 import {
   Player,
   Piece,
@@ -22,21 +22,19 @@ import {
   GamePlayers,
   GameStatus,
   RegisteredMap,
-  AssetsInterface,
-  GraphicsInterface,
 } from '../../common/src/Types'
+import _api from './_api'
 import { Assets } from './Assets'
 import { EventAdapter } from './EventAdapter'
-import { PuzzleTable } from '../../common/src/PuzzleTable'
-import { ViewportSnapshots } from './ViewportSnapshots'
-import { PlayerSettings } from './PlayerSettings'
-import { Sounds } from './Sounds'
-import { PuzzleStatus } from './PuzzleStatus'
-import { PlayerCursors } from '../../common/src/PlayerCursors'
-import _api from './_api'
-import { MODE_PLAY } from './GameMode'
 import { Graphics } from './Graphics'
-import { Renderer } from '../../common/src/Renderer'
+import { MODE_PLAY } from './GameMode'
+import { PlayerCursors } from './PlayerCursors'
+import { PlayerSettings } from './PlayerSettings'
+import { PuzzleStatus } from './PuzzleStatus'
+import { PuzzleTable } from './PuzzleTable'
+import { Renderer } from './Renderer'
+import { Sounds } from './Sounds'
+import { ViewportSnapshots } from './ViewportSnapshots'
 import debug from './debug'
 
 declare global {
@@ -51,7 +49,7 @@ export abstract class Game<HudType extends Hud> {
   protected rerender: boolean = true
 
   private assets: Assets
-  private graphics: GraphicsInterface
+  private graphics: Graphics
   protected sounds!: Sounds
   private viewport: Camera
   private evts!: EventAdapter
@@ -294,11 +292,11 @@ export abstract class Game<HudType extends Hud> {
     return GameCommon.getPuzzle(this.gameId).info.image
   }
 
-  getAssets(): AssetsInterface {
+  getAssets(): Assets {
     return this.assets
   }
 
-  getGraphics(): GraphicsInterface {
+  getGraphics(): Graphics {
     return this.graphics
   }
 

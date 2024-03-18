@@ -22,10 +22,9 @@ import badgeAnonIdle from './assets/gfx/badge_anon_idle.png'
 import click from './assets/sounds/click.mp3'
 // @ts-ignore
 import click2 from './assets/sounds/click2.mp3'
+import { Graphics } from './Graphics'
 
-import { AssetsInterface, GraphicsInterface } from '../../common/src/Types'
-
-export class Assets implements AssetsInterface {
+export class Assets {
   public Audio!: {
     CLICK: HTMLAudioElement
     CLICK_2: HTMLAudioElement
@@ -43,7 +42,7 @@ export class Assets implements AssetsInterface {
     badgeAnonIdle: ImageBitmap
   }
 
-  async init (graphics: GraphicsInterface) {
+  async init (graphics: Graphics) {
     // TODO: parallel loading
     this.Audio = {
       CLICK: new Audio(click),

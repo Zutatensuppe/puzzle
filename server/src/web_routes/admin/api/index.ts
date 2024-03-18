@@ -1,5 +1,6 @@
 import express, { NextFunction } from 'express'
 import { ServerInterface } from '../../../Server'
+import { MergeClientIdsIntoUser } from '../../../admin-tools/MergeClientIdsIntoUser'
 
 export default function createRouter(
   server: ServerInterface,
@@ -74,6 +75,15 @@ export default function createRouter(
   router.get('/users', async (req, res) => {
     const items = await server.getDb().getMany('users', undefined, [{ id: -1 }])
     res.send(items)
+  })
+
+  router.post('/users/_merge_client_ids_into_user', express.json(), async (req, res) => {
+    const userId = req.body.userId
+    const clientIds = req.body.clientIds
+    const dry = req.body.dry === false ? false : true
+    const job = new MergeClientIdsIntoUser(server.getDb())
+    const result = await job.run(userId, clientIds, dry)
+    res.send(result)
   })
 
   router.get('/groups', async (req, res) => {

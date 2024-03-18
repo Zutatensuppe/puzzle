@@ -1,10 +1,13 @@
-import Debug from './Debug'
-import GameCommon from './GameCommon'
-import { Dim, Point, Rect } from './Geometry'
-import { FireworksInterface, FixedLengthArray, GraphicsInterface, Piece, Player, PlayerCursorsInterface, PlayerSettingsData, PuzzleStatusInterface, PuzzleTableInterface, Timestamp } from './Types'
-import { Camera } from './Camera'
+import Debug from '../../common/src/Debug'
+import GameCommon from '../../common/src/GameCommon'
+import { Dim, Point, Rect } from '../../common/src/Geometry'
+import { FireworksInterface, FixedLengthArray, Piece, Player, PlayerSettingsData, PuzzleStatusInterface, Timestamp } from '../../common/src/Types'
+import { Camera } from '../../common/src/Camera'
 import PuzzleGraphics from './PuzzleGraphics'
-import { logger } from './Util'
+import { logger } from '../../common/src/Util'
+import { PlayerCursors } from './PlayerCursors'
+import { PuzzleTable } from './PuzzleTable'
+import { Graphics } from './Graphics'
 
 const log = logger('Renderer.ts')
 
@@ -28,7 +31,7 @@ export class Renderer {
   constructor(
     protected readonly gameId: string,
     protected readonly fireworks: FireworksInterface | null,
-    protected readonly puzzleTable: PuzzleTableInterface | null,
+    protected readonly puzzleTable: PuzzleTable | null,
     protected readonly lockMovement: boolean,
   ) {
     this.pieceDrawOffset = GameCommon.getPieceDrawOffset(this.gameId)
@@ -38,7 +41,7 @@ export class Renderer {
     this.tableBounds = GameCommon.getBounds(this.gameId)
   }
 
-  async init (graphics: GraphicsInterface) {
+  async init (graphics: Graphics) {
     if (!puzzleBitmapCache[this.gameId]) {
       // log.log('loading puzzle bitmap', this.gameId)
       puzzleBitmapCache[this.gameId] = await PuzzleGraphics.loadPuzzleBitmap(
@@ -78,7 +81,7 @@ export class Renderer {
     viewport: Camera,
     ts: Timestamp,
     settings: PlayerSettingsData,
-    playerCursors: PlayerCursorsInterface | null,
+    playerCursors: PlayerCursors | null,
     puzzleStatus: PuzzleStatusInterface,
     shouldDrawPiece: (piece: Piece) => boolean,
     shouldDrawPlayer: (player: Player) => boolean,
