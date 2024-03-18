@@ -1,15 +1,16 @@
-import GameCommon from './GameCommon'
+import GameCommon from '../../common/src/GameCommon'
 import { Dim, Point, Rect } from './Geometry'
-import { GraphicsInterface, PlayerSettingsData, PuzzleTableInterface } from './Types'
-import { logger } from './Util'
+import { PlayerSettingsData } from '../../common/src/Types'
+import { logger } from '../../common/src/Util'
+import { Graphics } from './Graphics'
 
 const log = logger('PuzzleTable.ts')
 
 const cache: Record<string, HTMLCanvasElement | null> = {}
 
-export class PuzzleTable implements PuzzleTableInterface {
+export class PuzzleTable {
   constructor(
-    private graphics: GraphicsInterface,
+    private graphics: Graphics,
   ) {
     // pass
   }
