@@ -832,7 +832,7 @@ fieldset {
     border-radius: 64px;
     opacity: 0.8;
     border: 3px solid rgb(145 70 255);
-    animation: border-pulse 2s infinite;
+    animation: none;
     transition: transform 0.2s ease-in, opacity 0.2s ease-in;
     -moz-transition: transform 0.2s ease-in, opacity 0.2s ease-in;
     -ms-transition: transform 0.2s ease-in, opacity 0.2s ease-in;
@@ -842,7 +842,7 @@ fieldset {
     &:hover {
       transform: scale(1.1);
       opacity: 1;
-      animation: none;
+      animation: border-pulse 2s infinite;
     }
   }
 }
