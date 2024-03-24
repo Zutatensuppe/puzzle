@@ -563,6 +563,10 @@ export default function createRouter(
 
     const leaderboards = await server.getLeaderboardRepo().getTop10(userId)
 
+    const livestreams = await server.getDb().getMany('twitch_livestreams', {
+      is_live: 1,
+    })
+
     const indexData: ApiDataIndexData = {
       gamesRunning: {
         items: gamesRunning,
@@ -573,6 +577,7 @@ export default function createRouter(
         pagination: { total: finishedCount, offset: 0, limit: GAMES_PER_PAGE_LIMIT },
       },
       leaderboards,
+      livestreams,
     }
     res.send(indexData)
   })

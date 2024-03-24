@@ -100,6 +100,43 @@
       </div>
     </div>
 
+    <h1
+      v-if="data.livestreams.length > 0"
+      class="mt-5"
+    >
+      Live on Twitch
+    </h1>
+    <v-container
+      v-if="data.livestreams.length > 0"
+      class="pl-0 pr-0 live-on-twitch"
+    >
+      <template
+        v-for="livestream of data.livestreams"
+        :key="livestream.id"
+      >
+        <v-tooltip>
+          <p>
+            <strong>{{ livestream.user_display_name }}</strong>
+          </p>
+          <p>
+            {{ livestream.title }}
+          </p>
+          <p>
+            {{ livestream.viewers }} viewers
+          </p>
+          <template #activator="{ props }">
+            <a
+              :href="livestream.url"
+              target="_blank"
+              v-bind="props"
+            >
+              <img :src="livestream.user_thumbnail">
+            </a>
+          </template>
+        </v-tooltip>
+      </template>
+    </v-container>
+
     <h1 class="mt-5">
       Finished games
     </h1>

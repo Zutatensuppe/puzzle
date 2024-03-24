@@ -72,7 +72,10 @@ export class LeaderboardRepo {
   public async getTop10(userId: number): Promise<Leaderboard[]> {
     const leaderboards: Leaderboard[] = []
     for (const lb of this.LEADERBOARDS) {
-      const leaderboard: LeaderboardRow = await this.db.get('leaderboard', { name: lb.name })
+      const leaderboard: LeaderboardRow | null = await this.db.get('leaderboard', { name: lb.name })
+      if (!leaderboard) {
+        continue
+      }
       const leaderboardUserEntry: LeaderboardEntry | null = userId ? await this.db._get(`
         select
           lbe.*, u.name as user_name
