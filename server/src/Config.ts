@@ -1,6 +1,6 @@
 import { readFileSync } from 'fs'
 import { logger } from '../../common/src/Util'
-import { CannyConfig, DiscordConfig, MailConfig } from '../../common/src/Types'
+import { CannyConfig, DiscordConfig, MailConfig, TwitchConfig } from '../../common/src/Types'
 import dotenv from 'dotenv'
 
 dotenv.config()
@@ -44,10 +44,7 @@ export interface Config {
   }
   secret: string
   auth: {
-    twitch: {
-      client_id: string
-      client_secret: string
-    }
+    twitch: TwitchConfig
   }
   canny: CannyConfig
   mail: MailConfig

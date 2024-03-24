@@ -160,13 +160,13 @@ export type AddPlayerLogEntry = [
 
 export type UpdatePlayerLogEntry = [
   LOG_TYPE.UPDATE_PLAYER,
-  number, // idx,
+  number, // player index,
   Timestamp, // ts
 ]
 
 export type HandleGameEventLogEntry = [
   LOG_TYPE.GAME_EVENT,
-  number, // idx,
+  number, // player index,
   GameEvent, // input,
   Timestamp, // ts
 ]
@@ -508,16 +508,32 @@ export interface LeaderboardEntry {
   pieces_count: number
 }
 
+export interface Livestream {
+  id: string
+  title: string
+  url: string
+  user_display_name: string
+  user_thumbnail: string
+  language: string
+  viewers: number
+}
+
 export interface ApiDataIndexData {
   gamesRunning: ApiGamesData
   gamesFinished: ApiGamesData
   leaderboards: Leaderboard[]
+  livestreams: Livestream[]
 }
 
 export type ApiDataFinishedGames = ApiGamesData
 
 export interface CannyConfig {
   sso_private_key: string
+}
+
+export interface TwitchConfig {
+  client_id: string
+  client_secret: string
 }
 
 export interface MailConfig {

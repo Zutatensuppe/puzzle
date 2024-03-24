@@ -29,6 +29,7 @@ import { LeaderboardRepo } from './repo/LeaderboardRepo'
 import { ImagesRepo } from './repo/ImagesRepo'
 import fs from 'fs'
 import { storeImageSnapshot } from './ImageSnapshots'
+import { Twitch } from './Twitch'
 
 const indexFile = path.resolve(config.dir.PUBLIC_DIR, 'index.html')
 const indexFileContents = fs.readFileSync(indexFile, 'utf-8')
@@ -59,6 +60,7 @@ export interface ServerInterface {
   getAnnouncementsRepo: () => AnnouncementsRepo
   getLeaderboardRepo: () => LeaderboardRepo
   getImagesRepo: () => ImagesRepo
+  getTwitch: () => Twitch
 }
 
 export class Server implements ServerInterface {
@@ -79,6 +81,7 @@ export class Server implements ServerInterface {
     private readonly announcementsRepo: AnnouncementsRepo,
     private readonly leaderboardRepo: LeaderboardRepo,
     private readonly imagesRepo: ImagesRepo,
+    private readonly twitch: Twitch,
   ) {
     // pass
   }
@@ -121,6 +124,9 @@ export class Server implements ServerInterface {
   }
   getImagesRepo(): ImagesRepo {
     return this.imagesRepo
+  }
+  getTwitch(): Twitch {
+    return this.twitch
   }
 
   async persistGame(gameId: string): Promise<void> {
@@ -343,6 +349,49 @@ export class Server implements ServerInterface {
     if (this.websocketserver) {
       this.websocketserver.close()
       this.websocketserver = null
+    }
+  }
+
+  async updateLivestreamsInfo(): Promise<void> {
+    const livestreams = await this.twitch.getLivestreams()
+    const liveIds = livestreams.map(l => l.id)
+
+    const liveLivestreams = await this.db.getMany('twitch_livestreams', { is_live: 1 })
+    const oldLiveIds = liveLivestreams.map(l => l.livestream_id)
+
+    const notLiveAnymore = oldLiveIds.filter(id => !liveIds.includes(id))
+    const newLiveIds = liveIds.filter(id => !oldLiveIds.includes(id))
+    const stillLiveIds = liveIds.filter(id => oldLiveIds.includes(id))
+
+    await this.db.update('twitch_livestreams', { is_live: 0 }, { livestream_id: { '$in': notLiveAnymore } })
+
+    const stillLiveStreams = livestreams.filter(l => stillLiveIds.includes(l.id))
+    const newLiveStreams = livestreams.filter(l => newLiveIds.includes(l.id))
+
+    // add streams that are new
+    for (const stream of newLiveStreams) {
+      await this.db.insert('twitch_livestreams', {
+        livestream_id: stream.id,
+        title: stream.title,
+        url: stream.url,
+        user_display_name: stream.user_display_name,
+        user_thumbnail: stream.user_thumbnail,
+        language: stream.language,
+        viewers: stream.viewers,
+        is_live: 1,
+      })
+    }
+
+    // update streams that are still live
+    for (const stream of stillLiveStreams) {
+      await this.db.update('twitch_livestreams', {
+        title: stream.title,
+        url: stream.url,
+        user_display_name: stream.user_display_name,
+        user_thumbnail: stream.user_thumbnail,
+        language: stream.language,
+        viewers: stream.viewers,
+      }, { livestream_id: stream.id })
     }
   }
 }

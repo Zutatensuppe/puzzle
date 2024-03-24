@@ -1,4 +1,5 @@
 import { logger } from '../../common/src/Util'
+import Time from '../../common/src/Time'
 import v8 from 'v8'
 import config from './Config'
 import Db from './Db'
@@ -18,6 +19,7 @@ import { ImageResize } from './ImageResize'
 import { PuzzleService } from './PuzzleService'
 import { LeaderboardRepo } from './repo/LeaderboardRepo'
 import { UsersRepo } from './repo/UsersRepo'
+import { Twitch } from './Twitch'
 
 const run = async () => {
   const db = new Db(config.db.connectStr, config.dir.DB_PATCHES_DIR)
@@ -39,6 +41,7 @@ const run = async () => {
   const puzzleService = new PuzzleService(images)
   const leaderboardRepo = new LeaderboardRepo(db)
   const gameService = new GameService(gamesRepo, usersRepo, imagesRepo, puzzleService, leaderboardRepo)
+  const twitch = new Twitch(config.auth.twitch)
 
   const server = new Server(
     db,
@@ -54,6 +57,7 @@ const run = async () => {
     announcementsRepo,
     leaderboardRepo,
     imagesRepo,
+    twitch,
   )
   server.start()
 
@@ -80,11 +84,26 @@ const run = async () => {
   }
   persistInterval = setTimeout(doPersist, config.persistence.interval)
 
+  // check for livestreams
+  let checkLivestreamsInterval: any = null
+  const updateLivestreamsInfo = () => {
+    log.log('Checking for livestreams...')
+    server.updateLivestreamsInfo().then(() => {
+      checkLivestreamsInterval = setTimeout(updateLivestreamsInfo, 1 * Time.MIN)
+    }).catch(error => {
+      log.error(error)
+    })
+  }
+  updateLivestreamsInfo()
+
   const gracefulShutdown = async (signal: string): Promise<void> => {
     log.log(`${signal} received...`)
 
     log.log('clearing persist interval...')
     clearInterval(persistInterval)
+
+    log.log('clearing check livestreams interval...')
+    clearInterval(checkLivestreamsInterval)
 
     log.log('Persisting games...')
     await server.persistGames()
