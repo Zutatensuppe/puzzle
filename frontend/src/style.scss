@@ -825,15 +825,14 @@ fieldset {
   a {
     display: inline-block;
   }
+
   img {
     width: 64px;
     height: 64px;
     border-radius: 64px;
     opacity: 0.8;
-    border: 3px solid rgb(145, 70, 255);
-
+    border: 3px solid rgb(145 70 255);
     animation: border-pulse 2s infinite;
-
     transition: transform 0.2s ease-in, opacity 0.2s ease-in;
     -moz-transition: transform 0.2s ease-in, opacity 0.2s ease-in;
     -ms-transition: transform 0.2s ease-in, opacity 0.2s ease-in;
@@ -850,6 +849,6 @@ fieldset {
 
 @keyframes border-pulse {
   50% {
-      border-color: rgba(145, 70, 255, 0);
+      border-color: rgba(145 70 255 / 0%);
   }
 }
