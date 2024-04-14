@@ -173,9 +173,8 @@ export type HandleGameEventLogEntry = [
 
 export type LogEntry = HeaderLogEntry | HandleGameEventLogEntry | UpdatePlayerLogEntry | AddPlayerLogEntry
 
-export interface ReplayData {
-  log: LogEntry[],
-  game: EncodedGame|null
+export interface ReplayGameData {
+  game: EncodedGame
 }
 
 export interface Tag {
