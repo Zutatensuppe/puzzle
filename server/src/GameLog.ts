@@ -31,7 +31,11 @@ export const gzFilenameOrFilename = (gameId: string, offset: number) => {
   if (fs.existsSync(gz)) {
     return gz
   }
-  return filename(gameId, offset)
+  const raw = filename(gameId, offset)
+  if (fs.existsSync(raw)) {
+    return raw
+  }
+  return ''
 }
 
 const create = (gameId: string, ts: Timestamp): void => {
