@@ -66,8 +66,12 @@ const images = (data: ImagesRequestData): XhrRequest => {
   return xhr.getRequest(`/api/images${Util.asQueryArgs(data)}`, {})
 }
 
-const replayData = async (data: { gameId: string, offset: number }) =>{
-  return xhr.get(`/api/replay-data${Util.asQueryArgs(data)}`, {})
+const replayGameData = async (data: { gameId: string }) =>{
+  return xhr.get(`/api/replay-game-data${Util.asQueryArgs(data)}`, {})
+}
+
+const replayLogData = async (data: { gameId: string, offset: number }) =>{
+  return xhr.get(`/api/replay-log-data${Util.asQueryArgs(data)}`, {})
 }
 
 const saveImage = async (data: { id: any, title: any, copyrightName: string, copyrightURL: string, tags: any }) => {
@@ -124,7 +128,8 @@ export default {
   getArtistData,
   indexData,
   newgameData,
-  replayData,
+  replayGameData,
+  replayLogData,
   saveImage,
   newGame,
   upload,

@@ -1,7 +1,7 @@
 import fs from 'fs'
 import { LOG_TYPE } from '../../common/src/Protocol'
 import Time from '../../common/src/Time'
-import { DefaultScoreMode, DefaultShapeMode, DefaultSnapMode, Game, LogEntry, Timestamp } from '../../common/src/Types'
+import { Game, LogEntry, Timestamp } from '../../common/src/Types'
 import { logger } from './../../common/src/Util'
 import config from './Config'
 
@@ -23,7 +23,16 @@ const shouldLog = (finishTs: Timestamp, currentTs: Timestamp): boolean => {
 }
 
 export const filename = (gameId: string, offset: number) => `${config.dir.DATA_DIR}/log_${gameId}-${offset}.log`
+export const filenameGz = (gameId: string, offset: number) => `${filename(gameId, offset)}.gz`
 export const idxname = (gameId: string) => `${config.dir.DATA_DIR}/log_${gameId}.idx.log`
+
+export const gzFilenameOrFilename = (gameId: string, offset: number) => {
+  const gz = filenameGz(gameId, offset)
+  if (fs.existsSync(gz)) {
+    return gz
+  }
+  return filename(gameId, offset)
+}
 
 const create = (gameId: string, ts: Timestamp): void => {
   const idxfile = idxname(gameId)
@@ -83,42 +92,13 @@ const _log = (gameId: string, logRow: LogEntry): void => {
   fs.writeFileSync(idxfile, JSON.stringify(idxObj))
 }
 
-const get = (
-  gameId: string,
-  offset: number = 0,
-): LogEntry[] => {
-  const idxfile = idxname(gameId)
-  if (!fs.existsSync(idxfile)) {
-    return []
-  }
-
-  const file = filename(gameId, offset)
-  if (!fs.existsSync(file)) {
-    return []
-  }
-
-  const lines = fs.readFileSync(file, 'utf-8').split('\n')
-  const log = lines.filter(line => !!line).map(line => {
-    return JSON.parse(`[${line}]`)
-  })
-  if (offset === 0 && log.length > 0) {
-    log[0][5] = DefaultScoreMode(log[0][5])
-    log[0][6] = DefaultShapeMode(log[0][6])
-    log[0][7] = DefaultSnapMode(log[0][7])
-    log[0][8] = log[0][8] || null // creatorUserId
-    log[0][9] = log[0][9] || 0 // private
-    log[0][10] = log[0][10] || undefined // crop
-  }
-  return log
-}
-
 export default {
   shouldLog,
   create,
   exists,
   hasReplay,
   log: _log,
-  get,
   filename,
+  gzFilenameOrFilename,
   idxname,
 }

@@ -11,6 +11,7 @@ import { COOKIE_TOKEN, generateSalt, generateToken, passwordHash } from '../../A
 import { ServerInterface } from '../../Server'
 import { UserRow } from '../../repo/UsersRepo'
 import { GameRow } from '../../repo/GamesRepo'
+import fs from 'fs'
 
 const log = logger('web_routes/api/index.ts')
 
@@ -422,7 +423,24 @@ export default function createRouter(
     })
   })
 
-  router.get('/replay-data', async (req, res): Promise<void> => {
+  router.get('/replay-game-data', async (req, res): Promise<void> => {
+    const q: Record<string, any> = req.query
+    const gameId = q.gameId || ''
+    if (!GameLog.exists(q.gameId)) {
+      res.status(404).send({ reason: 'no log found' })
+      return
+    }
+    const gameObj = await server.getGameService().loadGame(gameId)
+    if (!gameObj) {
+      res.status(404).send({ reason: 'no game found' })
+      return
+    }
+    gameObj.puzzle.info.image.gameCount = await server.getImagesRepo().getGameCount(gameObj.puzzle.info.image.id)
+    gameObj.registeredMap = await server.getGameService().generateRegisteredMap(gameObj)
+    res.send({ game: Util.encodeGame(gameObj) })
+  })
+
+  router.get('/replay-log-data', async (req, res): Promise<void> => {
     const q: Record<string, any> = req.query
     const offset = parseInt(q.offset, 10) || 0
     if (offset < 0) {
@@ -439,33 +457,12 @@ export default function createRouter(
       res.status(404).send({ reason: 'no log found' })
       return
     }
-    const log = GameLog.get(gameId, offset)
-    let game: GameType | null = null
-    if (offset === 0) {
-      const header = log[0] as HeaderLogEntry
-      // also need the game
-      game = await server.getGameService().createGameObject(
-        gameId,
-        header[1], // gameVersion
-        header[2], // targetPieceCount
-        header[3], // must be ImageInfo
-        header[4], // ts (of game creation)
-        header[5], // scoreMode
-        header[6], // shapeMode
-        header[7], // snapMode
-        header[8], // creatorUserId
-        true,      // hasReplay
-        !!header[9], // private
-        header[10], // crop
-      )
-      game.puzzle.info.image.gameCount = await server.getImagesRepo().getGameCount(game.puzzle.info.image.id)
-      // load registeredMap from the final game state
-      const gameObj = await server.getGameService().loadGame(gameId)
-      if (gameObj) {
-        game.registeredMap = await server.getGameService().generateRegisteredMap(gameObj)
-      }
+    const f = GameLog.gzFilenameOrFilename(gameId, offset)
+    res.header('Content-Type', 'text/plain')
+    if (f.endsWith('.gz')) {
+      res.header('Content-Encoding', 'gzip')
     }
-    res.send({ log, game: game ? Util.encodeGame(game) : null })
+    res.send(fs.readFileSync(f))
   })
 
   router.get('/newgame-data', async (req: any, res): Promise<void> => {

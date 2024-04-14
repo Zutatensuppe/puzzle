@@ -3,9 +3,10 @@
 import GameCommon from '../../common/src/GameCommon'
 import { GAME_EVENT_TYPE, LOG_TYPE } from '../../common/src/Protocol'
 import Time from '../../common/src/Time'
-import { Game as GameType, GameEvent, Player, ReplayData, ReplayHud, Timestamp, HeaderLogEntry, LogEntry } from '../../common/src/Types'
+import { Game as GameType, GameEvent, Player, ReplayHud, Timestamp, HeaderLogEntry, LogEntry, ReplayGameData } from '../../common/src/Types'
 import Util from '../../common/src/Util'
 import { Game } from './Game'
+import { parseLogFileContents } from '../../common/src/GameLog'
 import { MODE_REPLAY } from './GameMode'
 import _api from './_api'
 
@@ -36,40 +37,43 @@ export class GameReplay extends Game<ReplayHud> {
     return this.lastGameTs
   }
 
-  async queryNextReplayBatch (): Promise<ReplayData | null> {
+  async queryNextReplayBatch (): Promise<LogEntry[]> {
     const offset = this.dataOffset
     this.dataOffset += 10000 // meh
 
-    const res = await _api.pub.replayData({ gameId: this.gameId, offset })
+    const res = await _api.pub.replayLogData({ gameId: this.gameId, offset })
     if (res.status !== 200) {
       throw new Error('Replay not found')
     }
-    const replay: ReplayData = await res.json() as ReplayData
+    const text = res.text
+    const log = parseLogFileContents(text, offset)
 
     // cut log that was already handled
     this.log = this.log.slice(this.logPointer)
     this.logPointer = 0
-    this.log.push(...replay.log)
+    this.log.push(...log)
 
-    if (replay.log.length === 0) {
+    if (log.length === 0) {
       this.final = true
     }
-    return replay
+    return log
   }
 
   async connect(): Promise<void> {
-    const replay: ReplayData | null = await this.queryNextReplayBatch()
-    if (!replay) {
+    const replayGameDataRes = await _api.pub.replayGameData({ gameId: this.gameId })
+    if (replayGameDataRes.status !== 200) {
+      throw '[ 2024-04-14 no replay data received ]'
+    }
+    const replayGameData: ReplayGameData = await replayGameDataRes.json() as ReplayGameData
+    const logEntries: LogEntry[] = await this.queryNextReplayBatch()
+    if (!logEntries.length) {
       throw '[ 2023-02-12 no replay data received ]'
     }
-    if (!replay.game) {
-      throw '[ 2021-05-29 no game received ]'
-    }
-    const gameObject: GameType = Util.decodeGame(replay.game)
+    const gameObject: GameType = Util.decodeGame(replayGameData.game)
     GameCommon.setGame(gameObject.id, gameObject)
     GameCommon.setRegisteredMap(gameObject.id, gameObject.registeredMap)
 
-    const header = replay.log[0] as HeaderLogEntry
+    const header = logEntries[0] as HeaderLogEntry
     this.lastRealTs = Time.timestamp()
     this.gameStartTs = header[4]
     this.lastGameTs = this.gameStartTs
