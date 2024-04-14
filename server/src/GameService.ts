@@ -132,6 +132,34 @@ export class GameService {
     return false
   }
 
+  async createNewGameObj(gameId: string): Promise<Game | null> {
+    log.info(`createNewGameObj: ${gameId}`)
+    const gameRow = await this.repo.getGameRowById(gameId)
+    if (!gameRow) {
+      log.info(`createNewGameObj, game not found: ${gameId}`)
+      return null
+    }
+    const gameObject = await this.gameRowToGameObject(gameRow)
+    if (!gameObject) {
+      log.info(`createNewGameObj, game object not created: ${gameId}`)
+      return null
+    }
+    return this.createGameObject(
+      gameRow.id,
+      gameObject.gameVersion,
+      gameObject.puzzle.info.targetTiles,
+      gameObject.puzzle.info.image,
+      (new Date(gameRow.created)).getTime(),
+      gameObject.scoreMode,
+      gameObject.shapeMode,
+      gameObject.snapMode,
+      gameRow.creator_user_id,
+      true, // hasReplay
+      !!gameRow.private,
+      gameObject.crop,
+    )
+  }
+
   async loadGame(gameId: string): Promise<Game | null> {
     log.info(`[INFO] loading game: ${gameId}`)
     const gameRow = await this.repo.getGameRowById(gameId)

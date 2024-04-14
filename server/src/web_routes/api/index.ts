@@ -1,4 +1,4 @@
-import { GameSettings, Game as GameType, GameInfo, ApiDataIndexData, ApiDataFinishedGames, NewGameDataRequestData, ImagesRequestData, HeaderLogEntry } from '../../../../common/src/Types'
+import { GameSettings, GameInfo, ApiDataIndexData, ApiDataFinishedGames, NewGameDataRequestData, ImagesRequestData } from '../../../../common/src/Types'
 import config from '../../Config'
 import express, { Response, Router } from 'express'
 import GameCommon from '../../../../common/src/GameCommon'
@@ -430,7 +430,7 @@ export default function createRouter(
       res.status(404).send({ reason: 'no log found' })
       return
     }
-    const gameObj = await server.getGameService().loadGame(gameId)
+    const gameObj = await server.getGameService().createNewGameObj(gameId)
     if (!gameObj) {
       res.status(404).send({ reason: 'no game found' })
       return
@@ -458,6 +458,11 @@ export default function createRouter(
       return
     }
     const f = GameLog.gzFilenameOrFilename(gameId, offset)
+    if (!f) {
+      res.send('')
+      return
+    }
+
     res.header('Content-Type', 'text/plain')
     if (f.endsWith('.gz')) {
       res.header('Content-Encoding', 'gzip')
