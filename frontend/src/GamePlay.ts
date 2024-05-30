@@ -10,7 +10,7 @@ import { createImageSnapshot } from './ImageSnapshotCreator'
 
 export class GamePlay extends Game<Hud> {
 
-  private updateStatusInterval: number | null = null
+  private updateStatusInterval: ReturnType<typeof setTimeout> | null = null
   private lastSentImageSnapshotTs: number = 0
   private snapshotsIntervalMs: number = 5 * Time.MIN
 
