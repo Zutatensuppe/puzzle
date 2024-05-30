@@ -32,7 +32,9 @@ import { storeImageSnapshot } from './ImageSnapshots'
 import { Twitch } from './Twitch'
 
 const indexFile = path.resolve(config.dir.PUBLIC_DIR, 'index.html')
-const indexFileContents = fs.readFileSync(indexFile, 'utf-8')
+const indexFileContents = fs.existsSync(indexFile)
+  ? fs.readFileSync(indexFile, 'utf-8')
+  : 'INDEX FILE MISSING'
 
 const sendHtml = (res: Response, tmpl: string, data: Record<string, string> = {}): void => {
   let str = tmpl

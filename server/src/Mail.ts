@@ -14,11 +14,15 @@ const NOREPLY_MAIL = 'noreply@jigsaw.hyottoko.club'
 const SENDER = { name: NAME, email: NOREPLY_MAIL }
 
 class Mail {
-  private apiInstance: SibApiV3Sdk.TransactionalEmailsApi
+  private apiInstance: SibApiV3Sdk.TransactionalEmailsApi | null = null
   private publicBaseUrl: string
 
   constructor(cfg: MailConfig, publicBaseUrl: string) {
     this.publicBaseUrl = publicBaseUrl
+    if (cfg.sendinblue_api_key === 'SOME_API_KEY') {
+      log.info('skipping Mail constructor, sendinblue_api_key is not set')
+      return
+    }
     const defaultClient = SibApiV3Sdk.ApiClient.instance
     const apiKey = defaultClient.authentications['api-key']
     apiKey.apiKey = cfg.sendinblue_api_key
@@ -70,6 +74,10 @@ class Mail {
   }
 
   send(mail: SibApiV3Sdk.SendSmtpEmail) {
+    if (!this.apiInstance) {
+      log.info('skipping Mail.send, apiInstance is not set')
+      return
+    }
     this.apiInstance.sendTransacEmail(mail).then(function (data: TransacEmailResponseData) {
       log.info({ data }, 'API called successfully')
     }, function (error: TransacEmailError) {

@@ -1,11 +1,22 @@
 import { AppTokenAuthProvider } from '@twurple/auth'
 import { ApiClient } from '@twurple/api'
 import { Livestream, TwitchConfig } from './Types'
+import { logger } from '../../common/src/Util'
+
+const log = logger('Twitch.ts')
 
 export class Twitch {
-  private apiClient: ApiClient
+  private apiClient: ApiClient | null = null
   constructor(twitchConfig: TwitchConfig) {
-    console.log('Twitch.connect')
+    if (
+      twitchConfig.client_id === 'SOME_ID' ||
+      twitchConfig.client_secret === 'SOME_SECRET'
+    ) {
+      log.info('skipping Twitch.connect, credentials are not set')
+      return
+    }
+
+    log.info('Twitch.connect')
 
     const authProvider = new AppTokenAuthProvider(
       twitchConfig.client_id,
@@ -16,6 +27,11 @@ export class Twitch {
   }
 
   public async getLivestreams(): Promise<Livestream[]> {
+    if (!this.apiClient) {
+      log.info('skipping Twitch.getLivestreams, apiClient is not set')
+      return []
+    }
+
     const streams = await this.apiClient.streams.getStreams({
       game: '1315117298',
     })

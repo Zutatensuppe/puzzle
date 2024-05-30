@@ -1,8 +1,8 @@
-import { logger, uniqId } from '../src/common/Util'
-import Db from '../src/server/Db'
-import Users from '../src/server/Users'
-import config from '../src/server/Config'
-import { generateSalt, passwordHash } from '../src/server/Auth'
+import { logger, uniqId } from '../common/src/Util'
+import Db from '../server/src/Db'
+import { Users } from '../server/src/Users'
+import config from '../server/src/Config'
+import { generateSalt, passwordHash } from '../server/src/Auth'
 import readline from 'readline'
 
 const question = (q: any) => new Promise((resolve, reject) => {
@@ -31,7 +31,9 @@ async function run() {
 
   const salt = generateSalt()
 
-  const account = await Users.createAccount(db, {
+  const users = new Users(db)
+
+  const account = await users.createAccount({
     created: new Date(),
     email: email,
     password: passwordHash(password, salt),
@@ -39,13 +41,13 @@ async function run() {
     status: 'verified',
   })
 
-  const user = await Users.createUser(db, {
+  const user = await users.createUser({
     created: new Date(),
     name: displayName,
     client_id: uniqId(),
   })
 
-  const identity = await Users.createIdentity(db, {
+  const identity = await users.createIdentity({
     user_id: user.id,
     provider_name: 'local',
     provider_id: account.id,

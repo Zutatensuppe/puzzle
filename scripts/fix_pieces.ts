@@ -1,15 +1,21 @@
-import GameCommon from '../src/common/GameCommon'
-import { logger } from '../src/common/Util'
-import Db from '../src/server/Db'
-import config from '../src/server/Config'
-import GameStorage from '../src/server/GameStorage'
+import GameCommon from '../common/src/GameCommon'
+import { logger } from '../common/src/Util'
+import Db from '../server/src/Db'
+import config from '../server/src/Config'
+import { GameService } from '../server/src/GameService'
+import { GamesRepo } from '../server/src/repo/GamesRepo'
+import { UsersRepo } from '../server/src/repo/UsersRepo'
+import { ImagesRepo } from '../server/src/repo/ImagesRepo'
+import { PuzzleService } from '../server/src/PuzzleService'
+import { LeaderboardRepo } from '../server/src/repo/LeaderboardRepo'
+import { Images } from '../server/src/Images'
 
 const log = logger('fix_pieces.js')
 
 const db = new Db(config.db.connectStr, config.dir.DB_PATCHES_DIR)
 
-async function load(gameId: string) {
-  const gameObject = await GameStorage.loadGame(db, gameId)
+async function load(s: GameService, gameId: string) {
+  const gameObject = await s.loadGame(gameId)
   if (!gameObject) {
     log.error(`Game not found: ${gameId}`)
     return
@@ -17,13 +23,13 @@ async function load(gameId: string) {
   GameCommon.setGame(gameObject.id, gameObject)
 }
 
-async function persist(gameId: string) {
+async function persist(s: GameService, gameId: string) {
   const gameObject = GameCommon.get(gameId)
   if (!gameObject) {
     log.error(`Game not found: ${gameId}`)
     return
   }
-  await GameStorage.persistGame(db, gameObject)
+  await s.persistGame(gameObject)
 }
 
 function fixPieces(gameId: string): boolean {
@@ -53,9 +59,16 @@ function fixPieces(gameId: string): boolean {
 async function run(gameId: string) {
   await db.connect()
   await db.patch(true)
-  await load(gameId)
+  const gamesRepo = new GamesRepo(db)
+  const usersRepo = new UsersRepo(db)
+  const imagesRepo = new ImagesRepo(db)
+  const images = new Images(imagesRepo)
+  const puzzleService = new PuzzleService(images)
+  const leaderboardRepo = new LeaderboardRepo(db)
+  const s = new GameService(gamesRepo, usersRepo, imagesRepo, puzzleService, leaderboardRepo)
+  await load(s, gameId)
   if (fixPieces(gameId)) {
-    await persist(gameId)
+    await persist(s, gameId)
   }
   await db.close()
 }
