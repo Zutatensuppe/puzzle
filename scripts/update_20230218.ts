@@ -1,7 +1,7 @@
-import { logger } from '../src/common/Util'
-import config from '../src/server/Config'
-import Db from '../src/server/Db'
-import { LeaderboardRepo } from '../src/server/repo/LeaderboardRepo'
+import { logger } from '../common/src/Util'
+import config from '../server/src/Config'
+import Db from '../server/src/Db'
+import { LeaderboardRepo } from '../server/src/repo/LeaderboardRepo'
 
 const log = logger()
 

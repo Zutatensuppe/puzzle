@@ -23,7 +23,7 @@ export class GameReplay extends Game<ReplayHud> {
   private skipNonActionPhases: boolean = true
   private dataOffset: number = 0
   private gameTs!: number
-  private to: number | null = null
+  private to: ReturnType<typeof setTimeout> | null = null
 
   getMode(): string {
     return MODE_REPLAY

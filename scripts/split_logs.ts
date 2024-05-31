@@ -1,7 +1,7 @@
 import fs from 'fs'
-import { logger } from '../src/common/Util'
-import config from '../src/server/Config'
-import { filename } from '../src/server/GameLog'
+import { logger } from '../common/src/Util'
+import config from '../server/src/Config'
+import { filename } from '../server/src/GameLog'
 
 const log = logger('rewrite_logs')
 
@@ -35,7 +35,7 @@ const doit = (idxfile: string): void => {
   while (fs.existsSync(currentFile)) {
     idxNew.currentFile = currentFile
     const log = fs.readFileSync(currentFile, 'utf-8').split('\n')
-    const newLines = []
+    const newLines: string[] = []
     const lines = log.filter(line => !!line).map(line => {
       return JSON.parse(line)
     })

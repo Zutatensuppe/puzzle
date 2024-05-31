@@ -1,4 +1,7 @@
 import { DiscordConfig } from '../../common/src/Types'
+import { logger } from '../../common/src/Util'
+
+const log = logger('Discord.ts')
 
 export class Discord {
   constructor(
@@ -8,6 +11,14 @@ export class Discord {
   }
 
   async announce (message: string) {
+    if (
+      this.config.announce.channelId === 'CHANNEL ID' ||
+      this.config.announce.guildId === 'GUILD/SERVER ID'
+    ) {
+      log.info('skipping Discord.announce, channelId or guildId is not set')
+      return
+    }
+
     fetch(this.config.bot.url + '/announce', {
       method: 'POST',
       headers: {

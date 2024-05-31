@@ -6,7 +6,8 @@
     "setup:common": "cd common && npm ci",
     "setup:frontend": "cd frontend && npm ci",
     "setup:server": "cd server && npm ci",
-    "setup": "npm ci && npm run setup:common && npm run setup:frontend && npm run setup:server",
+    "setup:create-config": "node ./scripts/copy.js config.example.json config.json",
+    "setup": "npm ci && npm run setup:common && npm run setup:frontend && npm run setup:server && npm run setup:create-config",
 
     "build:frontend": "cd frontend && npm run build",
     "build:server": "cd server && npm run build",
@@ -28,6 +29,7 @@
   "author": "Zutatensuppe",
   "license": "ISC",
   "devDependencies": {
-    "rimraf": "^4.4.0"
+    "rimraf": "^4.4.0",
+    "ts-node": "^10.9.2"
   }
 }

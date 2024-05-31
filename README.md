@@ -8,68 +8,16 @@ See a live version at [jigsaw.hyottoko.club].
 
 # Get Started
 
-Note: node `^17.4.0` and npm `^8.1.0` are required. You can try with
+Note: node `^20.5.0` and npm `^9.8.0` are required. You can try with
 lower versions, but it may not work.
 
-## Quick start
+## Development
 
-1. Install dependencies:
-
-    ```shell
-    npm ci
-    ```
-
-2. Prepare config file:
-
-    ```shell
-    cp config.example.json config.json
-    # or on windows:
-    Copy-Item config.example.json config.json
-    ```
-
-    Adjust the config as needed. For development no adjustments are required.
-
-3. Launch the app in dev mode:
-
-    ```shell
-    npm run dev-services
-    npm run dev-server
-    npm run dev-frontend
-    ```
-
-A database has to be setup and running separately. By default
-the script will connect via `postgresql://hyottoko:hyottoko@localhost:5434/hyottoko`.
-This can be adjusted in the `config.json`.
-
-## Manual start
-
-There are other `run` scripts:
-
-command                | explanation
------------------------|----------------------------------------
-`npm run build`        | builds the sources
-`npm run server`       | runs the server with built files
-`npm run test`         | runs tests
-`npm run dev-services` | runs the dev services (eg. database)
-`npm run dev-server`   | runs the dev server (from unbuilt files)
-`npm run dev-frontend` | runs the dev frontend (with hmr and such)
-`./run ts [...ARGS]`   | run `node`, but with ts files. eg `./run ts scripts/import_images.ts`
-
-## Build
-
-Build the app:
+Install the dependencies and prepare a config.json:
 
 ```shell
-npm run build
+npm run setup
 ```
-
-Then start the app using the built files with:
-
-```shell
-npm run server
-```
-
-## Dev
 
 Start the dev database (postgres) via:
 
@@ -115,5 +63,30 @@ update without running an extra command.
 The server will restart when a change is made on the server code.
 
 Then open the url output by the dev-frontend command, eg. `http://localhost:3000`.
+
+## Build
+
+Build the app for production:
+
+```shell
+npm run build:app
+```
+
+Then start the app using the built files with:
+
+```shell
+node build/server/main.js
+```
+
+## Scripts
+
+There are other `run` scripts:
+
+command                | explanation
+-----------------------|----------------------------------------
+`npm run build`        | builds the sources
+`npm run lint`         | runs lint checks
+`npm run test`         | runs tests
+`./run ts [...ARGS]`   | run `node`, but with ts files. eg `./run ts scripts/create_user.ts`
 
 [jigsaw.hyottoko.club]: https://jigsaw.hyottoko.club

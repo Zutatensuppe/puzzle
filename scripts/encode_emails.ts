@@ -1,7 +1,7 @@
-import { logger } from '../src/common/Util'
-import config from '../src/server/Config'
-import Db from '../src/server/Db'
-import Crypto from '../src/server/Crypto'
+import { logger } from '../common/src/Util'
+import config from '../server/src/Config'
+import Db from '../server/src/Db'
+import Crypto from '../server/src/Crypto'
 
 const log = logger()
 
