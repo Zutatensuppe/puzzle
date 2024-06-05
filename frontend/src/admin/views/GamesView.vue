@@ -53,6 +53,12 @@
               class="is-clickable"
               @click="onDelete(item)"
             >DELETE</span>
+            <v-btn
+              block
+              @click="fixPieces(item.id)"
+            >
+              Fix Pieces
+            </v-btn>
           </td>
         </tr>
       </tbody>
@@ -101,6 +107,15 @@ const onDelete = async (game: any) => {
     alert('Successfully deleted game!')
   } else {
     alert('Deleting game failed!')
+  }
+}
+
+const fixPieces = async (gameId: string) => {
+  const resp = await api.admin.fixPieces(gameId)
+  if (resp.ok) {
+    alert('Successfully fixed ' + resp.changed + 'pieces!')
+  } else {
+    alert('Fixing pieces failed! ' + resp.error)
   }
 }
 

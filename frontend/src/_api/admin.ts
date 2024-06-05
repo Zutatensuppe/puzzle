@@ -27,6 +27,16 @@ const mergeClientIdsIntoUser = async (
   return await res.json()
 }
 
+const fixPieces = async (
+  gameId: string,
+) => {
+  const res = await xhr.post('/admin/api/games/_fix_pieces', {
+    headers: JSON_HEADERS,
+    body: JSON.stringify({ gameId }),
+  })
+  return await res.json()
+}
+
 const getAnnouncements = async () => {
   const res = await xhr.get('/admin/api/announcements', {})
   return await res.json()
@@ -65,4 +75,5 @@ export default {
   deleteImage,
   getGroups,
   mergeClientIdsIntoUser,
+  fixPieces,
 }

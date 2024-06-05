@@ -86,6 +86,12 @@ export default function createRouter(
     res.send(result)
   })
 
+  router.post('/games/_fix_pieces', express.json(), async (req, res) => {
+    const gameId = req.body.gameId
+    const result = await server.fixPieces(gameId)
+    res.send(result)
+  })
+
   router.get('/groups', async (req, res) => {
     const items = await server.getDb().getMany('user_groups', undefined, [{ id: -1 }])
     res.send(items)

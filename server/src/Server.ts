@@ -63,6 +63,7 @@ export interface ServerInterface {
   getLeaderboardRepo: () => LeaderboardRepo
   getImagesRepo: () => ImagesRepo
   getTwitch: () => Twitch
+  fixPieces: (gameId: string) => Promise<any>
 }
 
 export class Server implements ServerInterface {
@@ -351,6 +352,58 @@ export class Server implements ServerInterface {
     if (this.websocketserver) {
       this.websocketserver.close()
       this.websocketserver = null
+    }
+  }
+
+  public async fixPieces(gameId: string): Promise<any> {
+    const loaded = await this.gameService.ensureLoaded(gameId)
+    if (!loaded) {
+      return {
+        ok: false,
+        error: `[game ${gameId} does not exist... ]`,
+      }
+    }
+
+    let changed = 0
+    const pieces = GameCommon.getPiecesSortedByZIndex(gameId)
+    for (const piece of pieces) {
+      if (piece.owner === -1) {
+        const p = GameCommon.getFinalPiecePos(gameId, piece.idx)
+        if (p.x === piece.pos.x && p.y === piece.pos.y) {
+          // log.log('all good', tile.pos)
+        } else {
+          log.log('bad piece pos', piece.pos, 'should be: ', p)
+          piece.pos = p
+          GameCommon.setPiece(gameId, piece.idx, piece)
+          changed++
+        }
+      } else if (piece.owner !== 0) {
+        log.log('unowning piece', piece.idx)
+        piece.owner = 0
+        GameCommon.setPiece(gameId, piece.idx, piece)
+        changed++
+      }
+    }
+    if (changed) {
+      this.persistGame(gameId)
+      const game: GameType | null = GameCommon.get(gameId)
+      if (!game) {
+        return {
+          ok: false,
+          error: `[game ${gameId} does not exist (anymore)... ]`,
+        }
+      }
+      game.registeredMap = await this.gameService.generateRegisteredMap(game)
+
+      const encodedGame = Util.encodeGame(game)
+
+      for (const socket of this.gameSockets.getSockets(gameId)) {
+        this.websocketserver?.notifyOne([SERVER_EVENT_TYPE.SYNC, encodedGame], socket)
+      }
+    }
+    return {
+      ok: true,
+      changed,
     }
   }
 
