@@ -1,7 +1,7 @@
 import Debug from '../../common/src/Debug'
 import GameCommon from '../../common/src/GameCommon'
 import { Dim, Point, Rect } from '../../common/src/Geometry'
-import { FireworksInterface, FixedLengthArray, Piece, Player, PlayerSettingsData, PuzzleStatusInterface, Timestamp } from '../../common/src/Types'
+import { FireworksInterface, FixedLengthArray, Piece, PieceRotation, Player, PlayerSettingsData, PuzzleStatusInterface, Timestamp } from '../../common/src/Types'
 import { Camera } from '../../common/src/Camera'
 import PuzzleGraphics from './PuzzleGraphics'
 import { logger } from '../../common/src/Util'
@@ -159,10 +159,27 @@ export class Renderer {
         y: this.pieceDrawOffset + piece.pos.y,
       })
 
-      ctx.drawImage(tmpCanvas,
-        0, 0, tmpCanvas.width, tmpCanvas.height,
-        pos.x, pos.y, dim.w, dim.h,
-      )
+      let rot = 0
+      if (piece.rot === PieceRotation.R90) {
+        rot = Math.PI/2
+      } else if (piece.rot === PieceRotation.R180) {
+        rot = Math.PI
+      } else if (piece.rot === PieceRotation.R270) {
+        rot = -Math.PI/2
+      }
+      if (rot) {
+        console.log(rot)
+        ctx.save()
+        ctx.translate(pos.x + dim.w / 2, pos.y + dim.h / 2)
+        ctx.rotate(rot)
+        ctx.drawImage(tmpCanvas, -dim.w / 2, -dim.h / 2, dim.w, dim.h)
+        ctx.restore()
+      } else {
+        ctx.drawImage(tmpCanvas,
+          0, 0, tmpCanvas.width, tmpCanvas.height,
+          pos.x, pos.y, dim.w, dim.h,
+        )
+      }
       if (this.boundingBoxes) ctx.strokeRect(pos.x, pos.y, dim.w, dim.h)
     }
     if (this.debug) Debug.checkpoint('pieces done')

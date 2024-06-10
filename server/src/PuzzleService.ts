@@ -1,7 +1,7 @@
 import Util from '../../common/src/Util'
 import { Rng } from '../../common/src/Rng'
 import { Images } from './Images'
-import { EncodedPiece, Puzzle, ShapeMode, ImageInfo } from '../../common/src/Types'
+import { EncodedPiece, Puzzle, ShapeMode, ImageInfo, PieceRotation, RotationMode } from '../../common/src/Types'
 import { Dim, Point } from '../../common/src/Geometry'
 import config from './Config'
 import { determinePuzzleInfo, PuzzleCreationInfo, determinePuzzlePieceShapes } from '../../common/src/Puzzle'
@@ -19,6 +19,7 @@ export class PuzzleService {
     image: ImageInfo,
     ts: number,
     shapeMode: ShapeMode,
+    rotationMode: RotationMode,
     gameVersion: number,
   ): Promise<Puzzle> {
     const imagePath = `${config.dir.UPLOAD_DIR}/${image.filename}`
@@ -103,6 +104,10 @@ export class PuzzleService {
         // this position is the initial position only and is the
         // value that changes when moving a piece
         pos: positions[piece.idx],
+
+        rot: rotationMode === RotationMode.ORTHOGONAL
+          ? rng.choice([PieceRotation.R0, PieceRotation.R90, PieceRotation.R180, PieceRotation.R270])
+          : PieceRotation.R0,
       })
     })
 

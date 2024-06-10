@@ -1,6 +1,7 @@
 import { PuzzleCreationInfo } from './Puzzle'
 import {
   BasicPlayerInfo,
+  DefaultRotationMode,
   EncodedGame,
   EncodedGameLegacy,
   EncodedPiece,
@@ -11,6 +12,7 @@ import {
   PieceShape,
   Player,
   PuzzleInfo,
+  RotationMode,
   ScoreMode,
   ShapeMode,
   SnapMode,
@@ -86,7 +88,7 @@ function decodeShape(data: EncodedPieceShape): PieceShape {
 }
 
 function encodePiece(data: Piece): EncodedPiece {
-  return [data.idx, data.pos.x, data.pos.y, data.z, data.owner, data.group]
+  return [data.idx, data.pos.x, data.pos.y, data.z, data.owner, data.group, data.rot]
 }
 
 function decodePiece(data: EncodedPiece): Piece {
@@ -99,6 +101,7 @@ function decodePiece(data: EncodedPiece): Piece {
     z: data[3],
     owner: data[4],
     group: data[5],
+    rot: data[6],
   }
 }
 
@@ -146,6 +149,7 @@ function encodeGame(data: Game): EncodedGame | EncodedGameLegacy {
     data.private,
     data.crop,
     data.registeredMap,
+    data.rotationMode,
   ] : [
     data.id,
     data.rng.type || '',
@@ -188,6 +192,7 @@ function decodeGame(data: EncodedGame | EncodedGameLegacy): Game {
       scoreMode: data[5],
       shapeMode: data[6],
       snapMode: data[7],
+      rotationMode: RotationMode.NONE,
       creatorUserId: data[8],
       hasReplay: data[9],
       gameVersion: data[10],
@@ -207,6 +212,7 @@ function decodeGame(data: EncodedGame | EncodedGameLegacy): Game {
     scoreMode: data[5],
     shapeMode: data[6],
     snapMode: data[7],
+    rotationMode: DefaultRotationMode(data[14]),
     creatorUserId: data[8],
     hasReplay: data[9],
     gameVersion: data[10],
@@ -325,6 +331,22 @@ export const shapeModeDescriptionToString = (m: ShapeMode) => {
     case ShapeMode.ANY: return 'Flat pieces can occur anywhere'
     case ShapeMode.NORMAL:
     default: return 'Normal pieces, flat only on the outside'
+  }
+}
+
+export const rotationModeToString = (m: RotationMode) => {
+  switch (m) {
+    case RotationMode.ORTHOGONAL: return 'Simple'
+    case RotationMode.NONE:
+    default: return 'None'
+  }
+}
+
+export const rotationModeDescriptionToString = (m: RotationMode) => {
+  switch (m) {
+    case RotationMode.ORTHOGONAL: return 'Individual pieces can be rotated by 90 degrees at a time'
+    case RotationMode.NONE:
+    default: return 'Pieces cannot be rotated'
   }
 }
 

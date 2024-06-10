@@ -540,6 +540,7 @@ export default function createRouter(
       snapMode: GameCommon.Game_getSnapMode(game),
       scoreMode: GameCommon.Game_getScoreMode(game),
       shapeMode: GameCommon.Game_getShapeMode(game),
+      rotationMode: GameCommon.Game_getRotationMode(game),
     }
   }
 

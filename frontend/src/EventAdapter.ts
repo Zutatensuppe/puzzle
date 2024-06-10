@@ -15,6 +15,8 @@ export class EventAdapter {
   private DOWN = false
   private ZOOM_IN = false
   private ZOOM_OUT = false
+  private ROT_LEFT = false
+  private ROT_RIGHT = false
   private SHIFT = false
 
   private mouseDown: boolean = false
@@ -80,6 +82,10 @@ export class EventAdapter {
       this.ZOOM_OUT = state
     } else if (ev.code === 'KeyE') {
       this.ZOOM_IN = state
+    } else if (ev.code === 'KeyZ') {
+      this.ROT_LEFT = state
+    } else if (ev.code === 'KeyX') {
+      this.ROT_RIGHT = state
     }
   }
 
@@ -116,11 +122,21 @@ export class EventAdapter {
 
   _onWheel (ev: WheelEvent) {
     this.lastMouseWorld = this._mousePos(ev)
-    if (this.game.getViewport().canZoom(ev.deltaY < 0 ? 'in' : 'out')) {
-      const evt = ev.deltaY < 0
-        ? GAME_EVENT_TYPE.INPUT_EV_ZOOM_IN
-        : GAME_EVENT_TYPE.INPUT_EV_ZOOM_OUT
-      this.addEvent([evt, ...this.lastMouseWorld])
+    if (this.mouseDown) {
+      if (ev.deltaY < 0) {
+        this.addEvent([GAME_EVENT_TYPE.INPUT_EV_ROTATE, 0])
+        this.ROT_LEFT = false
+      } else {
+        this.addEvent([GAME_EVENT_TYPE.INPUT_EV_ROTATE, 1])
+        this.ROT_RIGHT = false
+      }
+    } else {
+      if (this.game.getViewport().canZoom(ev.deltaY < 0 ? 'in' : 'out')) {
+        const evt = ev.deltaY < 0
+          ? GAME_EVENT_TYPE.INPUT_EV_ZOOM_IN
+          : GAME_EVENT_TYPE.INPUT_EV_ZOOM_OUT
+        this.addEvent([evt, ...this.lastMouseWorld])
+      }
     }
   }
 
@@ -244,6 +260,16 @@ export class EventAdapter {
         this.lastMouseWorld[0] -= pos.w
         this.lastMouseWorld[1] -= pos.h
       }
+    }
+
+    if (this.ROT_LEFT && this.ROT_RIGHT) {
+      // cancel each other out
+    } else if (this.ROT_LEFT) {
+      this.addEvent([GAME_EVENT_TYPE.INPUT_EV_ROTATE, 0])
+      this.ROT_LEFT = false
+    } else if (this.ROT_RIGHT) {
+      this.addEvent([GAME_EVENT_TYPE.INPUT_EV_ROTATE, 1])
+      this.ROT_RIGHT = false
     }
 
     if (this.ZOOM_IN && this.ZOOM_OUT) {

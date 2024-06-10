@@ -22,6 +22,7 @@ import {
   GamePlayers,
   GameStatus,
   RegisteredMap,
+  RotationMode,
 } from '../../common/src/Types'
 import _api from './_api'
 import { Assets } from './Assets'
@@ -286,6 +287,10 @@ export abstract class Game<HudType extends Hud> {
 
   getShapeMode(): ShapeMode {
     return GameCommon.getShapeMode(this.gameId)
+  }
+
+  getRotationMode(): RotationMode {
+    return GameCommon.getRotationMode(this.gameId)
   }
 
   getImage(): ImageInfo {

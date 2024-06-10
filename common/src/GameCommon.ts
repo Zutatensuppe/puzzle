@@ -13,12 +13,14 @@ import {
   LogEntry,
   Piece,
   PieceChange,
+  PieceRotation,
   Player,
   PlayerChange,
   Puzzle,
   PuzzleData,
   PuzzleDataChange,
   RegisteredMap,
+  RotationMode,
   ScoreMode,
   ShapeMode,
   SnapMode,
@@ -164,6 +166,10 @@ function getShapeMode(gameId: string): ShapeMode {
   return Game_getShapeMode(GAMES[gameId])
 }
 
+function getRotationMode(gameId: string): RotationMode {
+  return Game_getRotationMode(GAMES[gameId])
+}
+
 function getVersion(gameId: string): number {
   return Game_getVersion(GAMES[gameId])
 }
@@ -240,6 +246,11 @@ const getFinalPiecePos = (gameId: string, pieceIdx: number): Point => {
   }
   const srcPos = srcPosByPieceIdx(gameId, pieceIdx)
   return Geometry.pointAdd(boardPos, srcPos)
+}
+
+const getPieceRotation = (gameId: string, pieceIdx: number): PieceRotation => {
+  const piece = getPiece(gameId, pieceIdx)
+  return piece.rot || PieceRotation.R0
 }
 
 const getPiecePos = (gameId: string, pieceIdx: number): Point => {
@@ -485,6 +496,14 @@ const getPieceOwner = (gameId: string, pieceIdx: number): string|number => {
 const finishPieces = (gameId: string, pieceIdxs: Array<number>): void => {
   for (const pieceIdx of pieceIdxs) {
     changePiece(gameId, pieceIdx, { owner: -1, z: 1 })
+  }
+}
+const rotatePieces = (gameId: string, pieceIdxs: Array<number>, direction: -1 | 1): void => {
+  for (const pieceIdx of pieceIdxs) {
+    const piece = getPiece(gameId, pieceIdx)
+    let rot = (piece.rot || 0) + direction
+    rot = rot < 0 ? 3 : rot % 4
+    changePiece(gameId, pieceIdx, { rot: rot })
   }
 }
 
@@ -830,10 +849,13 @@ function handleGameEvent(
       anyDropped = true
 
       // Check if the piece was dropped near the final location
+      const pieceRotation = getPieceRotation(gameId, pieceIdx)
       const piecePos = getPiecePos(gameId, pieceIdx)
       const finalPiecePos = getFinalPiecePos(gameId, pieceIdx)
 
-      if (
+      if (pieceRotation !== PieceRotation.R0) {
+        // not rotated correctly, so no snap
+      } else if (
         maySnapToFinal(gameId, pieceIdxs)
         && Geometry.pointDistance(finalPiecePos, piecePos) < puzzle.info.snapDistance
       ) {
@@ -938,6 +960,30 @@ function handleGameEvent(
       }
     } else {
       changePlayer(gameId, playerId, { d, ts })
+      _playerChange()
+    }
+  } else if (type === GAME_EVENT_TYPE.INPUT_EV_ROTATE) {
+    if (getRotationMode(gameId) === RotationMode.ORTHOGONAL) {
+      const pieceIdx = getFirstOwnedPieceIdx(gameId, playerId)
+      if (pieceIdx < 0) {
+        // player tried to rotate, but holding nothing
+        changePlayer(gameId, playerId, {ts})
+        _playerChange()
+      } else {
+        // player is rotating a piece (or group of pieces)
+        changePlayer(gameId, playerId, {ts})
+        _playerChange()
+
+        const direction = gameEvent[1] === 0 ? -1 : 1
+        const pieceIdxs = getGroupedPieceIdxs(gameId, pieceIdx)
+        // can only rotate when holding exactly 1 piece
+        if (pieceIdxs.length === 1) {
+          rotatePieces(gameId, pieceIdxs, direction)
+          _pieceChanges(pieceIdxs)
+        }
+      }
+    } else {
+      changePlayer(gameId, playerId, {ts})
       _playerChange()
     }
   } else if (type === GAME_EVENT_TYPE.INPUT_EV_ZOOM_IN) {
@@ -1100,6 +1146,10 @@ function Game_getShapeMode(game: Game): ShapeMode {
   return game.shapeMode
 }
 
+function Game_getRotationMode(game: Game): RotationMode {
+  return game.rotationMode
+}
+
 function Game_getAllPlayers(game: Game): Array<Player> {
   return game.players.map(Util.decodePlayer)
 }
@@ -1187,6 +1237,7 @@ export default {
   getScoreMode,
   getSnapMode,
   getShapeMode,
+  getRotationMode,
   handleGameEvent,
   handleLogEntry,
 
@@ -1211,5 +1262,6 @@ export default {
   Game_getScoreMode,
   Game_getSnapMode,
   Game_getShapeMode,
+  Game_getRotationMode,
   Game_isFinished,
 }

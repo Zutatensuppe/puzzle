@@ -26,6 +26,7 @@ export type GameEventInputBgColor = [GAME_EVENT_TYPE.INPUT_EV_BG_COLOR, string]
 export type GameEventInputPlayerColor = [GAME_EVENT_TYPE.INPUT_EV_PLAYER_COLOR, string]
 export type GameEventInputPlayerName = [GAME_EVENT_TYPE.INPUT_EV_PLAYER_NAME, string]
 export type GameEventInputMove = [GAME_EVENT_TYPE.INPUT_EV_MOVE, number, number]
+export type GameEventInputRotate = [GAME_EVENT_TYPE.INPUT_EV_ROTATE, number]
 export type GameEventInputTogglePreview = [GAME_EVENT_TYPE.INPUT_EV_TOGGLE_PREVIEW]
 export type GameEventInputToggleSounds = [GAME_EVENT_TYPE.INPUT_EV_TOGGLE_SOUNDS]
 export type GameEventInputReplayTogglePause = [GAME_EVENT_TYPE.INPUT_EV_REPLAY_TOGGLE_PAUSE]
@@ -49,6 +50,7 @@ export type GameEvent = GameEventInputMouseDown
   | GameEventInputPlayerColor
   | GameEventInputPlayerName
   | GameEventInputMove
+  | GameEventInputRotate
   | GameEventInputTogglePreview
   | GameEventInputToggleSounds
   | GameEventInputReplayTogglePause
@@ -88,6 +90,13 @@ export type EncodedPlayer = FixedLengthArray<[
 
 export type RegisteredMap = Record<string, boolean>
 
+export enum PieceRotation {
+  R0 = 0,
+  R90 = 1,
+  R180 = 2,
+  R270 = 3,
+}
+
 export type EncodedPiece = FixedLengthArray<[
   number,
   number,
@@ -95,6 +104,7 @@ export type EncodedPiece = FixedLengthArray<[
   number,
   string|number,
   number,
+  undefined|PieceRotation,
 ]>
 
 export interface Announcement {
@@ -136,6 +146,7 @@ export type EncodedGame = FixedLengthArray<[
   boolean, // private
   Rect, // crop
   RegisteredMap,
+  RotationMode | undefined,
 ]>
 
 export type HeaderLogEntry = [
@@ -198,6 +209,7 @@ export interface Game {
   scoreMode: ScoreMode
   shapeMode: ShapeMode
   snapMode: SnapMode
+  rotationMode: RotationMode
   rng: GameRng
   private: boolean
   hasReplay: boolean
@@ -231,6 +243,7 @@ export interface GameSettings {
   scoreMode: ScoreMode
   shapeMode: ShapeMode
   snapMode: SnapMode
+  rotationMode: RotationMode
   crop: Rect
 }
 
@@ -277,6 +290,7 @@ export interface Piece {
   pos: Point
   z: number
   group: number
+  rot?: PieceRotation
 }
 
 export interface PieceChange {
@@ -285,6 +299,7 @@ export interface PieceChange {
   pos?: Point
   z?: number
   group?: number
+  rot?: PieceRotation
 }
 
 export interface ImageInfo
@@ -435,6 +450,11 @@ export enum SnapMode {
   REAL = 1,
 }
 
+export enum RotationMode {
+  NONE = 0,
+  ORTHOGONAL = 1, // rotation only at 0, 90, 180, 270 degrees
+}
+
 export const DefaultScoreMode = (v: unknown): ScoreMode => {
   if (v === ScoreMode.FINAL || v === ScoreMode.ANY) {
     return v
@@ -454,6 +474,13 @@ export const DefaultSnapMode = (v: unknown): SnapMode => {
     return v
   }
   return SnapMode.NORMAL
+}
+
+export const DefaultRotationMode = (v: unknown): RotationMode => {
+  if (v === RotationMode.ORTHOGONAL) {
+    return v
+  }
+  return RotationMode.NONE
 }
 
 export interface ImageSnapshot {
@@ -478,6 +505,7 @@ export interface GameInfo {
   snapMode: SnapMode
   scoreMode: ScoreMode
   shapeMode: ShapeMode
+  rotationMode: RotationMode
 }
 
 export interface Pagination {
