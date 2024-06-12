@@ -168,7 +168,6 @@ export class Renderer {
         rot = -Math.PI/2
       }
       if (rot) {
-        console.log(rot)
         ctx.save()
         ctx.translate(pos.x + dim.w / 2, pos.y + dim.h / 2)
         ctx.rotate(rot)

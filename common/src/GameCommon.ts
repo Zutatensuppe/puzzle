@@ -238,6 +238,23 @@ const isCornerPiece = (gameId: string, pieceIdx: number): boolean => {
   )
 }
 
+const getFinalPieceOffset = (
+  gameId: string,
+  pieceIdxA: number,
+  pieceIdxB: number,
+): Point => {
+  const info = GAMES[gameId].puzzle.info
+
+  const coordA = Util.coordByPieceIdxDeprecated(info, pieceIdxA)
+  const coordB = Util.coordByPieceIdxDeprecated(info, pieceIdxB)
+
+  const offset = Geometry.pointSub(coordB, coordA)
+  return {
+    x: offset.x * info.tileSize,
+    y: offset.y * info.tileSize,
+  }
+}
+
 const getFinalPiecePos = (gameId: string, pieceIdx: number): Point => {
   const info = GAMES[gameId].puzzle.info
   const boardPos = {
@@ -314,6 +331,13 @@ const getPieceZIndex = (gameId: string, pieceIdx: number): number => {
 }
 
 const getFirstOwnedPieceIdx = (gameId: string, playerId: string): number => {
+  const player = getPlayer(gameId, playerId)
+  if (player) {
+    const idx = pieceIdxByPos(gameId, { x: player.x, y: player.y }, player.id)
+    if (idx !== -1) {
+      return idx
+    }
+  }
   for (const t of GAMES[gameId].puzzle.tiles) {
     const piece = Util.decodePiece(t)
     if (piece.owner === playerId) {
@@ -498,12 +522,28 @@ const finishPieces = (gameId: string, pieceIdxs: Array<number>): void => {
     changePiece(gameId, pieceIdx, { owner: -1, z: 1 })
   }
 }
-const rotatePieces = (gameId: string, pieceIdxs: Array<number>, direction: -1 | 1): void => {
+
+const rotatePieces = (gameId: string, heldPieceIdx: number, pieceIdxs: Array<number>, direction: -1 | 1): void => {
+  // find the (new) rotation of the held piece
+  const heldPiece = getPiece(gameId, heldPieceIdx)
+  let rot = (heldPiece.rot || 0) + direction
+  rot = rot < 0 ? 3 : rot % 4
+
+  // each other piece will get the same rotation as the held piece
+  // pieceIdxs contains the held piece, so we rotate them all in a for loop
+  // no extra changePiece call required for the held piece
   for (const pieceIdx of pieceIdxs) {
-    const piece = getPiece(gameId, pieceIdx)
-    let rot = (piece.rot || 0) + direction
-    rot = rot < 0 ? 3 : rot % 4
     changePiece(gameId, pieceIdx, { rot: rot })
+  }
+
+  // the other pieces also need to change their location
+  for (const pieceIdx of pieceIdxs) {
+    if (pieceIdx === heldPieceIdx) {
+      continue
+    }
+    const offset = Geometry.pointRotate(getFinalPieceOffset(gameId, heldPieceIdx, pieceIdx), rot)
+    const pos = Geometry.pointAdd(heldPiece.pos, offset)
+    changePiece(gameId, pieceIdx, { pos })
   }
 }
 
@@ -544,7 +584,11 @@ function getGroupedPieceIdxs(gameId: string, pieceIdx: number): number[] {
 
 // Returns the index of the puzzle piece with the highest z index
 // that is not finished yet and that matches the position
-const freePieceIdxByPos = (gameId: string, pos: Point): number => {
+const pieceIdxByPos = (
+  gameId: string,
+  pos: Point,
+  owner: string | number,
+): number => {
   const info = GAMES[gameId].puzzle.info
   const pieces = GAMES[gameId].puzzle.tiles
 
@@ -552,7 +596,7 @@ const freePieceIdxByPos = (gameId: string, pos: Point): number => {
   let pieceIdx = -1
   for (let idx = 0; idx < pieces.length; idx++) {
     const piece = Util.decodePiece(pieces[idx])
-    if (piece.owner !== 0) {
+    if (piece.owner !== owner) {
       continue
     }
 
@@ -793,7 +837,7 @@ function handleGameEvent(
     changePlayer(gameId, playerId, { d: 1, ts })
     _playerChange()
 
-    const tileIdxAtPos = freePieceIdxByPos(gameId, pos)
+    const tileIdxAtPos = pieceIdxByPos(gameId, pos, 0)
     if (tileIdxAtPos >= 0) {
       const maxZ = getMaxZIndex(gameId) + 1
       changeData(gameId, { maxZ })
@@ -853,10 +897,10 @@ function handleGameEvent(
       const piecePos = getPiecePos(gameId, pieceIdx)
       const finalPiecePos = getFinalPiecePos(gameId, pieceIdx)
 
-      if (pieceRotation !== PieceRotation.R0) {
-        // not rotated correctly, so no snap
-      } else if (
-        maySnapToFinal(gameId, pieceIdxs)
+      if (
+        // can only snap to final position if rotated correctly
+        pieceRotation === PieceRotation.R0
+        && maySnapToFinal(gameId, pieceIdxs)
         && Geometry.pointDistance(finalPiecePos, piecePos) < puzzle.info.snapDistance
       ) {
         const diff = Geometry.pointSub(finalPiecePos, piecePos)
@@ -890,7 +934,7 @@ function handleGameEvent(
           gameId: string,
           pieceIdx: number,
           otherPieceIdx: number,
-          off: Array<number>,
+          off: Point,
         ): boolean => {
           const info = GAMES[gameId].puzzle.info
           if (otherPieceIdx < 0) {
@@ -899,10 +943,15 @@ function handleGameEvent(
           if (areGrouped(gameId, pieceIdx, otherPieceIdx)) {
             return false
           }
+          const otherRotation = getPieceRotation(gameId, otherPieceIdx)
+          if (pieceRotation !== otherRotation) {
+            return false
+          }
           const piecePos = getPiecePos(gameId, pieceIdx)
+          const rotatedOff = Geometry.pointRotate(off, pieceRotation)
           const dstPos = Geometry.pointAdd(
             getPiecePos(gameId, otherPieceIdx),
-            {x: off[0] * info.tileSize, y: off[1] * info.tileSize},
+            {x: rotatedOff.x * info.tileSize, y: rotatedOff.y * info.tileSize},
           )
           if (Geometry.pointDistance(piecePos, dstPos) < info.snapDistance) {
             const diff = Geometry.pointSub(dstPos, piecePos)
@@ -926,10 +975,10 @@ function handleGameEvent(
         for (const pieceIdxTmp of getGroupedPieceIdxs(gameId, pieceIdx)) {
           const othersIdxs = getSurroundingPiecesByIdx(gameId, pieceIdxTmp)
           if (
-            check(gameId, pieceIdxTmp, othersIdxs[0], [0, 1]) // top
-            || check(gameId, pieceIdxTmp, othersIdxs[1], [-1, 0]) // right
-            || check(gameId, pieceIdxTmp, othersIdxs[2], [0, -1]) // bottom
-            || check(gameId, pieceIdxTmp, othersIdxs[3], [1, 0]) // left
+            check(gameId, pieceIdxTmp, othersIdxs[0], { x: 0, y: 1 }) // top
+            || check(gameId, pieceIdxTmp, othersIdxs[1], { x: -1, y: 0 }) // right
+            || check(gameId, pieceIdxTmp, othersIdxs[2], { x: 0, y: -1 }) // bottom
+            || check(gameId, pieceIdxTmp, othersIdxs[3], { x: 1, y: 0 }) // left
           ) {
             snapped = true
             break
@@ -976,11 +1025,8 @@ function handleGameEvent(
 
         const direction = gameEvent[1] === 0 ? -1 : 1
         const pieceIdxs = getGroupedPieceIdxs(gameId, pieceIdx)
-        // can only rotate when holding exactly 1 piece
-        if (pieceIdxs.length === 1) {
-          rotatePieces(gameId, pieceIdxs, direction)
-          _pieceChanges(pieceIdxs)
-        }
+        rotatePieces(gameId, pieceIdx, pieceIdxs, direction)
+        _pieceChanges(pieceIdxs)
       }
     } else {
       changePlayer(gameId, playerId, {ts})

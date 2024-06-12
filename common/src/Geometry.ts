@@ -1,3 +1,5 @@
+import { PieceRotation } from './Types'
+
 export interface Point {
   x: number
   y: number
@@ -39,6 +41,20 @@ function rectCenter(rect: Rect): Point {
   return {
     x: rect.x + (rect.w / 2),
     y: rect.y + (rect.h / 2),
+  }
+}
+
+function pointRotate(pt: Point, rot: PieceRotation): Point {
+  switch (rot) {
+    case PieceRotation.R90:
+      return { x: -pt.y, y: pt.x }
+    case PieceRotation.R180:
+      return { x: -pt.x, y: -pt.y }
+    case PieceRotation.R270:
+      return { x: pt.y, y: -pt.x }
+    case PieceRotation.R0:
+    default:
+      return { x: pt.x, y: pt.y}
   }
 }
 
@@ -85,6 +101,7 @@ export default {
   pointAdd,
   pointDistance,
   pointInBounds,
+  pointRotate,
   rectCenter,
   rectMoved,
   rectCenterDistance,
