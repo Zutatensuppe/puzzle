@@ -913,14 +913,18 @@ function handleGameEvent(
             break
           }
         }
+        const playerChange: PlayerChange = { d, ts }
         if (snapped && getScoreMode(gameId) === ScoreMode.ANY) {
-          const points = getPlayerPoints(gameId, playerId) + 1
-          changePlayer(gameId, playerId, { d, ts, points })
-          _playerChange()
-        } else {
-          changePlayer(gameId, playerId, { d, ts })
-          _playerChange()
+          playerChange.points = getPlayerPoints(gameId, playerId) + 1
+        } else if (
+          snapped
+          && getScoreMode(gameId) === ScoreMode.FINAL
+          && isFinishedPiece(gameId, pieceIdx)
+        ) {
+          playerChange.points = getPlayerPoints(gameId, playerId) + pieceIdxs.length
         }
+        changePlayer(gameId, playerId, playerChange)
+        _playerChange()
 
         if (snapped && getSnapMode(gameId) === SnapMode.REAL) {
           if (getFinishedPiecesCount(gameId) === getPieceCount(gameId)) {
