@@ -919,7 +919,7 @@ function handleGameEvent(
         } else if (
           snapped
           && getScoreMode(gameId) === ScoreMode.FINAL
-          && getPieceOwner(gameId, pieceIdx) === -1 // piece was finalized
+          && isFinishedPiece(gameId, pieceIdx)
         ) {
           playerChange.points = getPlayerPoints(gameId, playerId) + pieceIdxs.length
         }
