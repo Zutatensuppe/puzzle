@@ -10,6 +10,9 @@
           <tr><td><icon icon="arrow-right" /> Move right:</td><td><div><kbd>D</kbd>/<kbd>→</kbd>/<icon icon="mouse-left" /></div></td></tr>
           <tr><td /><td><div>Move faster by holding <kbd>Shift</kbd></div></td></tr>
 
+          <tr><td><icon icon="puzzle-piece-rotate-left" /> Rotate piece left: </td><td><div><kbd>Z</kbd>/<icon icon="mouse-left" /> + <icon icon="mouse-wheel" /> up</div></td></tr>
+          <tr><td><icon icon="puzzle-piece-rotate-right" /> Rotate piece right: </td><td><div><kbd>X</kbd>/<icon icon="mouse-left" /> + <icon icon="mouse-wheel" /> down</div></td></tr>
+
           <tr><td><icon icon="zoom-in" /> Zoom in:</td><td><div><kbd>E</kbd>/<icon icon="mouse-wheel" /></div></td></tr>
           <tr><td><icon icon="zoom-out" /> Zoom out:</td><td><div><kbd>Q</kbd>/<icon icon="mouse-wheel" /></div></td></tr>
           <tr><td><icon icon="preview" /> Toggle preview:</td><td><div><kbd>Space</kbd></div></td></tr>

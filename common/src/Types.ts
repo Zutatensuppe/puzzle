@@ -370,14 +370,18 @@ export interface PlayerSettingsData {
   name: string
   soundsEnabled: boolean
   otherPlayerClickSoundEnabled: boolean
+  rotateSoundEnabled: boolean
   soundsVolume: number
   showPlayerNames: boolean
+  mouseRotate: boolean
 }
 
 export const PLAYER_SETTINGS = {
   SOUND_VOLUME: 'sound_volume',
   SOUND_ENABLED: 'sound_enabled',
   OTHER_PLAYER_CLICK_SOUND_ENABLED: 'other_player_click_sound_enabled',
+  ROTATE_SOUND_ENABLED: 'rotate_sound_enabled',
+  MOUSE_ROTATE: 'mouse_rotate',
   COLOR_BACKGROUND: 'bg_color',
   SHOW_TABLE: 'show_table',
   TABLE_TEXTURE: 'table_texture',
@@ -393,6 +397,8 @@ export const PLAYER_SETTINGS_DEFAULTS = {
   SOUND_VOLUME: 100,
   SOUND_ENABLED: true,
   OTHER_PLAYER_CLICK_SOUND_ENABLED: true,
+  ROTATE_SOUND_ENABLED: true,
+  MOUSE_ROTATE: true,
   COLOR_BACKGROUND: '#222222',
   SHOW_TABLE: true,
   TABLE_TEXTURE: 'dark',
@@ -403,6 +409,23 @@ export const PLAYER_SETTINGS_DEFAULTS = {
   PLAYER_NAME: 'anon',
   SHOW_PLAYER_NAMES: true,
 }
+
+export const createDefaultPlayerSettingsData = () => ({
+  background: PLAYER_SETTINGS_DEFAULTS.COLOR_BACKGROUND,
+  showTable: PLAYER_SETTINGS_DEFAULTS.SHOW_TABLE,
+  tableTexture: PLAYER_SETTINGS_DEFAULTS.TABLE_TEXTURE,
+  useCustomTableTexture: PLAYER_SETTINGS_DEFAULTS.USE_CUSTOM_TABLE_TEXTURE,
+  customTableTexture: PLAYER_SETTINGS_DEFAULTS.CUSTOM_TABLE_TEXTURE,
+  customTableTextureScale: PLAYER_SETTINGS_DEFAULTS.CUSTOM_TABLE_TEXTURE_SCALE,
+  color: PLAYER_SETTINGS_DEFAULTS.PLAYER_COLOR,
+  name: PLAYER_SETTINGS_DEFAULTS.PLAYER_NAME,
+  soundsEnabled: PLAYER_SETTINGS_DEFAULTS.SOUND_ENABLED,
+  otherPlayerClickSoundEnabled: PLAYER_SETTINGS_DEFAULTS.OTHER_PLAYER_CLICK_SOUND_ENABLED,
+  rotateSoundEnabled: PLAYER_SETTINGS_DEFAULTS.ROTATE_SOUND_ENABLED,
+  soundsVolume: PLAYER_SETTINGS_DEFAULTS.SOUND_VOLUME,
+  showPlayerNames: PLAYER_SETTINGS_DEFAULTS.SHOW_PLAYER_NAMES,
+  mouseRotate: PLAYER_SETTINGS_DEFAULTS.MOUSE_ROTATE,
+})
 
 export interface GameStatus {
   finished: boolean
@@ -668,6 +691,7 @@ export interface HandleGameEventResult {
   changes: Change[]
   anySnapped: boolean
   anyDropped: boolean
+  anyRotated: boolean
 }
 
 export interface MergeClientIdsIntoUserResult {

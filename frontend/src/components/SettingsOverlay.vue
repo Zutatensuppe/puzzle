@@ -143,6 +143,13 @@
           :disabled="!playerSettings.soundsEnabled"
           label="Piece connect sounds of others"
         />
+        <v-checkbox
+          v-model="playerSettings.rotateSoundEnabled"
+          density="comfortable"
+          hide-details
+          :disabled="!playerSettings.soundsEnabled"
+          label="Piece rotation sound"
+        />
 
         <v-slider
           v-model="playerSettings.soundsVolume"
@@ -170,6 +177,17 @@
             />
           </template>
         </v-slider>
+      </fieldset>
+
+      <fieldset>
+        <legend>Controls</legend>
+
+        <v-checkbox
+          v-model="playerSettings.mouseRotate"
+          density="comfortable"
+          hide-details
+          label="Rotate via mouse wheel"
+        />
       </fieldset>
     </v-container>
   </v-card>

@@ -22,12 +22,15 @@ import badgeAnonIdle from './assets/gfx/badge_anon_idle.png'
 import click from './assets/sounds/click.mp3'
 // @ts-ignore
 import click2 from './assets/sounds/click2.mp3'
+// @ts-ignore
+import rotate from './assets/sounds/rotate2.mp3'
 import { Graphics } from './Graphics'
 
 export class Assets {
   public Audio!: {
     CLICK: HTMLAudioElement
     CLICK_2: HTMLAudioElement
+    ROTATE: HTMLAudioElement
   }
 
   public Gfx!: {
@@ -47,6 +50,7 @@ export class Assets {
     this.Audio = {
       CLICK: new Audio(click),
       CLICK_2: new Audio(click2),
+      ROTATE: new Audio(rotate),
     }
 
     this.Gfx = {

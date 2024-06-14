@@ -3,6 +3,7 @@ import { GameEvent } from '../../common/src/Types'
 import { Camera, Snapshot } from '../../common/src/Camera'
 import { Game } from './Game'
 import { MODE_REPLAY } from './GameMode'
+import { PlayerSettings } from './PlayerSettings'
 
 export class EventAdapter {
   private events: Array<GameEvent> = []
@@ -33,7 +34,7 @@ export class EventAdapter {
   private onKeyPress
   private onWndMouseDown
 
-  constructor (private game: Game<any>) {
+  constructor (private game: Game<any>, private playerSettings: PlayerSettings) {
     this.onResize = this.game.initViewport.bind(this.game)
     this.onMouseDown = this._onMouseDown.bind(this)
     this.onMouseUp = this._onMouseUp.bind(this)
@@ -122,7 +123,7 @@ export class EventAdapter {
 
   _onWheel (ev: WheelEvent) {
     this.lastMouseWorld = this._mousePos(ev)
-    if (this.mouseDown) {
+    if (this.playerSettings.mouseRotate() && this.mouseDown) {
       if (ev.deltaY < 0) {
         this.addEvent([GAME_EVENT_TYPE.INPUT_EV_ROTATE, 0])
         this.ROT_LEFT = false
@@ -199,14 +200,14 @@ export class EventAdapter {
   }
 
   registerEvents () {
-    this.game.getWindow().addEventListener('resize', this.onResize)
-    this.game.getCanvas().addEventListener('mousedown', this.onMouseDown)
-    this.game.getCanvas().addEventListener('mouseup', this.onMouseUp)
-    this.game.getCanvas().addEventListener('mousemove', this.onMouseMove)
-    this.game.getCanvas().addEventListener('wheel', this.onWheel)
-    this.game.getWindow().addEventListener('keydown', this.onKeyUp)
-    this.game.getWindow().addEventListener('keyup', this.onKeyDown)
-    this.game.getWindow().addEventListener('keypress', this.onKeyPress)
+    this.game.getWindow().addEventListener('resize', this.onResize, { passive: true })
+    this.game.getCanvas().addEventListener('mousedown', this.onMouseDown, { passive: true })
+    this.game.getCanvas().addEventListener('mouseup', this.onMouseUp, { passive: true })
+    this.game.getCanvas().addEventListener('mousemove', this.onMouseMove, { passive: true })
+    this.game.getCanvas().addEventListener('wheel', this.onWheel, { passive: true })
+    this.game.getWindow().addEventListener('keydown', this.onKeyUp, { passive: true })
+    this.game.getWindow().addEventListener('keyup', this.onKeyDown, { passive: true })
+    this.game.getWindow().addEventListener('keypress', this.onKeyPress, { passive: true })
     this.game.getWindow().addEventListener('mousedown', this.onWndMouseDown)
   }
 

@@ -16,6 +16,8 @@ export class PlayerSettings {
     this.settings = {} as PlayerSettingsData
     this.settings.soundsVolume = storage.getInt(PLAYER_SETTINGS.SOUND_VOLUME, PLAYER_SETTINGS_DEFAULTS.SOUND_VOLUME)
     this.settings.otherPlayerClickSoundEnabled = storage.getBool(PLAYER_SETTINGS.OTHER_PLAYER_CLICK_SOUND_ENABLED, PLAYER_SETTINGS_DEFAULTS.OTHER_PLAYER_CLICK_SOUND_ENABLED)
+    this.settings.mouseRotate = storage.getBool(PLAYER_SETTINGS.MOUSE_ROTATE, PLAYER_SETTINGS_DEFAULTS.MOUSE_ROTATE)
+    this.settings.rotateSoundEnabled = storage.getBool(PLAYER_SETTINGS.ROTATE_SOUND_ENABLED, PLAYER_SETTINGS_DEFAULTS.ROTATE_SOUND_ENABLED)
     this.settings.soundsEnabled = storage.getBool(PLAYER_SETTINGS.SOUND_ENABLED, PLAYER_SETTINGS_DEFAULTS.SOUND_ENABLED)
     this.settings.showPlayerNames = storage.getBool(PLAYER_SETTINGS.SHOW_PLAYER_NAMES, PLAYER_SETTINGS_DEFAULTS.SHOW_PLAYER_NAMES)
     this.settings.showTable = storage.getBool(PLAYER_SETTINGS.SHOW_TABLE, PLAYER_SETTINGS_DEFAULTS.SHOW_TABLE)
@@ -48,8 +50,10 @@ export class PlayerSettings {
     this.setName(data.name)
     this.setSoundsEnabled(data.soundsEnabled)
     this.setOtherPlayerClickSoundEnabled(data.otherPlayerClickSoundEnabled)
+    this.setRotateSoundEnabled(data.rotateSoundEnabled)
     this.setSoundsVolume(data.soundsVolume)
     this.setShowPlayerNames(data.showPlayerNames)
+    this.setMouseRotate(data.mouseRotate)
   }
 
   getSettings(): PlayerSettingsData {
@@ -148,11 +152,31 @@ export class PlayerSettings {
     return false
   }
 
+  setMouseRotate(value: boolean) {
+    if (this.settings.mouseRotate !== value) {
+      this.settings.mouseRotate = value
+      storage.setBool(PLAYER_SETTINGS.MOUSE_ROTATE, value)
+      this.showStatusMessage('Mouse rotate', value)
+      return true
+    }
+    return false
+  }
+
   setOtherPlayerClickSoundEnabled(value: boolean) {
     if (this.settings.otherPlayerClickSoundEnabled !== value) {
       this.settings.otherPlayerClickSoundEnabled = value
       storage.setBool(PLAYER_SETTINGS.OTHER_PLAYER_CLICK_SOUND_ENABLED, value)
       this.showStatusMessage('Other player sounds', value)
+      return true
+    }
+    return false
+  }
+
+  setRotateSoundEnabled(value: boolean) {
+    if (this.settings.rotateSoundEnabled !== value) {
+      this.settings.rotateSoundEnabled = value
+      storage.setBool(PLAYER_SETTINGS.ROTATE_SOUND_ENABLED, value)
+      this.showStatusMessage('Rotate sounds', value)
       return true
     }
     return false
@@ -232,5 +256,13 @@ export class PlayerSettings {
 
   soundsEnabled() {
     return this.settings.soundsEnabled
+  }
+
+  rotateSoundEnabled() {
+    return this.settings.rotateSoundEnabled
+  }
+
+  mouseRotate() {
+    return this.settings.mouseRotate
   }
 }

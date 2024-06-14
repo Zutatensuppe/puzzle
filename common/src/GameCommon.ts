@@ -740,6 +740,7 @@ function handleGameEvent(
 
   let anySnapped: boolean = false
   let anyDropped: boolean = false
+  let anyRotated: boolean = false
 
   // put both pieces (and their grouped pieces) in the same group
   const groupPieces = (
@@ -1027,6 +1028,7 @@ function handleGameEvent(
         const pieceIdxs = getGroupedPieceIdxs(gameId, pieceIdx)
         rotatePieces(gameId, pieceIdx, pieceIdxs, direction)
         _pieceChanges(pieceIdxs)
+        anyRotated = true
       }
     } else {
       changePlayer(gameId, playerId, {ts})
@@ -1050,7 +1052,7 @@ function handleGameEvent(
   if (anySnapped) {
     changes.push([CHANGE_TYPE.PLAYER_SNAP, playerId])
   }
-  return { changes, anySnapped, anyDropped }
+  return { changes, anySnapped, anyDropped, anyRotated }
 }
 
 function handleLogEntry(

@@ -148,10 +148,12 @@ export abstract class Game<HudType extends Hud> {
     await this.assets.init(this.graphics)
     this.playerCursors = new PlayerCursors(this.canvas, this.assets, this.graphics)
 
-    this.evts = new EventAdapter(this)
-    this.viewportSnapshots = new ViewportSnapshots(this.evts, this.viewport)
     this.playerSettings = new PlayerSettings(this)
     this.playerSettings.init()
+
+    this.evts = new EventAdapter(this, this.playerSettings)
+    this.viewportSnapshots = new ViewportSnapshots(this.evts, this.viewport)
+
     this.sounds = new Sounds(this.assets, this.playerSettings)
 
     const puzzleTable = new PuzzleTable(this.graphics)

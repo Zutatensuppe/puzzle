@@ -28,6 +28,13 @@ export class Renderer {
   // we can cache the whole background when we are in lockMovement mode
   private backgroundCache: ImageData | null = null
 
+  private static RotationMap: Record<PieceRotation, number> = {
+    [PieceRotation.R0]: 0,
+    [PieceRotation.R90]: Math.PI/2,
+    [PieceRotation.R180]: Math.PI,
+    [PieceRotation.R270]: -Math.PI/2,
+  }
+
   constructor(
     protected readonly gameId: string,
     protected readonly fireworks: FireworksInterface | null,
@@ -39,6 +46,16 @@ export class Renderer {
     this.boardPos = GameCommon.getBoardPos(this.gameId)
     this.pieceDim = GameCommon.getPieceDim(this.gameId)
     this.tableBounds = GameCommon.getBounds(this.gameId)
+  }
+
+  private static isOnCanvas(pos: Point, dim: Dim, canvas: HTMLCanvasElement): boolean {
+    if (pos.x > canvas.width || pos.y > canvas.height) {
+      return false
+    }
+    if (pos.x + dim.w < 0 || pos.y + dim.h < 0) {
+      return false
+    }
+    return true
   }
 
   async init (graphics: Graphics) {
@@ -153,20 +170,18 @@ export class Renderer {
       if (!shouldDrawPiece(piece)) {
         continue
       }
-      tmpCanvas = pieceBitmapsCache[this.gameId][piece.idx]
+
       pos = viewport.worldToViewportRaw({
         x: this.pieceDrawOffset + piece.pos.x,
         y: this.pieceDrawOffset + piece.pos.y,
       })
-
-      let rot = 0
-      if (piece.rot === PieceRotation.R90) {
-        rot = Math.PI/2
-      } else if (piece.rot === PieceRotation.R180) {
-        rot = Math.PI
-      } else if (piece.rot === PieceRotation.R270) {
-        rot = -Math.PI/2
+      if (!Renderer.isOnCanvas(pos, dim, canvas)) {
+        continue
       }
+
+      tmpCanvas = pieceBitmapsCache[this.gameId][piece.idx]
+
+      const rot = Renderer.RotationMap[piece.rot || PieceRotation.R0]
       if (rot) {
         ctx.save()
         ctx.translate(pos.x + dim.w / 2, pos.y + dim.h / 2)
