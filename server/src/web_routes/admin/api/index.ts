@@ -35,6 +35,12 @@ export default function createRouter(
 
   router.use(requireLoginApi)
 
+  router.get('/server-info', async (req, res) => {
+    res.send({
+      socketCount: server.getGameSockets().getSocketCount(),
+    })
+  })
+
   router.get('/games', async (req, res) => {
     const items = await server.getDb().getMany('games', undefined, [{ created: -1 }])
     const imageIdMap: Record<string, boolean> = {}
@@ -42,7 +48,7 @@ export default function createRouter(
       imageIdMap[game.image_id] = true
     })
     const imageIds = Object.keys(imageIdMap)
-    const images = await server.getDb().getMany('images', { id: { '$in': imageIds }})
+    const images = await server.getDb().getMany('images', { id: { '$in': imageIds } })
     const gamesWithImages = items.map(game => {
       game.image = images.find(image => image.id === game.image_id) || null
       return game

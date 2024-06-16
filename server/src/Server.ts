@@ -284,7 +284,7 @@ export class Server implements ServerInterface {
           } break
 
           case CLIENT_EVENT_TYPE.UPDATE: {
-            log.log(`ws`, socket.protocol, msgType)
+            // log.log(`ws`, socket.protocol, msgType)
             const loaded = await this.gameService.ensureLoaded(gameId)
             if (!loaded) {
               throw `[game ${gameId} does not exist... ]`

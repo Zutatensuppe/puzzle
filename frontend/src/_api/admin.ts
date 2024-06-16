@@ -15,6 +15,11 @@ const getUsers = async () => {
   return await res.json()
 }
 
+const getServerInfo = async () => {
+  const res = await xhr.get('/admin/api/server-info', {})
+  return await res.json()
+}
+
 const mergeClientIdsIntoUser = async (
   userId: number,
   clientIds: string[],
@@ -74,6 +79,7 @@ export default {
   getImages,
   deleteImage,
   getGroups,
+  getServerInfo,
   mergeClientIdsIntoUser,
   fixPieces,
 }
