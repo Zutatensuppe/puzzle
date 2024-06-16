@@ -159,10 +159,12 @@ export default function createRouter(
         provider_id,
       })
 
-      let user = null
-      if (req.user) {
-        user = req.user
-      } else if (identity) {
+      // in the auth/twitch request, no client_id header is sent, so we also
+      // cannot use req.user
+      // instead, the client_id is passed via req.query.state (but it can be empty)
+      const client_id = req.query.state || ''
+      let user = await server.getUsers().getUser({ client_id })
+      if (!user && identity) {
         user = await server.getUsers().getUserByIdentity(identity)
       }
 
@@ -170,7 +172,7 @@ export default function createRouter(
         user = await server.getUsers().createUser({
           name: userData.data[0].display_name,
           created: new Date(),
-          client_id: await determineNewUserClientId(req.query.state || ''),
+          client_id: await determineNewUserClientId(client_id),
           email: provider_email,
         })
       } else {
