@@ -39,4 +39,8 @@ export class GameSockets {
     }
     return this.sockets[gameId]
   }
+
+  getSocketCount(): number {
+    return Object.keys(this.sockets).reduce((acc, gameId) => acc + this.sockets[gameId].length, 0)
+  }
 }
