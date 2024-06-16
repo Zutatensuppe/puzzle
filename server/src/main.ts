@@ -20,6 +20,7 @@ import { PuzzleService } from './PuzzleService'
 import { LeaderboardRepo } from './repo/LeaderboardRepo'
 import { UsersRepo } from './repo/UsersRepo'
 import { Twitch } from './Twitch'
+import { UrlUtil } from './UrlUtil'
 
 const run = async () => {
   const db = new Db(config.db.connectStr, config.dir.DB_PATCHES_DIR)
@@ -54,6 +55,7 @@ const run = async () => {
     images,
     imageResize,
     tokensRepo,
+    new UrlUtil(),
     announcementsRepo,
     leaderboardRepo,
     imagesRepo,

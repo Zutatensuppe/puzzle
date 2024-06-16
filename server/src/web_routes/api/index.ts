@@ -321,7 +321,7 @@ export default function createRouter(
   router.post('/register', express.json(), async (req: any, res): Promise<void> => {
     const salt = generateSalt()
 
-    const client_id = await determineNewUserClientId(req.user ? req.user.client_id: '')
+    const client_id = await determineNewUserClientId(req.user ? req.user.client_id : '')
 
     const emailRaw = `${req.body.email}`
     const passwordRaw = `${req.body.password}`
@@ -631,7 +631,7 @@ export default function createRouter(
     await server.getImages().updateImage({
       title: data.title,
       copyright_name: data.copyrightName,
-      copyright_url: data.copyrightURL,
+      copyright_url: server.getUrlUtil().fixUrl(data.copyrightURL || ''),
     }, { id: data.id })
 
     await server.getImages().setTags(data.id, data.tags || [])
@@ -673,7 +673,7 @@ export default function createRouter(
         filename_original: req.file.originalname,
         title: req.body.title || '',
         copyright_name: req.body.copyrightName || '',
-        copyright_url: req.body.copyrightURL || '',
+        copyright_url: server.getUrlUtil().fixUrl(req.body.copyrightURL || ''),
         created: new Date(),
         width: dim.w,
         height: dim.h,
