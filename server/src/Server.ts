@@ -30,6 +30,7 @@ import { ImagesRepo } from './repo/ImagesRepo'
 import fs from 'fs'
 import { storeImageSnapshot } from './ImageSnapshots'
 import { Twitch } from './Twitch'
+import { UrlUtil } from './UrlUtil'
 
 const indexFile = path.resolve(config.dir.PUBLIC_DIR, 'index.html')
 const indexFileContents = fs.existsSync(indexFile)
@@ -57,6 +58,7 @@ export interface ServerInterface {
   getGameService: () => GameService
   getUsers: () => Users
   getImages: () => Images
+  getUrlUtil: () => UrlUtil
   getImageResize: () => ImageResize
   getTokensRepo: () => TokensRepo
   getAnnouncementsRepo: () => AnnouncementsRepo
@@ -81,6 +83,7 @@ export class Server implements ServerInterface {
     private readonly images: Images,
     private readonly imageResize: ImageResize,
     private readonly tokensRepo: TokensRepo,
+    private readonly urlUtil: UrlUtil,
     private readonly announcementsRepo: AnnouncementsRepo,
     private readonly leaderboardRepo: LeaderboardRepo,
     private readonly imagesRepo: ImagesRepo,
@@ -118,6 +121,9 @@ export class Server implements ServerInterface {
   }
   getTokensRepo(): TokensRepo {
     return this.tokensRepo
+  }
+  getUrlUtil(): UrlUtil {
+    return this.urlUtil
   }
   getAnnouncementsRepo(): AnnouncementsRepo {
     return this.announcementsRepo
@@ -185,7 +191,7 @@ export class Server implements ServerInterface {
       }
 
       sendHtml(res, indexFileContents, {
-        '<!-- og:image -->': '<meta property="og:image" content="'+  GameCommon.getImageUrl(gameId) +'" />',
+        '<!-- og:image -->': '<meta property="og:image" content="' + GameCommon.getImageUrl(gameId) + '" />',
       })
     })
 
@@ -198,7 +204,7 @@ export class Server implements ServerInterface {
       }
 
       sendHtml(res, indexFileContents, {
-        '<!-- og:image -->': '<meta property="og:image" content="'+  GameCommon.getImageUrl(gameId) +'" />',
+        '<!-- og:image -->': '<meta property="og:image" content="' + GameCommon.getImageUrl(gameId) + '" />',
       })
     })
 
