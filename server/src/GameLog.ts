@@ -28,7 +28,7 @@ const shouldLog = (gameId: string, finishTs: Timestamp, currentTs: Timestamp): b
   return timeSinceGameEnd <= POST_GAME_LOG_DURATION
 }
 
-export const filename = (gameId: string, offset: number) => `${config.dir.DATA_DIR}/log/${gameId}/${offset}/log_${gameId}-${offset}.log`
+export const filename = (gameId: string, offset: number) => `${config.dir.DATA_DIR}/log/${gameId}/log_${gameId}-${offset}.log`
 export const filenameGz = (gameId: string, offset: number) => `${filename(gameId, offset)}.gz`
 export const idxname = (gameId: string) => `${config.dir.DATA_DIR}/log/${gameId}/log_${gameId}.idx.log`
 
