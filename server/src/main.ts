@@ -1,5 +1,6 @@
 import { logger } from '../../common/src/Util'
 import Time from '../../common/src/Time'
+import GameCommon from '../../common/src/GameCommon'
 import v8 from 'v8'
 import config from './Config'
 import Db from './Db'
@@ -21,7 +22,6 @@ import { LeaderboardRepo } from './repo/LeaderboardRepo'
 import { UsersRepo } from './repo/UsersRepo'
 import { Twitch } from './Twitch'
 import { UrlUtil } from './UrlUtil'
-import GameCommon from './GameCommon'
 
 const run = async () => {
   const db = new Db(config.db.connectStr, config.dir.DB_PATCHES_DIR)
