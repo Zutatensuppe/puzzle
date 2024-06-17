@@ -10,7 +10,13 @@ const log = logger('GameLog.js')
 const LINES_PER_LOG_FILE = 10000
 const POST_GAME_LOG_DURATION = 5 * Time.MIN
 
-const shouldLog = (finishTs: Timestamp, currentTs: Timestamp): boolean => {
+const LOG_EXISTS: Record<string, boolean> = {}
+
+const shouldLog = (gameId: string, finishTs: Timestamp, currentTs: Timestamp): boolean => {
+  if (LOG_EXISTS[gameId] === false) {
+      return false
+  }
+
   // when not finished yet, always log
   if (!finishTs) {
     return true
@@ -22,9 +28,9 @@ const shouldLog = (finishTs: Timestamp, currentTs: Timestamp): boolean => {
   return timeSinceGameEnd <= POST_GAME_LOG_DURATION
 }
 
-export const filename = (gameId: string, offset: number) => `${config.dir.DATA_DIR}/log_${gameId}-${offset}.log`
+export const filename = (gameId: string, offset: number) => `${config.dir.DATA_DIR}/log/${gameId}/${offset}/log_${gameId}-${offset}.log`
 export const filenameGz = (gameId: string, offset: number) => `${filename(gameId, offset)}.gz`
-export const idxname = (gameId: string) => `${config.dir.DATA_DIR}/log_${gameId}.idx.log`
+export const idxname = (gameId: string) => `${config.dir.DATA_DIR}/log/${gameId}/log_${gameId}.idx.log`
 
 export const gzFilenameOrFilename = (gameId: string, offset: number) => {
   const gz = filenameGz(gameId, offset)
@@ -39,6 +45,7 @@ export const gzFilenameOrFilename = (gameId: string, offset: number) => {
 }
 
 const create = (gameId: string, ts: Timestamp): void => {
+  prepareLogDir(gameId)
   const idxfile = idxname(gameId)
   if (!fs.existsSync(idxfile)) {
     fs.appendFileSync(idxfile, JSON.stringify({
@@ -49,9 +56,13 @@ const create = (gameId: string, ts: Timestamp): void => {
       perFile: LINES_PER_LOG_FILE,
     }))
   }
+  LOG_EXISTS[gameId] = true
 }
 
 const exists = (gameId: string): boolean => {
+  if (LOG_EXISTS[gameId] === false) {
+    return false
+  }
   const idxfile = idxname(gameId)
   return fs.existsSync(idxfile)
 }
@@ -70,12 +81,23 @@ function hasReplay(game: Game): boolean {
 }
 
 const _log = (gameId: string, logRow: LogEntry): void => {
+  if (LOG_EXISTS[gameId] === false) {
+    return
+  }
   const idxfile = idxname(gameId)
   if (!fs.existsSync(idxfile)) {
+    LOG_EXISTS[gameId] = false
     return
   }
 
-  const idxObj = JSON.parse(fs.readFileSync(idxfile, 'utf-8'))
+  let idxObj: any
+  try {
+    idxObj = JSON.parse(fs.readFileSync(idxfile, 'utf-8'))
+  } catch (e) {
+    log.error('failed to read idxfile', idxfile)
+    LOG_EXISTS[gameId] = false
+    return
+  }
   if (idxObj.total % idxObj.perFile === 0) {
     idxObj.currentFile = filename(gameId, idxObj.total)
   }
@@ -94,6 +116,13 @@ const _log = (gameId: string, logRow: LogEntry): void => {
   idxObj.total++
   idxObj.lastTs = ts
   fs.writeFileSync(idxfile, JSON.stringify(idxObj))
+}
+
+const prepareLogDir = (gameId: string): void => {
+  const dir = `${config.dir.DATA_DIR}/log/${gameId}`
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir, { recursive: true })
+  }
 }
 
 export default {

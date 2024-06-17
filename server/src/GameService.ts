@@ -370,7 +370,7 @@ export class GameService {
   }
 
   addPlayer(gameId: string, playerId: string, ts: Timestamp): void {
-    if (GameLog.shouldLog(GameCommon.getFinishTs(gameId), ts)) {
+    if (GameLog.shouldLog(gameId, GameCommon.getFinishTs(gameId), ts)) {
       const idx = GameCommon.getPlayerIndexById(gameId, playerId)
       if (idx === -1) {
         GameLog.log(gameId, [LOG_TYPE.ADD_PLAYER, playerId, ts])
@@ -389,7 +389,7 @@ export class GameService {
     gameEvent: GameEvent,
     ts: Timestamp,
   ): Promise<HandleGameEventResult> {
-    if (GameLog.shouldLog(GameCommon.getFinishTs(gameId), ts)) {
+    if (GameLog.shouldLog(gameId, GameCommon.getFinishTs(gameId), ts)) {
       const idx = GameCommon.getPlayerIndexById(gameId, playerId)
       GameLog.log(gameId, [LOG_TYPE.GAME_EVENT, idx, gameEvent, ts])
     }
