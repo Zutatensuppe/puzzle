@@ -15,6 +15,9 @@
   "persistence": {
     "interval": 30000
   },
+  "idlecheck": {
+    "interval": 10000
+  },
   "secret": "SOME_SECRET_STRING",
   "auth": {
     "twitch": {

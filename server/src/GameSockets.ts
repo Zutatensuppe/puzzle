@@ -5,6 +5,22 @@ const log = logger('GameSocket.js')
 
 export class GameSockets {
   private sockets: Record<string, WebSocket[]> = {}
+  private idle: Record<string, number> = {}
+
+  private static MAX_IDLE_TICKS = 10
+
+  updateIdle(): string[] {
+    const idleGameIds = []
+    for (const gameId in this.sockets) {
+      if (this.sockets[gameId].length === 0) {
+        this.idle[gameId] = (this.idle[gameId] || 0) + 1
+        if (this.idle[gameId] > GameSockets.MAX_IDLE_TICKS) {
+          idleGameIds.push(gameId)
+        }
+      }
+    }
+    return idleGameIds
+  }
 
   socketExists(gameId: string, socket: WebSocket): boolean {
     if (!(gameId in this.sockets)) {
@@ -23,6 +39,9 @@ export class GameSockets {
   }
 
   addSocket(gameId: string, socket: WebSocket): void {
+    if (gameId in this.idle) {
+      delete this.idle[gameId]
+    }
     if (!(gameId in this.sockets)) {
       this.sockets[gameId] = []
     }
