@@ -40,3 +40,9 @@ CREATE TABLE games (
   data TEXT NOT NULL,
   private INTEGER NOT NULL
 );
+
+CREATE INDEX users_client_id ON users (client_id);
+
+CREATE INDEX image_x_category_image_id ON image_x_category (image_id);
+
+CREATE INDEX image_x_category_category_id ON image_x_category (category_id);

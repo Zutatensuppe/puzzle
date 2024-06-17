@@ -48,7 +48,7 @@ const valid = ref<boolean>(false)
 const busy = ref<boolean>(false)
 
 const emailRules = [
-  v => !!v && testEmailValid(v) || 'E-mail must be valid',
+  (v: string) => !!v && testEmailValid(v) || 'E-mail must be valid',
 ]
 
 async function doSendPasswordResetEmail() {

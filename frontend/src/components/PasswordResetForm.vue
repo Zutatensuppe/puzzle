@@ -43,7 +43,7 @@ const valid = ref<boolean>(false)
 const busy = ref<boolean>(false)
 const showPassword = ref<boolean>(false)
 const passwordRules = [
-  v => !!v || 'Password is required',
+  (v: string) => !!v || 'Password is required',
 ]
 
 const doChangePassword = async () => {

@@ -321,6 +321,7 @@ const tryLoadMore = async () => {
   if (currentRequest.value) {
     currentRequest.value.abort()
   }
+
   currentRequest.value = api.pub.images(requestData)
   const res = await currentRequest.value.send()
   const json = await res.json()

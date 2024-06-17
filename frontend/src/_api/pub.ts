@@ -30,7 +30,7 @@ const changePassword = async (password: string, token: string) => {
   })
 }
 
-const logout = async() => {
+const logout = async () => {
   return await xhr.post('/api/logout', {
     headers: JSON_HEADERS,
     body: {},
@@ -66,11 +66,11 @@ const images = (data: ImagesRequestData): XhrRequest => {
   return xhr.getRequest(`/api/images${Util.asQueryArgs(data)}`, {})
 }
 
-const replayGameData = async (data: { gameId: string }) =>{
+const replayGameData = async (data: { gameId: string }) => {
   return xhr.get(`/api/replay-game-data${Util.asQueryArgs(data)}`, {})
 }
 
-const replayLogData = async (data: { gameId: string, offset: number }) =>{
+const replayLogData = async (data: { gameId: string, offset: number }) => {
   return xhr.get(`/api/replay-log-data${Util.asQueryArgs(data)}`, {})
 }
 

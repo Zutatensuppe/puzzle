@@ -6,7 +6,7 @@
     "build:copyassets": "cpx \"src/assets/textures/*.{png,jpg,jpeg,svg,webp,mp3}\" ../build/public/assets/textures",
     "build": "vite build --config vite.config.build.mts && npm run build:copyassets",
     "start": "vite",
-    "lint": "tsc --noEmit && eslint src && stylelint \"src/**/*.scss\"",
+    "lint": "vue-tsc --noEmit && eslint src && stylelint \"src/**/*.scss\"",
     "test": ""
   },
   "author": "Zutatensuppe",
@@ -36,6 +36,7 @@
     "stylelint-config-standard-scss": "^12.0.0",
     "typescript": "^5.3.3",
     "vite": "^5.0.10",
-    "vitest": "^1.1.0"
+    "vitest": "^1.1.0",
+    "vue-tsc": "^2.0.21"
   }
 }

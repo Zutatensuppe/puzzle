@@ -242,6 +242,7 @@ export class Server implements ServerInterface {
             sockets,
           )
         } else {
+          // should not persist and unset immediately?
           await this.persistGame(gameId)
           log.info(`[INFO] unloading game: ${gameId}`)
           GameCommon.unsetGame(gameId)

@@ -34,7 +34,7 @@ const sighted = () => {
 }
 
 const OFFSET = 640
-const isInViewport = (element) => {
+const isInViewport = (element: HTMLDivElement) => {
   if (!element) {
     return false
   }
