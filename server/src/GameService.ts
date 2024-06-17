@@ -96,7 +96,7 @@ export class GameService {
 
     const registeredMap: RegisteredMap = {}
     const users = await this.usersRepo.getMany({
-      client_id: {'$in': gameObject.players.map(player => player[0])},
+      client_id: { '$in': gameObject.players.map(player => player[0]) },
     })
     for (const user of users) {
       if (user.email) {
@@ -123,12 +123,26 @@ export class GameService {
       return true
     }
 
-    const gameObject = await this.loadGame(gameId)
-    if (gameObject) {
-      GameCommon.setGame(gameObject.id, gameObject)
-      return true
+    if (GameCommon.isGameLoading(gameId)) {
+      return new Promise<boolean>((resolve) => {
+        GameCommon.onGameLoadingStateChange(gameId, resolve)
+      })
     }
 
+    let gameObject: Game | null = null
+    GameCommon.setGameLoading(gameId, true)
+    try {
+      gameObject = await this.loadGame(gameId)
+    } catch (e) {
+      GameCommon.setGameLoading(gameId, false)
+      return false
+    }
+
+    if (gameObject) {
+      GameCommon.setGame(gameObject.id, gameObject)
+      GameCommon.setGameLoading(gameId, false)
+      return true
+    }
     return false
   }
 
@@ -171,7 +185,7 @@ export class GameService {
     return gameObjects.length > 0 ? gameObjects[0] : null
   }
 
-  async gameRowsToGames (gameRows: GameRow[]): Promise<Game[]> {
+  async gameRowsToGames(gameRows: GameRow[]): Promise<Game[]> {
     const games: Game[] = []
     for (const gameRow of gameRows) {
       const gameObject = await this.gameRowToGameObject(gameRow)
@@ -230,7 +244,7 @@ export class GameService {
 
   storeDataToGame(
     storeData: GameStoreData,
-    creatorUserId: number|null,
+    creatorUserId: number | null,
     isPrivate: boolean,
   ): Game {
     return {
@@ -389,7 +403,9 @@ export class GameService {
         // persist game immediately when it was just finished
         // and also update the leaderboard afterwards
         await this.persistGame(game)
-        await this.leaderboardRepo.updateLeaderboards()
+
+        // no need to wait for leaderboard update
+        void this.leaderboardRepo.updateLeaderboards()
       }
     }
     return ret

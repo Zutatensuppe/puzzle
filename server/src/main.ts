@@ -1,5 +1,6 @@
 import { logger } from '../../common/src/Util'
 import Time from '../../common/src/Time'
+import GameCommon from '../../common/src/GameCommon'
 import v8 from 'v8'
 import config from './Config'
 import Db from './Db'
@@ -86,6 +87,21 @@ const run = async () => {
   }
   persistInterval = setTimeout(doPersist, config.persistence.interval)
 
+  // unload games in fixed interval
+  let idlecheckInterval: any = null
+  const doIdlecheck = async () => {
+    log.log('doIdlecheck...')
+    const idleGameIds = server.getGameSockets().updateIdle()
+    for (const gameId of idleGameIds) {
+      await server.persistGame(gameId)
+      log.info(`[INFO] unloading game: ${gameId}`)
+      GameCommon.unsetGame(gameId)
+    }
+    idlecheckInterval = setTimeout(doIdlecheck, config.idlecheck.interval)
+  }
+  idlecheckInterval = setTimeout(doIdlecheck, config.idlecheck.interval)
+
+
   // check for livestreams
   let checkLivestreamsInterval: any = null
   const updateLivestreamsInfo = () => {
@@ -102,10 +118,13 @@ const run = async () => {
     log.log(`${signal} received...`)
 
     log.log('clearing persist interval...')
-    clearInterval(persistInterval)
+    clearTimeout(persistInterval)
+
+    log.log('clearing idlecheck interval...')
+    clearTimeout(idlecheckInterval)
 
     log.log('clearing check livestreams interval...')
-    clearInterval(checkLivestreamsInterval)
+    clearTimeout(checkLivestreamsInterval)
 
     log.log('Persisting games...')
     await server.persistGames()

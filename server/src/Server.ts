@@ -241,12 +241,7 @@ export class Server implements ServerInterface {
             [SERVER_EVENT_TYPE.UPDATE, clientId, clientSeq, ret.changes],
             sockets,
           )
-        } else {
-          await this.persistGame(gameId)
-          log.info(`[INFO] unloading game: ${gameId}`)
-          GameCommon.unsetGame(gameId)
         }
-
       } catch (e) {
         log.error(e)
       }

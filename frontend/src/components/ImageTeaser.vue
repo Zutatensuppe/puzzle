@@ -45,7 +45,7 @@
         v-if="image.tags.length"
         class="imageteaser-info"
       >
-        <v-icon icon="mdi-tag" /> {{ image.tags.map(t => t.title).join(', ') }}
+        <v-icon icon="mdi-tag" /> {{ image.tags.map((t: Tag) => t.title).join(', ') }}
       </div>
       <div class="imageteaser-click-info">
         <h5>Click to setup a game</h5>
@@ -66,7 +66,7 @@
 <script setup lang="ts">
 import { computed, onMounted, onBeforeUnmount, ref } from 'vue'
 import { resizeUrl } from '../../../common/src/ImageService'
-import { ImageInfo } from '../../../common/src/Types'
+import { ImageInfo, Tag } from '../../../common/src/Types'
 import user, { User } from '../user'
 
 const props = withDefaults(defineProps<{

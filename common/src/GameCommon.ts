@@ -56,6 +56,34 @@ function setGame(gameId: string, game: Game): void {
   GAMES[gameId] = game
 }
 
+const GAME_LOADING: Record<string, boolean> = {}
+type CALLBACK_FN = (loaded: boolean) => void
+const CALLBACKS: Record<string, CALLBACK_FN[]> = {}
+function onGameLoadingStateChange(gameId: string, callback: (loaded: boolean) => void) {
+  CALLBACKS[gameId] = CALLBACKS[gameId] || []
+  CALLBACKS[gameId].push(callback)
+}
+
+function setGameLoading(gameId: string, loading: boolean): void {
+  if (loading) {
+    GAME_LOADING[gameId] = true
+    return
+  }
+
+  delete GAME_LOADING[gameId]
+  if (CALLBACKS[gameId]) {
+    const isLoaded = loaded(gameId)
+    for (const cb of CALLBACKS[gameId]) {
+      cb(isLoaded)
+    }
+    delete CALLBACKS[gameId]
+  }
+}
+
+function isGameLoading(gameId: string): boolean {
+  return !!GAME_LOADING[gameId]
+}
+
 function setRegisteredMap(gameId: string, registeredMap: RegisteredMap): void {
   GAMES[gameId].registeredMap = registeredMap
 }
@@ -1142,6 +1170,9 @@ function Game_isFinished(game: Game): boolean {
 }
 
 export default {
+  onGameLoadingStateChange,
+  setGameLoading,
+  isGameLoading,
   setGame,
   setRegisteredMap,
   unsetGame,

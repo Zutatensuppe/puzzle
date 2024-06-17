@@ -79,11 +79,11 @@ const valid = ref<boolean>(false)
 const busy = ref<boolean>(false)
 
 const passwordRules = [
-  v => !!v || 'Password is required',
+  (v: string) => !!v || 'Password is required',
 ]
 
 const emailRules = [
-  v => !!v && testEmailValid(v) || 'E-mail must be valid',
+  (v: string) => !!v && testEmailValid(v) || 'E-mail must be valid',
 ]
 
 const args = {

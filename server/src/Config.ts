@@ -33,6 +33,9 @@ export interface Config {
   persistence: {
     interval: number
   }
+  idlecheck: {
+    interval: number
+  }
   dir: {
     DB_PATCHES_DIR: string
     DATA_DIR: string
