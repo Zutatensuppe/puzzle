@@ -11,18 +11,19 @@ export class Canny {
   }
 
   createToken(user: UserRow): string | null {
-    if (this.config.sso_private_key === 'SOME_KEY') {
-      log.info('skipping Canny.createToken, sso_private_key is not set')
-    }
-
     if (!user.email) {
       return null
+    }
+    if (this.config.sso_private_key === 'SOME_KEY') {
+      log.info('skipping Canny.createToken, sso_private_key is not set')
     }
     const userData = {
       email: user.email,
       id: user.id,
       name: user.name,
     }
+
+    // TODO: create this only when needed and cache it
     return jwt.sign(userData, this.config.sso_private_key, { algorithm: 'HS256' })
   }
 }

@@ -123,12 +123,26 @@ export class GameService {
       return true
     }
 
-    const gameObject = await this.loadGame(gameId)
-    if (gameObject) {
-      GameCommon.setGame(gameObject.id, gameObject)
-      return true
+    if (GameCommon.isGameLoading(gameId)) {
+      return new Promise<boolean>((resolve) => {
+        GameCommon.onGameLoadingStateChange(gameId, resolve)
+      })
     }
 
+    let gameObject: Game | null = null
+    GameCommon.setGameLoading(gameId, true)
+    try {
+      gameObject = await this.loadGame(gameId)
+    } catch (e) {
+      GameCommon.setGameLoading(gameId, false)
+      return false
+    }
+
+    if (gameObject) {
+      GameCommon.setGame(gameObject.id, gameObject)
+      GameCommon.setGameLoading(gameId, false)
+      return true
+    }
     return false
   }
 

@@ -90,7 +90,7 @@ const run = async () => {
   // unload games in fixed interval
   let idlecheckInterval: any = null
   const doIdlecheck = async () => {
-    log.log('Unloading games...')
+    log.log('doIdlecheck...')
     const idleGameIds = server.getGameSockets().updateIdle()
     for (const gameId of idleGameIds) {
       await server.persistGame(gameId)
