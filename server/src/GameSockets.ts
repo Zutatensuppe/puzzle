@@ -46,6 +46,12 @@ export class GameSockets {
       this.sockets[gameId] = []
     }
     if (!this.sockets[gameId].includes(socket)) {
+      for (const s of this.sockets[gameId]) {
+        // close any existing sockets with the same protocol (= same player)
+        if (s.protocol === socket.protocol) {
+          s.close()
+        }
+      }
       this.sockets[gameId].push(socket)
       log.log('added socket: ', gameId, socket.protocol)
       log.log('socket count: ', Object.keys(this.sockets[gameId]).length)
