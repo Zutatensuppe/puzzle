@@ -96,6 +96,7 @@ const run = async () => {
       await server.persistGame(gameId)
       log.info(`[INFO] unloading game: ${gameId}`)
       GameCommon.unsetGame(gameId)
+      server.getGameSockets().removeSocketInfo(gameId)
     }
     idlecheckInterval = setTimeout(doIdlecheck, config.idlecheck.interval)
   }

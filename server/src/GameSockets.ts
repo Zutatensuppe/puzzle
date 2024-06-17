@@ -7,7 +7,7 @@ export class GameSockets {
   private sockets: Record<string, WebSocket[]> = {}
   private idle: Record<string, number> = {}
 
-  private static MAX_IDLE_TICKS = 10
+  private static MAX_IDLE_TICKS = 6 // * idlecheck interval = 6 * 10s = 60s
 
   updateIdle(): string[] {
     const idleGameIds = []
@@ -20,6 +20,15 @@ export class GameSockets {
       }
     }
     return idleGameIds
+  }
+
+  removeSocketInfo(gameId: string): void {
+    if (gameId in this.sockets) {
+      delete this.sockets[gameId]
+    }
+    if (gameId in this.idle) {
+      delete this.idle[gameId]
+    }
   }
 
   socketExists(gameId: string, socket: WebSocket): boolean {
