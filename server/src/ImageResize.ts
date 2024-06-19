@@ -1,20 +1,14 @@
 import sharp from 'sharp'
+import exif from 'exif'
 import { logger } from '../../common/src/Util'
 import config from './Config'
-import { Images } from './Images'
-import fs from 'fs'
+import fs from './FileSystem'
 import { Rect } from '../../common/src/Geometry'
 
 const log = logger('ImageResize.ts')
 
 export class ImageResize {
-  constructor(
-    private readonly images: Images,
-  ) {
-    // pass
-  }
-
-  async cropRestrictImage(
+  public async cropRestrictImage(
     sourceImagePath: string,
     filename: string,
     crop: Rect,
@@ -25,8 +19,8 @@ export class ImageResize {
     try {
       const baseDir = config.dir.CROP_DIR
       const targetFilename = `${baseDir}/${filename}-${crop.x}_${crop.y}_${crop.w}_${crop.h}_max_${maxw}x${maxh}-q75.${format}`
-      if (!fs.existsSync(targetFilename)) {
-        this.createDirIfNotExists(baseDir)
+      if (!await fs.exists(targetFilename)) {
+        await this.createDirIfNotExists(baseDir)
         const sharpImg = await this.loadSharpImage(sourceImagePath)
         const resized = sharpImg.extract({
           top: crop.y,
@@ -43,7 +37,7 @@ export class ImageResize {
     }
   }
 
-  async restrictImage(
+  public async restrictImage(
     sourceImagePath: string,
     filename: string,
     maxw: number,
@@ -52,8 +46,8 @@ export class ImageResize {
   ): Promise<string | null> {
     const baseDir = config.dir.RESIZE_DIR
     const targetFilename = `${baseDir}/${filename}-max_${maxw}x${maxh}-q75.${format}`
-    if (!fs.existsSync(targetFilename)) {
-      this.createDirIfNotExists(baseDir)
+    if (!await fs.exists(targetFilename)) {
+      await this.createDirIfNotExists(baseDir)
       try {
         const sharpImg = await this.loadSharpImage(sourceImagePath)
         const resized = sharpImg.resize(maxw, maxh, { fit: 'inside', withoutEnlargement: true })
@@ -66,7 +60,7 @@ export class ImageResize {
     return targetFilename
   }
 
-  async cropImage(
+  public async cropImage(
     sourceImagePath: string,
     filename: string,
     crop: Rect,
@@ -74,8 +68,8 @@ export class ImageResize {
   ): Promise<string | null> {
     const baseDir = config.dir.CROP_DIR
     const targetFilename = `${baseDir}/${filename}-${crop.x}_${crop.y}_${crop.w}_${crop.h}-q75.${format}`
-    if (!fs.existsSync(targetFilename)) {
-      this.createDirIfNotExists(baseDir)
+    if (!await fs.exists(targetFilename)) {
+      await this.createDirIfNotExists(baseDir)
       try {
         const sharpImg = await this.loadSharpImage(sourceImagePath)
         const resized = sharpImg.extract({
@@ -93,7 +87,7 @@ export class ImageResize {
     return targetFilename
   }
 
-  async resizeImage(
+  public async resizeImage(
     sourceImagePath: string,
     filename: string,
     w: number | null,
@@ -103,8 +97,8 @@ export class ImageResize {
   ): Promise<string | null> {
     const baseDir = config.dir.RESIZE_DIR
     const targetFilename = `${baseDir}/${filename}-${w}x${h || 0}-${fit}-q75.${format}`
-    if (!fs.existsSync(targetFilename)) {
-      this.createDirIfNotExists(baseDir)
+    if (!await fs.exists(targetFilename)) {
+      await this.createDirIfNotExists(baseDir)
       try {
         const sharpImg = await this.loadSharpImage(sourceImagePath)
         log.info(w, h, targetFilename)
@@ -129,16 +123,28 @@ export class ImageResize {
     }
   }
 
+  private async getExifOrientation(imagePath: string): Promise<number> {
+    return new Promise((resolve) => {
+      new exif.ExifImage({ image: imagePath }, (error, exifData) => {
+        if (error) {
+          resolve(0)
+        } else {
+          resolve(exifData.image.Orientation || 0)
+        }
+      })
+    })
+  }
+
   private async loadSharpImage(imagePath: string): Promise<sharp.Sharp> {
-    const orientation = await this.images.getExifOrientation(imagePath)
+    const orientation = await this.getExifOrientation(imagePath)
     const sharpImg = sharp(imagePath, { failOnError: false })
     const deg = this.orientationToRotationDegree(orientation)
     return deg ? sharpImg.rotate(deg) : sharpImg
   }
 
-  private createDirIfNotExists(dir: string): void {
-    if (!fs.existsSync(dir)) {
-      fs.mkdirSync(dir, { recursive: true })
+  private async createDirIfNotExists(dir: string): Promise<void> {
+    if (!await fs.exists(dir)) {
+      await fs.mkdir(dir)
     }
   }
 

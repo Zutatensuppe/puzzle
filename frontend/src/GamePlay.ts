@@ -53,9 +53,9 @@ export class GamePlay extends Game<Hud> {
     if (ret.anyDropped) {
       if (ts - this.lastSentImageSnapshotTs > this.snapshotsIntervalMs) {
         this.lastSentImageSnapshotTs = ts
-        createImageSnapshot(this.gameId, this.renderer).then((canvas) => {
+        void (createImageSnapshot(this.gameId, this.renderer).then((canvas) => {
           Communication.sendImageSnapshot(canvas.toDataURL('image/jpeg', 75), ts)
-        })
+        }))
       }
     }
 

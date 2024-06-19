@@ -12,12 +12,12 @@ export class Sounds {
   playPieceConnected() {
     const vol = this.playerSettings.soundsVolume()
     this.assets.Audio.CLICK.volume = vol / 100
-    this.assets.Audio.CLICK.play()
+    void this.assets.Audio.CLICK.play()
   }
 
   playOtherPieceConnected() {
     const vol = this.playerSettings.soundsVolume()
     this.assets.Audio.CLICK_2.volume = vol / 100
-    this.assets.Audio.CLICK_2.play()
+    void this.assets.Audio.CLICK_2.play()
   }
 }

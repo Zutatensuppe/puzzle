@@ -44,7 +44,7 @@ export class Graphics {
     return new Promise((resolve, reject) => {
       const img = new Image()
       img.onload = () => {
-        createImageBitmap(img).then(resolve)
+        void (createImageBitmap(img).then(resolve))
       }
       img.onerror = (e) => {
         reject(e)

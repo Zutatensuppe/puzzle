@@ -1,6 +1,6 @@
 import { EncodedPlayer } from '../../../common/src/Types'
 import Util from '../../../common/src/Util'
-import Db, { WhereRaw } from '../Db'
+import Db from '../Db'
 
 const TABLE = 'games'
 
@@ -79,8 +79,8 @@ export class GamesRepo {
     return !!gameRow
   }
 
-  async upsert(row: Partial<GameRow>, where: WhereRaw): Promise<void> {
-    await this.db.upsert(TABLE, row, where)
+  async upsert(row: Partial<GameRow>): Promise<void> {
+    await this.db.upsert(TABLE, row, ['id'])
   }
 
   async updatePlayerRelations(gameId: string, players: EncodedPlayer[]): Promise<void> {
@@ -99,10 +99,7 @@ export class GamesRepo {
         user_id: userId,
         game_id: gameId,
         pieces_count: p.points,
-      }, {
-        user_id: userId,
-        game_id: gameId,
-      })
+      }, ['user_id', 'game_id'])
     }
   }
 }

@@ -63,7 +63,7 @@ export class ImagesRepo {
   }
 
   async upsertTag(tag: Omit<TagRow, 'id'>): Promise<number> {
-    return await this.db.upsert('categories', tag, { slug: tag.slug }, 'id')
+    return await this.db.upsert('categories', tag, ['slug'], 'id')
   }
 
   async getTagsBySlugs(slugs: string[]): Promise<TagRow[]> {
@@ -74,12 +74,21 @@ export class ImagesRepo {
     return await this.db.getMany('categories', {slug: {'$ilike': search + '%'}})
   }
 
-  async getTagsByImageId(imageId: number): Promise<TagRow[]> {
+  async getTagsByImageIds(imageIds: number[]): Promise<Record<number, TagRow[]>> {
+    const where = this.db._buildWhere({'i.id': { '$in': imageIds }})
     const query = `
-      select c.id, c.slug, c.title from categories c
+      select i.id as image_id, json_agg(c.*) as tags from categories c
       inner join image_x_category ixc on c.id = ixc.category_id
-      where ixc.image_id = $1`
-    return await this.db._getMany(query, [imageId])
+      inner join images i on i.id = ixc.image_id
+      ${where.sql}
+      group by i.id
+    `
+    const rows = await this.db._getMany(query, where.values)
+    const tags: Record<number, TagRow[]> = {}
+    for (const row of rows) {
+      tags[row.image_id] = row.tags
+    }
+    return tags
   }
 
   async searchImagesWithCount(

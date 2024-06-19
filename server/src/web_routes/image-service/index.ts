@@ -2,7 +2,7 @@ import express, { Request, Response, Router } from 'express'
 import path from 'path'
 import config from '../../Config'
 import { ServerInterface } from '../../Server'
-import fs from 'fs'
+import fs from '../../FileSystem'
 
 export default function createRouter(
   server: ServerInterface,
@@ -11,7 +11,7 @@ export default function createRouter(
   router.get('/image/*', async (req: Request, res: Response) => {
     const filename = req.url.split('?')[0].substring('/image/'.length)
     const originalFile = path.resolve(config.dir.UPLOAD_DIR, decodeURIComponent(filename))
-    if (!fs.existsSync(originalFile)) {
+    if (!await fs.exists(originalFile)) {
       res.status(404)
       return
     }

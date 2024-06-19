@@ -48,17 +48,17 @@ export class GameService {
     // pass
   }
 
-  setDirty(gameId: string): void {
+  private setDirty(gameId: string): void {
     this.dirtyGames[gameId] = true
   }
 
-  setClean(gameId: string): void {
+  private setClean(gameId: string): void {
     if (gameId in this.dirtyGames) {
       delete this.dirtyGames[gameId]
     }
   }
 
-  async gameRowToGameObject(gameRow: GameRow): Promise<Game | null> {
+  public async gameRowToGameObject(gameRow: GameRow): Promise<Game | null> {
     let game: GameStoreData
     try {
       game = JSON.parse(gameRow.data)
@@ -80,7 +80,7 @@ export class GameService {
       gameRow.creator_user_id,
       !!gameRow.private,
     )
-    gameObject.hasReplay = GameLog.hasReplay(gameObject)
+    gameObject.hasReplay = await GameLog.hasReplay(gameObject)
     gameObject.crop = game.crop
     gameObject.registeredMap = await this.generateRegisteredMap(gameObject)
 
@@ -89,7 +89,7 @@ export class GameService {
     return gameObject
   }
 
-  async generateRegisteredMap(gameObject: Game): Promise<RegisteredMap> {
+  public async generateRegisteredMap(gameObject: Game): Promise<RegisteredMap> {
     if (!gameObject) {
       return {}
     }
@@ -106,19 +106,7 @@ export class GameService {
     return registeredMap
   }
 
-  getLastActionFromGameRow(gameRow: GameRow): Timestamp {
-    if (gameRow.data) {
-      try {
-        const game: GameStoreData = JSON.parse(gameRow.data)
-        return Math.max(0, ...game.players.map(p => p[8]))
-      } catch {
-        return 0
-      }
-    }
-    return 0
-  }
-
-  async ensureLoaded(gameId: string): Promise<boolean> {
+  public async ensureLoaded(gameId: string): Promise<boolean> {
     if (GameCommon.loaded(gameId)) {
       return true
     }
@@ -146,7 +134,7 @@ export class GameService {
     return false
   }
 
-  async createNewGameObj(gameId: string): Promise<Game | null> {
+  public async createNewGameObj(gameId: string): Promise<Game | null> {
     log.info(`createNewGameObj: ${gameId}`)
     const gameRow = await this.repo.getGameRowById(gameId)
     if (!gameRow) {
@@ -174,7 +162,7 @@ export class GameService {
     )
   }
 
-  async loadGame(gameId: string): Promise<Game | null> {
+  private async loadGame(gameId: string): Promise<Game | null> {
     log.info(`[INFO] loading game: ${gameId}`)
     const gameRow = await this.repo.getGameRowById(gameId)
     if (!gameRow) {
@@ -185,7 +173,7 @@ export class GameService {
     return gameObjects.length > 0 ? gameObjects[0] : null
   }
 
-  async gameRowsToGames(gameRows: GameRow[]): Promise<Game[]> {
+  private async gameRowsToGames(gameRows: GameRow[]): Promise<Game[]> {
     const games: Game[] = []
     for (const gameRow of gameRows) {
       const gameObject = await this.gameRowToGameObject(gameRow)
@@ -198,31 +186,31 @@ export class GameService {
     return games
   }
 
-  async getPublicRunningGames(offset: number, limit: number, userId: number): Promise<GameRow[]> {
+  public async getPublicRunningGames(offset: number, limit: number, userId: number): Promise<GameRow[]> {
     return await this.repo.getPublicRunningGames(offset, limit, userId)
   }
 
-  async getPublicFinishedGames(offset: number, limit: number, userId: number): Promise<GameRow[]> {
+  public async getPublicFinishedGames(offset: number, limit: number, userId: number): Promise<GameRow[]> {
     return await this.repo.getPublicFinishedGames(offset, limit, userId)
   }
 
-  async countPublicRunningGames(userId: number): Promise<number> {
+  public async countPublicRunningGames(userId: number): Promise<number> {
     return await this.repo.countPublicRunningGames(userId)
   }
 
-  async countPublicFinishedGames(userId: number): Promise<number> {
+  public async countPublicFinishedGames(userId: number): Promise<number> {
     return await this.repo.countPublicFinishedGames(userId)
   }
 
-  async exists(gameId: string): Promise<boolean> {
+  private async exists(gameId: string): Promise<boolean> {
     return await this.repo.exists(gameId)
   }
 
-  dirtyGameIds(): string[] {
+  public dirtyGameIds(): string[] {
     return Object.keys(this.dirtyGames)
   }
 
-  async persistGame(game: Game): Promise<void> {
+  public async persistGame(game: Game): Promise<void> {
     this.setClean(game.id)
     await this.repo.upsert({
       id: game.id,
@@ -234,15 +222,13 @@ export class GameService {
       private: game.private ? 1 : 0,
       pieces_count: game.puzzle.tiles.length,
       // the image_snapshot_url is not updated here, this is intended!
-    }, {
-      id: game.id,
     })
     await this.repo.updatePlayerRelations(game.id, game.players)
 
     log.info(`[INFO] persisted game ${game.id}`)
   }
 
-  storeDataToGame(
+  private storeDataToGame(
     storeData: GameStoreData,
     creatorUserId: number | null,
     isPrivate: boolean,
@@ -266,7 +252,7 @@ export class GameService {
     }
   }
 
-  gameToStoreData(game: Game): GameStoreData {
+  private gameToStoreData(game: Game): GameStoreData {
     return {
       id: game.id,
       gameVersion: game.gameVersion,
@@ -284,7 +270,7 @@ export class GameService {
     }
   }
 
-  async createGameObject(
+  private async createGameObject(
     gameId: string,
     gameVersion: number,
     targetPieceCount: number,
@@ -317,7 +303,7 @@ export class GameService {
     }
   }
 
-  async createNewGame(
+  public async createNewGame(
     gameSettings: GameSettings,
     ts: Timestamp,
     creatorUserId: number,
@@ -345,8 +331,8 @@ export class GameService {
       gameSettings.crop,
     )
 
-    GameLog.create(gameId, ts)
-    GameLog.log(
+    await GameLog.create(gameId, ts)
+    await GameLog.log(
       gameObject.id,
       [
         LOG_TYPE.HEADER,
@@ -369,13 +355,13 @@ export class GameService {
     return gameObject.id
   }
 
-  addPlayer(gameId: string, playerId: string, ts: Timestamp): void {
+  public async addPlayer(gameId: string, playerId: string, ts: Timestamp): Promise<void> {
     if (GameLog.shouldLog(gameId, GameCommon.getFinishTs(gameId), ts)) {
       const idx = GameCommon.getPlayerIndexById(gameId, playerId)
       if (idx === -1) {
-        GameLog.log(gameId, [LOG_TYPE.ADD_PLAYER, playerId, ts])
+        await GameLog.log(gameId, [LOG_TYPE.ADD_PLAYER, playerId, ts])
       } else {
-        GameLog.log(gameId, [LOG_TYPE.UPDATE_PLAYER, idx, ts])
+        await GameLog.log(gameId, [LOG_TYPE.UPDATE_PLAYER, idx, ts])
       }
     }
 
@@ -383,7 +369,7 @@ export class GameService {
     this.setDirty(gameId)
   }
 
-  async handleGameEvent(
+  public async handleGameEvent(
     gameId: string,
     playerId: string,
     gameEvent: GameEvent,
@@ -391,7 +377,7 @@ export class GameService {
   ): Promise<HandleGameEventResult> {
     if (GameLog.shouldLog(gameId, GameCommon.getFinishTs(gameId), ts)) {
       const idx = GameCommon.getPlayerIndexById(gameId, playerId)
-      GameLog.log(gameId, [LOG_TYPE.GAME_EVENT, idx, gameEvent, ts])
+      await GameLog.log(gameId, [LOG_TYPE.GAME_EVENT, idx, gameEvent, ts])
     }
     const wasFinished = GameCommon.getFinishTs(gameId)
     const ret = GameCommon.handleGameEvent(gameId, playerId, gameEvent, ts)

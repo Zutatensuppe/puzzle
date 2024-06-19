@@ -37,7 +37,7 @@ const run = async () => {
   const users = new Users(db)
   const usersRepo = new UsersRepo(db)
   const images = new Images(imagesRepo)
-  const imageResize = new ImageResize(images)
+  const imageResize = new ImageResize()
   const tokensRepo = new TokensRepo(db)
   const announcementsRepo = new AnnouncementsRepo(db)
   const puzzleService = new PuzzleService(images)
@@ -151,4 +151,4 @@ const run = async () => {
   })
 }
 
-run()
+void run()
