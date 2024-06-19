@@ -141,7 +141,7 @@ import { onMounted, onBeforeUnmount, ref, watch } from 'vue'
 import NewImageDialog from './../components/NewImageDialog.vue'
 import EditImageDialog from './../components/EditImageDialog.vue'
 import NewGameDialog from './../components/NewGameDialog.vue'
-import { GameSettings, ImageInfo, Tag, NewGameDataRequestData, ImagesRequestData, ImageSearchSort, isImageSearchSort } from '../../../common/src/Types'
+import { GameSettings, ImageInfo, Tag, NewGameDataRequestData, ImagesRequestData, ImageSearchSort, isImageSearchSort, ImageId } from '../../../common/src/Types'
 import api from '../_api'
 import { XhrRequest } from '../_api/xhr'
 import { onBeforeRouteUpdate, RouteLocationNormalizedLoaded, useRouter } from 'vue-router'
@@ -163,7 +163,7 @@ const sentinelActive = ref<boolean>(false)
 
 const tags = ref<Tag[]>([])
 const image = ref<ImageInfo>({
-  id: 0,
+  id: 0 as ImageId,
   uploaderUserId: null,
   uploaderName: '',
   filename: '',

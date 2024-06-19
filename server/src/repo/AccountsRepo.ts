@@ -1,10 +1,11 @@
 import Crypto from '../Crypto'
 import Db, { WhereRaw } from '../Db'
+import { AccountId } from '../../../common/src/Types'
 
 const TABLE = 'accounts'
 
 export interface AccountRow {
-  id: number
+  id: AccountId
   created: Date
   email: string
   password: string
@@ -17,11 +18,11 @@ export class AccountsRepo {
     // pass
   }
 
-  async insert(account: Partial<AccountRow>): Promise<number> {
+  async insert(account: Partial<AccountRow>): Promise<AccountId> {
     if (account.email) {
       account.email = Crypto.encrypt(account.email)
     }
-    return await this.db.insert(TABLE, account, 'id') as number
+    return await this.db.insert(TABLE, account, 'id') as AccountId
   }
 
   async get(where: WhereRaw): Promise<AccountRow | null> {

@@ -2,7 +2,13 @@
   <v-container>
     <Nav />
     <h1>Images</h1>
-    <v-table density="compact">
+
+    <Pagination
+      v-if="images"
+      :pagination="images.pagination"
+      @click="onPagination"
+    />
+    <v-table density="compact" v-if="images">
       <thead>
         <tr>
           <th>Preview</th>
@@ -13,8 +19,8 @@
       </thead>
       <tbody>
         <tr
-          v-for="(item, idx) in images"
-          :key="idx"
+          v-for="item in images.items"
+          :key="item.id"
         >
           <th>
             <a
@@ -52,6 +58,11 @@
         </tr>
       </tbody>
     </v-table>
+    <Pagination
+      v-if="images"
+      :pagination="images.pagination"
+      @click="onPagination"
+    />
   </v-container>
 </template>
 <script setup lang="ts">
@@ -60,8 +71,11 @@ import { resizeUrl } from '../../../../common/src/ImageService'
 import user from '../../user'
 import api from '../../_api'
 import Nav from '../components/Nav.vue'
+import Pagination from '../../components/Pagination.vue'
+import { Pagination as PaginationType } from '../../../../common/src/Types'
 
-const images = ref<any[]>([])
+const perPage = 50
+const images = ref<{ items: any[], pagination: PaginationType } | null>(null)
 
 const onDelete = async (image: any) => {
   if (!confirm(`Really delete image ${image.id}?`)) {
@@ -70,22 +84,31 @@ const onDelete = async (image: any) => {
 
   const resp = await api.admin.deleteImage(image.id)
   if (resp.ok) {
-    images.value = images.value.filter(i => i.id !== image.id)
+    if (images.value) {
+      images.value.items = images.value.items.filter(i => i.id !== image.id)
+    }
     alert('Successfully deleted image!')
   } else {
     alert('Deleting image failed!')
   }
 }
 
+const onPagination = async (q: { limit: number, offset: number }) => {
+  if (!images.value) {
+    return
+  }
+  images.value = await api.admin.getImages(q)
+}
+
 onMounted(async () => {
   if (user.getMe()) {
-    images.value = await api.admin.getImages()
+    images.value = await api.admin.getImages({ limit: perPage, offset: 0 })
   }
   user.eventBus.on('login', async () => {
-    images.value = await api.admin.getImages()
+    images.value = await api.admin.getImages({ limit: perPage, offset: 0 })
   })
   user.eventBus.on('logout', () => {
-    images.value = []
+    images.value = null
   })
 })
 </script>

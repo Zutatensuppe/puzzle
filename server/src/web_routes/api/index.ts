@@ -1,4 +1,4 @@
-import { GameSettings, GameInfo, ApiDataIndexData, ApiDataFinishedGames, NewGameDataRequestData, ImagesRequestData } from '../../../../common/src/Types'
+import { GameSettings, GameInfo, ApiDataIndexData, ApiDataFinishedGames, NewGameDataRequestData, ImagesRequestData, UserId, ImageId, ClientId } from '../../../../common/src/Types'
 import config from '../../Config'
 import express, { Response, Router } from 'express'
 import GameCommon from '../../../../common/src/GameCommon'
@@ -16,7 +16,7 @@ import fs from '../../FileSystem'
 const log = logger('web_routes/api/index.ts')
 
 interface SaveImageRequestData {
-  id: number
+  id: ImageId
   title: string
   copyrightName: string
   copyrightURL: string
@@ -29,7 +29,7 @@ export default function createRouter(
   server: ServerInterface,
 ): Router {
 
-  const determineNewUserClientId = async (originalClientId: string): Promise<string> => {
+  const determineNewUserClientId = async (originalClientId: ClientId): Promise<ClientId> => {
     // if a client id is given, we will use it, if it doesnt
     // correspond to a registered user. this way, guests will
     // continue to have their client id after logging in.
@@ -37,10 +37,10 @@ export default function createRouter(
     // puzzles they have puzzled as guests
     return originalClientId && !await server.getUsers().clientIdTaken(originalClientId)
       ? originalClientId
-      : uniqId()
+      : uniqId() as ClientId
   }
 
-  const addAuthToken = async (userId: number, res: Response): Promise<void> => {
+  const addAuthToken = async (userId: UserId, res: Response): Promise<void> => {
     const token = await server.getUsers().addAuthToken(userId)
     res.cookie(COOKIE_TOKEN, token, { maxAge: 356 * Time.DAY, httpOnly: true })
   }
@@ -312,7 +312,11 @@ export default function createRouter(
 
     const token = generateToken()
     // TODO: dont misuse token table user id <> account id
-    const tokenRow = { user_id: account.id, token, type: 'password-reset' }
+    const tokenRow = {
+      user_id: account.id,
+      token,
+      type: 'password-reset',
+    }
     await server.getTokensRepo().insert(tokenRow)
     server.getMail().sendPasswordResetMail({ user: { name: user.name, email: emailPlain }, token: tokenRow })
     res.send({ success: true })
@@ -368,7 +372,12 @@ export default function createRouter(
 
     const userInfo = { email: emailRaw, name: usernameRaw }
     const token = generateToken()
-    const tokenRow = { user_id: account.id, token, type: 'registration' }
+    const tokenRow = {
+      user_id: account.id,
+      token,
+      type: 'registration',
+    }
+    // TODO: dont misuse token table user id <> account id
     await server.getTokensRepo().insert(tokenRow)
     server.getMail().sendRegistrationMail({ user: userInfo, token: tokenRow })
     res.send({ success: true })
@@ -474,7 +483,7 @@ export default function createRouter(
 
   router.get('/newgame-data', async (req: any, res): Promise<void> => {
     const user: UserRow | null = req.user || null
-    const userId = user && req.user_type === 'user' ? user.id : 0
+    const userId = user && req.user_type === 'user' ? user.id : 0 as UserId
 
     const requestData: NewGameDataRequestData = req.query as any
     res.send({
@@ -511,7 +520,7 @@ export default function createRouter(
       return
     }
     const user: UserRow | null = req.user || null
-    const userId = user && req.user_type === 'user' ? user.id : 0
+    const userId = user && req.user_type === 'user' ? user.id : 0 as UserId
 
     res.send({
       images: await server.getImages().imagesFromDb(requestData.search, requestData.sort, false, offset, IMAGES_PER_PAGE_LIMIT, userId),
@@ -547,7 +556,7 @@ export default function createRouter(
 
   router.get('/index-data', async (req: any, res): Promise<void> => {
     const user: UserRow | null = req.user || null
-    const userId = user && req.user_type === 'user' ? user.id : 0
+    const userId = user && req.user_type === 'user' ? user.id : 0 as UserId
 
     const ts = Time.timestamp()
     // all running rows
@@ -588,7 +597,7 @@ export default function createRouter(
 
   router.get('/finished-games', async (req: any, res): Promise<void> => {
     const user: UserRow | null = req.user || null
-    const userId = user && req.user_type === 'user' ? user.id : 0
+    const userId = user && req.user_type === 'user' ? user.id : 0 as UserId
 
     const offset = parseInt(`${req.query.offset}`, 10)
     if (isNaN(offset) || offset < 0) {
@@ -684,10 +693,10 @@ export default function createRouter(
 
       if (req.body.tags) {
         const tags = req.body.tags.split(',').filter((tag: string) => !!tag)
-        await im.setTags(imageId as number, tags)
+        await im.setTags(imageId, tags)
       }
 
-      res.send(await im.imageFromDb(imageId as number))
+      res.send(await im.imageFromDb(imageId))
     })
   })
 

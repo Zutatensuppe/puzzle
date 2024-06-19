@@ -1,9 +1,10 @@
 import Db, { WhereRaw } from '../Db'
+import { AnnouncementId } from '../../../common/src/Types'
 
 const TABLE = 'announcements'
 
 export interface AnnouncementsRow {
-  id: number
+  id: AnnouncementId
   created: Date
   title: string
   message: string
@@ -18,8 +19,8 @@ export class AnnouncementsRepo {
     return await this.db.getMany(TABLE, undefined, [{ created: -1 }])
   }
 
-  async insert(announcement: Partial<AnnouncementsRow>): Promise<number> {
-    return await this.db.insert(TABLE, announcement, 'id') as number
+  async insert(announcement: Partial<AnnouncementsRow>): Promise<AnnouncementId> {
+    return await this.db.insert(TABLE, announcement, 'id') as AnnouncementId
   }
 
   async get(where: WhereRaw): Promise<AnnouncementsRow | null> {

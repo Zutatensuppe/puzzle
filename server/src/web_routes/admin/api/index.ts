@@ -1,6 +1,7 @@
 import express, { NextFunction } from 'express'
 import { ServerInterface } from '../../../Server'
 import { MergeClientIdsIntoUser } from '../../../admin-tools/MergeClientIdsIntoUser'
+import { ServerInfo } from '../../../Types'
 
 export default function createRouter(
   server: ServerInterface,
@@ -36,13 +37,26 @@ export default function createRouter(
   router.use(requireLoginApi)
 
   router.get('/server-info', async (req, res) => {
-    res.send({
+    res.send(<ServerInfo>{
       socketCount: server.getGameSockets().getSocketCount(),
+      socketCountsByGameIds: server.getGameSockets().getSocketCountsByGameIds(),
     })
   })
 
   router.get('/games', async (req, res) => {
-    const items = await server.getDb().getMany('games', undefined, [{ created: -1 }])
+    const offset = parseInt(`${req.query.offset}`, 10)
+    if (isNaN(offset) || offset < 0) {
+      res.status(400).send({ error: 'bad offset' })
+      return
+    }
+    const limit = parseInt(`${req.query.limit}`, 10)
+    if (isNaN(limit) || limit < 0) {
+      res.status(400).send({ error: 'bad limit' })
+      return
+    }
+
+    const total = await server.getDb().count('games')
+    const items = await server.getDb().getMany('games', undefined, [{ created: -1 }], { offset, limit })
     const imageIdMap: Record<string, boolean> = {}
     items.forEach(game => {
       imageIdMap[game.image_id] = true
@@ -53,7 +67,10 @@ export default function createRouter(
       game.image = images.find(image => image.id === game.image_id) || null
       return game
     })
-    res.send(gamesWithImages)
+    res.send({
+      items: gamesWithImages,
+      pagination: { total, offset, limit },
+    })
   })
 
   router.delete('/games/:id', async (req, res) => {
@@ -63,13 +80,30 @@ export default function createRouter(
   })
 
   router.get('/images', async (req, res) => {
+    const offset = parseInt(`${req.query.offset}`, 10)
+    if (isNaN(offset) || offset < 0) {
+      res.status(400).send({ error: 'bad offset' })
+      return
+    }
+    const limit = parseInt(`${req.query.limit}`, 10)
+    if (isNaN(limit) || limit < 0) {
+      res.status(400).send({ error: 'bad limit' })
+      return
+    }
+
+    const limitSql = server.getDb()._buildLimit({ offset, limit })
+    const total = await server.getDb().count('images')
     const items = await server.getDb()._getMany(`
       select i.*, count(g.id) as game_count
       from images i left join games g on g.image_id = i.id
       group by i.id
-      order by i.id desc;
+      order by i.id desc
+      ${limitSql};
     `)
-    res.send(items)
+    res.send({
+      items,
+      pagination: { total, offset, limit },
+    })
   })
 
   router.delete('/images/:id', async (req, res) => {
@@ -79,8 +113,23 @@ export default function createRouter(
   })
 
   router.get('/users', async (req, res) => {
-    const items = await server.getDb().getMany('users', undefined, [{ id: -1 }])
-    res.send(items)
+    const offset = parseInt(`${req.query.offset}`, 10)
+    if (isNaN(offset) || offset < 0) {
+      res.status(400).send({ error: 'bad offset' })
+      return
+    }
+    const limit = parseInt(`${req.query.limit}`, 10)
+    if (isNaN(limit) || limit < 0) {
+      res.status(400).send({ error: 'bad limit' })
+      return
+    }
+
+    const total = await server.getDb().count('users')
+    const items = await server.getDb().getMany('users', undefined, [{ id: -1 }], { offset, limit })
+    res.send({
+      items,
+      pagination: { total, offset, limit },
+    })
   })
 
   router.post('/users/_merge_client_ids_into_user', express.json(), async (req, res) => {

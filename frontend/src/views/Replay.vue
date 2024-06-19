@@ -174,7 +174,7 @@
 </template>
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, Ref, ref, watch } from 'vue'
-import { ReplayHud, GameStatus, GamePlayers, CONN_STATE, RegisteredMap } from '../../../common/src/Types'
+import { ReplayHud, GameStatus, GamePlayers, CONN_STATE, RegisteredMap, GameId } from '../../../common/src/Types'
 import { GameReplay } from './../GameReplay'
 import { useRoute } from 'vue-router'
 import api from '../_api'
@@ -414,7 +414,7 @@ onMounted(async () => {
   window.addEventListener('resize', onResize)
 
   const game = new GameReplay(
-    `${route.params.id}`,
+    `${route.params.id}` as GameId,
     api.clientId(),
     config.get().WS_ADDRESS,
     canvasEl.value,

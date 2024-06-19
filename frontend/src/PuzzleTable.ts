@@ -1,6 +1,6 @@
 import GameCommon from '../../common/src/GameCommon'
 import { Dim, Point, Rect } from './Geometry'
-import { PlayerSettingsData } from '../../common/src/Types'
+import { GameId, PlayerSettingsData } from '../../common/src/Types'
 import { logger } from '../../common/src/Util'
 import { Graphics } from './Graphics'
 
@@ -16,7 +16,7 @@ export class PuzzleTable {
   }
 
   async loadTexture(
-    gameId: string,
+    gameId: GameId,
     settings: PlayerSettingsData,
   ): Promise<HTMLCanvasElement | null> {
     const textureNameOrUrl = settings.useCustomTableTexture
@@ -66,7 +66,7 @@ export class PuzzleTable {
   }
 
   getImage(
-    gameId: string,
+    gameId: GameId,
     settings: PlayerSettingsData,
   ): HTMLCanvasElement | null {
     const textureNameOrUrl = settings.useCustomTableTexture ? settings.customTableTexture : settings.tableTexture

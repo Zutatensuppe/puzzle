@@ -1,7 +1,7 @@
 import Debug from '../../common/src/Debug'
 import GameCommon from '../../common/src/GameCommon'
 import { Dim, Point, Rect } from '../../common/src/Geometry'
-import { FireworksInterface, FixedLengthArray, Piece, Player, PlayerSettingsData, PuzzleStatusInterface, Timestamp } from '../../common/src/Types'
+import { FireworksInterface, FixedLengthArray, GameId, Piece, Player, PlayerSettingsData, PuzzleStatusInterface, Timestamp } from '../../common/src/Types'
 import { Camera } from '../../common/src/Camera'
 import PuzzleGraphics from './PuzzleGraphics'
 import { logger } from '../../common/src/Util'
@@ -29,7 +29,7 @@ export class Renderer {
   private backgroundCache: ImageData | null = null
 
   constructor(
-    protected readonly gameId: string,
+    protected readonly gameId: GameId,
     protected readonly fireworks: FireworksInterface | null,
     protected readonly puzzleTable: PuzzleTable | null,
     protected readonly lockMovement: boolean,

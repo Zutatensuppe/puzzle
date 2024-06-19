@@ -3,23 +3,25 @@
     <Nav />
     <h1>Users</h1>
 
-    <v-table density="compact">
+    <Pagination
+      v-if="users"
+      :pagination="users.pagination"
+      @click="onPagination"
+    />
+    <v-table density="compact" v-if="users">
       <thead>
         <tr>
           <th>Id</th>
           <th>Created</th>
           <th>Client Id</th>
-          <th>Id</th>
-          <th>Created</th>
-          <th>Client ID</th>
           <th>Name</th>
           <th>Email</th>
         </tr>
       </thead>
       <tbody>
         <tr
-          v-for="(item, idx) in users"
-          :key="idx"
+          v-for="item in users.items"
+          :key="item.id"
         >
           <td>{{ item.id }}</td>
           <td>{{ item.created }}</td>
@@ -41,6 +43,11 @@
         </tr>
       </tbody>
     </v-table>
+    <Pagination
+      v-if="users"
+      :pagination="users.pagination"
+      @click="onPagination"
+    />
 
     <h2>MERGE CLIENT IDS</h2>
 
@@ -89,9 +96,11 @@ import { onMounted, ref } from 'vue'
 import user from '../../user'
 import api from '../../_api'
 import Nav from '../components/Nav.vue'
-import { MergeClientIdsIntoUserResult } from '~common/Types'
+import Pagination from '../../components/Pagination.vue'
+import { ClientId, MergeClientIdsIntoUserResult, Pagination as PaginationType, UserId } from '../../../../common/src/Types'
 
-const users = ref<any[]>([])
+const perPage = 50
+const users = ref<{ items: any[], pagination: PaginationType } | null>(null)
 
 const dry = ref<boolean>(true)
 const mergeResult = ref<MergeClientIdsIntoUserResult | null>(null)
@@ -114,7 +123,7 @@ group by playername, client_id, user_id, user_client_id
 `
 
 const busy = ref<boolean>(false)
-const userId = ref<number>(0)
+const userId = ref<UserId>(0 as UserId)
 const clientIds = ref<string>('')
 const mergeClientIdsIntoUser = async () => {
   if (busy.value) {
@@ -122,20 +131,27 @@ const mergeClientIdsIntoUser = async () => {
   }
   mergeResult.value = null
   busy.value = true
-  const clientIdValues = clientIds.value.split('\n').map((x: string) => x.trim())
+  const clientIdValues: ClientId[] = clientIds.value.split('\n').map((x: string) => x.trim()) as ClientId[]
   mergeResult.value = await api.admin.mergeClientIdsIntoUser(userId.value, clientIdValues, dry.value)
   busy.value = false
 }
 
+const onPagination = async (q: { limit: number, offset: number }) => {
+  if (!users.value) {
+    return
+  }
+  users.value = await api.admin.getUsers(q)
+}
+
 onMounted(async () => {
   if (user.getMe()) {
-    users.value = await api.admin.getUsers()
+    users.value = await api.admin.getUsers({ limit: perPage, offset: 0 })
   }
   user.eventBus.on('login', async () => {
-    users.value = await api.admin.getUsers()
+    users.value = await api.admin.getUsers({ limit: perPage, offset: 0 })
   })
   user.eventBus.on('logout', () => {
-    users.value = []
+    users.value = null
   })
 })
 </script>

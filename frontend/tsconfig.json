@@ -7,9 +7,6 @@
 
     "strict": true,
     "moduleResolution": "node",
-    "paths": {
-      "~common/*": ["../common/src/*"]
-    },
     "rootDirs": [
       "src",
       "../common/src"

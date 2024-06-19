@@ -13,7 +13,8 @@ module.exports = {
     parser: {
       ts: '@typescript-eslint/parser',
     },
-    project: './tsconfig.json'
+    project: './tsconfig.json',
+    extraFileExtensions: ['.vue']
   },
   extends: [
     'plugin:vue/vue3-recommended',
