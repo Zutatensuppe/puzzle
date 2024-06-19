@@ -1,13 +1,13 @@
-import { EncodedPlayer } from '../../../common/src/Types'
+import { EncodedPlayer, GameId, ImageId, UserId } from '../../../common/src/Types'
 import Util from '../../../common/src/Util'
 import Db from '../Db'
 
 const TABLE = 'games'
 
 export interface GameRow {
-  id: string
-  creator_user_id: number | null
-  image_id: number
+  id: GameId
+  creator_user_id: UserId | null
+  image_id: ImageId
   created: Date
   finished: Date | null
   data: string
@@ -21,12 +21,12 @@ export class GamesRepo {
     // pass
   }
 
-  async getGameRowById(gameId: string): Promise<GameRow | null> {
+  async getGameRowById(gameId: GameId): Promise<GameRow | null> {
     const gameRow = await this.db.get(TABLE, {id: gameId})
     return (gameRow as GameRow) || null
   }
 
-  async getPublicRunningGames(offset: number, limit: number, userId: number): Promise<GameRow[]> {
+  async getPublicRunningGames(offset: number, limit: number, userId: UserId): Promise<GameRow[]> {
     const limitSql = this.db._buildLimit({ limit, offset })
     return await this.db._getMany(`
       SELECT * FROM ${TABLE}
@@ -40,7 +40,7 @@ export class GamesRepo {
     `, [userId]) as GameRow[]
   }
 
-  async getPublicFinishedGames(offset: number, limit: number, userId: number): Promise<GameRow[]> {
+  async getPublicFinishedGames(offset: number, limit: number, userId: UserId): Promise<GameRow[]> {
     const limitSql = this.db._buildLimit({ limit, offset })
     return await this.db._getMany(`
       SELECT * FROM ${TABLE}
@@ -54,7 +54,7 @@ export class GamesRepo {
     `, [userId]) as GameRow[]
   }
 
-  async countPublicRunningGames(userId: number): Promise<number> {
+  async countPublicRunningGames(userId: UserId): Promise<number> {
     const sql = `SELECT COUNT(*)::int FROM ${TABLE} WHERE
       ("private" = 0 OR creator_user_id = $1)
       AND
@@ -64,7 +64,7 @@ export class GamesRepo {
     return row.count
   }
 
-  async countPublicFinishedGames(userId: number): Promise<number> {
+  async countPublicFinishedGames(userId: UserId): Promise<number> {
     const sql = `SELECT COUNT(*)::int FROM ${TABLE} WHERE
       ("private" = 0 OR creator_user_id = $1)
       AND
@@ -74,7 +74,7 @@ export class GamesRepo {
     return row.count
   }
 
-  async exists(gameId: string): Promise<boolean> {
+  async exists(gameId: GameId): Promise<boolean> {
     const gameRow = await this.getGameRowById(gameId)
     return !!gameRow
   }
@@ -83,7 +83,7 @@ export class GamesRepo {
     await this.db.upsert(TABLE, row, ['id'])
   }
 
-  async updatePlayerRelations(gameId: string, players: EncodedPlayer[]): Promise<void> {
+  async updatePlayerRelations(gameId: GameId, players: EncodedPlayer[]): Promise<void> {
     if (!players.length) {
       return
     }

@@ -1,8 +1,8 @@
-import { Leaderboard, LeaderboardEntry } from '../../../common/src/Types'
+import { Leaderboard, LeaderboardEntry, LeaderboardId, UserId } from '../../../common/src/Types'
 import Db from '../Db'
 
 interface LeaderboardRow {
-  id: number
+  id: LeaderboardId
   name: string
 }
 
@@ -69,7 +69,7 @@ export class LeaderboardRepo {
     })
   }
 
-  public async getTop10(userId: number): Promise<Leaderboard[]> {
+  public async getTop10(userId: UserId): Promise<Leaderboard[]> {
     const leaderboards: Leaderboard[] = []
     for (const lb of this.LEADERBOARDS) {
       const leaderboard: LeaderboardRow | null = await this.db.get('leaderboard', { name: lb.name })

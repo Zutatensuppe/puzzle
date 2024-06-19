@@ -22,6 +22,8 @@ import {
   GamePlayers,
   GameStatus,
   RegisteredMap,
+  GameId,
+  ClientId,
 } from '../../common/src/Types'
 import _api from './_api'
 import { Assets } from './Assets'
@@ -72,8 +74,8 @@ export abstract class Game<HudType extends Hud> {
   private gameLoop!: GameLoopInstance
 
   constructor(
-    protected readonly gameId: string,
-    protected clientId: string,
+    protected readonly gameId: GameId,
+    protected clientId: ClientId,
     private readonly wsAddress: string,
     protected readonly canvas: HTMLCanvasElement,
     protected readonly hud: HudType,
@@ -84,7 +86,7 @@ export abstract class Game<HudType extends Hud> {
     this.viewport = new Camera()
   }
 
-  async reinit(clientId: string): Promise<void> {
+  async reinit(clientId: ClientId): Promise<void> {
     this.clientId = clientId
     this.unload()
     await this.init()
@@ -462,11 +464,11 @@ export abstract class Game<HudType extends Hud> {
     return GameCommon.getImageUrl(this.gameId)
   }
 
-  getGameId(): string {
+  getGameId(): GameId {
     return this.gameId
   }
 
-  getClientId(): string {
+  getClientId(): ClientId {
     return this.clientId
   }
 

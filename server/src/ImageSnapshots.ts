@@ -4,6 +4,7 @@ import fs from './FileSystem'
 import path from 'path'
 import { logger } from '../../common/src/Util'
 import Db from './Db'
+import { GameId } from '../../common/src/Types'
 
 const log = logger('ImageSnapshots.ts')
 
@@ -16,7 +17,7 @@ const tryRm = async (f: string): Promise<void> => {
   }
 }
 
-const cleanupPreviousVersionsOfImage = async (imgSnapshotDir: string, gameId: string, ts: number): Promise<void> => {
+const cleanupPreviousVersionsOfImage = async (imgSnapshotDir: string, gameId: GameId, ts: number): Promise<void> => {
   try {
     const files = await fs.readdir(imgSnapshotDir)
     const removalPromises = files.map(async (file) => {
@@ -41,7 +42,7 @@ const cleanupPreviousVersionsOfImage = async (imgSnapshotDir: string, gameId: st
   }
 }
 
-const cleanupResizedVersionsOfImage = async (resizeDir: string, gameId: string, ts: number): Promise<void> => {
+const cleanupResizedVersionsOfImage = async (resizeDir: string, gameId: GameId, ts: number): Promise<void> => {
   try {
     const files = await fs.readdir(resizeDir)
     const removalPromises = files.map(async (file) => {
@@ -59,7 +60,7 @@ const cleanupResizedVersionsOfImage = async (resizeDir: string, gameId: string, 
   }
 }
 
-export const storeImageSnapshot = async (imageBase64Str: string, gameId: string, ts: number, db: Db) => {
+export const storeImageSnapshot = async (imageBase64Str: string, gameId: GameId, ts: number, db: Db) => {
   const imgSnapshotDir = `${config.dir.UPLOAD_DIR}/image_snapshots`
   const filename = `${gameId}_${ts}.jpeg`
   if (await fs.exists(`${imgSnapshotDir}/${filename}`)) {

@@ -67,7 +67,7 @@
   </div>
 </template>
 <script setup lang="ts">
-import { Hud, GameStatus, GamePlayers, CONN_STATE, RegisteredMap } from '../../../common/src/Types'
+import { Hud, GameStatus, GamePlayers, CONN_STATE, RegisteredMap, GameId } from '../../../common/src/Types'
 import { GamePlay } from '../GamePlay'
 import { onMounted, onUnmounted, Ref, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
@@ -224,7 +224,7 @@ onMounted(async () => {
   window.addEventListener('resize', onResize)
 
   const game = new GamePlay(
-    `${route.params.id}`,
+    `${route.params.id}` as GameId,
     api.clientId(),
     config.get().WS_ADDRESS,
     canvasEl.value,

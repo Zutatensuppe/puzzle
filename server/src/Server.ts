@@ -8,7 +8,7 @@ import { GameSockets } from './GameSockets'
 import Time from '../../common/src/Time'
 import config from './Config'
 import GameCommon from '../../common/src/GameCommon'
-import { ServerEvent, Game as GameType, ClientEvent, GameEventInputConnectionClose } from '../../common/src/Types'
+import { ServerEvent, Game as GameType, ClientEvent, GameEventInputConnectionClose, GameId, ClientId } from '../../common/src/Types'
 import { GameService } from './GameService'
 import createApiRouter from './web_routes/api'
 import createAdminApiRouter from './web_routes/admin/api'
@@ -60,7 +60,7 @@ export interface ServerInterface {
   getLeaderboardRepo: () => LeaderboardRepo
   getImagesRepo: () => ImagesRepo
   getTwitch: () => Twitch
-  fixPieces: (gameId: string) => Promise<any>
+  fixPieces: (gameId: GameId) => Promise<any>
 }
 
 export class Server implements ServerInterface {
@@ -135,7 +135,7 @@ export class Server implements ServerInterface {
     return this.twitch
   }
 
-  async persistGame(gameId: string): Promise<void> {
+  async persistGame(gameId: GameId): Promise<void> {
     const game: GameType | null = GameCommon.get(gameId)
     if (!game) {
       log.error(`[ERROR] unable to persist non existing game ${gameId}`)
@@ -191,7 +191,7 @@ export class Server implements ServerInterface {
     app.use('/', express.static(config.dir.PUBLIC_DIR))
 
     app.get('/g/:id', async (req: Request, res: Response) => {
-      const gameId = req.params.id
+      const gameId = req.params.id as GameId
       const loaded = await this.gameService.ensureLoaded(gameId)
       if (!loaded) {
         res.status(404).send('Game not found')
@@ -204,7 +204,7 @@ export class Server implements ServerInterface {
     })
 
     app.get('/replay/:id', async (req: Request, res: Response) => {
-      const gameId = req.params.id
+      const gameId = req.params.id as GameId
       const loaded = await this.gameService.ensureLoaded(gameId)
       if (!loaded) {
         res.status(404).send('Game not found')
@@ -235,8 +235,8 @@ export class Server implements ServerInterface {
     ): Promise<void> => {
       try {
         const proto = socket.protocol.split('|')
-        const clientId = proto[0]
-        const gameId = proto[1]
+        const clientId = proto[0] as ClientId
+        const gameId = proto[1] as GameId
         this.gameSockets.removeSocket(gameId, socket)
 
         const ts = Time.timestamp()
@@ -260,8 +260,8 @@ export class Server implements ServerInterface {
     ): Promise<void> => {
       try {
         const proto = socket.protocol.split('|')
-        const clientId = proto[0]
-        const gameId = proto[1]
+        const clientId = proto[0] as ClientId
+        const gameId = proto[1] as GameId
         const msg = JSON.parse(data) as ClientEvent
         const msgType = msg[0]
         switch (msgType) {
@@ -364,7 +364,7 @@ export class Server implements ServerInterface {
     }
   }
 
-  public async fixPieces(gameId: string): Promise<any> {
+  public async fixPieces(gameId: GameId): Promise<any> {
     const loaded = await this.gameService.ensureLoaded(gameId)
     if (!loaded) {
       return {

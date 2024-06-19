@@ -5,7 +5,7 @@ import exif from 'exif'
 import config from './Config'
 import { Dim } from '../../common/src/Geometry'
 import Util, { logger } from '../../common/src/Util'
-import { Tag, ImageInfo } from '../../common/src/Types'
+import { Tag, ImageInfo, UserId, ImageId } from '../../common/src/Types'
 import { ImageRow, ImageRowWithCount, ImagesRepo, TagRow } from './repo/ImagesRepo'
 import { WhereRaw } from './Db'
 
@@ -40,7 +40,7 @@ export class Images {
     }))
   }
 
-  public async imageFromDb(imageId: number): Promise<ImageInfo | null> {
+  public async imageFromDb(imageId: ImageId): Promise<ImageInfo | null> {
     const imageInfos = await this.imagesByIdsFromDb([imageId])
     return imageInfos.length === 0 ? null : imageInfos[0]
   }
@@ -50,7 +50,7 @@ export class Images {
     tags: Record<number, TagRow[]>,
   ): ImageInfo {
     return {
-      id: row.id as number,
+      id: row.id as ImageId,
       uploaderUserId: row.uploader_user_id,
       uploaderName: row.uploader_user_name || null,
       filename: row.filename,
@@ -78,7 +78,7 @@ export class Images {
     isPrivate: boolean,
     offset: number,
     limit: number,
-    userId: number,
+    userId: UserId,
   ): Promise<ImageInfo[]> {
     const rows = await this.imagesRepo.searchImagesWithCount(search, orderBy, isPrivate, offset, limit, userId)
     const tags = await this.imagesRepo.getTagsByImageIds(rows.map(row => row.id))
@@ -86,7 +86,7 @@ export class Images {
   }
 
   public async imagesByIdsFromDb(
-    ids: number[],
+    ids: ImageId[],
   ): Promise<ImageInfo[]> {
     const rows = await this.imagesRepo.getImagesWithCountByIds(ids)
     const tags = await this.imagesRepo.getTagsByImageIds(rows.map(row => row.id))
@@ -110,7 +110,7 @@ export class Images {
     }
   }
 
-  public async setTags(imageId: number, tags: string[]): Promise<void> {
+  public async setTags(imageId: ImageId, tags: string[]): Promise<void> {
     await this.imagesRepo.deleteTagRelations(imageId)
     for (const tag of tags) {
       const slug = Util.slug(tag)
@@ -124,7 +124,7 @@ export class Images {
     }
   }
 
-  public async insertImage(image: Partial<ImageRow>): Promise<number> {
+  public async insertImage(image: Partial<ImageRow>): Promise<ImageId> {
     return await this.imagesRepo.insert(image)
   }
 
@@ -132,7 +132,7 @@ export class Images {
     await this.imagesRepo.update(image, where)
   }
 
-  public async getImageById(imageId: number): Promise<ImageRow | null> {
+  public async getImageById(imageId: ImageId): Promise<ImageRow | null> {
     return await this.imagesRepo.get({ id: imageId })
   }
 }

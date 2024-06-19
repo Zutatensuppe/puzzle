@@ -1,6 +1,6 @@
 import { LOG_TYPE } from '../../common/src/Protocol'
 import Time from '../../common/src/Time'
-import { Game, LogEntry, Timestamp } from '../../common/src/Types'
+import { Game, GameId, LogEntry, Timestamp } from '../../common/src/Types'
 import { logger } from './../../common/src/Util'
 import config from './Config'
 import fs from './FileSystem'
@@ -10,9 +10,9 @@ const log = logger('GameLog.js')
 const LINES_PER_LOG_FILE = 10000
 const POST_GAME_LOG_DURATION = 5 * Time.MIN
 
-const LOG_EXISTS: Record<string, boolean> = {}
+const LOG_EXISTS: Record<GameId, boolean> = {}
 
-const shouldLog = (gameId: string, finishTs: Timestamp, currentTs: Timestamp): boolean => {
+const shouldLog = (gameId: GameId, finishTs: Timestamp, currentTs: Timestamp): boolean => {
   if (LOG_EXISTS[gameId] === false) {
       return false
   }
@@ -28,11 +28,11 @@ const shouldLog = (gameId: string, finishTs: Timestamp, currentTs: Timestamp): b
   return timeSinceGameEnd <= POST_GAME_LOG_DURATION
 }
 
-export const filename = (gameId: string, offset: number) => `${config.dir.DATA_DIR}/log/${gameId}/log_${gameId}-${offset}.log`
-export const filenameGz = (gameId: string, offset: number) => `${filename(gameId, offset)}.gz`
-export const idxname = (gameId: string) => `${config.dir.DATA_DIR}/log/${gameId}/log_${gameId}.idx.log`
+export const filename = (gameId: GameId, offset: number) => `${config.dir.DATA_DIR}/log/${gameId}/log_${gameId}-${offset}.log`
+export const filenameGz = (gameId: GameId, offset: number) => `${filename(gameId, offset)}.gz`
+export const idxname = (gameId: GameId) => `${config.dir.DATA_DIR}/log/${gameId}/log_${gameId}.idx.log`
 
-export const gzFilenameOrFilename = async (gameId: string, offset: number) => {
+export const gzFilenameOrFilename = async (gameId: GameId, offset: number) => {
   const gz = filenameGz(gameId, offset)
   if (await fs.exists(gz)) {
     return gz
@@ -45,7 +45,7 @@ export const gzFilenameOrFilename = async (gameId: string, offset: number) => {
   return ''
 }
 
-const create = async (gameId: string, ts: Timestamp): Promise<void> => {
+const create = async (gameId: GameId, ts: Timestamp): Promise<void> => {
   await prepareLogDir(gameId)
   const idxfile = idxname(gameId)
   if (await fs.exists(idxfile)) {
@@ -69,7 +69,7 @@ const create = async (gameId: string, ts: Timestamp): Promise<void> => {
   }
 }
 
-const exists = async (gameId: string): Promise<boolean> => {
+const exists = async (gameId: GameId): Promise<boolean> => {
   if (LOG_EXISTS[gameId] === false) {
     return false
   }
@@ -90,7 +90,7 @@ async function hasReplay(game: Game): Promise<boolean> {
   return true
 }
 
-const _log = async (gameId: string, logRow: LogEntry): Promise<void> => {
+const _log = async (gameId: GameId, logRow: LogEntry): Promise<void> => {
   if (LOG_EXISTS[gameId] === false) {
     return
   }
@@ -142,7 +142,7 @@ const _log = async (gameId: string, logRow: LogEntry): Promise<void> => {
   }
 }
 
-const prepareLogDir = async (gameId: string): Promise<void> => {
+const prepareLogDir = async (gameId: GameId): Promise<void> => {
   const dir = `${config.dir.DATA_DIR}/log/${gameId}`
   if (!await fs.exists(dir)) {
     await fs.mkdir(dir)

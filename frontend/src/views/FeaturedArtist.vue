@@ -56,7 +56,7 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { GameSettings, ImageInfo } from '../../../common/src/Types'
+import { GameSettings, ImageId, ImageInfo } from '../../../common/src/Types'
 import ImageLibrary from '../components/ImageLibrary.vue'
 import NewGameDialog from '../components/NewGameDialog.vue'
 import api from '../_api'
@@ -68,7 +68,7 @@ const artist = ref<any>(null)
 const collections = ref<any[]>([])
 
 const image = ref<ImageInfo>({
-  id: 0,
+  id: 0 as ImageId,
   uploaderUserId: null,
   uploaderName: '',
   filename: '',

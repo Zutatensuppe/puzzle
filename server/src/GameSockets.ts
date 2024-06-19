@@ -1,17 +1,19 @@
 import { logger } from '../../common/src/Util'
+import { GameId } from '../../common/src/Types'
 import WebSocket from 'ws'
 
 const log = logger('GameSocket.js')
 
 export class GameSockets {
-  private sockets: Record<string, WebSocket[]> = {}
-  private idle: Record<string, number> = {}
+  private sockets: Record<GameId, WebSocket[]> = {}
+  private idle: Record<GameId, number> = {}
 
   private static MAX_IDLE_TICKS = 6 // * idlecheck interval = 6 * 10s = 60s
 
-  updateIdle(): string[] {
+  updateIdle(): GameId[] {
     const idleGameIds = []
-    for (const gameId in this.sockets) {
+    let gameId: GameId
+    for (gameId in this.sockets) {
       if (this.sockets[gameId].length === 0) {
         this.idle[gameId] = (this.idle[gameId] || 0) + 1
         if (this.idle[gameId] > GameSockets.MAX_IDLE_TICKS) {
@@ -22,7 +24,7 @@ export class GameSockets {
     return idleGameIds
   }
 
-  removeSocketInfo(gameId: string): void {
+  removeSocketInfo(gameId: GameId): void {
     if (gameId in this.sockets) {
       delete this.sockets[gameId]
     }
@@ -31,14 +33,14 @@ export class GameSockets {
     }
   }
 
-  socketExists(gameId: string, socket: WebSocket): boolean {
+  socketExists(gameId: GameId, socket: WebSocket): boolean {
     if (!(gameId in this.sockets)) {
       return false
     }
     return this.sockets[gameId].includes(socket)
   }
 
-  removeSocket(gameId: string, socket: WebSocket): void {
+  removeSocket(gameId: GameId, socket: WebSocket): void {
     if (!(gameId in this.sockets)) {
       return
     }
@@ -47,7 +49,7 @@ export class GameSockets {
     log.log('socket count: ', Object.keys(this.sockets[gameId]).length)
   }
 
-  addSocket(gameId: string, socket: WebSocket): void {
+  addSocket(gameId: GameId, socket: WebSocket): void {
     if (gameId in this.idle) {
       delete this.idle[gameId]
     }
@@ -67,7 +69,7 @@ export class GameSockets {
     }
   }
 
-  getSockets(gameId: string): WebSocket[] {
+  getSockets(gameId: GameId): WebSocket[] {
     if (!(gameId in this.sockets)) {
       return []
     }
@@ -75,6 +77,15 @@ export class GameSockets {
   }
 
   getSocketCount(): number {
-    return Object.keys(this.sockets).reduce((acc, gameId) => acc + this.sockets[gameId].length, 0)
+    return Object.keys(this.sockets).reduce((acc, gameId) => acc + this.sockets[gameId as GameId].length, 0)
+  }
+
+  getSocketCountsByGameIds(): Record<GameId, number> {
+    const counts: Record<GameId, number> = {}
+    let gameId: GameId
+    for (gameId in this.sockets) {
+      counts[gameId] = this.sockets[gameId].length
+    }
+    return counts
   }
 }
