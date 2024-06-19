@@ -30,7 +30,7 @@ import * as components from 'vuetify/components'
 import * as directives from 'vuetify/directives'
 import { init as initToast, toast } from './toast'
 
-(async () => {
+const run = async () => {
   debug.init()
   api.init()
 
@@ -94,4 +94,6 @@ import { init as initToast, toast } from './toast'
   // eslint-disable-next-line
   app.component('Icon', Icon)
   app.mount('#app')
-})()
+}
+
+void run()

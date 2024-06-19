@@ -433,7 +433,7 @@ export abstract class Game<HudType extends Hud> {
     }
 
     this.renderer.debug = debug.isDebugEnabled()
-    this.renderer.render(
+    await this.renderer.render(
       this.canvas,
       this.ctx,
       this.viewport,

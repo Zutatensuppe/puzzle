@@ -1,9 +1,9 @@
-import fs from 'fs'
 import { LOG_TYPE } from '../../common/src/Protocol'
 import Time from '../../common/src/Time'
 import { Game, LogEntry, Timestamp } from '../../common/src/Types'
 import { logger } from './../../common/src/Util'
 import config from './Config'
+import fs from './FileSystem'
 
 const log = logger('GameLog.js')
 
@@ -32,43 +32,53 @@ export const filename = (gameId: string, offset: number) => `${config.dir.DATA_D
 export const filenameGz = (gameId: string, offset: number) => `${filename(gameId, offset)}.gz`
 export const idxname = (gameId: string) => `${config.dir.DATA_DIR}/log/${gameId}/log_${gameId}.idx.log`
 
-export const gzFilenameOrFilename = (gameId: string, offset: number) => {
+export const gzFilenameOrFilename = async (gameId: string, offset: number) => {
   const gz = filenameGz(gameId, offset)
-  if (fs.existsSync(gz)) {
+  if (await fs.exists(gz)) {
     return gz
   }
+
   const raw = filename(gameId, offset)
-  if (fs.existsSync(raw)) {
+  if (await fs.exists(raw)) {
     return raw
   }
   return ''
 }
 
-const create = (gameId: string, ts: Timestamp): void => {
-  prepareLogDir(gameId)
+const create = async (gameId: string, ts: Timestamp): Promise<void> => {
+  await prepareLogDir(gameId)
   const idxfile = idxname(gameId)
-  if (!fs.existsSync(idxfile)) {
-    fs.appendFileSync(idxfile, JSON.stringify({
+  if (await fs.exists(idxfile)) {
+    // idx file already exists. but this should not happen :(
+    LOG_EXISTS[gameId] = false
+    return
+  }
+
+  try {
+    await fs.writeFile(idxfile, JSON.stringify({
       gameId: gameId,
       total: 0,
       lastTs: ts,
       currentFile: '',
       perFile: LINES_PER_LOG_FILE,
     }))
+    LOG_EXISTS[gameId] = true
+  } catch (e) {
+    console.error('failed to write idxfile', idxfile, e)
+    LOG_EXISTS[gameId] = false
   }
-  LOG_EXISTS[gameId] = true
 }
 
-const exists = (gameId: string): boolean => {
+const exists = async (gameId: string): Promise<boolean> => {
   if (LOG_EXISTS[gameId] === false) {
     return false
   }
   const idxfile = idxname(gameId)
-  return fs.existsSync(idxfile)
+  return await fs.exists(idxfile)
 }
 
-function hasReplay(game: Game): boolean {
-  if (!exists(game.id)) {
+async function hasReplay(game: Game): Promise<boolean> {
+  if (!await exists(game.id)) {
     return false
   }
   if (game.gameVersion < 2) {
@@ -80,19 +90,21 @@ function hasReplay(game: Game): boolean {
   return true
 }
 
-const _log = (gameId: string, logRow: LogEntry): void => {
+const _log = async (gameId: string, logRow: LogEntry): Promise<void> => {
   if (LOG_EXISTS[gameId] === false) {
     return
   }
   const idxfile = idxname(gameId)
-  if (!fs.existsSync(idxfile)) {
+
+  if (!await fs.exists(idxfile)) {
     LOG_EXISTS[gameId] = false
     return
   }
 
   let idxObj: any
   try {
-    idxObj = JSON.parse(fs.readFileSync(idxfile, 'utf-8'))
+    const idxData = await fs.readFile(idxfile)
+    idxObj = JSON.parse(idxData)
   } catch (e) {
     log.error('failed to read idxfile', idxfile)
     LOG_EXISTS[gameId] = false
@@ -111,17 +123,29 @@ const _log = (gameId: string, logRow: LogEntry): void => {
   }
 
   const line = JSON.stringify(logRow).slice(1, -1)
-  fs.appendFileSync(idxObj.currentFile, line + '\n')
+  try {
+    await fs.appendFile(idxObj.currentFile, line + '\n')
+  } catch (e) {
+    console.error('failed to append to log file', idxObj.currentFile, e)
+    LOG_EXISTS[gameId] = false
+    return
+  }
 
   idxObj.total++
   idxObj.lastTs = ts
-  fs.writeFileSync(idxfile, JSON.stringify(idxObj))
+  try {
+    await fs.writeFile(idxfile, JSON.stringify(idxObj))
+  } catch (e) {
+    console.error('failed to write idxfile', idxfile, e)
+    LOG_EXISTS[gameId] = false
+    return
+  }
 }
 
-const prepareLogDir = (gameId: string): void => {
+const prepareLogDir = async (gameId: string): Promise<void> => {
   const dir = `${config.dir.DATA_DIR}/log/${gameId}`
-  if (!fs.existsSync(dir)) {
-    fs.mkdirSync(dir, { recursive: true })
+  if (!await fs.exists(dir)) {
+    await fs.mkdir(dir)
   }
 }
 
@@ -131,7 +155,5 @@ export default {
   exists,
   hasReplay,
   log: _log,
-  filename,
   gzFilenameOrFilename,
-  idxname,
 }

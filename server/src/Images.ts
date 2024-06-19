@@ -6,7 +6,7 @@ import config from './Config'
 import { Dim } from '../../common/src/Geometry'
 import Util, { logger } from '../../common/src/Util'
 import { Tag, ImageInfo } from '../../common/src/Types'
-import { ImageRow, ImageRowWithCount, ImagesRepo } from './repo/ImagesRepo'
+import { ImageRow, ImageRowWithCount, ImagesRepo, TagRow } from './repo/ImagesRepo'
 import { WhereRaw } from './Db'
 
 const log = logger('Images.ts')
@@ -18,7 +18,7 @@ export class Images {
     // pass
   }
 
-  async getExifOrientation(imagePath: string): Promise<number> {
+  private async getExifOrientation(imagePath: string): Promise<number> {
     return new Promise((resolve) => {
       new exif.ExifImage({ image: imagePath }, (error, exifData) => {
         if (error) {
@@ -30,7 +30,7 @@ export class Images {
     })
   }
 
-  async getAllTags(): Promise<Tag[]> {
+  public async getAllTags(): Promise<Tag[]> {
     const tagRows = await this.imagesRepo.getAllTagsWithCount()
     return tagRows.map(row => ({
       id: row.id,
@@ -40,22 +40,15 @@ export class Images {
     }))
   }
 
-  async getTags(imageId: number): Promise<Tag[]> {
-    const tagRows = await this.imagesRepo.getTagsByImageId(imageId)
-    return  tagRows.map(row => ({
-      id: row.id,
-      slug: row.slug,
-      title: row.title,
-      total: 0,
-    }))
-  }
-
-  async imageFromDb(imageId: number): Promise<ImageInfo | null> {
+  public async imageFromDb(imageId: number): Promise<ImageInfo | null> {
     const imageInfos = await this.imagesByIdsFromDb([imageId])
     return imageInfos.length === 0 ? null : imageInfos[0]
   }
 
-  async imageWithCountToImageInfo(row: ImageRowWithCount): Promise<ImageInfo> {
+  private imageWithCountToImageInfo(
+    row: ImageRowWithCount,
+    tags: Record<number, TagRow[]>,
+  ): ImageInfo {
     return {
       id: row.id as number,
       uploaderUserId: row.uploader_user_id,
@@ -63,7 +56,12 @@ export class Images {
       filename: row.filename,
       url: `${config.dir.UPLOAD_URL}/${encodeURIComponent(row.filename)}`,
       title: row.title,
-      tags: await this.getTags(row.id),
+      tags: tags[row.id] ? tags[row.id].map(t => ({
+        id: t.id,
+        slug: t.slug,
+        title: t.title,
+        total: 0,
+      })) : [],
       created: row.created.getTime(),
       width: row.width,
       height: row.height,
@@ -74,7 +72,7 @@ export class Images {
     }
   }
 
-  async imagesFromDb(
+  public async imagesFromDb(
     search: string,
     orderBy: string,
     isPrivate: boolean,
@@ -83,25 +81,19 @@ export class Images {
     userId: number,
   ): Promise<ImageInfo[]> {
     const rows = await this.imagesRepo.searchImagesWithCount(search, orderBy, isPrivate, offset, limit, userId)
-    const images = []
-    for (const row of rows) {
-      images.push(await this.imageWithCountToImageInfo(row))
-    }
-    return images
+    const tags = await this.imagesRepo.getTagsByImageIds(rows.map(row => row.id))
+    return rows.map(row => this.imageWithCountToImageInfo(row, tags))
   }
 
-  async imagesByIdsFromDb(
+  public async imagesByIdsFromDb(
     ids: number[],
   ): Promise<ImageInfo[]> {
     const rows = await this.imagesRepo.getImagesWithCountByIds(ids)
-    const images = []
-    for (const row of rows) {
-      images.push(await this.imageWithCountToImageInfo(row))
-    }
-    return images
+    const tags = await this.imagesRepo.getTagsByImageIds(rows.map(row => row.id))
+    return rows.map(row => this.imageWithCountToImageInfo(row, tags))
   }
 
-  async getDimensions(imagePath: string): Promise<Dim> {
+  public async getDimensions(imagePath: string): Promise<Dim> {
     const dimensions = await probe(fs.createReadStream(imagePath))
     const orientation = await this.getExifOrientation(imagePath)
     // when image is rotated to the left or right, switch width/height
@@ -118,13 +110,13 @@ export class Images {
     }
   }
 
-  async setTags(imageId: number, tags: string[]): Promise<void> {
-    this.imagesRepo.deleteTagRelations(imageId)
+  public async setTags(imageId: number, tags: string[]): Promise<void> {
+    await this.imagesRepo.deleteTagRelations(imageId)
     for (const tag of tags) {
       const slug = Util.slug(tag)
       const id = await this.imagesRepo.upsertTag({ slug, title: tag })
       if (id) {
-        this.imagesRepo.insertTagRelation({
+        await this.imagesRepo.insertTagRelation({
           image_id: imageId,
           category_id: id,
         })
@@ -132,15 +124,15 @@ export class Images {
     }
   }
 
-  async insertImage(image: Partial<ImageRow>): Promise<number> {
+  public async insertImage(image: Partial<ImageRow>): Promise<number> {
     return await this.imagesRepo.insert(image)
   }
 
-  async updateImage(image: Partial<ImageRow>, where: WhereRaw): Promise<void> {
+  public async updateImage(image: Partial<ImageRow>, where: WhereRaw): Promise<void> {
     await this.imagesRepo.update(image, where)
   }
 
-  async getImageById(imageId: number): Promise<ImageRow | null> {
+  public async getImageById(imageId: number): Promise<ImageRow | null> {
     return await this.imagesRepo.get({ id: imageId })
   }
 }

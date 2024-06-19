@@ -11,7 +11,7 @@ import { COOKIE_TOKEN, generateSalt, generateToken, passwordHash } from '../../A
 import { ServerInterface } from '../../Server'
 import { UserRow } from '../../repo/UsersRepo'
 import { GameRow } from '../../repo/GamesRepo'
-import fs from 'fs'
+import fs from '../../FileSystem'
 
 const log = logger('web_routes/api/index.ts')
 
@@ -191,7 +191,7 @@ export default function createRouter(
       }
 
       if (!identity) {
-        server.getUsers().createIdentity({
+        await server.getUsers().createIdentity({
           user_id: user.id,
           provider_name,
           provider_id,
@@ -209,7 +209,7 @@ export default function createRouter(
           updateNeeded = true
         }
         if (updateNeeded) {
-          server.getUsers().updateIdentity(identity)
+          await server.getUsers().updateIdentity(identity)
         }
       }
 
@@ -428,7 +428,7 @@ export default function createRouter(
   router.get('/replay-game-data', async (req, res): Promise<void> => {
     const q: Record<string, any> = req.query
     const gameId = q.gameId || ''
-    if (!GameLog.exists(q.gameId)) {
+    if (!await GameLog.exists(q.gameId)) {
       res.status(404).send({ reason: 'no log found' })
       return
     }
@@ -455,11 +455,11 @@ export default function createRouter(
       return
     }
     const gameId = q.gameId || ''
-    if (!GameLog.exists(q.gameId)) {
+    if (!await GameLog.exists(q.gameId)) {
       res.status(404).send({ reason: 'no log found' })
       return
     }
-    const f = GameLog.gzFilenameOrFilename(gameId, offset)
+    const f = await GameLog.gzFilenameOrFilename(gameId, offset)
     if (!f) {
       res.send('')
       return
@@ -469,7 +469,7 @@ export default function createRouter(
     if (f.endsWith('.gz')) {
       res.header('Content-Encoding', 'gzip')
     }
-    res.send(fs.readFileSync(f))
+    res.send(await fs.readFileRaw(f))
   })
 
   router.get('/newgame-data', async (req: any, res): Promise<void> => {
@@ -526,7 +526,7 @@ export default function createRouter(
     const finished = GameCommon.Game_getFinishTs(game)
     return {
       id: game.id,
-      hasReplay: GameLog.hasReplay(game),
+      hasReplay: await GameLog.hasReplay(game),
       isPrivate: GameCommon.Game_isPrivate(game),
       started: GameCommon.Game_getStartTs(game),
       finished,
@@ -660,14 +660,16 @@ export default function createRouter(
 
       log.info('req.file.filename', req.file.filename)
 
+      const im = server.getImages()
+
       const user = await server.getUsers().getOrCreateUserByRequest(req)
 
-      const dim = await server.getImages().getDimensions(
+      const dim = await im.getDimensions(
         `${config.dir.UPLOAD_DIR}/${req.file.filename}`,
       )
       // post form, so booleans are submitted as 'true' | 'false'
       const isPrivate = req.body.private === 'false' ? 0 : 1
-      const imageId = await server.getImages().insertImage({
+      const imageId = await im.insertImage({
         uploader_user_id: user.id,
         filename: req.file.filename,
         filename_original: req.file.originalname,
@@ -682,10 +684,10 @@ export default function createRouter(
 
       if (req.body.tags) {
         const tags = req.body.tags.split(',').filter((tag: string) => !!tag)
-        await server.getImages().setTags(imageId as number, tags)
+        await im.setTags(imageId as number, tags)
       }
 
-      res.send(await server.getImages().imageFromDb(imageId as number))
+      res.send(await im.imageFromDb(imageId as number))
     })
   })
 

@@ -1,13 +1,10 @@
-import { Mutex } from 'async-mutex'
-import fs from 'fs'
+import fs from './FileSystem'
 import * as pg from 'pg'
 // @ts-ignore
 const { Client } = pg.default
 import { logger } from '../../common/src/Util'
 
 const log = logger('Db.ts')
-
-const mutex = new Mutex()
 
 /**
  * TODO: create a more specific type for OrderBy.
@@ -53,7 +50,7 @@ class Db {
   async patch(verbose: boolean = true): Promise<void> {
     await this.run('CREATE TABLE IF NOT EXISTS public.db_patches ( id TEXT PRIMARY KEY);', [])
 
-    const files = fs.readdirSync(this.patchesDir)
+    const files = await fs.readdir(this.patchesDir)
     const patches = (await this.getMany('public.db_patches')).map(row => row.id)
 
     for (const f of files) {
@@ -63,7 +60,7 @@ class Db {
         }
         continue
       }
-      const contents = fs.readFileSync(`${this.patchesDir}/${f}`, 'utf-8')
+      const contents = await fs.readFile(`${this.patchesDir}/${f}`)
 
       const all = contents.split(';').map(s => s.trim()).filter(s => !!s)
       try {
@@ -248,10 +245,8 @@ class Db {
     whereRaw: WhereRaw = {},
     orderBy: OrderBy = [],
   ): Promise<any> {
-    const where = this._buildWhere(whereRaw)
-    const orderBySql = this._buildOrderBy(orderBy)
-    const sql = 'SELECT * FROM ' + table + where.sql + orderBySql
-    return await this._get(sql, where.values)
+    const rows = await this.getMany(table, whereRaw, orderBy, { offset: 0, limit: 1 })
+    return rows.length > 0 ? rows[0] : null
   }
 
   async getMany(
@@ -283,26 +278,35 @@ class Db {
     return await this.run(sql, where.values)
   }
 
-  async exists(table: string, whereRaw: WhereRaw): Promise<boolean> {
-    return !!await this.get(table, whereRaw)
-  }
-
   async upsert(
     table: string,
     data: Data,
-    check: WhereRaw,
+    uniqueCols: string[], // must containunique columns!
     idcol: string | null = null,
   ): Promise<any> {
-    return mutex.runExclusive(async () => {
-      if (!await this.exists(table, check)) {
-        return await this.insert(table, data, idcol)
-      }
-      await this.update(table, data, check)
-      if (idcol === null) {
-        return 0 // dont care about id
-      }
-      return (await this.get(table, check))[idcol] // get id manually
+    const columns = Object.keys(data).join(', ')
+    const values = Object.values(data)
+    const conflictColumns = uniqueCols.join(', ')
+
+    let sql = `
+      INSERT INTO ${table} (${columns})
+      VALUES (${values.map((_, index) => `$${index + 1}`).join(', ')})
+      ON CONFLICT (${conflictColumns}) DO UPDATE SET
+    `
+
+    const keyOff = values.length
+
+    Object.keys(data).forEach((key, index) => {
+      sql += `${key} = $${keyOff + index + 1}, `
     })
+
+    sql = sql.slice(0, -2) // Remove the last comma and space
+    if (idcol) {
+      sql += ` RETURNING ${idcol}`
+      return (await this.run(sql, [...values, ...values])).rows[0][idcol]
+    }
+    await this.run(sql, [...values, ...values])
+    return 0
   }
 
   async insert(table: string, data: Data, idcol: string | null = null): Promise<number | bigint> {
@@ -317,6 +321,28 @@ class Db {
       sql += ` RETURNING ${idcol}`
       return (await this.run(sql, values)).rows[0][idcol]
     }
+    await this.run(sql, values)
+    return 0
+  }
+
+  async insertMany(table: string, datas: Data[]): Promise<number | bigint> {
+    if (datas.length === 0) {
+      return 0
+    }
+
+    const keys = Object.keys(datas[0])
+    const values: any[] = []
+
+    let $i = 1
+    const valueRows: string[] = []
+    for (const data of datas) {
+      valueRows.push('(' + keys.map(() => `$${$i++}`).join(',') + ')')
+      values.push(...keys.map(k => data[k]))
+    }
+
+    const sql = 'INSERT INTO ' + table
+      + ' (' + keys.join(',') + ')'
+      + ' VALUES ' + valueRows.join(',')
     await this.run(sql, values)
     return 0
   }

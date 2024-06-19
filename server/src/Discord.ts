@@ -19,7 +19,7 @@ export class Discord {
       return
     }
 
-    fetch(this.config.bot.url + '/announce', {
+    void fetch(this.config.bot.url + '/announce', {
       method: 'POST',
       headers: {
         'Accept': 'application/json',

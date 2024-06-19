@@ -27,15 +27,10 @@ import { AnnouncementsRepo } from './repo/AnnouncementsRepo'
 import { ImageResize } from './ImageResize'
 import { LeaderboardRepo } from './repo/LeaderboardRepo'
 import { ImagesRepo } from './repo/ImagesRepo'
-import fs from 'fs'
 import { storeImageSnapshot } from './ImageSnapshots'
 import { Twitch } from './Twitch'
 import { UrlUtil } from './UrlUtil'
-
-const indexFile = path.resolve(config.dir.PUBLIC_DIR, 'index.html')
-const indexFileContents = fs.existsSync(indexFile)
-  ? fs.readFileSync(indexFile, 'utf-8')
-  : 'INDEX FILE MISSING'
+import fs from './FileSystem'
 
 const sendHtml = (res: Response, tmpl: string, data: Record<string, string> = {}): void => {
   let str = tmpl
@@ -71,6 +66,8 @@ export interface ServerInterface {
 export class Server implements ServerInterface {
   private webserver: HttpServer | null = null
   private websocketserver: WebSocketServer | null = null
+
+  private _indexFileContents: string | null = null
 
   constructor(
     private readonly db: Db,
@@ -153,6 +150,17 @@ export class Server implements ServerInterface {
     }
   }
 
+  private async indexFileContents(): Promise<string> {
+    if (this._indexFileContents !== null) {
+      return this._indexFileContents
+    }
+    const indexFile = path.resolve(config.dir.PUBLIC_DIR, 'index.html')
+    this._indexFileContents = await fs.exists(indexFile)
+      ? await fs.readFile(indexFile)
+      : 'INDEX FILE MISSING'
+    return this._indexFileContents
+  }
+
   start() {
     const port = config.http.port
     const hostname = config.http.hostname
@@ -176,7 +184,7 @@ export class Server implements ServerInterface {
     app.use('/uploads/', express.static(config.dir.UPLOAD_DIR))
 
     app.get('/', async (req: any, res) => {
-      sendHtml(res, indexFileContents, {
+      sendHtml(res, await this.indexFileContents(), {
         '<!-- og:image -->': '<meta property="og:image" content="/assets/textures/poster.webp" />',
       })
     })
@@ -190,7 +198,7 @@ export class Server implements ServerInterface {
         return
       }
 
-      sendHtml(res, indexFileContents, {
+      sendHtml(res, await this.indexFileContents(), {
         '<!-- og:image -->': '<meta property="og:image" content="' + GameCommon.getImageUrl(gameId) + '" />',
       })
     })
@@ -203,13 +211,13 @@ export class Server implements ServerInterface {
         return
       }
 
-      sendHtml(res, indexFileContents, {
+      sendHtml(res, await this.indexFileContents(), {
         '<!-- og:image -->': '<meta property="og:image" content="' + GameCommon.getImageUrl(gameId) + '" />',
       })
     })
 
     app.all('*', async (req: any, res) => {
-      sendHtml(res, indexFileContents, {
+      sendHtml(res, await this.indexFileContents(), {
         '<!-- og:image -->': '<meta property="og:image" content="/assets/textures/poster.webp" />',
       })
     })
@@ -264,7 +272,7 @@ export class Server implements ServerInterface {
               throw `[game ${gameId} does not exist... ]`
             }
             const ts = Time.timestamp()
-            this.gameService.addPlayer(gameId, clientId, ts)
+            await this.gameService.addPlayer(gameId, clientId, ts)
             this.gameSockets.addSocket(gameId, socket)
 
             const game: GameType | null = GameCommon.get(gameId)
@@ -290,7 +298,7 @@ export class Server implements ServerInterface {
 
             let sendGame = false
             if (!GameCommon.playerExists(gameId, clientId)) {
-              this.gameService.addPlayer(gameId, clientId, ts)
+              await this.gameService.addPlayer(gameId, clientId, ts)
               sendGame = true
             }
             if (!this.gameSockets.socketExists(gameId, socket)) {
@@ -386,7 +394,7 @@ export class Server implements ServerInterface {
       }
     }
     if (changed) {
-      this.persistGame(gameId)
+      await this.persistGame(gameId)
       const game: GameType | null = GameCommon.get(gameId)
       if (!game) {
         return {
@@ -425,18 +433,17 @@ export class Server implements ServerInterface {
     const newLiveStreams = livestreams.filter(l => newLiveIds.includes(l.id))
 
     // add streams that are new
-    for (const stream of newLiveStreams) {
-      await this.db.insert('twitch_livestreams', {
-        livestream_id: stream.id,
-        title: stream.title,
-        url: stream.url,
-        user_display_name: stream.user_display_name,
-        user_thumbnail: stream.user_thumbnail,
-        language: stream.language,
-        viewers: stream.viewers,
-        is_live: 1,
-      })
-    }
+    const newLiveStreamRows = newLiveStreams.map(stream => ({
+      livestream_id: stream.id,
+      title: stream.title,
+      url: stream.url,
+      user_display_name: stream.user_display_name,
+      user_thumbnail: stream.user_thumbnail,
+      language: stream.language,
+      viewers: stream.viewers,
+      is_live: 1,
+    }))
+    await this.db.insertMany('twitch_livestreams', newLiveStreamRows)
 
     // update streams that are still live
     for (const stream of stillLiveStreams) {
