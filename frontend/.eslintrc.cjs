@@ -13,6 +13,8 @@ module.exports = {
     parser: {
       ts: '@typescript-eslint/parser',
     },
+    project: './tsconfig.json',
+    extraFileExtensions: ['.vue']
   },
   extends: [
     'plugin:vue/vue3-recommended',
@@ -26,6 +28,8 @@ module.exports = {
       allowTemplateLiterals: true,
     }],
     'comma-dangle': ['error', 'always-multiline'],
+    'no-void': ['error', { allowAsStatement: true }],
+    '@typescript-eslint/no-floating-promises': ['error', { ignoreVoid: true }],
     '@typescript-eslint/no-inferrable-types': 'off',
     '@typescript-eslint/ban-ts-comment': 'off',
     '@typescript-eslint/no-explicit-any': 'off',

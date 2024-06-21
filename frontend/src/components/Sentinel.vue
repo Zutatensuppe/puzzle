@@ -34,7 +34,7 @@ const sighted = () => {
 }
 
 const OFFSET = 640
-const isInViewport = (element) => {
+const isInViewport = (element: HTMLDivElement) => {
   if (!element) {
     return false
   }
@@ -47,7 +47,6 @@ const isInViewport = (element) => {
   )
 }
 
-let interval: any = null
 let observer = new IntersectionObserver((entries: IntersectionObserverEntry[]) => {
   const intersecting = entries.some(e => e.isIntersecting)
   if (intersecting) {
@@ -65,6 +64,5 @@ onMounted(() => {
 onUnmounted(() => {
   log.info('disconnect')
   observer.disconnect()
-  clearInterval(interval)
 })
 </script>

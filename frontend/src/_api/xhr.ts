@@ -1,3 +1,4 @@
+import { ClientId } from '../../../common/src/Types'
 import storage from '../storage'
 
 export const JSON_HEADERS = {
@@ -66,7 +67,7 @@ export class XhrRequest {
   }
 }
 
-let xhrClientId: string = ''
+let xhrClientId: ClientId = '' as ClientId
 const request = async (
   method: string,
   url: string,
@@ -78,7 +79,7 @@ const request = async (
 
 export default {
   init: () => {
-    xhrClientId = storage.uniq('ID')
+    xhrClientId = storage.uniq('ID') as ClientId
   },
   request,
   get: (url: string, options: any): Promise<Response> => {
@@ -94,7 +95,7 @@ export default {
     return request('post', url, options)
   },
   clientId: () => xhrClientId,
-  setClientId: (clientId: string) => {
+  setClientId: (clientId: ClientId) => {
     xhrClientId = clientId
   },
 }

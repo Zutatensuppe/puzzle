@@ -2,10 +2,19 @@
   <v-container>
     <Nav />
     <h1>Games</h1>
-    <v-table density="compact">
+    <div v-if="serverInfo">
+      {{ serverInfo.socketCount }} sockets connected
+    </div>
+    <Pagination
+      v-if="games"
+      :pagination="games.pagination"
+      @click="onPagination"
+    />
+    <v-table density="compact" v-if="games">
       <thead>
         <tr>
           <th>Preview</th>
+          <th>Players</th>
           <th>Infos</th>
 
           <th>Actions</th>
@@ -13,16 +22,40 @@
       </thead>
       <tbody>
         <tr
-          v-for="(item, idx) in games"
-          :key="idx"
+          v-for="item in games.items"
+          :key="item.id"
         >
-          <th>
+          <td>
             <a
               :href="`/uploads/${item.image.filename}`"
               target="_blank"
             ><img :src="resizeUrl(`/image-service/image/${item.image.filename}`, 150, 100, 'contain')">
             </a>
-          </th>
+          </td>
+          <td valign="top">
+            <div>
+              <div v-if="(serverInfo?.socketCountsByGameIds[item.id] || 0) > 0">
+                🔴 {{ (serverInfo?.socketCountsByGameIds[item.id] || 0) }} player<span v-if="(serverInfo?.socketCountsByGameIds[item.id] || 0) > 1">s</span> connected
+              </div>
+              <div v-else>
+                No players connected
+              </div>
+              <hr />
+              <div style="height: 100px; overflow-y: auto;">
+                <div v-for="player in sortedPlayers(item)">
+                  <div
+                    :style="player[5] === 'ukraine' ? {
+                      'backgroundImage': 'linear-gradient(180deg, rgba(0,87,183,1) 0%, rgba(0,87,183,1) 50%, rgba(255,221,0,1) 50%)',
+                      '-webkit-background-clip': 'text',
+                      '-webkit-text-fill-color': 'transparent'
+                    } : { color: player[5] }"
+                  >
+                    {{ player[4] }} ({{ player[7] }})
+                  </div>
+                </div>
+              </div>
+            </div>
+          </td>
           <td>
             <div class="d-flex ga-3">
               <span class="text-disabled">Id:</span> <a
@@ -49,10 +82,13 @@
           </td>
 
           <td>
-            <span
-              class="is-clickable"
+            <v-btn
+              block
               @click="onDelete(item)"
-            >DELETE</span>
+            >
+              DELETE
+            </v-btn>
+            <br />
             <v-btn
               block
               @click="fixPieces(item.id)"
@@ -63,6 +99,11 @@
         </tr>
       </tbody>
     </v-table>
+    <Pagination
+      v-if="games"
+      :pagination="games.pagination"
+      @click="onPagination"
+    />
   </v-container>
 </template>
 <script setup lang="ts">
@@ -71,9 +112,13 @@ import { resizeUrl } from '../../../../common/src/ImageService'
 import user from '../../user'
 import api from '../../_api'
 import Nav from '../components/Nav.vue'
+import Pagination from '../../components/Pagination.vue'
 import { scoreModeToString, shapeModeToString, snapModeToString } from '../../../../common/src/Util'
+import { GameId, Pagination as PaginationType, ServerInfo } from '../../../../common/src/Types'
 
-const games = ref<any[]>([])
+const perPage = 50
+const games = ref<{ items: any[], pagination: PaginationType } | null>(null)
+const serverInfo = ref<ServerInfo | null>(null)
 
 const gameVersion = (game: any) => {
   const parsed = JSON.parse(game.data)
@@ -103,14 +148,16 @@ const onDelete = async (game: any) => {
 
   const resp = await api.admin.deleteGame(game.id)
   if (resp.ok) {
-    games.value = games.value.filter(g => g.id !== game.id)
+    if (games.value) {
+      games.value.items = games.value.items.filter(g => g.id !== game.id)
+    }
     alert('Successfully deleted game!')
   } else {
     alert('Deleting game failed!')
   }
 }
 
-const fixPieces = async (gameId: string) => {
+const fixPieces = async (gameId: GameId) => {
   const resp = await api.admin.fixPieces(gameId)
   if (resp.ok) {
     alert('Successfully fixed ' + resp.changed + 'pieces!')
@@ -119,15 +166,34 @@ const fixPieces = async (gameId: string) => {
   }
 }
 
+const sortedPlayers = (item: any) => {
+  const parsed = JSON.parse(item.data).players
+  // sort by score descending
+  parsed.sort((a: any, b: any) => {
+    return b[7] - a[7]
+  })
+  return parsed
+}
+
+const onPagination = async (q: { limit: number, offset: number }) => {
+  if (!games.value) {
+    return
+  }
+  games.value = await api.admin.getGames(q)
+}
+
 onMounted(async () => {
   if (user.getMe()) {
-    games.value = await api.admin.getGames()
+    games.value = await api.admin.getGames({ limit: perPage, offset: 0 })
+    serverInfo.value = await api.admin.getServerInfo()
   }
   user.eventBus.on('login', async () => {
-    games.value = await api.admin.getGames()
+    games.value = await api.admin.getGames({ limit: perPage, offset: 0 })
+    serverInfo.value = await api.admin.getServerInfo()
   })
   user.eventBus.on('logout', () => {
-    games.value = []
+    games.value = null
+    serverInfo.value = null
   })
 })
 </script>

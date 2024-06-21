@@ -8,7 +8,7 @@ import { GameSockets } from './GameSockets'
 import Time from '../../common/src/Time'
 import config from './Config'
 import GameCommon from '../../common/src/GameCommon'
-import { ServerEvent, Game as GameType, ClientEvent, GameEventInputConnectionClose } from '../../common/src/Types'
+import { ServerEvent, Game as GameType, ClientEvent, GameEventInputConnectionClose, GameId, ClientId } from '../../common/src/Types'
 import { GameService } from './GameService'
 import createApiRouter from './web_routes/api'
 import createAdminApiRouter from './web_routes/admin/api'
@@ -27,14 +27,10 @@ import { AnnouncementsRepo } from './repo/AnnouncementsRepo'
 import { ImageResize } from './ImageResize'
 import { LeaderboardRepo } from './repo/LeaderboardRepo'
 import { ImagesRepo } from './repo/ImagesRepo'
-import fs from 'fs'
 import { storeImageSnapshot } from './ImageSnapshots'
 import { Twitch } from './Twitch'
-
-const indexFile = path.resolve(config.dir.PUBLIC_DIR, 'index.html')
-const indexFileContents = fs.existsSync(indexFile)
-  ? fs.readFileSync(indexFile, 'utf-8')
-  : 'INDEX FILE MISSING'
+import { UrlUtil } from './UrlUtil'
+import fs from './FileSystem'
 
 const sendHtml = (res: Response, tmpl: string, data: Record<string, string> = {}): void => {
   let str = tmpl
@@ -57,18 +53,21 @@ export interface ServerInterface {
   getGameService: () => GameService
   getUsers: () => Users
   getImages: () => Images
+  getUrlUtil: () => UrlUtil
   getImageResize: () => ImageResize
   getTokensRepo: () => TokensRepo
   getAnnouncementsRepo: () => AnnouncementsRepo
   getLeaderboardRepo: () => LeaderboardRepo
   getImagesRepo: () => ImagesRepo
   getTwitch: () => Twitch
-  fixPieces: (gameId: string) => Promise<any>
+  fixPieces: (gameId: GameId) => Promise<any>
 }
 
 export class Server implements ServerInterface {
   private webserver: HttpServer | null = null
   private websocketserver: WebSocketServer | null = null
+
+  private _indexFileContents: string | null = null
 
   constructor(
     private readonly db: Db,
@@ -81,6 +80,7 @@ export class Server implements ServerInterface {
     private readonly images: Images,
     private readonly imageResize: ImageResize,
     private readonly tokensRepo: TokensRepo,
+    private readonly urlUtil: UrlUtil,
     private readonly announcementsRepo: AnnouncementsRepo,
     private readonly leaderboardRepo: LeaderboardRepo,
     private readonly imagesRepo: ImagesRepo,
@@ -119,6 +119,9 @@ export class Server implements ServerInterface {
   getTokensRepo(): TokensRepo {
     return this.tokensRepo
   }
+  getUrlUtil(): UrlUtil {
+    return this.urlUtil
+  }
   getAnnouncementsRepo(): AnnouncementsRepo {
     return this.announcementsRepo
   }
@@ -132,7 +135,7 @@ export class Server implements ServerInterface {
     return this.twitch
   }
 
-  async persistGame(gameId: string): Promise<void> {
+  async persistGame(gameId: GameId): Promise<void> {
     const game: GameType | null = GameCommon.get(gameId)
     if (!game) {
       log.error(`[ERROR] unable to persist non existing game ${gameId}`)
@@ -145,6 +148,17 @@ export class Server implements ServerInterface {
     for (const gameId of this.gameService.dirtyGameIds()) {
       await this.persistGame(gameId)
     }
+  }
+
+  private async indexFileContents(): Promise<string> {
+    if (this._indexFileContents !== null) {
+      return this._indexFileContents
+    }
+    const indexFile = path.resolve(config.dir.PUBLIC_DIR, 'index.html')
+    this._indexFileContents = await fs.exists(indexFile)
+      ? await fs.readFile(indexFile)
+      : 'INDEX FILE MISSING'
+    return this._indexFileContents
   }
 
   start() {
@@ -170,40 +184,40 @@ export class Server implements ServerInterface {
     app.use('/uploads/', express.static(config.dir.UPLOAD_DIR))
 
     app.get('/', async (req: any, res) => {
-      sendHtml(res, indexFileContents, {
+      sendHtml(res, await this.indexFileContents(), {
         '<!-- og:image -->': '<meta property="og:image" content="/assets/textures/poster.webp" />',
       })
     })
     app.use('/', express.static(config.dir.PUBLIC_DIR))
 
     app.get('/g/:id', async (req: Request, res: Response) => {
-      const gameId = req.params.id
+      const gameId = req.params.id as GameId
       const loaded = await this.gameService.ensureLoaded(gameId)
       if (!loaded) {
         res.status(404).send('Game not found')
         return
       }
 
-      sendHtml(res, indexFileContents, {
-        '<!-- og:image -->': '<meta property="og:image" content="'+  GameCommon.getImageUrl(gameId) +'" />',
+      sendHtml(res, await this.indexFileContents(), {
+        '<!-- og:image -->': '<meta property="og:image" content="' + GameCommon.getImageUrl(gameId) + '" />',
       })
     })
 
     app.get('/replay/:id', async (req: Request, res: Response) => {
-      const gameId = req.params.id
+      const gameId = req.params.id as GameId
       const loaded = await this.gameService.ensureLoaded(gameId)
       if (!loaded) {
         res.status(404).send('Game not found')
         return
       }
 
-      sendHtml(res, indexFileContents, {
-        '<!-- og:image -->': '<meta property="og:image" content="'+  GameCommon.getImageUrl(gameId) +'" />',
+      sendHtml(res, await this.indexFileContents(), {
+        '<!-- og:image -->': '<meta property="og:image" content="' + GameCommon.getImageUrl(gameId) + '" />',
       })
     })
 
     app.all('*', async (req: any, res) => {
-      sendHtml(res, indexFileContents, {
+      sendHtml(res, await this.indexFileContents(), {
         '<!-- og:image -->': '<meta property="og:image" content="/assets/textures/poster.webp" />',
       })
     })
@@ -221,8 +235,8 @@ export class Server implements ServerInterface {
     ): Promise<void> => {
       try {
         const proto = socket.protocol.split('|')
-        const clientId = proto[0]
-        const gameId = proto[1]
+        const clientId = proto[0] as ClientId
+        const gameId = proto[1] as GameId
         this.gameSockets.removeSocket(gameId, socket)
 
         const ts = Time.timestamp()
@@ -235,12 +249,7 @@ export class Server implements ServerInterface {
             [SERVER_EVENT_TYPE.UPDATE, clientId, clientSeq, ret.changes],
             sockets,
           )
-        } else {
-          await this.persistGame(gameId)
-          log.info(`[INFO] unloading game: ${gameId}`)
-          GameCommon.unsetGame(gameId)
         }
-
       } catch (e) {
         log.error(e)
       }
@@ -251,8 +260,8 @@ export class Server implements ServerInterface {
     ): Promise<void> => {
       try {
         const proto = socket.protocol.split('|')
-        const clientId = proto[0]
-        const gameId = proto[1]
+        const clientId = proto[0] as ClientId
+        const gameId = proto[1] as GameId
         const msg = JSON.parse(data) as ClientEvent
         const msgType = msg[0]
         switch (msgType) {
@@ -263,7 +272,7 @@ export class Server implements ServerInterface {
               throw `[game ${gameId} does not exist... ]`
             }
             const ts = Time.timestamp()
-            this.gameService.addPlayer(gameId, clientId, ts)
+            await this.gameService.addPlayer(gameId, clientId, ts)
             this.gameSockets.addSocket(gameId, socket)
 
             const game: GameType | null = GameCommon.get(gameId)
@@ -278,7 +287,7 @@ export class Server implements ServerInterface {
           } break
 
           case CLIENT_EVENT_TYPE.UPDATE: {
-            log.log(`ws`, socket.protocol, msgType)
+            // log.log(`ws`, socket.protocol, msgType)
             const loaded = await this.gameService.ensureLoaded(gameId)
             if (!loaded) {
               throw `[game ${gameId} does not exist... ]`
@@ -289,7 +298,7 @@ export class Server implements ServerInterface {
 
             let sendGame = false
             if (!GameCommon.playerExists(gameId, clientId)) {
-              this.gameService.addPlayer(gameId, clientId, ts)
+              await this.gameService.addPlayer(gameId, clientId, ts)
               sendGame = true
             }
             if (!this.gameSockets.socketExists(gameId, socket)) {
@@ -355,7 +364,7 @@ export class Server implements ServerInterface {
     }
   }
 
-  public async fixPieces(gameId: string): Promise<any> {
+  public async fixPieces(gameId: GameId): Promise<any> {
     const loaded = await this.gameService.ensureLoaded(gameId)
     if (!loaded) {
       return {
@@ -385,7 +394,7 @@ export class Server implements ServerInterface {
       }
     }
     if (changed) {
-      this.persistGame(gameId)
+      await this.persistGame(gameId)
       const game: GameType | null = GameCommon.get(gameId)
       if (!game) {
         return {
@@ -424,18 +433,17 @@ export class Server implements ServerInterface {
     const newLiveStreams = livestreams.filter(l => newLiveIds.includes(l.id))
 
     // add streams that are new
-    for (const stream of newLiveStreams) {
-      await this.db.insert('twitch_livestreams', {
-        livestream_id: stream.id,
-        title: stream.title,
-        url: stream.url,
-        user_display_name: stream.user_display_name,
-        user_thumbnail: stream.user_thumbnail,
-        language: stream.language,
-        viewers: stream.viewers,
-        is_live: 1,
-      })
-    }
+    const newLiveStreamRows = newLiveStreams.map(stream => ({
+      livestream_id: stream.id,
+      title: stream.title,
+      url: stream.url,
+      user_display_name: stream.user_display_name,
+      user_thumbnail: stream.user_thumbnail,
+      language: stream.language,
+      viewers: stream.viewers,
+      is_live: 1,
+    }))
+    await this.db.insertMany('twitch_livestreams', newLiveStreamRows)
 
     // update streams that are still live
     for (const stream of stillLiveStreams) {

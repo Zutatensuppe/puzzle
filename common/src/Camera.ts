@@ -4,7 +4,7 @@ let MIN_ZOOM = .1
 const MAX_ZOOM = 6
 const ZOOM_STEP = .05
 
-type ZOOM_DIR = 'in'|'out'
+type ZOOM_DIR = 'in' | 'out'
 
 export interface Snapshot {
   x: number
@@ -17,7 +17,7 @@ export class Camera {
   private y: number = 0
   private curZoom: number = 1
 
-  constructor(snapshot: Snapshot|null = null) {
+  constructor(snapshot: Snapshot | null = null) {
     if (snapshot) {
       this.fromSnapshot(snapshot)
     }
@@ -25,7 +25,7 @@ export class Camera {
 
   calculateZoomCapping(windowDim: Dim, tableDim: Dim): void {
     // min zoom still may never go below .1
-    MIN_ZOOM = Math.max(.1, windowDim.w/tableDim.w, windowDim.h/tableDim.h)
+    MIN_ZOOM = Math.max(.1, windowDim.w / tableDim.w, windowDim.h / tableDim.h)
   }
 
   centerFit(
@@ -36,8 +36,8 @@ export class Camera {
   ): void {
     this.reset()
     this.move(
-      -(tableDim.w - canvasDim.w) /2,
-      -(tableDim.h - canvasDim.h) /2,
+      -(tableDim.w - canvasDim.w) / 2,
+      -(tableDim.h - canvasDim.h) / 2,
     )
 
     // zoom viewport to fit whole puzzle in

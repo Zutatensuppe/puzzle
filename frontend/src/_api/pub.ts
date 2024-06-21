@@ -1,4 +1,4 @@
-import { GameSettings, ImagesRequestData, NewGameDataRequestData } from '../../../common/src/Types'
+import { GameId, GameSettings, ImageId, ImagesRequestData, NewGameDataRequestData } from '../../../common/src/Types'
 import Util from '../../../common/src/Util'
 import xhr, { JSON_HEADERS, XhrRequest } from './xhr'
 
@@ -30,7 +30,7 @@ const changePassword = async (password: string, token: string) => {
   })
 }
 
-const logout = async() => {
+const logout = async () => {
   return await xhr.post('/api/logout', {
     headers: JSON_HEADERS,
     body: {},
@@ -66,15 +66,15 @@ const images = (data: ImagesRequestData): XhrRequest => {
   return xhr.getRequest(`/api/images${Util.asQueryArgs(data)}`, {})
 }
 
-const replayGameData = async (data: { gameId: string }) =>{
+const replayGameData = async (data: { gameId: GameId }) => {
   return xhr.get(`/api/replay-game-data${Util.asQueryArgs(data)}`, {})
 }
 
-const replayLogData = async (data: { gameId: string, offset: number }) =>{
+const replayLogData = async (data: { gameId: GameId, offset: number }) => {
   return xhr.get(`/api/replay-log-data${Util.asQueryArgs(data)}`, {})
 }
 
-const saveImage = async (data: { id: any, title: any, copyrightName: string, copyrightURL: string, tags: any }) => {
+const saveImage = async (data: { id: ImageId, title: any, copyrightName: string, copyrightURL: string, tags: any }) => {
   return xhr.post('/api/save-image', {
     headers: JSON_HEADERS,
     body: JSON.stringify({

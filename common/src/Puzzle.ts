@@ -69,8 +69,8 @@ export const determinePuzzleInfo = (
   }
 }
 
-function determineTabs (shapeMode: ShapeMode): number[] {
-  switch(shapeMode) {
+function determineTabs(shapeMode: ShapeMode): number[] {
+  switch (shapeMode) {
     case ShapeMode.ANY:
       return [-1, 0, 1]
     case ShapeMode.FLAT:

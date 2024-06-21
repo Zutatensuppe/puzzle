@@ -1,5 +1,5 @@
 import Db from '../Db'
-import { EncodedPlayer, MergeClientIdsIntoUserResult, Player } from '../Types'
+import { ClientId, EncodedPlayer, MergeClientIdsIntoUserResult, Player, UserId } from '../../../common/src/Types'
 import Util, { logger } from '../../../common/src/Util'
 
 const log = logger()
@@ -10,8 +10,8 @@ export class MergeClientIdsIntoUser {
   ) { }
 
   async run(
-    userId: number,
-    clientIds: string[],
+    userId: UserId,
+    clientIds: ClientId[],
     dry: boolean,
   ): Promise<MergeClientIdsIntoUserResult> {
     const result: MergeClientIdsIntoUserResult = {

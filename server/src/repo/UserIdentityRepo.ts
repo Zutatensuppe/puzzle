@@ -1,11 +1,12 @@
 import Crypto from '../Crypto'
 import Db, { WhereRaw } from '../Db'
+import { IdentityId, UserId } from '../../../common/src/Types'
 
 const TABLE = 'user_identity'
 
 export interface IdentityRow {
-  id: number
-  user_id: number
+  id: IdentityId
+  user_id: UserId
   provider_name: string
   provider_id: string
   provider_email: string
@@ -16,11 +17,11 @@ export class UserIdentityRepo {
     // pass
   }
 
-  async insert(userIdentity: Partial<IdentityRow>): Promise<number> {
+  async insert(userIdentity: Partial<IdentityRow>): Promise<IdentityId> {
     if (userIdentity.provider_email) {
       userIdentity.provider_email = Crypto.encrypt(userIdentity.provider_email)
     }
-    return await this.db.insert(TABLE, userIdentity, 'id') as number
+    return await this.db.insert(TABLE, userIdentity, 'id') as IdentityId
   }
 
   async get(where: WhereRaw): Promise<IdentityRow | null> {

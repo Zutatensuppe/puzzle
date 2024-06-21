@@ -1,6 +1,6 @@
 import { AppTokenAuthProvider } from '@twurple/auth'
 import { ApiClient } from '@twurple/api'
-import { Livestream, TwitchConfig } from './Types'
+import { Livestream, LivestreamId, TwitchConfig } from '../../common/src/Types'
 import { logger } from '../../common/src/Util'
 
 const log = logger('Twitch.ts')
@@ -39,9 +39,9 @@ export class Twitch {
     for (const stream of streams.data) {
       const user = await stream.getUser()
       livestreams.push({
-        id: stream.id,
+        id: stream.id as LivestreamId,
         title: stream.title,
-        url: `https://twitch/${user.name}`,
+        url: `https://twitch.tv/${user.name}`,
         user_display_name: stream.userDisplayName,
         user_thumbnail: user.profilePictureUrl,
         language: stream.language,

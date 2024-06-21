@@ -1,4 +1,4 @@
-import { Piece, Player, PlayerSettingsData, createDefaultPlayerSettingsData } from '../../common/src/Types'
+import { GameId, Piece, Player, PlayerSettingsData, createDefaultPlayerSettingsData } from '../../common/src/Types'
 import GameCommon from '../../common/src/GameCommon'
 import { Renderer } from '../../common/src/Renderer'
 import { Camera } from '../../common/src/Camera'
@@ -7,7 +7,7 @@ import { logger } from '../../common/src/Util'
 const log = logger('ImageSnapshotCreator.ts')
 
 export const createImageSnapshot = async (
-  gameId: string,
+  gameId: GameId,
   renderer: Renderer,
 ): Promise<HTMLCanvasElement> => {
   const boardDim = GameCommon.getBoardDim(gameId)

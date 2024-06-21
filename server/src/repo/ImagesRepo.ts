@@ -1,11 +1,11 @@
-import { ImageSearchSort } from '../../../common/src/Types'
+import { ImageId, ImageSearchSort, TagId, UserId } from '../../../common/src/Types'
 import Db, { OrderBy, WhereRaw } from '../Db'
 
 const TABLE = 'images'
 
 export interface ImageRow {
-  id: number
-  uploader_user_id: number
+  id: ImageId
+  uploader_user_id: UserId
   uploader_user_name: string
   created: Date
   filename: string
@@ -19,12 +19,12 @@ export interface ImageRow {
 }
 
 export interface ImageXTagRow {
-  image_id: number
-  category_id: number
+  image_id: ImageId
+  category_id: TagId
 }
 
 export interface TagRow {
-  id: number
+  id: TagId
   slug: string
   title: string
 }
@@ -46,15 +46,15 @@ export class ImagesRepo {
     return await this.db.get(TABLE, where)
   }
 
-  async insert(image: Partial<ImageRow>): Promise<number> {
-    return await this.db.insert(TABLE, image, 'id') as number
+  async insert(image: Partial<ImageRow>): Promise<ImageId> {
+    return await this.db.insert(TABLE, image, 'id') as ImageId
   }
 
   async update(image: Partial<ImageRow>, where: WhereRaw): Promise<void> {
     await this.db.update(TABLE, image, where)
   }
 
-  async deleteTagRelations(imageId: number): Promise<void> {
+  async deleteTagRelations(imageId: ImageId): Promise<void> {
     await this.db.delete('image_x_category', { image_id: imageId })
   }
 
@@ -62,8 +62,8 @@ export class ImagesRepo {
     await this.db.insert('image_x_category', imageXtag)
   }
 
-  async upsertTag(tag: Omit<TagRow, 'id'>): Promise<number> {
-    return await this.db.upsert('categories', tag, { slug: tag.slug }, 'id')
+  async upsertTag(tag: Omit<TagRow, 'id'>): Promise<TagId> {
+    return await this.db.upsert('categories', tag, ['slug'], 'id')
   }
 
   async getTagsBySlugs(slugs: string[]): Promise<TagRow[]> {
@@ -74,12 +74,21 @@ export class ImagesRepo {
     return await this.db.getMany('categories', {slug: {'$ilike': search + '%'}})
   }
 
-  async getTagsByImageId(imageId: number): Promise<TagRow[]> {
+  async getTagsByImageIds(imageIds: ImageId[]): Promise<Record<ImageId, TagRow[]>> {
+    const where = this.db._buildWhere({'i.id': { '$in': imageIds }})
     const query = `
-      select c.id, c.slug, c.title from categories c
+      select i.id as image_id, json_agg(c.*) as tags from categories c
       inner join image_x_category ixc on c.id = ixc.category_id
-      where ixc.image_id = $1`
-    return await this.db._getMany(query, [imageId])
+      inner join images i on i.id = ixc.image_id
+      ${where.sql}
+      group by i.id
+    `
+    const rows = await this.db._getMany(query, where.values)
+    const tags: Record<ImageId, TagRow[]> = {}
+    for (const row of rows) {
+      tags[row.image_id] = row.tags
+    }
+    return tags
   }
 
   async searchImagesWithCount(
@@ -88,7 +97,7 @@ export class ImagesRepo {
     isPrivate: boolean,
     offset: number,
     limit: number,
-    userId: number,
+    userId: UserId,
   ): Promise<ImageRowWithCount[]> {
     const orderByMap = {
       [ImageSearchSort.ALPHA_ASC]: [{ title: 1 }, { created: -1 }],
@@ -102,7 +111,7 @@ export class ImagesRepo {
       return []
     }
 
-    const imageIds: number[] = []
+    const imageIds: ImageId[] = []
     // search in tags:
     const searchClean = search.trim()
     const searches = searchClean ? searchClean.split(/\s+/) : []
@@ -114,7 +123,7 @@ export class ImagesRepo {
           const where = this.db._buildWhere({
             'category_id': {'$in': tags.map(x => x.id)},
           })
-          const ids: number[] = (await this.db._getMany(`
+          const ids: ImageId[] = (await this.db._getMany(`
       select i.id from image_x_category ixc
       inner join images i on i.id = ixc.image_id ${where.sql};
       `, where.values)).map(img => img.id)
@@ -167,12 +176,12 @@ export class ImagesRepo {
     `, params)
   }
 
-  async getGameCount(imageId: number): Promise<number> {
+  async getGameCount(imageId: ImageId): Promise<number> {
     const rows = await this.getImagesWithCountByIds([imageId])
     return rows.length > 0 ? rows[0].games_count : 0
   }
 
-  async getImagesWithCountByIds(imageIds: number[]): Promise<ImageRowWithCount[]> {
+  async getImagesWithCountByIds(imageIds: ImageId[]): Promise<ImageRowWithCount[]> {
     const params: any[] = []
     const dbWhere = this.db._buildWhere({'images.id': { '$in': imageIds }})
     params.push(...dbWhere.values)

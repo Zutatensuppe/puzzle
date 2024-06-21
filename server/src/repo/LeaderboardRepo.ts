@@ -1,8 +1,8 @@
-import { Leaderboard, LeaderboardEntry } from '../../../common/src/Types'
+import { Leaderboard, LeaderboardEntry, LeaderboardId, UserId } from '../../../common/src/Types'
 import Db from '../Db'
 
 interface LeaderboardRow {
-  id: number
+  id: LeaderboardId
   name: string
 }
 
@@ -24,7 +24,7 @@ export class LeaderboardRepo {
       await this.db.run('truncate leaderboard_entries')
 
       for (const lb of this.LEADERBOARDS) {
-        const leaderboardId = await this.db.upsert('leaderboard', { name: lb.name }, { name: lb.name }, 'id')
+        const leaderboardId = await this.db.upsert('leaderboard', { name: lb.name }, ['name'], 'id')
         const rows = await this.db._getMany(`
           with relevant_users as (
             select u.id from users u
@@ -62,14 +62,14 @@ export class LeaderboardRepo {
         for (const row of rows) {
           row.leaderboard_id = leaderboardId
           row.rank = row.pieces_count ? i : 0
-          this.db.insert('leaderboard_entries', row)
           i++
         }
+        await this.db.insertMany('leaderboard_entries', rows)
       }
     })
   }
 
-  public async getTop10(userId: number): Promise<Leaderboard[]> {
+  public async getTop10(userId: UserId): Promise<Leaderboard[]> {
     const leaderboards: Leaderboard[] = []
     for (const lb of this.LEADERBOARDS) {
       const leaderboard: LeaderboardRow | null = await this.db.get('leaderboard', { name: lb.name })

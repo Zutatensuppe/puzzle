@@ -2,13 +2,13 @@ import mitt from 'mitt'
 import api from './_api'
 import storage from './storage'
 import xhr from './_api/xhr'
-import { PLAYER_SETTINGS } from '../../common/src/Types'
+import { ClientId, PLAYER_SETTINGS, UserId } from '../../common/src/Types'
 
 export interface User {
-  id: number
+  id: UserId
   name: string
   created: string
-  clientId: string
+  clientId: ClientId
   type: 'guest' | 'user'
   cannyToken: string | null
   groups: string[]
@@ -18,7 +18,7 @@ let me: null | User = null
 export const eventBus = mitt()
 
 async function init(): Promise<void> {
-  xhr.setClientId(storage.uniq('ID'))
+  xhr.setClientId(storage.uniq('ID') as ClientId)
   const res = await api.pub.me()
   me = res.status === 200 ? (await res.json()) : null
   if (me) {
@@ -27,7 +27,7 @@ async function init(): Promise<void> {
     eventBus.emit('login')
   } else {
     console.log('not logged in')
-    xhr.setClientId(storage.uniq('ID'))
+    xhr.setClientId(storage.uniq('ID') as ClientId)
     eventBus.emit('logout')
   }
 }

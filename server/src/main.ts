@@ -1,5 +1,6 @@
 import { logger } from '../../common/src/Util'
 import Time from '../../common/src/Time'
+import GameCommon from '../../common/src/GameCommon'
 import v8 from 'v8'
 import config from './Config'
 import Db from './Db'
@@ -20,6 +21,7 @@ import { PuzzleService } from './PuzzleService'
 import { LeaderboardRepo } from './repo/LeaderboardRepo'
 import { UsersRepo } from './repo/UsersRepo'
 import { Twitch } from './Twitch'
+import { UrlUtil } from './UrlUtil'
 
 const run = async () => {
   const db = new Db(config.db.connectStr, config.dir.DB_PATCHES_DIR)
@@ -35,7 +37,7 @@ const run = async () => {
   const users = new Users(db)
   const usersRepo = new UsersRepo(db)
   const images = new Images(imagesRepo)
-  const imageResize = new ImageResize(images)
+  const imageResize = new ImageResize()
   const tokensRepo = new TokensRepo(db)
   const announcementsRepo = new AnnouncementsRepo(db)
   const puzzleService = new PuzzleService(images)
@@ -54,6 +56,7 @@ const run = async () => {
     images,
     imageResize,
     tokensRepo,
+    new UrlUtil(),
     announcementsRepo,
     leaderboardRepo,
     imagesRepo,
@@ -84,6 +87,22 @@ const run = async () => {
   }
   persistInterval = setTimeout(doPersist, config.persistence.interval)
 
+  // unload games in fixed interval
+  let idlecheckInterval: any = null
+  const doIdlecheck = async () => {
+    log.log('doIdlecheck...')
+    const idleGameIds = server.getGameSockets().updateIdle()
+    for (const gameId of idleGameIds) {
+      await server.persistGame(gameId)
+      log.info(`[INFO] unloading game: ${gameId}`)
+      GameCommon.unsetGame(gameId)
+      server.getGameSockets().removeSocketInfo(gameId)
+    }
+    idlecheckInterval = setTimeout(doIdlecheck, config.idlecheck.interval)
+  }
+  idlecheckInterval = setTimeout(doIdlecheck, config.idlecheck.interval)
+
+
   // check for livestreams
   let checkLivestreamsInterval: any = null
   const updateLivestreamsInfo = () => {
@@ -100,10 +119,13 @@ const run = async () => {
     log.log(`${signal} received...`)
 
     log.log('clearing persist interval...')
-    clearInterval(persistInterval)
+    clearTimeout(persistInterval)
+
+    log.log('clearing idlecheck interval...')
+    clearTimeout(idlecheckInterval)
 
     log.log('clearing check livestreams interval...')
-    clearInterval(checkLivestreamsInterval)
+    clearTimeout(checkLivestreamsInterval)
 
     log.log('Persisting games...')
     await server.persistGames()
@@ -129,4 +151,4 @@ const run = async () => {
   })
 }
 
-run()
+void run()

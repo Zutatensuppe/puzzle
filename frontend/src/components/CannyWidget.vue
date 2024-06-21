@@ -46,6 +46,8 @@ const removeIframe = () => {
 const onInit = () => {
   me.value = user.getMe()
   removeIframe()
+  // @ts-ignore
+  // eslint-disable-next-line no-undef
   Canny('render', {
     boardToken: props.boardToken,
     basePath: props.basePath,

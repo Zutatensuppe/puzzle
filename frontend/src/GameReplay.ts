@@ -221,7 +221,7 @@ export class GameReplay extends Game<ReplayHud> {
     await this.connect()
     await this.initBaseProps()
     this.doSetSpeedStatus()
-    this.next()
+    await this.next()
     this.initGameLoop()
   }
 }

@@ -1,4 +1,4 @@
-import { TokenRow } from '../../common/src/Types'
+import { AccountId, ClientId, TokenRow, UserId } from '../../common/src/Types'
 import { COOKIE_TOKEN, generateToken } from './Auth'
 import Db, { WhereRaw } from './Db'
 import { AccountRow, AccountsRepo } from './repo/AccountsRepo'
@@ -44,7 +44,7 @@ export class Users {
     return row !== null
   }
 
-  async clientIdTaken(clientId: string): Promise<boolean> {
+  async clientIdTaken(clientId: ClientId): Promise<boolean> {
     const row = await this.db._get(`
       with relevant_users as (
         select u.client_id from users u
@@ -63,11 +63,11 @@ export class Users {
     return await this.getAccountByEmailPlain(emailPlain) !== null
   }
 
-  async setAccountVerified(accountId: number): Promise<void> {
+  async setAccountVerified(accountId: AccountId): Promise<void> {
     await this.accountsRepo.update({ status: 'verified'}, { id: accountId})
   }
 
-  async getGroups(userId: number): Promise<UserGroupRow[]> {
+  async getGroups(userId: UserId): Promise<UserGroupRow[]> {
     return await this.usersRepo.getGroupsByUserId(userId)
   }
 
@@ -135,7 +135,7 @@ export class Users {
     return await this.tokensRepo.get(where)
   }
 
-  async addAuthToken(userId: number): Promise<string> {
+  async addAuthToken(userId: UserId): Promise<string> {
     const token = generateToken()
     await this.tokensRepo.insert({ user_id: userId, token, type: 'auth' })
     return token

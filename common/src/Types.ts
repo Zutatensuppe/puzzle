@@ -7,9 +7,25 @@ type ArrayLengthMutationKeys = 'splice' | 'push' | 'pop' | 'shift' | 'unshift' |
 type ArrayItems<T extends Array<any>> = T extends Array<infer TItems> ? TItems : never
 export type FixedLengthArray<T extends any[]> =
   Pick<T, Exclude<keyof T, ArrayLengthMutationKeys>>
-  & { [Symbol.iterator]: () => IterableIterator< ArrayItems<T> > }
+  & { [Symbol.iterator]: () => IterableIterator<ArrayItems<T>> }
 
 export type Timestamp = number
+
+declare const __brand: unique symbol
+type Brand<B> = { [__brand]: B }
+type Branded<T, B> = T & Brand<B>
+
+export type GameId = Branded<string, 'GameId'>
+export type ClientId = Branded<string, 'ClientId'>
+export type UserId = Branded<number, 'UserId'>
+export type IdentityId = Branded<number, 'IdentityId'>
+export type UserGroupId = Branded<number, 'UserGroupId'>
+export type AccountId = Branded<number, 'AccountId'>
+export type ImageId = Branded<number, 'ImageId'>
+export type AnnouncementId = Branded<number, 'AnnouncementId'>
+export type TagId = Branded<number, 'TagId'>
+export type LeaderboardId = Branded<number, 'LeaderboardId'>
+export type LivestreamId = Branded<string, 'LivestreamId'>
 
 export type ChangePiece = [CHANGE_TYPE.PIECE, EncodedPiece]
 export type ChangePlayer = [CHANGE_TYPE.PLAYER, EncodedPlayer]
@@ -77,18 +93,18 @@ export type ClientImageSnapshotEvent = [CLIENT_EVENT_TYPE.IMAGE_SNAPSHOT, string
 export type ClientEvent = ClientInitEvent | ClientUpdateEvent | ClientImageSnapshotEvent
 
 export type EncodedPlayer = FixedLengthArray<[
-  string,
+  ClientId,
   number,
   number,
-  0|1,
-  string|null,
-  string|null,
-  string|null,
+  0 | 1,
+  string | null,
+  string | null,
+  string | null,
   number,
   Timestamp,
 ]>
 
-export type RegisteredMap = Record<string, boolean>
+export type RegisteredMap = Record<ClientId, boolean>
 
 export enum PieceRotation {
   R0 = 0,
@@ -102,13 +118,13 @@ export type EncodedPiece = FixedLengthArray<[
   number,
   number,
   number,
-  string|number,
+  ClientId | number,
   number,
   undefined|PieceRotation,
 ]>
 
 export interface Announcement {
-  id: number
+  id: AnnouncementId
   created: string // date string
   title: string
   message: string
@@ -117,7 +133,7 @@ export interface Announcement {
 export type EncodedPieceShape = number
 
 export type EncodedGameLegacy = FixedLengthArray<[
-  string,
+  GameId,
   string,
   RngSerialized,
   Puzzle,
@@ -125,14 +141,14 @@ export type EncodedGameLegacy = FixedLengthArray<[
   ScoreMode,
   ShapeMode,
   SnapMode,
-  number|null,
+  UserId | null,
   boolean, // has replay
   number, // gameVersion
   boolean, // private
 ]>
 
 export type EncodedGame = FixedLengthArray<[
-  string,
+  GameId,
   string,
   RngSerialized,
   Puzzle,
@@ -140,7 +156,7 @@ export type EncodedGame = FixedLengthArray<[
   ScoreMode,
   ShapeMode,
   SnapMode,
-  number|null,
+  UserId | null,
   boolean, // has replay
   number, // gameVersion
   boolean, // private
@@ -189,7 +205,7 @@ export interface ReplayGameData {
 }
 
 export interface Tag {
-  id: number
+  id: TagId
   slug: string
   title: string
   total: number
@@ -201,9 +217,9 @@ interface GameRng {
 }
 
 export interface Game {
-  id: string
+  id: GameId
   gameVersion: number
-  creatorUserId: number|null
+  creatorUserId: UserId | null
   players: Array<EncodedPlayer>
   puzzle: Puzzle
   scoreMode: ScoreMode
@@ -218,7 +234,7 @@ export interface Game {
 }
 
 export interface Image {
-  id: number
+  id: ImageId
   filename: string
   file: string
   url: string
@@ -285,7 +301,7 @@ export interface PieceShape {
 }
 
 export interface Piece {
-  owner: string|number
+  owner: ClientId | number
   idx: number
   pos: Point
   z: number
@@ -294,7 +310,7 @@ export interface Piece {
 }
 
 export interface PieceChange {
-  owner?: string|number
+  owner?: ClientId | number
   idx?: number
   pos?: Point
   z?: number
@@ -302,11 +318,10 @@ export interface PieceChange {
   rot?: PieceRotation
 }
 
-export interface ImageInfo
-{
-  id: number
-  uploaderUserId: number|null
-  uploaderName: string|null
+export interface ImageInfo {
+  id: ImageId
+  uploaderUserId: UserId | null
+  uploaderName: string | null
   filename: string
   url: string
   title: string
@@ -341,21 +356,21 @@ export interface PuzzleInfo {
 }
 
 export interface Player {
-  id: string
+  id: ClientId
   x: number
   y: number
-  d: 0|1
-  name: string|null
-  color: string|null
-  bgcolor: string|null
+  d: 0 | 1
+  name: string | null
+  color: string | null
+  bgcolor: string | null
   points: number
   ts: Timestamp
 }
 
 export interface BasicPlayerInfo {
-  id: string
-  name: string|null
-  color: string|null
+  id: ClientId
+  name: string | null
+  color: string | null
   points: number
 }
 
@@ -442,10 +457,10 @@ export interface PlayerChange {
   id?: string
   x?: number
   y?: number
-  d?: 0|1
-  name?: string|null
-  color?: string|null
-  bgcolor?: string|null
+  d?: 0 | 1
+  name?: string | null
+  color?: string | null
+  bgcolor?: string | null
   points?: number
   ts?: Timestamp
 }
@@ -515,7 +530,7 @@ export interface ImageSnapshots {
 }
 
 export interface GameInfo {
-  id: string
+  id: GameId
   hasReplay: boolean
   isPrivate: boolean
   started: number
@@ -543,23 +558,23 @@ export interface ApiGamesData {
 }
 
 export interface Leaderboard {
-  id: number
+  id: LeaderboardId
   name: string
   entries: LeaderboardEntry[]
   userEntry: LeaderboardEntry | null
 }
 
 export interface LeaderboardEntry {
-  leaderboard_id: number
+  leaderboard_id: LeaderboardId
   rank: number
-  user_id: number
+  user_id: UserId
   user_name: string
   games_count: number
   pieces_count: number
 }
 
 export interface Livestream {
-  id: string
+  id: LivestreamId
   title: string
   url: string
   user_display_name: string
@@ -602,7 +617,7 @@ export interface DiscordConfig {
 }
 
 export interface TokenRow {
-  user_id: number
+  user_id: UserId | AccountId
   type: string
   token: string
 }
@@ -696,9 +711,14 @@ export interface HandleGameEventResult {
 
 export interface MergeClientIdsIntoUserResult {
   dry: boolean
-  updatedGameIds: string[]
-  updatedImageIds: number[]
-  removedUserIds: number[]
-  userIdsWithIdentities: number[]
-  userIdsWithoutIdentities: number[]
+  updatedGameIds: GameId[]
+  updatedImageIds: ImageId[]
+  removedUserIds: UserId[]
+  userIdsWithIdentities: UserId[]
+  userIdsWithoutIdentities: UserId[]
+}
+
+export interface ServerInfo {
+  socketCount: number
+  socketCountsByGameIds: Record<GameId, number>
 }

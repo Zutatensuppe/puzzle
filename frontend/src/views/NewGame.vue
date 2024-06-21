@@ -141,7 +141,7 @@ import { onMounted, onBeforeUnmount, ref, watch } from 'vue'
 import NewImageDialog from './../components/NewImageDialog.vue'
 import EditImageDialog from './../components/EditImageDialog.vue'
 import NewGameDialog from './../components/NewGameDialog.vue'
-import { GameSettings, ImageInfo, Tag, NewGameDataRequestData, ImagesRequestData, ImageSearchSort, isImageSearchSort } from '../../../common/src/Types'
+import { GameSettings, ImageInfo, Tag, NewGameDataRequestData, ImagesRequestData, ImageSearchSort, isImageSearchSort, ImageId } from '../../../common/src/Types'
 import api from '../_api'
 import { XhrRequest } from '../_api/xhr'
 import { onBeforeRouteUpdate, RouteLocationNormalizedLoaded, useRouter } from 'vue-router'
@@ -163,7 +163,7 @@ const sentinelActive = ref<boolean>(false)
 
 const tags = ref<Tag[]>([])
 const image = ref<ImageInfo>({
-  id: 0,
+  id: 0 as ImageId,
   uploaderUserId: null,
   uploaderName: '',
   filename: '',
@@ -312,18 +312,28 @@ const onNewGame = async (gameSettings: GameSettings) => {
 }
 
 const tryLoadMore = async () => {
+  if (currentRequest.value) {
+    // still loading
+    return
+  }
+
   offset.value = images.value.length
   const requestData: ImagesRequestData = {
     sort: filters.value.sort,
     search: filters.value.search,
     offset: offset.value,
   }
-  if (currentRequest.value) {
-    currentRequest.value.abort()
-  }
   currentRequest.value = api.pub.images(requestData)
-  const res = await currentRequest.value.send()
-  const json = await res.json()
+  let json: { images: ImageInfo[] }
+  try {
+    const res = await currentRequest.value.send()
+    json = await res.json()
+    currentRequest.value = null
+  } catch (e) {
+    currentRequest.value = null
+    return
+  }
+
   if (json.images.length === 0) {
     sentinelActive.value = false
   } else {

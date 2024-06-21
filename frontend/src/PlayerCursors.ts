@@ -28,15 +28,12 @@ export class PlayerCursors
   }
 
   async get (p: Player): Promise<ImageBitmap | HTMLCanvasElement> {
-    const key = p.color + ' ' + p.d
+    const color = p.color || '#ffffff'
+    const key = color + ' ' + p.d
     if (!this.cursorImages[key]) {
       const cursor = p.d ? this.assets.Gfx.GRAB : this.assets.Gfx.HAND
-      if (p.color) {
-        const mask = p.d ? this.assets.Gfx.GRAB_MASK : this.assets.Gfx.HAND_MASK
-        this.cursorImages[key] = this.graphics.colorizedCanvas(cursor, mask, p.color)
-      } else {
-        this.cursorImages[key] = cursor
-      }
+      const mask = p.d ? this.assets.Gfx.GRAB_MASK : this.assets.Gfx.HAND_MASK
+      this.cursorImages[key] = this.graphics.colorizedCanvas(cursor, mask, color)
     }
     return this.cursorImages[key]
   }

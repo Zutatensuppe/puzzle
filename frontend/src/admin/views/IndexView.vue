@@ -14,7 +14,7 @@ const loggedIn = ref<boolean>(false)
 onMounted(async () => {
   const me = user.getMe()
   loggedIn.value = !!(me && me.type === 'user')
-  user.eventBus.on('login', () => {
+  user.eventBus.on('login', async () => {
     console.log('login')
     loggedIn.value = true
   })
