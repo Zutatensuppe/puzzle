@@ -41,7 +41,7 @@ export class Twitch {
       livestreams.push({
         id: stream.id as LivestreamId,
         title: stream.title,
-        url: `https://twitch/${user.name}`,
+        url: `https://twitch.tv/${user.name}`,
         user_display_name: stream.userDisplayName,
         user_thumbnail: user.profilePictureUrl,
         language: stream.language,
