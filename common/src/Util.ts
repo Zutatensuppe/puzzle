@@ -40,7 +40,7 @@ const NOOP = () => { return }
 
 export const logger = (...pre: string[]): { log: LogFn, error: LogFn, info: LogFn, disable: () => void } => {
 
-  const log = (m: 'log'|'info'|'error') => (...args: LogArgs): void => {
+  const log = (m: 'log' | 'info' | 'error') => (...args: LogArgs): void => {
     const d = new Date()
     const date = dateformat('hh:mm:ss', d)
     console[m](`${date}`, ...pre, ...args)
@@ -70,18 +70,18 @@ function encodeShape(data: PieceShape): EncodedPieceShape {
       ^^     bottom
     ^^       left
   */
-  return ((data.top    + 1) << 0)
-       | ((data.right  + 1) << 2)
-       | ((data.bottom + 1) << 4)
-       | ((data.left   + 1) << 6)
+  return ((data.top + 1) << 0)
+    | ((data.right + 1) << 2)
+    | ((data.bottom + 1) << 4)
+    | ((data.left + 1) << 6)
 }
 
 function decodeShape(data: EncodedPieceShape): PieceShape {
   return {
-    top:    (data >> 0 & 0b11) - 1,
-    right:  (data >> 2 & 0b11) - 1,
+    top: (data >> 0 & 0b11) - 1,
+    right: (data >> 2 & 0b11) - 1,
     bottom: (data >> 4 & 0b11) - 1,
-    left:   (data >> 6 & 0b11) - 1,
+    left: (data >> 6 & 0b11) - 1,
   }
 }
 

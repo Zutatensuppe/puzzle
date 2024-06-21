@@ -7,7 +7,7 @@ type ArrayLengthMutationKeys = 'splice' | 'push' | 'pop' | 'shift' | 'unshift' |
 type ArrayItems<T extends Array<any>> = T extends Array<infer TItems> ? TItems : never
 export type FixedLengthArray<T extends any[]> =
   Pick<T, Exclude<keyof T, ArrayLengthMutationKeys>>
-  & { [Symbol.iterator]: () => IterableIterator< ArrayItems<T> > }
+  & { [Symbol.iterator]: () => IterableIterator<ArrayItems<T>> }
 
 export type Timestamp = number
 
@@ -94,10 +94,10 @@ export type EncodedPlayer = FixedLengthArray<[
   ClientId,
   number,
   number,
-  0|1,
-  string|null,
-  string|null,
-  string|null,
+  0 | 1,
+  string | null,
+  string | null,
+  string | null,
   number,
   Timestamp,
 ]>
@@ -109,7 +109,7 @@ export type EncodedPiece = FixedLengthArray<[
   number,
   number,
   number,
-  ClientId|number,
+  ClientId | number,
   number,
 ]>
 
@@ -131,7 +131,7 @@ export type EncodedGameLegacy = FixedLengthArray<[
   ScoreMode,
   ShapeMode,
   SnapMode,
-  UserId|null,
+  UserId | null,
   boolean, // has replay
   number, // gameVersion
   boolean, // private
@@ -146,7 +146,7 @@ export type EncodedGame = FixedLengthArray<[
   ScoreMode,
   ShapeMode,
   SnapMode,
-  UserId|null,
+  UserId | null,
   boolean, // has replay
   number, // gameVersion
   boolean, // private
@@ -208,7 +208,7 @@ interface GameRng {
 export interface Game {
   id: GameId
   gameVersion: number
-  creatorUserId: UserId|null
+  creatorUserId: UserId | null
   players: Array<EncodedPlayer>
   puzzle: Puzzle
   scoreMode: ScoreMode
@@ -288,7 +288,7 @@ export interface PieceShape {
 }
 
 export interface Piece {
-  owner: ClientId|number
+  owner: ClientId | number
   idx: number
   pos: Point
   z: number
@@ -296,18 +296,17 @@ export interface Piece {
 }
 
 export interface PieceChange {
-  owner?: ClientId|number
+  owner?: ClientId | number
   idx?: number
   pos?: Point
   z?: number
   group?: number
 }
 
-export interface ImageInfo
-{
+export interface ImageInfo {
   id: ImageId
-  uploaderUserId: UserId|null
-  uploaderName: string|null
+  uploaderUserId: UserId | null
+  uploaderName: string | null
   filename: string
   url: string
   title: string
@@ -345,18 +344,18 @@ export interface Player {
   id: ClientId
   x: number
   y: number
-  d: 0|1
-  name: string|null
-  color: string|null
-  bgcolor: string|null
+  d: 0 | 1
+  name: string | null
+  color: string | null
+  bgcolor: string | null
   points: number
   ts: Timestamp
 }
 
 export interface BasicPlayerInfo {
   id: ClientId
-  name: string|null
-  color: string|null
+  name: string | null
+  color: string | null
   points: number
 }
 
@@ -420,10 +419,10 @@ export interface PlayerChange {
   id?: string
   x?: number
   y?: number
-  d?: 0|1
-  name?: string|null
-  color?: string|null
-  bgcolor?: string|null
+  d?: 0 | 1
+  name?: string | null
+  color?: string | null
+  bgcolor?: string | null
   points?: number
   ts?: Timestamp
 }

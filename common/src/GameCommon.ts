@@ -105,14 +105,14 @@ function getPlayerIndexById(gameId: GameId, clientId: ClientId): number {
   return -1
 }
 
-function getPlayerIdByIndex(gameId: GameId, playerIndex: number): ClientId|null {
+function getPlayerIdByIndex(gameId: GameId, playerIndex: number): ClientId | null {
   if (GAMES[gameId].players.length > playerIndex) {
     return Util.decodePlayer(GAMES[gameId].players[playerIndex]).id
   }
   return null
 }
 
-function getPlayer(gameId: GameId, clientId: ClientId): Player|null {
+function getPlayer(gameId: GameId, clientId: ClientId): Player | null {
   const idx = getPlayerIndexById(gameId, clientId)
   if (idx === -1) {
     return null
@@ -170,7 +170,7 @@ function addPlayer(
   }
 }
 
-function get(gameId: GameId): Game|null {
+function get(gameId: GameId): Game | null {
   return GAMES[gameId] || null
 }
 
@@ -345,7 +345,7 @@ const getFirstOwnedPieceIdx = (gameId: GameId, clientId: ClientId): number => {
 const getFirstOwnedPiece = (
   gameId: GameId,
   playerId: ClientId,
-): EncodedPiece|null => {
+): EncodedPiece | null => {
   const idx = getFirstOwnedPieceIdx(gameId, playerId)
   return idx < 0 ? null : GAMES[gameId].puzzle.tiles[idx]
 }
@@ -402,13 +402,13 @@ function getSurroundingPiecesByIdx(gameId: GameId, pieceIdx: number) {
 
   return [
     // top
-    (c.y > 0) ?               (pieceIdx - info.tilesX) : -1,
+    (c.y > 0) ? (pieceIdx - info.tilesX) : -1,
     // right
-    (c.x < info.tilesX - 1) ? (pieceIdx + 1)           : -1,
+    (c.x < info.tilesX - 1) ? (pieceIdx + 1) : -1,
     // bottom
     (c.y < info.tilesY - 1) ? (pieceIdx + info.tilesX) : -1,
     // left
-    (c.x > 0) ?               (pieceIdx - 1)           : -1,
+    (c.x > 0) ? (pieceIdx - 1) : -1,
   ]
 }
 
@@ -508,7 +508,7 @@ const isFinishedPiece = (gameId: GameId, pieceIdx: number): boolean => {
   return getPieceOwner(gameId, pieceIdx) === -1
 }
 
-const getPieceOwner = (gameId: GameId, pieceIdx: number): string|number => {
+const getPieceOwner = (gameId: GameId, pieceIdx: number): string | number => {
   return getPiece(gameId, pieceIdx).owner
 }
 
@@ -521,7 +521,7 @@ const finishPieces = (gameId: GameId, pieceIdxs: Array<number>): void => {
 const setPiecesOwner = (
   gameId: GameId,
   pieceIdxs: Array<number>,
-  owner: ClientId|number,
+  owner: ClientId | number,
 ): void => {
   for (const pieceIdx of pieceIdxs) {
     changePiece(gameId, pieceIdx, { owner })
@@ -583,17 +583,17 @@ const freePieceIdxByPos = (gameId: GameId, pos: Point): number => {
   return pieceIdx
 }
 
-const getPlayerBgColor = (gameId: GameId, clientId: ClientId): string|null => {
+const getPlayerBgColor = (gameId: GameId, clientId: ClientId): string | null => {
   const p = getPlayer(gameId, clientId)
   return p ? p.bgcolor : null
 }
 
-const getPlayerColor = (gameId: GameId, clientId: ClientId): string|null => {
+const getPlayerColor = (gameId: GameId, clientId: ClientId): string | null => {
   const p = getPlayer(gameId, clientId)
   return p ? p.color : null
 }
 
-const getPlayerName = (gameId: GameId, clientId: ClientId): string|null => {
+const getPlayerName = (gameId: GameId, clientId: ClientId): string | null => {
   const p = getPlayer(gameId, clientId)
   return p ? p.name : null
 }
@@ -799,7 +799,7 @@ function handleGameEvent(
   } else if (type === GAME_EVENT_TYPE.INPUT_EV_MOUSE_DOWN) {
     const x = gameEvent[1]
     const y = gameEvent[2]
-    const pos = {x, y}
+    const pos = { x, y }
 
     changePlayer(gameId, clientId, { d: 1, ts })
     _playerChange()
@@ -821,13 +821,13 @@ function handleGameEvent(
 
     if (!down) {
       // player is just moving the hand
-      changePlayer(gameId, clientId, {x, y, ts})
+      changePlayer(gameId, clientId, { x, y, ts })
       _playerChange()
     } else {
       const pieceIdx = getFirstOwnedPieceIdx(gameId, clientId)
       if (pieceIdx < 0) {
         // player is just moving map, so no change in position!
-        changePlayer(gameId, clientId, {ts})
+        changePlayer(gameId, clientId, { ts })
         _playerChange()
       } else {
         const x = gameEvent[1]
@@ -836,7 +836,7 @@ function handleGameEvent(
         const diffY = gameEvent[4]
 
         // player is moving a piece (and hand)
-        changePlayer(gameId, clientId, {x, y, ts})
+        changePlayer(gameId, clientId, { x, y, ts })
         _playerChange()
 
         // check if pos is on the piece, otherwise dont move
@@ -910,7 +910,7 @@ function handleGameEvent(
           const piecePos = getPiecePos(gameId, pieceIdx)
           const dstPos = Geometry.pointAdd(
             getPiecePos(gameId, otherPieceIdx),
-            {x: off[0] * info.tileSize, y: off[1] * info.tileSize},
+            { x: off[0] * info.tileSize, y: off[1] * info.tileSize },
           )
           if (Geometry.pointDistance(piecePos, dstPos) < info.snapDistance) {
             const diff = Geometry.pointSub(dstPos, piecePos)
