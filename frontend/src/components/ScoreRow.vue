@@ -42,7 +42,7 @@ const style = computed(() => {
       '-webkit-text-fill-color': 'transparent',
     } as StyleValue
   }
-  return { color: props.player.color } as StyleValue
+  return { color: props.player.color || '#ffffff' }
 })
 
 
