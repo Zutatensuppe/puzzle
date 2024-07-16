@@ -852,3 +852,17 @@ fieldset {
       border-color: rgba(145 70 255 / 0%);
   }
 }
+
+
+
+.view-admin_games {
+  .color-private {
+    background: rgba(122 85 165 / 80%);
+    padding: 0 5px;
+  }
+
+  .color-finished {
+    background: rgba(55, 131, 68, 0.8);
+    padding: 0 5px;
+  }
+}

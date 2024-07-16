@@ -2,6 +2,7 @@ import express, { NextFunction } from 'express'
 import { ServerInterface } from '../../../Server'
 import { MergeClientIdsIntoUser } from '../../../admin-tools/MergeClientIdsIntoUser'
 import { ServerInfo } from '../../../Types'
+import GameLog from '../../../GameLog'
 
 export default function createRouter(
   server: ServerInterface,
@@ -40,6 +41,7 @@ export default function createRouter(
     res.send(<ServerInfo>{
       socketCount: server.getGameSockets().getSocketCount(),
       socketCountsByGameIds: server.getGameSockets().getSocketCountsByGameIds(),
+      gameLogInfoByGameIds: GameLog.getGameLogInfos(),
     })
   })
 
