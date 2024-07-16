@@ -10,6 +10,7 @@ const log = logger('GameLog.js')
 const LINES_PER_LOG_FILE = 1000
 const POST_GAME_LOG_DURATION = 5 * Time.MIN
 
+const GAME_LOG_PREVENT_READ_DISK: Record<GameId, boolean> = {}
 const GAME_LOG_IDX: Record<GameId, LogIndex> = {}
 const GAME_LOG: Record<GameId, Record<string, string[]>> = {}
 const GAME_LOG_DIRTY: Record<GameId, boolean> = {}
@@ -71,6 +72,7 @@ const flushToDisk = async (gameId: GameId): Promise<void> => {
   }
 
   GAME_LOG_DIRTY[gameId] = false
+  delete GAME_LOG_PREVENT_READ_DISK[gameId]
 }
 
 const loadFromDisk = async (gameId: GameId): Promise<void> => {
@@ -78,13 +80,19 @@ const loadFromDisk = async (gameId: GameId): Promise<void> => {
     return
   }
 
+  if (GAME_LOG_PREVENT_READ_DISK[gameId]) {
+    return
+  }
+
   const idxfile = idxname(gameId)
   let idxObj: any
   try {
+
     const idxData = await fs.readFile(idxfile)
     idxObj = JSON.parse(idxData)
   } catch (e) {
     log.error('failed to read idxfile', idxfile)
+    GAME_LOG_PREVENT_READ_DISK[gameId] = true
     return
   }
   let lines = []
