@@ -666,7 +666,21 @@ export interface MergeClientIdsIntoUserResult {
   userIdsWithoutIdentities: UserId[]
 }
 
+export interface LogIndex {
+  gameId: GameId
+  total: number
+  lastTs: Timestamp
+  currentFile: string
+  perFile: number
+}
+
+export type GameLogInfoByGameIds = Record<GameId, {
+  logIndex: LogIndex
+  logEntriesToFlush: number
+}>
+
 export interface ServerInfo {
   socketCount: number
   socketCountsByGameIds: Record<GameId, number>
+  gameLogInfoByGameIds: GameLogInfoByGameIds
 }

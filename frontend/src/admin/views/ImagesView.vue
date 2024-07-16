@@ -32,7 +32,7 @@
             <div class="d-flex ga-3">
               <span class="text-disabled">Title:</span> {{ item.title || '-' }}
               <span class="text-disabled">Dimensions:</span> {{ item.width }}×{{ item.height }}
-              <span class="text-disabled">Private:</span> {{ item.private ? '✓' : '✖' }}
+              <span class="text-disabled">Private:</span> <span :class="{ 'color-private': item.private }">{{ item.private ?  '✓' : '✖' }}</span>
             </div>
             <div class="d-flex ga-3">
               <span class="text-disabled">Id:</span> {{ item.id }}
@@ -41,6 +41,8 @@
             </div>
             <div class="d-flex ga-3">
               <span class="text-disabled">Filename:</span> {{ item.filename || '-' }}
+            </div>
+            <div class="d-flex ga-3">
               <span class="text-disabled">Original Filename:</span> {{ item.filename_original || '-' }}
             </div>
             <div class="d-flex ga-3">

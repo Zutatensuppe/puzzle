@@ -124,6 +124,7 @@ export class GameService {
     GameCommon.setGameLoading(gameId, true)
     try {
       gameObject = await this.loadGame(gameId)
+      await GameLog.loadFromDisk(gameId)
     } catch (e) {
       GameCommon.setGameLoading(gameId, false)
       return false
@@ -227,6 +228,8 @@ export class GameService {
       // the image_snapshot_url is not updated here, this is intended!
     })
     await this.repo.updatePlayerRelations(game.id, game.players)
+
+    await GameLog.flushToDisk(game.id)
 
     log.info(`[INFO] persisted game ${game.id}`)
   }
@@ -334,8 +337,8 @@ export class GameService {
       gameSettings.crop,
     )
 
-    await GameLog.create(gameId, ts)
-    await GameLog.log(
+    GameLog.create(gameId, ts)
+    GameLog.log(
       gameObject.id,
       [
         LOG_TYPE.HEADER,
@@ -362,9 +365,9 @@ export class GameService {
     if (GameLog.shouldLog(gameId, GameCommon.getFinishTs(gameId), ts)) {
       const idx = GameCommon.getPlayerIndexById(gameId, clientId)
       if (idx === -1) {
-        await GameLog.log(gameId, [LOG_TYPE.ADD_PLAYER, clientId, ts])
+        GameLog.log(gameId, [LOG_TYPE.ADD_PLAYER, clientId, ts])
       } else {
-        await GameLog.log(gameId, [LOG_TYPE.UPDATE_PLAYER, idx, ts])
+        GameLog.log(gameId, [LOG_TYPE.UPDATE_PLAYER, idx, ts])
       }
     }
 
@@ -380,7 +383,7 @@ export class GameService {
   ): Promise<HandleGameEventResult> {
     if (GameLog.shouldLog(gameId, GameCommon.getFinishTs(gameId), ts)) {
       const idx = GameCommon.getPlayerIndexById(gameId, clientId)
-      await GameLog.log(gameId, [LOG_TYPE.GAME_EVENT, idx, gameEvent, ts])
+      GameLog.log(gameId, [LOG_TYPE.GAME_EVENT, idx, gameEvent, ts])
     }
     const wasFinished = GameCommon.getFinishTs(gameId)
     const ret = GameCommon.handleGameEvent(gameId, clientId, gameEvent, ts)
