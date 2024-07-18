@@ -21,7 +21,7 @@ export class GameReplay extends Game<ReplayHud> {
   private lastGameTs: number = 0
   private gameStartTs: number = 0
   private skipNonActionPhases: boolean = true
-  private dataOffset: number = 0
+  private logFileIdx: number = 0
   private gameTs!: number
   private to: ReturnType<typeof setTimeout> | null = null
 
@@ -38,15 +38,15 @@ export class GameReplay extends Game<ReplayHud> {
   }
 
   async queryNextReplayBatch (): Promise<LogEntry[]> {
-    const offset = this.dataOffset
-    this.dataOffset += 10000 // meh
+    const logFileIdx = this.logFileIdx
+    this.logFileIdx++
 
-    const res = await _api.pub.replayLogData({ gameId: this.gameId, offset })
+    const res = await _api.pub.replayLogData({ gameId: this.gameId, logFileIdx })
     if (res.status !== 200) {
       throw new Error('Replay not found')
     }
     const text = res.text
-    const log = parseLogFileContents(text, offset)
+    const log = parseLogFileContents(text, logFileIdx)
 
     // cut log that was already handled
     this.log = this.log.slice(this.logPointer)

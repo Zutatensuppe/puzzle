@@ -70,7 +70,7 @@ const replayGameData = async (data: { gameId: GameId }) => {
   return xhr.get(`/api/replay-game-data${Util.asQueryArgs(data)}`, {})
 }
 
-const replayLogData = async (data: { gameId: GameId, offset: number }) => {
+const replayLogData = async (data: { gameId: GameId, logFileIdx: number }) => {
   return xhr.get(`/api/replay-log-data${Util.asQueryArgs(data)}`, {})
 }
 
