@@ -453,21 +453,18 @@ export default function createRouter(
 
   router.get('/replay-log-data', async (req, res): Promise<void> => {
     const q: Record<string, any> = req.query
-    const offset = parseInt(q.offset, 10) || 0
-    if (offset < 0) {
-      res.status(400).send({ reason: 'bad offset' })
-      return
-    }
-    const size = parseInt(q.size, 10) || 10000
-    if (size < 0 || size > 10000) {
-      res.status(400).send({ reason: 'bad size' })
+    const logFileIdx = parseInt(q.logFileIdx, 10) || 0
+    if (logFileIdx < 0) {
+      res.status(400).send({ reason: 'bad logFileIdx' })
       return
     }
     const gameId = q.gameId || ''
-    if (!await GameLog.exists(q.gameId)) {
+    const idxObj = await GameLog.getIndex(q.gameId)
+    if (!idxObj) {
       res.status(404).send({ reason: 'no log found' })
       return
     }
+    const offset = idxObj.perFile * logFileIdx
     const f = await GameLog.gzFilenameOrFilename(gameId, offset)
     if (!f) {
       res.send('')

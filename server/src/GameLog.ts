@@ -7,7 +7,7 @@ import fs from './FileSystem'
 
 const log = logger('GameLog.js')
 
-const LINES_PER_LOG_FILE = 1000
+const LINES_PER_LOG_FILE = 10000
 const POST_GAME_LOG_DURATION = 5 * Time.MIN
 
 const GAME_LOG_PREVENT_READ_DISK: Record<GameId, boolean> = {}
@@ -66,7 +66,7 @@ const flushToDisk = async (gameId: GameId): Promise<void> => {
   // write each log file
   for (const file in GAME_LOG[gameId]) {
     await fs.writeFile(file, GAME_LOG[gameId][file].join('\n'))
-    if (GAME_LOG[gameId][file].length === LINES_PER_LOG_FILE) {
+    if (GAME_LOG[gameId][file].length === GAME_LOG_IDX[gameId].perFile) {
       delete GAME_LOG[gameId][file]
     }
   }
@@ -129,8 +129,12 @@ const create = (gameId: GameId, ts: Timestamp): void => {
 }
 
 const exists = async (gameId: GameId): Promise<boolean> => {
+  return !!getIndex(gameId)
+}
+
+const getIndex = async (gameId: GameId): Promise<LogIndex | null> => {
   await loadFromDisk(gameId)
-  return !!GAME_LOG_IDX[gameId]
+  return GAME_LOG_IDX[gameId]
 }
 
 async function hasReplay(game: Game): Promise<boolean> {
@@ -202,6 +206,7 @@ export default {
   shouldLog,
   create,
   exists,
+  getIndex,
   loadFromDisk,
   flushToDisk,
   hasReplay,
