@@ -48,6 +48,13 @@ export const gzFilenameOrFilename = async (gameId: GameId, offset: number) => {
   return ''
 }
 
+const unsetGame = (gameId: GameId): void => {
+  delete GAME_LOG_IDX[gameId]
+  delete GAME_LOG[gameId]
+  delete GAME_LOG_DIRTY[gameId]
+  delete GAME_LOG_PREVENT_READ_DISK[gameId]
+}
+
 const flushToDisk = async (gameId: GameId): Promise<void> => {
   if (!GAME_LOG[gameId]) {
     return
@@ -129,7 +136,7 @@ const create = (gameId: GameId, ts: Timestamp): void => {
 }
 
 const exists = async (gameId: GameId): Promise<boolean> => {
-  return !!getIndex(gameId)
+  return !!(await getIndex(gameId))
 }
 
 const getIndex = async (gameId: GameId): Promise<LogIndex | null> => {
@@ -213,4 +220,5 @@ export default {
   log: _log,
   gzFilenameOrFilename,
   getGameLogInfos,
+  unsetGame,
 }
