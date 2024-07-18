@@ -222,7 +222,7 @@ export class GameService {
       image_id: game.puzzle.info.image.id,
       created: new Date(game.puzzle.data.started),
       finished: game.puzzle.data.finished ? new Date(game.puzzle.data.finished) : null,
-      data: JSON.stringify(this.gameToStoreData(game)),
+      data: JSON.stringify(await this.gameToStoreData(game)),
       private: game.private ? 1 : 0,
       pieces_count: game.puzzle.tiles.length,
       // the image_snapshot_url is not updated here, this is intended!
@@ -258,7 +258,7 @@ export class GameService {
     }
   }
 
-  private gameToStoreData(game: Game): GameStoreData {
+  private async gameToStoreData(game: Game): Promise<GameStoreData> {
     return {
       id: game.id,
       gameVersion: game.gameVersion,
@@ -271,7 +271,8 @@ export class GameService {
       scoreMode: game.scoreMode,
       shapeMode: game.shapeMode,
       snapMode: game.snapMode,
-      hasReplay: game.hasReplay,
+      // cannot use value from the game object, because it might be outdated
+      hasReplay: await GameLog.hasReplay(game),
       crop: game.crop,
     }
   }

@@ -22,6 +22,7 @@ import { LeaderboardRepo } from './repo/LeaderboardRepo'
 import { UsersRepo } from './repo/UsersRepo'
 import { Twitch } from './Twitch'
 import { UrlUtil } from './UrlUtil'
+import GameLog from './GameLog'
 
 const run = async () => {
   const db = new Db(config.db.connectStr, config.dir.DB_PATCHES_DIR)
@@ -96,6 +97,7 @@ const run = async () => {
       await server.persistGame(gameId)
       log.info(`[INFO] unloading game: ${gameId}`)
       GameCommon.unsetGame(gameId)
+      GameLog.unsetGame(gameId)
       server.getGameSockets().removeSocketInfo(gameId)
     }
     idlecheckInterval = setTimeout(doIdlecheck, config.idlecheck.interval)
