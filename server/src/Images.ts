@@ -1,6 +1,5 @@
 import probe from 'probe-image-size'
 import fs from 'fs'
-import exif from 'exif'
 
 import config from './Config'
 import { Dim } from '../../common/src/Geometry'
@@ -8,27 +7,15 @@ import Util, { logger } from '../../common/src/Util'
 import { Tag, ImageInfo, UserId, ImageId } from '../../common/src/Types'
 import { ImageRow, ImageRowWithCount, ImagesRepo, TagRow } from './repo/ImagesRepo'
 import { WhereRaw } from './Db'
+import { ImageExif } from './ImageExif'
 
 const log = logger('Images.ts')
 
 export class Images {
   constructor(
     private readonly imagesRepo: ImagesRepo,
-  ) {
-    // pass
-  }
-
-  private async getExifOrientation(imagePath: string): Promise<number> {
-    return new Promise((resolve) => {
-      new exif.ExifImage({ image: imagePath }, (error, exifData) => {
-        if (error) {
-          resolve(0)
-        } else {
-          resolve(exifData.image.Orientation || 0)
-        }
-      })
-    })
-  }
+    private readonly imageExif: ImageExif,
+  ) {}
 
   public async getAllTags(): Promise<Tag[]> {
     const tagRows = await this.imagesRepo.getAllTagsWithCount()
@@ -95,7 +82,7 @@ export class Images {
 
   public async getDimensions(imagePath: string): Promise<Dim> {
     const dimensions = await probe(fs.createReadStream(imagePath))
-    const orientation = await this.getExifOrientation(imagePath)
+    const orientation = await this.imageExif.getOrientation(imagePath)
     // when image is rotated to the left or right, switch width/height
     // https://jdhao.github.io/2019/07/31/image_rotation_exif_info/
     if (orientation === 6 || orientation === 8) {

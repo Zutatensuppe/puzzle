@@ -63,8 +63,8 @@ export class PuzzleService {
     for (const pos of positions) {
       pos.x = last.x
       pos.y = last.y
-      last.x+=diffX
-      last.y+=diffY
+      last.x += diffX
+      last.y += diffY
       index++
       // did we move horizontally?
       if (diffX !== 0) {

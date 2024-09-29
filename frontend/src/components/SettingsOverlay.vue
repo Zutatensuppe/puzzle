@@ -176,15 +176,14 @@
 </template>
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
-import { GamePlay } from '../GamePlay'
-import { GameReplay } from '../GameReplay'
 
 import IngameColorPicker from './IngameColorPicker.vue'
 import { PlayerSettingsData } from '../../../common/src/Types'
 import user, { User } from '../user'
+import { GameInterface } from '../Game'
 
 const props = defineProps<{
-  game: GamePlay | GameReplay
+  game: GameInterface
 }>()
 
 const emit = defineEmits<{
@@ -222,7 +221,7 @@ const emitChanges = (): void => {
     newSettings.color = 'ukraine'
   }
   props.game.getPlayerSettings().apply(newSettings)
-  props.game.loadTableTexture(newSettings)
+  void props.game.loadTableTexture(newSettings)
 }
 
 const me = ref<User|null>(null)

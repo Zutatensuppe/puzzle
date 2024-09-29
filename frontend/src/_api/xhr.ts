@@ -28,7 +28,7 @@ export class XhrRequest {
     // pass
   }
 
-  async send(): Promise<Response> {
+  send(): Promise<Response> {
     return new Promise((resolve, reject) => {
       this.xhr = new window.XMLHttpRequest()
       this.xhr.open(this.method, this.url, true)
@@ -44,7 +44,7 @@ export class XhrRequest {
         resolve({
           status: this.status,
           text: this.responseText,
-          json: async () => JSON.parse(this.responseText),
+          json: () => JSON.parse(this.responseText),
         })
       })
       this.xhr.addEventListener('error', function (_ev: ProgressEvent<XMLHttpRequestEventTarget>) {

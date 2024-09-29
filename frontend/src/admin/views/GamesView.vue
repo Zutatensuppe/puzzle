@@ -10,7 +10,10 @@
       :pagination="games.pagination"
       @click="onPagination"
     />
-    <v-table density="compact" v-if="games">
+    <v-table
+      v-if="games"
+      density="compact"
+    >
       <thead>
         <tr>
           <th>Preview</th>
@@ -43,9 +46,12 @@
               <div v-else>
                 No players connected
               </div>
-              <hr />
+              <hr>
               <div style="height: 100px; overflow-y: auto;">
-                <div v-for="player in sortedPlayers(item)">
+                <div
+                  v-for="player in sortedPlayers(item)"
+                  :key="`${item.id}-${player[0]}`"
+                >
                   <div
                     :style="player[5] === 'ukraine' ? {
                       'backgroundImage': 'linear-gradient(180deg, rgba(0,87,183,1) 0%, rgba(0,87,183,1) 50%, rgba(255,221,0,1) 50%)',
@@ -66,7 +72,7 @@
                 target="_blank"
               >{{ item.id }}</a>
               <span class="text-disabled">Image-Id: </span> {{ item.image_id }}
-              <span class="text-disabled">Private:</span> <span :class="{ 'color-private': item.private }">{{ item.private ?  '✓' : '✖' }}</span>
+              <span class="text-disabled">Private:</span> <span :class="{ 'color-private': item.private }">{{ item.private ? '✓' : '✖' }}</span>
             </div>
             <div class="d-flex ga-3">
               <span class="text-disabled">Creator:</span> {{ item.creator_user_id || '-' }}
@@ -91,7 +97,7 @@
             >
               DELETE
             </v-btn>
-            <br />
+            <br>
             <v-btn
               block
               @click="fixPieces(item.id)"

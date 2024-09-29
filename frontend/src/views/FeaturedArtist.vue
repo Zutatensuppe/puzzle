@@ -101,7 +101,7 @@ const onNewGame = async (gameSettings: GameSettings) => {
   const res = await api.pub.newGame({ gameSettings })
   if (res.status === 200) {
     const game = await res.json()
-    router.push({ name: 'game', params: { id: game.id } })
+    void router.push({ name: 'game', params: { id: game.id } })
   }
 }
 

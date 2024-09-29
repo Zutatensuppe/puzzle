@@ -47,7 +47,69 @@ declare global {
 
 const log = logger('Game.ts')
 
-export abstract class Game<HudType extends Hud> {
+export interface GameInterface {
+  reinit(clientId: ClientId): Promise<void>
+  shouldDrawPiece (piece: Piece): boolean
+  getWsAddres(): string
+  getMode(): string
+  time(): number
+  getWindow(): Window
+  getCanvas(): HTMLCanvasElement
+  getViewport(): Camera
+  init(): Promise<void>
+  connect(): Promise<void>
+  unload(): void
+  registerEvents(): void
+  unregisterEvents(): void
+  stopGameLoop(): void
+  initBaseProps(): Promise<void>
+  initViewport(): void
+  initFireworks(): void
+  initFinishState(): void
+  initGameLoop(): void
+  previewImageUrl(): string
+  checkFinished(): void
+  loadTableTexture(settings: PlayerSettingsData): Promise<void>
+  shouldDrawPlayer(player: Player): boolean
+  justFinished(): boolean
+  emitToggleInterface(): void
+  emitTogglePreview(): void
+  toggleViewFixedPieces(): void
+  toggleViewLoosePieces(): void
+  togglePreview(value: boolean): void
+  toggleHotkeys(value: boolean): void
+  changeStatus(value: GameStatus): void
+  changePlayers(value: GamePlayers, registeredMap: RegisteredMap): void
+  getScoreMode(): ScoreMode
+  getSnapMode(): SnapMode
+  getShapeMode(): ShapeMode
+  getImage(): ImageInfo
+  getAssets(): Assets
+  getGraphics(): Graphics
+  onServerUpdateEvent(msg: ServerUpdateEvent): void
+  onUpdate(): void
+  handleEvent(evt: GameEvent): void
+  handleLocalEvent(evt: GameEvent): boolean
+  onRender (): void
+  hasReplay(): boolean
+  getPlayerSettings(): PlayerSettings
+  getPreviewImageUrl(): string
+  getGameId(): GameId
+  getClientId(): ClientId
+  requireRerender(): void
+  showStatusMessage(what: string, value: any): void
+  bgChange(value: string): void
+  changeTableTexture(_value: string): void
+  changeUseCustomTableTexture(_value: boolean): void
+  changeCustomTableTexture(_value: string): void
+  changeCustomTableTextureScale(_value: number): void
+  changeShowTable(_value: boolean): void
+  changeColor(value: string): void
+  changeName(value: string): void
+  changeSoundsVolume(_value: number): void
+}
+
+export abstract class Game<HudType extends Hud> implements GameInterface {
   protected rerender: boolean = true
 
   private assets: Assets
@@ -82,7 +144,7 @@ export abstract class Game<HudType extends Hud> {
   ) {
     this.ctx = canvas.getContext('2d') as CanvasRenderingContext2D
     this.assets = new Assets()
-    this.graphics = new Graphics()
+    this.graphics = Graphics.getInstance()
     this.viewport = new Camera()
   }
 
@@ -429,13 +491,13 @@ export abstract class Game<HudType extends Hud> {
     return true
   }
 
-  async onRender (): Promise<void> {
+  onRender (): void {
     if (!this.rerender) {
       return
     }
 
     this.renderer.debug = debug.isDebugEnabled()
-    await this.renderer.render(
+    this.renderer.render(
       this.canvas,
       this.ctx,
       this.viewport,

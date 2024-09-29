@@ -10,12 +10,10 @@ const cache: Record<string, HTMLCanvasElement | null> = {}
 
 export class PuzzleTable {
   constructor(
-    private graphics: Graphics,
-  ) {
-    // pass
-  }
+    private readonly graphics: Graphics,
+  ) {}
 
-  async loadTexture(
+  public async loadTexture(
     gameId: GameId,
     settings: PlayerSettingsData,
   ): Promise<HTMLCanvasElement | null> {
@@ -28,7 +26,7 @@ export class PuzzleTable {
     const scale = settings.useCustomTableTexture
       ? settings.customTableTextureScale
       : 1 // determined later, but always fixed for cache key
-    const cacheKey = gameId + '___' + textureNameOrUrl + '___' + scale
+    const cacheKey = `${gameId}___${textureNameOrUrl}___${scale}`
     if (cache[cacheKey]) {
       return cache[cacheKey]
     }
@@ -55,7 +53,7 @@ export class PuzzleTable {
       : { url: textureNameOrUrl, scale, isDark: false }
     try {
       const bitmap = await this.graphics.loadImageToBitmap(obj.url)
-      const texture = await this._createTableGfx(bounds, boardPos, boardDim, bitmap, obj.scale, obj.isDark)
+      const texture = this._createTableGfx(bounds, boardPos, boardDim, bitmap, obj.scale, obj.isDark)
       cache[cacheKey] = texture
       return cache[cacheKey]
     } catch (e) {
@@ -65,7 +63,7 @@ export class PuzzleTable {
     }
   }
 
-  getImage(
+  public getImage(
     gameId: GameId,
     settings: PlayerSettingsData,
   ): HTMLCanvasElement | null {
@@ -75,14 +73,14 @@ export class PuzzleTable {
     return cache[cacheKey] || null
   }
 
-  async _createTableGfx(
+  private _createTableGfx(
     bounds: Rect,
     boardPos: Point,
     boardDim: Dim,
     bitmap: ImageBitmap,
     scale: number,
     isDark: boolean,
-  ): Promise<HTMLCanvasElement> {
+  ): HTMLCanvasElement {
     const tableCanvas = this.graphics.repeat(bitmap, bounds, scale)
     const adjustedBounds: Dim = { w: tableCanvas.width, h: tableCanvas.height }
     const ratio = adjustedBounds.w / bounds.w

@@ -10,11 +10,11 @@ export class Discord {
     // pass
   }
 
-  async announce (message: string) {
+  announce (message: string) {
     if (
       this.config.announce.channelId === 'CHANNEL ID' ||
       this.config.announce.guildId === 'GUILD/SERVER ID'
-    ) {
+    ){
       log.info('skipping Discord.announce, channelId or guildId is not set')
       return
     }

@@ -13,11 +13,10 @@
 </template>
 <script setup lang="ts">
 import { computed } from 'vue'
-import { GamePlay } from '../GamePlay'
-import { GameReplay } from '../GameReplay'
+import { GameInterface } from '../Game'
 
 const props = defineProps<{
-  game: GamePlay | GameReplay
+  game: GameInterface,
 }>()
 
 const emit = defineEmits<{

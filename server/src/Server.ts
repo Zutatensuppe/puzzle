@@ -272,7 +272,7 @@ export class Server implements ServerInterface {
               throw `[game ${gameId} does not exist... ]`
             }
             const ts = Time.timestamp()
-            await this.gameService.addPlayer(gameId, clientId, ts)
+            this.gameService.addPlayer(gameId, clientId, ts)
             this.gameSockets.addSocket(gameId, socket)
 
             const game: GameType | null = GameCommon.get(gameId)
@@ -298,7 +298,7 @@ export class Server implements ServerInterface {
 
             let sendGame = false
             if (!GameCommon.playerExists(gameId, clientId)) {
-              await this.gameService.addPlayer(gameId, clientId, ts)
+              this.gameService.addPlayer(gameId, clientId, ts)
               sendGame = true
             }
             if (!this.gameSockets.socketExists(gameId, socket)) {

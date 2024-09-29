@@ -8,7 +8,10 @@
       :pagination="users.pagination"
       @click="onPagination"
     />
-    <v-table density="compact" v-if="users">
+    <v-table
+      v-if="users"
+      density="compact"
+    >
       <thead>
         <tr>
           <th>Id</th>

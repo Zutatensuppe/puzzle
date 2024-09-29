@@ -42,19 +42,19 @@ const getAnnouncements = async () => {
   return await res.json()
 }
 
-const config = async () => {
+const config = () => {
   return xhr.get(`/api/conf`, {})
 }
 
-const me = async () => {
+const me = () => {
   return xhr.get(`/api/me`, {})
 }
 
-const indexData = async () => {
+const indexData = () => {
   return xhr.get('/api/index-data', {})
 }
 
-const finishedGames = async (data: { limit: number, offset: number }) => {
+const finishedGames = (data: { limit: number, offset: number }) => {
   return xhr.get(`/api/finished-games${Util.asQueryArgs(data)}`, {})
 }
 
@@ -66,15 +66,15 @@ const images = (data: ImagesRequestData): XhrRequest => {
   return xhr.getRequest(`/api/images${Util.asQueryArgs(data)}`, {})
 }
 
-const replayGameData = async (data: { gameId: GameId }) => {
+const replayGameData = (data: { gameId: GameId }) => {
   return xhr.get(`/api/replay-game-data${Util.asQueryArgs(data)}`, {})
 }
 
-const replayLogData = async (data: { gameId: GameId, logFileIdx: number }) => {
+const replayLogData =  (data: { gameId: GameId, logFileIdx: number }) => {
   return xhr.get(`/api/replay-log-data${Util.asQueryArgs(data)}`, {})
 }
 
-const saveImage = async (data: { id: ImageId, title: any, copyrightName: string, copyrightURL: string, tags: any }) => {
+const saveImage = (data: { id: ImageId, title: any, copyrightName: string, copyrightURL: string, tags: any }) => {
   return xhr.post('/api/save-image', {
     headers: JSON_HEADERS,
     body: JSON.stringify({
@@ -87,18 +87,18 @@ const saveImage = async (data: { id: ImageId, title: any, copyrightName: string,
   })
 }
 
-const newGame = async (data: { gameSettings: GameSettings }) => {
+const newGame = (data: { gameSettings: GameSettings }) => {
   return xhr.post('/api/newgame', {
     headers: JSON_HEADERS,
     body: JSON.stringify(data.gameSettings),
   })
 }
 
-const getArtistData = async (data: { name: string }) => {
+const getArtistData = (data: { name: string }) => {
   return xhr.get(`/api/artist/${data.name}`, {})
 }
 
-const upload = async (data: { file: File, title: string, copyrightName: string, copyrightURL: string, tags: string[], isPrivate: boolean, onProgress: (progress: number) => void }) => {
+const upload = (data: { file: File, title: string, copyrightName: string, copyrightURL: string, tags: string[], isPrivate: boolean, onProgress: (progress: number) => void }) => {
   const formData = new FormData()
   formData.append('file', data.file, data.file.name)
   formData.append('title', data.title)

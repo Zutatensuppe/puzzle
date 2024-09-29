@@ -23,6 +23,7 @@ import { UsersRepo } from './repo/UsersRepo'
 import { Twitch } from './Twitch'
 import { UrlUtil } from './UrlUtil'
 import GameLog from './GameLog'
+import { ImageExif } from './ImageExif'
 
 const run = async () => {
   const db = new Db(config.db.connectStr, config.dir.DB_PATCHES_DIR)
@@ -37,8 +38,9 @@ const run = async () => {
   const imagesRepo = new ImagesRepo(db)
   const users = new Users(db)
   const usersRepo = new UsersRepo(db)
-  const images = new Images(imagesRepo)
-  const imageResize = new ImageResize()
+  const imageExif = new ImageExif()
+  const images = new Images(imagesRepo, imageExif)
+  const imageResize = new ImageResize(imageExif)
   const tokensRepo = new TokensRepo(db)
   const announcementsRepo = new AnnouncementsRepo(db)
   const puzzleService = new PuzzleService(images)

@@ -91,7 +91,6 @@ const run = async () => {
   app.use(router)
   app.use(vuetify)
   initToast(app)
-  // eslint-disable-next-line
   app.component('Icon', Icon)
   app.mount('#app')
 }

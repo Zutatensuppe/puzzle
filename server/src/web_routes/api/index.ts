@@ -657,7 +657,7 @@ export default function createRouter(
   })
 
   router.post('/upload', (req: any, res): void => {
-    upload(req, res, async (err: any): Promise<void> => {
+    void upload(req, res, async (err: any): Promise<void> => {
       if (err) {
         log.log('/api/upload/', 'error', err)
         res.status(400).send('Something went wrong!')
