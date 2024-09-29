@@ -100,8 +100,8 @@ in jigsawpuzzles.io
     <ImageLibrary
       :class="{blurred: dialog }"
       :images="images"
-      @imageClicked="onImageClicked"
-      @imageEditClicked="onImageEditClicked"
+      @image-clicked="onImageClicked"
+      @image-edit-clicked="onImageEditClicked"
     />
     <Sentinel
       v-if="sentinelActive"
@@ -113,9 +113,9 @@ in jigsawpuzzles.io
         :autocomplete-tags="autocompleteTags"
         :upload-progress="uploadProgress"
         :uploading="uploading"
-        @postToGalleryClick="postToGalleryClick"
-        @setupGameClick="setupGameClick"
-        @tagClick="onTagClick"
+        @post-to-gallery-click="postToGalleryClick"
+        @setup-game-click="setupGameClick"
+        @tag-click="onTagClick"
         @close="closeDialog"
       />
       <EditImageDialog
@@ -208,7 +208,7 @@ const autocompleteTags = (input: string, exclude: string[]): string[] => {
 }
 
 watch(filters, () => {
-  filtersChangedDebounced()
+  void filtersChangedDebounced()
 }, { deep: true })
 
 const currentRequest = ref<XhrRequest | null>(null)
@@ -234,7 +234,7 @@ const loadImages = async () => {
 
 const filtersChanged = async () => {
   await loadImages()
-  router.push({ name: 'new-game', query: { sort: filters.value.sort, search: filters.value.search }})
+  void router.push({ name: 'new-game', query: { sort: filters.value.sort, search: filters.value.search }})
   sentinelActive.value = true
 }
 const filtersChangedDebounced = debounce(filtersChanged, 300)
@@ -242,7 +242,7 @@ const filtersChangedDebounced = debounce(filtersChanged, 300)
 const onTagClick = (tag: Tag): void => {
   closeDialog()
   shouldInitFiltersFromRoute.value = true
-  router.push({ name: 'new-game', query: { sort: ImageSearchSort.DATE_DESC, search: tag.title } })
+  void router.push({ name: 'new-game', query: { sort: ImageSearchSort.DATE_DESC, search: tag.title } })
 }
 
 const onImageClicked = (newImage: ImageInfo) => {
@@ -298,7 +298,7 @@ const setupGameClick = async (data: any) => {
   uploading.value = 'setupGame'
   const uploadedImage = await uploadImage(data)
   uploading.value = ''
-  loadImages() // load images in background
+  void loadImages() // load images in background
   image.value = uploadedImage
   openDialog('new-game')
 }
@@ -307,7 +307,7 @@ const onNewGame = async (gameSettings: GameSettings) => {
   const res = await api.pub.newGame({ gameSettings })
   if (res.status === 200) {
     const game = await res.json()
-    router.push({ name: 'game', params: { id: game.id } })
+    void router.push({ name: 'game', params: { id: game.id } })
   }
 }
 
@@ -329,7 +329,7 @@ const tryLoadMore = async () => {
     const res = await currentRequest.value.send()
     json = await res.json()
     currentRequest.value = null
-  } catch (e) {
+  } catch {
     currentRequest.value = null
     return
   }
@@ -354,7 +354,7 @@ const shouldInitFiltersFromRoute = ref<boolean>(false)
 const onPopstate = () => {
   shouldInitFiltersFromRoute.value = true
 }
-onBeforeRouteUpdate(async (to, from) => {
+onBeforeRouteUpdate((to, _from) => {
   if (shouldInitFiltersFromRoute.value) {
     initFilters(to)
     shouldInitFiltersFromRoute.value = false

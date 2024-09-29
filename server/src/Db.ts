@@ -149,18 +149,18 @@ class Db {
           }
 
           if (prop === '$ilike') {
-            wheres.push(k + ` ilike $${$i++}`)
+            wheres.push(`${k} ilike $${$i++}`)
             values.push(where[k][prop])
             continue
           }
 
           // TODO: implement rest of mongo like query args ($eq, $lte, $in...)
-          throw new Error('not implemented: ' + prop + ' '+ JSON.stringify(where[k]))
+          throw new Error(`not implemented: ${prop} ${JSON.stringify(where[k])}`)
         }
         continue
       }
 
-      wheres.push(k + ` = $${$i++}`)
+      wheres.push(`${k} = $${$i++}`)
       values.push(where[k])
     }
 

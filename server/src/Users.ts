@@ -166,7 +166,7 @@ export class Users {
     }
   }
 
-  async getUserByIdentity(identity: IdentityRow): Promise<UserRow | null> {
+  getUserByIdentity(identity: IdentityRow): Promise<UserRow | null> {
     return this.getUser({ id: identity.user_id })
   }
 }

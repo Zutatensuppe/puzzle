@@ -14,7 +14,7 @@ export class GamePlay extends Game<Hud> {
   private lastSentImageSnapshotTs: number = 0
   private snapshotsIntervalMs: number = 5 * Time.MIN
 
-  async connect(): Promise<void> {
+  public async connect(): Promise<void> {
     Communication.onConnectionStateChange((state) => {
       this.hud.setConnectionState(state)
     })
@@ -26,7 +26,7 @@ export class GamePlay extends Game<Hud> {
     this.requireRerender()
   }
 
-  unload(): void {
+  public unload(): void {
     if (this.updateStatusInterval) {
       clearInterval(this.updateStatusInterval)
     }
@@ -35,7 +35,7 @@ export class GamePlay extends Game<Hud> {
     Communication.disconnect()
   }
 
-  handleEvent(evt: GameEvent): void {
+  public handleEvent(evt: GameEvent): void {
     // LOCAL ONLY CHANGES
     // -------------------------------------------------------------
     this.handleLocalEvent(evt)
@@ -53,9 +53,8 @@ export class GamePlay extends Game<Hud> {
     if (ret.anyDropped) {
       if (ts - this.lastSentImageSnapshotTs > this.snapshotsIntervalMs) {
         this.lastSentImageSnapshotTs = ts
-        void (createImageSnapshot(this.gameId, this.renderer).then((canvas) => {
-          Communication.sendImageSnapshot(canvas.toDataURL('image/jpeg', 75), ts)
-        }))
+        const canvas = createImageSnapshot(this.gameId, this.renderer)
+        Communication.sendImageSnapshot(canvas.toDataURL('image/jpeg', 75), ts)
       }
     }
 
@@ -80,7 +79,7 @@ export class GamePlay extends Game<Hud> {
     })
   }
 
-  async init(): Promise<void> {
+  public async init(): Promise<void> {
     await this.connect()
     await this.initBaseProps()
     this.initStatusInterval()

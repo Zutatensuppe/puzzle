@@ -97,7 +97,7 @@ const onMousedown = (ev: MouseEvent) => {
   }
   lastMouseDown = ev
 }
-const onMouseup = (ev: MouseEvent) => {
+const onMouseup = (_ev: MouseEvent) => {
   if (!props.piecesPreview) {
     return
   }

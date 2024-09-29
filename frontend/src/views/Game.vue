@@ -119,7 +119,7 @@ const onResize = (): void => {
 
 const reconnect = (): void => {
   if (g.value) {
-    g.value.connect()
+    void g.value.connect()
   }
 }
 

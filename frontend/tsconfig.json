@@ -2,17 +2,19 @@
   "compilerOptions": {
     "target": "es2020",
     "module": "es2020",
-
-    "allowSyntheticDefaultImports": true,
-
     "strict": true,
     "moduleResolution": "node",
+    "esModuleInterop": true,
+    "skipLibCheck": true,
     "rootDirs": [
       "src",
       "../common/src"
     ]
   },
   "include": [
-    "src/**/*.ts", "src/**/*.d.ts", "../common/src/*"
+    "src/**/*.ts",
+    "src/**/*.d.ts",
+    "../common/src/*",
+    "src/**/*.vue"
   ]
 }

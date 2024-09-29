@@ -125,7 +125,7 @@ export class GameService {
     try {
       gameObject = await this.loadGame(gameId)
       await GameLog.loadFromDisk(gameId)
-    } catch (e) {
+    } catch {
       GameCommon.setGameLoading(gameId, false)
       return false
     }
@@ -362,7 +362,7 @@ export class GameService {
     return gameObject.id
   }
 
-  public async addPlayer(gameId: GameId, clientId: ClientId, ts: Timestamp): Promise<void> {
+  public addPlayer(gameId: GameId, clientId: ClientId, ts: Timestamp): void {
     if (GameLog.shouldLog(gameId, GameCommon.getFinishTs(gameId), ts)) {
       const idx = GameCommon.getPlayerIndexById(gameId, clientId)
       if (idx === -1) {

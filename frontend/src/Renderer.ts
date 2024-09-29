@@ -75,7 +75,7 @@ export class Renderer {
     }
   }
 
-  async render (
+  render (
     canvas: HTMLCanvasElement,
     ctx: CanvasRenderingContext2D,
     viewport: Camera,
@@ -177,7 +177,7 @@ export class Renderer {
       const players = GameCommon.getActivePlayers(this.gameId, ts)
       for (const p of players) {
         if (shouldDrawPlayer(p)) {
-          bmp = await playerCursors.get(p)
+          bmp = playerCursors.get(p)
           pos = viewport.worldToViewport(p)
           ctx.drawImage(bmp, pos.x - playerCursors.CURSOR_W_2, pos.y - playerCursors.CURSOR_H_2)
           if (this.boundingBoxes) ctx.strokeRect(pos.x - bmp.width / 2, pos.y - bmp.height / 2, bmp.width, bmp.height)

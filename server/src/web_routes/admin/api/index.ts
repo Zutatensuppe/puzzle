@@ -37,7 +37,7 @@ export default function createRouter(
 
   router.use(requireLoginApi)
 
-  router.get('/server-info', async (req, res) => {
+  router.get('/server-info', (_req, res) => {
     res.send(<ServerInfo>{
       socketCount: server.getGameSockets().getSocketCount(),
       socketCountsByGameIds: server.getGameSockets().getSocketCountsByGameIds(),
@@ -168,7 +168,7 @@ export default function createRouter(
       res.status(500).send({ ok: false, reason: 'unable_to_get_announcement' })
       return
     }
-    await server.getDiscord().announce(`**${title}**\n${announcement.message}`)
+    server.getDiscord().announce(`**${title}**\n${announcement.message}`)
     res.send({ announcement })
   })
 

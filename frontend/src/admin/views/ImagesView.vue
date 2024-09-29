@@ -8,7 +8,10 @@
       :pagination="images.pagination"
       @click="onPagination"
     />
-    <v-table density="compact" v-if="images">
+    <v-table
+      v-if="images"
+      density="compact"
+    >
       <thead>
         <tr>
           <th>Preview</th>
@@ -32,7 +35,7 @@
             <div class="d-flex ga-3">
               <span class="text-disabled">Title:</span> {{ item.title || '-' }}
               <span class="text-disabled">Dimensions:</span> {{ item.width }}×{{ item.height }}
-              <span class="text-disabled">Private:</span> <span :class="{ 'color-private': item.private }">{{ item.private ?  '✓' : '✖' }}</span>
+              <span class="text-disabled">Private:</span> <span :class="{ 'color-private': item.private }">{{ item.private ? '✓' : '✖' }}</span>
             </div>
             <div class="d-flex ga-3">
               <span class="text-disabled">Id:</span> {{ item.id }}

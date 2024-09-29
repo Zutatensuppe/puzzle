@@ -45,7 +45,7 @@ const onCloseLoginDialog = () => {
   showLogin.value = false
 }
 
-onMounted(async () => {
+onMounted(() => {
   user.eventBus.on('login', onInit)
   user.eventBus.on('triggerLoginDialog', onTriggerLoginDialog)
   user.eventBus.on('closeLoginDialog', onCloseLoginDialog)
@@ -56,7 +56,7 @@ onMounted(async () => {
     if (passwordResetTokenValue) {
       loginDialogTab.value = 'reset-password'
       showLogin.value = true
-      passwordResetToken.value= passwordResetTokenValue
+      passwordResetToken.value = passwordResetTokenValue
     }
     const emailVerified = urlParams.get('email-verified')
     if (emailVerified) {

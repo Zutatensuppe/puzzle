@@ -33,8 +33,6 @@
 import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { ImageSearchSort, Tag } from '../../../common/src/Types'
-import { GamePlay } from '../GamePlay'
-import { GameReplay } from '../GameReplay'
 import ImageInfoTable from './ImageInfoTable.vue'
 import {
   scoreModeDescriptionToString,
@@ -44,10 +42,11 @@ import {
   snapModeDescriptionToString,
   snapModeToString,
 } from '../../../common/src/Util'
+import { GameInterface } from '../Game'
 const router = useRouter()
 
 const props = defineProps<{
-  game: GamePlay | GameReplay
+  game: GameInterface
 }>()
 
 const image = props.game.getImage()

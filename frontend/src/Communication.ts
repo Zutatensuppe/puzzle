@@ -56,7 +56,7 @@ function send(message: ClientEvent): void {
   if (connectionState === CONN_STATE.CONNECTED) {
     try {
       ws.send(JSON.stringify(message))
-    } catch (e) {
+    } catch {
       log.info('unable to send message.. maybe because ws is invalid?')
     }
   }

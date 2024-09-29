@@ -94,10 +94,9 @@ const loadFromDisk = async (gameId: GameId): Promise<void> => {
   const idxfile = idxname(gameId)
   let idxObj: any
   try {
-
     const idxData = await fs.readFile(idxfile)
     idxObj = JSON.parse(idxData)
-  } catch (e) {
+  } catch {
     log.error('failed to read idxfile', idxfile)
     GAME_LOG_PREVENT_READ_DISK[gameId] = true
     return
@@ -106,7 +105,7 @@ const loadFromDisk = async (gameId: GameId): Promise<void> => {
   try {
     const currentFileContents = await fs.readFile(idxObj.currentFile)
     lines = currentFileContents.split('\n')
-  } catch (e) {
+  } catch {
     log.error('failed to read currentFile', idxObj.currentFile)
     return
   }
@@ -168,7 +167,7 @@ const _log = (gameId: GameId, logRow: LogEntry): void => {
   }
 
   const type = logRow[0]
-  const timestampIdx = type === LOG_TYPE.HEADER? 4 : (logRow.length - 1)
+  const timestampIdx = type === LOG_TYPE.HEADER ? 4 : (logRow.length - 1)
   const ts: Timestamp = logRow[timestampIdx] as Timestamp
   if (type !== LOG_TYPE.HEADER) {
     // for everything but header save the diff to last log entry

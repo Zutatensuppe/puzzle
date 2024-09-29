@@ -7,11 +7,6 @@
 <script setup lang="ts">
 import { onMounted, onUnmounted, Ref, ref } from 'vue'
 
-import { logger } from '../../../common/src/Util'
-
-const log = logger('Sentinel.vue')
-log.disable()
-
 const el = ref<HTMLDivElement>() as Ref<HTMLDivElement>
 
 const emit = defineEmits<{
@@ -19,7 +14,6 @@ const emit = defineEmits<{
 }>()
 
 const sighted = () => {
-  log.info('sighted')
   emit('sighted')
 
   // after seeing the element, intersection observer won't trigger again
@@ -27,7 +21,6 @@ const sighted = () => {
   // after a certain amount of time after each sighting
   setTimeout(() => {
     if (isInViewport(el.value)) {
-      log.info('viewport check detected intersection')
       sighted()
     }
   }, 1000)
@@ -50,7 +43,6 @@ const isInViewport = (element: HTMLDivElement) => {
 let observer = new IntersectionObserver((entries: IntersectionObserverEntry[]) => {
   const intersecting = entries.some(e => e.isIntersecting)
   if (intersecting) {
-    log.info('observer detected intersection')
     sighted()
   }
 }, {
@@ -58,11 +50,9 @@ let observer = new IntersectionObserver((entries: IntersectionObserverEntry[]) =
   threshold: 1.0,
 })
 onMounted(() => {
-  log.info('start observing')
   observer.observe(el.value)
 })
 onUnmounted(() => {
-  log.info('disconnect')
   observer.disconnect()
 })
 </script>

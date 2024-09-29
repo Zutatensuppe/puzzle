@@ -17,14 +17,13 @@
 <script setup lang="ts">
 import { StyleValue, computed } from 'vue'
 import { BasicPlayerInfo, RegisteredMap } from '../../../common/src/Types'
-import { GamePlay } from '../GamePlay'
-import { GameReplay } from '../GameReplay'
+import { GameInterface } from '../Game'
 
 const props = defineProps<{
   player: BasicPlayerInfo,
   active: boolean,
   registeredMap: RegisteredMap,
-  game: GamePlay | GameReplay,
+  game: GameInterface,
 }>()
 
 const name = computed(() => {

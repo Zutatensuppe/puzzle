@@ -16,9 +16,9 @@ export class PlayerCursors
   public readonly CURSOR_H_2: number
 
   constructor(
-    private canvas: HTMLCanvasElement,
-    private assets: Assets,
-    private graphics: Graphics,
+    private readonly canvas: HTMLCanvasElement,
+    private readonly assets: Assets,
+    private readonly graphics: Graphics,
   ) {
     // all cursors must be of the same dimensions
     this.CURSOR_W = assets.Gfx.GRAB.width
@@ -27,7 +27,7 @@ export class PlayerCursors
     this.CURSOR_H_2 = Math.round(this.CURSOR_H / 2)
   }
 
-  async get (p: Player): Promise<ImageBitmap | HTMLCanvasElement> {
+  public get (p: Player): ImageBitmap | HTMLCanvasElement {
     const color = p.color || '#ffffff'
     const key = color + ' ' + p.d
     if (!this.cursorImages[key]) {
@@ -38,13 +38,13 @@ export class PlayerCursors
     return this.cursorImages[key]
   }
 
-  updatePlayerCursorState(d: boolean) {
+  public updatePlayerCursorState(d: boolean) {
     this.cursorState = d
     const [url, fallback] = d ? [this.cursorDown, 'grab'] : [this.cursor, 'default']
     this.canvas.style.cursor = `url('${url}') ${this.CURSOR_W_2} ${this.CURSOR_H_2}, ${fallback}`
   }
 
-  updatePlayerCursorColor(color: string) {
+  public updatePlayerCursorColor(color: string) {
     this.cursorDown = this.graphics.colorizedCanvas(this.assets.Gfx.GRAB, this.assets.Gfx.GRAB_MASK, color).toDataURL()
     this.cursor = this.graphics.colorizedCanvas(this.assets.Gfx.HAND, this.assets.Gfx.HAND_MASK, color).toDataURL()
     this.updatePlayerCursorState(this.cursorState)

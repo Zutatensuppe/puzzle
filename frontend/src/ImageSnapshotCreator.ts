@@ -6,10 +6,10 @@ import { logger } from '../../common/src/Util'
 
 const log = logger('ImageSnapshotCreator.ts')
 
-export const createImageSnapshot = async (
+export const createImageSnapshot = (
   gameId: GameId,
   renderer: Renderer,
-): Promise<HTMLCanvasElement> => {
+): HTMLCanvasElement => {
   const boardDim = GameCommon.getBoardDim(gameId)
   const tableDim = GameCommon.getTableDim(gameId)
 
@@ -43,7 +43,7 @@ export const createImageSnapshot = async (
 
   // create image
   const ctx = canvas.getContext('2d') as CanvasRenderingContext2D
-  await renderer.render(
+  renderer.render(
     canvas,
     ctx,
     viewport,

@@ -1,13 +1,17 @@
 import sharp from 'sharp'
-import exif from 'exif'
 import { logger } from '../../common/src/Util'
 import config from './Config'
 import fs from './FileSystem'
 import { Rect } from '../../common/src/Geometry'
+import { ImageExif } from './ImageExif'
 
 const log = logger('ImageResize.ts')
 
 export class ImageResize {
+  constructor(
+    private readonly imageExif: ImageExif,
+  ) {}
+
   public async cropRestrictImage(
     sourceImagePath: string,
     filename: string,
@@ -123,20 +127,8 @@ export class ImageResize {
     }
   }
 
-  private async getExifOrientation(imagePath: string): Promise<number> {
-    return new Promise((resolve) => {
-      new exif.ExifImage({ image: imagePath }, (error, exifData) => {
-        if (error) {
-          resolve(0)
-        } else {
-          resolve(exifData.image.Orientation || 0)
-        }
-      })
-    })
-  }
-
   private async loadSharpImage(imagePath: string): Promise<sharp.Sharp> {
-    const orientation = await this.getExifOrientation(imagePath)
+    const orientation = await this.imageExif.getOrientation(imagePath)
     const sharpImg = sharp(imagePath, { failOnError: false })
     const deg = this.orientationToRotationDegree(orientation)
     return deg ? sharpImg.rotate(deg) : sharpImg
