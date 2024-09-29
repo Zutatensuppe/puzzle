@@ -84,13 +84,13 @@
       </div>
 
       <div
-        v-if="data.leaderboards.length > 0"
+        v-if="leaderboards.length > 0"
         class="leaderboard-container"
       >
         <h1>Leaderboard</h1>
         <v-tabs v-model="leaderboardTab">
           <v-tab
-            v-for="lb in data.leaderboards"
+            v-for="lb in leaderboards"
             :key="lb.id"
             :value="lb.name"
           >
@@ -99,7 +99,7 @@
         </v-tabs>
         <v-window v-model="leaderboardTab">
           <v-window-item
-            v-for="lb in data.leaderboards"
+            v-for="lb in leaderboards"
             :key="lb.id"
             :value="lb.name"
           >
@@ -161,7 +161,7 @@
   </v-dialog>
 </template>
 <script setup lang="ts">
-import { onMounted, onBeforeUnmount, ref } from 'vue'
+import { onMounted, onBeforeUnmount, ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { ApiDataFinishedGames, ApiDataIndexData, GameInfo, ImageInfo, ImageSearchSort, Tag } from '../../../common/src/Types'
 import RunningGameTeaser from '../components/RunningGameTeaser.vue'
@@ -215,7 +215,17 @@ const leaderboardConfigs: Record<string, { title: string, description: string }>
     description: 'All finished puzzles.',
   },
 }
-const leaderboardTab = ref<string>(data.value?.leaderboards[0].name || '')
+const leaderboards = computed(() => {
+  const list = []
+  for (const [key, value] of Object.entries(leaderboardConfigs)) {
+    const lb = data.value?.leaderboards.find(lb => lb.name === key)
+    if (lb) {
+      list.push(lb)
+    }
+  }
+  return list
+})
+const leaderboardTab = ref<string>(leaderboards.value[0]?.name || '')
 
 const onPagination = async (q: { limit: number, offset: number }) => {
   if (!data.value) {
