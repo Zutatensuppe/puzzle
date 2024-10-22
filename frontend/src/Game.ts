@@ -35,13 +35,15 @@ import { PlayerSettings } from './PlayerSettings'
 import { PuzzleStatus } from './PuzzleStatus'
 import { PuzzleTable } from './PuzzleTable'
 import { Renderer } from './Renderer'
+import { RendererWebgl } from './RendererWebgl'
 import { Sounds } from './Sounds'
 import { ViewportSnapshots } from './ViewportSnapshots'
 import debug from './debug'
+import { hasWebGL2Support } from './util'
 
 declare global {
   interface Window {
-      DEBUG?: boolean
+    DEBUG?: boolean
   }
 }
 
@@ -49,7 +51,7 @@ const log = logger('Game.ts')
 
 export interface GameInterface {
   reinit(clientId: ClientId): Promise<void>
-  shouldDrawPiece (piece: Piece): boolean
+  shouldDrawPiece(piece: Piece): boolean
   getWsAddres(): string
   getMode(): string
   time(): number
@@ -90,7 +92,7 @@ export interface GameInterface {
   onUpdate(): void
   handleEvent(evt: GameEvent): void
   handleLocalEvent(evt: GameEvent): boolean
-  onRender (): void
+  onRender(): void
   hasReplay(): boolean
   getPlayerSettings(): PlayerSettings
   getPreviewImageUrl(): string
@@ -121,9 +123,10 @@ export abstract class Game<HudType extends Hud> implements GameInterface {
   private viewportSnapshots!: ViewportSnapshots
   protected playerSettings!: PlayerSettings
   protected puzzleStatus!: PuzzleStatus
-  private fireworks!: FireworksInterface
-  protected renderer!: Renderer
-  protected ctx: CanvasRenderingContext2D
+  private fireworks: FireworksInterface | null = null
+  protected ctx!: CanvasRenderingContext2D
+  protected renderer: Renderer | null = null
+  protected rendererWebgl: RendererWebgl | null = null
 
   private isInterfaceVisible: boolean = true
   private isPreviewVisible: boolean = false
@@ -142,7 +145,6 @@ export abstract class Game<HudType extends Hud> implements GameInterface {
     protected readonly canvas: HTMLCanvasElement,
     protected readonly hud: HudType,
   ) {
-    this.ctx = canvas.getContext('2d') as CanvasRenderingContext2D
     this.assets = new Assets()
     this.graphics = Graphics.getInstance()
     this.viewport = new Camera()
@@ -154,7 +156,7 @@ export abstract class Game<HudType extends Hud> implements GameInterface {
     await this.init()
   }
 
-  shouldDrawPiece (piece: Piece): boolean {
+  shouldDrawPiece(piece: Piece): boolean {
     if (piece.owner === -1) {
       return this.isViewFixedPieces
     }
@@ -193,11 +195,15 @@ export abstract class Game<HudType extends Hud> implements GameInterface {
 
   registerEvents(): void {
     this.evts.registerEvents()
-    window.addEventListener('resize', this.fireworks.resizeBound)
+    if (this.fireworks) {
+      window.addEventListener('resize', this.fireworks.resizeBound)
+    }
   }
 
   unregisterEvents(): void {
-    window.removeEventListener('resize', this.fireworks.resizeBound)
+    if (this.fireworks) {
+      window.removeEventListener('resize', this.fireworks.resizeBound)
+    }
     this.evts.unregisterEvents()
   }
 
@@ -206,8 +212,6 @@ export abstract class Game<HudType extends Hud> implements GameInterface {
   }
 
   async initBaseProps(): Promise<void> {
-    this.initFireworks()
-
     await this.assets.init(this.graphics)
     this.playerCursors = new PlayerCursors(this.canvas, this.assets, this.graphics)
 
@@ -218,9 +222,31 @@ export abstract class Game<HudType extends Hud> implements GameInterface {
     this.sounds = new Sounds(this.assets, this.playerSettings)
 
     const puzzleTable = new PuzzleTable(this.graphics)
-    await puzzleTable.loadTexture(this.gameId, this.playerSettings.getSettings())
-    this.renderer = new Renderer(this.gameId, this.fireworks, puzzleTable, false)
-    await this.renderer.init(this.graphics)
+
+    if (this.playerSettings.renderer() === 'webgl2' && hasWebGL2Support()) {
+      this.rendererWebgl = new RendererWebgl(
+        this.gameId,
+        this.fireworks,
+        puzzleTable,
+        false,
+        this.canvas,
+        this.graphics,
+        this.assets,
+      )
+      await this.rendererWebgl.init()
+      await this.rendererWebgl.loadTableTexture(this.playerSettings.getSettings())
+    } else {
+      this.ctx = this.canvas.getContext('2d') as CanvasRenderingContext2D
+      this.initFireworks()
+      this.renderer = new Renderer(
+        this.gameId,
+        this.fireworks,
+        puzzleTable,
+        false,
+      )
+      await this.renderer.init(this.graphics)
+      await this.renderer.loadTableTexture(this.playerSettings.getSettings())
+    }
 
     this.canvas.classList.add('loaded')
     this.hud.setPuzzleCut()
@@ -263,7 +289,7 @@ export abstract class Game<HudType extends Hud> implements GameInterface {
   }
 
   initFinishState(): void {
-    this.longFinished = !! GameCommon.getFinishTs(this.gameId)
+    this.longFinished = !!GameCommon.getFinishTs(this.gameId)
     this.finished = this.longFinished
   }
 
@@ -279,15 +305,20 @@ export abstract class Game<HudType extends Hud> implements GameInterface {
   }
 
   checkFinished(): void {
-    this.finished = !! GameCommon.getFinishTs(this.gameId)
+    this.finished = !!GameCommon.getFinishTs(this.gameId)
     if (this.justFinished()) {
-      this.fireworks.update()
+      this.fireworks?.update()
+      // need to constantly rerender for fireworks
       this.requireRerender()
     }
   }
 
   async loadTableTexture(settings: PlayerSettingsData): Promise<void> {
-    await this.renderer.loadTableTexture(settings)
+    if (this.rendererWebgl) {
+      await this.rendererWebgl.loadTableTexture(settings)
+    } else if (this.renderer){
+      await this.renderer.loadTableTexture(settings)
+    }
     this.requireRerender()
   }
 
@@ -409,7 +440,7 @@ export abstract class Game<HudType extends Hud> implements GameInterface {
     if (rerender) {
       this.requireRerender()
     }
-    this.finished = !! GameCommon.getFinishTs(this.gameId)
+    this.finished = !!GameCommon.getFinishTs(this.gameId)
   }
 
   onUpdate(): void {
@@ -491,25 +522,40 @@ export abstract class Game<HudType extends Hud> implements GameInterface {
     return true
   }
 
-  onRender (): void {
+  onRender(): void {
     if (!this.rerender) {
       return
     }
 
-    this.renderer.debug = debug.isDebugEnabled()
-    this.renderer.render(
-      this.canvas,
-      this.ctx,
-      this.viewport,
-      this.time(),
-      this.playerSettings.getSettings(),
-      this.playerCursors,
-      this.puzzleStatus,
-      (piece: Piece) => this.shouldDrawPiece(piece),
-      (player: Player) => this.shouldDrawPlayer(player),
-      this.justFinished(),
-      false,
-    )
+    if (this.rendererWebgl) {
+      this.rendererWebgl.debug = debug.isDebugEnabled()
+      this.rendererWebgl.render(
+        this.viewport,
+        this.time(),
+        this.playerSettings.getSettings(),
+        this.playerCursors,
+        this.puzzleStatus,
+        (piece: Piece) => this.shouldDrawPiece(piece),
+        (player: Player) => this.shouldDrawPlayer(player),
+        this.justFinished(),
+        false,
+      )
+    } else if (this.renderer) {
+      this.renderer.debug = debug.isDebugEnabled()
+      this.renderer.render(
+        this.canvas,
+        this.ctx,
+        this.viewport,
+        this.time(),
+        this.playerSettings.getSettings(),
+        this.playerCursors,
+        this.puzzleStatus,
+        (piece: Piece) => this.shouldDrawPiece(piece),
+        (player: Player) => this.shouldDrawPlayer(player),
+        this.justFinished(),
+        false,
+      )
+    }
 
     this.rerender = false
   }

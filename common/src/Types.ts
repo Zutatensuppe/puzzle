@@ -359,6 +359,11 @@ export interface BasicPlayerInfo {
   points: number
 }
 
+export enum Renderer {
+  WEBGL2 = 'webgl2',
+  CANVAS = 'canvas',
+}
+
 export interface PlayerSettingsData {
   background: string
   showTable: boolean
@@ -372,6 +377,7 @@ export interface PlayerSettingsData {
   otherPlayerClickSoundEnabled: boolean
   soundsVolume: number
   showPlayerNames: boolean
+  renderer: Renderer
 }
 
 export const PLAYER_SETTINGS = {
@@ -387,6 +393,7 @@ export const PLAYER_SETTINGS = {
   PLAYER_COLOR: 'player_color',
   PLAYER_NAME: 'player_name',
   SHOW_PLAYER_NAMES: 'show_player_names',
+  RENDERER: 'renderer',
 }
 
 export const PLAYER_SETTINGS_DEFAULTS = {
@@ -402,6 +409,7 @@ export const PLAYER_SETTINGS_DEFAULTS = {
   PLAYER_COLOR: '#ffffff',
   PLAYER_NAME: 'anon',
   SHOW_PLAYER_NAMES: true,
+  RENDERER: Renderer.WEBGL2,
 }
 
 export interface GameStatus {

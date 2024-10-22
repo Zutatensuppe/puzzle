@@ -2,7 +2,8 @@ import { MODE_REPLAY } from './GameMode'
 import storage from './storage'
 import GameCommon from '../../common/src/GameCommon'
 import { Game } from './Game'
-import { PLAYER_SETTINGS, PLAYER_SETTINGS_DEFAULTS, PlayerSettingsData } from '../../common/src/Types'
+import { PLAYER_SETTINGS, PLAYER_SETTINGS_DEFAULTS, PlayerSettingsData, Renderer } from '../../common/src/Types'
+import { hasWebGL2Support } from './util'
 
 export class PlayerSettings {
 
@@ -35,6 +36,20 @@ export class PlayerSettings {
       this.settings.name = GameCommon.getPlayerName(this.game.getGameId(), this.game.getClientId())
         || storage.getStr(PLAYER_SETTINGS.PLAYER_NAME, PLAYER_SETTINGS_DEFAULTS.PLAYER_NAME)
     }
+    this.settings.renderer = this.parseRenderer(storage.getStr(PLAYER_SETTINGS.RENDERER, PLAYER_SETTINGS_DEFAULTS.RENDERER))
+  }
+
+  parseRenderer(str: string): Renderer {
+    if (!hasWebGL2Support()) {
+      return Renderer.CANVAS
+    }
+    if (Renderer.WEBGL2 === str) {
+      return Renderer.WEBGL2
+    }
+    if (Renderer.CANVAS === str) {
+      return Renderer.CANVAS
+    }
+    return PLAYER_SETTINGS_DEFAULTS.RENDERER
   }
 
   apply(data: PlayerSettingsData) {
@@ -50,6 +65,7 @@ export class PlayerSettings {
     this.setOtherPlayerClickSoundEnabled(data.otherPlayerClickSoundEnabled)
     this.setSoundsVolume(data.soundsVolume)
     this.setShowPlayerNames(data.showPlayerNames)
+    this.setRenderer(data.renderer)
   }
 
   getSettings(): PlayerSettingsData {
@@ -189,6 +205,15 @@ export class PlayerSettings {
     return false
   }
 
+  setRenderer(value: Renderer) {
+    if (this.settings.renderer !== value) {
+      this.settings.renderer = value
+      storage.setStr(PLAYER_SETTINGS.RENDERER, value)
+      this.showStatusMessage('Renderer', value)
+      return true
+    }
+  }
+
   toggleSoundsEnabled() {
     this.settings.soundsEnabled = !this.settings.soundsEnabled
     const value = this.settings.soundsEnabled
@@ -232,5 +257,9 @@ export class PlayerSettings {
 
   soundsEnabled() {
     return this.settings.soundsEnabled
+  }
+
+  renderer() {
+    return this.settings.renderer
   }
 }
