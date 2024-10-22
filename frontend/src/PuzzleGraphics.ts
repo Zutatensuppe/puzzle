@@ -2,7 +2,8 @@
 
 import Geometry, { Dim, Point, Rect } from '../../common/src/Geometry'
 import Util, { logger } from '../../common/src/Util'
-import { Puzzle, PuzzleInfo, PieceShape, EncodedPiece, ShapeMode } from '../../common/src/Types'
+import { Color, COLOR_MAGENTA, colorEquals, colorIsGrayscale } from '../../common/src/Color'
+import { Puzzle, PuzzleInfo, PieceShape, EncodedPiece, ShapeMode, EncodedPieceShape } from '../../common/src/Types'
 import { determinePuzzlePieceShapes, PuzzleCreationInfo } from '../../common/src/Puzzle'
 import { Rng } from '../../common/src/Rng'
 import { Graphics } from './Graphics'
@@ -10,7 +11,7 @@ import { Graphics } from './Graphics'
 const log = logger('PuzzleGraphics.js')
 
 const CURVY_COORDS = [
-  0, 0, 40, 15, 37, 5,
+  0, 0, 35, 15, 37, 5,
   37, 5, 40, 0, 38, -5,
   38, -5, 20, -20, 50, -20,
   50, -20, 80, -20, 62, -5,
@@ -130,9 +131,9 @@ function createPuzzlePieces(
   }
 
   for (const p of pieces) {
-    const c = graphics.createCanvas(pieceDrawSize, pieceDrawSize)
+    const c = graphics.createCanvas(pieceDrawSize)
     const ctx = c.getContext('2d') as CanvasRenderingContext2D
-    const c2 = graphics.createCanvas(pieceDrawSize, pieceDrawSize)
+    const c2 = graphics.createCanvas(pieceDrawSize)
     const ctx2 = c2.getContext('2d') as CanvasRenderingContext2D
     const piece = Util.decodePiece(p)
     const srcRect = srcRectByIdx(info, piece.idx)
@@ -163,7 +164,7 @@ function createPuzzlePieces(
     ctx.globalCompositeOperation = 'source-in'
     ctx.globalAlpha = .2
     ctx.fillStyle = 'black'
-    ctx.fillRect(0,0, c.width, c.height)
+    ctx.fillRect(0, 0, c.width, c.height)
     ctx.restore()
 
     // main image
@@ -261,6 +262,90 @@ async function loadPuzzleBitmap(
   return graphics.resizeBitmap(bmp, puzzle.info.width, puzzle.info.height)
 }
 
+export const createWebglStencil = async (
+  graphics: Graphics,
+  path: Path2D,
+  size: number,
+) => {
+  const factor = 1.25
+
+  // create a shadowed version of the path
+  const c2 = graphics.createCanvas(size)
+  const ctx2 = c2.getContext('2d')!
+  ctx2.shadowColor = 'rgba(0,0,0,1)'
+  ctx2.shadowOffsetX = -2 * factor
+  ctx2.shadowOffsetY = -4 * factor
+  ctx2.shadowBlur = 7 * factor
+  ctx2.lineWidth = 3 * factor
+  ctx2.stroke(path)
+  ctx2.shadowColor = 'rgba(255,255,255,1)'
+  ctx2.shadowOffsetX = + 2 * factor
+  ctx2.shadowOffsetY = + 4 * factor
+  ctx2.stroke(path)
+
+  // create a magenta filled version of the path
+  const c = graphics.createCanvas(size)
+  const ctx = c.getContext('2d')!
+  ctx.fillStyle = 'magenta'
+  ctx.fillRect(0, 0, size, size)
+  ctx.save()
+  ctx.globalCompositeOperation = 'destination-out'
+  ctx.clip(path)
+  ctx.fill(path)
+  ctx.globalCompositeOperation = 'source-over'
+  ctx.drawImage(c2, 0, 0)
+  ctx.restore()
+
+  // stroke the path with a thin line (to remove some artifacts and
+  // fill the outside of the piece, so they stick together without leaving gaps)
+  ctx.save()
+  ctx.lineWidth = 2
+  ctx.fillStyle = 'rgba(0,0,0,0)'
+  ctx.stroke(path)
+  ctx.restore()
+
+  // some artifacts remain after stroke path, so we need to clean up the pixels
+  // we make all pixels that are NOT magenta and NOT grayscale into black
+  const imageData = ctx.getImageData(0, 0, c.width, c.height)
+  const pixels = imageData.data
+  for (let i = 0; i < pixels.length; i += 4) {
+    const color = pixels.slice(i, i + 4) as Color
+    if (!colorEquals(color, COLOR_MAGENTA) && !colorIsGrayscale(color)) {
+      pixels[i] = 0
+      pixels[i + 1] = 0
+      pixels[i + 2] = 0
+    }
+  }
+  ctx.putImageData(imageData, 0, 0)
+
+  return await createImageBitmap(c)
+}
+
+// TODO: cache or create pngs for each stencil, because they don't
+//       change depending on the puzzle image, and it takes ~2 seconds
+//       to generate them
+async function createWebglStencils(
+  graphics: Graphics,
+): Promise<Record<EncodedPieceShape, ImageBitmap>> {
+  const SPRITE_SIZE = 256
+  const SPRITE_DRAW_OFFSET = SPRITE_SIZE / 2
+  const size = SPRITE_SIZE + 2 * SPRITE_DRAW_OFFSET
+  const shapes: Record<EncodedPieceShape, ImageBitmap> = {}
+  for (let top = -1; top <= 1; top++) {
+    for (let bottom = -1; bottom <= 1; bottom++) {
+      for (let left = -1; left <= 1; left++) {
+        for (let right = -1; right <= 1; right++) {
+          const shape: PieceShape = { top, bottom, left, right }
+          const encodedShape = Util.encodeShape(shape)
+          const path = createPathForShape(shape, SPRITE_DRAW_OFFSET, SPRITE_DRAW_OFFSET, SPRITE_SIZE)
+          shapes[encodedShape] = await createWebglStencil(graphics, path, size)
+        }
+      }
+    }
+  }
+  return shapes
+}
+
 function loadPuzzleBitmaps(
   puzzleBitmap: HTMLCanvasElement,
   puzzle: Puzzle,
@@ -272,4 +357,5 @@ function loadPuzzleBitmaps(
 export default {
   loadPuzzleBitmap,
   loadPuzzleBitmaps,
+  createWebglStencils,
 }

@@ -3,6 +3,7 @@ import GameCommon from '../../common/src/GameCommon'
 import { Renderer } from '../../common/src/Renderer'
 import { Camera } from '../../common/src/Camera'
 import { logger } from '../../common/src/Util'
+import { RendererWebgl } from './RendererWebgl'
 
 const log = logger('ImageSnapshotCreator.ts')
 
@@ -19,7 +20,7 @@ export const createImageSnapshot = (
 
   const playerSettings: PlayerSettingsData = {
     background: PLAYER_SETTINGS_DEFAULTS.COLOR_BACKGROUND,
-    showTable: PLAYER_SETTINGS_DEFAULTS.SHOW_TABLE,
+    showTable: false,
     tableTexture: PLAYER_SETTINGS_DEFAULTS.TABLE_TEXTURE,
     useCustomTableTexture: PLAYER_SETTINGS_DEFAULTS.USE_CUSTOM_TABLE_TEXTURE,
     customTableTexture: PLAYER_SETTINGS_DEFAULTS.CUSTOM_TABLE_TEXTURE,
@@ -30,6 +31,7 @@ export const createImageSnapshot = (
     otherPlayerClickSoundEnabled: PLAYER_SETTINGS_DEFAULTS.OTHER_PLAYER_CLICK_SOUND_ENABLED,
     soundsVolume: PLAYER_SETTINGS_DEFAULTS.SOUND_VOLUME,
     showPlayerNames: PLAYER_SETTINGS_DEFAULTS.SHOW_PLAYER_NAMES,
+    renderer: PLAYER_SETTINGS_DEFAULTS.RENDERER,
   }
 
   const viewport = new Camera()
@@ -57,4 +59,49 @@ export const createImageSnapshot = (
     true,
   )
   return canvas
+}
+
+
+export const createImageSnapshotWebgl = (
+  gameId: GameId,
+  renderer: RendererWebgl,
+): string => {
+  console.log('createImageSnapshotWebgl')
+  const boardDim = GameCommon.getBoardDim(gameId)
+  const tableDim = GameCommon.getTableDim(gameId)
+
+  const playerSettings: PlayerSettingsData = {
+    background: PLAYER_SETTINGS_DEFAULTS.COLOR_BACKGROUND,
+    showTable: false,
+    tableTexture: PLAYER_SETTINGS_DEFAULTS.TABLE_TEXTURE,
+    useCustomTableTexture: PLAYER_SETTINGS_DEFAULTS.USE_CUSTOM_TABLE_TEXTURE,
+    customTableTexture: PLAYER_SETTINGS_DEFAULTS.CUSTOM_TABLE_TEXTURE,
+    customTableTextureScale: PLAYER_SETTINGS_DEFAULTS.CUSTOM_TABLE_TEXTURE_SCALE,
+    color: PLAYER_SETTINGS_DEFAULTS.PLAYER_COLOR,
+    name: PLAYER_SETTINGS_DEFAULTS.PLAYER_NAME,
+    soundsEnabled: PLAYER_SETTINGS_DEFAULTS.SOUND_ENABLED,
+    otherPlayerClickSoundEnabled: PLAYER_SETTINGS_DEFAULTS.OTHER_PLAYER_CLICK_SOUND_ENABLED,
+    soundsVolume: PLAYER_SETTINGS_DEFAULTS.SOUND_VOLUME,
+    showPlayerNames: PLAYER_SETTINGS_DEFAULTS.SHOW_PLAYER_NAMES,
+    renderer: PLAYER_SETTINGS_DEFAULTS.RENDERER,
+  }
+
+  const viewport = new Camera()
+  viewport.calculateZoomCapping(boardDim, tableDim)
+  viewport.centerFit(
+    { w: boardDim.w, h: boardDim.h },
+    tableDim,
+    boardDim,
+    0,
+  )
+
+  return renderer.renderToImageString(
+    boardDim,
+    viewport,
+    new Date().getTime(),
+    playerSettings,
+    (_piece: Piece) => true,
+    (_player: Player) => false,
+    true,
+  )
 }

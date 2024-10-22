@@ -41,7 +41,7 @@ export class Renderer {
     this.tableBounds = GameCommon.getBounds(this.gameId)
   }
 
-  async init (graphics: Graphics) {
+  async init(graphics: Graphics) {
     if (!puzzleBitmapCache[this.gameId]) {
       // log.log('loading puzzle bitmap', this.gameId)
       puzzleBitmapCache[this.gameId] = await PuzzleGraphics.loadPuzzleBitmap(
@@ -69,9 +69,9 @@ export class Renderer {
     }
   }
 
-  async loadTableTexture (settings: PlayerSettingsData): Promise<void> {
+  async loadTableTexture(settings: PlayerSettingsData): Promise<void> {
     if (this.puzzleTable) {
-      await this.puzzleTable.loadTexture(this.gameId, settings)
+      await this.puzzleTable.loadTextureToCanvas(this.gameId, settings)
     }
   }
 

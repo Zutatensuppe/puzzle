@@ -6,7 +6,7 @@ import { Game } from './Game'
 import Communication from './Communication'
 import Util from '../../common/src/Util'
 import Time from '../../common/src/Time'
-import { createImageSnapshot } from './ImageSnapshotCreator'
+import { createImageSnapshot, createImageSnapshotWebgl } from './ImageSnapshotCreator'
 
 export class GamePlay extends Game<Hud> {
 
@@ -53,8 +53,14 @@ export class GamePlay extends Game<Hud> {
     if (ret.anyDropped) {
       if (ts - this.lastSentImageSnapshotTs > this.snapshotsIntervalMs) {
         this.lastSentImageSnapshotTs = ts
-        const canvas = createImageSnapshot(this.gameId, this.renderer)
-        Communication.sendImageSnapshot(canvas.toDataURL('image/jpeg', 75), ts)
+        if (this.rendererWebgl) {
+          const imageStr = createImageSnapshotWebgl(this.gameId, this.rendererWebgl)
+          Communication.sendImageSnapshot(imageStr, ts)
+          this.rerender = true
+        } else if (this.renderer) {
+          const canvas = createImageSnapshot(this.gameId, this.renderer)
+          Communication.sendImageSnapshot(canvas.toDataURL('image/jpeg', 75), ts)
+        }
       }
     }
 
