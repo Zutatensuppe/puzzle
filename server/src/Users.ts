@@ -109,13 +109,13 @@ export class Users {
     }
     let data = await this.getUserInfoByRequest(req)
     if (!data.user) {
-      await this.repos.users.insert({
+      const user = await this.createUser({
         client_id: req.headers[HEADER_CLIENT_ID],
         created: new Date(),
         name: '',
         email: '',
       })
-      data = await this.getUserInfoByRequest(req)
+      data = { token: null, user, user_type: 'guest' }
     }
     // here the user is already guaranteed to exist (as UserRow is fine here)
     return data.user as UserRow
