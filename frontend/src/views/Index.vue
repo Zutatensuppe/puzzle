@@ -217,7 +217,7 @@ const leaderboardConfigs: Record<string, { title: string, description: string }>
 }
 const leaderboards = computed(() => {
   const list = []
-  for (const [key, value] of Object.entries(leaderboardConfigs)) {
+  for (const key of Object.keys(leaderboardConfigs)) {
     const lb = data.value?.leaderboards.find(lb => lb.name === key)
     if (lb) {
       list.push(lb)

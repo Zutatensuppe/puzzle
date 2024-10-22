@@ -73,15 +73,15 @@ export class UsersRepo {
   }
 
   async isInGroup(userId: UserId, groupName: string): Promise<boolean> {
-    const adminGroup = await this.getUserGroupByName(groupName)
-    if (!adminGroup) {
+    const group = await this.getUserGroupByName(groupName)
+    if (!group) {
       return false
     }
-    const userXAdmin = await this.db.get('user_x_user_group', {
-      user_group_id: adminGroup.id,
+    const userXGroup = await this.db.get('user_x_user_group', {
+      user_group_id: group.id,
       user_id: userId,
     })
-    return !!userXAdmin
+    return !!userXGroup
   }
 
   async getUserGroups(): Promise<UserGroupRow[]> {
