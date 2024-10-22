@@ -1,6 +1,7 @@
 import { EncodedPlayer, GameId, ImageId, UserId } from '../../../common/src/Types'
 import Util from '../../../common/src/Util'
 import Db from '../Db'
+import { ImageRow } from './ImagesRepo'
 
 const TABLE = 'games'
 
@@ -16,9 +17,21 @@ export interface GameRow {
   image_snapshot_url: string | null
 }
 
+export interface GameRowWithImage extends GameRow {
+  image: ImageRow | null
+}
+
 export class GamesRepo {
   constructor(private readonly db: Db) {
     // pass
+  }
+
+  async count(): Promise<number> {
+    return await this.db.count(TABLE)
+  }
+
+  async getAll(offset: number, limit: number): Promise<GameRow[]> {
+    return await this.db.getMany(TABLE, undefined, [{ created: -1 }], { offset, limit })
   }
 
   async getGameRowById(gameId: GameId): Promise<GameRow | null> {
@@ -101,5 +114,11 @@ export class GamesRepo {
         pieces_count: p.points,
       }, ['user_id', 'game_id'])
     }
+  }
+
+  async delete(gameId: GameId): Promise<void> {
+    await this.db.delete(TABLE, { id: gameId })
+
+    // TODO: delete relation table entries, maybe recalculate leaderboards etc.
   }
 }

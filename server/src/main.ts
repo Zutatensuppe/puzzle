@@ -10,46 +10,37 @@ import { Discord } from './Discord'
 import { Server } from './Server'
 import { GameSockets } from './GameSockets'
 import { GameService } from './GameService'
-import { GamesRepo } from './repo/GamesRepo'
 import { Users } from './Users'
-import { ImagesRepo } from './repo/ImagesRepo'
 import { Images } from './Images'
-import { TokensRepo } from './repo/TokensRepo'
-import { AnnouncementsRepo } from './repo/AnnouncementsRepo'
 import { ImageResize } from './ImageResize'
 import { PuzzleService } from './PuzzleService'
-import { LeaderboardRepo } from './repo/LeaderboardRepo'
-import { UsersRepo } from './repo/UsersRepo'
 import { Twitch } from './Twitch'
 import { UrlUtil } from './UrlUtil'
 import GameLog from './GameLog'
 import { ImageExif } from './ImageExif'
+import { Repos } from './repo/Repos'
 
 const run = async () => {
   const db = new Db(config.db.connectStr, config.dir.DB_PATCHES_DIR)
   await db.connect()
   await db.patch()
 
+  const repos = new Repos(db)
   const mail = new Mail(config.mail, config.http.publicBaseUrl)
   const canny = new Canny(config.canny)
   const discord = new Discord(config.discord)
   const gameSockets = new GameSockets()
-  const gamesRepo = new GamesRepo(db)
-  const imagesRepo = new ImagesRepo(db)
-  const users = new Users(db)
-  const usersRepo = new UsersRepo(db)
+  const users = new Users(db, repos)
   const imageExif = new ImageExif()
-  const images = new Images(imagesRepo, imageExif)
+  const images = new Images(repos.images, imageExif)
   const imageResize = new ImageResize(imageExif)
-  const tokensRepo = new TokensRepo(db)
-  const announcementsRepo = new AnnouncementsRepo(db)
   const puzzleService = new PuzzleService(images)
-  const leaderboardRepo = new LeaderboardRepo(db)
-  const gameService = new GameService(gamesRepo, usersRepo, imagesRepo, puzzleService, leaderboardRepo)
+  const gameService = new GameService(repos, puzzleService)
   const twitch = new Twitch(config.auth.twitch)
 
   const server = new Server(
     db,
+    repos,
     mail,
     canny,
     discord,
@@ -58,11 +49,7 @@ const run = async () => {
     users,
     images,
     imageResize,
-    tokensRepo,
     new UrlUtil(),
-    announcementsRepo,
-    leaderboardRepo,
-    imagesRepo,
     twitch,
   )
   server.start()

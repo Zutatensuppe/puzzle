@@ -170,10 +170,10 @@ export default function createRouter(
 
       if (!user) {
         user = await server.getUsers().createUser({
-          name: userData.data[0].display_name,
-          created: new Date(),
           client_id: await determineNewUserClientId(client_id),
+          created: new Date(),
           email: provider_email,
+          name: userData.data[0].display_name,
         })
       } else {
         let updateNeeded = false
@@ -257,7 +257,7 @@ export default function createRouter(
     const token = `${req.body.token}`
     const passwordRaw = `${req.body.password}`
 
-    const tokenRow = await server.getTokensRepo().get({ type: 'password-reset', token })
+    const tokenRow = await server.repos.tokens.get({ type: 'password-reset', token })
 
     if (!tokenRow) {
       res.status(400).send({ reason: 'no such token' })
@@ -276,7 +276,7 @@ export default function createRouter(
     await server.getUsers().updateAccount(account)
 
     // remove token, already used
-    await server.getTokensRepo().delete(tokenRow)
+    await server.repos.tokens.delete(tokenRow)
 
     res.send({ success: true })
   })
@@ -317,7 +317,7 @@ export default function createRouter(
       token,
       type: 'password-reset',
     }
-    await server.getTokensRepo().insert(tokenRow)
+    await server.repos.tokens.insert(tokenRow)
     server.getMail().sendPasswordResetMail({ user: { name: user.name, email: emailPlain }, token: tokenRow })
     res.send({ success: true })
   })
@@ -357,17 +357,18 @@ export default function createRouter(
       await server.getUsers().updateUser(user)
     } else {
       user = await server.getUsers().createUser({
-        created: new Date(),
-        name: usernameRaw,
-        email: emailRaw,
         client_id,
+        created: new Date(),
+        email: emailRaw,
+        name: usernameRaw,
       })
     }
 
     await server.getUsers().createIdentity({
       user_id: user.id,
       provider_name: 'local',
-      provider_id: account.id,
+      provider_id: `${account.id}`,
+      provider_email: null,
     })
 
     const userInfo = { email: emailRaw, name: usernameRaw }
@@ -378,14 +379,14 @@ export default function createRouter(
       type: 'registration',
     }
     // TODO: dont misuse token table user id <> account id
-    await server.getTokensRepo().insert(tokenRow)
+    await server.repos.tokens.insert(tokenRow)
     server.getMail().sendRegistrationMail({ user: userInfo, token: tokenRow })
     res.send({ success: true })
   })
 
   router.get('/verify-email/:token', async (req, res): Promise<void> => {
     const token = req.params.token
-    const tokenRow = await server.getTokensRepo().get({ token })
+    const tokenRow = await server.repos.tokens.get({ token })
     if (!tokenRow) {
       res.status(400).send({ reason: 'bad token' })
       return
@@ -423,12 +424,12 @@ export default function createRouter(
       res.status(401).send({})
       return
     }
-    await server.getTokensRepo().delete({ token: req.token })
+    await server.repos.tokens.delete({ token: req.token })
     res.clearCookie(COOKIE_TOKEN)
     res.send({ success: true })
   })
 
-  router.get('/conf', (req, res): void => {
+  router.get('/conf', (_req, res): void => {
     res.send({
       WS_ADDRESS: config.ws.connectstring,
     })
@@ -446,7 +447,7 @@ export default function createRouter(
       res.status(404).send({ reason: 'no game found' })
       return
     }
-    gameObj.puzzle.info.image.gameCount = await server.getImagesRepo().getGameCount(gameObj.puzzle.info.image.id)
+    gameObj.puzzle.info.image.gameCount = await server.repos.images.getGameCount(gameObj.puzzle.info.image.id)
     gameObj.registeredMap = await server.getGameService().generateRegisteredMap(gameObj)
     res.send({ game: Util.encodeGame(gameObj) })
   })
@@ -571,11 +572,9 @@ export default function createRouter(
       gamesFinished.push(await GameToGameInfo(row, ts))
     }
 
-    const leaderboards = await server.getLeaderboardRepo().getTop10(userId)
+    const leaderboards = await server.repos.leaderboard.getTop10(userId)
 
-    const livestreams = await server.getDb().getMany('twitch_livestreams', {
-      is_live: 1,
-    })
+    const livestreams = await server.repos.livestreams.getLive()
 
     const indexData: ApiDataIndexData = {
       gamesRunning: {
@@ -698,7 +697,7 @@ export default function createRouter(
   })
 
   router.get('/announcements', async (req, res) => {
-    const items = await server.getAnnouncementsRepo().getAll()
+    const items = await server.repos.announcements.getAll()
     res.send(items)
   })
 

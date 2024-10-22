@@ -1,6 +1,6 @@
 import { AppTokenAuthProvider } from '@twurple/auth'
 import { ApiClient } from '@twurple/api'
-import { Livestream, LivestreamId, TwitchConfig } from '../../common/src/Types'
+import { TwitchLivestream, LivestreamId, TwitchConfig } from '../../common/src/Types'
 import { logger } from '../../common/src/Util'
 
 const log = logger('Twitch.ts')
@@ -26,7 +26,7 @@ export class Twitch {
     this.apiClient = new ApiClient({ authProvider })
   }
 
-  public async getLivestreams(): Promise<Livestream[]> {
+  public async getLivestreams(): Promise<TwitchLivestream[]> {
     if (!this.apiClient) {
       log.info('skipping Twitch.getLivestreams, apiClient is not set')
       return []
@@ -35,7 +35,7 @@ export class Twitch {
     const streams = await this.apiClient.streams.getStreams({
       game: '1315117298',
     })
-    const livestreams: Livestream[] = []
+    const livestreams: TwitchLivestream[] = []
     for (const stream of streams.data) {
       const user = await stream.getUser()
       livestreams.push({
