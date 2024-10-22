@@ -111,7 +111,7 @@ export class Images {
     }
   }
 
-  public async insertImage(image: Partial<ImageRow>): Promise<ImageId> {
+  public async insertImage(image: Omit<ImageRow, 'id'>): Promise<ImageId> {
     return await this.imagesRepo.insert(image)
   }
 

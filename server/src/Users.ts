@@ -1,10 +1,10 @@
 import { AccountId, ClientId, TokenRow, UserId } from '../../common/src/Types'
 import { COOKIE_TOKEN, generateToken } from './Auth'
 import Db, { WhereRaw } from './Db'
-import { AccountRow, AccountsRepo } from './repo/AccountsRepo'
-import { TokensRepo } from './repo/TokensRepo'
-import { IdentityRow, UserIdentityRepo } from './repo/UserIdentityRepo'
-import { UserGroupRow, UserRow, UsersRepo } from './repo/UsersRepo'
+import { AccountRow } from './repo/AccountsRepo'
+import { Repos } from './repo/Repos'
+import { IdentityRow } from './repo/UserIdentityRepo'
+import { UserGroupRow, UserRow } from './repo/UsersRepo'
 
 const HEADER_CLIENT_ID = 'client-id'
 
@@ -15,18 +15,10 @@ interface UserInfo {
 }
 
 export class Users {
-  private usersRepo: UsersRepo
-  private accountsRepo: AccountsRepo
-  private userIdentityRepo: UserIdentityRepo
-  private tokensRepo: TokensRepo
-
   constructor(
     private db: Db,
+    private repos: Repos,
   ) {
-    this.usersRepo = new UsersRepo(db)
-    this.accountsRepo = new AccountsRepo(db)
-    this.userIdentityRepo = new UserIdentityRepo(db)
-    this.tokensRepo = new TokensRepo(db)
   }
 
   async usernameTaken(username: string): Promise<boolean> {
@@ -64,29 +56,29 @@ export class Users {
   }
 
   async setAccountVerified(accountId: AccountId): Promise<void> {
-    await this.accountsRepo.update({ status: 'verified'}, { id: accountId})
+    await this.repos.accounts.update({ status: 'verified'}, { id: accountId})
   }
 
   async getGroups(userId: UserId): Promise<UserGroupRow[]> {
-    return await this.usersRepo.getGroupsByUserId(userId)
+    return await this.repos.users.getGroupsByUserId(userId)
   }
 
   async createAccount(account: any): Promise<AccountRow> {
-    const accountId = await this.accountsRepo.insert(account)
-    return await this.accountsRepo.get({ id: accountId }) as AccountRow
+    const accountId = await this.repos.accounts.insert(account)
+    return await this.repos.accounts.get({ id: accountId }) as AccountRow
   }
 
-  async createIdentity(identity: any): Promise<IdentityRow> {
-    const identityId = await this.userIdentityRepo.insert(identity)
-    return await this.userIdentityRepo.get({ id: identityId }) as IdentityRow
+  async createIdentity(identity: Omit<IdentityRow, 'id'>): Promise<IdentityRow> {
+    const identityId = await this.repos.userIdentity.insert(identity)
+    return await this.repos.userIdentity.get({ id: identityId }) as IdentityRow
   }
 
   async updateIdentity(identity: any): Promise<void> {
-    await this.userIdentityRepo.update(identity)
+    await this.repos.userIdentity.update(identity)
   }
 
   async getIdentity(where: WhereRaw): Promise<IdentityRow | null> {
-    return await this.userIdentityRepo.get(where)
+    return await this.repos.userIdentity.get(where)
   }
 
   async getAccountByEmailPlain(emailPlain: string): Promise<AccountRow | null> {
@@ -94,20 +86,20 @@ export class Users {
   }
 
   async getAccount(where: WhereRaw): Promise<AccountRow | null> {
-    return await this.accountsRepo.get(where)
+    return await this.repos.accounts.get(where)
   }
 
   async updateAccount(account: AccountRow): Promise<void> {
-    return await this.accountsRepo.update(account, { id: account.id })
+    return await this.repos.accounts.update(account, { id: account.id })
   }
 
-  async createUser(user: any): Promise<UserRow> {
-    const userId = await this.usersRepo.insert(user)
+  async createUser(user: Omit<UserRow, 'id'>): Promise<UserRow> {
+    const userId = await this.repos.users.insert(user)
     return await this.getUser({ id: userId }) as UserRow
   }
 
   async updateUser(user: any): Promise<void> {
-    await this.usersRepo.update(user)
+    await this.repos.users.update(user)
   }
 
   async getOrCreateUserByRequest(req: any): Promise<UserRow> {
@@ -117,9 +109,11 @@ export class Users {
     }
     let data = await this.getUserInfoByRequest(req)
     if (!data.user) {
-      await this.usersRepo.insert({
+      await this.repos.users.insert({
         client_id: req.headers[HEADER_CLIENT_ID],
         created: new Date(),
+        name: '',
+        email: '',
       })
       data = await this.getUserInfoByRequest(req)
     }
@@ -128,16 +122,16 @@ export class Users {
   }
 
   async getUser(where: WhereRaw): Promise<UserRow | null> {
-    return await this.usersRepo.get(where)
+    return await this.repos.users.get(where)
   }
 
   async getToken(where: WhereRaw): Promise<TokenRow | null> {
-    return await this.tokensRepo.get(where)
+    return await this.repos.tokens.get(where)
   }
 
   async addAuthToken(userId: UserId): Promise<string> {
     const token = generateToken()
-    await this.tokensRepo.insert({ user_id: userId, token, type: 'auth' })
+    await this.repos.tokens.insert({ user_id: userId, token, type: 'auth' })
     return token
   }
 

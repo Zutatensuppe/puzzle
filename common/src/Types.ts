@@ -522,8 +522,20 @@ export interface LeaderboardEntry {
   pieces_count: number
 }
 
-export interface Livestream {
+export interface TwitchLivestream {
   id: LivestreamId
+  title: string
+  url: string
+  user_display_name: string
+  user_thumbnail: string
+  language: string
+  viewers: number
+}
+
+export interface LivestreamsRow {
+  id: number
+  is_live: number
+  livestream_id: LivestreamId
   title: string
   url: string
   user_display_name: string
@@ -536,7 +548,7 @@ export interface ApiDataIndexData {
   gamesRunning: ApiGamesData
   gamesFinished: ApiGamesData
   leaderboards: Leaderboard[]
-  livestreams: Livestream[]
+  livestreams: LivestreamsRow[]
 }
 
 export type ApiDataFinishedGames = ApiGamesData

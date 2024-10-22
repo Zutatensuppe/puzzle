@@ -22,7 +22,15 @@ export class UsersRepo {
     // pass
   }
 
-  async insert(user: Partial<UserRow>): Promise<UserId> {
+  async count(): Promise<number> {
+    return await this.db.count(TABLE)
+  }
+
+  async getAll(offset: number, limit: number): Promise<UserRow[]> {
+    return await this.db.getMany(TABLE, undefined, [{ id: -1 }], { offset, limit })
+  }
+
+  async insert(user: Omit<UserRow, 'id'>): Promise<UserId> {
     if (user.email) {
       user.email = Crypto.encrypt(user.email)
     }
@@ -58,5 +66,25 @@ export class UsersRepo {
     const relations = await this.db.getMany('user_x_user_group', { user_id: userId })
     const groupIds = relations.map(r => r.user_group_id)
     return await this.db.getMany('user_groups', { id: { '$in': groupIds }}) as UserGroupRow[]
+  }
+
+  async getUserGroupByName(name: string): Promise<UserGroupRow | null> {
+    return await this.db.get('user_groups', { name })
+  }
+
+  async isInGroup(userId: UserId, groupName: string): Promise<boolean> {
+    const adminGroup = await this.getUserGroupByName(groupName)
+    if (!adminGroup) {
+      return false
+    }
+    const userXAdmin = await this.db.get('user_x_user_group', {
+      user_group_id: adminGroup.id,
+      user_id: userId,
+    })
+    return !!userXAdmin
+  }
+
+  async getUserGroups(): Promise<UserGroupRow[]> {
+    return await this.db.getMany('user_groups', undefined, [{ id: -1 }])
   }
 }

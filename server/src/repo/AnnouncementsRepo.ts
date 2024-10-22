@@ -19,7 +19,7 @@ export class AnnouncementsRepo {
     return await this.db.getMany(TABLE, undefined, [{ created: -1 }])
   }
 
-  async insert(announcement: Partial<AnnouncementsRow>): Promise<AnnouncementId> {
+  async insert(announcement: Omit<AnnouncementsRow, 'id'>): Promise<AnnouncementId> {
     return await this.db.insert(TABLE, announcement, 'id') as AnnouncementId
   }
 

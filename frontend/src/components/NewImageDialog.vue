@@ -362,7 +362,7 @@ const onDrop = async (evt: DragEvent): Promise<boolean> => {
   try {
     const f = await gfx.loadFileToBlob(file)
     preview(f)
-  } catch (e) {
+  } catch {
     toast('Image could not be loaded (Error 2)', 'error')
   }
   return false
