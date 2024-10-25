@@ -56,15 +56,22 @@ export class ImagesRepo {
 
   async getAllWithGameCount(offset: number, limit: number): Promise<ImageRowWithCount[]> {
     return await this.db._getMany(`
+      WITH counts AS (
+        SELECT
+          COUNT(*)::int AS count,
+          image_id
+        FROM
+          games
+        GROUP BY image_id
+      )
       SELECT
-        i.*,
-        count(g.id) AS game_count
+        images.*,
+        COALESCE(counts.count, 0) AS games_count,
         COALESCE(u.name, '') AS uploader_user_name
       FROM ${TABLE} images
-        LEFT JOIN games g ON g.image_id = images.id
+        LEFT JOIN counts ON counts.image_id = images.id
         LEFT JOIN users u ON u.id = images.uploader_user_id
-      GROUP BY i.id
-      ORDER BY i.id DESC
+      ORDER BY images.id DESC
       ${this.db._buildLimit({ offset, limit })};
     `)
   }
