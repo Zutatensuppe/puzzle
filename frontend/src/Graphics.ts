@@ -89,7 +89,7 @@ export class Graphics {
 
   public dataUrlToBlob(dataUrl: string): Blob {
     const arr = dataUrl.split(',')
-    const m = arr[0].match(/:(.*?)/)
+    const m = arr[0].match(/:(.*?);/)
     if (!m) {
       throw new Error('dataUrlToBlob: Could not parse data url')
     }
