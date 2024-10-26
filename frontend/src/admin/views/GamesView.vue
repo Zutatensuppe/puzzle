@@ -10,7 +10,10 @@
       :pagination="games.pagination"
       @click="onPagination"
     />
-    <v-table density="compact" v-if="games">
+    <v-table
+      v-if="games"
+      density="compact"
+    >
       <thead>
         <tr>
           <th>Preview</th>
@@ -34,15 +37,21 @@
           </td>
           <td valign="top">
             <div>
+              <div v-if="serverInfo?.gameLogInfoByGameIds[item.id] && (serverInfo?.gameLogInfoByGameIds[item.id].logEntriesToFlush || 0) > 0">
+                📓 {{ (serverInfo?.gameLogInfoByGameIds[item.id].logEntriesToFlush || 0) }} log <span v-if="(serverInfo?.gameLogInfoByGameIds[item.id].logEntriesToFlush || 0) > 1">entries</span><span v-else>entry</span> to flush
+              </div>
               <div v-if="(serverInfo?.socketCountsByGameIds[item.id] || 0) > 0">
                 🔴 {{ (serverInfo?.socketCountsByGameIds[item.id] || 0) }} player<span v-if="(serverInfo?.socketCountsByGameIds[item.id] || 0) > 1">s</span> connected
               </div>
               <div v-else>
                 No players connected
               </div>
-              <hr />
+              <hr>
               <div style="height: 100px; overflow-y: auto;">
-                <div v-for="player in sortedPlayers(item)">
+                <div
+                  v-for="player in sortedPlayers(item)"
+                  :key="`${item.id}-${player[0]}`"
+                >
                   <div
                     :style="player[5] === 'ukraine' ? {
                       'backgroundImage': 'linear-gradient(180deg, rgba(0,87,183,1) 0%, rgba(0,87,183,1) 50%, rgba(255,221,0,1) 50%)',
@@ -63,12 +72,12 @@
                 target="_blank"
               >{{ item.id }}</a>
               <span class="text-disabled">Image-Id: </span> {{ item.image_id }}
-              <span class="text-disabled">Private:</span> {{ item.private ? true : false }}
+              <span class="text-disabled">Private:</span> <span :class="{ 'color-private': item.private }">{{ item.private ? '✓' : '✖' }}</span>
             </div>
             <div class="d-flex ga-3">
               <span class="text-disabled">Creator:</span> {{ item.creator_user_id || '-' }}
               <span class="text-disabled">Created:</span> {{ item.created }}
-              <span class="text-disabled">Finished:</span> {{ item.finished || '-' }}
+              <span class="text-disabled">Finished:</span> <span :class="{ 'color-finished': item.finished }">{{ item.finished || '-' }}</span>
             </div>
             <div class="d-flex ga-3">
               <span class="text-disabled">Pieces:</span> {{ item.pieces_count }}
@@ -88,7 +97,7 @@
             >
               DELETE
             </v-btn>
-            <br />
+            <br>
             <v-btn
               block
               @click="fixPieces(item.id)"

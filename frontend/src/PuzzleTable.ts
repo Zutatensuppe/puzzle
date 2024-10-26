@@ -3,6 +3,7 @@ import { Dim, Point, Rect } from './Geometry'
 import { GameId, PlayerSettingsData } from '../../common/src/Types'
 import { logger } from '../../common/src/Util'
 import { Graphics } from './Graphics'
+import { getTextureInfoByPlayerSettings } from './PuzzleTableTextureInfo'
 
 const log = logger('PuzzleTable.ts')
 
@@ -10,25 +11,18 @@ const cache: Record<string, HTMLCanvasElement | null> = {}
 
 export class PuzzleTable {
   constructor(
-    private graphics: Graphics,
-  ) {
-    // pass
-  }
+    private readonly graphics: Graphics,
+  ) {}
 
-  async loadTexture(
+  public async loadTextureToCanvas(
     gameId: GameId,
     settings: PlayerSettingsData,
   ): Promise<HTMLCanvasElement | null> {
-    const textureNameOrUrl = settings.useCustomTableTexture
-      ? settings.customTableTexture
-      : settings.tableTexture
-    if (!textureNameOrUrl) {
+    const textureInfo = getTextureInfoByPlayerSettings(settings)
+    if (!textureInfo) {
       return null
     }
-    const scale = settings.useCustomTableTexture
-      ? settings.customTableTextureScale
-      : 1 // determined later, but always fixed for cache key
-    const cacheKey = gameId + '___' + textureNameOrUrl + '___' + scale
+    const cacheKey = `${gameId}___${textureInfo.url}___${textureInfo.scale}`
     if (cache[cacheKey]) {
       return cache[cacheKey]
     }
@@ -42,47 +36,42 @@ export class PuzzleTable {
     const boardPos = GameCommon.getBoardPos(gameId)
     const boardDim = GameCommon.getBoardDim(gameId)
 
-    const map: Record<string, { url: string, scale: number, isDark: boolean }> = {
-      dark: { url: '/assets/textures/wood-dark.jpg', scale: 1.5, isDark: true },
-      light: { url: '/assets/textures/wood-light.jpg', scale: 1.5, isDark: false },
-      brown: { url: '/assets/textures/Oak-none-3275x2565mm-Architextures.jpg', scale: 2.5, isDark: true },
-      aiwood: { url: '/assets/textures/ai-wood.png', scale: 1.5, isDark: true },
-    }
-
-    const obj = textureNameOrUrl in map
-      ? map[textureNameOrUrl]
-      // TODO: dark or light could be determined by the image? or another setting prop
-      : { url: textureNameOrUrl, scale, isDark: false }
     try {
-      const bitmap = await this.graphics.loadImageToBitmap(obj.url)
-      const texture = await this._createTableGfx(bounds, boardPos, boardDim, bitmap, obj.scale, obj.isDark)
+      const url = textureInfo.url.match(/^https?:\/\//)
+        ? `/api/proxy?${new URLSearchParams({ url: textureInfo.url })}`
+        : textureInfo.url
+      const bitmap = await this.graphics.loadImageToBitmap(url)
+
+      const texture = this._createTableGfx(bounds, boardPos, boardDim, bitmap, textureInfo.scale, this.graphics.isDark(bitmap))
       cache[cacheKey] = texture
       return cache[cacheKey]
     } catch (e) {
-      log.error('unable to load', obj.url)
+      log.error('unable to load', textureInfo.url)
       log.error(e)
       return null
     }
   }
 
-  getImage(
+  public getImage(
     gameId: GameId,
     settings: PlayerSettingsData,
   ): HTMLCanvasElement | null {
-    const textureNameOrUrl = settings.useCustomTableTexture ? settings.customTableTexture : settings.tableTexture
-    const scale = settings.useCustomTableTexture ? settings.customTableTextureScale : 1 // determined later, but always fixed for cache key
-    const cacheKey = gameId + '___' + textureNameOrUrl + '___' + scale
+    const textureInfo = getTextureInfoByPlayerSettings(settings)
+    if (!textureInfo) {
+      return null
+    }
+    const cacheKey = `${gameId}___${textureInfo.url}___${textureInfo.scale}`
     return cache[cacheKey] || null
   }
 
-  async _createTableGfx(
+  private _createTableGfx(
     bounds: Rect,
     boardPos: Point,
     boardDim: Dim,
     bitmap: ImageBitmap,
     scale: number,
     isDark: boolean,
-  ): Promise<HTMLCanvasElement> {
+  ): HTMLCanvasElement {
     const tableCanvas = this.graphics.repeat(bitmap, bounds, scale)
     const adjustedBounds: Dim = { w: tableCanvas.width, h: tableCanvas.height }
     const ratio = adjustedBounds.w / bounds.w

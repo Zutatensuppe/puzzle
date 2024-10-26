@@ -11,10 +11,10 @@ import Nav from '../components/Nav.vue'
 import LoginForm from '../../components/LoginForm.vue'
 
 const loggedIn = ref<boolean>(false)
-onMounted(async () => {
+onMounted(() => {
   const me = user.getMe()
   loggedIn.value = !!(me && me.type === 'user')
-  user.eventBus.on('login', async () => {
+  user.eventBus.on('login', () => {
     console.log('login')
     loggedIn.value = true
   })

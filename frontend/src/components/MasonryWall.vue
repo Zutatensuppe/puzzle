@@ -133,7 +133,7 @@ async function redraw(force = false) {
 const resizeObserver = new ResizeObserver(() => redraw())
 
 onMounted(() => {
-  redraw()
+  void redraw()
   resizeObserver.observe(wall.value)
 })
 

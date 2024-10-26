@@ -1,9 +1,5 @@
 // @ts-ignore
-import grabMask from './assets/gfx/grab_mask.png'
-// @ts-ignore
 import grab from './assets/gfx/grab.png'
-// @ts-ignore
-import handMask from './assets/gfx/hand_mask.png'
 // @ts-ignore
 import hand from './assets/gfx/hand.png'
 
@@ -25,6 +21,7 @@ import click2 from './assets/sounds/click2.mp3'
 // @ts-ignore
 import rotate from './assets/sounds/rotate2.mp3'
 import { Graphics } from './Graphics'
+import { COLOR_MAGENTA } from '../../common/src/Color'
 
 export class Assets {
   public Audio!: {
@@ -34,6 +31,8 @@ export class Assets {
   }
 
   public Gfx!: {
+    GRAB_RAW: ImageBitmap
+    HAND_RAW: ImageBitmap
     GRAB: ImageBitmap
     HAND: ImageBitmap
     GRAB_MASK: ImageBitmap
@@ -53,11 +52,15 @@ export class Assets {
       ROTATE: new Audio(rotate),
     }
 
+    const grabGfx = await graphics.loadImageToBitmap(grab)
+    const handGfx = await graphics.loadImageToBitmap(hand)
     this.Gfx = {
-      GRAB: await graphics.loadImageToBitmap(grab),
-      HAND: await graphics.loadImageToBitmap(hand),
-      GRAB_MASK: await graphics.loadImageToBitmap(grabMask),
-      HAND_MASK: await graphics.loadImageToBitmap(handMask),
+      GRAB_RAW: grabGfx,
+      HAND_RAW: handGfx,
+      GRAB: await graphics.removeColor(grabGfx, COLOR_MAGENTA),
+      HAND: await graphics.removeColor(handGfx, COLOR_MAGENTA),
+      GRAB_MASK: await graphics.extractColor(grabGfx, COLOR_MAGENTA),
+      HAND_MASK: await graphics.extractColor(handGfx, COLOR_MAGENTA),
       badgeMask: await graphics.loadImageToBitmap(badgeMask),
       badgeOver: await graphics.loadImageToBitmap(badgeOver),
       badgeOverIdle: await graphics.loadImageToBitmap(badgeOverIdle),

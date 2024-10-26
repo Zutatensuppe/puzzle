@@ -374,6 +374,11 @@ export interface BasicPlayerInfo {
   points: number
 }
 
+export enum Renderer {
+  WEBGL2 = 'webgl2',
+  CANVAS = 'canvas',
+}
+
 export interface PlayerSettingsData {
   background: string
   showTable: boolean
@@ -389,6 +394,7 @@ export interface PlayerSettingsData {
   soundsVolume: number
   showPlayerNames: boolean
   mouseRotate: boolean
+  renderer: Renderer
 }
 
 export const PLAYER_SETTINGS = {
@@ -406,6 +412,7 @@ export const PLAYER_SETTINGS = {
   PLAYER_COLOR: 'player_color',
   PLAYER_NAME: 'player_name',
   SHOW_PLAYER_NAMES: 'show_player_names',
+  RENDERER: 'renderer',
 }
 
 export const PLAYER_SETTINGS_DEFAULTS = {
@@ -423,6 +430,7 @@ export const PLAYER_SETTINGS_DEFAULTS = {
   PLAYER_COLOR: '#ffffff',
   PLAYER_NAME: 'anon',
   SHOW_PLAYER_NAMES: true,
+  RENDERER: Renderer.WEBGL2,
 }
 
 export const createDefaultPlayerSettingsData = () => ({
@@ -440,6 +448,7 @@ export const createDefaultPlayerSettingsData = () => ({
   soundsVolume: PLAYER_SETTINGS_DEFAULTS.SOUND_VOLUME,
   showPlayerNames: PLAYER_SETTINGS_DEFAULTS.SHOW_PLAYER_NAMES,
   mouseRotate: PLAYER_SETTINGS_DEFAULTS.MOUSE_ROTATE,
+  renderer: PLAYER_SETTINGS_DEFAULTS.RENDERER,
 })
 
 export interface GameStatus {
@@ -573,8 +582,20 @@ export interface LeaderboardEntry {
   pieces_count: number
 }
 
-export interface Livestream {
+export interface TwitchLivestream {
   id: LivestreamId
+  title: string
+  url: string
+  user_display_name: string
+  user_thumbnail: string
+  language: string
+  viewers: number
+}
+
+export interface LivestreamsRow {
+  id: number
+  is_live: number
+  livestream_id: LivestreamId
   title: string
   url: string
   user_display_name: string
@@ -587,7 +608,7 @@ export interface ApiDataIndexData {
   gamesRunning: ApiGamesData
   gamesFinished: ApiGamesData
   leaderboards: Leaderboard[]
-  livestreams: Livestream[]
+  livestreams: LivestreamsRow[]
 }
 
 export type ApiDataFinishedGames = ApiGamesData
@@ -718,7 +739,21 @@ export interface MergeClientIdsIntoUserResult {
   userIdsWithoutIdentities: UserId[]
 }
 
+export interface LogIndex {
+  gameId: GameId
+  total: number
+  lastTs: Timestamp
+  currentFile: string
+  perFile: number
+}
+
+export type GameLogInfoByGameIds = Record<GameId, {
+  logIndex: LogIndex
+  logEntriesToFlush: number
+}>
+
 export interface ServerInfo {
   socketCount: number
   socketCountsByGameIds: Record<GameId, number>
+  gameLogInfoByGameIds: GameLogInfoByGameIds
 }

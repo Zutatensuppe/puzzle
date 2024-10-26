@@ -2,13 +2,13 @@ import { DefaultScoreMode, DefaultShapeMode, DefaultSnapMode, LogEntry } from '.
 
 export const parseLogFileContents = (
   contents: string,
-  offset: number = 0,
+  logFileIdx: number = 0,
 ): LogEntry[] => {
   const lines = contents.split('\n')
   const log = lines.filter(line => !!line).map(line => {
     return JSON.parse(`[${line}]`)
   })
-  if (offset === 0 && log.length > 0) {
+  if (logFileIdx === 0 && log.length > 0) {
     log[0][5] = DefaultScoreMode(log[0][5])
     log[0][6] = DefaultShapeMode(log[0][6])
     log[0][7] = DefaultSnapMode(log[0][7])

@@ -90,7 +90,7 @@ const statusMessages = ref<InstanceType<typeof StatusMessages>>() as Ref<Instanc
 const players = ref<GamePlayers>({ active: [], idle: [] })
 const status = ref<GameStatus>({ finished: false, duration: 0, piecesDone: 0, piecesTotal: 0 })
 const dialog = ref<boolean>(false)
-const dialogPersistent = ref<boolean|undefined>(undefined)
+const dialogPersistent = ref<boolean | undefined>(undefined)
 const overlay = ref<string>('')
 const connectionState = ref<CONN_STATE>(CONN_STATE.NOT_CONNECTED)
 const cuttingPuzzle = ref<boolean>(true)
@@ -119,7 +119,7 @@ const onResize = (): void => {
 
 const reconnect = (): void => {
   if (g.value) {
-    g.value.connect()
+    void g.value.connect()
   }
 }
 

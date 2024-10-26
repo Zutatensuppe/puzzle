@@ -21,32 +21,32 @@ export class GameReplay extends Game<ReplayHud> {
   private lastGameTs: number = 0
   private gameStartTs: number = 0
   private skipNonActionPhases: boolean = true
-  private dataOffset: number = 0
+  private logFileIdx: number = 0
   private gameTs!: number
   private to: ReturnType<typeof setTimeout> | null = null
 
-  getMode(): string {
+  public getMode(): string {
     return MODE_REPLAY
   }
 
-  shouldDrawPlayer(_player: Player): boolean {
+  public shouldDrawPlayer(_player: Player): boolean {
     return true
   }
 
-  time(): number {
+  public time(): number {
     return this.lastGameTs
   }
 
-  async queryNextReplayBatch (): Promise<LogEntry[]> {
-    const offset = this.dataOffset
-    this.dataOffset += 10000 // meh
+  public async queryNextReplayBatch (): Promise<LogEntry[]> {
+    const logFileIdx = this.logFileIdx
+    this.logFileIdx++
 
-    const res = await _api.pub.replayLogData({ gameId: this.gameId, offset })
+    const res = await _api.pub.replayLogData({ gameId: this.gameId, logFileIdx })
     if (res.status !== 200) {
       throw new Error('Replay not found')
     }
     const text = res.text
-    const log = parseLogFileContents(text, offset)
+    const log = parseLogFileContents(text, logFileIdx)
 
     // cut log that was already handled
     this.log = this.log.slice(this.logPointer)
@@ -59,7 +59,7 @@ export class GameReplay extends Game<ReplayHud> {
     return log
   }
 
-  async connect(): Promise<void> {
+  public async connect(): Promise<void> {
     const replayGameDataRes = await _api.pub.replayGameData({ gameId: this.gameId })
     if (replayGameDataRes.status !== 200) {
       throw '[ 2024-04-14 no replay data received ]'
@@ -83,12 +83,12 @@ export class GameReplay extends Game<ReplayHud> {
     this.requireRerender()
   }
 
-  doSetSpeedStatus(): void {
+  public doSetSpeedStatus(): void {
     this.hud.setReplaySpeed(this.speeds[this.speedIdx])
     this.hud.setReplayPaused(this.paused)
   }
 
-  replayOnSpeedUp(): void {
+  public replayOnSpeedUp(): void {
     if (this.speedIdx + 1 < this.speeds.length) {
       this.speedIdx++
       this.doSetSpeedStatus()
@@ -96,7 +96,7 @@ export class GameReplay extends Game<ReplayHud> {
     }
   }
 
-  replayOnSpeedDown(): void {
+  public replayOnSpeedDown(): void {
     if (this.speedIdx >= 1) {
       this.speedIdx--
       this.doSetSpeedStatus()
@@ -104,13 +104,13 @@ export class GameReplay extends Game<ReplayHud> {
     }
   }
 
-  replayOnPauseToggle(): void {
+  public replayOnPauseToggle(): void {
     this.paused = !this.paused
     this.doSetSpeedStatus()
     this.showStatusMessage(this.paused ? 'Paused' : 'Playing')
   }
 
-  handleEvent(evt: GameEvent): void {
+  public handleEvent(evt: GameEvent): void {
     // LOCAL ONLY CHANGES
     // -------------------------------------------------------------
     const type = evt[0]
@@ -183,7 +183,7 @@ export class GameReplay extends Game<ReplayHud> {
     }
   }
 
-  unload() {
+  public unload() {
     if (this.to) {
       clearTimeout(this.to)
     }
@@ -191,33 +191,33 @@ export class GameReplay extends Game<ReplayHud> {
     this.unregisterEvents()
   }
 
-  speedUp() {
+  public speedUp() {
     this.replayOnSpeedUp()
   }
 
-  speedDown() {
+  public speedDown() {
     this.replayOnSpeedDown()
   }
 
-  togglePause() {
+  public togglePause() {
     this.replayOnPauseToggle()
   }
 
-  unpause() {
+  public unpause() {
     if (!this.paused) {
       return
     }
     this.togglePause()
   }
 
-  pause() {
+  public pause() {
     if (this.paused) {
       return
     }
     this.togglePause()
   }
 
-  async init(): Promise<void> {
+  public async init(): Promise<void> {
     await this.connect()
     await this.initBaseProps()
     this.doSetSpeedStatus()

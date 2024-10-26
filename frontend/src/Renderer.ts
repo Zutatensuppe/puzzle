@@ -30,9 +30,9 @@ export class Renderer {
 
   private static RotationMap: Record<PieceRotation, number> = {
     [PieceRotation.R0]: 0,
-    [PieceRotation.R90]: Math.PI/2,
+    [PieceRotation.R90]: Math.PI / 2,
     [PieceRotation.R180]: Math.PI,
-    [PieceRotation.R270]: -Math.PI/2,
+    [PieceRotation.R270]: -Math.PI / 2,
   }
 
   constructor(
@@ -58,7 +58,7 @@ export class Renderer {
     return true
   }
 
-  async init (graphics: Graphics) {
+  async init(graphics: Graphics) {
     if (!puzzleBitmapCache[this.gameId]) {
       // log.log('loading puzzle bitmap', this.gameId)
       puzzleBitmapCache[this.gameId] = await PuzzleGraphics.loadPuzzleBitmap(
@@ -86,13 +86,13 @@ export class Renderer {
     }
   }
 
-  async loadTableTexture (settings: PlayerSettingsData): Promise<void> {
+  async loadTableTexture(settings: PlayerSettingsData): Promise<void> {
     if (this.puzzleTable) {
-      await this.puzzleTable.loadTexture(this.gameId, settings)
+      await this.puzzleTable.loadTextureToCanvas(this.gameId, settings)
     }
   }
 
-  async render (
+  render (
     canvas: HTMLCanvasElement,
     ctx: CanvasRenderingContext2D,
     viewport: Camera,
@@ -208,7 +208,7 @@ export class Renderer {
       const players = GameCommon.getActivePlayers(this.gameId, ts)
       for (const p of players) {
         if (shouldDrawPlayer(p)) {
-          bmp = await playerCursors.get(p)
+          bmp = playerCursors.get(p)
           pos = viewport.worldToViewport(p)
           ctx.drawImage(bmp, pos.x - playerCursors.CURSOR_W_2, pos.y - playerCursors.CURSOR_H_2)
           if (this.boundingBoxes) ctx.strokeRect(pos.x - bmp.width / 2, pos.y - bmp.height / 2, bmp.width, bmp.height)

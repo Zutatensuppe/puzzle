@@ -49,10 +49,10 @@ const run = async () => {
     routes: [
       { name: 'index', path: '/', component: Index, meta: { title: 'Jigsaw Hyottoko Club' } },
       { name: 'new-game', path: '/new-game', component: NewGame, meta: { title: 'New Game' } },
-      { name: 'featured-artist', path: '/featured-artist/:artist', component: FeaturedArtistView, meta: { title: 'Featured Artist'} },
+      { name: 'featured-artist', path: '/featured-artist/:artist', component: FeaturedArtistView, meta: { title: 'Featured Artist' } },
 
       // Canny.io feedback
-      { path: '/feedback', redirect: { name: 'bug-reports'} },
+      { path: '/feedback', redirect: { name: 'bug-reports' } },
       { name: 'bug-reports', path: '/feedback/bug-reports', component: CannyBugReportsView, meta: { title: 'Bug Reports' } },
       { path: '/feedback/bug-reports/:catchAll(.*)', component: CannyBugReportsView, meta: { title: 'Bug Reports' } },
       { name: 'feature-requests', path: '/feedback/feature-requests', component: CannyFeatureRequestsView, meta: { title: 'Feature Requests' } },
@@ -91,7 +91,6 @@ const run = async () => {
   app.use(router)
   app.use(vuetify)
   initToast(app)
-  // eslint-disable-next-line
   app.component('Icon', Icon)
   app.mount('#app')
 }

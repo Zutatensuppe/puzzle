@@ -10,7 +10,7 @@
         :image="item"
         :edit="edit"
         @click="emit('imageClicked', item)"
-        @editClick="emit('imageEditClicked', item)"
+        @edit-click="emit('imageEditClicked', item)"
       />
     </template>
   </MasonryWall>

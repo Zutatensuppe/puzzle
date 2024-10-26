@@ -189,20 +189,47 @@
           label="Rotate via mouse wheel"
         />
       </fieldset>
+
+      <fieldset>
+        <legend>Graphics</legend>
+
+        <v-radio-group
+          v-model="playerSettings.renderer"
+          inline
+          density="comfortable"
+          hide-details
+        >
+          <v-radio
+            label="WebGL2 (fast)"
+            value="webgl2"
+            :disabled="!webGlSupported"
+          />
+          <v-radio
+            label="Canvas (slow)"
+            value="canvas"
+          />
+        </v-radio-group>
+        <div v-if="!webGlSupported">
+          WebGL2 is not supported by your browser.
+        </div>
+        <div v-if="initialRenderer !== playerSettings.renderer">
+          Please reload the page to apply the new rendering settings.
+        </div>
+      </fieldset>
     </v-container>
   </v-card>
 </template>
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
-import { GamePlay } from '../GamePlay'
-import { GameReplay } from '../GameReplay'
 
 import IngameColorPicker from './IngameColorPicker.vue'
 import { PlayerSettingsData } from '../../../common/src/Types'
 import user, { User } from '../user'
+import { GameInterface } from '../Game'
+import { hasWebGL2Support } from '../util'
 
 const props = defineProps<{
-  game: GamePlay | GameReplay
+  game: GameInterface
 }>()
 
 const emit = defineEmits<{
@@ -211,6 +238,8 @@ const emit = defineEmits<{
 
 const playerSettings = ref<PlayerSettingsData>(JSON.parse(JSON.stringify(props.game.getPlayerSettings().getSettings())))
 const isUkraineColor = ref<boolean>(playerSettings.value.color === 'ukraine')
+const initialRenderer = ref<'webgl2' | 'canvas'>(playerSettings.value.renderer)
+const webGlSupported = hasWebGL2Support()
 
 const onColorPickerOpen = () => {
   emit('dialogChange', [
@@ -240,7 +269,7 @@ const emitChanges = (): void => {
     newSettings.color = 'ukraine'
   }
   props.game.getPlayerSettings().apply(newSettings)
-  props.game.loadTableTexture(newSettings)
+  void props.game.loadTableTexture(newSettings)
 }
 
 const me = ref<User|null>(null)

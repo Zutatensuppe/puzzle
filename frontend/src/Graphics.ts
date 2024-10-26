@@ -1,9 +1,24 @@
 'use strict'
 
+import { Color, colorEquals } from '../../common/src/Color'
 import { Rect } from './Geometry'
 
 export class Graphics {
-  grayscaledCanvas(
+  private static instance: Graphics
+
+  public static IS_DARK_THRESHOLD = 175
+
+  private constructor() {
+  }
+
+  public static getInstance(): Graphics {
+    if (!Graphics.instance) {
+      Graphics.instance = new Graphics()
+    }
+    return Graphics.instance
+  }
+
+  public grayscaledCanvas(
     bitmap: HTMLCanvasElement,
     background: string,
     opacity: number,
@@ -33,34 +48,93 @@ export class Graphics {
     return c2
   }
 
-  createCanvas(width:number = 0, height:number = 0): HTMLCanvasElement {
-      const c = document.createElement('canvas')
-      c.width = width
-      c.height = height
-      return c
+  private imageElementToCanvas(imageElement: HTMLImageElement): HTMLCanvasElement {
+    const canvas = document.createElement('canvas')
+    const ctx = canvas.getContext('2d') as CanvasRenderingContext2D
+    canvas.width = imageElement.width
+    canvas.height = imageElement.height
+    ctx.drawImage(imageElement, 0, 0)
+    return canvas
   }
 
-  async loadImageToBitmap(imagePath: string): Promise<ImageBitmap> {
+  public createCanvas(width: number, height: number | null = null): HTMLCanvasElement {
+    const c = document.createElement('canvas')
+    c.width = width
+    c.height = height === null ? width : height
+    return c
+  }
+
+  public async loadImageToBitmap(src: string): Promise<ImageBitmap> {
+    const img = await this.loadImageToImageElement(src)
+    return await createImageBitmap(img)
+  }
+
+  public loadFileToBlob(file: File): Promise<Blob> {
+    return new Promise<Blob>((resolve, reject) => {
+      const r = new FileReader()
+      r.readAsDataURL(file)
+      r.onload = async (ev: any) => {
+        try {
+          const blob = await this.loadImageToBlob(ev.target.result)
+          resolve(blob)
+        } catch (e) {
+          reject(e)
+        }
+      }
+      r.onerror = (ev: any) => {
+        reject(ev)
+      }
+    })
+  }
+
+  public dataUrlToBlob(dataUrl: string): Blob {
+    const arr = dataUrl.split(',')
+    const m = arr[0].match(/:(.*?);/)
+    if (!m) {
+      throw new Error('dataUrlToBlob: Could not parse data url')
+    }
+    const mime = m[1]
+    const bstr = atob(arr[1])
+    let n = bstr.length
+    const u8arr = new Uint8Array(n)
+    while (n--) {
+      u8arr[n] = bstr.charCodeAt(n)
+    }
+    return new Blob([u8arr], { type: mime })
+  }
+
+  public async loadImageToBlob(src: string): Promise<Blob> {
+    const canvas = await this.loadImageToCanvas(src)
+    return this.dataUrlToBlob(canvas.toDataURL())
+  }
+
+  public async loadImageToCanvas(src: string): Promise<HTMLCanvasElement> {
+    const bitmap = await this.loadImageToImageElement(src)
+    return this.imageElementToCanvas(bitmap)
+  }
+
+  public loadImageToImageElement(src: string): Promise<HTMLImageElement> {
     return new Promise((resolve, reject) => {
       const img = new Image()
+      img.crossOrigin = 'anonymous'
       img.onload = () => {
-        void (createImageBitmap(img).then(resolve))
+        resolve(img)
       }
       img.onerror = (e) => {
         reject(e)
       }
-      img.src = imagePath
+      img.src = src
     })
   }
 
-  bitmapToImageString(bitmap: ImageBitmap): string {
+  public bitmapToImageString(bitmap: ImageBitmap): string {
     const c = this.createCanvas(bitmap.width, bitmap.height)
     const ctx = c.getContext('2d') as CanvasRenderingContext2D
     ctx.drawImage(bitmap, 0, 0)
     return c.toDataURL()
   }
 
-  resizeBitmap (
+  public resizeBitmap(
     bitmap: ImageBitmap,
     width: number,
     height: number,
@@ -71,7 +145,41 @@ export class Graphics {
     return c
   }
 
-  colorizedCanvas(
+  public async removeColor(imageBitmap: ImageBitmap, targetColor: Color) {
+    const c = this.createCanvas(imageBitmap.width, imageBitmap.height)
+    const ctx = c.getContext('2d')!
+    ctx.drawImage(imageBitmap, 0, 0)
+    const imageData = ctx.getImageData(0, 0, c.width, c.height)
+    const pixels = imageData.data
+    for (let i = 0; i < pixels.length; i += 4) {
+      const color = pixels.slice(i, i + 4) as Color
+      if (colorEquals(color, targetColor)) {
+        // make the color transparent
+        pixels[i + 3] = 0
+      }
+    }
+    ctx.putImageData(imageData, 0, 0)
+    return await createImageBitmap(c)
+  }
+
+  public async extractColor(imageBitmap: ImageBitmap, targetColor: Color) {
+    const c = this.createCanvas(imageBitmap.width, imageBitmap.height)
+    const ctx = c.getContext('2d')!
+    ctx.drawImage(imageBitmap, 0, 0)
+    const imageData = ctx.getImageData(0, 0, c.width, c.height)
+    const pixels = imageData.data
+    for (let i = 0; i < pixels.length; i += 4) {
+      const color = pixels.slice(i, i + 4) as Color
+      if (!colorEquals(color, targetColor)) {
+        // make the color transparent
+        pixels[i + 3] = 0
+      }
+    }
+    ctx.putImageData(imageData, 0, 0)
+    return await createImageBitmap(c)
+  }
+
+  public colorizedCanvas(
     bitmap: ImageBitmap,
     mask: ImageBitmap,
     color: string,
@@ -125,7 +233,7 @@ export class Graphics {
     return c
   }
 
-  repeat(
+  public repeat(
     bitmap: ImageBitmap,
     rect: Rect,
     scale: number,
@@ -150,11 +258,35 @@ export class Graphics {
     const bmw = Math.round(Math.max(bitmap.width * wratio * scale, 100))
     const bmh = Math.round(Math.max(bitmap.height * hratio * scale, 100))
     const ctx = c.getContext('2d') as CanvasRenderingContext2D
-    for (let x = 0; x < c.width; x+=bmw) {
-      for (let y = 0; y < c.height; y+=bmh) {
+    for (let x = 0; x < c.width; x += bmw) {
+      for (let y = 0; y < c.height; y += bmh) {
         ctx.drawImage(bitmap, x, y, bmw, bmh)
       }
     }
     return c
+  }
+
+  public getBrightness(img: HTMLImageElement | ImageBitmap): number {
+    const canvas = document.createElement('canvas')
+    canvas.width = img.width
+    canvas.height = img.height
+    const ctx = canvas.getContext('2d')!
+    ctx.drawImage(img, 0, 0)
+    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height)
+    const data = imageData.data
+    let r, g, b, avg
+    let colorSum = 0
+    for (let x = 0, len = data.length; x < len; x += 4) {
+      r = data[x]
+      g = data[x + 1]
+      b = data[x + 2]
+      avg = Math.floor((r + g + b) / 3)
+      colorSum += avg
+    }
+    return Math.floor(colorSum / (img.width * img.height))
+  }
+
+  public isDark(img: HTMLImageElement | ImageBitmap): boolean {
+    return this.getBrightness(img) < Graphics.IS_DARK_THRESHOLD
   }
 }

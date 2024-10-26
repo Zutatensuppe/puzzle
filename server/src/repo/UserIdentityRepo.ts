@@ -9,7 +9,7 @@ export interface IdentityRow {
   user_id: UserId
   provider_name: string
   provider_id: string
-  provider_email: string
+  provider_email: string | null
 }
 
 export class UserIdentityRepo {
@@ -17,7 +17,7 @@ export class UserIdentityRepo {
     // pass
   }
 
-  async insert(userIdentity: Partial<IdentityRow>): Promise<IdentityId> {
+  async insert(userIdentity: Omit<IdentityRow, 'id'>): Promise<IdentityId> {
     if (userIdentity.provider_email) {
       userIdentity.provider_email = Crypto.encrypt(userIdentity.provider_email)
     }

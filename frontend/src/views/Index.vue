@@ -83,44 +83,30 @@
         </v-container>
       </div>
 
-      <div class="leaderboard-container" v-if="leaderboardWeek || leaderboardMonth || leaderboardAlltime">
+      <div
+        v-if="leaderboards.length > 0"
+        class="leaderboard-container"
+      >
         <h1>Leaderboard</h1>
         <v-tabs v-model="leaderboardTab">
-          <v-tab value="week" v-if="leaderboardWeek">
-            Weekly
-          </v-tab>
-          <v-tab value="month" v-if="leaderboardMonth">
-            Monthly
-          </v-tab>
-          <v-tab value="alltime" v-if="leaderboardAlltime">
-            Alltime
+          <v-tab
+            v-for="lb in leaderboards"
+            :key="lb.id"
+            :value="lb.name"
+          >
+            {{ leaderboardConfigs[lb.name].title || lb.name }}
           </v-tab>
         </v-tabs>
-
         <v-window v-model="leaderboardTab">
-          <v-window-item value="week" v-if="leaderboardWeek">
+          <v-window-item
+            v-for="lb in leaderboards"
+            :key="lb.id"
+            :value="lb.name"
+          >
             <p class="pt-2 pb-2 text-medium-emphasis">
-              Finished puzzles within a week.
+              {{ leaderboardConfigs[lb.name].description || lb.name }}
             </p>
-            <Leaderboard
-              :lb="leaderboardWeek"
-            />
-          </v-window-item>
-          <v-window-item value="month" v-if="leaderboardMonth">
-            <p class="pt-2 pb-2 text-medium-emphasis">
-              Finished puzzles within a month.
-            </p>
-            <Leaderboard
-              :lb="leaderboardMonth"
-            />
-          </v-window-item>
-          <v-window-item value="alltime" v-if="leaderboardAlltime">
-            <p class="pt-2 pb-2 text-medium-emphasis">
-              All finished puzzles.
-            </p>
-            <Leaderboard
-              :lb="leaderboardAlltime"
-            />
+            <Leaderboard :lb="lb" />
           </v-window-item>
         </v-window>
         <div
@@ -175,7 +161,7 @@
   </v-dialog>
 </template>
 <script setup lang="ts">
-import { computed, onMounted, onBeforeUnmount, ref } from 'vue'
+import { onMounted, onBeforeUnmount, ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { ApiDataFinishedGames, ApiDataIndexData, GameInfo, ImageInfo, ImageSearchSort, Tag } from '../../../common/src/Types'
 import RunningGameTeaser from '../components/RunningGameTeaser.vue'
@@ -202,10 +188,10 @@ const login = () => {
 }
 
 const goToGame = ((game: GameInfo) => {
-  router.push({ name: 'game', params: { id: game.id } })
+  void router.push({ name: 'game', params: { id: game.id } })
 })
 const goToReplay = ((game: GameInfo) => {
-  router.push({ name: 'replay', params: { id: game.id } })
+  void router.push({ name: 'replay', params: { id: game.id } })
 })
 
 const dialog = ref<boolean>(false)
@@ -215,17 +201,31 @@ const showImageInfo = ((image: ImageInfo) => {
   imageInfo.value = image
 })
 
-const leaderboardTab = ref<string>('week')
-
-const leaderboardWeek = computed(() => {
-  return data.value?.leaderboards.find(lb => lb.name === 'week')
+const leaderboardConfigs: Record<string, { title: string, description: string }> = {
+  week: {
+    title: 'Weekly',
+    description: 'Finished puzzles within a week.',
+  },
+  month: {
+    title: 'Monthly',
+    description: 'Finished puzzles within a month.',
+  },
+  alltime: {
+    title: 'Alltime',
+    description: 'All finished puzzles.',
+  },
+}
+const leaderboards = computed(() => {
+  const list = []
+  for (const key of Object.keys(leaderboardConfigs)) {
+    const lb = data.value?.leaderboards.find(lb => lb.name === key)
+    if (lb) {
+      list.push(lb)
+    }
+  }
+  return list
 })
-const leaderboardMonth = computed(() => {
-  return data.value?.leaderboards.find(lb => lb.name === 'month')
-})
-const leaderboardAlltime = computed(() => {
-  return data.value?.leaderboards.find(lb => lb.name === 'alltime')
-})
+const leaderboardTab = ref<string>(leaderboards.value[0]?.name || '')
 
 const onPagination = async (q: { limit: number, offset: number }) => {
   if (!data.value) {
@@ -237,11 +237,11 @@ const onPagination = async (q: { limit: number, offset: number }) => {
 }
 
 const onTagClick = (tag: Tag): void => {
-  router.push({ name: 'new-game', query: { sort: ImageSearchSort.DATE_DESC, search: tag.title } })
+  void router.push({ name: 'new-game', query: { sort: ImageSearchSort.DATE_DESC, search: tag.title } })
 }
 
-onMounted(async () => {
-  onInit()
+onMounted(() => {
+  void onInit()
   user.eventBus.on('login', onInit)
   user.eventBus.on('logout', onInit)
 })

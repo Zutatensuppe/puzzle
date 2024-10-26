@@ -3,13 +3,14 @@ import GameCommon from '../../common/src/GameCommon'
 import { Renderer } from '../../common/src/Renderer'
 import { Camera } from '../../common/src/Camera'
 import { logger } from '../../common/src/Util'
+import { RendererWebgl } from './RendererWebgl'
 
 const log = logger('ImageSnapshotCreator.ts')
 
-export const createImageSnapshot = async (
+export const createImageSnapshot = (
   gameId: GameId,
   renderer: Renderer,
-): Promise<HTMLCanvasElement> => {
+): HTMLCanvasElement => {
   const boardDim = GameCommon.getBoardDim(gameId)
   const tableDim = GameCommon.getTableDim(gameId)
 
@@ -18,6 +19,7 @@ export const createImageSnapshot = async (
   canvas.height = boardDim.h
 
   const playerSettings: PlayerSettingsData = createDefaultPlayerSettingsData()
+  playerSettings.showTable = false
 
   const viewport = new Camera()
   viewport.calculateZoomCapping(boardDim, tableDim)
@@ -30,7 +32,7 @@ export const createImageSnapshot = async (
 
   // create image
   const ctx = canvas.getContext('2d') as CanvasRenderingContext2D
-  await renderer.render(
+  renderer.render(
     canvas,
     ctx,
     viewport,
@@ -44,4 +46,36 @@ export const createImageSnapshot = async (
     true,
   )
   return canvas
+}
+
+
+export const createImageSnapshotWebgl = (
+  gameId: GameId,
+  renderer: RendererWebgl,
+): string => {
+  console.log('createImageSnapshotWebgl')
+  const boardDim = GameCommon.getBoardDim(gameId)
+  const tableDim = GameCommon.getTableDim(gameId)
+
+  const playerSettings: PlayerSettingsData = createDefaultPlayerSettingsData()
+  playerSettings.showTable = false
+
+  const viewport = new Camera()
+  viewport.calculateZoomCapping(boardDim, tableDim)
+  viewport.centerFit(
+    { w: boardDim.w, h: boardDim.h },
+    tableDim,
+    boardDim,
+    0,
+  )
+
+  return renderer.renderToImageString(
+    boardDim,
+    viewport,
+    new Date().getTime(),
+    playerSettings,
+    (_piece: Piece) => true,
+    (_player: Player) => false,
+    true,
+  )
 }

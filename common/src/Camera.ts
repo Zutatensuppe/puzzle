@@ -13,9 +13,9 @@ export interface Snapshot {
 }
 
 export class Camera {
-  private x: number = 0
-  private y: number = 0
-  private curZoom: number = 1
+  public x: number = 0
+  public y: number = 0
+  public curZoom: number = 1
 
   constructor(snapshot: Snapshot | null = null) {
     if (snapshot) {

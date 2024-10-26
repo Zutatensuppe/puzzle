@@ -24,15 +24,14 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { BasicPlayerInfo, RegisteredMap, GamePlayers } from '../../../common/src/Types'
-import { GamePlay } from '../GamePlay'
-import { GameReplay } from '../GameReplay'
 import ScoreRow from './ScoreRow.vue'
 import sortBy from 'lodash/sortBy'
+import { GameInterface } from '../Game'
 
 const props = defineProps<{
   players: GamePlayers,
   registeredMap: RegisteredMap,
-  game: GamePlay | GameReplay,
+  game: GameInterface
 }>()
 
 const actives = computed((): BasicPlayerInfo[] => sortBy(props.players.active, (p: BasicPlayerInfo) => -p.points))

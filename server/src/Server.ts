@@ -22,15 +22,12 @@ import Db from './Db'
 import { Server as HttpServer } from 'http'
 import path from 'path'
 import { Images } from './Images'
-import { TokensRepo } from './repo/TokensRepo'
-import { AnnouncementsRepo } from './repo/AnnouncementsRepo'
 import { ImageResize } from './ImageResize'
-import { LeaderboardRepo } from './repo/LeaderboardRepo'
-import { ImagesRepo } from './repo/ImagesRepo'
 import { storeImageSnapshot } from './ImageSnapshots'
 import { Twitch } from './Twitch'
 import { UrlUtil } from './UrlUtil'
 import fs from './FileSystem'
+import { Repos } from './repo/Repos'
 
 const sendHtml = (res: Response, tmpl: string, data: Record<string, string> = {}): void => {
   let str = tmpl
@@ -45,6 +42,7 @@ const sendHtml = (res: Response, tmpl: string, data: Record<string, string> = {}
 const log = logger('Server.ts')
 
 export interface ServerInterface {
+  repos: Repos
   getDb: () => Db
   getMail: () => Mail
   getCanny: () => Canny
@@ -55,10 +53,6 @@ export interface ServerInterface {
   getImages: () => Images
   getUrlUtil: () => UrlUtil
   getImageResize: () => ImageResize
-  getTokensRepo: () => TokensRepo
-  getAnnouncementsRepo: () => AnnouncementsRepo
-  getLeaderboardRepo: () => LeaderboardRepo
-  getImagesRepo: () => ImagesRepo
   getTwitch: () => Twitch
   fixPieces: (gameId: GameId) => Promise<any>
 }
@@ -71,6 +65,7 @@ export class Server implements ServerInterface {
 
   constructor(
     private readonly db: Db,
+    public readonly repos: Repos,
     private readonly mail: Mail,
     private readonly canny: Canny,
     private readonly discord: Discord,
@@ -79,11 +74,7 @@ export class Server implements ServerInterface {
     private readonly users: Users,
     private readonly images: Images,
     private readonly imageResize: ImageResize,
-    private readonly tokensRepo: TokensRepo,
     private readonly urlUtil: UrlUtil,
-    private readonly announcementsRepo: AnnouncementsRepo,
-    private readonly leaderboardRepo: LeaderboardRepo,
-    private readonly imagesRepo: ImagesRepo,
     private readonly twitch: Twitch,
   ) {
     // pass
@@ -116,20 +107,8 @@ export class Server implements ServerInterface {
   getImageResize(): ImageResize {
     return this.imageResize
   }
-  getTokensRepo(): TokensRepo {
-    return this.tokensRepo
-  }
   getUrlUtil(): UrlUtil {
     return this.urlUtil
-  }
-  getAnnouncementsRepo(): AnnouncementsRepo {
-    return this.announcementsRepo
-  }
-  getLeaderboardRepo(): LeaderboardRepo {
-    return this.leaderboardRepo
-  }
-  getImagesRepo(): ImagesRepo {
-    return this.imagesRepo
   }
   getTwitch(): Twitch {
     return this.twitch
@@ -272,7 +251,7 @@ export class Server implements ServerInterface {
               throw `[game ${gameId} does not exist... ]`
             }
             const ts = Time.timestamp()
-            await this.gameService.addPlayer(gameId, clientId, ts)
+            this.gameService.addPlayer(gameId, clientId, ts)
             this.gameSockets.addSocket(gameId, socket)
 
             const game: GameType | null = GameCommon.get(gameId)
@@ -298,7 +277,7 @@ export class Server implements ServerInterface {
 
             let sendGame = false
             if (!GameCommon.playerExists(gameId, clientId)) {
-              await this.gameService.addPlayer(gameId, clientId, ts)
+              this.gameService.addPlayer(gameId, clientId, ts)
               sendGame = true
             }
             if (!this.gameSockets.socketExists(gameId, socket)) {
@@ -420,14 +399,14 @@ export class Server implements ServerInterface {
     const livestreams = await this.twitch.getLivestreams()
     const liveIds = livestreams.map(l => l.id)
 
-    const liveLivestreams = await this.db.getMany('twitch_livestreams', { is_live: 1 })
+    const liveLivestreams = await this.repos.livestreams.getLive()
     const oldLiveIds = liveLivestreams.map(l => l.livestream_id)
 
     const notLiveAnymore = oldLiveIds.filter(id => !liveIds.includes(id))
     const newLiveIds = liveIds.filter(id => !oldLiveIds.includes(id))
     const stillLiveIds = liveIds.filter(id => oldLiveIds.includes(id))
 
-    await this.db.update('twitch_livestreams', { is_live: 0 }, { livestream_id: { '$in': notLiveAnymore } })
+    await this.repos.livestreams.update({ is_live: 0 }, { livestream_id: { '$in': notLiveAnymore } })
 
     const stillLiveStreams = livestreams.filter(l => stillLiveIds.includes(l.id))
     const newLiveStreams = livestreams.filter(l => newLiveIds.includes(l.id))
@@ -443,11 +422,11 @@ export class Server implements ServerInterface {
       viewers: stream.viewers,
       is_live: 1,
     }))
-    await this.db.insertMany('twitch_livestreams', newLiveStreamRows)
+    await this.repos.livestreams.insertMany(newLiveStreamRows)
 
     // update streams that are still live
     for (const stream of stillLiveStreams) {
-      await this.db.update('twitch_livestreams', {
+      await this.repos.livestreams.update({
         title: stream.title,
         url: stream.url,
         user_display_name: stream.user_display_name,

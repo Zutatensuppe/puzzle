@@ -1,10 +1,11 @@
 {
   "editor.codeActionsOnSave": {
-    "source.fixAll.eslint": "true"
+    "source.fixAll": "explicit",
+    "source.fixAll.eslint": "always"
   },
   "eslint.validate": [
     "typescript",
-    "javascript"
+    "javascript",
   ],
   "eslint.workingDirectories": [
     "frontend",

@@ -6,7 +6,6 @@ const TABLE = 'images'
 export interface ImageRow {
   id: ImageId
   uploader_user_id: UserId
-  uploader_user_name: string
   created: Date
   filename: string
   filename_original: string
@@ -35,6 +34,7 @@ export interface TagRowWithCount extends TagRow {
 
 export interface ImageRowWithCount extends ImageRow {
   games_count: number
+  uploader_user_name: string
 }
 
 export class ImagesRepo {
@@ -46,7 +46,41 @@ export class ImagesRepo {
     return await this.db.get(TABLE, where)
   }
 
-  async insert(image: Partial<ImageRow>): Promise<ImageId> {
+  async getMany(where: WhereRaw): Promise<ImageRow[]> {
+    return await this.db.getMany(TABLE, where)
+  }
+
+  async count(): Promise<number> {
+    return await this.db.count(TABLE)
+  }
+
+  async getAllWithGameCount(offset: number, limit: number): Promise<ImageRowWithCount[]> {
+    return await this.db._getMany(`
+      WITH counts AS (
+        SELECT
+          COUNT(*)::int AS count,
+          image_id
+        FROM
+          games
+        GROUP BY image_id
+      )
+      SELECT
+        images.*,
+        COALESCE(counts.count, 0) AS games_count,
+        COALESCE(u.name, '') AS uploader_user_name
+      FROM ${TABLE} images
+        LEFT JOIN counts ON counts.image_id = images.id
+        LEFT JOIN users u ON u.id = images.uploader_user_id
+      ORDER BY images.id DESC
+      ${this.db._buildLimit({ offset, limit })};
+    `)
+  }
+
+  async delete(imageId: ImageId): Promise<void> {
+    await this.db.delete(TABLE, { id: imageId })
+  }
+
+  async insert(image: Omit<ImageRow, 'id'>): Promise<ImageId> {
     return await this.db.insert(TABLE, image, 'id') as ImageId
   }
 

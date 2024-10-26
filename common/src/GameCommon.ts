@@ -291,7 +291,7 @@ const getFinalPiecePos = (gameId: GameId, pieceIdx: number): Point => {
     x: (info.table.width - info.width) / 2,
     y: (info.table.height - info.height) / 2,
   }
-  const srcPos = srcPosByPieceIdx(gameId, pieceIdx)
+  const srcPos = getSrcPosByPieceIdx(gameId, pieceIdx)
   return Geometry.pointAdd(boardPos, srcPos)
 }
 
@@ -420,7 +420,7 @@ const getMaxZIndexByPieceIdxs = (gameId: GameId, pieceIdxs: Array<number>): numb
   return maxZ
 }
 
-function srcPosByPieceIdx(gameId: GameId, pieceIdx: number): Point {
+function getSrcPosByPieceIdx(gameId: GameId, pieceIdx: number): Point {
   const info = GAMES[gameId].puzzle.info
 
   const c = Util.coordByPieceIdxDeprecated(info, pieceIdx)
@@ -1312,6 +1312,7 @@ export default {
   getRng,
   getPuzzleWidth,
   getPuzzleHeight,
+  getSrcPosByPieceIdx,
   getPiecesSortedByZIndex,
   getFirstOwnedPiece,
   getPieceDrawOffset,
