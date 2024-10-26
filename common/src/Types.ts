@@ -375,80 +375,80 @@ export interface BasicPlayerInfo {
 }
 
 export enum Renderer {
-  WEBGL2 = 'webgl2',
   CANVAS = 'canvas',
+  WEBGL2 = 'webgl2',
 }
 
 export interface PlayerSettingsData {
   background: string
-  showTable: boolean
-  tableTexture: string
-  useCustomTableTexture: boolean
+  color: string
   customTableTexture: string
   customTableTextureScale: number
-  color: string
-  name: string
-  soundsEnabled: boolean
-  otherPlayerClickSoundEnabled: boolean
-  rotateSoundEnabled: boolean
-  soundsVolume: number
-  showPlayerNames: boolean
   mouseRotate: boolean
+  name: string
+  otherPlayerClickSoundEnabled: boolean
   renderer: Renderer
+  rotateSoundEnabled: boolean
+  showPlayerNames: boolean
+  showTable: boolean
+  soundsEnabled: boolean
+  soundsVolume: number
+  tableTexture: string
+  useCustomTableTexture: boolean
 }
 
 export const PLAYER_SETTINGS = {
-  SOUND_VOLUME: 'sound_volume',
-  SOUND_ENABLED: 'sound_enabled',
-  OTHER_PLAYER_CLICK_SOUND_ENABLED: 'other_player_click_sound_enabled',
-  ROTATE_SOUND_ENABLED: 'rotate_sound_enabled',
-  MOUSE_ROTATE: 'mouse_rotate',
   COLOR_BACKGROUND: 'bg_color',
-  SHOW_TABLE: 'show_table',
-  TABLE_TEXTURE: 'table_texture',
-  USE_CUSTOM_TABLE_TEXTURE: 'use_custom_table_texture',
-  CUSTOM_TABLE_TEXTURE: 'custom_table_texture',
   CUSTOM_TABLE_TEXTURE_SCALE: 'custom_table_texture_scale',
+  CUSTOM_TABLE_TEXTURE: 'custom_table_texture',
+  MOUSE_ROTATE: 'mouse_rotate',
+  OTHER_PLAYER_CLICK_SOUND_ENABLED: 'other_player_click_sound_enabled',
   PLAYER_COLOR: 'player_color',
   PLAYER_NAME: 'player_name',
-  SHOW_PLAYER_NAMES: 'show_player_names',
   RENDERER: 'renderer',
+  ROTATE_SOUND_ENABLED: 'rotate_sound_enabled',
+  SHOW_PLAYER_NAMES: 'show_player_names',
+  SHOW_TABLE: 'show_table',
+  SOUND_ENABLED: 'sound_enabled',
+  SOUND_VOLUME: 'sound_volume',
+  TABLE_TEXTURE: 'table_texture',
+  USE_CUSTOM_TABLE_TEXTURE: 'use_custom_table_texture',
 }
 
 export const PLAYER_SETTINGS_DEFAULTS = {
-  SOUND_VOLUME: 100,
-  SOUND_ENABLED: true,
-  OTHER_PLAYER_CLICK_SOUND_ENABLED: true,
-  ROTATE_SOUND_ENABLED: true,
-  MOUSE_ROTATE: true,
   COLOR_BACKGROUND: '#222222',
-  SHOW_TABLE: true,
-  TABLE_TEXTURE: 'dark',
-  USE_CUSTOM_TABLE_TEXTURE: false,
-  CUSTOM_TABLE_TEXTURE: '',
   CUSTOM_TABLE_TEXTURE_SCALE: 1.0,
+  CUSTOM_TABLE_TEXTURE: '',
+  MOUSE_ROTATE: true,
+  OTHER_PLAYER_CLICK_SOUND_ENABLED: true,
   PLAYER_COLOR: '#ffffff',
   PLAYER_NAME: 'anon',
-  SHOW_PLAYER_NAMES: true,
   RENDERER: Renderer.WEBGL2,
+  ROTATE_SOUND_ENABLED: true,
+  SHOW_PLAYER_NAMES: true,
+  SHOW_TABLE: true,
+  SOUND_ENABLED: true,
+  SOUND_VOLUME: 100,
+  TABLE_TEXTURE: 'dark',
+  USE_CUSTOM_TABLE_TEXTURE: false,
 }
 
-export const createDefaultPlayerSettingsData = () => ({
+export const createDefaultPlayerSettingsData = (): PlayerSettingsData => ({
   background: PLAYER_SETTINGS_DEFAULTS.COLOR_BACKGROUND,
-  showTable: PLAYER_SETTINGS_DEFAULTS.SHOW_TABLE,
-  tableTexture: PLAYER_SETTINGS_DEFAULTS.TABLE_TEXTURE,
-  useCustomTableTexture: PLAYER_SETTINGS_DEFAULTS.USE_CUSTOM_TABLE_TEXTURE,
+  color: PLAYER_SETTINGS_DEFAULTS.PLAYER_COLOR,
   customTableTexture: PLAYER_SETTINGS_DEFAULTS.CUSTOM_TABLE_TEXTURE,
   customTableTextureScale: PLAYER_SETTINGS_DEFAULTS.CUSTOM_TABLE_TEXTURE_SCALE,
-  color: PLAYER_SETTINGS_DEFAULTS.PLAYER_COLOR,
-  name: PLAYER_SETTINGS_DEFAULTS.PLAYER_NAME,
-  soundsEnabled: PLAYER_SETTINGS_DEFAULTS.SOUND_ENABLED,
-  otherPlayerClickSoundEnabled: PLAYER_SETTINGS_DEFAULTS.OTHER_PLAYER_CLICK_SOUND_ENABLED,
-  rotateSoundEnabled: PLAYER_SETTINGS_DEFAULTS.ROTATE_SOUND_ENABLED,
-  soundsVolume: PLAYER_SETTINGS_DEFAULTS.SOUND_VOLUME,
-  showPlayerNames: PLAYER_SETTINGS_DEFAULTS.SHOW_PLAYER_NAMES,
   mouseRotate: PLAYER_SETTINGS_DEFAULTS.MOUSE_ROTATE,
+  name: PLAYER_SETTINGS_DEFAULTS.PLAYER_NAME,
+  otherPlayerClickSoundEnabled: PLAYER_SETTINGS_DEFAULTS.OTHER_PLAYER_CLICK_SOUND_ENABLED,
   renderer: PLAYER_SETTINGS_DEFAULTS.RENDERER,
+  rotateSoundEnabled: PLAYER_SETTINGS_DEFAULTS.ROTATE_SOUND_ENABLED,
+  showPlayerNames: PLAYER_SETTINGS_DEFAULTS.SHOW_PLAYER_NAMES,
+  showTable: PLAYER_SETTINGS_DEFAULTS.SHOW_TABLE,
+  soundsEnabled: PLAYER_SETTINGS_DEFAULTS.SOUND_ENABLED,
+  soundsVolume: PLAYER_SETTINGS_DEFAULTS.SOUND_VOLUME,
+  tableTexture: PLAYER_SETTINGS_DEFAULTS.TABLE_TEXTURE,
+  useCustomTableTexture: PLAYER_SETTINGS_DEFAULTS.USE_CUSTOM_TABLE_TEXTURE,
 })
 
 export interface GameStatus {
