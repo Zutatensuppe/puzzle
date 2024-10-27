@@ -15,8 +15,7 @@ out vec4 fragColor;
 
 // TODO: replace hardcoded values (build shader with a template string?)
 const float SPRITE_SIZE = 64.0;
-const float PADDING_SIZE = 32.0;
-const float FULL_SIZE = SPRITE_SIZE + 2.0 * PADDING_SIZE;
+const float PADDING_SIZE = SPRITE_SIZE / 4.0;
 const vec2 PIECE_SIZE = vec2(SPRITE_SIZE, SPRITE_SIZE);
 
 vec3 blendLightenDarken(vec3 baseColor, vec4 gradient) {
@@ -55,7 +54,7 @@ vec4 determine_frag_color() {
   vec2 adjustedTexcoord = unrotateTexcoord(v_texcoord);
 
   // Calculate the position in the puzzle image
-  vec2 puzzleCoord = v_puzcoord + v_texcoord * (PIECE_SIZE + 2.0 *PADDING_SIZE) - PADDING_SIZE;
+  vec2 puzzleCoord = v_puzcoord + v_texcoord * (PIECE_SIZE + 2.0 * PADDING_SIZE) - PADDING_SIZE;
   puzzleCoord /= puzzle_image_size; // Normalize to [0, 1] range
 
   // Sample the stencil and puzzle image

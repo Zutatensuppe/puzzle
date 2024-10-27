@@ -39,7 +39,6 @@ export class TextureAtlas {
 
     for (let i = 0; i < images.length; i++) {
       const [src, image] = images[i]
-      // prettier-ignore
       gl.texSubImage3D(
         gl.TEXTURE_2D_ARRAY, 0,
         0, 0, i,

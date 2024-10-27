@@ -3,15 +3,15 @@ import { Buffer, Float32, Uint8 } from './Buffer'
 import { TextureAtlas } from './TextureAtlas'
 
 
-export type SpriteInfo = {
-  texture: number
+export type PieceSpriteInfo = {
+  stencilTexture: number
   // world pos
   x: number
   y: number
   z: number
   // texture pos
-  t_x: number
-  t_y: number
+  puzzleImageX: number
+  puzzleImageY: number
   // rotation of piece (0, 1, 2, 3 => standing for 0, 90, 180, 270 degrees)
   rotation: number
   // visibility of piece
@@ -70,7 +70,7 @@ export class SpriteBatch {
 
   constructor(
     gl: WebGL2RenderingContext,
-    sprites: SpriteInfo[],
+    sprites: PieceSpriteInfo[],
     spriteSize: number,
     atlas: TextureAtlas,
   ) {
@@ -79,12 +79,12 @@ export class SpriteBatch {
     this.spriteSize = spriteSize
     this.halfSpriteSize = spriteSize / 2
 
-    const tid = new Uint8Array(sprites.map((s) => atlas.getId(s.texture)!))
+    const tid = new Uint8Array(sprites.map((s) => atlas.getId(s.stencilTexture)!))
     const x = new Float32Array(sprites.map((s) => s.x + this.halfSpriteSize))
     const y = new Float32Array(sprites.map((s) => s.y + this.halfSpriteSize))
     const z = new Float32Array(sprites.map((s) => s.z))
-    const t_x = new Float32Array(sprites.map((s) => s.t_x))
-    const t_y = new Float32Array(sprites.map((s) => s.t_y))
+    const t_x = new Float32Array(sprites.map((s) => s.puzzleImageX))
+    const t_y = new Float32Array(sprites.map((s) => s.puzzleImageY))
     const rotation = new Uint8Array(sprites.map((s) => s.rotation))
     const visible = new Uint8Array(sprites.map((s) => s.visible ? 1 : 0))
 

@@ -6,7 +6,7 @@ import { EncodedPieceShape, GameId } from '../Types'
 import { Shader } from './Shader'
 import piecesFragment from './shaders/piecesFragment'
 import piecesVertex from './shaders/piecesVertex'
-import { SpriteBatch, SpriteInfo } from './SpriteBatch'
+import { SpriteBatch, PieceSpriteInfo } from './SpriteBatch'
 import { TextureAtlas } from './TextureAtlas'
 import m4 from './m4'
 
@@ -44,8 +44,7 @@ export class PiecesShaderWrapper {
     const info = GameCommon.getPuzzle(this.gameId).info
     this.shader.bind()
     this.shader.setUniform('puzzle_image_size', [info.width, info.height])
-    const spriteSize = 128
-    const sprites: SpriteInfo[] = []
+    const sprites: PieceSpriteInfo[] = []
     const maxZ = GameCommon.getMaxZIndex(this.gameId)
     for (const piece of GameCommon.getEncodedPieces(this.gameId)) {
       const finalPos = GameCommon.getSrcPosByPieceIdx(this.gameId, piece[EncodedPieceIdx.IDX])
@@ -53,14 +52,17 @@ export class PiecesShaderWrapper {
         x: piece[EncodedPieceIdx.POS_X],
         y: piece[EncodedPieceIdx.POS_Y],
         z: maxZ ? piece[EncodedPieceIdx.Z] / maxZ : 0,
-        t_x: finalPos.x,
-        t_y: finalPos.y,
-        texture: this.pieceTexture(info.shapes, piece),
+        puzzleImageX: finalPos.x,
+        puzzleImageY: finalPos.y,
+        stencilTexture: this.pieceTexture(info.shapes, piece),
         rotation: this.pieceRotation(piece[EncodedPieceIdx.ROTATION]),
         visible: true,
       })
     }
-    this.sprites = new SpriteBatch(this.gl, sprites, spriteSize, this.atlas)
+    //
+    const spriteSize = 128
+    const borderSize = spriteSize / 4
+    this.sprites = new SpriteBatch(this.gl, sprites, spriteSize + borderSize, this.atlas)
     console.timeEnd('rest')
   }
 

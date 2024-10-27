@@ -325,7 +325,7 @@ async function createWebglStencils(
   graphics: Graphics,
 ): Promise<Record<EncodedPieceShape, ImageBitmap>> {
   const SPRITE_SIZE = 256
-  const SPRITE_DRAW_OFFSET = SPRITE_SIZE / 2
+  const SPRITE_DRAW_OFFSET = SPRITE_SIZE / 4
   const size = SPRITE_SIZE + 2 * SPRITE_DRAW_OFFSET
   const shapes: Record<EncodedPieceShape, ImageBitmap> = {}
   for (let top = -1; top <= 1; top++) {
@@ -366,15 +366,16 @@ async function createWebglStencils(
   // c.style.left = '0'
   // c.style.top = '0'
   // c.style.zIndex = '1000'
-  return shapes
+  // return shapes
 }
 
 async function createWebglStencilsFromPng(
   graphics: Graphics,
   bitmap: ImageBitmap,
 ): Promise<Record<EncodedPieceShape, ImageBitmap>> {
+  // await createWebglStencils(graphics)
   const SPRITE_SIZE = 256
-  const SPRITE_DRAW_OFFSET = SPRITE_SIZE / 2
+  const SPRITE_DRAW_OFFSET = SPRITE_SIZE / 4
   const size = SPRITE_SIZE + 2 * SPRITE_DRAW_OFFSET
   const shapes: Record<EncodedPieceShape, ImageBitmap> = {}
 

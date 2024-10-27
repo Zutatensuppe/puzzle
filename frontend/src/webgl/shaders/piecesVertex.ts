@@ -26,7 +26,7 @@ out vec2 v_puzcoord;
 
 // TODO: replace hardcoded values (build shader with a template string?)
 const float SPRITE_SIZE = 64.0;
-const float PADDING_SIZE = 32.0;
+const float PADDING_SIZE = SPRITE_SIZE / 4.0;
 
 void main() {
     v_tid = tid;
