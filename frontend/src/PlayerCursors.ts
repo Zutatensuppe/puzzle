@@ -40,8 +40,11 @@ export class PlayerCursors
 
   public updatePlayerCursorState(d: boolean) {
     this.cursorState = d
-    const [url, fallback] = d ? [this.cursorDown, 'grab'] : [this.cursor, 'default']
-    this.canvas.style.cursor = `url('${url}') ${this.CURSOR_W_2} ${this.CURSOR_H_2}, ${fallback}`
+    if (d) {
+      this.canvas.style.cursor = `url('${this.cursorDown}') ${this.CURSOR_W_2} ${this.CURSOR_H_2}, grab`
+    } else {
+      this.canvas.style.cursor = `url('${this.cursor}') ${this.CURSOR_W_2} ${this.CURSOR_H_2}, default`
+    }
   }
 
   public updatePlayerCursorColor(color: string) {

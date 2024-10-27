@@ -37,6 +37,13 @@ function pointInBounds(pt: Point, rect: Rect): boolean {
     && pt.y <= rect.y + rect.h
 }
 
+function xyInBounds(x: number, y: number, rect: Rect): boolean {
+  return x >= rect.x
+    && x <= rect.x + rect.w
+    && y >= rect.y
+    && y <= rect.y + rect.h
+}
+
 function rectCenter(rect: Rect): Point {
   return {
     x: rect.x + (rect.w / 2),
@@ -101,6 +108,7 @@ export default {
   pointAdd,
   pointDistance,
   pointInBounds,
+  xyInBounds,
   pointRotate,
   rectCenter,
   rectMoved,

@@ -371,12 +371,10 @@ const getPieceZIndex = (gameId: GameId, pieceIdx: number): number => {
 const getFirstOwnedPieceIdx = (gameId: GameId, clientId: ClientId): number => {
   const player = getPlayer(gameId, clientId)
   if (player) {
-    const idx = pieceIdxByPos(
+    const idx = pieceIdxByXy(
       gameId,
-      {
-        x: player[EncodedPlayerIdx.X],
-        y: player[EncodedPlayerIdx.Y],
-      },
+      player[EncodedPlayerIdx.X],
+      player[EncodedPlayerIdx.Y],
       player[EncodedPlayerIdx.ID],
     )
     if (idx !== -1) {
@@ -635,9 +633,10 @@ function getGroupedPieceIdxs(gameId: GameId, pieceIdx: number): number[] {
 
 // Returns the index of the puzzle piece with the highest z index
 // that is not finished yet and that matches the position
-const pieceIdxByPos = (
+const pieceIdxByXy = (
   gameId: GameId,
-  pos: Point,
+  x: number,
+  y: number,
   owner: string | number,
 ): number => {
   const info = GAMES[gameId].puzzle.info
@@ -657,7 +656,7 @@ const pieceIdxByPos = (
       w: info.tileSize,
       h: info.tileSize,
     }
-    if (Geometry.pointInBounds(pos, collisionRect)) {
+    if (Geometry.xyInBounds(x, y, collisionRect)) {
       if (maxZ === -1 || piece[EncodedPieceIdx.Z] > maxZ) {
         maxZ = piece[EncodedPieceIdx.Z]
         pieceIdx = idx
@@ -883,12 +882,11 @@ function handleGameEvent(
   } else if (type === GAME_EVENT_TYPE.INPUT_EV_MOUSE_DOWN) {
     const x = gameEvent[1]
     const y = gameEvent[2]
-    const pos = { x, y }
 
     changePlayer(gameId, clientId, { d: 1, ts })
     _playerChange()
 
-    const tileIdxAtPos = pieceIdxByPos(gameId, pos, 0)
+    const tileIdxAtPos = pieceIdxByXy(gameId, x, y, 0)
     if (tileIdxAtPos >= 0) {
       const maxZ = getMaxZIndex(gameId) + 1
       changeData(gameId, { maxZ })
