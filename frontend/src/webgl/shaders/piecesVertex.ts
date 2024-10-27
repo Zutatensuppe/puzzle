@@ -14,6 +14,8 @@ layout(location = 4) in float y; // world space
 layout(location = 5) in float t_x; // texture pos (on puzzle image)
 layout(location = 6) in float t_y; // texture pos (on puzzle image)
 
+layout(location = 7) in uint rotation; // rotation of piece
+
 flat out uint v_tid;
 out vec2 v_texcoord;
 out vec2 v_puzcoord;
@@ -33,6 +35,38 @@ void main() {
       0, 0, 1, 0,
       x + PADDING_SIZE, y + PADDING_SIZE, 0, 1
     );
+    mat4 rotationMatrix = mat4(
+      1, 0, 0, 0,
+      0, 1, 0, 0,
+      0, 0, 1, 0,
+      0, 0, 0, 1
+    );
+    if (rotation == 1u) {
+      // 90 deg
+      rotationMatrix = mat4(
+        0, 1, 0, 0,
+        -1, 0, 0, 0,
+        0, 0, 1, 0,
+        0, 0, 0, 1
+      );
+    } else if (rotation == 2u) {
+      // 180 deg
+      rotationMatrix = mat4(
+        -1, 0, 0, 0,
+        0, -1, 0, 0,
+        0, 0, 1, 0,
+        0, 0, 0, 1
+      );
+    } else if (rotation == 3u) {
+      // 270 deg
+      rotationMatrix = mat4(
+        0, -1, 0, 0,
+        1, 0, 0, 0,
+        0, 0, 1, 0,
+        0, 0, 0, 1
+      );
+    }
+
 
     gl_Position = projection * view * model * vec4(position, 0, 1);
 }

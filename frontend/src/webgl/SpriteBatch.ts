@@ -11,6 +11,8 @@ export type SpriteInfo = {
   // texture pos
   t_x: number
   t_y: number
+  //
+  rotation: number
 }
 
 // Anchor is top-left
@@ -50,6 +52,9 @@ export class SpriteBatch {
   t_x: Buffer<Float32>
   t_y: Buffer<Float32>
 
+  // Per-instance Rotation
+  rotation: Buffer<Uint8>
+
   // Attribute set, used to bind the above buffers to the shader.
   attribs: AttributeSet
 
@@ -67,6 +72,7 @@ export class SpriteBatch {
     const y = new Float32Array(sprites.map((s) => s.y + spriteSize / 2))
     const t_x = new Float32Array(sprites.map((s) => s.t_x))
     const t_y = new Float32Array(sprites.map((s) => s.t_y))
+    const rotation = new Uint8Array(sprites.map((s) => s.rotation))
     this.instances = sprites.length
     this.quad = new Buffer(gl, QUAD, 'static')
     this.tid = new Buffer(gl, tid, 'static')
@@ -74,6 +80,7 @@ export class SpriteBatch {
     this.t_y = new Buffer(gl, t_y, 'static')
     this.x = new Buffer(gl, x, 'dynamic')
     this.y = new Buffer(gl, y, 'dynamic')
+    this.rotation = new Buffer(gl, rotation, 'dynamic')
 
     this.attribs = new AttributeSet(gl, [
       {
@@ -99,6 +106,10 @@ export class SpriteBatch {
       {
         buffer: this.t_y,
         attributes: [floatAttrib(6, 1)],
+      },
+      {
+        buffer: this.rotation,
+        attributes: [ubyteAttrib(7, 1)],
       },
     ])
   }

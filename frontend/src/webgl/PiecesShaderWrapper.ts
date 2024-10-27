@@ -1,5 +1,6 @@
 import { Camera } from '../Camera'
 import GameCommon from '../../../common/src/GameCommon'
+import { PieceRotation } from '../../../common/src/Types'
 import { EncodedPieceShape, GameId, Piece } from '../Types'
 import { Shader } from './Shader'
 import piecesFragment from './shaders/piecesFragment'
@@ -40,6 +41,20 @@ export class PiecesShaderWrapper {
     console.timeEnd('rest')
   }
 
+  private pieceRotationToDegrees(rot: PieceRotation | undefined): number {
+    switch (rot) {
+      case PieceRotation.R90:
+        return 1
+      case PieceRotation.R180:
+        return 2
+      case PieceRotation.R270:
+        return 3
+      case PieceRotation.R0:
+      default:
+        return 0
+    }
+  }
+
   public render(
     camera: Camera,
     shouldDrawPiece: (piece: Piece) => boolean,
@@ -58,6 +73,7 @@ export class PiecesShaderWrapper {
         t_x: finalPos.x,
         t_y: finalPos.y,
         texture: `${info.shapes[piece.idx]}`,
+        rotation: this.pieceRotationToDegrees(piece.rot),
       })
     })
     this.sprites = new SpriteBatch(this.gl, sprites, spriteSize, this.atlas)
