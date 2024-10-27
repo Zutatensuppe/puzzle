@@ -6,6 +6,7 @@ uniform highp sampler2D atlas2;
 uniform vec2 puzzle_image_size;
 
 flat in uint v_tid;
+flat in uint v_rotation;
 in vec2 v_texcoord;
 in vec2 v_puzcoord;
 
@@ -33,9 +34,24 @@ vec3 blendLightenDarken(vec3 baseColor, vec4 gradient) {
   return clamp(result, 0.0, 1.0);
 }
 
+vec2 unrotateTexcoord(vec2 texcoord) {
+  if (v_rotation == 1u) {
+    // rotate texcoord by -90 degrees
+    return vec2(1.0 - texcoord.y, texcoord.x);
+  }
+  if (v_rotation == 2u) {
+    // rotate texcoord by -180 degrees
+    return vec2(1.0 - texcoord.x, 1.0 - texcoord.y);
+  }
+  if (v_rotation == 3u) {
+    // rotate texcoord by -270 degrees
+    return vec2(texcoord.y, 1.0 - texcoord.x);
+  }
+  return texcoord;
+}
+
 vec4 determine_frag_color() {
-  // Map texcoord to the stencil texture, correcting for the actual size
-  vec2 adjustedTexcoord = v_texcoord;
+  vec2 adjustedTexcoord = unrotateTexcoord(v_texcoord);
 
   // Calculate the position in the puzzle image
   vec2 puzzleCoord = v_puzcoord + v_texcoord * (PIECE_SIZE + 2.0 *PADDING_SIZE) - PADDING_SIZE;

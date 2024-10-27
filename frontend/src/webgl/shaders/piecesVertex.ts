@@ -17,6 +17,7 @@ layout(location = 6) in float t_y; // texture pos (on puzzle image)
 layout(location = 7) in uint rotation; // rotation of piece
 
 flat out uint v_tid;
+flat out uint v_rotation;
 out vec2 v_texcoord;
 out vec2 v_puzcoord;
 
@@ -26,6 +27,7 @@ const float PADDING_SIZE = 32.0;
 
 void main() {
     v_tid = tid;
+    v_rotation = rotation;
     v_texcoord = texcoord;
     v_puzcoord = vec2(t_x, t_y);
 
@@ -67,7 +69,6 @@ void main() {
       );
     }
 
-
-    gl_Position = projection * view * model * vec4(position, 0, 1);
+    gl_Position = projection * view * model * rotationMatrix * vec4(position, 0, 1);
 }
 `

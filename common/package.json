@@ -6,13 +6,14 @@
   "license": "ISC",
   "scripts": {
     "lint": "tsc --noEmit && eslint src",
-    "test": ""
+    "test": "vitest --run"
   },
   "devDependencies": {
     "@eslint/js": "^9.11.1",
     "eslint": "^9.11.1",
     "globals": "^15.9.0",
     "typescript": "~5.5.0",
-    "typescript-eslint": "^8.7.0"
+    "typescript-eslint": "^8.7.0",
+    "vitest": "^2.1.3"
   }
 }

@@ -66,7 +66,6 @@ export class SpriteBatch {
   ) {
     this.gl = gl
 
-
     const tid = new Uint8Array(sprites.map((s) => atlas.getId(s.texture)!))
     const x = new Float32Array(sprites.map((s) => s.x + spriteSize / 2))
     const y = new Float32Array(sprites.map((s) => s.y + spriteSize / 2))
@@ -75,7 +74,7 @@ export class SpriteBatch {
     const rotation = new Uint8Array(sprites.map((s) => s.rotation))
     this.instances = sprites.length
     this.quad = new Buffer(gl, QUAD, 'static')
-    this.tid = new Buffer(gl, tid, 'static')
+    this.tid = new Buffer(gl, tid, 'dynamic')
     this.t_x = new Buffer(gl, t_x, 'static')
     this.t_y = new Buffer(gl, t_y, 'static')
     this.x = new Buffer(gl, x, 'dynamic')
@@ -119,6 +118,8 @@ export class SpriteBatch {
     this.y.flush()
     this.t_x.flush()
     this.t_y.flush()
+    this.tid.flush()
+    this.rotation.flush()
 
     this.attribs.bind()
     this.gl.drawArraysInstanced(this.gl.TRIANGLES, 0, 6, this.instances)
@@ -132,5 +133,6 @@ export class SpriteBatch {
     this.t_x.destroy()
     this.t_y.destroy()
     this.attribs.destroy()
+    this.rotation.destroy()
   }
 }

@@ -1,5 +1,6 @@
 import { Camera } from '../Camera'
 import GameCommon from '../../../common/src/GameCommon'
+import Util from '../../../common/src/Util'
 import { PieceRotation } from '../../../common/src/Types'
 import { EncodedPieceShape, GameId, Piece } from '../Types'
 import { Shader } from './Shader'
@@ -41,7 +42,7 @@ export class PiecesShaderWrapper {
     console.timeEnd('rest')
   }
 
-  private pieceRotationToDegrees(rot: PieceRotation | undefined): number {
+  private pieceRotation(rot: PieceRotation | undefined): number {
     switch (rot) {
       case PieceRotation.R90:
         return 1
@@ -53,6 +54,12 @@ export class PiecesShaderWrapper {
       default:
         return 0
     }
+  }
+
+  private pieceTexture(shapes: EncodedPieceShape[], piece: Piece): string {
+    // TODO: rotate texture based on piece rotation
+    const shape = Util.rotateEncodedShape(shapes[piece.idx], piece.rot)
+    return `${shape}`
   }
 
   public render(
@@ -72,10 +79,11 @@ export class PiecesShaderWrapper {
         y: piece.pos.y,
         t_x: finalPos.x,
         t_y: finalPos.y,
-        texture: `${info.shapes[piece.idx]}`,
-        rotation: this.pieceRotationToDegrees(piece.rot),
+        texture: this.pieceTexture(info.shapes, piece),
+        rotation: this.pieceRotation(piece.rot),
       })
     })
+    // TODO: do not build a new SpriteBatch every frame LUL
     this.sprites = new SpriteBatch(this.gl, sprites, spriteSize, this.atlas)
 
     // bind the shader and update the uniforms

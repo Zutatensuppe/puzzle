@@ -144,11 +144,11 @@ export class EventAdapter {
     }
   }
 
-  _onKeyUp (ev: KeyboardEvent) {
+  _onKeyDown (ev: KeyboardEvent) {
     this._key(true, ev)
   }
 
-  _onKeyDown (ev: KeyboardEvent) {
+  _onKeyUp (ev: KeyboardEvent) {
     this._key(false, ev)
   }
 

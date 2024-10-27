@@ -9,6 +9,7 @@ import {
   EncodedPlayer,
   Game,
   Piece,
+  PieceRotation,
   PieceShape,
   Player,
   PuzzleInfo,
@@ -84,6 +85,52 @@ function decodeShape(data: EncodedPieceShape): PieceShape {
     right: (data >> 2 & 0b11) - 1,
     bottom: (data >> 4 & 0b11) - 1,
     left: (data >> 6 & 0b11) - 1,
+  }
+}
+
+function rotateShape(shape: PieceShape, rotation: PieceRotation): PieceShape {
+  switch (rotation) {
+    case PieceRotation.R90:
+      return {
+        top: shape.left,
+        right: shape.top,
+        bottom: shape.right,
+        left: shape.bottom,
+      }
+    case PieceRotation.R180:
+      return {
+        top: shape.bottom,
+        right: shape.left,
+        bottom: shape.top,
+        left: shape.right,
+      }
+    case PieceRotation.R270:
+      return {
+        top: shape.right,
+        right: shape.bottom,
+        bottom: shape.left,
+        left: shape.top,
+      }
+    case PieceRotation.R0:
+    default:
+      return shape
+  }
+}
+
+function rotateEncodedShape(
+  shape: EncodedPieceShape,
+  rotation: PieceRotation | undefined,
+): EncodedPieceShape {
+  switch (rotation) {
+    case PieceRotation.R90:
+      return (shape >> 6 | shape << 2) & 0b11111111
+    case PieceRotation.R180:
+      return (shape >> 4 | shape << 4) & 0b11111111
+      case PieceRotation.R270:
+      return (shape >> 2 | shape << 6) & 0b11111111
+    case PieceRotation.R0:
+    default:
+      return shape
   }
 }
 
@@ -373,4 +420,7 @@ export default {
   coordByPieceIdx,
 
   asQueryArgs,
+
+  rotateShape,
+  rotateEncodedShape,
 }
