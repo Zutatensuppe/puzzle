@@ -366,7 +366,7 @@ async function createWebglStencils(
   // c.style.left = '0'
   // c.style.top = '0'
   // c.style.zIndex = '1000'
-  // return shapes
+  return shapes
 }
 
 async function createWebglStencilsFromPng(
