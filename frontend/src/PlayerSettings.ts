@@ -38,11 +38,7 @@ export class PlayerSettings {
       this.settings.name = GameCommon.getPlayerName(this.game.getGameId(), this.game.getClientId())
         || storage.getStr(PLAYER_SETTINGS.PLAYER_NAME, PLAYER_SETTINGS_DEFAULTS.PLAYER_NAME)
     }
-    if (storage.getStr('force_webgl2', '') === '1') {
-      this.settings.renderer = Renderer.WEBGL2
-    } else {
-      this.settings.renderer = Renderer.CANVAS // this.parseRenderer(storage.getStr(PLAYER_SETTINGS.RENDERER, PLAYER_SETTINGS_DEFAULTS.RENDERER))
-    }
+    this.settings.renderer = this.parseRenderer(storage.getStr(PLAYER_SETTINGS.RENDERER, PLAYER_SETTINGS_DEFAULTS.RENDERER))
   }
 
   parseRenderer(str: string): Renderer {

@@ -16,12 +16,21 @@ export const hexToColor = (hex: string): Color => {
   return hexToColorLookupMap.get(hex)!
 }
 
-export const colorEquals = (a: Color, b: Color): boolean => {
-  return a[0] === b[0] && a[1] === b[1] && a[2] === b[2] && a[3] === b[3]
+export const colorEquals = (a: Color, b: Color, tolerance: number = 2) => {
+  return (
+    Math.abs(a[0] - b[0]) <= tolerance &&
+    Math.abs(a[1] - b[1]) <= tolerance &&
+    Math.abs(a[2] - b[2]) <= tolerance &&
+    Math.abs(a[3] - b[3]) <= tolerance
+  )
 }
 
-export const colorIsGrayscale = (color: Color): boolean => {
-  return color[0] === color[1] && color[1] === color[2]
+export const colorIsGrayscale = (color: Color, tolerance: number = 2): boolean => {
+  return (
+    Math.abs(color[0] - color[1]) <= tolerance &&
+    Math.abs(color[1] - color[2]) <= tolerance &&
+    Math.abs(color[0] - color[2]) <= tolerance
+  )
 }
 
 export function hueToRgb(h: number): [number, number, number] {
