@@ -64,7 +64,7 @@ export class RendererWebgl {
     if (!stencils) {
       // all stencils, in flat puzzle we dont need all of them but still
       // create them here
-      stencils = await PuzzleGraphics.createWebglStencils(this.graphics)
+      stencils = await PuzzleGraphics.createWebglStencilsFromPng(this.graphics, this.assets.Gfx.stencilsDefault)
     }
     console.timeEnd('stencils')
 

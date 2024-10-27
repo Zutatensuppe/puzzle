@@ -15,6 +15,9 @@ import badgeAnon from './assets/gfx/badge_anon.png'
 import badgeAnonIdle from './assets/gfx/badge_anon_idle.png'
 
 // @ts-ignore
+import stencilsDefault from './assets/stencils/default.png'
+
+// @ts-ignore
 import click from './assets/sounds/click.mp3'
 // @ts-ignore
 import click2 from './assets/sounds/click2.mp3'
@@ -42,6 +45,7 @@ export class Assets {
     badgeOverIdle: ImageBitmap
     badgeAnon: ImageBitmap
     badgeAnonIdle: ImageBitmap
+    stencilsDefault: ImageBitmap
   }
 
   async init (graphics: Graphics) {
@@ -66,6 +70,7 @@ export class Assets {
       badgeOverIdle: await graphics.loadImageToBitmap(badgeOverIdle),
       badgeAnon: await graphics.loadImageToBitmap(badgeAnon),
       badgeAnonIdle: await graphics.loadImageToBitmap(badgeAnonIdle),
+      stencilsDefault: await graphics.loadImageToBitmap(stencilsDefault),
     }
   }
 }

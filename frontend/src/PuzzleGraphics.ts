@@ -321,9 +321,6 @@ export const createWebglStencil = async (
   return await createImageBitmap(c)
 }
 
-// TODO: cache or create pngs for each stencil, because they don't
-//       change depending on the puzzle image, and it takes ~2 seconds
-//       to generate them
 async function createWebglStencils(
   graphics: Graphics,
 ): Promise<Record<EncodedPieceShape, ImageBitmap>> {
@@ -343,6 +340,66 @@ async function createWebglStencils(
       }
     }
   }
+  // draw the stencils 9x9 on a canvas for storing in the assets dir
+  // const c = graphics.createCanvas(size * 9)
+  // let x = 0
+  // let y = 0
+  // const ctx = c.getContext('2d')!
+  // for (let top = -1; top <= 1; top++) {
+  //   for (let bottom = -1; bottom <= 1; bottom++) {
+  //     for (let left = -1; left <= 1; left++) {
+  //       for (let right = -1; right <= 1; right++) {
+  //         const shape: PieceShape = { top, bottom, left, right }
+  //         const encodedShape = Util.encodeShape(shape)
+  //         ctx.drawImage(shapes[encodedShape], x * size, y * size)
+  //         x += 1
+  //         if (x >= 9) {
+  //           x = 0
+  //           y += 1
+  //         }
+  //       }
+  //     }
+  //   }
+  // }
+  // document.body.append(c)
+  // c.style.position = 'absolute'
+  // c.style.left = '0'
+  // c.style.top = '0'
+  // c.style.zIndex = '1000'
+  return shapes
+}
+
+async function createWebglStencilsFromPng(
+  graphics: Graphics,
+  bitmap: ImageBitmap,
+): Promise<Record<EncodedPieceShape, ImageBitmap>> {
+  const SPRITE_SIZE = 256
+  const SPRITE_DRAW_OFFSET = SPRITE_SIZE / 2
+  const size = SPRITE_SIZE + 2 * SPRITE_DRAW_OFFSET
+  const shapes: Record<EncodedPieceShape, ImageBitmap> = {}
+
+  let x = 0
+  let y = 0
+  const c = graphics.createCanvas(size)
+  const ctx = c.getContext('2d')!
+  for (let top = -1; top <= 1; top++) {
+    for (let bottom = -1; bottom <= 1; bottom++) {
+      for (let left = -1; left <= 1; left++) {
+        for (let right = -1; right <= 1; right++) {
+          const shape: PieceShape = { top, bottom, left, right }
+          const encodedShape = Util.encodeShape(shape)
+          ctx.clearRect(0, 0, size, size)
+          ctx.drawImage(bitmap, x * size, y * size, size, size, 0, 0, size, size)
+          x += 1
+          if (x >= 9) {
+            x = 0
+            y += 1
+          }
+          shapes[encodedShape] = await createImageBitmap(c)
+        }
+      }
+    }
+  }
   return shapes
 }
 
@@ -358,4 +415,5 @@ export default {
   loadPuzzleBitmap,
   loadPuzzleBitmaps,
   createWebglStencils,
+  createWebglStencilsFromPng,
 }
