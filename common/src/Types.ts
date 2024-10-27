@@ -1,4 +1,4 @@
-import { Point, Rect } from './Geometry'
+import { Rect } from './Geometry'
 import { SERVER_EVENT_TYPE, LOG_TYPE, CLIENT_EVENT_TYPE, CHANGE_TYPE, GAME_EVENT_TYPE } from './Protocol'
 import { Rng, RngSerialized } from './Rng'
 
@@ -92,16 +92,28 @@ export type ClientUpdateEvent = [CLIENT_EVENT_TYPE.UPDATE, number, GameEvent]
 export type ClientImageSnapshotEvent = [CLIENT_EVENT_TYPE.IMAGE_SNAPSHOT, string, number]
 export type ClientEvent = ClientInitEvent | ClientUpdateEvent | ClientImageSnapshotEvent
 
+export enum EncodedPlayerIdx {
+  ID = 0,
+  X = 1,
+  Y = 2,
+  MOUSEDOWN = 3,
+  NAME = 4,
+  COLOR = 5,
+  BGCOLOR = 6,
+  POINTS = 7,
+  TIMESTAMP = 8,
+}
+
 export type EncodedPlayer = FixedLengthArray<[
-  ClientId,
-  number,
-  number,
-  0 | 1,
-  string | null,
-  string | null,
-  string | null,
-  number,
-  Timestamp,
+  EncodedPlayerIdx.ID extends 0 ? ClientId : never,
+  EncodedPlayerIdx.X extends 1 ? number : never,
+  EncodedPlayerIdx.Y extends 2 ? number : never,
+  EncodedPlayerIdx.MOUSEDOWN extends 3 ? 0 | 1 : never,
+  EncodedPlayerIdx.NAME extends 4 ? string | null : never,
+  EncodedPlayerIdx.COLOR extends 5 ? string | null : never,
+  EncodedPlayerIdx.BGCOLOR extends 6 ? string | null : never,
+  EncodedPlayerIdx.POINTS extends 7 ? number : never,
+  EncodedPlayerIdx.TIMESTAMP extends 8 ? Timestamp : never,
 ]>
 
 export type RegisteredMap = Record<ClientId, boolean>
@@ -113,14 +125,24 @@ export enum PieceRotation {
   R270 = 3,
 }
 
+export enum EncodedPieceIdx {
+  IDX = 0,
+  POS_X = 1,
+  POS_Y = 2,
+  Z = 3,
+  OWNER = 4,
+  GROUP = 5,
+  ROTATION = 6,
+}
+
 export type EncodedPiece = FixedLengthArray<[
-  number,
-  number,
-  number,
-  number,
-  ClientId | number,
-  number,
-  undefined|PieceRotation,
+  EncodedPieceIdx.IDX extends 0 ? number : never,
+  EncodedPieceIdx.POS_X extends 1 ? number : never,
+  EncodedPieceIdx.POS_Y extends 2 ? number : never,
+  EncodedPieceIdx.Z extends 3 ? number : never,
+  EncodedPieceIdx.OWNER extends 4 ? ClientId | number : never,
+  EncodedPieceIdx.GROUP extends 5 ? number : never,
+  EncodedPieceIdx.ROTATION extends 6 ? undefined|PieceRotation : never,
 ]>
 
 export interface Announcement {
@@ -300,22 +322,14 @@ export interface PieceShape {
   right: PieceEdge
 }
 
-export interface Piece {
-  owner: ClientId | number
-  idx: number
-  pos: Point
-  z: number
-  group: number
-  rot?: PieceRotation
-}
-
 export interface PieceChange {
-  owner?: ClientId | number
-  idx?: number
-  pos?: Point
-  z?: number
-  group?: number
-  rot?: PieceRotation
+  [EncodedPieceIdx.OWNER]?: ClientId | number
+  [EncodedPieceIdx.IDX]?: number
+  [EncodedPieceIdx.POS_X]?: number
+  [EncodedPieceIdx.POS_Y]?: number
+  [EncodedPieceIdx.Z]?: number
+  [EncodedPieceIdx.GROUP]?: number
+  [EncodedPieceIdx.ROTATION]?: PieceRotation
 }
 
 export interface ImageInfo {

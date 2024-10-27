@@ -3,7 +3,7 @@
 import Geometry, { Dim, Point, Rect } from '../../common/src/Geometry'
 import Util, { logger } from '../../common/src/Util'
 import { Color, COLOR_MAGENTA, colorEquals, colorIsGrayscale } from '../../common/src/Color'
-import { Puzzle, PuzzleInfo, PieceShape, EncodedPiece, ShapeMode, EncodedPieceShape } from '../../common/src/Types'
+import { Puzzle, PuzzleInfo, PieceShape, EncodedPiece, ShapeMode, EncodedPieceShape, EncodedPieceIdx } from '../../common/src/Types'
 import { determinePuzzlePieceShapes, PuzzleCreationInfo } from '../../common/src/Puzzle'
 import { Rng } from '../../common/src/Rng'
 import { Graphics } from './Graphics'
@@ -130,14 +130,14 @@ function createPuzzlePieces(
     return paths[key]
   }
 
-  for (const p of pieces) {
+  for (const piece of pieces) {
     const c = graphics.createCanvas(pieceDrawSize)
     const ctx = c.getContext('2d') as CanvasRenderingContext2D
     const c2 = graphics.createCanvas(pieceDrawSize)
     const ctx2 = c2.getContext('2d') as CanvasRenderingContext2D
-    const piece = Util.decodePiece(p)
-    const srcRect = srcRectByIdx(info, piece.idx)
-    const path = pathForShape(Util.decodeShape(info.shapes[piece.idx]))
+    const pieceIdx = piece[EncodedPieceIdx.IDX]
+    const srcRect = srcRectByIdx(info, pieceIdx)
+    const path = pathForShape(Util.decodeShape(info.shapes[pieceIdx]))
 
     ctx.clearRect(0, 0, pieceDrawSize, pieceDrawSize)
 
@@ -236,7 +236,7 @@ function createPuzzlePieces(
     ctx2.restore()
     ctx.drawImage(c2, 0, 0)
 
-    bitmaps[piece.idx] = c
+    bitmaps[pieceIdx] = c
   }
 
   log.log('end createPuzzlePieces')

@@ -1,7 +1,7 @@
 import Util from '../../common/src/Util'
 import { Rng } from '../../common/src/Rng'
 import { Images } from './Images'
-import { EncodedPiece, Puzzle, ShapeMode, ImageInfo, PieceRotation, RotationMode } from '../../common/src/Types'
+import { EncodedPiece, Puzzle, ShapeMode, ImageInfo, PieceRotation, RotationMode, EncodedPieceIdx } from '../../common/src/Types'
 import { Dim, Point } from '../../common/src/Geometry'
 import config from './Config'
 import { determinePuzzleInfo, PuzzleCreationInfo, determinePuzzlePieceShapes } from '../../common/src/Puzzle'
@@ -88,27 +88,28 @@ export class PuzzleService {
     // then shuffle the positions
     positions = rng.shuffle(positions)
 
-    const pieces: Array<EncodedPiece> = rawPieces.map(piece => {
-      return Util.encodePiece({
-        idx: piece.idx, // index of piece in the array
-        group: 0, // if grouped with other pieces
-        z: 0, // z index of the piece
+    const pieces: EncodedPiece[] = rawPieces.map(piece => {
+      const encodedPiece: EncodedPiece = [] as unknown as EncodedPiece
+      encodedPiece[EncodedPieceIdx.IDX] = piece.idx // index of piece in the array
+      encodedPiece[EncodedPieceIdx.GROUP] = 0 // if grouped with other pieces
+      encodedPiece[EncodedPieceIdx.Z] = 0 // z index of the piece
 
-        // who owns the piece
-        // 0 = free for taking
-        // -1 = finished
-        // other values: id of player who has the piece
-        owner: 0,
+      // who owns the piece
+      // 0 = free for taking
+      // -1 = finished
+      // other values: id of player who has the piece
+      encodedPiece[EncodedPieceIdx.OWNER] = 0
 
-        // physical current position of the piece (x/y in pixels)
-        // this position is the initial position only and is the
-        // value that changes when moving a piece
-        pos: positions[piece.idx],
+      // physical current position of the piece (x/y in pixels)
+      // this position is the initial position only and is the
+      // value that changes when moving a piece
+      encodedPiece[EncodedPieceIdx.POS_X] = positions[piece.idx].x
+      encodedPiece[EncodedPieceIdx.POS_Y] = positions[piece.idx].y
 
-        rot: rotationMode === RotationMode.ORTHOGONAL
-          ? rng.choice([PieceRotation.R0, PieceRotation.R90, PieceRotation.R180, PieceRotation.R270])
-          : PieceRotation.R0,
-      })
+      encodedPiece[EncodedPieceIdx.ROTATION] = rotationMode === RotationMode.ORTHOGONAL
+        ? rng.choice([PieceRotation.R0, PieceRotation.R90, PieceRotation.R180, PieceRotation.R270])
+        : PieceRotation.R0
+      return encodedPiece
     })
 
     // Complete puzzle object

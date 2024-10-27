@@ -1,4 +1,4 @@
-import { GameId, Piece, Player, PlayerSettingsData, createDefaultPlayerSettingsData } from '../../common/src/Types'
+import { EncodedPiece, EncodedPlayer, GameId, PlayerSettingsData, createDefaultPlayerSettingsData } from '../../common/src/Types'
 import GameCommon from '../../common/src/GameCommon'
 import { Renderer } from '../../common/src/Renderer'
 import { Camera } from '../../common/src/Camera'
@@ -40,8 +40,8 @@ export const createImageSnapshot = (
     playerSettings,
     null,
     { update: (_ts: number) => { return } },
-    (_piece: Piece) => true,
-    (_player: Player) => false,
+    (_piece: EncodedPiece) => true,
+    (_player: EncodedPlayer) => false,
     false,
     true,
   )
@@ -74,8 +74,8 @@ export const createImageSnapshotWebgl = (
     viewport,
     new Date().getTime(),
     playerSettings,
-    (_piece: Piece) => true,
-    (_player: Player) => false,
+    (_piece: EncodedPiece) => true,
+    (_player: EncodedPlayer) => false,
     true,
   )
 }

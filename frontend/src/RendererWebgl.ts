@@ -1,13 +1,12 @@
 import Debug from '../../common/src/Debug'
 import GameCommon from '../../common/src/GameCommon'
 import { Dim, Point, Rect } from '../../common/src/Geometry'
-import { EncodedPieceShape, FireworksInterface, GameId, Piece, Player, PlayerSettingsData, PuzzleStatusInterface, Timestamp } from '../../common/src/Types'
+import { EncodedPiece, EncodedPieceShape, EncodedPlayer, FireworksInterface, GameId, PlayerSettingsData, PuzzleStatusInterface, Timestamp } from '../../common/src/Types'
 import { Camera } from '../../common/src/Camera'
 import { logger } from '../../common/src/Util'
 import { PlayerCursors } from './PlayerCursors'
 import { PuzzleTable } from './PuzzleTable'
 import { Graphics } from './Graphics'
-import { Viewport } from './webgl/Viewport'
 import { BgShaderWrapper } from './webgl/BgShaderWrapper'
 import { getTextureInfoByPlayerSettings } from './PuzzleTableTextureInfo'
 import { PiecesShaderWrapper } from './webgl/PiecesShaderWrapper'
@@ -28,13 +27,7 @@ export class RendererWebgl {
   private tableBounds!: Rect
   private boardPos!: Point
   private boardDim!: Dim
-  private pieceDim!: Dim
-  private pieceDrawOffset!: number
   private gl!: WebGL2RenderingContext
-  private viewport!: Viewport
-
-  // we can cache the whole background when we are in lockMovement mode
-  private backgroundCache: ImageData | null = null
 
   private piecesShaderWrapper!: PiecesShaderWrapper
   private bgShaderWrapper!: BgShaderWrapper
@@ -50,16 +43,13 @@ export class RendererWebgl {
     protected readonly graphics: Graphics,
     protected readonly assets: Assets,
   ) {
-    this.pieceDrawOffset = GameCommon.getPieceDrawOffset(this.gameId)
     this.boardDim = GameCommon.getBoardDim(this.gameId)
     this.boardPos = GameCommon.getBoardPos(this.gameId)
-    this.pieceDim = GameCommon.getPieceDim(this.gameId)
     this.tableBounds = GameCommon.getBounds(this.gameId)
   }
 
   async init() {
     this.gl = this.canvas.getContext('webgl2')!
-    this.viewport = new Viewport(this.canvas)
 
     console.time('load')
     if (!puzzleBitmapCache[this.gameId]) {
@@ -81,7 +71,7 @@ export class RendererWebgl {
     this.bgShaderWrapper = new BgShaderWrapper(this.gl, this.graphics)
     this.bgShaderWrapper.init(this.tableBounds, this.boardDim, this.boardPos, puzzleBitmapCache[this.gameId])
 
-    this.piecesShaderWrapper = new PiecesShaderWrapper(this.gl, this.viewport, this.gameId)
+    this.piecesShaderWrapper = new PiecesShaderWrapper(this.gl, this.gameId)
     this.piecesShaderWrapper.init(puzzleBitmapCache[this.gameId], stencils)
 
     this.playersShaderWrapper = new PlayersShaderWrapper(this.gl, this.assets, this.gameId)
@@ -103,18 +93,17 @@ export class RendererWebgl {
     camera: Camera,
     ts: Timestamp,
     settings: PlayerSettingsData,
-    shouldDrawPiece: (piece: Piece) => boolean,
-    shouldDrawPlayer: (player: Player) => boolean,
+    shouldDrawEncodedPiece: (piece: EncodedPiece) => boolean,
+    shouldDrawPlayer: (player: EncodedPlayer) => boolean,
     renderPreview: boolean,
   ) {
     const oldWidth = this.canvas.width
     const oldHeight = this.canvas.height
     this.canvas.width = canvasDim.w
     this.canvas.height = canvasDim.h
-    this.viewport.resize(this.canvas)
 
     // update the viewport and clear the screen
-    this.gl.viewport(0, 0, this.viewport.width, this.viewport.height)
+    this.gl.viewport(0, 0, this.canvas.width, this.canvas.height)
 
     // draw background
     const pos = camera.worldToViewportRaw(this.tableBounds)
@@ -122,14 +111,13 @@ export class RendererWebgl {
     this.bgShaderWrapper?.render(settings.showTable, renderPreview, settings.background, dim, pos)
 
     // draw pieces
-    this.piecesShaderWrapper?.render(camera, shouldDrawPiece)
+    this.piecesShaderWrapper?.render(camera, shouldDrawEncodedPiece)
 
     // draw players
     this.playersShaderWrapper?.render(camera, shouldDrawPlayer, settings.showPlayerNames, ts)
     const str = this.canvas.toDataURL('image/jpeg', 75)
     this.canvas.width = oldWidth
     this.canvas.height = oldHeight
-    this.viewport.resize(this.canvas)
     return str
   }
 
@@ -139,25 +127,19 @@ export class RendererWebgl {
     settings: PlayerSettingsData,
     playerCursors: PlayerCursors | null,
     puzzleStatus: PuzzleStatusInterface,
-    shouldDrawPiece: (piece: Piece) => boolean,
-    shouldDrawPlayer: (player: Player) => boolean,
+    shouldDrawEncodedPiece: (piece: EncodedPiece) => boolean,
+    shouldDrawPlayer: (player: EncodedPlayer) => boolean,
     renderFireworks: boolean,
     renderPreview: boolean,
   ) {
-    if (!this.viewport) {
-      return
-    }
-
     if (this.debug) Debug.checkpoint_start(0)
 
     // ---------------------------------------------------------------
     // ---------------------------------------------------------------
     // ---------------------------------------------------------------
 
-    this.viewport.resize(this.canvas)
-
     // update the viewport and clear the screen
-    this.gl.viewport(0, 0, this.viewport.width, this.viewport.height)
+    this.gl.viewport(0, 0, this.canvas.width, this.canvas.height)
 
     // draw background
     this.bgShaderWrapper?.render(
@@ -169,7 +151,7 @@ export class RendererWebgl {
     )
 
     // draw pieces
-    this.piecesShaderWrapper?.render(camera, shouldDrawPiece)
+    this.piecesShaderWrapper?.render(camera, shouldDrawEncodedPiece)
 
     // draw players
     this.playersShaderWrapper?.render(camera, shouldDrawPlayer, settings.showPlayerNames, ts)

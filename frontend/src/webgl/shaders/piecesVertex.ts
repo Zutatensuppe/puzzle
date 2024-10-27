@@ -10,14 +10,17 @@ layout(location = 1) in vec2 texcoord;
 layout(location = 2) in uint tid;
 layout(location = 3) in float x; // world space
 layout(location = 4) in float y; // world space
+layout(location = 5) in float z; // z index
 
-layout(location = 5) in float t_x; // texture pos (on puzzle image)
-layout(location = 6) in float t_y; // texture pos (on puzzle image)
+layout(location = 6) in float t_x; // texture pos (on puzzle image)
+layout(location = 7) in float t_y; // texture pos (on puzzle image)
 
-layout(location = 7) in uint rotation; // rotation of piece
+layout(location = 8) in uint rotation; // rotation of piece
+layout(location = 9) in uint visible; // visibility of piece
 
 flat out uint v_tid;
 flat out uint v_rotation;
+flat out uint v_visible;
 out vec2 v_texcoord;
 out vec2 v_puzcoord;
 
@@ -28,6 +31,7 @@ const float PADDING_SIZE = 32.0;
 void main() {
     v_tid = tid;
     v_rotation = rotation;
+    v_visible = visible;
     v_texcoord = texcoord;
     v_puzcoord = vec2(t_x, t_y);
 
@@ -69,6 +73,6 @@ void main() {
       );
     }
 
-    gl_Position = projection * view * model * rotationMatrix * vec4(position, 0, 1);
+    gl_Position = projection * view * model * rotationMatrix * vec4(position, z, 1);
 }
 `

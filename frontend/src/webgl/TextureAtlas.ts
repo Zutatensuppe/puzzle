@@ -1,12 +1,12 @@
 export class TextureAtlas {
   private gl: WebGL2RenderingContext
-  private nameToId: Map<string, number>
+  private nameToId: Record<number, number>
   // Note: you can awlays bind a texture directly, but it's also possible
   //       to use a sampler to change how a texture is handled by the GPU
   //       without creating a new texture.
   private texture: WebGLTexture
 
-  constructor(gl: WebGL2RenderingContext, images: [string, ImageBitmap][]) {
+  constructor(gl: WebGL2RenderingContext, images: [number, ImageBitmap][]) {
     if (images.length === 0) {
       throw new Error('Cannot create texture atlas: no images provided')
     }
@@ -26,7 +26,7 @@ export class TextureAtlas {
     }
 
     this.gl = gl
-    this.nameToId = new Map()
+    this.nameToId = {}
     this.texture = gl.createTexture()!
 
     gl.bindTexture(gl.TEXTURE_2D_ARRAY, this.texture)
@@ -48,7 +48,7 @@ export class TextureAtlas {
         image,
       )
 
-      this.nameToId.set(src, i)
+      this.nameToId[src] = i
     }
 
     gl.texParameteri(gl.TEXTURE_2D_ARRAY, gl.TEXTURE_MIN_FILTER, gl.NEAREST)
@@ -59,8 +59,8 @@ export class TextureAtlas {
     gl.bindTexture(gl.TEXTURE_2D_ARRAY, null)
   }
 
-  getId(name: string) {
-    const id = this.nameToId.get(name)
+  getId(name: number) {
+    const id = this.nameToId[name]
     if (id === undefined) {
       throw new Error(`Cannot find texture ${name}`)
     }
@@ -81,7 +81,7 @@ export class TextureAtlas {
 
   destroy() {
     this.gl.deleteTexture(this.texture)
-    this.nameToId.clear()
+    this.nameToId = {}
     this.index = -1
   }
 }

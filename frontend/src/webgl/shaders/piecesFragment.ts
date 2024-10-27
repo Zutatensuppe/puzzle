@@ -7,6 +7,7 @@ uniform vec2 puzzle_image_size;
 
 flat in uint v_tid;
 flat in uint v_rotation;
+flat in uint v_visible;
 in vec2 v_texcoord;
 in vec2 v_puzcoord;
 
@@ -73,6 +74,10 @@ vec4 determine_frag_color() {
 }
 
 void main() {
-  fragColor = determine_frag_color();
+  if (v_visible == 0u) {
+    fragColor = vec4(.0);
+  } else {
+    fragColor = determine_frag_color();
+  }
 }
 `

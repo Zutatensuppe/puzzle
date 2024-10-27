@@ -4,14 +4,12 @@ import {
   DefaultRotationMode,
   EncodedGame,
   EncodedGameLegacy,
-  EncodedPiece,
   EncodedPieceShape,
   EncodedPlayer,
+  EncodedPlayerIdx,
   Game,
-  Piece,
   PieceRotation,
   PieceShape,
-  Player,
   PuzzleInfo,
   RotationMode,
   ScoreMode,
@@ -134,52 +132,6 @@ function rotateEncodedShape(
   }
 }
 
-function encodePiece(data: Piece): EncodedPiece {
-  return [data.idx, data.pos.x, data.pos.y, data.z, data.owner, data.group, data.rot]
-}
-
-function decodePiece(data: EncodedPiece): Piece {
-  return {
-    idx: data[0],
-    pos: {
-      x: data[1],
-      y: data[2],
-    },
-    z: data[3],
-    owner: data[4],
-    group: data[5],
-    rot: data[6],
-  }
-}
-
-function encodePlayer(data: Player): EncodedPlayer {
-  return [
-    data.id,
-    data.x,
-    data.y,
-    data.d,
-    data.name,
-    data.color,
-    data.bgcolor,
-    data.points,
-    data.ts,
-  ]
-}
-
-function decodePlayer(data: EncodedPlayer): Player {
-  return {
-    id: data[0],
-    x: data[1],
-    y: data[2],
-    d: data[3], // mouse down
-    name: data[4],
-    color: data[5],
-    bgcolor: data[6],
-    points: data[7],
-    ts: data[8],
-  }
-}
-
 function encodeGame(data: Game): EncodedGame | EncodedGameLegacy {
   return data.crop ? [
     data.id,
@@ -213,12 +165,12 @@ function encodeGame(data: Game): EncodedGame | EncodedGameLegacy {
   ]
 }
 
-export const playerToBasicPlayerInfo = (p: Player): BasicPlayerInfo => {
+export const playerToBasicPlayerInfo = (p: EncodedPlayer): BasicPlayerInfo => {
   return {
-    id: p.id,
-    color: p.color,
-    name: p.name,
-    points: p.points,
+    id: p[EncodedPlayerIdx.ID],
+    color: p[EncodedPlayerIdx.COLOR],
+    name: p[EncodedPlayerIdx.NAME],
+    points: p[EncodedPlayerIdx.POINTS],
   }
 }
 
@@ -406,12 +358,6 @@ export default {
 
   encodeShape,
   decodeShape,
-
-  encodePiece,
-  decodePiece,
-
-  encodePlayer,
-  decodePlayer,
 
   encodeGame,
   decodeGame,

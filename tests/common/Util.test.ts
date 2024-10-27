@@ -47,44 +47,6 @@ describe('Util', () => {
     }))
   })
 
-  describe('de/encodePiece', () => {
-    const testCases = [
-      {
-        piece: { idx: 1, pos: { x: 2, y: 3 }, z: 4, owner: 5, group: 6 } as Piece,
-        encoded: [1, 2, 3, 4, 5, 6] as EncodedPiece,
-      },
-      {
-        piece: { idx: 1, pos: { x: 0, y: 9 }, z: 4, owner: -1, group: 6 } as Piece,
-        encoded: [1, 0, 9, 4, -1, 6] as EncodedPiece,
-      },
-    ]
-
-    testCases.forEach(({ piece, encoded }) => it('encodePiece $piece', () => {
-      expect(Util.encodePiece(piece)).toStrictEqual(encoded)
-    }))
-
-    testCases.forEach(({ piece, encoded }) => it('decodePiece $piece', () => {
-      expect(Util.decodePiece(encoded)).toStrictEqual(piece)
-    }))
-  })
-
-  describe('de/encodePlayer', () => {
-    const testCases = [
-      {
-        player: { id: 'bla', x: 1, y: 2, d: 0, name: 'name', color: 'color', bgcolor: 'bgcolor', points: 5, ts: 6 } as Player,
-        encoded: ['bla', 1, 2, 0, 'name', 'color', 'bgcolor', 5, 6] as EncodedPlayer,
-      },
-    ]
-
-    testCases.forEach(({ player, encoded }) => it('encodePlayer $player', () => {
-      expect(Util.encodePlayer(player)).toStrictEqual(encoded)
-    }))
-
-    testCases.forEach(({ player, encoded }) => it('decodePlayer $player', () => {
-      expect(Util.decodePlayer(encoded)).toStrictEqual(player)
-    }))
-  })
-
   describe('de/encodeGame', () => {
     const rng = {
       rand_high: 1,
