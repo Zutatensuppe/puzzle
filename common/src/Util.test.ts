@@ -1,8 +1,117 @@
-import { EncodedGame, EncodedGameLegacy, EncodedPiece, EncodedPlayer, Game, Piece, Player, Puzzle, PuzzleInfo } from '../../src/common/Types'
-import Util, { clamp } from '../../src/common/Util'
 import { describe, expect, it } from 'vitest'
+import { EncodedGame, EncodedGameLegacy, EncodedPieceShape, Game, GameId, ImageId, PieceRotation, PieceShape, Puzzle, PuzzleInfo, UserId } from './Types'
+import Util, { clamp } from './Util'
 
-describe('Util', () => {
+describe('Util.ts', () => {
+  describe('de/encodeShape', () => {
+    const testCases: {
+      name: string
+      decoded: PieceShape
+      encoded: EncodedPieceShape
+    }[] = [
+      {
+        name: 'flat on all sides',
+        decoded: { top: 0, right: 0, bottom: 0, left: 0 },
+        encoded: 0b01010101,
+      },
+      {
+        name: 'taps on top and right, notches on bottom and left',
+        decoded: { top: 1, right: 1, bottom: -1, left: -1 },
+        encoded: 0b00001010,
+      },
+    ]
+
+    testCases.forEach(({ name, decoded, encoded }) => it(name, () => {
+      expect(Util.decodeShape(encoded)).toEqual(decoded)
+      expect(Util.encodeShape(decoded)).toEqual(encoded)
+    }))
+  })
+
+  describe('rotateShape', () => {
+    const testCases: {
+      name: string
+      shape: PieceShape
+      rotation: PieceRotation
+      expected: PieceShape
+    }[] = [
+      {
+        name: 'rot 90 degree, flat on all sides',
+        shape: { top: 0, right: 0, bottom: 0, left: 0 },
+        rotation: PieceRotation.R90,
+        expected: { top: 0, right: 0, bottom: 0, left: 0 },
+      },
+      {
+        name: 'rot 90 degree, taps on top and right, notches on bottom and left',
+        shape: { top: 1, right: 1, bottom: -1, left: -1 },
+        rotation: PieceRotation.R90,
+        expected: { top: -1, right: 1, bottom: 1, left: -1 },
+      },
+      {
+        name: 'rot 180 degree, taps on top and right, notches on bottom and left',
+        shape: { top: 1, right: 1, bottom: -1, left: -1 },
+        rotation: PieceRotation.R180,
+        expected: { top: -1, right: -1, bottom: 1, left: 1 },
+      },
+      {
+        name: 'rot 270 degree, taps on top and right, notches on bottom and left',
+        shape: { top: 1, right: 1, bottom: -1, left: -1 },
+        rotation: PieceRotation.R270,
+        expected: { top: 1, right: -1, bottom: -1, left: 1 },
+      },
+    ]
+
+    testCases.forEach(({ name, shape, rotation, expected }) => it(name, () => {
+      const actual = Util.rotateShape(shape, rotation)
+      expect(actual).toEqual(expected)
+    }))
+  })
+
+  describe('rotateEncodedShape', () => {
+    const testCases: {
+      name: string
+      shape: EncodedPieceShape
+      rotation: PieceRotation
+      expected: EncodedPieceShape
+    }[] = [
+      {
+        name: 'rot 90 degree, flat on all sides',
+        shape: 0b10101010,
+        rotation: PieceRotation.R90,
+        expected: 0b10101010,
+      },
+      {
+        name: 'rot 90 degree, taps on top and right, notches on bottom and left',
+        shape: 0b00001010,
+        rotation: PieceRotation.R90,
+        expected: 0b00101000,
+      },
+      {
+        name: 'rot 180 degree, taps on top and right, notches on bottom and left',
+        shape: 0b00001010,
+        rotation: PieceRotation.R180,
+        expected: 0b10100000,
+      },
+      {
+        name: 'rot 270 degree, taps on top and right, notches on bottom and left',
+        shape: 0b00001010,
+        rotation: PieceRotation.R270,
+        expected: 0b10000010,
+      },
+      {
+        name: 'rot 90 degree, flat on top, taps on all other sides',
+        shape: 0b10101000,
+        rotation: PieceRotation.R90,
+        expected: 0b10100010,
+      },
+    ]
+
+    testCases.forEach(({ name, shape, rotation, expected }) => it(name, () => {
+      const actual = Util.rotateEncodedShape(shape, rotation)
+      expect(actual).toEqual(expected)
+    }))
+  })
+
+
   describe('slug', () => {
     const testCases = [
       { str: '^%5k0sj55%%zxc0j', expected: '5k0sj55-zxc0j' },
@@ -47,44 +156,6 @@ describe('Util', () => {
     }))
   })
 
-  describe('de/encodePiece', () => {
-    const testCases = [
-      {
-        piece: { idx: 1, pos: { x: 2, y: 3 }, z: 4, owner: 5, group: 6 } as Piece,
-        encoded: [1, 2, 3, 4, 5, 6] as EncodedPiece,
-      },
-      {
-        piece: { idx: 1, pos: { x: 0, y: 9 }, z: 4, owner: -1, group: 6 } as Piece,
-        encoded: [1, 0, 9, 4, -1, 6] as EncodedPiece,
-      },
-    ]
-
-    testCases.forEach(({ piece, encoded }) => it('encodePiece $piece', () => {
-      expect(Util.encodePiece(piece)).toStrictEqual(encoded)
-    }))
-
-    testCases.forEach(({ piece, encoded }) => it('decodePiece $piece', () => {
-      expect(Util.decodePiece(encoded)).toStrictEqual(piece)
-    }))
-  })
-
-  describe('de/encodePlayer', () => {
-    const testCases = [
-      {
-        player: { id: 'bla', x: 1, y: 2, d: 0, name: 'name', color: 'color', bgcolor: 'bgcolor', points: 5, ts: 6 } as Player,
-        encoded: ['bla', 1, 2, 0, 'name', 'color', 'bgcolor', 5, 6] as EncodedPlayer,
-      },
-    ]
-
-    testCases.forEach(({ player, encoded }) => it('encodePlayer $player', () => {
-      expect(Util.encodePlayer(player)).toStrictEqual(encoded)
-    }))
-
-    testCases.forEach(({ player, encoded }) => it('decodePlayer $player', () => {
-      expect(Util.decodePlayer(encoded)).toStrictEqual(player)
-    }))
-  })
-
   describe('de/encodeGame', () => {
     const rng = {
       rand_high: 1,
@@ -109,9 +180,9 @@ describe('Util', () => {
       tilesY: 0,
       shapes: [],
       image: {
-        id: 0,
+        id: 0 as ImageId,
         uploaderName: '',
-        uploaderUserId: 0,
+        uploaderUserId: 0 as UserId,
         filename: '',
         url: '',
         copyrightName: '',
@@ -138,12 +209,12 @@ describe('Util', () => {
 
     const testCases = [
       {
-        game: { id: 'id', rng: { type: 'asd', obj: rng }, puzzle: puzzle, players: [], scoreMode: 1, shapeMode: 1, snapMode: 1, creatorUserId: 1, hasReplay: true, gameVersion: 1, private: true } as Game,
-        encoded: ['id', 'asd', { rand_high: 1, rand_low: 1 }, puzzle, [], 1, 1, 1, 1, true, 1, true] as EncodedGameLegacy,
+        game: { id: 'id' as GameId, rng: { type: 'asd', obj: rng }, puzzle: puzzle, players: [], scoreMode: 1, shapeMode: 1, snapMode: 1, rotationMode: 0, creatorUserId: 1 as UserId, hasReplay: true, gameVersion: 1, private: true, registeredMap: {} } as Game,
+        encoded: ['id' as GameId, 'asd', { rand_high: 1, rand_low: 1 }, puzzle, [], 1, 1, 1, 1 as UserId, true, 1, true] as EncodedGameLegacy,
       },
       {
-        game: { id: 'id', rng: { type: 'asd', obj: rng }, puzzle: puzzle, players: [], scoreMode: 1, shapeMode: 1, snapMode: 1, creatorUserId: 1, hasReplay: true, gameVersion: 1, private: true, crop: { x: 0, y: 0, w: 100, h: 100 } } as Game,
-        encoded: ['id', 'asd', { rand_high: 1, rand_low: 1 }, puzzle, [], 1, 1, 1, 1, true, 1, true, { x: 0, y: 0, w: 100, h: 100 }] as EncodedGame,
+        game: { id: 'id' as GameId, rng: { type: 'asd', obj: rng }, puzzle: puzzle, players: [], scoreMode: 1, shapeMode: 1, snapMode: 1, rotationMode: 1, creatorUserId: 1 as UserId, hasReplay: true, gameVersion: 1, private: true, crop: { x: 0, y: 0, w: 100, h: 100 }, registeredMap: {} } as Game,
+        encoded: ['id' as GameId, 'asd', { rand_high: 1, rand_low: 1 }, puzzle, [], 1, 1, 1, 1 as UserId, true, 1, true, { x: 0, y: 0, w: 100, h: 100 }, {}, 1] as EncodedGame,
       },
     ]
     testCases.forEach(({ game, encoded }) => it('encodeGame $game', () => {
@@ -177,9 +248,9 @@ describe('Util', () => {
       tilesY: 0,
       shapes: [],
       image: {
-        id: 0,
+        id: 0 as ImageId,
         uploaderName: '',
-        uploaderUserId: 0,
+        uploaderUserId: 0 as UserId,
         filename: '',
         url: '',
         copyrightName: '',

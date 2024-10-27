@@ -16,6 +16,10 @@
             <td><v-icon icon="mdi-connection" /> Snapping: </td>
             <td><span :title="snapMode[1]">{{ snapMode[0] }}</span></td>
           </tr>
+          <tr>
+            <td><v-icon icon="mdi-format-rotate-90" /> Rotation: </td>
+            <td><span :title="rotationMode[1]">{{ rotationMode[0] }}</span></td>
+          </tr>
         </tbody>
       </v-table>
       <h4 class="mt-5">
@@ -35,6 +39,8 @@ import { useRouter } from 'vue-router'
 import { ImageSearchSort, Tag } from '../../../common/src/Types'
 import ImageInfoTable from './ImageInfoTable.vue'
 import {
+  rotationModeDescriptionToString,
+  rotationModeToString,
   scoreModeDescriptionToString,
   scoreModeToString,
   shapeModeDescriptionToString,
@@ -69,6 +75,11 @@ const shapeMode = computed(() => {
 const snapMode = computed(() => {
   const m = props.game.getSnapMode()
   return [snapModeToString(m), snapModeDescriptionToString(m)]
+})
+
+const rotationMode = computed(() => {
+  const m = props.game.getRotationMode()
+  return [rotationModeToString(m), rotationModeDescriptionToString(m)]
 })
 </script>
 <style scoped>

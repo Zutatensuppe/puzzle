@@ -1,5 +1,4 @@
-import { EncodedPlayer, GameId, ImageId, UserId } from '../../../common/src/Types'
-import Util from '../../../common/src/Util'
+import { EncodedPlayer, EncodedPlayerIdx, GameId, ImageId, UserId } from '../../../common/src/Types'
 import Db from '../Db'
 import { ImageRow } from './ImagesRepo'
 
@@ -100,18 +99,17 @@ export class GamesRepo {
     if (!players.length) {
       return
     }
-    const decodedPlayers = players.map(player => Util.decodePlayer(player))
-    const userRows = await this.db.getMany('users', { client_id: { '$in': decodedPlayers.map(p => p.id )}})
-    for (const p of decodedPlayers) {
-      const userRow = userRows.find(row => row.client_id === p.id)
+    const userRows = await this.db.getMany('users', { client_id: { '$in': players.map(p => p[EncodedPlayerIdx.ID] )}})
+    for (const p of players) {
+      const userRow = userRows.find(row => row.client_id === p[EncodedPlayerIdx.ID])
       const userId = userRow
         ? userRow.id
-        : await this.db.insert('users', { client_id: p.id, created: new Date() }, 'id')
+        : await this.db.insert('users', { client_id: p[EncodedPlayerIdx.ID], created: new Date() }, 'id')
 
       await this.db.upsert('user_x_game', {
         user_id: userId,
         game_id: gameId,
-        pieces_count: p.points,
+        pieces_count: p[EncodedPlayerIdx.POINTS],
       }, ['user_id', 'game_id'])
     }
   }

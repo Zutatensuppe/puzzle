@@ -1,4 +1,4 @@
-import Time from '../../src/common/Time'
+import Time from './Time'
 import { describe, expect, it } from 'vitest'
 
 describe('Time.ts', () => {

@@ -9,15 +9,27 @@ export class Sounds {
     // pass
   }
 
-  playPieceConnected() {
+  private play(audio: HTMLAudioElement) {
+    const cloned = audio.cloneNode() as HTMLAudioElement
     const vol = this.playerSettings.soundsVolume()
-    this.assets.Audio.CLICK.volume = vol / 100
-    void this.assets.Audio.CLICK.play()
+    cloned.volume = vol / 100
+    cloned.addEventListener('ended', () => {
+      cloned.remove()
+    })
+    cloned.play().catch(_e => {
+      cloned.remove()
+    })
+  }
+
+  playPieceConnected() {
+    this.play(this.assets.Audio.CLICK)
   }
 
   playOtherPieceConnected() {
-    const vol = this.playerSettings.soundsVolume()
-    this.assets.Audio.CLICK_2.volume = vol / 100
-    void this.assets.Audio.CLICK_2.play()
+    this.play(this.assets.Audio.CLICK_2)
+  }
+
+  playPieceRotated() {
+    this.play(this.assets.Audio.ROTATE)
   }
 }

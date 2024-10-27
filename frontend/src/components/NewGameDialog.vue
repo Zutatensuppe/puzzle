@@ -106,6 +106,22 @@
                   </v-radio-group>
                 </div>
                 <div>
+                  <v-label><v-icon icon="mdi-format-rotate-90 mr-1" /> Rotation</v-label>
+                  <v-radio-group
+                    v-model="rotationMode"
+                    density="comfortable"
+                  >
+                    <v-radio
+                      :label="`${rotationModeToString(RotationMode.NONE)} (${rotationModeDescriptionToString(RotationMode.NONE)})`"
+                      :value="RotationMode.NONE"
+                    />
+                    <v-radio
+                      :label="`${rotationModeToString(RotationMode.ORTHOGONAL)} (${rotationModeDescriptionToString(RotationMode.ORTHOGONAL)})`"
+                      :value="RotationMode.ORTHOGONAL"
+                    />
+                  </v-radio-group>
+                </div>
+                <div>
                   <v-label><v-icon icon="mdi-incognito mr-1" /> Privacy</v-label>
                   <v-checkbox
                     v-model="isPrivate"
@@ -150,13 +166,15 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 
-import { GameSettings, ImageInfo, ScoreMode, ShapeMode, SnapMode, Tag } from '../../../common/src/Types'
+import { GameSettings, ImageInfo, RotationMode, ScoreMode, ShapeMode, SnapMode, Tag } from '../../../common/src/Types'
 import { NEWGAME_MIN_PIECES, NEWGAME_MAX_PIECES } from '../../../common/src/GameCommon'
 import PuzzleCropper from './PuzzleCropper.vue'
 import { determinePuzzleInfo, PuzzleCreationInfo } from '../../../common/src/Puzzle'
 import { Rect } from '../../../common/src/Geometry'
 import ImageInfoTable from './ImageInfoTable.vue'
 import {
+  rotationModeDescriptionToString,
+  rotationModeToString,
   scoreModeDescriptionToString,
   scoreModeToString,
   shapeModeDescriptionToString,
@@ -183,6 +201,7 @@ const isPrivate = ref<boolean>(forcePrivate.value)
 const scoreMode = ref<ScoreMode>(ScoreMode.ANY)
 const shapeMode = ref<ShapeMode>(ShapeMode.NORMAL)
 const snapMode = ref<SnapMode>(SnapMode.NORMAL)
+const rotationMode = ref<RotationMode>(RotationMode.NONE)
 
 const crop = ref<Rect>({ x: 0, y: 0, w: props.image.width, h: props.image.height })
 
@@ -217,6 +236,9 @@ const shapeModeInt = computed((): number => {
 const snapModeInt = computed((): number => {
   return parseInt(`${snapMode.value}`, 10)
 })
+const rotationModeInt = computed((): number => {
+  return parseInt(`${rotationMode.value}`, 10)
+})
 const piecesInt = computed((): number => {
   return parseInt(`${pieces.value}`, 10)
 })
@@ -248,6 +270,7 @@ const onNewGameClick = () => {
     scoreMode: scoreModeInt.value,
     shapeMode: shapeModeInt.value,
     snapMode: snapModeInt.value,
+    rotationMode: rotationModeInt.value,
     crop: crop.value,
   })
 }

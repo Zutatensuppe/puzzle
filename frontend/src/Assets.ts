@@ -15,9 +15,14 @@ import badgeAnon from './assets/gfx/badge_anon.png'
 import badgeAnonIdle from './assets/gfx/badge_anon_idle.png'
 
 // @ts-ignore
+import stencilsDefault from './assets/stencils/default.png'
+
+// @ts-ignore
 import click from './assets/sounds/click.mp3'
 // @ts-ignore
 import click2 from './assets/sounds/click2.mp3'
+// @ts-ignore
+import rotate from './assets/sounds/rotate2.mp3'
 import { Graphics } from './Graphics'
 import { COLOR_MAGENTA } from '../../common/src/Color'
 
@@ -25,6 +30,7 @@ export class Assets {
   public Audio!: {
     CLICK: HTMLAudioElement
     CLICK_2: HTMLAudioElement
+    ROTATE: HTMLAudioElement
   }
 
   public Gfx!: {
@@ -39,6 +45,7 @@ export class Assets {
     badgeOverIdle: ImageBitmap
     badgeAnon: ImageBitmap
     badgeAnonIdle: ImageBitmap
+    stencilsDefault: ImageBitmap
   }
 
   async init (graphics: Graphics) {
@@ -46,6 +53,7 @@ export class Assets {
     this.Audio = {
       CLICK: new Audio(click),
       CLICK_2: new Audio(click2),
+      ROTATE: new Audio(rotate),
     }
 
     const grabGfx = await graphics.loadImageToBitmap(grab)
@@ -62,6 +70,7 @@ export class Assets {
       badgeOverIdle: await graphics.loadImageToBitmap(badgeOverIdle),
       badgeAnon: await graphics.loadImageToBitmap(badgeAnon),
       badgeAnonIdle: await graphics.loadImageToBitmap(badgeAnonIdle),
+      stencilsDefault: await graphics.loadImageToBitmap(stencilsDefault),
     }
   }
 }

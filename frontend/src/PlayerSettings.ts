@@ -2,7 +2,7 @@ import { MODE_REPLAY } from './GameMode'
 import storage from './storage'
 import GameCommon from '../../common/src/GameCommon'
 import { Game } from './Game'
-import { PLAYER_SETTINGS, PLAYER_SETTINGS_DEFAULTS, PlayerSettingsData, Renderer } from '../../common/src/Types'
+import { PLAYER_SETTINGS, PLAYER_SETTINGS_DEFAULTS, PlayerSettingsData, RendererType } from '../../common/src/Types'
 import { hasWebGL2Support } from './util'
 
 export class PlayerSettings {
@@ -17,6 +17,8 @@ export class PlayerSettings {
     this.settings = {} as PlayerSettingsData
     this.settings.soundsVolume = storage.getInt(PLAYER_SETTINGS.SOUND_VOLUME, PLAYER_SETTINGS_DEFAULTS.SOUND_VOLUME)
     this.settings.otherPlayerClickSoundEnabled = storage.getBool(PLAYER_SETTINGS.OTHER_PLAYER_CLICK_SOUND_ENABLED, PLAYER_SETTINGS_DEFAULTS.OTHER_PLAYER_CLICK_SOUND_ENABLED)
+    this.settings.mouseRotate = storage.getBool(PLAYER_SETTINGS.MOUSE_ROTATE, PLAYER_SETTINGS_DEFAULTS.MOUSE_ROTATE)
+    this.settings.rotateSoundEnabled = storage.getBool(PLAYER_SETTINGS.ROTATE_SOUND_ENABLED, PLAYER_SETTINGS_DEFAULTS.ROTATE_SOUND_ENABLED)
     this.settings.soundsEnabled = storage.getBool(PLAYER_SETTINGS.SOUND_ENABLED, PLAYER_SETTINGS_DEFAULTS.SOUND_ENABLED)
     this.settings.showPlayerNames = storage.getBool(PLAYER_SETTINGS.SHOW_PLAYER_NAMES, PLAYER_SETTINGS_DEFAULTS.SHOW_PLAYER_NAMES)
     this.settings.showTable = storage.getBool(PLAYER_SETTINGS.SHOW_TABLE, PLAYER_SETTINGS_DEFAULTS.SHOW_TABLE)
@@ -39,15 +41,15 @@ export class PlayerSettings {
     this.settings.renderer = this.parseRenderer(storage.getStr(PLAYER_SETTINGS.RENDERER, PLAYER_SETTINGS_DEFAULTS.RENDERER))
   }
 
-  parseRenderer(str: string): Renderer {
+  parseRenderer(str: string): RendererType {
     if (!hasWebGL2Support()) {
-      return Renderer.CANVAS
+      return RendererType.CANVAS
     }
-    if (Renderer.WEBGL2 === str) {
-      return Renderer.WEBGL2
+    if (RendererType.WEBGL2 === str) {
+      return RendererType.WEBGL2
     }
-    if (Renderer.CANVAS === str) {
-      return Renderer.CANVAS
+    if (RendererType.CANVAS === str) {
+      return RendererType.CANVAS
     }
     return PLAYER_SETTINGS_DEFAULTS.RENDERER
   }
@@ -63,8 +65,10 @@ export class PlayerSettings {
     this.setName(data.name)
     this.setSoundsEnabled(data.soundsEnabled)
     this.setOtherPlayerClickSoundEnabled(data.otherPlayerClickSoundEnabled)
+    this.setRotateSoundEnabled(data.rotateSoundEnabled)
     this.setSoundsVolume(data.soundsVolume)
     this.setShowPlayerNames(data.showPlayerNames)
+    this.setMouseRotate(data.mouseRotate)
     this.setRenderer(data.renderer)
   }
 
@@ -164,11 +168,31 @@ export class PlayerSettings {
     return false
   }
 
+  setMouseRotate(value: boolean) {
+    if (this.settings.mouseRotate !== value) {
+      this.settings.mouseRotate = value
+      storage.setBool(PLAYER_SETTINGS.MOUSE_ROTATE, value)
+      this.showStatusMessage('Mouse rotate', value)
+      return true
+    }
+    return false
+  }
+
   setOtherPlayerClickSoundEnabled(value: boolean) {
     if (this.settings.otherPlayerClickSoundEnabled !== value) {
       this.settings.otherPlayerClickSoundEnabled = value
       storage.setBool(PLAYER_SETTINGS.OTHER_PLAYER_CLICK_SOUND_ENABLED, value)
       this.showStatusMessage('Other player sounds', value)
+      return true
+    }
+    return false
+  }
+
+  setRotateSoundEnabled(value: boolean) {
+    if (this.settings.rotateSoundEnabled !== value) {
+      this.settings.rotateSoundEnabled = value
+      storage.setBool(PLAYER_SETTINGS.ROTATE_SOUND_ENABLED, value)
+      this.showStatusMessage('Rotate sounds', value)
       return true
     }
     return false
@@ -205,7 +229,7 @@ export class PlayerSettings {
     return false
   }
 
-  setRenderer(value: Renderer) {
+  setRenderer(value: RendererType) {
     if (this.settings.renderer !== value) {
       this.settings.renderer = value
       storage.setStr(PLAYER_SETTINGS.RENDERER, value)
@@ -257,6 +281,14 @@ export class PlayerSettings {
 
   soundsEnabled() {
     return this.settings.soundsEnabled
+  }
+
+  rotateSoundEnabled() {
+    return this.settings.rotateSoundEnabled
+  }
+
+  mouseRotate() {
+    return this.settings.mouseRotate
   }
 
   renderer() {

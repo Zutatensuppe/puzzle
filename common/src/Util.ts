@@ -1,16 +1,17 @@
 import { PuzzleCreationInfo } from './Puzzle'
 import {
   BasicPlayerInfo,
+  DefaultRotationMode,
   EncodedGame,
   EncodedGameLegacy,
-  EncodedPiece,
   EncodedPieceShape,
   EncodedPlayer,
+  EncodedPlayerIdx,
   Game,
-  Piece,
+  PieceRotation,
   PieceShape,
-  Player,
   PuzzleInfo,
+  RotationMode,
   ScoreMode,
   ShapeMode,
   SnapMode,
@@ -85,48 +86,49 @@ function decodeShape(data: EncodedPieceShape): PieceShape {
   }
 }
 
-function encodePiece(data: Piece): EncodedPiece {
-  return [data.idx, data.pos.x, data.pos.y, data.z, data.owner, data.group]
-}
-
-function decodePiece(data: EncodedPiece): Piece {
-  return {
-    idx: data[0],
-    pos: {
-      x: data[1],
-      y: data[2],
-    },
-    z: data[3],
-    owner: data[4],
-    group: data[5],
+function rotateShape(shape: PieceShape, rotation: PieceRotation): PieceShape {
+  switch (rotation) {
+    case PieceRotation.R90:
+      return {
+        top: shape.left,
+        right: shape.top,
+        bottom: shape.right,
+        left: shape.bottom,
+      }
+    case PieceRotation.R180:
+      return {
+        top: shape.bottom,
+        right: shape.left,
+        bottom: shape.top,
+        left: shape.right,
+      }
+    case PieceRotation.R270:
+      return {
+        top: shape.right,
+        right: shape.bottom,
+        bottom: shape.left,
+        left: shape.top,
+      }
+    case PieceRotation.R0:
+    default:
+      return shape
   }
 }
 
-function encodePlayer(data: Player): EncodedPlayer {
-  return [
-    data.id,
-    data.x,
-    data.y,
-    data.d,
-    data.name,
-    data.color,
-    data.bgcolor,
-    data.points,
-    data.ts,
-  ]
-}
-
-function decodePlayer(data: EncodedPlayer): Player {
-  return {
-    id: data[0],
-    x: data[1],
-    y: data[2],
-    d: data[3], // mouse down
-    name: data[4],
-    color: data[5],
-    bgcolor: data[6],
-    points: data[7],
-    ts: data[8],
+function rotateEncodedShape(
+  shape: EncodedPieceShape,
+  rotation: PieceRotation | undefined,
+): EncodedPieceShape {
+  switch (rotation) {
+    case PieceRotation.R90:
+      return (shape >> 6 | shape << 2) & 0b11111111
+    case PieceRotation.R180:
+      return (shape >> 4 | shape << 4) & 0b11111111
+      case PieceRotation.R270:
+      return (shape >> 2 | shape << 6) & 0b11111111
+    case PieceRotation.R0:
+    default:
+      return shape
   }
 }
 
@@ -146,6 +148,7 @@ function encodeGame(data: Game): EncodedGame | EncodedGameLegacy {
     data.private,
     data.crop,
     data.registeredMap,
+    data.rotationMode,
   ] : [
     data.id,
     data.rng.type || '',
@@ -162,12 +165,12 @@ function encodeGame(data: Game): EncodedGame | EncodedGameLegacy {
   ]
 }
 
-export const playerToBasicPlayerInfo = (p: Player): BasicPlayerInfo => {
+export const playerToBasicPlayerInfo = (p: EncodedPlayer): BasicPlayerInfo => {
   return {
-    id: p.id,
-    color: p.color,
-    name: p.name,
-    points: p.points,
+    id: p[EncodedPlayerIdx.ID],
+    color: p[EncodedPlayerIdx.COLOR],
+    name: p[EncodedPlayerIdx.NAME],
+    points: p[EncodedPlayerIdx.POINTS],
   }
 }
 
@@ -188,6 +191,7 @@ function decodeGame(data: EncodedGame | EncodedGameLegacy): Game {
       scoreMode: data[5],
       shapeMode: data[6],
       snapMode: data[7],
+      rotationMode: RotationMode.NONE,
       creatorUserId: data[8],
       hasReplay: data[9],
       gameVersion: data[10],
@@ -207,6 +211,7 @@ function decodeGame(data: EncodedGame | EncodedGameLegacy): Game {
     scoreMode: data[5],
     shapeMode: data[6],
     snapMode: data[7],
+    rotationMode: DefaultRotationMode(data[14]),
     creatorUserId: data[8],
     hasReplay: data[9],
     gameVersion: data[10],
@@ -328,6 +333,22 @@ export const shapeModeDescriptionToString = (m: ShapeMode) => {
   }
 }
 
+export const rotationModeToString = (m: RotationMode) => {
+  switch (m) {
+    case RotationMode.ORTHOGONAL: return 'Simple'
+    case RotationMode.NONE:
+    default: return 'None'
+  }
+}
+
+export const rotationModeDescriptionToString = (m: RotationMode) => {
+  switch (m) {
+    case RotationMode.ORTHOGONAL: return 'Individual pieces can be rotated by 90 degrees at a time'
+    case RotationMode.NONE:
+    default: return 'Pieces cannot be rotated'
+  }
+}
+
 export default {
   hash,
   slug,
@@ -338,12 +359,6 @@ export default {
   encodeShape,
   decodeShape,
 
-  encodePiece,
-  decodePiece,
-
-  encodePlayer,
-  decodePlayer,
-
   encodeGame,
   decodeGame,
 
@@ -351,4 +366,7 @@ export default {
   coordByPieceIdx,
 
   asQueryArgs,
+
+  rotateShape,
+  rotateEncodedShape,
 }

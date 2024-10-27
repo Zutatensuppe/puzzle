@@ -1,4 +1,4 @@
-import { Point, Rect } from './Geometry'
+import { Rect } from './Geometry'
 import { SERVER_EVENT_TYPE, LOG_TYPE, CLIENT_EVENT_TYPE, CHANGE_TYPE, GAME_EVENT_TYPE } from './Protocol'
 import { Rng, RngSerialized } from './Rng'
 
@@ -42,6 +42,7 @@ export type GameEventInputBgColor = [GAME_EVENT_TYPE.INPUT_EV_BG_COLOR, string]
 export type GameEventInputPlayerColor = [GAME_EVENT_TYPE.INPUT_EV_PLAYER_COLOR, string]
 export type GameEventInputPlayerName = [GAME_EVENT_TYPE.INPUT_EV_PLAYER_NAME, string]
 export type GameEventInputMove = [GAME_EVENT_TYPE.INPUT_EV_MOVE, number, number]
+export type GameEventInputRotate = [GAME_EVENT_TYPE.INPUT_EV_ROTATE, number]
 export type GameEventInputTogglePreview = [GAME_EVENT_TYPE.INPUT_EV_TOGGLE_PREVIEW]
 export type GameEventInputToggleSounds = [GAME_EVENT_TYPE.INPUT_EV_TOGGLE_SOUNDS]
 export type GameEventInputReplayTogglePause = [GAME_EVENT_TYPE.INPUT_EV_REPLAY_TOGGLE_PAUSE]
@@ -65,6 +66,7 @@ export type GameEvent = GameEventInputMouseDown
   | GameEventInputPlayerColor
   | GameEventInputPlayerName
   | GameEventInputMove
+  | GameEventInputRotate
   | GameEventInputTogglePreview
   | GameEventInputToggleSounds
   | GameEventInputReplayTogglePause
@@ -90,27 +92,57 @@ export type ClientUpdateEvent = [CLIENT_EVENT_TYPE.UPDATE, number, GameEvent]
 export type ClientImageSnapshotEvent = [CLIENT_EVENT_TYPE.IMAGE_SNAPSHOT, string, number]
 export type ClientEvent = ClientInitEvent | ClientUpdateEvent | ClientImageSnapshotEvent
 
+export enum EncodedPlayerIdx {
+  ID = 0,
+  X = 1,
+  Y = 2,
+  MOUSEDOWN = 3,
+  NAME = 4,
+  COLOR = 5,
+  BGCOLOR = 6,
+  POINTS = 7,
+  TIMESTAMP = 8,
+}
+
 export type EncodedPlayer = FixedLengthArray<[
-  ClientId,
-  number,
-  number,
-  0 | 1,
-  string | null,
-  string | null,
-  string | null,
-  number,
-  Timestamp,
+  EncodedPlayerIdx.ID extends 0 ? ClientId : never,
+  EncodedPlayerIdx.X extends 1 ? number : never,
+  EncodedPlayerIdx.Y extends 2 ? number : never,
+  EncodedPlayerIdx.MOUSEDOWN extends 3 ? 0 | 1 : never,
+  EncodedPlayerIdx.NAME extends 4 ? string | null : never,
+  EncodedPlayerIdx.COLOR extends 5 ? string | null : never,
+  EncodedPlayerIdx.BGCOLOR extends 6 ? string | null : never,
+  EncodedPlayerIdx.POINTS extends 7 ? number : never,
+  EncodedPlayerIdx.TIMESTAMP extends 8 ? Timestamp : never,
 ]>
 
 export type RegisteredMap = Record<ClientId, boolean>
 
+export enum PieceRotation {
+  R0 = 0,
+  R90 = 1,
+  R180 = 2,
+  R270 = 3,
+}
+
+export enum EncodedPieceIdx {
+  IDX = 0,
+  POS_X = 1,
+  POS_Y = 2,
+  Z = 3,
+  OWNER = 4,
+  GROUP = 5,
+  ROTATION = 6,
+}
+
 export type EncodedPiece = FixedLengthArray<[
-  number,
-  number,
-  number,
-  number,
-  ClientId | number,
-  number,
+  EncodedPieceIdx.IDX extends 0 ? number : never,
+  EncodedPieceIdx.POS_X extends 1 ? number : never,
+  EncodedPieceIdx.POS_Y extends 2 ? number : never,
+  EncodedPieceIdx.Z extends 3 ? number : never,
+  EncodedPieceIdx.OWNER extends 4 ? ClientId | number : never,
+  EncodedPieceIdx.GROUP extends 5 ? number : never,
+  EncodedPieceIdx.ROTATION extends 6 ? undefined|PieceRotation : never,
 ]>
 
 export interface Announcement {
@@ -152,6 +184,7 @@ export type EncodedGame = FixedLengthArray<[
   boolean, // private
   Rect, // crop
   RegisteredMap,
+  RotationMode | undefined,
 ]>
 
 export type HeaderLogEntry = [
@@ -214,6 +247,7 @@ export interface Game {
   scoreMode: ScoreMode
   shapeMode: ShapeMode
   snapMode: SnapMode
+  rotationMode: RotationMode
   rng: GameRng
   private: boolean
   hasReplay: boolean
@@ -247,6 +281,7 @@ export interface GameSettings {
   scoreMode: ScoreMode
   shapeMode: ShapeMode
   snapMode: SnapMode
+  rotationMode: RotationMode
   crop: Rect
 }
 
@@ -287,20 +322,14 @@ export interface PieceShape {
   right: PieceEdge
 }
 
-export interface Piece {
-  owner: ClientId | number
-  idx: number
-  pos: Point
-  z: number
-  group: number
-}
-
 export interface PieceChange {
-  owner?: ClientId | number
-  idx?: number
-  pos?: Point
-  z?: number
-  group?: number
+  [EncodedPieceIdx.OWNER]?: ClientId | number
+  [EncodedPieceIdx.IDX]?: number
+  [EncodedPieceIdx.POS_X]?: number
+  [EncodedPieceIdx.POS_Y]?: number
+  [EncodedPieceIdx.Z]?: number
+  [EncodedPieceIdx.GROUP]?: number
+  [EncodedPieceIdx.ROTATION]?: PieceRotation
 }
 
 export interface ImageInfo {
@@ -359,58 +388,82 @@ export interface BasicPlayerInfo {
   points: number
 }
 
-export enum Renderer {
-  WEBGL2 = 'webgl2',
+export enum RendererType {
   CANVAS = 'canvas',
+  WEBGL2 = 'webgl2',
 }
 
 export interface PlayerSettingsData {
   background: string
-  showTable: boolean
-  tableTexture: string
-  useCustomTableTexture: boolean
+  color: string
   customTableTexture: string
   customTableTextureScale: number
-  color: string
+  mouseRotate: boolean
   name: string
-  soundsEnabled: boolean
   otherPlayerClickSoundEnabled: boolean
-  soundsVolume: number
+  renderer: RendererType
+  rotateSoundEnabled: boolean
   showPlayerNames: boolean
-  renderer: Renderer
+  showTable: boolean
+  soundsEnabled: boolean
+  soundsVolume: number
+  tableTexture: string
+  useCustomTableTexture: boolean
 }
 
 export const PLAYER_SETTINGS = {
-  SOUND_VOLUME: 'sound_volume',
-  SOUND_ENABLED: 'sound_enabled',
-  OTHER_PLAYER_CLICK_SOUND_ENABLED: 'other_player_click_sound_enabled',
   COLOR_BACKGROUND: 'bg_color',
-  SHOW_TABLE: 'show_table',
-  TABLE_TEXTURE: 'table_texture',
-  USE_CUSTOM_TABLE_TEXTURE: 'use_custom_table_texture',
-  CUSTOM_TABLE_TEXTURE: 'custom_table_texture',
   CUSTOM_TABLE_TEXTURE_SCALE: 'custom_table_texture_scale',
+  CUSTOM_TABLE_TEXTURE: 'custom_table_texture',
+  MOUSE_ROTATE: 'mouse_rotate',
+  OTHER_PLAYER_CLICK_SOUND_ENABLED: 'other_player_click_sound_enabled',
   PLAYER_COLOR: 'player_color',
   PLAYER_NAME: 'player_name',
-  SHOW_PLAYER_NAMES: 'show_player_names',
   RENDERER: 'renderer',
+  ROTATE_SOUND_ENABLED: 'rotate_sound_enabled',
+  SHOW_PLAYER_NAMES: 'show_player_names',
+  SHOW_TABLE: 'show_table',
+  SOUND_ENABLED: 'sound_enabled',
+  SOUND_VOLUME: 'sound_volume',
+  TABLE_TEXTURE: 'table_texture',
+  USE_CUSTOM_TABLE_TEXTURE: 'use_custom_table_texture',
 }
 
 export const PLAYER_SETTINGS_DEFAULTS = {
-  SOUND_VOLUME: 100,
-  SOUND_ENABLED: true,
-  OTHER_PLAYER_CLICK_SOUND_ENABLED: true,
   COLOR_BACKGROUND: '#222222',
-  SHOW_TABLE: true,
-  TABLE_TEXTURE: 'dark',
-  USE_CUSTOM_TABLE_TEXTURE: false,
-  CUSTOM_TABLE_TEXTURE: '',
   CUSTOM_TABLE_TEXTURE_SCALE: 1.0,
+  CUSTOM_TABLE_TEXTURE: '',
+  MOUSE_ROTATE: true,
+  OTHER_PLAYER_CLICK_SOUND_ENABLED: true,
   PLAYER_COLOR: '#ffffff',
   PLAYER_NAME: 'anon',
+  RENDERER: RendererType.WEBGL2,
+  ROTATE_SOUND_ENABLED: true,
   SHOW_PLAYER_NAMES: true,
-  RENDERER: Renderer.WEBGL2,
+  SHOW_TABLE: true,
+  SOUND_ENABLED: true,
+  SOUND_VOLUME: 100,
+  TABLE_TEXTURE: 'dark',
+  USE_CUSTOM_TABLE_TEXTURE: false,
 }
+
+export const createDefaultPlayerSettingsData = (): PlayerSettingsData => ({
+  background: PLAYER_SETTINGS_DEFAULTS.COLOR_BACKGROUND,
+  color: PLAYER_SETTINGS_DEFAULTS.PLAYER_COLOR,
+  customTableTexture: PLAYER_SETTINGS_DEFAULTS.CUSTOM_TABLE_TEXTURE,
+  customTableTextureScale: PLAYER_SETTINGS_DEFAULTS.CUSTOM_TABLE_TEXTURE_SCALE,
+  mouseRotate: PLAYER_SETTINGS_DEFAULTS.MOUSE_ROTATE,
+  name: PLAYER_SETTINGS_DEFAULTS.PLAYER_NAME,
+  otherPlayerClickSoundEnabled: PLAYER_SETTINGS_DEFAULTS.OTHER_PLAYER_CLICK_SOUND_ENABLED,
+  renderer: PLAYER_SETTINGS_DEFAULTS.RENDERER,
+  rotateSoundEnabled: PLAYER_SETTINGS_DEFAULTS.ROTATE_SOUND_ENABLED,
+  showPlayerNames: PLAYER_SETTINGS_DEFAULTS.SHOW_PLAYER_NAMES,
+  showTable: PLAYER_SETTINGS_DEFAULTS.SHOW_TABLE,
+  soundsEnabled: PLAYER_SETTINGS_DEFAULTS.SOUND_ENABLED,
+  soundsVolume: PLAYER_SETTINGS_DEFAULTS.SOUND_VOLUME,
+  tableTexture: PLAYER_SETTINGS_DEFAULTS.TABLE_TEXTURE,
+  useCustomTableTexture: PLAYER_SETTINGS_DEFAULTS.USE_CUSTOM_TABLE_TEXTURE,
+})
 
 export interface GameStatus {
   finished: boolean
@@ -458,6 +511,11 @@ export enum SnapMode {
   REAL = 1,
 }
 
+export enum RotationMode {
+  NONE = 0,
+  ORTHOGONAL = 1, // rotation only at 0, 90, 180, 270 degrees
+}
+
 export const DefaultScoreMode = (v: unknown): ScoreMode => {
   if (v === ScoreMode.FINAL || v === ScoreMode.ANY) {
     return v
@@ -477,6 +535,13 @@ export const DefaultSnapMode = (v: unknown): SnapMode => {
     return v
   }
   return SnapMode.NORMAL
+}
+
+export const DefaultRotationMode = (v: unknown): RotationMode => {
+  if (v === RotationMode.ORTHOGONAL) {
+    return v
+  }
+  return RotationMode.NONE
 }
 
 export interface ImageSnapshot {
@@ -501,6 +566,7 @@ export interface GameInfo {
   snapMode: SnapMode
   scoreMode: ScoreMode
   shapeMode: ShapeMode
+  rotationMode: RotationMode
 }
 
 export interface Pagination {
@@ -675,6 +741,7 @@ export interface HandleGameEventResult {
   changes: Change[]
   anySnapped: boolean
   anyDropped: boolean
+  anyRotated: boolean
 }
 
 export interface MergeClientIdsIntoUserResult {

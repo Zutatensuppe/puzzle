@@ -143,6 +143,13 @@
           :disabled="!playerSettings.soundsEnabled"
           label="Piece connect sounds of others"
         />
+        <v-checkbox
+          v-model="playerSettings.rotateSoundEnabled"
+          density="comfortable"
+          hide-details
+          :disabled="!playerSettings.soundsEnabled"
+          label="Piece rotation sound"
+        />
 
         <v-slider
           v-model="playerSettings.soundsVolume"
@@ -173,6 +180,17 @@
       </fieldset>
 
       <fieldset>
+        <legend>Controls</legend>
+
+        <v-checkbox
+          v-model="playerSettings.mouseRotate"
+          density="comfortable"
+          hide-details
+          label="Rotate via mouse wheel"
+        />
+      </fieldset>
+
+      <fieldset>
         <legend>Graphics</legend>
 
         <v-radio-group
@@ -182,13 +200,11 @@
           hide-details
         >
           <v-radio
-            label="WebGL2 (fast)"
-            value="webgl2"
-            :disabled="!webGlSupported"
-          />
-          <v-radio
-            label="Canvas (slow)"
-            value="canvas"
+            v-for="option in rendererOptions"
+            :key="option.value"
+            :label="option.label"
+            :value="option.value"
+            :disabled="option.disabled"
           />
         </v-radio-group>
         <div v-if="!webGlSupported">
@@ -205,7 +221,7 @@
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 
 import IngameColorPicker from './IngameColorPicker.vue'
-import { PlayerSettingsData } from '../../../common/src/Types'
+import { PlayerSettingsData, RendererType } from '../../../common/src/Types'
 import user, { User } from '../user'
 import { GameInterface } from '../Game'
 import { hasWebGL2Support } from '../util'
@@ -220,8 +236,19 @@ const emit = defineEmits<{
 
 const playerSettings = ref<PlayerSettingsData>(JSON.parse(JSON.stringify(props.game.getPlayerSettings().getSettings())))
 const isUkraineColor = ref<boolean>(playerSettings.value.color === 'ukraine')
-const initialRenderer = ref<'webgl2' | 'canvas'>(playerSettings.value.renderer)
+const initialRenderer = ref<RendererType>(playerSettings.value.renderer)
 const webGlSupported = hasWebGL2Support()
+const rendererOptions = [
+  {
+    label: 'WebGL2 (fast)',
+    value: RendererType.WEBGL2,
+    disabled: !webGlSupported,
+  },
+  {
+    label: 'Canvas (slow)',
+    value: RendererType.CANVAS,
+  },
+]
 
 const onColorPickerOpen = () => {
   emit('dialogChange', [

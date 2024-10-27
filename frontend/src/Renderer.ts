@@ -1,7 +1,7 @@
 import Debug from '../../common/src/Debug'
 import GameCommon from '../../common/src/GameCommon'
 import { Dim, Point, Rect } from '../../common/src/Geometry'
-import { FireworksInterface, FixedLengthArray, GameId, Piece, Player, PlayerSettingsData, PuzzleStatusInterface, Timestamp } from '../../common/src/Types'
+import { EncodedPiece, EncodedPieceIdx, EncodedPlayer, EncodedPlayerIdx, FireworksInterface, FixedLengthArray, GameId, PieceRotation, PlayerSettingsData, PuzzleStatusInterface, Timestamp } from '../../common/src/Types'
 import { Camera } from '../../common/src/Camera'
 import PuzzleGraphics from './PuzzleGraphics'
 import { logger } from '../../common/src/Util'
@@ -28,6 +28,13 @@ export class Renderer {
   // we can cache the whole background when we are in lockMovement mode
   private backgroundCache: ImageData | null = null
 
+  private static RotationMap: Record<PieceRotation, number> = {
+    [PieceRotation.R0]: 0,
+    [PieceRotation.R90]: Math.PI / 2,
+    [PieceRotation.R180]: Math.PI,
+    [PieceRotation.R270]: -Math.PI / 2,
+  }
+
   constructor(
     protected readonly gameId: GameId,
     protected readonly fireworks: FireworksInterface | null,
@@ -39,6 +46,16 @@ export class Renderer {
     this.boardPos = GameCommon.getBoardPos(this.gameId)
     this.pieceDim = GameCommon.getPieceDim(this.gameId)
     this.tableBounds = GameCommon.getBounds(this.gameId)
+  }
+
+  private static isOnCanvas(pos: Point, dim: Dim, canvas: HTMLCanvasElement): boolean {
+    if (pos.x > canvas.width || pos.y > canvas.height) {
+      return false
+    }
+    if (pos.x + dim.w < 0 || pos.y + dim.h < 0) {
+      return false
+    }
+    return true
   }
 
   async init(graphics: Graphics) {
@@ -83,8 +100,8 @@ export class Renderer {
     settings: PlayerSettingsData,
     playerCursors: PlayerCursors | null,
     puzzleStatus: PuzzleStatusInterface,
-    shouldDrawPiece: (piece: Piece) => boolean,
-    shouldDrawPlayer: (player: Player) => boolean,
+    shouldDrawEncodedPiece: (piece: EncodedPiece) => boolean,
+    shouldDrawPlayer: (player: EncodedPlayer) => boolean,
     renderFireworks: boolean,
     renderPreview: boolean,
   ) {
@@ -145,24 +162,38 @@ export class Renderer {
 
     // DRAW PIECES
     // ---------------------------------------------------------------
-    const pieces = GameCommon.getPiecesSortedByZIndex(this.gameId)
+    const pieces = GameCommon.getEncodedPiecesSortedByZIndex(this.gameId)
     if (this.debug) Debug.checkpoint('get pieces done')
 
     dim = viewport.worldDimToViewportRaw(this.pieceDim)
     for (const piece of pieces) {
-      if (!shouldDrawPiece(piece)) {
+      if (!shouldDrawEncodedPiece(piece)) {
         continue
       }
-      tmpCanvas = pieceBitmapsCache[this.gameId][piece.idx]
-      pos = viewport.worldToViewportRaw({
-        x: this.pieceDrawOffset + piece.pos.x,
-        y: this.pieceDrawOffset + piece.pos.y,
-      })
 
-      ctx.drawImage(tmpCanvas,
-        0, 0, tmpCanvas.width, tmpCanvas.height,
-        pos.x, pos.y, dim.w, dim.h,
-      )
+      pos = viewport.worldToViewportRaw({
+        x: this.pieceDrawOffset + piece[EncodedPieceIdx.POS_X],
+        y: this.pieceDrawOffset + piece[EncodedPieceIdx.POS_Y],
+      })
+      if (!Renderer.isOnCanvas(pos, dim, canvas)) {
+        continue
+      }
+
+      tmpCanvas = pieceBitmapsCache[this.gameId][piece[EncodedPieceIdx.IDX]]
+
+      const rot = Renderer.RotationMap[piece[EncodedPieceIdx.ROTATION] || PieceRotation.R0]
+      if (rot) {
+        ctx.save()
+        ctx.translate(pos.x + dim.w / 2, pos.y + dim.h / 2)
+        ctx.rotate(rot)
+        ctx.drawImage(tmpCanvas, -dim.w / 2, -dim.h / 2, dim.w, dim.h)
+        ctx.restore()
+      } else {
+        ctx.drawImage(tmpCanvas,
+          0, 0, tmpCanvas.width, tmpCanvas.height,
+          pos.x, pos.y, dim.w, dim.h,
+        )
+      }
       if (this.boundingBoxes) ctx.strokeRect(pos.x, pos.y, dim.w, dim.h)
     }
     if (this.debug) Debug.checkpoint('pieces done')
@@ -178,18 +209,18 @@ export class Renderer {
       for (const p of players) {
         if (shouldDrawPlayer(p)) {
           bmp = playerCursors.get(p)
-          pos = viewport.worldToViewport(p)
+          pos = viewport.worldToViewportXy(p[EncodedPlayerIdx.X], p[EncodedPlayerIdx.Y])
           ctx.drawImage(bmp, pos.x - playerCursors.CURSOR_W_2, pos.y - playerCursors.CURSOR_H_2)
           if (this.boundingBoxes) ctx.strokeRect(pos.x - bmp.width / 2, pos.y - bmp.height / 2, bmp.width, bmp.height)
           if (settings.showPlayerNames) {
             // performance:
             // not drawing text directly here, to have less ctx
             // switches between drawImage and fillTxt
-            texts.push([`${p.name} (${p.points})`, pos.x, pos.y + playerCursors.CURSOR_H])
+            texts.push([`${p[EncodedPlayerIdx.NAME]} (${p[EncodedPlayerIdx.POINTS]})`, pos.x, pos.y + playerCursors.CURSOR_H])
           }
-          if (this.debug) Debug.checkpoint(`drew player ${p.name} at ${pos.x},${pos.y}`)
+          if (this.debug) Debug.checkpoint(`drew player ${p[EncodedPlayerIdx.NAME]} at ${pos.x},${pos.y}`)
         } else {
-          if (this.debug) Debug.checkpoint(`skipped player ${p.name}`)
+          if (this.debug) Debug.checkpoint(`skipped player ${p[EncodedPlayerIdx.NAME]}`)
         }
       }
 

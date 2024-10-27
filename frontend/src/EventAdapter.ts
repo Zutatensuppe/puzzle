@@ -3,6 +3,7 @@ import { GameEvent } from '../../common/src/Types'
 import { Camera, Snapshot } from '../../common/src/Camera'
 import { Game } from './Game'
 import { MODE_REPLAY } from './GameMode'
+import { PlayerSettings } from './PlayerSettings'
 
 export class EventAdapter {
   private events: Array<GameEvent> = []
@@ -15,6 +16,8 @@ export class EventAdapter {
   private DOWN = false
   private ZOOM_IN = false
   private ZOOM_OUT = false
+  private ROT_LEFT = false
+  private ROT_RIGHT = false
   private SHIFT = false
 
   private mouseDown: boolean = false
@@ -32,7 +35,7 @@ export class EventAdapter {
   private onKeyPress
   private onWndMouseDown
 
-  constructor (private game: Game<any>) {
+  constructor (private game: Game<any>, private playerSettings: PlayerSettings) {
     this.onResize = this.game.initViewport.bind(this.game)
     this.onMouseDown = this._onMouseDown.bind(this)
     this.onMouseUp = this._onMouseUp.bind(this)
@@ -83,6 +86,10 @@ export class EventAdapter {
       this.ZOOM_OUT = state
     } else if (ev.code === 'KeyE') {
       this.ZOOM_IN = state
+    } else if (ev.code === 'KeyZ') {
+      this.ROT_LEFT = state
+    } else if (ev.code === 'KeyX') {
+      this.ROT_RIGHT = state
     }
   }
 
@@ -119,19 +126,29 @@ export class EventAdapter {
 
   _onWheel (ev: WheelEvent) {
     this.lastMouseWorld = this._mousePos(ev)
-    if (this.game.getViewport().canZoom(ev.deltaY < 0 ? 'in' : 'out')) {
-      const evt = ev.deltaY < 0
-        ? GAME_EVENT_TYPE.INPUT_EV_ZOOM_IN
-        : GAME_EVENT_TYPE.INPUT_EV_ZOOM_OUT
-      this.addEvent([evt, ...this.lastMouseWorld])
+    if (this.playerSettings.mouseRotate() && this.mouseDown) {
+      if (ev.deltaY < 0) {
+        this.addEvent([GAME_EVENT_TYPE.INPUT_EV_ROTATE, 0])
+        this.ROT_LEFT = false
+      } else {
+        this.addEvent([GAME_EVENT_TYPE.INPUT_EV_ROTATE, 1])
+        this.ROT_RIGHT = false
+      }
+    } else {
+      if (this.game.getViewport().canZoom(ev.deltaY < 0 ? 'in' : 'out')) {
+        const evt = ev.deltaY < 0
+          ? GAME_EVENT_TYPE.INPUT_EV_ZOOM_IN
+          : GAME_EVENT_TYPE.INPUT_EV_ZOOM_OUT
+        this.addEvent([evt, ...this.lastMouseWorld])
+      }
     }
   }
 
-  _onKeyUp (ev: KeyboardEvent) {
+  _onKeyDown (ev: KeyboardEvent) {
     this._key(true, ev)
   }
 
-  _onKeyDown (ev: KeyboardEvent) {
+  _onKeyUp (ev: KeyboardEvent) {
     this._key(false, ev)
   }
 
@@ -203,18 +220,18 @@ export class EventAdapter {
 
   registerEvents () {
     const w = this.game.getWindow()
-    w.addEventListener('resize', this.onResize)
-    w.addEventListener('keydown', this.onKeyUp)
-    w.addEventListener('keyup', this.onKeyDown)
-    w.addEventListener('keypress', this.onKeyPress)
+    w.addEventListener('resize', this.onResize, { passive: true })
+    w.addEventListener('keydown', this.onKeyDown, { passive: true })
+    w.addEventListener('keyup', this.onKeyUp, { passive: true })
+    w.addEventListener('keypress', this.onKeyPress, { passive: true })
     w.addEventListener('mousedown', this.onWndMouseDown)
 
     const c = this.game.getCanvas()
-    c.addEventListener('mousedown', this.onMouseDown)
-    c.addEventListener('mouseup', this.onMouseUp)
-    c.addEventListener('mousemove', this.onMouseMove)
+    c.addEventListener('mousedown', this.onMouseDown, { passive: true })
+    c.addEventListener('mouseup', this.onMouseUp, { passive: true })
+    c.addEventListener('mousemove', this.onMouseMove, { passive: true })
     c.addEventListener('mouseenter', this.onMouseEnter)
-    c.addEventListener('wheel', this.onWheel)
+    c.addEventListener('wheel', this.onWheel, { passive: true })
   }
 
   unregisterEvents () {
@@ -270,6 +287,16 @@ export class EventAdapter {
         this.lastMouseWorld[0] -= pos.w
         this.lastMouseWorld[1] -= pos.h
       }
+    }
+
+    if (this.ROT_LEFT && this.ROT_RIGHT) {
+      // cancel each other out
+    } else if (this.ROT_LEFT) {
+      this.addEvent([GAME_EVENT_TYPE.INPUT_EV_ROTATE, 0])
+      this.ROT_LEFT = false
+    } else if (this.ROT_RIGHT) {
+      this.addEvent([GAME_EVENT_TYPE.INPUT_EV_ROTATE, 1])
+      this.ROT_RIGHT = false
     }
 
     if (this.ZOOM_IN && this.ZOOM_OUT) {

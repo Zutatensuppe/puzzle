@@ -144,6 +144,11 @@ export class Camera {
     return { x: Math.round(x), y: Math.round(y) }
   }
 
+  worldToViewportXy(x: number, y: number): Point {
+    const viweport = this.worldToViewportRaw({ x, y})
+    return { x: Math.round(viweport.x), y: Math.round(viweport.y) }
+  }
+
   /**
    * Translate a coordinate in the world to a
    * coordinate in the viewport, not rounded

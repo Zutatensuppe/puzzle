@@ -1,4 +1,4 @@
-import { GameId, PLAYER_SETTINGS_DEFAULTS, Piece, Player, PlayerSettingsData } from '../../common/src/Types'
+import { EncodedPiece, EncodedPlayer, GameId, PlayerSettingsData, createDefaultPlayerSettingsData } from '../../common/src/Types'
 import GameCommon from '../../common/src/GameCommon'
 import { Renderer } from '../../common/src/Renderer'
 import { Camera } from '../../common/src/Camera'
@@ -18,21 +18,8 @@ export const createImageSnapshot = (
   canvas.width = boardDim.w
   canvas.height = boardDim.h
 
-  const playerSettings: PlayerSettingsData = {
-    background: PLAYER_SETTINGS_DEFAULTS.COLOR_BACKGROUND,
-    showTable: false,
-    tableTexture: PLAYER_SETTINGS_DEFAULTS.TABLE_TEXTURE,
-    useCustomTableTexture: PLAYER_SETTINGS_DEFAULTS.USE_CUSTOM_TABLE_TEXTURE,
-    customTableTexture: PLAYER_SETTINGS_DEFAULTS.CUSTOM_TABLE_TEXTURE,
-    customTableTextureScale: PLAYER_SETTINGS_DEFAULTS.CUSTOM_TABLE_TEXTURE_SCALE,
-    color: PLAYER_SETTINGS_DEFAULTS.PLAYER_COLOR,
-    name: PLAYER_SETTINGS_DEFAULTS.PLAYER_NAME,
-    soundsEnabled: PLAYER_SETTINGS_DEFAULTS.SOUND_ENABLED,
-    otherPlayerClickSoundEnabled: PLAYER_SETTINGS_DEFAULTS.OTHER_PLAYER_CLICK_SOUND_ENABLED,
-    soundsVolume: PLAYER_SETTINGS_DEFAULTS.SOUND_VOLUME,
-    showPlayerNames: PLAYER_SETTINGS_DEFAULTS.SHOW_PLAYER_NAMES,
-    renderer: PLAYER_SETTINGS_DEFAULTS.RENDERER,
-  }
+  const playerSettings: PlayerSettingsData = createDefaultPlayerSettingsData()
+  playerSettings.showTable = false
 
   const viewport = new Camera()
   viewport.calculateZoomCapping(boardDim, tableDim)
@@ -53,8 +40,8 @@ export const createImageSnapshot = (
     playerSettings,
     null,
     { update: (_ts: number) => { return } },
-    (_piece: Piece) => true,
-    (_player: Player) => false,
+    (_piece: EncodedPiece) => true,
+    (_player: EncodedPlayer) => false,
     false,
     true,
   )
@@ -70,21 +57,8 @@ export const createImageSnapshotWebgl = (
   const boardDim = GameCommon.getBoardDim(gameId)
   const tableDim = GameCommon.getTableDim(gameId)
 
-  const playerSettings: PlayerSettingsData = {
-    background: PLAYER_SETTINGS_DEFAULTS.COLOR_BACKGROUND,
-    showTable: false,
-    tableTexture: PLAYER_SETTINGS_DEFAULTS.TABLE_TEXTURE,
-    useCustomTableTexture: PLAYER_SETTINGS_DEFAULTS.USE_CUSTOM_TABLE_TEXTURE,
-    customTableTexture: PLAYER_SETTINGS_DEFAULTS.CUSTOM_TABLE_TEXTURE,
-    customTableTextureScale: PLAYER_SETTINGS_DEFAULTS.CUSTOM_TABLE_TEXTURE_SCALE,
-    color: PLAYER_SETTINGS_DEFAULTS.PLAYER_COLOR,
-    name: PLAYER_SETTINGS_DEFAULTS.PLAYER_NAME,
-    soundsEnabled: PLAYER_SETTINGS_DEFAULTS.SOUND_ENABLED,
-    otherPlayerClickSoundEnabled: PLAYER_SETTINGS_DEFAULTS.OTHER_PLAYER_CLICK_SOUND_ENABLED,
-    soundsVolume: PLAYER_SETTINGS_DEFAULTS.SOUND_VOLUME,
-    showPlayerNames: PLAYER_SETTINGS_DEFAULTS.SHOW_PLAYER_NAMES,
-    renderer: PLAYER_SETTINGS_DEFAULTS.RENDERER,
-  }
+  const playerSettings: PlayerSettingsData = createDefaultPlayerSettingsData()
+  playerSettings.showTable = false
 
   const viewport = new Camera()
   viewport.calculateZoomCapping(boardDim, tableDim)
@@ -100,8 +74,8 @@ export const createImageSnapshotWebgl = (
     viewport,
     new Date().getTime(),
     playerSettings,
-    (_piece: Piece) => true,
-    (_player: Player) => false,
+    (_piece: EncodedPiece) => true,
+    (_player: EncodedPlayer) => false,
     true,
   )
 }

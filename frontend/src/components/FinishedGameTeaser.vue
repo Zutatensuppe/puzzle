@@ -43,6 +43,12 @@
       >
         <v-icon icon="mdi-connection" /> Snapping: {{ snapMode }}
       </div>
+      <div
+        class="game-teaser-info secondary"
+        title="Rotation"
+      >
+        <v-icon icon="mdi-format-rotate-90" /> Rotation: {{ rotationMode }}
+      </div>
       <div class="game-teaser-click-info">
         <h5>Click to {{ joinPuzzleText }}</h5>
       </div>
@@ -76,7 +82,7 @@ import { computed } from 'vue'
 import { resizeUrl } from '../../../common/src/ImageService'
 import Time from '../../../common/src/Time'
 import { GameInfo, ImageInfo } from '../../../common/src/Types'
-import { scoreModeToString, shapeModeToString, snapModeToString } from '../../../common/src/Util'
+import { rotationModeToString, scoreModeToString, shapeModeToString, snapModeToString } from '../../../common/src/Util'
 
 const props = defineProps<{
   game: GameInfo,
@@ -98,6 +104,8 @@ const snapMode = computed(() => snapModeToString(props.game.snapMode))
 const scoreMode = computed(() => scoreModeToString(props.game.scoreMode))
 
 const shapeMode = computed(() => shapeModeToString(props.game.shapeMode))
+
+const rotationMode = computed(() => rotationModeToString(props.game.rotationMode))
 
 const time = (start: number, end: number) => {
   const from = start

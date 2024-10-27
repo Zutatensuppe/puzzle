@@ -3,7 +3,7 @@
 import GameCommon from '../../common/src/GameCommon'
 import { GAME_EVENT_TYPE, LOG_TYPE } from '../../common/src/Protocol'
 import Time from '../../common/src/Time'
-import { Game as GameType, GameEvent, Player, ReplayHud, Timestamp, HeaderLogEntry, LogEntry, ReplayGameData } from '../../common/src/Types'
+import { Game as GameType, GameEvent, ReplayHud, Timestamp, HeaderLogEntry, LogEntry, ReplayGameData, EncodedPlayer } from '../../common/src/Types'
 import Util from '../../common/src/Util'
 import { Game } from './Game'
 import { parseLogFileContents } from '../../common/src/GameLog'
@@ -29,7 +29,7 @@ export class GameReplay extends Game<ReplayHud> {
     return MODE_REPLAY
   }
 
-  public shouldDrawPlayer(_player: Player): boolean {
+  public shouldDrawPlayer(_player: EncodedPlayer): boolean {
     return true
   }
 

@@ -1,6 +1,6 @@
 import Db from '../Db'
-import { ClientId, EncodedPlayer, MergeClientIdsIntoUserResult, Player, UserId } from '../../../common/src/Types'
-import Util, { logger } from '../../../common/src/Util'
+import { ClientId, EncodedPlayer, EncodedPlayerIdx, MergeClientIdsIntoUserResult, UserId } from '../../../common/src/Types'
+import { logger } from '../../../common/src/Util'
 
 const log = logger()
 
@@ -47,16 +47,16 @@ export class MergeClientIdsIntoUser {
       const data = JSON.parse(gameRow.data)
 
       // check if target player already exists in the players array
-      const decodedPlayers: Player[] = data.players.map((player: EncodedPlayer) => Util.decodePlayer(player))
+      const players: EncodedPlayer[] = data.players
 
       let needUpdate = false
-      let targetPlayer: Player | undefined = decodedPlayers.find((p: Player) => user.client_id === p.id)
+      let targetPlayer: EncodedPlayer | undefined = players.find((p: EncodedPlayer) => user.client_id === p[EncodedPlayerIdx.ID])
       if (!targetPlayer) {
-        targetPlayer = decodedPlayers.find((p: Player) => clientIdsOfUser.includes(p.id))
+        targetPlayer = players.find((p: EncodedPlayer) => clientIdsOfUser.includes(p[EncodedPlayerIdx.ID]))
         needUpdate = true
       }
       if (targetPlayer) {
-        const playersOfUser = decodedPlayers.filter((p: Player) => clientIdsOfUser.includes(p.id))
+        const playersOfUser = players.filter((p: EncodedPlayer) => clientIdsOfUser.includes(p[EncodedPlayerIdx.ID]))
         if (playersOfUser.length > 1) {
           needUpdate = true
         }
@@ -64,15 +64,15 @@ export class MergeClientIdsIntoUser {
         if (needUpdate) {
           // combine all of user points to the target user
           let points = 0
-          playersOfUser.forEach((p: Player) => {
-            points += p.points
+          playersOfUser.forEach((p: EncodedPlayer) => {
+            points += p[EncodedPlayerIdx.POINTS]
           })
-          targetPlayer.points = points
-          targetPlayer.id = user.client_id
+          targetPlayer[EncodedPlayerIdx.POINTS] = points
+          targetPlayer[EncodedPlayerIdx.ID] = user.client_id
 
           // leave other players untouched
-          const otherPlayers = decodedPlayers.filter((p: Player) => !clientIdsOfUser.includes(p.id) && p !== targetPlayer)
-          const newPlayers = [targetPlayer, ...otherPlayers].map((p: Player) => Util.encodePlayer(p))
+          const otherPlayers = players.filter((p: EncodedPlayer) => !clientIdsOfUser.includes(p[EncodedPlayerIdx.ID]) && p !== targetPlayer)
+          const newPlayers = [targetPlayer, ...otherPlayers]
           data.players = newPlayers
 
           log.info(`updating user ${user.name} in game ${gameRow.id}.`)

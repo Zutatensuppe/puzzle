@@ -1,5 +1,5 @@
 import { Assets } from './Assets'
-import { Player } from '../../common/src/Types'
+import { EncodedPlayer, EncodedPlayerIdx } from '../../common/src/Types'
 import { Graphics } from './Graphics'
 
 export class PlayerCursors
@@ -27,12 +27,12 @@ export class PlayerCursors
     this.CURSOR_H_2 = Math.round(this.CURSOR_H / 2)
   }
 
-  public get (p: Player): ImageBitmap | HTMLCanvasElement {
-    const color = p.color || '#ffffff'
-    const key = color + ' ' + p.d
+  public get (p: EncodedPlayer): ImageBitmap | HTMLCanvasElement {
+    const color = p[EncodedPlayerIdx.COLOR] || '#ffffff'
+    const key = color + ' ' + p[EncodedPlayerIdx.MOUSEDOWN]
     if (!this.cursorImages[key]) {
-      const cursor = p.d ? this.assets.Gfx.GRAB : this.assets.Gfx.HAND
-      const mask = p.d ? this.assets.Gfx.GRAB_MASK : this.assets.Gfx.HAND_MASK
+      const cursor = p[EncodedPlayerIdx.MOUSEDOWN] ? this.assets.Gfx.GRAB : this.assets.Gfx.HAND
+      const mask = p[EncodedPlayerIdx.MOUSEDOWN] ? this.assets.Gfx.GRAB_MASK : this.assets.Gfx.HAND_MASK
       this.cursorImages[key] = this.graphics.colorizedCanvas(cursor, mask, color)
     }
     return this.cursorImages[key]
@@ -40,8 +40,11 @@ export class PlayerCursors
 
   public updatePlayerCursorState(d: boolean) {
     this.cursorState = d
-    const [url, fallback] = d ? [this.cursorDown, 'grab'] : [this.cursor, 'default']
-    this.canvas.style.cursor = `url('${url}') ${this.CURSOR_W_2} ${this.CURSOR_H_2}, ${fallback}`
+    if (d) {
+      this.canvas.style.cursor = `url('${this.cursorDown}') ${this.CURSOR_W_2} ${this.CURSOR_H_2}, grab`
+    } else {
+      this.canvas.style.cursor = `url('${this.cursor}') ${this.CURSOR_W_2} ${this.CURSOR_H_2}, default`
+    }
   }
 
   public updatePlayerCursorColor(color: string) {

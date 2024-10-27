@@ -86,6 +86,7 @@
               <span class="text-disabled">Score Mode:</span> {{ gameScoreMode(item) }}
               <span class="text-disabled">Shape Mode:</span> {{ gameShapeMode(item) }}
               <span class="text-disabled">Snap Mode:</span> {{ gameSnapMode(item) }}
+              <span class="text-disabled">Rotation Mode:</span> {{ gameRotationMode(item) }}
             </div>
             <div class="d-flex ga-3" />
           </td>
@@ -122,7 +123,7 @@ import user from '../../user'
 import api from '../../_api'
 import Nav from '../components/Nav.vue'
 import Pagination from '../../components/Pagination.vue'
-import { scoreModeToString, shapeModeToString, snapModeToString } from '../../../../common/src/Util'
+import { rotationModeToString, scoreModeToString, shapeModeToString, snapModeToString } from '../../../../common/src/Util'
 import { GameId, Pagination as PaginationType, ServerInfo } from '../../../../common/src/Types'
 
 const perPage = 50
@@ -139,15 +140,19 @@ const gameHasReplay = (game: any) => {
 }
 const gameScoreMode = (game: any) => {
   const parsed = JSON.parse(game.data)
-  return snapModeToString(parsed.scoreMode)
+  return scoreModeToString(parsed.scoreMode)
 }
 const gameShapeMode = (game: any) => {
   const parsed = JSON.parse(game.data)
-  return scoreModeToString(parsed.shapeMode)
+  return shapeModeToString(parsed.shapeMode)
 }
 const gameSnapMode = (game: any) => {
   const parsed = JSON.parse(game.data)
-  return shapeModeToString(parsed.snapMode)
+  return snapModeToString(parsed.snapMode)
+}
+const gameRotationMode = (game: any) => {
+  const parsed = JSON.parse(game.data)
+  return rotationModeToString(parsed.rotationMode)
 }
 
 const onDelete = async (game: any) => {

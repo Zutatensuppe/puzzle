@@ -47,8 +47,13 @@ export class GamePlay extends Game<Hud> {
     if (ret.changes.length > 0) {
       this.requireRerender()
     }
-    if (ret.anySnapped && this.playerSettings.soundsEnabled()) {
-      this.sounds.playPieceConnected()
+    if (this.playerSettings.soundsEnabled()) {
+      if (ret.anySnapped) {
+        this.sounds.playPieceConnected()
+      }
+      if (ret.anyRotated && this.playerSettings.rotateSoundEnabled()) {
+        this.sounds.playPieceRotated()
+      }
     }
     if (ret.anyDropped) {
       if (ts - this.lastSentImageSnapshotTs > this.snapshotsIntervalMs) {

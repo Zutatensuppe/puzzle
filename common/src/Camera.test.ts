@@ -1,4 +1,4 @@
-import { Camera } from '../../src/frontend/Camera'
+import { Camera } from './Camera'
 import { expect, it } from 'vitest'
 
 it('test input stuff', () => {

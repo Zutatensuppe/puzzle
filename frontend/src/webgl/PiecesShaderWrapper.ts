@@ -1,12 +1,14 @@
 import { Camera } from '../Camera'
 import GameCommon from '../../../common/src/GameCommon'
-import { EncodedPieceShape, GameId, Piece } from '../Types'
+import Util from '../../../common/src/Util'
+import { EncodedPiece, EncodedPieceIdx, PieceRotation } from '../../../common/src/Types'
+import { EncodedPieceShape, GameId } from '../Types'
 import { Shader } from './Shader'
 import piecesFragment from './shaders/piecesFragment'
 import piecesVertex from './shaders/piecesVertex'
-import { SpriteBatch, SpriteInfo } from './SpriteBatch'
+import { SpriteBatch, PieceSpriteInfo } from './SpriteBatch'
 import { TextureAtlas } from './TextureAtlas'
-import { Viewport } from './Viewport'
+import m4 from './m4'
 
 export class PiecesShaderWrapper {
   private shader!: Shader
@@ -16,18 +18,19 @@ export class PiecesShaderWrapper {
 
   constructor(
     private readonly gl: WebGL2RenderingContext,
-    private readonly viewport: Viewport,
     private readonly gameId: GameId,
   ) {
   }
 
   public init(puzzleBitmap: HTMLCanvasElement, stencils: Record<EncodedPieceShape, ImageBitmap>) {
     console.time('textureAtlas')
-    this.atlas = new TextureAtlas(this.gl, Object.keys(stencils).map((key) => [`${key}`, stencils[key as unknown as EncodedPieceShape]]))
+    this.atlas = new TextureAtlas(this.gl, Object.keys(stencils).map((key) => [key as unknown as EncodedPieceShape, stencils[key as unknown as EncodedPieceShape]]))
     console.timeEnd('textureAtlas')
 
     console.time('rest')
     this.bgTex = this.gl.createTexture()!
+    this.gl.enable(this.gl.DEPTH_TEST)
+    this.gl.depthFunc(this.gl.LEQUAL)
     this.gl.activeTexture(this.gl.TEXTURE1)
     this.gl.bindTexture(this.gl.TEXTURE_2D, this.bgTex)
     // Set the parameters so we can render any size image.
@@ -37,35 +40,69 @@ export class PiecesShaderWrapper {
     this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_MAG_FILTER, this.gl.LINEAR)
     this.gl.texImage2D(this.gl.TEXTURE_2D, 0, this.gl.RGBA, this.gl.RGBA, this.gl.UNSIGNED_BYTE, puzzleBitmap)
     this.shader = new Shader(this.gl, piecesVertex, piecesFragment)
+
+    const info = GameCommon.getPuzzle(this.gameId).info
+    this.shader.bind()
+    this.shader.setUniform('puzzle_image_size', [info.width, info.height])
+    const sprites: PieceSpriteInfo[] = []
+    const maxZ = GameCommon.getMaxZIndex(this.gameId)
+    for (const piece of GameCommon.getEncodedPieces(this.gameId)) {
+      const finalPos = GameCommon.getSrcPosByPieceIdx(this.gameId, piece[EncodedPieceIdx.IDX])
+      sprites.push({
+        x: piece[EncodedPieceIdx.POS_X],
+        y: piece[EncodedPieceIdx.POS_Y],
+        z: maxZ ? piece[EncodedPieceIdx.Z] / maxZ : 0,
+        puzzleImageX: finalPos.x,
+        puzzleImageY: finalPos.y,
+        stencilTexture: this.pieceTexture(info.shapes, piece),
+        rotation: this.pieceRotation(piece[EncodedPieceIdx.ROTATION]),
+        visible: true,
+      })
+    }
+    //
+    const spriteSize = 128
+    const borderSize = spriteSize / 4
+    this.sprites = new SpriteBatch(this.gl, sprites, spriteSize + borderSize, this.atlas)
     console.timeEnd('rest')
+  }
+
+  private pieceRotation(rot: PieceRotation | undefined): number {
+    switch (rot) {
+      case PieceRotation.R90:
+        return 1
+      case PieceRotation.R180:
+        return 2
+      case PieceRotation.R270:
+        return 3
+      case PieceRotation.R0:
+      default:
+        return 0
+    }
+  }
+
+  private pieceTexture(shapes: EncodedPieceShape[], piece: EncodedPiece): EncodedPieceShape {
+    return Util.rotateEncodedShape(shapes[piece[EncodedPieceIdx.IDX]], piece[EncodedPieceIdx.ROTATION])
   }
 
   public render(
     camera: Camera,
-    shouldDrawPiece: (piece: Piece) => boolean,
+    shouldDrawEncodedPiece: (piece: EncodedPiece) => boolean,
   ) {
-    const info = GameCommon.getPuzzle(this.gameId).info
-    const spriteSize = 128
-    const sprites: SpriteInfo[] = []
-    GameCommon.getPiecesSortedByZIndex(this.gameId).forEach((piece) => {
-      if (!shouldDrawPiece(piece)) {
-        return
-      }
-      const finalPos = GameCommon.getSrcPosByPieceIdx(this.gameId, piece.idx)
-      sprites.push({
-        x: piece.pos.x,
-        y: piece.pos.y,
-        t_x: finalPos.x,
-        t_y: finalPos.y,
-        texture: `${info.shapes[piece.idx]}`,
-      })
-    })
-    this.sprites = new SpriteBatch(this.gl, sprites, spriteSize, this.atlas)
-
     // bind the shader and update the uniforms
     this.shader.bind()
-    this.shader.setUniform('projection', this.viewport.projection())
-    this.shader.setUniform('puzzle_image_size', [info.width, info.height])
+    const info = GameCommon.getPuzzle(this.gameId).info
+    let i = 0
+    const maxZ = GameCommon.getMaxZIndex(this.gameId)
+    for (const piece of GameCommon.getEncodedPieces(this.gameId)) {
+      this.sprites.setX(i, piece[EncodedPieceIdx.POS_X])
+      this.sprites.setY(i, piece[EncodedPieceIdx.POS_Y])
+      this.sprites.z.set(i, maxZ ? piece[EncodedPieceIdx.Z] / maxZ : 0)
+      this.sprites.setTexture(i, this.pieceTexture(info.shapes, piece))
+      this.sprites.rotation.set(i, this.pieceRotation(piece[EncodedPieceIdx.ROTATION]))
+      this.sprites.visible.set(i, shouldDrawEncodedPiece(piece) ? 1 : 0)
+      i++
+    }
+    this.shader.setUniform('projection', m4.orthographic(0, this.gl.canvas.width, this.gl.canvas.height, 0, -1, 1, undefined))
     this.shader.setUniform('view', [
       camera.curZoom, 0, 0, 0,
       0, camera.curZoom, 0, 0,

@@ -8,7 +8,7 @@ import { GameSockets } from './GameSockets'
 import Time from '../../common/src/Time'
 import config from './Config'
 import GameCommon from '../../common/src/GameCommon'
-import { ServerEvent, Game as GameType, ClientEvent, GameEventInputConnectionClose, GameId, ClientId } from '../../common/src/Types'
+import { ServerEvent, Game as GameType, ClientEvent, GameEventInputConnectionClose, GameId, ClientId, EncodedPieceIdx } from '../../common/src/Types'
 import { GameService } from './GameService'
 import createApiRouter from './web_routes/api'
 import createAdminApiRouter from './web_routes/admin/api'
@@ -353,22 +353,24 @@ export class Server implements ServerInterface {
     }
 
     let changed = 0
-    const pieces = GameCommon.getPiecesSortedByZIndex(gameId)
+    const pieces = GameCommon.getEncodedPiecesSortedByZIndex(gameId)
     for (const piece of pieces) {
-      if (piece.owner === -1) {
-        const p = GameCommon.getFinalPiecePos(gameId, piece.idx)
-        if (p.x === piece.pos.x && p.y === piece.pos.y) {
+      if (piece[EncodedPieceIdx.OWNER] === -1) {
+        const p = GameCommon.getFinalPiecePos(gameId, piece[EncodedPieceIdx.IDX])
+        if (p.x === piece[EncodedPieceIdx.POS_X] && p.y === piece[EncodedPieceIdx.POS_Y]) {
           // log.log('all good', tile.pos)
         } else {
-          log.log('bad piece pos', piece.pos, 'should be: ', p)
-          piece.pos = p
-          GameCommon.setPiece(gameId, piece.idx, piece)
+          const piecePos = { x: piece[EncodedPieceIdx.POS_X], y: piece[EncodedPieceIdx.POS_Y] }
+          log.log('bad piece pos', piecePos, 'should be: ', p)
+          piece[EncodedPieceIdx.POS_X] = p.x
+          piece[EncodedPieceIdx.POS_Y] = p.y
+          GameCommon.setPiece(gameId, piece[EncodedPieceIdx.IDX], piece)
           changed++
         }
-      } else if (piece.owner !== 0) {
-        log.log('unowning piece', piece.idx)
-        piece.owner = 0
-        GameCommon.setPiece(gameId, piece.idx, piece)
+      } else if (piece[EncodedPieceIdx.OWNER] !== 0) {
+        log.log('unowning piece', piece[EncodedPieceIdx.IDX])
+        piece[EncodedPieceIdx.OWNER] = 0
+        GameCommon.setPiece(gameId, piece[EncodedPieceIdx.IDX], piece)
         changed++
       }
     }

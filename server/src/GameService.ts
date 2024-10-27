@@ -1,6 +1,8 @@
 import {
   DefaultScoreMode, DefaultShapeMode, DefaultSnapMode, Game, Puzzle,
   EncodedPlayer, ScoreMode, ShapeMode, SnapMode, ImageInfo, Timestamp, GameSettings, GameEvent, RegisteredMap, ImageSnapshots, HandleGameEventResult,
+  DefaultRotationMode,
+  RotationMode,
   GameId,
   UserId,
   ClientId,
@@ -32,6 +34,7 @@ interface GameStoreData {
   scoreMode: ScoreMode
   shapeMode: ShapeMode
   snapMode: SnapMode
+  rotationMode?: RotationMode
   hasReplay: boolean
   crop?: Rect
 }
@@ -154,6 +157,7 @@ export class GameService {
       gameObject.scoreMode,
       gameObject.shapeMode,
       gameObject.snapMode,
+      gameObject.rotationMode,
       gameRow.creator_user_id,
       true, // hasReplay
       !!gameRow.private,
@@ -247,6 +251,7 @@ export class GameService {
       scoreMode: DefaultScoreMode(storeData.scoreMode),
       shapeMode: DefaultShapeMode(storeData.shapeMode),
       snapMode: DefaultSnapMode(storeData.snapMode),
+      rotationMode: DefaultRotationMode(storeData.rotationMode),
       hasReplay: !!storeData.hasReplay,
       private: isPrivate,
       registeredMap: {},
@@ -266,6 +271,7 @@ export class GameService {
       scoreMode: game.scoreMode,
       shapeMode: game.shapeMode,
       snapMode: game.snapMode,
+      rotationMode: game.rotationMode,
       // cannot use value from the game object, because it might be outdated
       hasReplay: await GameLog.hasReplay(game),
       crop: game.crop,
@@ -281,6 +287,7 @@ export class GameService {
     scoreMode: ScoreMode,
     shapeMode: ShapeMode,
     snapMode: SnapMode,
+    rotationMode: RotationMode,
     creatorUserId: UserId | null,
     hasReplay: boolean,
     isPrivate: boolean,
@@ -293,11 +300,12 @@ export class GameService {
       gameVersion,
       creatorUserId,
       rng: { type: 'Rng', obj: rng },
-      puzzle: await this.puzzleService.createPuzzle(rng, targetPieceCount, image, ts, shapeMode, gameVersion),
+      puzzle: await this.puzzleService.createPuzzle(rng, targetPieceCount, image, ts, shapeMode, rotationMode, gameVersion),
       players: [],
       scoreMode,
       shapeMode,
       snapMode,
+      rotationMode,
       hasReplay,
       private: isPrivate,
       crop,
@@ -324,9 +332,10 @@ export class GameService {
       gameSettings.tiles,
       gameSettings.image,
       ts,
-      gameSettings.scoreMode,
-      gameSettings.shapeMode,
-      gameSettings.snapMode,
+      DefaultScoreMode(gameSettings.scoreMode),
+      DefaultShapeMode(gameSettings.shapeMode),
+      DefaultSnapMode(gameSettings.snapMode),
+      DefaultRotationMode(gameSettings.rotationMode),
       creatorUserId,
       true, // hasReplay
       gameSettings.private,

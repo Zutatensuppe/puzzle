@@ -6,10 +6,8 @@ import { GameLoopInstance, run } from './gameloop'
 import fireworksController from '../../common/src/Fireworks'
 import GameCommon from '../../common/src/GameCommon'
 import Time from '../../common/src/Time'
-import Util, { logger } from '../../common/src/Util'
+import { logger } from '../../common/src/Util'
 import {
-  Player,
-  Piece,
   Hud,
   ScoreMode,
   SnapMode,
@@ -22,8 +20,14 @@ import {
   GamePlayers,
   GameStatus,
   RegisteredMap,
+  RotationMode,
   GameId,
   ClientId,
+  RendererType,
+  EncodedPiece,
+  EncodedPieceIdx,
+  EncodedPlayer,
+  EncodedPlayerIdx,
 } from '../../common/src/Types'
 import _api from './_api'
 import { Assets } from './Assets'
@@ -51,7 +55,7 @@ const log = logger('Game.ts')
 
 export interface GameInterface {
   reinit(clientId: ClientId): Promise<void>
-  shouldDrawPiece(piece: Piece): boolean
+  shouldDrawEncodedPiece(piece: EncodedPiece): boolean
   getWsAddres(): string
   getMode(): string
   time(): number
@@ -72,7 +76,7 @@ export interface GameInterface {
   previewImageUrl(): string
   checkFinished(): void
   loadTableTexture(settings: PlayerSettingsData): Promise<void>
-  shouldDrawPlayer(player: Player): boolean
+  shouldDrawPlayer(player: EncodedPlayer): boolean
   justFinished(): boolean
   emitToggleInterface(): void
   emitTogglePreview(): void
@@ -156,8 +160,8 @@ export abstract class Game<HudType extends Hud> implements GameInterface {
     await this.init()
   }
 
-  shouldDrawPiece(piece: Piece): boolean {
-    if (piece.owner === -1) {
+  shouldDrawEncodedPiece(piece: EncodedPiece): boolean {
+    if (piece[EncodedPieceIdx.OWNER] === -1) {
       return this.isViewFixedPieces
     }
     return this.isViewLoosePieces
@@ -215,15 +219,17 @@ export abstract class Game<HudType extends Hud> implements GameInterface {
     await this.assets.init(this.graphics)
     this.playerCursors = new PlayerCursors(this.canvas, this.assets, this.graphics)
 
-    this.evts = new EventAdapter(this)
-    this.viewportSnapshots = new ViewportSnapshots(this.evts, this.viewport)
     this.playerSettings = new PlayerSettings(this)
     this.playerSettings.init()
+
+    this.evts = new EventAdapter(this, this.playerSettings)
+    this.viewportSnapshots = new ViewportSnapshots(this.evts, this.viewport)
+
     this.sounds = new Sounds(this.assets, this.playerSettings)
 
     const puzzleTable = new PuzzleTable(this.graphics)
 
-    if (this.playerSettings.renderer() === 'webgl2' && hasWebGL2Support()) {
+    if (this.playerSettings.renderer() === RendererType.WEBGL2 && hasWebGL2Support()) {
       this.rendererWebgl = new RendererWebgl(
         this.gameId,
         this.fireworks,
@@ -268,6 +274,9 @@ export abstract class Game<HudType extends Hud> implements GameInterface {
   }
 
   initViewport(): void {
+    this.canvas.width = this.canvas.clientWidth
+    this.canvas.height = this.canvas.clientHeight
+
     // initialize some view data
     // this global data will change according to input events
 
@@ -322,8 +331,8 @@ export abstract class Game<HudType extends Hud> implements GameInterface {
     this.requireRerender()
   }
 
-  shouldDrawPlayer(player: Player): boolean {
-    return player.id !== this.clientId
+  shouldDrawPlayer(player: EncodedPlayer): boolean {
+    return player[EncodedPlayerIdx.ID] !== this.clientId
   }
 
   justFinished(): boolean {
@@ -383,6 +392,10 @@ export abstract class Game<HudType extends Hud> implements GameInterface {
     return GameCommon.getShapeMode(this.gameId)
   }
 
+  getRotationMode(): RotationMode {
+    return GameCommon.getRotationMode(this.gameId)
+  }
+
   getImage(): ImageInfo {
     return GameCommon.getPuzzle(this.gameId).info.image
   }
@@ -407,15 +420,14 @@ export abstract class Game<HudType extends Hud> implements GameInterface {
     for (const [changeType, changeData] of evChanges) {
       switch (changeType) {
         case CHANGE_TYPE.PLAYER: {
-          const p = Util.decodePlayer(changeData)
-          if (p.id !== this.clientId) {
-            GameCommon.setPlayer(this.gameId, p.id, p)
+          const p = changeData
+          if (p[EncodedPlayerIdx.ID] !== this.clientId) {
+            GameCommon.setPlayer(this.gameId, p[EncodedPlayerIdx.ID], p)
             rerender = true
           }
         } break
         case CHANGE_TYPE.PIECE: {
-          const piece = Util.decodePiece(changeData)
-          GameCommon.setPiece(this.gameId, piece.idx, piece)
+          GameCommon.setPiece(this.gameId, changeData[EncodedPieceIdx.IDX], changeData)
           rerender = true
         } break
         case CHANGE_TYPE.DATA: {
@@ -535,8 +547,8 @@ export abstract class Game<HudType extends Hud> implements GameInterface {
         this.playerSettings.getSettings(),
         this.playerCursors,
         this.puzzleStatus,
-        (piece: Piece) => this.shouldDrawPiece(piece),
-        (player: Player) => this.shouldDrawPlayer(player),
+        (piece: EncodedPiece) => this.shouldDrawEncodedPiece(piece),
+        (player: EncodedPlayer) => this.shouldDrawPlayer(player),
         this.justFinished(),
         false,
       )
@@ -550,8 +562,8 @@ export abstract class Game<HudType extends Hud> implements GameInterface {
         this.playerSettings.getSettings(),
         this.playerCursors,
         this.puzzleStatus,
-        (piece: Piece) => this.shouldDrawPiece(piece),
-        (player: Player) => this.shouldDrawPlayer(player),
+        (piece: EncodedPiece) => this.shouldDrawEncodedPiece(piece),
+        (player: EncodedPlayer) => this.shouldDrawPlayer(player),
         this.justFinished(),
         false,
       )

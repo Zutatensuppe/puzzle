@@ -1,7 +1,7 @@
 import { Assets } from '../Assets'
 import { Camera } from '../Camera'
 import GameCommon from '../../../common/src/GameCommon'
-import { GameId, Player, Timestamp } from '../Types'
+import { EncodedPlayer, EncodedPlayerIdx, GameId, Timestamp } from '../../../common/src/Types'
 import m4 from './m4'
 import { Shader } from './Shader'
 import playersFragment from './shaders/playersFragment'
@@ -127,7 +127,7 @@ export class PlayersShaderWrapper {
 
   public render(
     viewport: Camera,
-    shouldDrawPlayer: (player: Player) => boolean,
+    shouldDrawPlayer: (player: EncodedPlayer) => boolean,
     showPlayerNames: boolean,
     ts: Timestamp,
   ) {
@@ -137,15 +137,15 @@ export class PlayersShaderWrapper {
       if (!shouldDrawPlayer(p)) {
         continue
       }
-      const pos = viewport.worldToViewport(p)
-      const textureInfo = p.d ? this.textureInfoGrab : this.textureInfoHand
+      const pos = viewport.worldToViewportXy(p[EncodedPlayerIdx.X], p[EncodedPlayerIdx.Y])
+      const textureInfo = p[EncodedPlayerIdx.MOUSEDOWN] ? this.textureInfoGrab : this.textureInfoHand
       this.drawPlayer(
         textureInfo.texture,
         textureInfo.width,
         textureInfo.height,
         pos.x - 8,
         pos.y - 8,
-        p.color,
+        p[EncodedPlayerIdx.COLOR],
         null,
       )
       if (!showPlayerNames) {
@@ -161,19 +161,19 @@ export class PlayersShaderWrapper {
           nameHeight,
           pos.x - (nameWidth / 2),
           pos.y + 16 - (nameHeight - cacheEntry.fontHeight),
-          p.color,
+          p[EncodedPlayerIdx.COLOR],
           cacheEntry.canvas,
         )
       }
     }
   }
 
-  private getPlayerNameCanvas(p: Player, w: number, h: number): PlayerNameCacheEntry | null {
-    if (!p.name) {
+  private getPlayerNameCanvas(p: EncodedPlayer, w: number, h: number): PlayerNameCacheEntry | null {
+    if (!p[EncodedPlayerIdx.NAME]) {
       return null
     }
-    const text = `${p.name} (${p.points})`
-    if (!playerNameCache[p.id] || playerNameCache[p.id].text !== text) {
+    const text = `${p[EncodedPlayerIdx.NAME]} (${p[EncodedPlayerIdx.POINTS]})`
+    if (!playerNameCache[p[EncodedPlayerIdx.ID]] || playerNameCache[p[EncodedPlayerIdx.ID]].text !== text) {
       const canvas = document.createElement('canvas')
       canvas.width = w
       canvas.height = h
@@ -184,8 +184,8 @@ export class PlayersShaderWrapper {
       const metrics = ctx.measureText(text)
       const fontHeight = metrics.fontBoundingBoxAscent + metrics.fontBoundingBoxDescent
       const actualHeight = metrics.actualBoundingBoxAscent + metrics.actualBoundingBoxDescent
-      playerNameCache[p.id] = { text, canvas, fontHeight, actualHeight }
+      playerNameCache[p[EncodedPlayerIdx.ID]] = { text, canvas, fontHeight, actualHeight }
     }
-    return playerNameCache[p.id]
+    return playerNameCache[p[EncodedPlayerIdx.ID]]
   }
 }
