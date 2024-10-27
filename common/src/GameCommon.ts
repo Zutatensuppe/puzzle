@@ -169,7 +169,7 @@ function addPlayer(
   if (!playerExists(gameId, clientId)) {
     setPlayer(gameId, clientId, __createPlayerObject(clientId, ts))
   } else {
-    changePlayer(gameId, clientId, { ts })
+    changePlayer(gameId, clientId, { [EncodedPlayerIdx.TIMESTAMP]: ts })
   }
 }
 
@@ -849,15 +849,15 @@ function handleGameEvent(
     }
   } else if (type === GAME_EVENT_TYPE.INPUT_EV_BG_COLOR) {
     const bgcolor = gameEvent[1]
-    changePlayer(gameId, clientId, { bgcolor, ts })
+    changePlayer(gameId, clientId, { [EncodedPlayerIdx.BGCOLOR]: bgcolor, [EncodedPlayerIdx.TIMESTAMP]: ts })
     _playerChange()
   } else if (type === GAME_EVENT_TYPE.INPUT_EV_PLAYER_COLOR) {
     const color = gameEvent[1]
-    changePlayer(gameId, clientId, { color, ts })
+    changePlayer(gameId, clientId, { [EncodedPlayerIdx.COLOR]: color, [EncodedPlayerIdx.TIMESTAMP]: ts })
     _playerChange()
   } else if (type === GAME_EVENT_TYPE.INPUT_EV_PLAYER_NAME) {
     const name = `${gameEvent[1]}`.substr(0, 16)
-    changePlayer(gameId, clientId, { name, ts })
+    changePlayer(gameId, clientId, { [EncodedPlayerIdx.NAME]: name, [EncodedPlayerIdx.TIMESTAMP]: ts })
     _playerChange()
   } else if (type === GAME_EVENT_TYPE.INPUT_EV_MOVE) {
     const diffX = gameEvent[1]
@@ -866,7 +866,7 @@ function handleGameEvent(
     if (player) {
       const x = player[EncodedPlayerIdx.X] - diffX
       const y = player[EncodedPlayerIdx.Y] - diffY
-      changePlayer(gameId, clientId, { ts, x, y })
+      changePlayer(gameId, clientId, { [EncodedPlayerIdx.TIMESTAMP]: ts, [EncodedPlayerIdx.X]: x, [EncodedPlayerIdx.Y]: y })
       _playerChange()
       const pieceIdx = getFirstOwnedPieceIdx(gameId, clientId)
       if (pieceIdx >= 0) {
@@ -883,7 +883,7 @@ function handleGameEvent(
     const x = gameEvent[1]
     const y = gameEvent[2]
 
-    changePlayer(gameId, clientId, { d: 1, ts })
+    changePlayer(gameId, clientId, { [EncodedPlayerIdx.MOUSEDOWN]: 1, [EncodedPlayerIdx.TIMESTAMP]: ts })
     _playerChange()
 
     const tileIdxAtPos = pieceIdxByXy(gameId, x, y, 0)
@@ -903,13 +903,13 @@ function handleGameEvent(
 
     if (!down) {
       // player is just moving the hand
-      changePlayer(gameId, clientId, { x, y, ts })
+      changePlayer(gameId, clientId, { [EncodedPlayerIdx.X]: x, [EncodedPlayerIdx.Y]: y, [EncodedPlayerIdx.TIMESTAMP]: ts })
       _playerChange()
     } else {
       const pieceIdx = getFirstOwnedPieceIdx(gameId, clientId)
       if (pieceIdx < 0) {
         // player is just moving map, so no change in position!
-        changePlayer(gameId, clientId, { ts })
+        changePlayer(gameId, clientId, { [EncodedPlayerIdx.TIMESTAMP]: ts })
         _playerChange()
       } else {
         const x = gameEvent[1]
@@ -918,7 +918,7 @@ function handleGameEvent(
         const diffY = gameEvent[4]
 
         // player is moving a piece (and hand)
-        changePlayer(gameId, clientId, { x, y, ts })
+        changePlayer(gameId, clientId, { [EncodedPlayerIdx.X]: x, [EncodedPlayerIdx.Y]: y, [EncodedPlayerIdx.TIMESTAMP]: ts })
         _playerChange()
 
         // check if pos is on the piece, otherwise dont move
@@ -967,7 +967,7 @@ function handleGameEvent(
           // no score mode... should never occur, because there is a
           // fallback to ScoreMode.FINAL in getScoreMode function
         }
-        changePlayer(gameId, clientId, { d, ts, points })
+        changePlayer(gameId, clientId, { [EncodedPlayerIdx.MOUSEDOWN]: d, [EncodedPlayerIdx.TIMESTAMP]: ts, [EncodedPlayerIdx.POINTS]: points })
         _playerChange()
 
         // check if the puzzle is finished
@@ -1033,15 +1033,15 @@ function handleGameEvent(
             break
           }
         }
-        const playerChange: PlayerChange = { d, ts }
+        const playerChange: PlayerChange = { [EncodedPlayerIdx.MOUSEDOWN]: d, [EncodedPlayerIdx.TIMESTAMP]: ts }
         if (snapped && getScoreMode(gameId) === ScoreMode.ANY) {
-          playerChange.points = getPlayerPoints(gameId, clientId) + 1
+          playerChange[EncodedPlayerIdx.POINTS] = getPlayerPoints(gameId, clientId) + 1
         } else if (
           snapped
           && getScoreMode(gameId) === ScoreMode.FINAL
           && isFinishedPiece(gameId, pieceIdx)
         ) {
-          playerChange.points = getPlayerPoints(gameId, clientId) + pieceIdxs.length
+          playerChange[EncodedPlayerIdx.POINTS] = getPlayerPoints(gameId, clientId) + pieceIdxs.length
         }
         changePlayer(gameId, clientId, playerChange)
         _playerChange()
@@ -1057,7 +1057,7 @@ function handleGameEvent(
         }
       }
     } else {
-      changePlayer(gameId, clientId, { d, ts })
+      changePlayer(gameId, clientId, { [EncodedPlayerIdx.MOUSEDOWN]: d, [EncodedPlayerIdx.TIMESTAMP]: ts })
       _playerChange()
     }
   } else if (type === GAME_EVENT_TYPE.INPUT_EV_ROTATE) {
@@ -1065,11 +1065,11 @@ function handleGameEvent(
       const pieceIdx = getFirstOwnedPieceIdx(gameId, clientId)
       if (pieceIdx < 0) {
         // player tried to rotate, but holding nothing
-        changePlayer(gameId, clientId, {ts})
+        changePlayer(gameId, clientId, { [EncodedPlayerIdx.TIMESTAMP]: ts })
         _playerChange()
       } else {
         // player is rotating a piece (or group of pieces)
-        changePlayer(gameId, clientId, {ts})
+        changePlayer(gameId, clientId, { [EncodedPlayerIdx.TIMESTAMP]: ts })
         _playerChange()
 
         const direction = gameEvent[1] === 0 ? -1 : 1
@@ -1079,21 +1079,21 @@ function handleGameEvent(
         anyRotated = true
       }
     } else {
-      changePlayer(gameId, clientId, {ts})
+      changePlayer(gameId, clientId, { [EncodedPlayerIdx.TIMESTAMP]: ts })
       _playerChange()
     }
   } else if (type === GAME_EVENT_TYPE.INPUT_EV_ZOOM_IN) {
     const x = gameEvent[1]
     const y = gameEvent[2]
-    changePlayer(gameId, clientId, { x, y, ts })
+    changePlayer(gameId, clientId, { [EncodedPlayerIdx.X]: x, [EncodedPlayerIdx.Y]: y, [EncodedPlayerIdx.TIMESTAMP]: ts })
     _playerChange()
   } else if (type === GAME_EVENT_TYPE.INPUT_EV_ZOOM_OUT) {
     const x = gameEvent[1]
     const y = gameEvent[2]
-    changePlayer(gameId, clientId, { x, y, ts })
+    changePlayer(gameId, clientId, { [EncodedPlayerIdx.X]: x, [EncodedPlayerIdx.Y]: y, [EncodedPlayerIdx.TIMESTAMP]: ts })
     _playerChange()
   } else {
-    changePlayer(gameId, clientId, { ts })
+    changePlayer(gameId, clientId, { [EncodedPlayerIdx.TIMESTAMP]: ts })
     _playerChange()
   }
 
