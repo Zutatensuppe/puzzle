@@ -188,7 +188,13 @@ const crop = ref<Rect>({ x: 0, y: 0, w: props.image.width, h: props.image.height
 
 const valid = ref<boolean>(true)
 
+// prevent clicking the button multiple times
+const creating = ref<boolean>(false)
+
 const canStartNewGame = computed((): boolean => {
+  if (creating.value) {
+    return false
+  }
   if (!valid.value) {
     return false
   }
@@ -234,6 +240,7 @@ const onCropUpdate = (newCrop: Rect) => {
 }
 
 const onNewGameClick = () => {
+  creating.value = true
   emit('newGame', {
     tiles: piecesInt.value,
     private: isPrivate.value,
