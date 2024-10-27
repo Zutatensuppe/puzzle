@@ -477,15 +477,15 @@ export interface PuzzleStatusInterface {
 }
 
 export interface PlayerChange {
-  id?: string
-  x?: number
-  y?: number
-  d?: 0 | 1
-  name?: string | null
-  color?: string | null
-  bgcolor?: string | null
-  points?: number
-  ts?: Timestamp
+  [EncodedPlayerIdx.ID]?: string
+  [EncodedPlayerIdx.X]?: number
+  [EncodedPlayerIdx.Y]?: number
+  [EncodedPlayerIdx.MOUSEDOWN]?: 0 | 1
+  [EncodedPlayerIdx.NAME]?: string | null
+  [EncodedPlayerIdx.COLOR]?: string | null
+  [EncodedPlayerIdx.BGCOLOR]?: string | null
+  [EncodedPlayerIdx.POINTS]?: number
+  [EncodedPlayerIdx.TIMESTAMP]?: Timestamp
 }
 
 export interface FireworksInterface {
