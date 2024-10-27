@@ -374,7 +374,7 @@ export interface BasicPlayerInfo {
   points: number
 }
 
-export enum Renderer {
+export enum RendererType {
   CANVAS = 'canvas',
   WEBGL2 = 'webgl2',
 }
@@ -387,7 +387,7 @@ export interface PlayerSettingsData {
   mouseRotate: boolean
   name: string
   otherPlayerClickSoundEnabled: boolean
-  renderer: Renderer
+  renderer: RendererType
   rotateSoundEnabled: boolean
   showPlayerNames: boolean
   showTable: boolean
@@ -423,7 +423,7 @@ export const PLAYER_SETTINGS_DEFAULTS = {
   OTHER_PLAYER_CLICK_SOUND_ENABLED: true,
   PLAYER_COLOR: '#ffffff',
   PLAYER_NAME: 'anon',
-  RENDERER: Renderer.WEBGL2,
+  RENDERER: RendererType.WEBGL2,
   ROTATE_SOUND_ENABLED: true,
   SHOW_PLAYER_NAMES: true,
   SHOW_TABLE: true,

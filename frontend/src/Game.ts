@@ -25,6 +25,7 @@ import {
   RotationMode,
   GameId,
   ClientId,
+  RendererType,
 } from '../../common/src/Types'
 import _api from './_api'
 import { Assets } from './Assets'
@@ -226,7 +227,7 @@ export abstract class Game<HudType extends Hud> implements GameInterface {
 
     const puzzleTable = new PuzzleTable(this.graphics)
 
-    if (this.playerSettings.renderer() === 'webgl2' && hasWebGL2Support()) {
+    if (this.playerSettings.renderer() === RendererType.WEBGL2 && hasWebGL2Support()) {
       this.rendererWebgl = new RendererWebgl(
         this.gameId,
         this.fireworks,

@@ -2,7 +2,7 @@ import { MODE_REPLAY } from './GameMode'
 import storage from './storage'
 import GameCommon from '../../common/src/GameCommon'
 import { Game } from './Game'
-import { PLAYER_SETTINGS, PLAYER_SETTINGS_DEFAULTS, PlayerSettingsData, Renderer } from '../../common/src/Types'
+import { PLAYER_SETTINGS, PLAYER_SETTINGS_DEFAULTS, PlayerSettingsData, RendererType } from '../../common/src/Types'
 import { hasWebGL2Support } from './util'
 
 export class PlayerSettings {
@@ -41,15 +41,15 @@ export class PlayerSettings {
     this.settings.renderer = this.parseRenderer(storage.getStr(PLAYER_SETTINGS.RENDERER, PLAYER_SETTINGS_DEFAULTS.RENDERER))
   }
 
-  parseRenderer(str: string): Renderer {
+  parseRenderer(str: string): RendererType {
     if (!hasWebGL2Support()) {
-      return Renderer.CANVAS
+      return RendererType.CANVAS
     }
-    if (Renderer.WEBGL2 === str) {
-      return Renderer.WEBGL2
+    if (RendererType.WEBGL2 === str) {
+      return RendererType.WEBGL2
     }
-    if (Renderer.CANVAS === str) {
-      return Renderer.CANVAS
+    if (RendererType.CANVAS === str) {
+      return RendererType.CANVAS
     }
     return PLAYER_SETTINGS_DEFAULTS.RENDERER
   }
@@ -229,7 +229,7 @@ export class PlayerSettings {
     return false
   }
 
-  setRenderer(value: Renderer) {
+  setRenderer(value: RendererType) {
     if (this.settings.renderer !== value) {
       this.settings.renderer = value
       storage.setStr(PLAYER_SETTINGS.RENDERER, value)
