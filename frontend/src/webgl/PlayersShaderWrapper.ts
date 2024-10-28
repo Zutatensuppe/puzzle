@@ -111,11 +111,14 @@ export class PlayersShaderWrapper {
     this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.positionBuffer)
     this.gl.enableVertexAttribArray(this.positionLocation)
     this.gl.vertexAttribPointer(this.positionLocation, 2, this.gl.FLOAT, false, 0, 0)
+
     this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.texcoordBuffer)
     this.gl.enableVertexAttribArray(this.texcoordLocation)
     this.gl.vertexAttribPointer(this.texcoordLocation, 2, this.gl.FLOAT, false, 0, 0)
 
     this.gl.drawArrays(this.gl.TRIANGLES, 0, 6)
+    this.gl.disableVertexAttribArray(this.positionLocation)
+    this.gl.disableVertexAttribArray(this.texcoordLocation)
   }
 
   private createMatrix(translateX: number, translateY: number, scaleW: number, scaleH: number) {
