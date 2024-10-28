@@ -30,10 +30,14 @@
         >
           <td>
             <a
+              v-if="item.image"
               :href="`/uploads/${item.image.filename}`"
               target="_blank"
-            ><img :src="resizeUrl(`/image-service/image/${item.image.filename}`, 150, 100, 'contain')">
-            </a>
+              class="image-holder"
+            ><img
+              :src="resizeUrl(`/image-service/image/${item.image.filename}`, 150, 100, 'contain')"
+              :class="item.image.private ? ['image-private', 'image'] : ['image']"
+            ></a>
           </td>
           <td valign="top">
             <div>
