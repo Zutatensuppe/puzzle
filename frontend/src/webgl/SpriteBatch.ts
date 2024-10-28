@@ -163,6 +163,7 @@ export class SpriteBatch {
 
     this.attribs.bind()
     this.gl.drawArraysInstanced(this.gl.TRIANGLES, 0, 6, this.instances)
+    this.attribs.unbind()
   }
 
   destroy() {
