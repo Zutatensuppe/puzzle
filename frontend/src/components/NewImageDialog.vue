@@ -94,7 +94,7 @@
             <v-checkbox
               v-model="isPrivate"
               density="comfortable"
-              label="Private Image (Private images won't show up in the public gallery)"
+              label="Private Image (Private images won't show up in the public gallery, but are visible to the admin for moderation purposes)"
             />
           </div>
 
