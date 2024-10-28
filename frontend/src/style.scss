@@ -855,8 +855,6 @@ fieldset {
   }
 }
 
-
-
 .view-admin_games {
   .color-private {
     background: rgba(122 85 165 / 80%);
@@ -866,5 +864,25 @@ fieldset {
   .color-finished {
     background: rgba(55 131 68 / 80%);
     padding: 0 5px;
+  }
+}
+
+.view-admin_games,
+.view-admin_images {
+  .image-holder {
+    display: inline-block;
+    overflow: hidden;
+
+    img {
+      vertical-align: bottom;
+    }
+
+    img.image-private {
+      filter: blur(8px);
+    }
+
+    &:hover img.image-private {
+      filter: blur(0);
+    }
   }
 }

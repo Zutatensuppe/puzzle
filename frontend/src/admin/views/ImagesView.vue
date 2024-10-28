@@ -29,7 +29,11 @@
             <a
               :href="`/uploads/${item.filename}`"
               target="_blank"
-            ><img :src="resizeUrl(`/image-service/image/${item.filename}`, 150, 100, 'contain')"></a>
+              class="image-holder"
+            ><img
+              :src="resizeUrl(`/image-service/image/${item.filename}`, 150, 100, 'contain')"
+              :class="item.private ? ['image-private', 'image'] : ['image']"
+            ></a>
           </th>
           <td>
             <div class="d-flex ga-3">
