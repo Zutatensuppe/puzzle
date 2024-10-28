@@ -931,7 +931,7 @@ function handleGameEvent(
       }
     }
   } else if (type === GAME_EVENT_TYPE.INPUT_EV_MOUSE_UP) {
-    const d = 0 // mouse down = false
+    const mouseDown = 0 // mouse down = false
 
     const pieceIdx = getFirstOwnedPieceIdx(gameId, clientId)
     if (pieceIdx >= 0) {
@@ -967,7 +967,7 @@ function handleGameEvent(
           // no score mode... should never occur, because there is a
           // fallback to ScoreMode.FINAL in getScoreMode function
         }
-        changePlayer(gameId, clientId, { [EncodedPlayerIdx.MOUSEDOWN]: d, [EncodedPlayerIdx.TIMESTAMP]: ts, [EncodedPlayerIdx.POINTS]: points })
+        changePlayer(gameId, clientId, { [EncodedPlayerIdx.MOUSEDOWN]: mouseDown, [EncodedPlayerIdx.TIMESTAMP]: ts, [EncodedPlayerIdx.POINTS]: points })
         _playerChange()
 
         // check if the puzzle is finished
@@ -1033,7 +1033,7 @@ function handleGameEvent(
             break
           }
         }
-        const playerChange: PlayerChange = { [EncodedPlayerIdx.MOUSEDOWN]: d, [EncodedPlayerIdx.TIMESTAMP]: ts }
+        const playerChange: PlayerChange = { [EncodedPlayerIdx.MOUSEDOWN]: mouseDown, [EncodedPlayerIdx.TIMESTAMP]: ts }
         if (snapped && getScoreMode(gameId) === ScoreMode.ANY) {
           playerChange[EncodedPlayerIdx.POINTS] = getPlayerPoints(gameId, clientId) + 1
         } else if (
@@ -1057,7 +1057,7 @@ function handleGameEvent(
         }
       }
     } else {
-      changePlayer(gameId, clientId, { [EncodedPlayerIdx.MOUSEDOWN]: d, [EncodedPlayerIdx.TIMESTAMP]: ts })
+      changePlayer(gameId, clientId, { [EncodedPlayerIdx.MOUSEDOWN]: mouseDown, [EncodedPlayerIdx.TIMESTAMP]: ts })
       _playerChange()
     }
   } else if (type === GAME_EVENT_TYPE.INPUT_EV_ROTATE) {
@@ -1213,7 +1213,7 @@ function Game_getEncodedPieces(game: Game): EncodedPiece[] {
 
 function Game_getEncodedPiecesSortedByZIndex(game: Game): EncodedPiece[] {
   const pieces = game.puzzle.tiles
-  return pieces.sort((t1, t2) => t1[EncodedPieceIdx.Z] - t2[EncodedPieceIdx.Z])
+  return pieces.toSorted((t1, t2) => t1[EncodedPieceIdx.Z] - t2[EncodedPieceIdx.Z])
 }
 
 function Game_getPuzzle(game: Game): Puzzle {
