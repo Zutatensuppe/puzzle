@@ -74,7 +74,7 @@ export class RendererWebgl {
     this.piecesShaderWrapper = new PiecesShaderWrapper(this.gl, this.gameId)
     this.piecesShaderWrapper.init(puzzleBitmapCache[this.gameId], stencils)
 
-    this.playersShaderWrapper = new PlayersShaderWrapper(this.gl, this.assets, this.gameId)
+    this.playersShaderWrapper = new PlayersShaderWrapper(this.gl, this.assets, this.gameId, this.graphics)
     this.playersShaderWrapper.init()
 
     this.fireworksShaderWrapper = new FireworksShaderWrapper(this.gl, GameCommon.getRng(this.gameId))
@@ -88,19 +88,22 @@ export class RendererWebgl {
     }
   }
 
-  renderToImageString(
-    canvasDim: Dim,
-    camera: Camera,
+  public renderToImageString(
+    boardDim: Dim,
+    tableDim: Dim,
     ts: Timestamp,
     settings: PlayerSettingsData,
     shouldDrawEncodedPiece: (piece: EncodedPiece) => boolean,
     shouldDrawPlayer: (player: EncodedPlayer) => boolean,
     renderPreview: boolean,
   ) {
+    const camera = new Camera()
+    camera.calculateZoomCapping(boardDim, tableDim)
+    camera.centerFit(boardDim, tableDim, boardDim, 0)
     const oldWidth = this.canvas.width
     const oldHeight = this.canvas.height
-    this.canvas.width = canvasDim.w
-    this.canvas.height = canvasDim.h
+    this.canvas.width = boardDim.w
+    this.canvas.height = boardDim.h
 
     // update the viewport and clear the screen
     this.gl.viewport(0, 0, this.canvas.width, this.canvas.height)

@@ -6,7 +6,7 @@
   >
 </template>
 <script setup lang="ts">
-import { Game } from '../Game'
+import { GameInterface } from '../Game'
 
 // this displays the current puzzle image, it is kind of a hack
 // to always keep an image element with the preview url, so that
@@ -15,6 +15,6 @@ import { Game } from '../Game'
 // take a second for large images for some reason!
 
 defineProps<{
-  game: Game<any> | null,
+  game: GameInterface | null,
 }>()
 </script>

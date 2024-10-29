@@ -18,6 +18,7 @@
 import { StyleValue, computed } from 'vue'
 import { BasicPlayerInfo, RegisteredMap } from '../../../common/src/Types'
 import { GameInterface } from '../Game'
+import { getAnonBadge, getColoredBadge } from '../BadgeCreator'
 
 const props = defineProps<{
   player: BasicPlayerInfo,
@@ -44,48 +45,10 @@ const style = computed(() => {
   return { color: props.player.color || '#ffffff' }
 })
 
-
-let badgeMap: Record<string, string> = {}
-const getColoredBadge = (color: string): string => {
-  const graphics = props.game.getGraphics()
-  const assets = props.game.getAssets()
-  let url = ''
-  let key = 'color_' + color + '_' + (props.active ? 'active' : 'idle')
-  if (key in badgeMap) {
-    url = badgeMap[key]
-  } else {
-    if (props.active) {
-      badgeMap[key] = graphics.colorizedCanvas(assets.Gfx.badgeOver, assets.Gfx.badgeMask, props.player.color || '#ffffff').toDataURL()
-    } else {
-      badgeMap[key] = graphics.colorizedCanvas(assets.Gfx.badgeOverIdle, assets.Gfx.badgeMask, props.player.color || '#ffffff').toDataURL()
-    }
-    url = badgeMap[key]
-  }
-  return url
-}
-
-const getAnonBadge = (): string => {
-  const graphics = props.game.getGraphics()
-  const assets = props.game.getAssets()
-  let url = ''
-  let key = 'anon_' + (props.active ? 'active' : 'idle')
-  if (key in badgeMap) {
-    url = badgeMap[key]
-  } else {
-    if (props.active) {
-      badgeMap[key] = graphics.bitmapToImageString(assets.Gfx.badgeAnon)
-    } else {
-      badgeMap[key] = graphics.bitmapToImageString(assets.Gfx.badgeAnonIdle)
-    }
-    url = badgeMap[key]
-  }
-  return url
-}
-
 const iconStyle = computed(() => {
   const url = !props.registeredMap[props.player.id]
-    ? getAnonBadge()
-    : getColoredBadge(props.player.color || '#ffffff')
+    ? getAnonBadge(props.game.graphics, props.game.assets, props.active)
+    : getColoredBadge(props.game.graphics, props.game.assets, props.player.color || '#ffffff', props.active)
   return {
     backgroundImage: `url(${url})`,
   }

@@ -43,7 +43,6 @@ import { RendererWebgl } from './RendererWebgl'
 import { Sounds } from './Sounds'
 import { ViewportSnapshots } from './ViewportSnapshots'
 import debug from './debug'
-import { hasWebGL2Support } from './util'
 
 declare global {
   interface Window {
@@ -54,6 +53,8 @@ declare global {
 const log = logger('Game.ts')
 
 export interface GameInterface {
+  readonly graphics: Graphics
+  readonly assets: Assets
   reinit(clientId: ClientId): Promise<void>
   shouldDrawEncodedPiece(piece: EncodedPiece): boolean
   getWsAddres(): string
@@ -90,8 +91,6 @@ export interface GameInterface {
   getSnapMode(): SnapMode
   getShapeMode(): ShapeMode
   getImage(): ImageInfo
-  getAssets(): Assets
-  getGraphics(): Graphics
   onServerUpdateEvent(msg: ServerUpdateEvent): void
   onUpdate(): void
   handleEvent(evt: GameEvent): void
@@ -118,8 +117,8 @@ export interface GameInterface {
 export abstract class Game<HudType extends Hud> implements GameInterface {
   protected rerender: boolean = true
 
-  private assets: Assets
-  private graphics: Graphics
+  public readonly assets: Assets
+  public readonly graphics: Graphics
   protected sounds!: Sounds
   private viewport: Camera
   private evts!: EventAdapter
@@ -129,7 +128,7 @@ export abstract class Game<HudType extends Hud> implements GameInterface {
   protected puzzleStatus!: PuzzleStatus
   private fireworks: FireworksInterface | null = null
   protected ctx!: CanvasRenderingContext2D
-  protected renderer: Renderer | null = null
+  protected rendererCanvas2d: Renderer | null = null
   protected rendererWebgl: RendererWebgl | null = null
 
   private isInterfaceVisible: boolean = true
@@ -229,7 +228,7 @@ export abstract class Game<HudType extends Hud> implements GameInterface {
 
     const puzzleTable = new PuzzleTable(this.graphics)
 
-    if (this.playerSettings.renderer() === RendererType.WEBGL2 && hasWebGL2Support()) {
+    if (this.playerSettings.renderer() === RendererType.WEBGL2 && this.graphics.hasWebGL2Support()) {
       this.rendererWebgl = new RendererWebgl(
         this.gameId,
         this.fireworks,
@@ -244,14 +243,15 @@ export abstract class Game<HudType extends Hud> implements GameInterface {
     } else {
       this.ctx = this.canvas.getContext('2d') as CanvasRenderingContext2D
       this.initFireworks()
-      this.renderer = new Renderer(
+      this.rendererCanvas2d = new Renderer(
         this.gameId,
         this.fireworks,
         puzzleTable,
         false,
+        this.graphics,
       )
-      await this.renderer.init(this.graphics)
-      await this.renderer.loadTableTexture(this.playerSettings.getSettings())
+      await this.rendererCanvas2d.init()
+      await this.rendererCanvas2d.loadTableTexture(this.playerSettings.getSettings())
     }
 
     this.canvas.classList.add('loaded')
@@ -325,8 +325,8 @@ export abstract class Game<HudType extends Hud> implements GameInterface {
   async loadTableTexture(settings: PlayerSettingsData): Promise<void> {
     if (this.rendererWebgl) {
       await this.rendererWebgl.loadTableTexture(settings)
-    } else if (this.renderer){
-      await this.renderer.loadTableTexture(settings)
+    } else if (this.rendererCanvas2d){
+      await this.rendererCanvas2d.loadTableTexture(settings)
     }
     this.requireRerender()
   }
@@ -398,14 +398,6 @@ export abstract class Game<HudType extends Hud> implements GameInterface {
 
   getImage(): ImageInfo {
     return GameCommon.getPuzzle(this.gameId).info.image
-  }
-
-  getAssets(): Assets {
-    return this.assets
-  }
-
-  getGraphics(): Graphics {
-    return this.graphics
   }
 
   onServerUpdateEvent(msg: ServerUpdateEvent): void {
@@ -552,9 +544,9 @@ export abstract class Game<HudType extends Hud> implements GameInterface {
         this.justFinished(),
         false,
       )
-    } else if (this.renderer) {
-      this.renderer.debug = debug.isDebugEnabled()
-      this.renderer.render(
+    } else if (this.rendererCanvas2d) {
+      this.rendererCanvas2d.debug = debug.isDebugEnabled()
+      this.rendererCanvas2d.render(
         this.canvas,
         this.ctx,
         this.viewport,

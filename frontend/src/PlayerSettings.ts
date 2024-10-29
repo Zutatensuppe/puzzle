@@ -1,15 +1,14 @@
 import { MODE_REPLAY } from './GameMode'
 import storage from './storage'
 import GameCommon from '../../common/src/GameCommon'
-import { Game } from './Game'
+import { GameInterface } from './Game'
 import { PLAYER_SETTINGS, PLAYER_SETTINGS_DEFAULTS, PlayerSettingsData, RendererType } from '../../common/src/Types'
-import { hasWebGL2Support } from './util'
 
 export class PlayerSettings {
 
   private settings!: PlayerSettingsData
 
-  constructor(private game: Game<any>) {
+  constructor(private game: GameInterface) {
     // pass
   }
 
@@ -42,7 +41,7 @@ export class PlayerSettings {
   }
 
   parseRenderer(str: string): RendererType {
-    if (!hasWebGL2Support()) {
+    if (!this.game.graphics.hasWebGL2Support()) {
       return RendererType.CANVAS
     }
     if (RendererType.WEBGL2 === str) {
