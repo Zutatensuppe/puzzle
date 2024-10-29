@@ -26,20 +26,34 @@ const determinePiecesXY = (
   if (desiredPieceCount <= 0 || isNaN(desiredPieceCount)) {
     return { countHorizontal: 0, countVertical: 0 }
   }
-  const w_ = dim.w < dim.h ? (dim.w * dim.h) : (dim.w * dim.w)
-  const h_ = dim.w < dim.h ? (dim.h * dim.h) : (dim.w * dim.h)
-  let size = 0
-  let pieces = 0
-  do {
-    size++
-    pieces = Math.floor(w_ / size) * Math.floor(h_ / size)
-  } while (pieces >= desiredPieceCount)
-  if (pieces !== desiredPieceCount) {
-    size--
+  const w = dim.w < dim.h ? (dim.w * dim.h) : (dim.w * dim.w)
+  const h = dim.w < dim.h ? (dim.h * dim.h) : (dim.w * dim.h)
+  const totalArea = w * h
+
+  // Initial estimate for size
+  let size = Math.floor(Math.sqrt(totalArea / desiredPieceCount))
+  let pieces = Math.floor(w / size) * Math.floor(h / size)
+
+  // kind of binary search to find the best counts
+  // we get closer to the desired piece count fast by starting
+  // with a high sizeChange and bitshifting it in each iteration
+  let sizeChange = 128 // 128, 64, 32, 16, 8, 4, 2, 1
+  while (sizeChange >= 1) {
+    while (pieces < desiredPieceCount) {
+      size -= sizeChange
+      pieces = Math.floor(w / size) * Math.floor(h / size)
+    }
+    while (pieces >= desiredPieceCount) {
+      size += sizeChange
+      pieces = Math.floor(w / size) * Math.floor(h / size)
+    }
+    sizeChange = sizeChange >> 1
   }
+  size--
+
   return {
-    countHorizontal: Math.floor(w_ / size),
-    countVertical: Math.floor(h_ / size),
+    countHorizontal: Math.floor(w / size),
+    countVertical: Math.floor(h / size),
   }
 }
 
