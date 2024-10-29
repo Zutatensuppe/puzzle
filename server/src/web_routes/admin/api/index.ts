@@ -1,5 +1,5 @@
 import express, { NextFunction } from 'express'
-import { ServerInterface } from '../../../Server'
+import { Server } from '../../../Server'
 import { MergeClientIdsIntoUser } from '../../../admin-tools/MergeClientIdsIntoUser'
 import { GameId, ImageId, ServerInfo } from '../../../Types'
 import GameLog from '../../../GameLog'
@@ -7,7 +7,7 @@ import { GameRowWithImage } from '../../../repo/GamesRepo'
 import { FixPieces } from '../../../admin-tools/FixPieces'
 
 export default function createRouter(
-  server: ServerInterface,
+  server: Server,
 ): express.Router {
   const router = express.Router()
 

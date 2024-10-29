@@ -1,11 +1,11 @@
 import express, { Request, Response, Router } from 'express'
 import path from 'path'
 import config from '../../Config'
-import { ServerInterface } from '../../Server'
+import { Server } from '../../Server'
 import fs from '../../FileSystem'
 
 export default function createRouter(
-  server: ServerInterface,
+  server: Server,
 ): Router {
   const router = express.Router()
   router.get('/image/*', async (req: Request, res: Response) => {

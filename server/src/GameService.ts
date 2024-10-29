@@ -6,6 +6,7 @@ import {
   GameId,
   UserId,
   ClientId,
+  GameInfo,
 } from '../../common/src/Types'
 import Util, { logger } from '../../common/src/Util'
 import { Rng, RngSerialized } from '../../common/src/Rng'
@@ -59,7 +60,7 @@ export class GameService {
     }
   }
 
-  public async gameRowToGameObject(gameRow: GameRow): Promise<Game | null> {
+  private async gameRowToGameObject(gameRow: GameRow): Promise<Game | null> {
     let game: GameStoreData
     try {
       game = JSON.parse(gameRow.data)
@@ -75,29 +76,34 @@ export class GameService {
     if (!Array.isArray(game.players)) {
       game.players = Object.values(game.players)
     }
+    game.puzzle.info.image.gameCount = await this.repos.images.getGameCount(game.puzzle.info.image.id)
 
-    const gameObject: Game = this.storeDataToGame(
-      game,
-      gameRow.creator_user_id,
-      !!gameRow.private,
-    )
-    gameObject.hasReplay = await GameLog.hasReplay(gameObject)
-    gameObject.crop = game.crop
-    gameObject.registeredMap = await this.generateRegisteredMap(gameObject)
-
-    const gameCount = await this.repos.images.getGameCount(gameObject.puzzle.info.image.id)
-    gameObject.puzzle.info.image.gameCount = gameCount
-    return gameObject
+    const gameVersion = game.gameVersion || 1 // old games didnt have this stored
+    return {
+      id: game.id,
+      gameVersion,
+      creatorUserId: gameRow.creator_user_id,
+      rng: {
+        type: game.rng ? game.rng.type : '_fake_',
+        obj: game.rng ? Rng.unserialize(game.rng.obj) : new Rng(0),
+      },
+      puzzle: game.puzzle,
+      players: game.players,
+      scoreMode: DefaultScoreMode(game.scoreMode),
+      shapeMode: DefaultShapeMode(game.shapeMode),
+      snapMode: DefaultSnapMode(game.snapMode),
+      rotationMode: DefaultRotationMode(game.rotationMode),
+      hasReplay: await GameLog.hasReplay(game.id, gameVersion),
+      private: !!gameRow.private,
+      registeredMap: await this.generateRegisteredMap(game.players),
+      crop: game.crop,
+    }
   }
 
-  public async generateRegisteredMap(gameObject: Game): Promise<RegisteredMap> {
-    if (!gameObject) {
-      return {}
-    }
-
+  public async generateRegisteredMap(players: EncodedPlayer[]): Promise<RegisteredMap> {
     const registeredMap: RegisteredMap = {}
     const users = await this.repos.users.getMany({
-      client_id: { '$in': gameObject.players.map(player => player[0]) },
+      client_id: { '$in': players.map(player => player[0]) },
     })
     for (const user of users) {
       if (user.email) {
@@ -136,7 +142,7 @@ export class GameService {
     return false
   }
 
-  public async createNewGameObj(gameId: GameId): Promise<Game | null> {
+  public async createNewGameObjForReplay(gameId: GameId): Promise<Game | null> {
     log.info(`createNewGameObj: ${gameId}`)
     const gameRow = await this.repos.games.getGameRowById(gameId)
     if (!gameRow) {
@@ -148,7 +154,7 @@ export class GameService {
       log.info(`createNewGameObj, game object not created: ${gameId}`)
       return null
     }
-    return this.createGameObject(
+    const gameObj = await this.createGameObject(
       gameRow.id,
       gameObject.gameVersion,
       gameObject.puzzle.info.targetTiles,
@@ -163,6 +169,9 @@ export class GameService {
       !!gameRow.private,
       gameObject.crop,
     )
+    gameObj.puzzle.info.image.gameCount = await this.repos.images.getGameCount(gameObj.puzzle.info.image.id)
+    gameObj.registeredMap = await this.generateRegisteredMap(gameObj.players)
+    return gameObj
   }
 
   private async loadGame(gameId: GameId): Promise<Game | null> {
@@ -233,28 +242,31 @@ export class GameService {
     log.info(`[INFO] persisted game ${game.id}`)
   }
 
-  private storeDataToGame(
-    storeData: GameStoreData,
-    creatorUserId: UserId | null,
-    isPrivate: boolean,
-  ): Game {
+  async gameToGameInfo (gameRow: GameRow, ts: number): Promise<GameInfo> {
+    const game = await this.gameRowToGameObject(gameRow)
+    if (!game) {
+      throw new Error('invalid game row')
+    }
+    const finished = GameCommon.Game_getFinishTs(game)
     return {
-      id: storeData.id,
-      gameVersion: storeData.gameVersion || 1, // old games didnt have this stored
-      creatorUserId,
-      rng: {
-        type: storeData.rng ? storeData.rng.type : '_fake_',
-        obj: storeData.rng ? Rng.unserialize(storeData.rng.obj) : new Rng(0),
-      },
-      puzzle: storeData.puzzle,
-      players: storeData.players,
-      scoreMode: DefaultScoreMode(storeData.scoreMode),
-      shapeMode: DefaultShapeMode(storeData.shapeMode),
-      snapMode: DefaultSnapMode(storeData.snapMode),
-      rotationMode: DefaultRotationMode(storeData.rotationMode),
-      hasReplay: !!storeData.hasReplay,
-      private: isPrivate,
-      registeredMap: {},
+      id: game.id,
+      hasReplay: game.hasReplay,
+      isPrivate: GameCommon.Game_isPrivate(game),
+      started: GameCommon.Game_getStartTs(game),
+      finished,
+      piecesFinished: GameCommon.Game_getFinishedPiecesCount(game),
+      piecesTotal: GameCommon.Game_getPieceCount(game),
+      players: finished
+        ? GameCommon.Game_getPlayersWithScore(game).length
+        : GameCommon.Game_getActivePlayers(game, ts).length,
+      image: GameCommon.Game_getImage(game),
+      imageSnapshots: gameRow.image_snapshot_url
+        ? { current: { url: gameRow.image_snapshot_url } }
+        : { current: null },
+      snapMode: GameCommon.Game_getSnapMode(game),
+      scoreMode: GameCommon.Game_getScoreMode(game),
+      shapeMode: GameCommon.Game_getShapeMode(game),
+      rotationMode: GameCommon.Game_getRotationMode(game),
     }
   }
 
@@ -273,7 +285,7 @@ export class GameService {
       snapMode: game.snapMode,
       rotationMode: game.rotationMode,
       // cannot use value from the game object, because it might be outdated
-      hasReplay: await GameLog.hasReplay(game),
+      hasReplay: await GameLog.hasReplay(game.id, game.gameVersion),
       crop: game.crop,
     }
   }

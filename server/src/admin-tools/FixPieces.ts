@@ -1,16 +1,14 @@
 import GameCommon from '../GameCommon'
-import { ServerInterface } from '../Server'
-import { EncodedPieceIdx, FixPiecesResult, Game, GameId } from '../../../common/src/Types'
-import Util, { logger } from '../Util'
+import { Server } from '../Server'
+import { EncodedPieceIdx, FixPiecesResult, GameId } from '../../../common/src/Types'
+import { logger } from '../Util'
 
 const log = logger()
 
 export class FixPieces {
   constructor(
-    private readonly server: ServerInterface,
-  ) {
-
-  }
+    private readonly server: Server,
+  ) {}
 
   public async run(gameId: GameId): Promise<FixPiecesResult> {
       const loaded = await this.server.gameService.ensureLoaded(gameId)
@@ -45,16 +43,7 @@ export class FixPieces {
       }
       if (changed) {
         await this.server.persistGame(gameId)
-        const game: Game | null = GameCommon.get(gameId)
-        if (!game) {
-          return {
-            ok: false,
-            error: `[game ${gameId} does not exist (anymore)... ]`,
-          }
-        }
-        game.registeredMap = await this.server.gameService.generateRegisteredMap(game)
-
-        const encodedGame = Util.encodeGame(game)
+        const encodedGame = await this.server.getEncodedGameForSync(gameId)
         this.server.syncGameToClients(gameId, encodedGame)
       }
       return {

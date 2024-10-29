@@ -41,24 +41,7 @@ const sendHtml = (res: Response, tmpl: string, data: Record<string, string> = {}
 
 const log = logger('Server.ts')
 
-export interface ServerInterface {
-  repos: Repos
-  db: Db
-  mail: Mail
-  canny: Canny
-  discord: Discord
-  gameSockets: GameSockets
-  gameService: GameService
-  users: Users
-  images: Images
-  urlUtil: UrlUtil
-  imageResize: ImageResize
-  twitch: Twitch
-  persistGame: (gameId: GameId) => Promise<void>
-  syncGameToClients: (gameId: GameId, encodedGame: EncodedGame | EncodedGameLegacy) => void
-}
-
-export class Server implements ServerInterface {
+export class Server {
   private webserver: HttpServer | null = null
   private websocketserver: WebSocketServer | null = null
 
@@ -94,6 +77,15 @@ export class Server implements ServerInterface {
       return
     }
     await this.gameService.persistGame(game)
+  }
+
+  async getEncodedGameForSync(gameId: GameId): Promise<EncodedGame | EncodedGameLegacy> {
+    const game: GameType | null = GameCommon.get(gameId)
+    if (!game) {
+      throw `[game ${gameId} does not exist (anymore)... ]`
+    }
+    game.registeredMap = await this.gameService.generateRegisteredMap(game.players)
+    return Util.encodeGame(game)
   }
 
   async persistGames(): Promise<void> {
@@ -227,13 +219,7 @@ export class Server implements ServerInterface {
             this.gameService.addPlayer(gameId, clientId, ts)
             this.gameSockets.addSocket(gameId, socket)
 
-            const game: GameType | null = GameCommon.get(gameId)
-            if (!game) {
-              throw `[game ${gameId} does not exist (anymore)... ]`
-            }
-            game.registeredMap = await this.gameService.generateRegisteredMap(game)
-
-            const encodedGame = Util.encodeGame(game)
+            const encodedGame = await this.getEncodedGameForSync(gameId)
             notify([SERVER_EVENT_TYPE.INIT, encodedGame], [socket])
             notify([SERVER_EVENT_TYPE.SYNC, encodedGame], this.gameSockets.getSockets(gameId).filter(s => s !== socket))
           } break
@@ -258,13 +244,7 @@ export class Server implements ServerInterface {
               sendGame = true
             }
             if (sendGame) {
-              const game: GameType | null = GameCommon.get(gameId)
-              if (!game) {
-                throw `[game ${gameId} does not exist (anymore)... ]`
-              }
-
-              game.registeredMap = await this.gameService.generateRegisteredMap(game)
-              const encodedGame = Util.encodeGame(game)
+              const encodedGame = await this.getEncodedGameForSync(gameId)
               notify([SERVER_EVENT_TYPE.INIT, encodedGame], [socket])
               notify([SERVER_EVENT_TYPE.SYNC, encodedGame], this.gameSockets.getSockets(gameId).filter(s => s !== socket))
             }

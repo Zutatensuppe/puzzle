@@ -1,16 +1,14 @@
 import { GameSettings, GameInfo, ApiDataIndexData, ApiDataFinishedGames, NewGameDataRequestData, ImagesRequestData, UserId, ImageId, ClientId } from '../../../../common/src/Types'
 import config from '../../Config'
 import express, { Response, Router } from 'express'
-import GameCommon from '../../../../common/src/GameCommon'
 import GameLog from '../../GameLog'
 import multer from 'multer'
 import request from 'request'
 import Time from '../../../../common/src/Time'
 import Util, { logger, uniqId } from '../../../../common/src/Util'
 import { COOKIE_TOKEN, generateSalt, generateToken, passwordHash } from '../../Auth'
-import { ServerInterface } from '../../Server'
+import { Server } from '../../Server'
 import { UserRow } from '../../repo/UsersRepo'
-import { GameRow } from '../../repo/GamesRepo'
 import fs from '../../FileSystem'
 
 const log = logger('web_routes/api/index.ts')
@@ -26,7 +24,7 @@ const GAMES_PER_PAGE_LIMIT = 10
 const IMAGES_PER_PAGE_LIMIT = 20
 
 export default function createRouter(
-  server: ServerInterface,
+  server: Server,
 ): Router {
 
   const determineNewUserClientId = async (originalClientId: ClientId): Promise<ClientId> => {
@@ -442,13 +440,11 @@ export default function createRouter(
       res.status(404).send({ reason: 'no log found' })
       return
     }
-    const gameObj = await server.gameService.createNewGameObj(gameId)
+    const gameObj = await server.gameService.createNewGameObjForReplay(gameId)
     if (!gameObj) {
       res.status(404).send({ reason: 'no game found' })
       return
     }
-    gameObj.puzzle.info.image.gameCount = await server.repos.images.getGameCount(gameObj.puzzle.info.image.id)
-    gameObj.registeredMap = await server.gameService.generateRegisteredMap(gameObj)
     res.send({ game: Util.encodeGame(gameObj) })
   })
 
@@ -525,34 +521,6 @@ export default function createRouter(
     })
   })
 
-  const GameToGameInfo = async (gameRow: GameRow, ts: number): Promise<GameInfo> => {
-    const game = await server.gameService.gameRowToGameObject(gameRow)
-    if (!game) {
-      throw new Error('invalid game row')
-    }
-    const finished = GameCommon.Game_getFinishTs(game)
-    return {
-      id: game.id,
-      hasReplay: await GameLog.hasReplay(game),
-      isPrivate: GameCommon.Game_isPrivate(game),
-      started: GameCommon.Game_getStartTs(game),
-      finished,
-      piecesFinished: GameCommon.Game_getFinishedPiecesCount(game),
-      piecesTotal: GameCommon.Game_getPieceCount(game),
-      players: finished
-        ? GameCommon.Game_getPlayersWithScore(game).length
-        : GameCommon.Game_getActivePlayers(game, ts).length,
-      image: GameCommon.Game_getImage(game),
-      imageSnapshots: gameRow.image_snapshot_url
-        ? { current: { url: gameRow.image_snapshot_url } }
-        : { current: null },
-      snapMode: GameCommon.Game_getSnapMode(game),
-      scoreMode: GameCommon.Game_getScoreMode(game),
-      shapeMode: GameCommon.Game_getShapeMode(game),
-      rotationMode: GameCommon.Game_getRotationMode(game),
-    }
-  }
-
   router.get('/index-data', async (req: any, res): Promise<void> => {
     const user: UserRow | null = req.user || null
     const userId = user && req.user_type === 'user' ? user.id : 0 as UserId
@@ -567,10 +535,10 @@ export default function createRouter(
     const gamesRunning: GameInfo[] = []
     const gamesFinished: GameInfo[] = []
     for (const row of runningRows) {
-      gamesRunning.push(await GameToGameInfo(row, ts))
+      gamesRunning.push(await server.gameService.gameToGameInfo(row, ts))
     }
     for (const row of finishedRows) {
-      gamesFinished.push(await GameToGameInfo(row, ts))
+      gamesFinished.push(await server.gameService.gameToGameInfo(row, ts))
     }
 
     const leaderboards = await server.repos.leaderboard.getTop10(userId)
@@ -606,7 +574,7 @@ export default function createRouter(
     const finishedCount = await server.gameService.countPublicFinishedGames(userId)
     const gamesFinished: GameInfo[] = []
     for (const row of finishedRows) {
-      gamesFinished.push(await GameToGameInfo(row, ts))
+      gamesFinished.push(await server.gameService.gameToGameInfo(row, ts))
     }
     const indexData: ApiDataFinishedGames = {
       items: gamesFinished,
