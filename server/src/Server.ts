@@ -43,17 +43,17 @@ const log = logger('Server.ts')
 
 export interface ServerInterface {
   repos: Repos
-  getDb: () => Db
-  getMail: () => Mail
-  getCanny: () => Canny
-  getDiscord: () => Discord
-  getGameSockets: () => GameSockets
-  getGameService: () => GameService
-  getUsers: () => Users
-  getImages: () => Images
-  getUrlUtil: () => UrlUtil
-  getImageResize: () => ImageResize
-  getTwitch: () => Twitch
+  db: Db
+  mail: Mail
+  canny: Canny
+  discord: Discord
+  gameSockets: GameSockets
+  gameService: GameService
+  users: Users
+  images: Images
+  urlUtil: UrlUtil
+  imageResize: ImageResize
+  twitch: Twitch
   persistGame: (gameId: GameId) => Promise<void>
   syncGameToClients: (gameId: GameId, encodedGame: EncodedGame | EncodedGameLegacy) => void
 }
@@ -65,54 +65,20 @@ export class Server implements ServerInterface {
   private _indexFileContents: string | null = null
 
   constructor(
-    private readonly db: Db,
+    public readonly db: Db,
     public readonly repos: Repos,
-    private readonly mail: Mail,
-    private readonly canny: Canny,
-    private readonly discord: Discord,
-    private readonly gameSockets: GameSockets,
-    private readonly gameService: GameService,
-    private readonly users: Users,
-    private readonly images: Images,
-    private readonly imageResize: ImageResize,
-    private readonly urlUtil: UrlUtil,
-    private readonly twitch: Twitch,
+    public readonly mail: Mail,
+    public readonly canny: Canny,
+    public readonly discord: Discord,
+    public readonly gameSockets: GameSockets,
+    public readonly gameService: GameService,
+    public readonly users: Users,
+    public readonly images: Images,
+    public readonly imageResize: ImageResize,
+    public readonly urlUtil: UrlUtil,
+    public readonly twitch: Twitch,
   ) {
     // pass
-  }
-
-  getDb(): Db {
-    return this.db
-  }
-  getMail(): Mail {
-    return this.mail
-  }
-  getCanny(): Canny {
-    return this.canny
-  }
-  getDiscord(): Discord {
-    return this.discord
-  }
-  getGameSockets(): GameSockets {
-    return this.gameSockets
-  }
-  getGameService(): GameService {
-    return this.gameService
-  }
-  getUsers(): Users {
-    return this.users
-  }
-  getImages(): Images {
-    return this.images
-  }
-  getImageResize(): ImageResize {
-    return this.imageResize
-  }
-  getUrlUtil(): UrlUtil {
-    return this.urlUtil
-  }
-  getTwitch(): Twitch {
-    return this.twitch
   }
 
   syncGameToClients(gameId: GameId, encodedGame: EncodedGame | EncodedGameLegacy) {

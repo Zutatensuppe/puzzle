@@ -33,8 +33,8 @@ export default function createRouter(
 
   router.get('/server-info', (_req, res) => {
     res.send(<ServerInfo>{
-      socketCount: server.getGameSockets().getSocketCount(),
-      socketCountsByGameIds: server.getGameSockets().getSocketCountsByGameIds(),
+      socketCount: server.gameSockets.getSocketCount(),
+      socketCountsByGameIds: server.gameSockets.getSocketCountsByGameIds(),
       gameLogInfoByGameIds: GameLog.getGameLogInfos(),
     })
   })
@@ -124,7 +124,7 @@ export default function createRouter(
     const userId = req.body.userId
     const clientIds = req.body.clientIds
     const dry = req.body.dry === false ? false : true
-    const job = new MergeClientIdsIntoUser(server.getDb())
+    const job = new MergeClientIdsIntoUser(server.db)
     const result = await job.run(userId, clientIds, dry)
     res.send(result)
   })
@@ -155,7 +155,7 @@ export default function createRouter(
       res.status(500).send({ ok: false, reason: 'unable_to_get_announcement' })
       return
     }
-    server.getDiscord().announce(`**${title}**\n${announcement.message}`)
+    server.discord.announce(`**${title}**\n${announcement.message}`)
     res.send({ announcement })
   })
 

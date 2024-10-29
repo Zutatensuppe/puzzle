@@ -81,13 +81,13 @@ const run = async () => {
   let idlecheckInterval: any = null
   const doIdlecheck = async () => {
     log.log('doIdlecheck...')
-    const idleGameIds = server.getGameSockets().updateIdle()
+    const idleGameIds = server.gameSockets.updateIdle()
     for (const gameId of idleGameIds) {
       await server.persistGame(gameId)
       log.info(`[INFO] unloading game: ${gameId}`)
       GameCommon.unsetGame(gameId)
       GameLog.unsetGame(gameId)
-      server.getGameSockets().removeSocketInfo(gameId)
+      server.gameSockets.removeSocketInfo(gameId)
     }
     idlecheckInterval = setTimeout(doIdlecheck, config.idlecheck.interval)
   }

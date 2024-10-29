@@ -13,7 +13,7 @@ export class FixPieces {
   }
 
   public async run(gameId: GameId): Promise<FixPiecesResult> {
-      const loaded = await this.server.getGameService().ensureLoaded(gameId)
+      const loaded = await this.server.gameService.ensureLoaded(gameId)
       if (!loaded) {
         return {
           ok: false,
@@ -52,7 +52,7 @@ export class FixPieces {
             error: `[game ${gameId} does not exist (anymore)... ]`,
           }
         }
-        game.registeredMap = await this.server.getGameService().generateRegisteredMap(game)
+        game.registeredMap = await this.server.gameService.generateRegisteredMap(game)
 
         const encodedGame = Util.encodeGame(game)
         this.server.syncGameToClients(gameId, encodedGame)
