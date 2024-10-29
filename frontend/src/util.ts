@@ -18,12 +18,3 @@ export function debounce<F extends (...args: any[]) => any>(func: F, wait: numbe
 export const testEmailValid = (email: string) => {
   return /^\w+([.-]\w+)*@\w+([.-]\w+)*(\.\w+)+$/.test(email)
 }
-
-let supportsWebgl2Cache: boolean | null = null
-export const hasWebGL2Support = () => {
-  if (supportsWebgl2Cache === null) {
-    const canvas = document.createElement('canvas')
-    supportsWebgl2Cache = !!canvas.getContext('webgl2')
-  }
-  return supportsWebgl2Cache
-}

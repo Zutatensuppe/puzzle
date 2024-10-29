@@ -224,7 +224,6 @@ import IngameColorPicker from './IngameColorPicker.vue'
 import { PlayerSettingsData, RendererType } from '../../../common/src/Types'
 import user, { User } from '../user'
 import { GameInterface } from '../Game'
-import { hasWebGL2Support } from '../util'
 
 const props = defineProps<{
   game: GameInterface
@@ -237,7 +236,7 @@ const emit = defineEmits<{
 const playerSettings = ref<PlayerSettingsData>(JSON.parse(JSON.stringify(props.game.getPlayerSettings().getSettings())))
 const isUkraineColor = ref<boolean>(playerSettings.value.color === 'ukraine')
 const initialRenderer = ref<RendererType>(playerSettings.value.renderer)
-const webGlSupported = hasWebGL2Support()
+const webGlSupported = props.game.graphics.hasWebGL2Support()
 const rendererOptions = [
   {
     label: 'WebGL2 (fast)',

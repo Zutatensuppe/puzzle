@@ -1,13 +1,14 @@
 import Debug from '../../common/src/Debug'
 import GameCommon from '../../common/src/GameCommon'
 import { Dim, Point, Rect } from '../../common/src/Geometry'
-import { EncodedPiece, EncodedPieceIdx, EncodedPlayer, EncodedPlayerIdx, FireworksInterface, FixedLengthArray, GameId, PieceRotation, PlayerSettingsData, PuzzleStatusInterface, Timestamp } from '../../common/src/Types'
+import { EncodedPiece, EncodedPieceIdx, EncodedPlayer, EncodedPlayerIdx, FireworksInterface, GameId, PieceRotation, PlayerSettingsData, PuzzleStatusInterface, Timestamp } from '../../common/src/Types'
 import { Camera } from '../../common/src/Camera'
 import PuzzleGraphics from './PuzzleGraphics'
 import { logger } from '../../common/src/Util'
 import { PlayerCursors } from './PlayerCursors'
 import { PuzzleTable } from './PuzzleTable'
 import { Graphics } from './Graphics'
+import { getPlayerNameCanvas } from './PlayerNames'
 
 const log = logger('Renderer.ts')
 
@@ -40,6 +41,7 @@ export class Renderer {
     protected readonly fireworks: FireworksInterface | null,
     protected readonly puzzleTable: PuzzleTable | null,
     protected readonly lockMovement: boolean,
+    protected readonly graphics: Graphics,
   ) {
     this.pieceDrawOffset = GameCommon.getPieceDrawOffset(this.gameId)
     this.boardDim = GameCommon.getBoardDim(this.gameId)
@@ -58,13 +60,13 @@ export class Renderer {
     return true
   }
 
-  async init(graphics: Graphics) {
+  async init() {
     if (!puzzleBitmapCache[this.gameId]) {
       // log.log('loading puzzle bitmap', this.gameId)
       puzzleBitmapCache[this.gameId] = await PuzzleGraphics.loadPuzzleBitmap(
         GameCommon.getPuzzle(this.gameId),
         GameCommon.getImageUrl(this.gameId),
-        graphics,
+        this.graphics,
       )
     }
     if (!pieceBitmapsCache[this.gameId]) {
@@ -72,12 +74,12 @@ export class Renderer {
       pieceBitmapsCache[this.gameId] = PuzzleGraphics.loadPuzzleBitmaps(
         puzzleBitmapCache[this.gameId],
         GameCommon.getPuzzle(this.gameId),
-        graphics,
+        this.graphics,
       )
     }
     if (!puzzleBitmapGrayscaled[this.gameId]) {
       // log.log('loading grayscaled puzzle bitmap', this.gameId)
-      const bmpGrayscaled = graphics.grayscaledCanvas(
+      const bmpGrayscaled = this.graphics.grayscaledCanvas(
         puzzleBitmapCache[this.gameId],
         'black',
         0.3,
@@ -203,7 +205,6 @@ export class Renderer {
     // DRAW PLAYERS
     // ---------------------------------------------------------------
     if (playerCursors) {
-      const texts: FixedLengthArray<[string, number, number]>[] = []
       // Cursors
       const players = GameCommon.getActivePlayers(this.gameId, ts)
       for (const p of players) {
@@ -213,10 +214,14 @@ export class Renderer {
           ctx.drawImage(bmp, pos.x - playerCursors.CURSOR_W_2, pos.y - playerCursors.CURSOR_H_2)
           if (this.boundingBoxes) ctx.strokeRect(pos.x - bmp.width / 2, pos.y - bmp.height / 2, bmp.width, bmp.height)
           if (settings.showPlayerNames) {
-            // performance:
-            // not drawing text directly here, to have less ctx
-            // switches between drawImage and fillTxt
-            texts.push([`${p[EncodedPlayerIdx.NAME]} (${p[EncodedPlayerIdx.POINTS]})`, pos.x, pos.y + playerCursors.CURSOR_H])
+            const cacheEntry = getPlayerNameCanvas(this.graphics, p)
+            if (cacheEntry) {
+              ctx.drawImage(
+                cacheEntry.canvas,
+                pos.x - (cacheEntry.canvas.width / 2),
+                pos.y + 16 - (cacheEntry.canvas.height - cacheEntry.fontHeight),
+              )
+            }
           }
           if (this.debug) Debug.checkpoint(`drew player ${p[EncodedPlayerIdx.NAME]} at ${pos.x},${pos.y}`)
         } else {
@@ -224,12 +229,6 @@ export class Renderer {
         }
       }
 
-      // Names
-      ctx.fillStyle = 'white'
-      ctx.textAlign = 'center'
-      for (const [txt, x, y] of texts) {
-        ctx.fillText(txt, x, y)
-      }
       if (this.debug) Debug.checkpoint('players done')
     } else {
       if (this.debug) Debug.checkpoint('players skipped')
@@ -244,5 +243,36 @@ export class Renderer {
     if (renderFireworks && this.fireworks) {
       this.fireworks.render()
     }
+  }
+
+  public renderToImageString(
+    boardDim: Dim,
+    tableDim: Dim,
+    ts: Timestamp,
+    settings: PlayerSettingsData,
+    shouldDrawEncodedPiece: (piece: EncodedPiece) => boolean,
+    shouldDrawPlayer: (player: EncodedPlayer) => boolean,
+    renderPreview: boolean,
+  ): string {
+    const viewport = new Camera()
+    viewport.calculateZoomCapping(boardDim, tableDim)
+    viewport.centerFit(boardDim, tableDim, boardDim, 0)
+
+    const canvas = this.graphics.createCanvas(boardDim.w, boardDim.h)
+    const ctx = canvas.getContext('2d') as CanvasRenderingContext2D
+    this.render(
+      canvas,
+      ctx,
+      viewport,
+      ts,
+      settings,
+      null,
+      { update: (_ts: number) => { return } },
+      shouldDrawEncodedPiece,
+      shouldDrawPlayer,
+      false,
+      renderPreview,
+    )
+    return canvas.toDataURL('image/jpeg', 75)
   }
 }

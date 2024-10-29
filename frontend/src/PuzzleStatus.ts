@@ -1,10 +1,10 @@
 import GameCommon from '../../common/src/GameCommon'
-import { Game } from './Game'
+import { GameInterface } from './Game'
 import { PuzzleStatusInterface } from '../../common/src/Types'
 import { playerToBasicPlayerInfo } from '../../common/src/Util'
 
 export class PuzzleStatus implements PuzzleStatusInterface {
-  constructor(private game: Game<any>) {
+  constructor(private game: GameInterface) {
     // pass
   }
 

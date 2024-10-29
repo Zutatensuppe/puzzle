@@ -7,14 +7,8 @@ import { Shader } from './Shader'
 import playersFragment from './shaders/playersFragment'
 import playersVertex from './shaders/playersVertex'
 import { COLOR_BLUE, hexToColor } from '../../../common/src/Color'
-
-type PlayerNameCacheEntry = {
-  text: string
-  canvas: HTMLCanvasElement
-  fontHeight: number
-  actualHeight: number
-}
-const playerNameCache: Record<string, PlayerNameCacheEntry> = {}
+import { Graphics } from '../Graphics'
+import { getPlayerNameCanvas } from '../PlayerNames'
 
 export class PlayersShaderWrapper {
   private shader!: Shader
@@ -32,6 +26,7 @@ export class PlayersShaderWrapper {
     private readonly gl: WebGL2RenderingContext,
     private readonly assets: Assets,
     private readonly gameId: GameId,
+    private readonly graphics: Graphics,
   ) {
   }
 
@@ -154,41 +149,18 @@ export class PlayersShaderWrapper {
       if (!showPlayerNames) {
         continue
       }
-      const nameWidth = 200
-      const nameHeight = 20
-      const cacheEntry = this.getPlayerNameCanvas(p, nameWidth, nameHeight)
+      const cacheEntry = getPlayerNameCanvas(this.graphics, p)
       if (cacheEntry) {
         this.drawPlayer(
           this.texName,
-          nameWidth,
-          nameHeight,
-          pos.x - (nameWidth / 2),
-          pos.y + 16 - (nameHeight - cacheEntry.fontHeight),
+          cacheEntry.canvas.width,
+          cacheEntry.canvas.height,
+          pos.x - (cacheEntry.canvas.width / 2),
+          pos.y + 16 - (cacheEntry.canvas.height - cacheEntry.fontHeight),
           p[EncodedPlayerIdx.COLOR],
           cacheEntry.canvas,
         )
       }
     }
-  }
-
-  private getPlayerNameCanvas(p: EncodedPlayer, w: number, h: number): PlayerNameCacheEntry | null {
-    if (!p[EncodedPlayerIdx.NAME]) {
-      return null
-    }
-    const text = `${p[EncodedPlayerIdx.NAME]} (${p[EncodedPlayerIdx.POINTS]})`
-    if (!playerNameCache[p[EncodedPlayerIdx.ID]] || playerNameCache[p[EncodedPlayerIdx.ID]].text !== text) {
-      const canvas = document.createElement('canvas')
-      canvas.width = w
-      canvas.height = h
-      const ctx = canvas.getContext('2d')!
-      ctx.fillStyle = 'white'
-      ctx.textAlign = 'center'
-      ctx.fillText(text, canvas.width / 2, canvas.height / 2)
-      const metrics = ctx.measureText(text)
-      const fontHeight = metrics.fontBoundingBoxAscent + metrics.fontBoundingBoxDescent
-      const actualHeight = metrics.actualBoundingBoxAscent + metrics.actualBoundingBoxDescent
-      playerNameCache[p[EncodedPlayerIdx.ID]] = { text, canvas, fontHeight, actualHeight }
-    }
-    return playerNameCache[p[EncodedPlayerIdx.ID]]
   }
 }

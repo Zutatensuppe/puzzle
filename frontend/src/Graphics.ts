@@ -8,6 +8,8 @@ export class Graphics {
 
   public static IS_DARK_THRESHOLD = 175
 
+  private supportsWebgl2Cache: boolean | null = null
+
   private constructor() {
   }
 
@@ -16,6 +18,14 @@ export class Graphics {
       Graphics.instance = new Graphics()
     }
     return Graphics.instance
+  }
+
+  public hasWebGL2Support(): boolean {
+    if (this.supportsWebgl2Cache === null) {
+      const canvas = this.createCanvas(1)
+      this.supportsWebgl2Cache = !!canvas.getContext('webgl2')
+    }
+    return this.supportsWebgl2Cache
   }
 
   public grayscaledCanvas(
@@ -49,10 +59,8 @@ export class Graphics {
   }
 
   private imageElementToCanvas(imageElement: HTMLImageElement): HTMLCanvasElement {
-    const canvas = document.createElement('canvas')
+    const canvas = this.createCanvas(imageElement.width, imageElement.height)
     const ctx = canvas.getContext('2d') as CanvasRenderingContext2D
-    canvas.width = imageElement.width
-    canvas.height = imageElement.height
     ctx.drawImage(imageElement, 0, 0)
     return canvas
   }
@@ -267,9 +275,7 @@ export class Graphics {
   }
 
   public getBrightness(img: HTMLImageElement | ImageBitmap): number {
-    const canvas = document.createElement('canvas')
-    canvas.width = img.width
-    canvas.height = img.height
+    const canvas = this.createCanvas(img.width, img.height)
     const ctx = canvas.getContext('2d')!
     ctx.drawImage(img, 0, 0)
     const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height)

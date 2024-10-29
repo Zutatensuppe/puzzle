@@ -1,7 +1,7 @@
 import { GAME_EVENT_TYPE } from '../../common/src/Protocol'
 import { GameEvent } from '../../common/src/Types'
 import { Camera, Snapshot } from '../../common/src/Camera'
-import { Game } from './Game'
+import { GameInterface } from './Game'
 import { MODE_REPLAY } from './GameMode'
 import { PlayerSettings } from './PlayerSettings'
 
@@ -35,7 +35,7 @@ export class EventAdapter {
   private onKeyPress
   private onWndMouseDown
 
-  constructor (private game: Game<any>, private playerSettings: PlayerSettings) {
+  constructor (private game: GameInterface, private playerSettings: PlayerSettings) {
     this.onResize = this.game.initViewport.bind(this.game)
     this.onMouseDown = this._onMouseDown.bind(this)
     this.onMouseUp = this._onMouseUp.bind(this)
