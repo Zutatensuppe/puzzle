@@ -8,7 +8,7 @@ import { GameSockets } from './GameSockets'
 import Time from '../../common/src/Time'
 import config from './Config'
 import GameCommon from '../../common/src/GameCommon'
-import { ServerEvent, Game as GameType, ClientEvent, GameEventInputConnectionClose, GameId, ClientId, EncodedPieceIdx } from '../../common/src/Types'
+import { ServerEvent, Game as GameType, ClientEvent, GameEventInputConnectionClose, GameId, ClientId, EncodedGame, EncodedGameLegacy } from '../../common/src/Types'
 import { GameService } from './GameService'
 import createApiRouter from './web_routes/api'
 import createAdminApiRouter from './web_routes/admin/api'
@@ -54,7 +54,8 @@ export interface ServerInterface {
   getUrlUtil: () => UrlUtil
   getImageResize: () => ImageResize
   getTwitch: () => Twitch
-  fixPieces: (gameId: GameId) => Promise<any>
+  persistGame: (gameId: GameId) => Promise<void>
+  syncGameToClients: (gameId: GameId, encodedGame: EncodedGame | EncodedGameLegacy) => void
 }
 
 export class Server implements ServerInterface {
@@ -112,6 +113,12 @@ export class Server implements ServerInterface {
   }
   getTwitch(): Twitch {
     return this.twitch
+  }
+
+  syncGameToClients(gameId: GameId, encodedGame: EncodedGame | EncodedGameLegacy) {
+    for (const socket of this.gameSockets.getSockets(gameId)) {
+      this.websocketserver?.notifyOne([SERVER_EVENT_TYPE.SYNC, encodedGame], socket)
+    }
   }
 
   async persistGame(gameId: GameId): Promise<void> {
@@ -340,60 +347,6 @@ export class Server implements ServerInterface {
     if (this.websocketserver) {
       this.websocketserver.close()
       this.websocketserver = null
-    }
-  }
-
-  public async fixPieces(gameId: GameId): Promise<any> {
-    const loaded = await this.gameService.ensureLoaded(gameId)
-    if (!loaded) {
-      return {
-        ok: false,
-        error: `[game ${gameId} does not exist... ]`,
-      }
-    }
-
-    let changed = 0
-    const pieces = GameCommon.getEncodedPiecesSortedByZIndex(gameId)
-    for (const piece of pieces) {
-      if (piece[EncodedPieceIdx.OWNER] === -1) {
-        const p = GameCommon.getFinalPiecePos(gameId, piece[EncodedPieceIdx.IDX])
-        if (p.x === piece[EncodedPieceIdx.POS_X] && p.y === piece[EncodedPieceIdx.POS_Y]) {
-          // log.log('all good', tile.pos)
-        } else {
-          const piecePos = { x: piece[EncodedPieceIdx.POS_X], y: piece[EncodedPieceIdx.POS_Y] }
-          log.log('bad piece pos', piecePos, 'should be: ', p)
-          piece[EncodedPieceIdx.POS_X] = p.x
-          piece[EncodedPieceIdx.POS_Y] = p.y
-          GameCommon.setPiece(gameId, piece[EncodedPieceIdx.IDX], piece)
-          changed++
-        }
-      } else if (piece[EncodedPieceIdx.OWNER] !== 0) {
-        log.log('unowning piece', piece[EncodedPieceIdx.IDX])
-        piece[EncodedPieceIdx.OWNER] = 0
-        GameCommon.setPiece(gameId, piece[EncodedPieceIdx.IDX], piece)
-        changed++
-      }
-    }
-    if (changed) {
-      await this.persistGame(gameId)
-      const game: GameType | null = GameCommon.get(gameId)
-      if (!game) {
-        return {
-          ok: false,
-          error: `[game ${gameId} does not exist (anymore)... ]`,
-        }
-      }
-      game.registeredMap = await this.gameService.generateRegisteredMap(game)
-
-      const encodedGame = Util.encodeGame(game)
-
-      for (const socket of this.gameSockets.getSockets(gameId)) {
-        this.websocketserver?.notifyOne([SERVER_EVENT_TYPE.SYNC, encodedGame], socket)
-      }
-    }
-    return {
-      ok: true,
-      changed,
     }
   }
 

@@ -4,6 +4,7 @@ import { MergeClientIdsIntoUser } from '../../../admin-tools/MergeClientIdsIntoU
 import { GameId, ImageId, ServerInfo } from '../../../Types'
 import GameLog from '../../../GameLog'
 import { GameRowWithImage } from '../../../repo/GamesRepo'
+import { FixPieces } from '../../../admin-tools/FixPieces'
 
 export default function createRouter(
   server: ServerInterface,
@@ -130,7 +131,8 @@ export default function createRouter(
 
   router.post('/games/_fix_pieces', express.json(), async (req, res) => {
     const gameId = req.body.gameId
-    const result = await server.fixPieces(gameId)
+    const job = new FixPieces(server)
+    const result = await job.run(gameId)
     res.send(result)
   })
 

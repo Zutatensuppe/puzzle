@@ -744,6 +744,10 @@ export interface HandleGameEventResult {
   anyRotated: boolean
 }
 
+type FixPiecesResultOk = { ok: true, changed: number }
+type FixPiecesResultError = { ok: false, error: string }
+export type FixPiecesResult = FixPiecesResultOk | FixPiecesResultError
+
 export interface MergeClientIdsIntoUserResult {
   dry: boolean
   updatedGameIds: GameId[]
