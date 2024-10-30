@@ -29,8 +29,6 @@ export class PiecesShaderWrapper {
 
     console.time('rest')
     this.bgTex = this.gl.createTexture()!
-    this.gl.enable(this.gl.DEPTH_TEST)
-    this.gl.depthFunc(this.gl.LEQUAL)
     this.gl.activeTexture(this.gl.TEXTURE1)
     this.gl.bindTexture(this.gl.TEXTURE_2D, this.bgTex)
     // Set the parameters so we can render any size image.
@@ -51,7 +49,7 @@ export class PiecesShaderWrapper {
       sprites.push({
         x: piece[EncodedPieceIdx.POS_X],
         y: piece[EncodedPieceIdx.POS_Y],
-        z: maxZ ? piece[EncodedPieceIdx.Z] / maxZ : 0,
+        z: (maxZ ? piece[EncodedPieceIdx.Z] / maxZ : 0) - 0.5,
         puzzleImageX: finalPos.x,
         puzzleImageY: finalPos.y,
         stencilTexture: this.pieceTexture(info.shapes, piece),
@@ -96,7 +94,7 @@ export class PiecesShaderWrapper {
     for (const piece of GameCommon.getEncodedPieces(this.gameId)) {
       this.sprites.setX(i, piece[EncodedPieceIdx.POS_X])
       this.sprites.setY(i, piece[EncodedPieceIdx.POS_Y])
-      this.sprites.z.set(i, maxZ ? piece[EncodedPieceIdx.Z] / maxZ : 0)
+      this.sprites.z.set(i, ((maxZ ? piece[EncodedPieceIdx.Z] / maxZ : 0) - 0.5))
       this.sprites.setTexture(i, this.pieceTexture(info.shapes, piece))
       this.sprites.rotation.set(i, this.pieceRotation(piece[EncodedPieceIdx.ROTATION]))
       this.sprites.visible.set(i, shouldDrawEncodedPiece(piece) ? 1 : 0)

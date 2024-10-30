@@ -17,10 +17,10 @@ vec3 hueToRgb( float h ) {
 void main(){
   if (u_mode == 0) {
     gl_PointSize = a_data.w * 2.0;
-    gl_Position = vec4(vec2(1, -1) * ((a_data.xy / u_res) * 2. - 1.), 0, 1);
+    gl_Position = vec4(vec2(1, -1) * ((a_data.xy / u_res) * 2. - 1.), -1.0, 1);
     v_color = vec4(hueToRgb(a_data.z), 0.8);
   } else {
-    gl_Position = vec4(position, 1, 1);
+    gl_Position = vec4(position, -.8, 1);
   }
 }
 `
