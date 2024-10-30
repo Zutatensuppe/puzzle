@@ -1,7 +1,7 @@
-import GameCommon from '../GameCommon'
+import GameCommon from '../../../common/src/GameCommon'
 import { Server } from '../Server'
 import { EncodedPieceIdx, FixPiecesResult, GameId } from '../../../common/src/Types'
-import { logger } from '../Util'
+import { logger } from '../../../common/src/Util'
 
 const log = logger()
 

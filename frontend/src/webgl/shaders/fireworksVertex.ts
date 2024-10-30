@@ -5,7 +5,7 @@ precision mediump float;
 uniform highp int u_mode;
 uniform vec2 u_res;
 
-in vec4 position;
+in vec2 position;
 in vec4 a_data;
 
 out vec4 v_color;
@@ -20,7 +20,7 @@ void main(){
     gl_Position = vec4(vec2(1, -1) * ((a_data.xy / u_res) * 2. - 1.), 0, 1);
     v_color = vec4(hueToRgb(a_data.z), 0.8);
   } else {
-    gl_Position = position;
+    gl_Position = vec4(position, 1, 1);
   }
 }
 `
