@@ -1,6 +1,6 @@
 import { LOG_TYPE } from '../../common/src/Protocol'
 import Time from '../../common/src/Time'
-import { Game, GameId, GameLogInfoByGameIds, LogEntry, LogIndex, Timestamp } from '../../common/src/Types'
+import { GameId, GameLogInfoByGameIds, LogEntry, LogIndex, Timestamp } from '../../common/src/Types'
 import { logger } from './../../common/src/Util'
 import config from './Config'
 import fs from './FileSystem'
@@ -143,11 +143,11 @@ const getIndex = async (gameId: GameId): Promise<LogIndex | null> => {
   return GAME_LOG_IDX[gameId]
 }
 
-async function hasReplay(game: Game): Promise<boolean> {
-  if (!await exists(game.id)) {
+async function hasReplay(gameId: GameId, gameVersion: number): Promise<boolean> {
+  if (!await exists(gameId)) {
     return false
   }
-  if (game.gameVersion < 2) {
+  if (gameVersion < 2) {
     // replays before gameVersion 2 are incompatible with current code
     return false
   }

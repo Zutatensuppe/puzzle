@@ -47,7 +47,7 @@ export function rgbToHex(r: number, g: number, b: number): string {
   return `#${toHex(r)}${toHex(g)}${toHex(b)}`
 }
 
-export function rgbToHue(r: number, g: number, b: number): number {
+export function rgb255ToHue(r: number, g: number, b: number): number {
   r = r / 255
   g = g / 255
   b = b / 255
@@ -79,15 +79,13 @@ export function hueToHex(hue: number): string {
   return rgbToHex(r, g, b)
 }
 
-export function rgbToRgba(r: number, g: number, b: number, alpha: number): string {
-  // Convert r, g, b from 0-1 range to 0-255
-  const to255 = (x: number) => Math.round(x * 255)
-  return `rgba(${to255(r)}, ${to255(g)}, ${to255(b)}, ${alpha})`
+export function rgb255ToRgba(r: number, g: number, b: number, alpha: number): string {
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`
 }
 
 export function hueToRgba(hue: number, alpha: number = 1): string {
   const [r, g, b] = hueToRgb(hue)
-  return rgbToRgba(r, g, b, alpha)
+  return rgb255ToRgba(r, g, b, alpha)
 }
 
 export function randomColor(rng: Rng): [number, number, number] {

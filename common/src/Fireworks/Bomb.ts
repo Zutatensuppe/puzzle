@@ -1,4 +1,4 @@
-import { randomColor, rgbToHue, rgbToRgba } from '../Color'
+import { randomColor, rgb255ToHue, rgb255ToRgba } from '../Color'
 import { Controller } from './Controller'
 import { Particle } from './Particle'
 
@@ -27,8 +27,8 @@ export class Bomb {
     this.alive = true
 
     const c = randomColor(controller.rng)
-    this.colorHue = rgbToHue(...c)
-    this.colorHex = rgbToRgba(...c, .8)
+    this.colorHue = rgb255ToHue(...c)
+    this.colorHex = rgb255ToRgba(...c, .8)
 
     this.px = (window.innerWidth / 4) + (this.controller.rng.random(0, window.innerWidth) / 2)
     this.py = window.innerHeight

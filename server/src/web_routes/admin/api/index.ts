@@ -1,12 +1,13 @@
 import express, { NextFunction } from 'express'
-import { ServerInterface } from '../../../Server'
+import { Server } from '../../../Server'
 import { MergeClientIdsIntoUser } from '../../../admin-tools/MergeClientIdsIntoUser'
 import { GameId, ImageId, ServerInfo } from '../../../Types'
 import GameLog from '../../../GameLog'
 import { GameRowWithImage } from '../../../repo/GamesRepo'
+import { FixPieces } from '../../../admin-tools/FixPieces'
 
 export default function createRouter(
-  server: ServerInterface,
+  server: Server,
 ): express.Router {
   const router = express.Router()
 
@@ -32,8 +33,8 @@ export default function createRouter(
 
   router.get('/server-info', (_req, res) => {
     res.send(<ServerInfo>{
-      socketCount: server.getGameSockets().getSocketCount(),
-      socketCountsByGameIds: server.getGameSockets().getSocketCountsByGameIds(),
+      socketCount: server.gameSockets.getSocketCount(),
+      socketCountsByGameIds: server.gameSockets.getSocketCountsByGameIds(),
       gameLogInfoByGameIds: GameLog.getGameLogInfos(),
     })
   })
@@ -123,14 +124,15 @@ export default function createRouter(
     const userId = req.body.userId
     const clientIds = req.body.clientIds
     const dry = req.body.dry === false ? false : true
-    const job = new MergeClientIdsIntoUser(server.getDb())
+    const job = new MergeClientIdsIntoUser(server.db)
     const result = await job.run(userId, clientIds, dry)
     res.send(result)
   })
 
   router.post('/games/_fix_pieces', express.json(), async (req, res) => {
     const gameId = req.body.gameId
-    const result = await server.fixPieces(gameId)
+    const job = new FixPieces(server)
+    const result = await job.run(gameId)
     res.send(result)
   })
 
@@ -153,7 +155,7 @@ export default function createRouter(
       res.status(500).send({ ok: false, reason: 'unable_to_get_announcement' })
       return
     }
-    server.getDiscord().announce(`**${title}**\n${announcement.message}`)
+    server.discord.announce(`**${title}**\n${announcement.message}`)
     res.send({ announcement })
   })
 

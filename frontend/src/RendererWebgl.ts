@@ -51,6 +51,9 @@ export class RendererWebgl {
   async init() {
     this.gl = this.canvas.getContext('webgl2')!
 
+    this.gl.enable(this.gl.DEPTH_TEST)
+    this.gl.depthFunc(this.gl.LESS)
+
     console.time('load')
     if (!puzzleBitmapCache[this.gameId]) {
       puzzleBitmapCache[this.gameId] = await PuzzleGraphics.loadPuzzleBitmap(

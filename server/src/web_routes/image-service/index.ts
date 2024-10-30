@@ -1,11 +1,11 @@
 import express, { Request, Response, Router } from 'express'
 import path from 'path'
 import config from '../../Config'
-import { ServerInterface } from '../../Server'
+import { Server } from '../../Server'
 import fs from '../../FileSystem'
 
 export default function createRouter(
-  server: ServerInterface,
+  server: Server,
 ): Router {
   const router = express.Router()
   router.get('/image/*', async (req: Request, res: Response) => {
@@ -36,7 +36,7 @@ export default function createRouter(
         res.status(400).send(`fit must be 'contain' or 'cover'`)
         return
       }
-      const resizedFilename = await server.getImageResize().resizeImage(originalFile, targetFilename, w, h, fit, format)
+      const resizedFilename = await server.imageResize.resizeImage(originalFile, targetFilename, w, h, fit, format)
       if (!resizedFilename) {
         res.status(500).send('unable to resize image')
         return
@@ -59,7 +59,7 @@ export default function createRouter(
         return
       }
 
-      const croppedFilename = await server.getImageResize().restrictImage(originalFile, targetFilename, w, h, format)
+      const croppedFilename = await server.imageResize.restrictImage(originalFile, targetFilename, w, h, format)
       if (!croppedFilename) {
         res.status(500).send('unable to restrict size image')
         return
@@ -92,7 +92,7 @@ export default function createRouter(
         return
       }
 
-      const croppedFilename = await server.getImageResize().cropRestrictImage(originalFile, targetFilename, crop, 1920, 1920, format)
+      const croppedFilename = await server.imageResize.cropRestrictImage(originalFile, targetFilename, crop, 1920, 1920, format)
       if (!croppedFilename) {
         res.status(500).send('unable to crop restrict image')
         return
@@ -120,7 +120,7 @@ export default function createRouter(
         return
       }
 
-      const croppedFilename = await server.getImageResize().cropImage(originalFile, targetFilename, crop, format)
+      const croppedFilename = await server.imageResize.cropImage(originalFile, targetFilename, crop, format)
       if (!croppedFilename) {
         res.status(500).send('unable to crop image')
         return

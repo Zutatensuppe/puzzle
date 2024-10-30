@@ -1,16 +1,14 @@
 import { GameSettings, GameInfo, ApiDataIndexData, ApiDataFinishedGames, NewGameDataRequestData, ImagesRequestData, UserId, ImageId, ClientId } from '../../../../common/src/Types'
 import config from '../../Config'
 import express, { Response, Router } from 'express'
-import GameCommon from '../../../../common/src/GameCommon'
 import GameLog from '../../GameLog'
 import multer from 'multer'
 import request from 'request'
 import Time from '../../../../common/src/Time'
 import Util, { logger, uniqId } from '../../../../common/src/Util'
 import { COOKIE_TOKEN, generateSalt, generateToken, passwordHash } from '../../Auth'
-import { ServerInterface } from '../../Server'
+import { Server } from '../../Server'
 import { UserRow } from '../../repo/UsersRepo'
-import { GameRow } from '../../repo/GamesRepo'
 import fs from '../../FileSystem'
 
 const log = logger('web_routes/api/index.ts')
@@ -26,7 +24,7 @@ const GAMES_PER_PAGE_LIMIT = 10
 const IMAGES_PER_PAGE_LIMIT = 20
 
 export default function createRouter(
-  server: ServerInterface,
+  server: Server,
 ): Router {
 
   const determineNewUserClientId = async (originalClientId: ClientId): Promise<ClientId> => {
@@ -35,13 +33,13 @@ export default function createRouter(
     // continue to have their client id after logging in.
     // this will make them show up on leaderboards and keep scores in
     // puzzles they have puzzled as guests
-    return originalClientId && !await server.getUsers().clientIdTaken(originalClientId)
+    return originalClientId && !await server.users.clientIdTaken(originalClientId)
       ? originalClientId
       : uniqId() as ClientId
   }
 
   const addAuthToken = async (userId: UserId, res: Response): Promise<void> => {
-    const token = await server.getUsers().addAuthToken(userId)
+    const token = await server.users.addAuthToken(userId)
     res.cookie(COOKIE_TOKEN, token, { maxAge: 356 * Time.DAY, httpOnly: true })
   }
 
@@ -75,14 +73,14 @@ export default function createRouter(
   const router = express.Router()
   router.get('/me', async (req: any, res): Promise<void> => {
     if (req.user) {
-      const groups = await server.getUsers().getGroups(req.user.id)
+      const groups = await server.users.getGroups(req.user.id)
       res.send({
         id: req.user.id,
         name: req.user.name,
         clientId: req.user.client_id,
         created: req.user.created,
         type: req.user_type,
-        cannyToken: server.getCanny().createToken(req.user),
+        cannyToken: server.canny.createToken(req.user),
         groups: groups.map(g => g.name),
       })
       return
@@ -154,7 +152,7 @@ export default function createRouter(
       const provider_id = userData.data[0].id
       const provider_email = userData.data[0].email
 
-      const identity = await server.getUsers().getIdentity({
+      const identity = await server.users.getIdentity({
         provider_name,
         provider_id,
       })
@@ -163,13 +161,13 @@ export default function createRouter(
       // cannot use req.user
       // instead, the client_id is passed via req.query.state (but it can be empty)
       const client_id = req.query.state || ''
-      let user = await server.getUsers().getUser({ client_id })
+      let user = await server.users.getUser({ client_id })
       if (!user && identity) {
-        user = await server.getUsers().getUserByIdentity(identity)
+        user = await server.users.getUserByIdentity(identity)
       }
 
       if (!user) {
-        user = await server.getUsers().createUser({
+        user = await server.users.createUser({
           client_id: await determineNewUserClientId(client_id),
           created: new Date(),
           email: provider_email,
@@ -186,12 +184,12 @@ export default function createRouter(
           updateNeeded = true
         }
         if (updateNeeded) {
-          await server.getUsers().updateUser(user)
+          await server.users.updateUser(user)
         }
       }
 
       if (!identity) {
-        await server.getUsers().createIdentity({
+        await server.users.createIdentity({
           user_id: user.id,
           provider_name,
           provider_id,
@@ -209,7 +207,7 @@ export default function createRouter(
           updateNeeded = true
         }
         if (updateNeeded) {
-          await server.getUsers().updateIdentity(identity)
+          await server.users.updateIdentity(identity)
         }
       }
 
@@ -225,7 +223,7 @@ export default function createRouter(
   router.post('/auth/local', express.json(), async (req, res): Promise<void> => {
     const emailPlain = req.body.email
     const passwordPlain = req.body.password
-    const account = await server.getUsers().getAccountByEmailPlain(emailPlain)
+    const account = await server.users.getAccountByEmailPlain(emailPlain)
     if (!account) {
       res.status(401).send({ reason: 'bad email' })
       return
@@ -240,7 +238,7 @@ export default function createRouter(
       res.status(401).send({ reason: 'bad password' })
       return
     }
-    const identity = await server.getUsers().getIdentity({
+    const identity = await server.users.getIdentity({
       provider_name: 'local',
       provider_id: account.id,
     })
@@ -265,7 +263,7 @@ export default function createRouter(
     }
 
     // note: token contains account id, not user id ...
-    const account = await server.getUsers().getAccount({ id: tokenRow.user_id })
+    const account = await server.users.getAccount({ id: tokenRow.user_id })
     if (!account) {
       res.status(400).send({ reason: 'no such account' })
       return
@@ -273,7 +271,7 @@ export default function createRouter(
 
     const password = passwordHash(passwordRaw, account.salt)
     account.password = password
-    await server.getUsers().updateAccount(account)
+    await server.users.updateAccount(account)
 
     // remove token, already used
     await server.repos.tokens.delete(tokenRow)
@@ -286,13 +284,13 @@ export default function createRouter(
     // as easily guess if an email is registered or not
 
     const emailPlain = `${req.body.email}`
-    const account = await server.getUsers().getAccountByEmailPlain(emailPlain)
+    const account = await server.users.getAccountByEmailPlain(emailPlain)
     if (!account) {
       // res.status(400).send({ reason: 'no such email' })
       res.send({ success: true })
       return
     }
-    const identity = await server.getUsers().getIdentity({
+    const identity = await server.users.getIdentity({
       provider_name: 'local',
       provider_id: account.id,
     })
@@ -301,7 +299,7 @@ export default function createRouter(
       res.send({ success: true })
       return
     }
-    const user = await server.getUsers().getUser({
+    const user = await server.users.getUser({
       id: identity.user_id,
     })
     if (!user) {
@@ -318,7 +316,7 @@ export default function createRouter(
       type: 'password-reset',
     }
     await server.repos.tokens.insert(tokenRow)
-    server.getMail().sendPasswordResetMail({ user: { name: user.name, email: emailPlain }, token: tokenRow })
+    server.mail.sendPasswordResetMail({ user: { name: user.name, email: emailPlain }, token: tokenRow })
     res.send({ success: true })
   })
 
@@ -331,17 +329,17 @@ export default function createRouter(
     const passwordRaw = `${req.body.password}`
     const usernameRaw = `${req.body.username}`
 
-    if (await server.getUsers().usernameTaken(usernameRaw)) {
+    if (await server.users.usernameTaken(usernameRaw)) {
       res.status(409).send({ reason: 'username already taken' })
       return
     }
 
-    if (await server.getUsers().emailTaken(emailRaw)) {
+    if (await server.users.emailTaken(emailRaw)) {
       res.status(409).send({ reason: 'email already taken' })
       return
     }
 
-    const account = await server.getUsers().createAccount({
+    const account = await server.users.createAccount({
       created: new Date(),
       email: emailRaw,
       password: passwordHash(passwordRaw, salt),
@@ -349,14 +347,14 @@ export default function createRouter(
       status: 'verification_pending',
     })
 
-    let user = await server.getUsers().getUser({ client_id })
+    let user = await server.users.getUser({ client_id })
     if (user) {
       // update user
       user.email = emailRaw
       user.name = usernameRaw
-      await server.getUsers().updateUser(user)
+      await server.users.updateUser(user)
     } else {
-      user = await server.getUsers().createUser({
+      user = await server.users.createUser({
         client_id,
         created: new Date(),
         email: emailRaw,
@@ -364,7 +362,7 @@ export default function createRouter(
       })
     }
 
-    await server.getUsers().createIdentity({
+    await server.users.createIdentity({
       user_id: user.id,
       provider_name: 'local',
       provider_id: `${account.id}`,
@@ -380,7 +378,7 @@ export default function createRouter(
     }
     // TODO: dont misuse token table user id <> account id
     await server.repos.tokens.insert(tokenRow)
-    server.getMail().sendRegistrationMail({ user: userInfo, token: tokenRow })
+    server.mail.sendRegistrationMail({ user: userInfo, token: tokenRow })
     res.send({ success: true })
   })
 
@@ -395,13 +393,13 @@ export default function createRouter(
     // tokenRow.user_id is the account id here.
     // TODO: clean this up.. users vs accounts vs user_identity
 
-    const account = await server.getUsers().getAccount({ id: tokenRow.user_id })
+    const account = await server.users.getAccount({ id: tokenRow.user_id })
     if (!account) {
       res.status(400).send({ reason: 'bad account' })
       return
     }
 
-    const identity = await server.getUsers().getIdentity({
+    const identity = await server.users.getIdentity({
       provider_name: 'local',
       provider_id: account.id,
     })
@@ -411,7 +409,7 @@ export default function createRouter(
     }
 
     // set account to verified
-    await server.getUsers().setAccountVerified(account.id)
+    await server.users.setAccountVerified(account.id)
 
     // make the user logged in and redirect to startpage
     await addAuthToken(identity.user_id, res)
@@ -442,13 +440,11 @@ export default function createRouter(
       res.status(404).send({ reason: 'no log found' })
       return
     }
-    const gameObj = await server.getGameService().createNewGameObj(gameId)
+    const gameObj = await server.gameService.createNewGameObjForReplay(gameId)
     if (!gameObj) {
       res.status(404).send({ reason: 'no game found' })
       return
     }
-    gameObj.puzzle.info.image.gameCount = await server.repos.images.getGameCount(gameObj.puzzle.info.image.id)
-    gameObj.registeredMap = await server.getGameService().generateRegisteredMap(gameObj)
     res.send({ game: Util.encodeGame(gameObj) })
   })
 
@@ -485,22 +481,22 @@ export default function createRouter(
 
     const requestData: NewGameDataRequestData = req.query as any
     res.send({
-      images: await server.getImages().imagesFromDb(requestData.search, requestData.sort, false, 0, IMAGES_PER_PAGE_LIMIT, userId),
-      tags: await server.getImages().getAllTags(),
+      images: await server.images.imagesFromDb(requestData.search, requestData.sort, false, 0, IMAGES_PER_PAGE_LIMIT, userId),
+      tags: await server.images.getAllTags(),
     })
   })
 
   router.get('/artist/:name', async (req, res): Promise<void> => {
     const name = req.params.name
-    const artist = await server.getDb().get('artist', { name })
+    const artist = await server.db.get('artist', { name })
     if (!artist) {
       res.status(404).send({ reason: 'not found' })
       return
     }
-    const rel1 = await server.getDb().getMany('artist_x_collection', { artist_id: artist.id })
-    const collections = await server.getDb().getMany('collection', { id: { '$in': rel1.map((r: any) => r.collection_id) } })
-    const rel2 = await server.getDb().getMany('collection_x_image', { collection_id: { '$in': collections.map((r: any) => r.id) } })
-    const items = await server.getImages().imagesByIdsFromDb(rel2.map((r: any) => r.image_id))
+    const rel1 = await server.db.getMany('artist_x_collection', { artist_id: artist.id })
+    const collections = await server.db.getMany('collection', { id: { '$in': rel1.map((r: any) => r.collection_id) } })
+    const rel2 = await server.db.getMany('collection_x_image', { collection_id: { '$in': collections.map((r: any) => r.id) } })
+    const items = await server.images.imagesByIdsFromDb(rel2.map((r: any) => r.image_id))
     collections.forEach(c => {
       c.images = items.filter(image => rel2.find(r => r.collection_id === c.id && r.image_id === image.id) ? true : false)
     })
@@ -521,37 +517,9 @@ export default function createRouter(
     const userId = user && req.user_type === 'user' ? user.id : 0 as UserId
 
     res.send({
-      images: await server.getImages().imagesFromDb(requestData.search, requestData.sort, false, offset, IMAGES_PER_PAGE_LIMIT, userId),
+      images: await server.images.imagesFromDb(requestData.search, requestData.sort, false, offset, IMAGES_PER_PAGE_LIMIT, userId),
     })
   })
-
-  const GameToGameInfo = async (gameRow: GameRow, ts: number): Promise<GameInfo> => {
-    const game = await server.getGameService().gameRowToGameObject(gameRow)
-    if (!game) {
-      throw new Error('invalid game row')
-    }
-    const finished = GameCommon.Game_getFinishTs(game)
-    return {
-      id: game.id,
-      hasReplay: await GameLog.hasReplay(game),
-      isPrivate: GameCommon.Game_isPrivate(game),
-      started: GameCommon.Game_getStartTs(game),
-      finished,
-      piecesFinished: GameCommon.Game_getFinishedPiecesCount(game),
-      piecesTotal: GameCommon.Game_getPieceCount(game),
-      players: finished
-        ? GameCommon.Game_getPlayersWithScore(game).length
-        : GameCommon.Game_getActivePlayers(game, ts).length,
-      image: GameCommon.Game_getImage(game),
-      imageSnapshots: gameRow.image_snapshot_url
-        ? { current: { url: gameRow.image_snapshot_url } }
-        : { current: null },
-      snapMode: GameCommon.Game_getSnapMode(game),
-      scoreMode: GameCommon.Game_getScoreMode(game),
-      shapeMode: GameCommon.Game_getShapeMode(game),
-      rotationMode: GameCommon.Game_getRotationMode(game),
-    }
-  }
 
   router.get('/index-data', async (req: any, res): Promise<void> => {
     const user: UserRow | null = req.user || null
@@ -559,18 +527,18 @@ export default function createRouter(
 
     const ts = Time.timestamp()
     // all running rows
-    const runningRows = await server.getGameService().getPublicRunningGames(-1, -1, userId)
-    const runningCount = await server.getGameService().countPublicRunningGames(userId)
-    const finishedRows = await server.getGameService().getPublicFinishedGames(0, GAMES_PER_PAGE_LIMIT, userId)
-    const finishedCount = await server.getGameService().countPublicFinishedGames(userId)
+    const runningRows = await server.gameService.getPublicRunningGames(-1, -1, userId)
+    const runningCount = await server.gameService.countPublicRunningGames(userId)
+    const finishedRows = await server.gameService.getPublicFinishedGames(0, GAMES_PER_PAGE_LIMIT, userId)
+    const finishedCount = await server.gameService.countPublicFinishedGames(userId)
 
     const gamesRunning: GameInfo[] = []
     const gamesFinished: GameInfo[] = []
     for (const row of runningRows) {
-      gamesRunning.push(await GameToGameInfo(row, ts))
+      gamesRunning.push(await server.gameService.gameToGameInfo(row, ts))
     }
     for (const row of finishedRows) {
-      gamesFinished.push(await GameToGameInfo(row, ts))
+      gamesFinished.push(await server.gameService.gameToGameInfo(row, ts))
     }
 
     const leaderboards = await server.repos.leaderboard.getTop10(userId)
@@ -602,11 +570,11 @@ export default function createRouter(
       return
     }
     const ts = Time.timestamp()
-    const finishedRows = await server.getGameService().getPublicFinishedGames(offset, GAMES_PER_PAGE_LIMIT, userId)
-    const finishedCount = await server.getGameService().countPublicFinishedGames(userId)
+    const finishedRows = await server.gameService.getPublicFinishedGames(offset, GAMES_PER_PAGE_LIMIT, userId)
+    const finishedCount = await server.gameService.countPublicFinishedGames(userId)
     const gamesFinished: GameInfo[] = []
     for (const row of finishedRows) {
-      gamesFinished.push(await GameToGameInfo(row, ts))
+      gamesFinished.push(await server.gameService.gameToGameInfo(row, ts))
     }
     const indexData: ApiDataFinishedGames = {
       items: gamesFinished,
@@ -623,7 +591,7 @@ export default function createRouter(
     }
 
     const data = req.body as SaveImageRequestData
-    const image = await server.getImages().getImageById(data.id)
+    const image = await server.images.getImageById(data.id)
     if (!image) {
       res.status(404).send({ ok: false, error: 'not_found' })
       return
@@ -634,15 +602,15 @@ export default function createRouter(
       return
     }
 
-    await server.getImages().updateImage({
+    await server.images.updateImage({
       title: data.title,
       copyright_name: data.copyrightName,
-      copyright_url: server.getUrlUtil().fixUrl(data.copyrightURL || ''),
+      copyright_url: server.urlUtil.fixUrl(data.copyrightURL || ''),
     }, { id: data.id })
 
-    await server.getImages().setTags(data.id, data.tags || [])
+    await server.images.setTags(data.id, data.tags || [])
 
-    res.send({ ok: true, image: await server.getImages().imageFromDb(data.id) })
+    res.send({ ok: true, image: await server.images.imageFromDb(data.id) })
   })
 
   router.get('/proxy', (req: any, res): void => {
@@ -666,9 +634,9 @@ export default function createRouter(
 
       log.info('req.file.filename', req.file.filename)
 
-      const im = server.getImages()
+      const im = server.images
 
-      const user = await server.getUsers().getOrCreateUserByRequest(req)
+      const user = await server.users.getOrCreateUserByRequest(req)
 
       const dim = await im.getDimensions(
         `${config.dir.UPLOAD_DIR}/${req.file.filename}`,
@@ -681,7 +649,7 @@ export default function createRouter(
         filename_original: req.file.originalname,
         title: req.body.title || '',
         copyright_name: req.body.copyrightName || '',
-        copyright_url: server.getUrlUtil().fixUrl(req.body.copyrightURL || ''),
+        copyright_url: server.urlUtil.fixUrl(req.body.copyrightURL || ''),
         created: new Date(),
         width: dim.w,
         height: dim.h,
@@ -703,9 +671,9 @@ export default function createRouter(
   })
 
   router.post('/newgame', express.json(), async (req, res): Promise<void> => {
-    const user = await server.getUsers().getOrCreateUserByRequest(req)
+    const user = await server.users.getOrCreateUserByRequest(req)
     try {
-      const gameId = await server.getGameService().createNewGame(
+      const gameId = await server.gameService.createNewGame(
         req.body as GameSettings,
         Time.timestamp(),
         user.id,

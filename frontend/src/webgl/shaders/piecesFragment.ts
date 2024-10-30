@@ -63,7 +63,7 @@ vec4 determine_frag_color() {
 
   // Determine the final color before blur
   vec4 col = vec4(.0);
-  if (stencil.r >=.9 && stencil.b >= .9) {
+  if (stencil.r >=.5 && stencil.b >= .5 && stencil.g <= .1) {
     // magenta is transparent
     col = vec4(.0);
   } else {
