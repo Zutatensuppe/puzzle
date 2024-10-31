@@ -174,7 +174,7 @@
 </template>
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, Ref, ref, watch } from 'vue'
-import { ReplayHud, GameStatus, GamePlayers, CONN_STATE, RegisteredMap, GameId } from '../../../common/src/Types'
+import { ReplayHud, GameStatus, GamePlayers, CONN_STATE, RegisteredMap, GameId, DialogChangeData } from '../../../common/src/Types'
 import { GameReplay } from './../GameReplay'
 import { useRoute } from 'vue-router'
 import api from '../_api'
@@ -214,12 +214,10 @@ const replayText = computed((): string => {
     (replay.value.paused ? ' Paused' : '')
 })
 
-const onDialogChange = (changes: any[]): void => {
-  changes.forEach((change: { type: string, value: any }) => {
-    if (change.type === 'persistent') {
-      dialogPersistent.value = change.value
-    }
-  })
+const onDialogChange = (change: DialogChangeData): void => {
+  if (change.type === 'persistent') {
+    dialogPersistent.value = change.value
+  }
 }
 
 const onResize = (): void => {

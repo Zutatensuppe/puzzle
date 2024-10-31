@@ -168,7 +168,7 @@ export class Server {
 
     const wss = new WebSocketServer(config.ws)
 
-    const notify = (data: ServerEvent, sockets: Array<WebSocket>): void => {
+    const notify = (data: ServerEvent, sockets: WebSocket[]): void => {
       for (const socket of sockets) {
         wss.notifyOne(data, socket)
       }

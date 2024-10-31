@@ -1,34 +1,20 @@
 import Util from '../../common/src/Util'
 import { Rng } from '../../common/src/Rng'
-import { Images } from './Images'
-import { EncodedPiece, Puzzle, ShapeMode, ImageInfo, PieceRotation, RotationMode, EncodedPieceIdx } from '../../common/src/Types'
+import { EncodedPiece, Puzzle, ShapeMode, ImageInfo, PieceRotation, RotationMode, EncodedPieceIdx, Timestamp } from '../../common/src/Types'
 import { Dim, Point } from '../../common/src/Geometry'
-import config from './Config'
 import { determinePuzzleInfo, PuzzleCreationInfo, determinePuzzlePieceShapes } from '../../common/src/Puzzle'
 
 export class PuzzleService {
-  constructor(
-    private readonly images: Images,
-  ) {
-    // pass
-  }
-
-  async createPuzzle(
+  createPuzzle(
     rng: Rng,
     targetPieceCount: number,
     image: ImageInfo,
-    ts: number,
+    started: Timestamp,
     shapeMode: ShapeMode,
     rotationMode: RotationMode,
     gameVersion: number,
-  ): Promise<Puzzle> {
-    const imagePath = `${config.dir.UPLOAD_DIR}/${image.filename}`
-
-    // determine puzzle information from the image dimensions
-    const dim = await this.images.getDimensions(imagePath)
-    if (!dim.w || !dim.h) {
-      throw `[ 2021-05-16 invalid dimension for path ${imagePath} ]`
-    }
+  ): Puzzle {
+    const dim: Dim = { w: image.width, h: image.height }
     const info: PuzzleCreationInfo = determinePuzzleInfo(dim, targetPieceCount)
 
     const rawPieces = new Array(info.pieceCount)
@@ -121,7 +107,7 @@ export class PuzzleService {
         // TODO: maybe calculate this each time?
         maxZ: 0,     // max z of all pieces
         maxGroup: 0, // max group of all pieces
-        started: ts, // start timestamp
+        started, // start timestamp
         finished: 0, // finish timestamp
       },
       // static puzzle information. stays same for complete duration of

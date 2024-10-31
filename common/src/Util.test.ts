@@ -161,8 +161,8 @@ describe('Util.ts', () => {
       rand_high: 1,
       rand_low: 1,
       random: (_min: number, _max: number): number => 0,
-      choice: <T>(array: Array<T>): T => array[0],
-      shuffle: <T>(array: Array<T>): Array<T> => array,
+      choice: <T>(array: T[]): T => array[0],
+      shuffle: <T>(array: T[]): T[] => array,
     }
 
     const puzzleInfo: PuzzleInfo = {

@@ -34,7 +34,7 @@ const pad = (x: number, pad: string): string => {
   return pad.substring(0, pad.length - str.length) + str
 }
 
-type LogArgs = Array<any>
+type LogArgs = any[]
 type LogFn = (...args: LogArgs) => void
 
 const NOOP = () => { return }

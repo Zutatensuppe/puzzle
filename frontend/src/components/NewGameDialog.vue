@@ -243,10 +243,8 @@ const piecesInt = computed((): number => {
   return parseInt(`${pieces.value}`, 10)
 })
 const puzzleCreationInfo = computed((): PuzzleCreationInfo => {
-  return determinePuzzleInfo({
-    w: props.image.width,
-    h: props.image.height,
-  }, piecesInt.value)
+  const dim = { w: props.image.width, h: props.image.height }
+  return determinePuzzleInfo(dim, piecesInt.value)
 })
 
 const numberRule = (v: string) => {

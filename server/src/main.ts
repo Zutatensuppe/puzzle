@@ -34,7 +34,7 @@ const run = async () => {
   const imageExif = new ImageExif()
   const images = new Images(repos.images, imageExif)
   const imageResize = new ImageResize(imageExif)
-  const puzzleService = new PuzzleService(images)
+  const puzzleService = new PuzzleService()
   const gameService = new GameService(repos, puzzleService)
   const twitch = new Twitch(config.auth.twitch)
 

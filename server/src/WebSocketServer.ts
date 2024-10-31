@@ -27,10 +27,10 @@ class EvtBus {
     this._on[type].push(callback)
   }
 
-  dispatch (type: string, ...args: Array<any>): void {
-    (this._on[type] || []).forEach((cb: CallbackFunc) => {
+  dispatch (type: string, ...args: any[]): void {
+    for (const cb of this._on[type] || []) {
       cb(...args)
-    })
+    }
   }
 }
 

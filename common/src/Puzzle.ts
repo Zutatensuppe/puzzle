@@ -99,9 +99,9 @@ export function determinePuzzlePieceShapes(
   rng: Rng,
   info: PuzzleCreationInfo,
   shapeMode: ShapeMode,
-): Array<EncodedPieceShape> {
+): EncodedPieceShape[] {
   const tabs: number[] = determineTabs(shapeMode)
-  const shapes: Array<PieceShape> = new Array(info.pieceCount)
+  const shapes: PieceShape[] = new Array(info.pieceCount)
   for (let i = 0; i < info.pieceCount; i++) {
     const coord = Util.coordByPieceIdx(info, i)
     shapes[i] = {
@@ -111,7 +111,6 @@ export function determinePuzzlePieceShapes(
       bottom: coord.y === info.pieceCountVertical - 1 ? 0 : rng.choice(tabs),
     }
   }
-
   return shapes.map(Util.encodeShape)
 }
 

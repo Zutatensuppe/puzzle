@@ -67,7 +67,7 @@
   </div>
 </template>
 <script setup lang="ts">
-import { Hud, GameStatus, GamePlayers, CONN_STATE, RegisteredMap, GameId } from '../../../common/src/Types'
+import { Hud, GameStatus, GamePlayers, CONN_STATE, RegisteredMap, GameId, DialogChangeData } from '../../../common/src/Types'
 import { GamePlay } from '../GamePlay'
 import { onMounted, onUnmounted, Ref, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
@@ -101,12 +101,10 @@ const registeredMap = ref<RegisteredMap>({})
 const g = ref<GamePlay | null>(null)
 const route = useRoute()
 
-const onDialogChange = (changes: any[]): void => {
-  changes.forEach((change: { type: string, value: any }) => {
-    if (change.type === 'persistent') {
-      dialogPersistent.value = change.value
-    }
-  })
+const onDialogChange = (change: DialogChangeData): void => {
+  if (change.type === 'persistent') {
+    dialogPersistent.value = change.value
+  }
 }
 
 const onResize = (): void => {

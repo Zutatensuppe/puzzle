@@ -20,12 +20,12 @@ export class Rng {
   }
 
   // get one random item from the given array
-  choice<T>(array: Array<T>): T {
+  choice<T>(array: T[]): T {
     return array[this.random(0, array.length - 1)]
   }
 
   // return a shuffled (shallow) copy of the given array
-  shuffle<T>(array: Array<T>): Array<T> {
+  shuffle<T>(array: T[]): T[] {
     const arr = array.slice()
     for (let i = 0; i <= arr.length - 2; i++) {
       const j = this.random(i, arr.length - 1)

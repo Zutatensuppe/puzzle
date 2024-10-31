@@ -15,10 +15,10 @@ const log = logger('Db.ts')
  * ]
  */
 type Data = Record<string, any>
-type Params = Array<any>
+type Params = any[]
 
 export type WhereRaw = Record<string, any>
-export type OrderBy = Array<Record<string, 1 | -1>>
+export type OrderBy = Record<string, 1 | -1>[]
 export interface Limit {
   offset: number
   limit: number
@@ -26,7 +26,7 @@ export interface Limit {
 
 interface Where {
   sql: string
-  values: Array<any>
+  values: any[]
   $i: number
 }
 

@@ -64,9 +64,9 @@ export class MergeClientIdsIntoUser {
         if (needUpdate) {
           // combine all of user points to the target user
           let points = 0
-          playersOfUser.forEach((p: EncodedPlayer) => {
+          for (const p of playersOfUser) {
             points += p[EncodedPlayerIdx.POINTS]
-          })
+          }
           targetPlayer[EncodedPlayerIdx.POINTS] = points
           targetPlayer[EncodedPlayerIdx.ID] = user.client_id
 

@@ -53,8 +53,8 @@ declare global {
 const log = logger('Game.ts')
 
 export interface GameInterface {
-  readonly graphics: Graphics
   readonly assets: Assets
+  readonly graphics: Graphics
   reinit(clientId: ClientId): Promise<void>
   shouldDrawEncodedPiece(piece: EncodedPiece): boolean
   getWsAddres(): string
