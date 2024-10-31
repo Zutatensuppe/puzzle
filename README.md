@@ -5,6 +5,7 @@
 
 This is a multiplayer puzzle game running in the browser.
 See a live version at [jigsaw.hyottoko.club].
+You can also join the [jigsaw.hyottoko.club discord](https://discord.gg/uFGXRdUXxU).
 
 # Get Started
 
