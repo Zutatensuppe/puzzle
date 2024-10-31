@@ -497,9 +497,9 @@ export default function createRouter(
     const collections = await server.db.getMany('collection', { id: { '$in': rel1.map((r: any) => r.collection_id) } })
     const rel2 = await server.db.getMany('collection_x_image', { collection_id: { '$in': collections.map((r: any) => r.id) } })
     const items = await server.images.imagesByIdsFromDb(rel2.map((r: any) => r.image_id))
-    collections.forEach(c => {
+    for (const c of collections) {
       c.images = items.filter(image => rel2.find(r => r.collection_id === c.id && r.image_id === image.id) ? true : false)
-    })
+    }
     res.send({
       artist,
       collections,

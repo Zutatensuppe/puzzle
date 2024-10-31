@@ -4,10 +4,13 @@ export const parseLogFileContents = (
   contents: string,
   logFileIdx: number = 0,
 ): LogEntry[] => {
-  const lines = contents.split('\n')
-  const log = lines.filter(line => !!line).map(line => {
-    return JSON.parse(`[${line}]`)
-  })
+  const log: LogEntry[] = []
+  for (const line of contents.split('\n')) {
+    if (!line) {
+      continue
+    }
+    log.push(JSON.parse(`[${line}]`))
+  }
   if (logFileIdx === 0 && log.length > 0) {
     log[0][5] = DefaultScoreMode(log[0][5])
     log[0][6] = DefaultShapeMode(log[0][6])

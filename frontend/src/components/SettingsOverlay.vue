@@ -221,7 +221,7 @@
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 
 import IngameColorPicker from './IngameColorPicker.vue'
-import { PlayerSettingsData, RendererType } from '../../../common/src/Types'
+import { DialogChangeData, PlayerSettingsData, RendererType } from '../../../common/src/Types'
 import user, { User } from '../user'
 import { GameInterface } from '../Game'
 
@@ -230,7 +230,7 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
-  (e: 'dialogChange', val: any[]): void
+  (e: 'dialogChange', val: DialogChangeData): void
 }>()
 
 const playerSettings = ref<PlayerSettingsData>(JSON.parse(JSON.stringify(props.game.getPlayerSettings().getSettings())))
@@ -250,14 +250,10 @@ const rendererOptions = [
 ]
 
 const onColorPickerOpen = () => {
-  emit('dialogChange', [
-    { type: 'persistent', value: true },
-  ])
+  emit('dialogChange', { type: 'persistent', value: true })
 }
 const onColorPickerClose = () => {
-  emit('dialogChange', [
-    { type: 'persistent', value: undefined },
-  ])
+  emit('dialogChange', { type: 'persistent', value: undefined })
 }
 
 const updateVolume = (newVolume: number): void => {

@@ -94,9 +94,9 @@ const createColumns = (count: number): Column[] => {
 
 if (ssrColumns.value > 0) {
   const newColumns = createColumns(ssrColumns.value)
-  items.value.forEach((_: unknown, i: number) =>
-    newColumns[i % ssrColumns.value].push(i),
-  )
+  for (let i = 0; i < items.value.length; i++) {
+    newColumns[i % ssrColumns.value].push(i)
+  }
   columns.value = newColumns
 }
 

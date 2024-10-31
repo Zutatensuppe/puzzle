@@ -54,9 +54,9 @@ export default function createRouter(
     const total = await server.repos.games.count()
     const items = await server.repos.games.getAll(offset, limit)
     const imageIdMap: Record<string, boolean> = {}
-    items.forEach(game => {
-      imageIdMap[game.image_id] = true
-    })
+    for (const item of items) {
+      imageIdMap[item.image_id] = true
+    }
     const imageIds = Object.keys(imageIdMap)
     const images = await server.repos.images.getMany({ id: { '$in': imageIds } })
     const gamesWithImages: GameRowWithImage[] = items.map(game => {

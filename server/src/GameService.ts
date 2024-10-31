@@ -154,7 +154,7 @@ export class GameService {
       log.info(`createNewGameObj, game object not created: ${gameId}`)
       return null
     }
-    const gameObj = await this.createGameObject(
+    const gameObj = this.createGameObject(
       gameRow.id,
       gameObject.gameVersion,
       gameObject.puzzle.info.targetTiles,
@@ -290,7 +290,7 @@ export class GameService {
     }
   }
 
-  private async createGameObject(
+  private createGameObject(
     gameId: GameId,
     gameVersion: number,
     targetPieceCount: number,
@@ -304,7 +304,7 @@ export class GameService {
     hasReplay: boolean,
     isPrivate: boolean,
     crop: Rect | undefined,
-  ): Promise<Game> {
+  ): Game {
     const seed = Util.hash(gameId + ' ' + ts)
     const rng = new Rng(seed)
     return {
@@ -312,7 +312,7 @@ export class GameService {
       gameVersion,
       creatorUserId,
       rng: { type: 'Rng', obj: rng },
-      puzzle: await this.puzzleService.createPuzzle(rng, targetPieceCount, image, ts, shapeMode, rotationMode, gameVersion),
+      puzzle: this.puzzleService.createPuzzle(rng, targetPieceCount, image, ts, shapeMode, rotationMode, gameVersion),
       players: [],
       scoreMode,
       shapeMode,
@@ -338,7 +338,7 @@ export class GameService {
       gameId = Util.uniqId() as GameId
     } while (await this.exists(gameId))
 
-    const gameObject = await this.createGameObject(
+    const gameObject = this.createGameObject(
       gameId,
       GAME_VERSION,
       gameSettings.tiles,

@@ -8,7 +8,7 @@ export class Graphics {
 
   public static IS_DARK_THRESHOLD = 175
 
-  private supportsWebgl2Cache: boolean | null = null
+  public supportsWebgl2Cache: boolean | null = null
 
   private constructor() {
   }
@@ -58,7 +58,7 @@ export class Graphics {
     return c2
   }
 
-  private imageElementToCanvas(imageElement: HTMLImageElement): HTMLCanvasElement {
+  public imageElementToCanvas(imageElement: HTMLImageElement): HTMLCanvasElement {
     const canvas = this.createCanvas(imageElement.width, imageElement.height)
     const ctx = canvas.getContext('2d') as CanvasRenderingContext2D
     ctx.drawImage(imageElement, 0, 0)

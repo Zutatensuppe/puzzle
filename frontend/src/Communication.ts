@@ -20,7 +20,7 @@ let syncCallback = (_evt: ServerSyncEvent) => {
   // noop
 }
 
-let missedStateChanges: Array<number> = []
+let missedStateChanges: number[] = []
 let connectionStateChangeCallback = (state: number) => {
   missedStateChanges.push(state)
 }

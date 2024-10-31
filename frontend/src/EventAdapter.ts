@@ -6,7 +6,7 @@ import { MODE_REPLAY } from './GameMode'
 import { PlayerSettings } from './PlayerSettings'
 
 export class EventAdapter {
-  private events: Array<GameEvent> = []
+  private events: GameEvent[] = []
 
   private KEYS_ON = true
 

@@ -29,7 +29,7 @@ export const generateToken = (): string => {
 
 const randomString = (length: number): string => {
   const a = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890'.split('')
-  const b = []
+  const b = new Array(length)
   for (let i = 0; i < length; i++) {
     const j = parseInt((Math.random() * (a.length - 1)).toFixed(0), 10)
     b[i] = a[j]

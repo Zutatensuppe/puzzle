@@ -4,7 +4,7 @@ import { Rng, RngSerialized } from './Rng'
 
 // @see https://stackoverflow.com/a/59906630/392905
 type ArrayLengthMutationKeys = 'splice' | 'push' | 'pop' | 'shift' | 'unshift' | number
-type ArrayItems<T extends Array<any>> = T extends Array<infer TItems> ? TItems : never
+type ArrayItems<T extends any[]> = T extends Array<infer TItems> ? TItems : never
 export type FixedLengthArray<T extends any[]> =
   Pick<T, Exclude<keyof T, ArrayLengthMutationKeys>>
   & { [Symbol.iterator]: () => IterableIterator<ArrayItems<T>> }
@@ -159,7 +159,7 @@ export type EncodedGameLegacy = FixedLengthArray<[
   string,
   RngSerialized,
   Puzzle,
-  Array<EncodedPlayer>,
+  EncodedPlayer[],
   ScoreMode,
   ShapeMode,
   SnapMode,
@@ -174,7 +174,7 @@ export type EncodedGame = FixedLengthArray<[
   string,
   RngSerialized,
   Puzzle,
-  Array<EncodedPlayer>,
+  EncodedPlayer[],
   ScoreMode,
   ShapeMode,
   SnapMode,
@@ -242,7 +242,7 @@ export interface Game {
   id: GameId
   gameVersion: number
   creatorUserId: UserId | null
-  players: Array<EncodedPlayer>
+  players: EncodedPlayer[]
   puzzle: Puzzle
   scoreMode: ScoreMode
   shapeMode: ShapeMode
@@ -261,7 +261,7 @@ export interface Image {
   file: string
   url: string
   title: string
-  tags: Array<Tag>
+  tags: Tag[]
   created: number
 }
 
@@ -286,7 +286,7 @@ export interface GameSettings {
 }
 
 export interface Puzzle {
-  tiles: Array<EncodedPiece>
+  tiles: EncodedPiece[]
   data: PuzzleData
   info: PuzzleInfo
 }
@@ -366,7 +366,7 @@ export interface PuzzleInfo {
   tilesX: number
   tilesY: number
 
-  shapes: Array<EncodedPieceShape>
+  shapes: EncodedPieceShape[]
 }
 
 export interface Player {
@@ -774,4 +774,9 @@ export interface ServerInfo {
   socketCount: number
   socketCountsByGameIds: Record<GameId, number>
   gameLogInfoByGameIds: GameLogInfoByGameIds
+}
+
+export interface DialogChangeData {
+  type: string
+  value: boolean | undefined
 }

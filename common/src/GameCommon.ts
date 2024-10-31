@@ -421,7 +421,7 @@ const getMaxZIndex = (gameId: GameId): number => {
   return GAMES[gameId].puzzle.data.maxZ
 }
 
-const getMaxZIndexByPieceIdxs = (gameId: GameId, pieceIdxs: Array<number>): number => {
+const getMaxZIndexByPieceIdxs = (gameId: GameId, pieceIdxs: number[]): number => {
   let maxZ = 0
   for (const pieceIdx of pieceIdxs) {
     const curZ = getPieceZIndex(gameId, pieceIdx)
@@ -459,7 +459,7 @@ function getSurroundingPiecesByIdx(gameId: GameId, pieceIdx: number) {
   ]
 }
 
-const setPiecesZIndex = (gameId: GameId, pieceIdxs: Array<number>, zIndex: number): void => {
+const setPiecesZIndex = (gameId: GameId, pieceIdxs: number[], zIndex: number): void => {
   for (const pieceIdx of pieceIdxs) {
     changePiece(gameId, pieceIdx, { [EncodedPieceIdx.Z]: zIndex })
   }
@@ -473,7 +473,7 @@ const movePieceDiff = (gameId: GameId, pieceIdx: number, diff: Point): void => {
 
 const movePiecesDiff = (
   gameId: GameId,
-  pieceIdxs: Array<number>,
+  pieceIdxs: number[],
   diff: Point,
 ): boolean => {
   const gameVersion = getVersion(gameId)
@@ -485,7 +485,7 @@ const movePiecesDiff = (
 
 const movePiecesDiff_v2 = (
   gameId: GameId,
-  pieceIdxs: Array<number>,
+  pieceIdxs: number[],
   diff: Point,
 ): boolean => {
   const drawSize = getPieceDrawSize(gameId)
@@ -517,7 +517,7 @@ const movePiecesDiff_v2 = (
 
 const movePiecesDiff_v3 = (
   gameId: GameId,
-  pieceIdxs: Array<number>,
+  pieceIdxs: number[],
   diff: Point,
 ): boolean => {
   const bounds = getBounds(gameId)
@@ -559,7 +559,7 @@ const getPieceOwner = (gameId: GameId, pieceIdx: number): string | number => {
   return getEncodedPiece(gameId, pieceIdx)[EncodedPieceIdx.OWNER]
 }
 
-const finishPieces = (gameId: GameId, pieceIdxs: Array<number>): void => {
+const finishPieces = (gameId: GameId, pieceIdxs: number[]): void => {
   for (const pieceIdx of pieceIdxs) {
     changePiece(gameId, pieceIdx, { [EncodedPieceIdx.OWNER]: -1, [EncodedPieceIdx.Z]: 1 })
   }
@@ -568,7 +568,7 @@ const finishPieces = (gameId: GameId, pieceIdxs: Array<number>): void => {
 const rotatePieces = (
   gameId: GameId,
   heldPieceIdx: number,
-  pieceIdxs: Array<number>,
+  pieceIdxs: number[],
   direction: -1 | 1,
 ): void => {
   // find the (new) rotation of the held piece
@@ -599,7 +599,7 @@ const rotatePieces = (
 
 const setPiecesOwner = (
   gameId: GameId,
-  pieceIdxs: Array<number>,
+  pieceIdxs: number[],
   owner: ClientId | number,
 ): void => {
   for (const pieceIdx of pieceIdxs) {
@@ -761,7 +761,7 @@ function handleGameEvent(
 ): HandleGameEventResult {
   const puzzle = GAMES[gameId].puzzle
 
-  const changes: Array<Change> = []
+  const changes: Change[] = []
 
   const _dataChange = (): void => {
     changes.push([CHANGE_TYPE.DATA, puzzle.data])
@@ -774,7 +774,7 @@ function handleGameEvent(
     ])
   }
 
-  const _pieceChanges = (pieceIdxs: Array<number>): void => {
+  const _pieceChanges = (pieceIdxs: number[]): void => {
     for (const pieceIdx of pieceIdxs) {
       _pieceChange(pieceIdx)
     }
@@ -1250,15 +1250,15 @@ function Game_getRotationMode(game: Game): RotationMode {
   return game.rotationMode
 }
 
-function Game_getAllPlayers(game: Game): Array<EncodedPlayer> {
+function Game_getAllPlayers(game: Game): EncodedPlayer[] {
   return game.players
 }
 
-function Game_getPlayersWithScore(game: Game): Array<EncodedPlayer> {
+function Game_getPlayersWithScore(game: Game): EncodedPlayer[] {
   return Game_getAllPlayers(game).filter((p: EncodedPlayer) => p[EncodedPlayerIdx.POINTS] > 0)
 }
 
-function Game_getActivePlayers(game: Game, ts: number): Array<EncodedPlayer> {
+function Game_getActivePlayers(game: Game, ts: number): EncodedPlayer[] {
   const minTs = ts - IDLE_TIMEOUT_SEC * Time.SEC
   return Game_getAllPlayers(game).filter((p: EncodedPlayer) => p[EncodedPlayerIdx.TIMESTAMP] >= minTs)
 }
