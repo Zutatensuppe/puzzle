@@ -161,11 +161,15 @@ export default function createRouter(
       // cannot use req.user
       // instead, the client_id is passed via req.query.state (but it can be empty)
       const client_id = req.query.state || ''
-      let user = await server.users.getUser({ client_id })
-      if (!user && identity) {
+      // first try to find user by the identity
+      // the client_id should only be used if no identity is found
+      let user: UserRow | null = null
+      if (identity) {
         user = await server.users.getUserByIdentity(identity)
       }
-
+      if (!user) {
+        user = await server.users.getUser({ client_id })
+      }
       if (!user) {
         user = await server.users.createUser({
           client_id: await determineNewUserClientId(client_id),

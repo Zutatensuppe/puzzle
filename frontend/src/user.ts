@@ -27,7 +27,6 @@ async function init(): Promise<void> {
     eventBus.emit('login')
   } else {
     console.log('not logged in')
-    xhr.setClientId(storage.uniq('ID') as ClientId)
     eventBus.emit('logout')
   }
 }
