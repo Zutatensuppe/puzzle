@@ -142,6 +142,9 @@ export abstract class Game<HudType extends Hud> implements GameInterface {
 
   private gameLoop!: GameLoopInstance
 
+  private onUpdateBound: () => void
+  private onRenderBound: () => void
+
   constructor(
     protected readonly gameId: GameId,
     protected clientId: ClientId,
@@ -152,6 +155,9 @@ export abstract class Game<HudType extends Hud> implements GameInterface {
     this.assets = new Assets()
     this.graphics = Graphics.getInstance()
     this.viewport = new Camera()
+
+    this.onUpdateBound = this.onUpdate.bind(this)
+    this.onRenderBound = this.onRender.bind(this)
   }
 
   async reinit(clientId: ClientId): Promise<void> {
@@ -311,8 +317,8 @@ export abstract class Game<HudType extends Hud> implements GameInterface {
 
   initGameLoop(): void {
     this.gameLoop = run({
-      update: this.onUpdate.bind(this),
-      render: this.onRender.bind(this),
+      update: this.onUpdateBound,
+      render: this.onRenderBound,
     })
   }
 
