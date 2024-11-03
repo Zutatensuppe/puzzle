@@ -70,29 +70,44 @@
             </div>
           </td>
           <td>
-            <div class="d-flex ga-3">
+            <div class="d-flex flex-wrap gc-3">
               <span class="text-disabled">Id:</span> <a
                 :href="`/g/${item.id}`"
                 target="_blank"
               >{{ item.id }}</a>
               <span class="text-disabled">Image-Id: </span> {{ item.image_id }}
               <span class="text-disabled">Private:</span> <span :class="{ 'color-private': item.private }">{{ item.private ? '✓' : '✖' }}</span>
+              <span class="text-disabled">Password:</span>
+              <Icon
+                v-if="item.join_password"
+                icon="lock-closed"
+                title="Password protected"
+              />
+              <span v-else>-</span>
+              <span class="text-disabled">Anon:</span>
+              <Icon
+                v-if="item.require_account"
+                icon="no-anon"
+                title="No anonymous players allowed"
+              />
+              <span v-else>✓</span>
             </div>
-            <div class="d-flex ga-3">
+            <div class="d-flex flex-wrap gc-3">
               <span class="text-disabled">Creator:</span> {{ item.creator_user_id || '-' }}
               <span class="text-disabled">Created:</span> {{ item.created }}
               <span class="text-disabled">Finished:</span> <span :class="{ 'color-finished': item.finished }">{{ item.finished || '-' }}</span>
             </div>
-            <div class="d-flex ga-3">
+            <div class="d-flex flex-wrap gc-3">
               <span class="text-disabled">Pieces:</span> {{ item.pieces_count }}
               <span class="text-disabled">Game Version:</span> {{ gameVersion(item) }}
               <span class="text-disabled">Has Replay:</span> {{ gameHasReplay(item) }}
               <span class="text-disabled">Score Mode:</span> {{ gameScoreMode(item) }}
-              <span class="text-disabled">Shape Mode:</span> {{ gameShapeMode(item) }}
+              <span class="text-disabled">Shape Mode:</span>
+              <Icon :icon="shapeIcon(item)" />
               <span class="text-disabled">Snap Mode:</span> {{ gameSnapMode(item) }}
-              <span class="text-disabled">Rotation Mode:</span> {{ gameRotationMode(item) }}
+              <span class="text-disabled">Rotation Mode:</span>
+              <Icon :icon="rotationIcon(item)" />
             </div>
-            <div class="d-flex ga-3" />
           </td>
 
           <td>
@@ -128,38 +143,45 @@ import api from '../../_api'
 import Nav from '../components/Nav.vue'
 import Pagination from '../../components/Pagination.vue'
 import { rotationModeToString, scoreModeToString, shapeModeToString, snapModeToString } from '../../../../common/src/Util'
-import { GameId, Pagination as PaginationType, ServerInfo } from '../../../../common/src/Types'
+import { EncodedPlayer, EncodedPlayerIdx, GameId, GameRowWithImage, Pagination as PaginationType, ServerInfo } from '../../../../common/src/Types'
+import Icon from '../../components/Icon.vue'
 
 const perPage = 50
-const games = ref<{ items: any[], pagination: PaginationType } | null>(null)
+const games = ref<{ items: GameRowWithImage[], pagination: PaginationType } | null>(null)
 const serverInfo = ref<ServerInfo | null>(null)
 
-const gameVersion = (game: any) => {
+const gameVersion = (game: GameRowWithImage) => {
   const parsed = JSON.parse(game.data)
   return parsed.gameVersion || '-'
 }
-const gameHasReplay = (game: any) => {
+const gameHasReplay = (game: GameRowWithImage) => {
   const parsed = JSON.parse(game.data)
   return parsed.hasReplay || '-'
 }
-const gameScoreMode = (game: any) => {
+const gameScoreMode = (game: GameRowWithImage) => {
   const parsed = JSON.parse(game.data)
   return scoreModeToString(parsed.scoreMode)
 }
-const gameShapeMode = (game: any) => {
+const gameShapeMode = (game: GameRowWithImage) => {
   const parsed = JSON.parse(game.data)
   return shapeModeToString(parsed.shapeMode)
 }
-const gameSnapMode = (game: any) => {
+const shapeIcon = (game: GameRowWithImage) => {
+  return 'puzzle-piece-' + gameShapeMode(game).toLowerCase()
+}
+const gameSnapMode = (game: GameRowWithImage) => {
   const parsed = JSON.parse(game.data)
   return snapModeToString(parsed.snapMode)
 }
-const gameRotationMode = (game: any) => {
+const gameRotationMode = (game: GameRowWithImage) => {
   const parsed = JSON.parse(game.data)
   return rotationModeToString(parsed.rotationMode)
 }
+const rotationIcon = (game: GameRowWithImage) => {
+  return 'rotation-' + gameRotationMode(game).toLowerCase()
+}
 
-const onDelete = async (game: any) => {
+const onDelete = async (game: GameRowWithImage) => {
   if (!confirm(`Really delete game ${game.id}?`)) {
     return
   }
@@ -184,11 +206,11 @@ const fixPieces = async (gameId: GameId) => {
   }
 }
 
-const sortedPlayers = (item: any) => {
+const sortedPlayers = (item: GameRowWithImage) => {
   const parsed = JSON.parse(item.data).players
   // sort by score descending
-  parsed.sort((a: any, b: any) => {
-    return b[7] - a[7]
+  parsed.sort((a: EncodedPlayer, b: EncodedPlayer) => {
+    return b[EncodedPlayerIdx.POINTS] - a[EncodedPlayerIdx.POINTS]
   })
   return parsed
 }

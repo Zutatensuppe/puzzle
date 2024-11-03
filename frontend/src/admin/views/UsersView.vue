@@ -100,10 +100,10 @@ import user from '../../user'
 import api from '../../_api'
 import Nav from '../components/Nav.vue'
 import Pagination from '../../components/Pagination.vue'
-import { ClientId, MergeClientIdsIntoUserResult, Pagination as PaginationType, UserId } from '../../../../common/src/Types'
+import { ClientId, MergeClientIdsIntoUserResult, Pagination as PaginationType, UserId, UserRow } from '../../../../common/src/Types'
 
 const perPage = 50
-const users = ref<{ items: any[], pagination: PaginationType } | null>(null)
+const users = ref<{ items: UserRow[], pagination: PaginationType } | null>(null)
 
 const dry = ref<boolean>(true)
 const mergeResult = ref<MergeClientIdsIntoUserResult | null>(null)

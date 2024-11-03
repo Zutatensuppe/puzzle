@@ -59,7 +59,7 @@ export class GameReplay extends Game<ReplayHud> {
     return log
   }
 
-  public async connect(): Promise<void> {
+  private async connect(): Promise<void> {
     const replayGameDataRes = await _api.pub.replayGameData({ gameId: this.gameId })
     if (replayGameDataRes.status !== 200) {
       throw '[ 2024-04-14 no replay data received ]'

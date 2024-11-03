@@ -57,7 +57,7 @@
               <span class="text-disabled">Copyright-URL:</span> {{ item.copyright_url || '-' }}
             </div>
           </td>
-          <td>{{ item.game_count }}</td>
+          <td>{{ item.games_count }}</td>
           <td>
             <span
               class="is-clickable"
@@ -81,12 +81,12 @@ import user from '../../user'
 import api from '../../_api'
 import Nav from '../components/Nav.vue'
 import Pagination from '../../components/Pagination.vue'
-import { Pagination as PaginationType } from '../../../../common/src/Types'
+import { ImageRowWithCount, Pagination as PaginationType } from '../../../../common/src/Types'
 
 const perPage = 50
-const images = ref<{ items: any[], pagination: PaginationType } | null>(null)
+const images = ref<{ items: ImageRowWithCount[], pagination: PaginationType } | null>(null)
 
-const onDelete = async (image: any) => {
+const onDelete = async (image: ImageRowWithCount) => {
   if (!confirm(`Really delete image ${image.id}?`)) {
     return
   }

@@ -9,6 +9,7 @@
       density="compact"
       label="E-mail"
       :rules="emailRules"
+      autocomplete="current-email"
     />
 
     <v-btn

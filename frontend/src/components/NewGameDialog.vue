@@ -128,6 +128,28 @@
                     density="comfortable"
                     label="Private Game (Private games won't show up in the public game overview)"
                     :disabled="forcePrivate"
+                    hide-details
+                  />
+                  <v-checkbox
+                    v-model="requireAccount"
+                    density="comfortable"
+                    label="Require account (Anonymous users won't be able to join)"
+                    :disabled="!isPrivate"
+                    hide-details
+                  />
+                  <v-checkbox
+                    v-model="requirePassword"
+                    density="comfortable"
+                    label="Require password to join"
+                    :disabled="!isPrivate"
+                    hide-details
+                  />
+                  <v-text-field
+                    v-model="joinPassword"
+                    label="Join Password"
+                    type="password"
+                    density="compact"
+                    :disabled="!isPrivate || !requirePassword"
                   />
                 </div>
 
@@ -198,6 +220,9 @@ const tab = ref<string>('settings')
 const forcePrivate = ref<boolean>(props.image.private)
 const pieces = ref<string | number>(1000)
 const isPrivate = ref<boolean>(forcePrivate.value)
+const requireAccount = ref<boolean>(false)
+const requirePassword = ref<boolean>(false)
+const joinPassword = ref<string>('')
 const scoreMode = ref<ScoreMode>(ScoreMode.ANY)
 const shapeMode = ref<ShapeMode>(ShapeMode.NORMAL)
 const snapMode = ref<SnapMode>(SnapMode.NORMAL)
@@ -261,9 +286,15 @@ const onCropUpdate = (newCrop: Rect) => {
 
 const onNewGameClick = () => {
   creating.value = true
+
+  const isPriv = isPrivate.value
+  const reqAccount = isPriv ? requireAccount.value : false
+  const joinPass = isPriv && requirePassword.value ? joinPassword.value || null : null
   emit('newGame', {
     tiles: piecesInt.value,
-    private: isPrivate.value,
+    private: isPriv,
+    requireAccount: reqAccount,
+    joinPassword: joinPass,
     image: props.image,
     scoreMode: scoreModeInt.value,
     shapeMode: shapeModeInt.value,

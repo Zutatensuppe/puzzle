@@ -2,9 +2,77 @@
   <v-dialog
     v-model="show"
     class="overlay-connection"
+    :persistent="true"
   >
     <v-card>
       <v-container :fluid="true">
+        <v-form
+          v-if="insufficientAuth"
+          class="justify-center mb-2"
+        >
+          <h4>Not authorized to join :(</h4>
+
+          <div
+            v-if="insufficientAuthDetails?.banned"
+            class="mb-3"
+          >
+            You were banned from this puzzle.
+          </div>
+          <div v-else>
+            <div
+              v-if="insufficientAuthDetails?.requireAccount"
+              class="mb-3"
+            >
+              You need to be logged in to join this puzzle.
+
+              <LoginBit />
+            </div>
+            <div
+              v-if="insufficientAuthDetails?.requirePassword"
+              class="mb-3"
+            >
+              You need a password to join this puzzle.
+
+              <v-text-field
+                v-model="joinPassword"
+                hide-details
+                type="password"
+                density="compact"
+                label="Password"
+                autocomplete="game-password"
+                @keydown.enter.prevent="connectWithPassword"
+              />
+            </div>
+            <div
+              v-else-if="insufficientAuthDetails?.wrongPassword"
+              class="mb-3"
+            >
+              The password you provided is wrong.
+
+              <v-text-field
+                v-model="joinPassword"
+                hide-details
+                type="password"
+                density="compact"
+                label="Password"
+                autocomplete="game-password"
+                @keydown.enter.prevent="connectWithPassword"
+              />
+            </div>
+
+            <div
+              class="d-flex justify-center mt-5"
+            >
+              <v-btn
+                color="info"
+                prepend-icon="mdi-wifi"
+                @click="connectWithPassword"
+              >
+                Connect to puzzle
+              </v-btn>
+            </div>
+          </div>
+        </v-form>
         <div
           v-if="lostConnection"
           class="d-flex justify-center mb-2"
@@ -34,17 +102,24 @@
   </v-dialog>
 </template>
 <script setup lang="ts">
-import { computed } from 'vue'
-import { CONN_STATE } from '../../../common/src/Types'
+import { computed, ref } from 'vue'
+import { CONN_STATE, InsufficentAuthDetails } from '../../../common/src/Types'
+import LoginBit from './LoginBit.vue'
 
 const emit = defineEmits<{
   (e: 'reconnect'): void
+  (e: 'connect_with_password', password: string): void
   (e: 'close'): void
 }>()
 
 const props = defineProps<{
   connectionState: CONN_STATE
+  insufficientAuthDetails: InsufficentAuthDetails | null
 }>()
+
+const insufficientAuth = computed((): boolean => {
+  return props.connectionState === CONN_STATE.INSUFFICIENT_AUTH
+})
 
 const lostConnection = computed((): boolean => {
   return props.connectionState === CONN_STATE.DISCONNECTED
@@ -55,6 +130,12 @@ const connecting = computed((): boolean => {
 })
 
 const show = computed((): boolean => {
-  return !!(lostConnection.value || connecting.value)
+  return !!(lostConnection.value || connecting.value || insufficientAuth.value)
 })
+
+const joinPassword = ref<string>('')
+
+const connectWithPassword = () => {
+  emit('connect_with_password', joinPassword.value)
+}
 </script>

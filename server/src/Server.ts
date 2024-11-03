@@ -215,6 +215,14 @@ export class Server {
             if (!loaded) {
               throw `[game ${gameId} does not exist... ]`
             }
+
+            const user = await this.users.getUser({ client_id: clientId })
+            const details = await this.gameService.checkAuth(msg, gameId, clientId, user)
+            if (details.requireAccount || details.requirePassword || details.wrongPassword || details.banned) {
+              notify([SERVER_EVENT_TYPE.INSUFFICIENT_AUTH, details], [socket])
+              break
+            }
+
             const ts = Time.timestamp()
             this.gameService.addPlayer(gameId, clientId, ts)
             this.gameSockets.addSocket(gameId, socket)
@@ -243,17 +251,46 @@ export class Server {
               this.gameSockets.addSocket(gameId, socket)
               sendGame = true
             }
+
+            let handled = false
+            // handle special admin kind of events
+            if (gameEvent[0] === GAME_EVENT_TYPE.INPUT_EV_BAN_PLAYER) {
+              handled = true
+              const user = await this.users.getUser({ client_id: clientId })
+              if (user?.id === GameCommon.getCreatorUserId(gameId)) {
+                const playerClientId = gameEvent[1]
+                const changed = GameCommon.setPlayerBanned(gameId, playerClientId)
+                if (changed) {
+                  sendGame = true
+
+                  this.gameSockets.getSocket(gameId, playerClientId)?.close()
+                }
+              }
+            } else if (gameEvent[0] === GAME_EVENT_TYPE.INPUT_EV_UNBAN_PLAYER) {
+              handled = true
+              const user = await this.users.getUser({ client_id: clientId })
+              if (user?.id === GameCommon.getCreatorUserId(gameId)) {
+                const playerClientId = gameEvent[1]
+                const changed = GameCommon.setPlayerUnbanned(gameId, playerClientId)
+                if (changed) {
+                  sendGame = true
+                }
+              }
+            }
+
             if (sendGame) {
               const encodedGame = await this.getEncodedGameForSync(gameId)
               notify([SERVER_EVENT_TYPE.INIT, encodedGame], [socket])
-              notify([SERVER_EVENT_TYPE.SYNC, encodedGame], this.gameSockets.getSockets(gameId).filter(s => s !== socket))
+              notify([SERVER_EVENT_TYPE.SYNC, encodedGame], this.gameSockets.getSockets(gameId))
             }
 
-            const ret = await this.gameService.handleGameEvent(gameId, clientId, gameEvent, ts)
-            notify(
-              [SERVER_EVENT_TYPE.UPDATE, clientId, clientSeq, ret.changes],
-              this.gameSockets.getSockets(gameId),
-            )
+            if (!handled) {
+              const ret = await this.gameService.handleGameEvent(gameId, clientId, gameEvent, ts)
+              notify(
+                [SERVER_EVENT_TYPE.UPDATE, clientId, clientSeq, ret.changes],
+                this.gameSockets.getSockets(gameId),
+              )
+            }
           } break
           case CLIENT_EVENT_TYPE.IMAGE_SNAPSHOT: {
             log.log(`ws`, socket.protocol, msgType)

@@ -26,8 +26,9 @@ import { onMounted, ref } from 'vue'
 import user from '../../user'
 import api from '../../_api'
 import Nav from '../components/Nav.vue'
+import { UserGroupRow } from '../../Types'
 
-const groups = ref<any[]>([])
+const groups = ref<UserGroupRow[]>([])
 
 onMounted(async () => {
   if (user.getMe()) {

@@ -1,6 +1,5 @@
 import jwt from 'jsonwebtoken'
-import { CannyConfig } from '../../common/src/Types'
-import { UserRow } from './repo/UsersRepo'
+import { CannyConfig, UserRow } from '../../common/src/Types'
 import { logger } from '../../common/src/Util'
 
 const log = logger('Canny.ts')

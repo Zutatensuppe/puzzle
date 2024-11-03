@@ -11,6 +11,7 @@
       :append-inner-icon="showPassword ? 'mdi-eye' : 'mdi-eye-off'"
       :type="showPassword ? 'text' : 'password'"
       :rules="passwordRules"
+      autocomplete="new-password"
       @click:append-inner="showPassword = !showPassword"
       @keydown.enter.prevent="doChangePassword"
     />

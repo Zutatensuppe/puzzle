@@ -1,5 +1,5 @@
 import { logger } from '../../common/src/Util'
-import { GameId } from '../../common/src/Types'
+import { ClientId, GameId } from '../../common/src/Types'
 import WebSocket from 'ws'
 
 const log = logger('GameSocket.js')
@@ -67,6 +67,17 @@ export class GameSockets {
       log.log('added socket: ', gameId, socket.protocol)
       log.log('socket count: ', Object.keys(this.sockets[gameId]).length)
     }
+  }
+
+  getSocket(gameId: GameId, clientId: ClientId): WebSocket | null {
+    for (const s of this.sockets[gameId]) {
+      const proto = s.protocol.split('|')
+      const socketClientId = proto[0] as ClientId
+      if (socketClientId === clientId) {
+        return s
+      }
+    }
+    return null
   }
 
   getSockets(gameId: GameId): WebSocket[] {

@@ -22,6 +22,7 @@ export class PuzzleStatus implements PuzzleStatusInterface {
     this.game.changePlayers({
       active: GameCommon.getActivePlayers(this.game.getGameId(), ts).map(playerToBasicPlayerInfo),
       idle: GameCommon.getIdlePlayers(this.game.getGameId(), ts).map(playerToBasicPlayerInfo),
+      banned: GameCommon.getBannedPlayers(this.game.getGameId()).map(playerToBasicPlayerInfo),
     }, GameCommon.getRegisteredMap(this.game.getGameId()))
   }
 }

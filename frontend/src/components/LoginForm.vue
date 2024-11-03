@@ -18,6 +18,7 @@
       v-model="email"
       density="compact"
       label="E-mail"
+      autocomplete="current-email"
       :rules="emailRules"
     />
     <v-text-field
@@ -27,6 +28,7 @@
       :append-inner-icon="showPassword ? 'mdi-eye' : 'mdi-eye-off'"
       :type="showPassword ? 'text' : 'password'"
       :rules="passwordRules"
+      autocomplete="current-password"
       @click:append-inner="showPassword = !showPassword"
       @keydown.enter.prevent="doLogin"
     />

@@ -149,6 +149,9 @@ function encodeGame(data: Game): EncodedGame | EncodedGameLegacy {
     data.crop,
     data.registeredMap,
     data.rotationMode,
+    data.joinPassword,
+    data.requireAccount,
+    data.banned,
   ] : [
     data.id,
     data.rng.type || '',
@@ -197,6 +200,9 @@ function decodeGame(data: EncodedGame | EncodedGameLegacy): Game {
       gameVersion: data[10],
       private: data[11],
       registeredMap: {},
+      joinPassword: null,
+      requireAccount: false,
+      banned: {},
     }
   }
 
@@ -218,6 +224,9 @@ function decodeGame(data: EncodedGame | EncodedGameLegacy): Game {
     private: data[11],
     crop: data[12],
     registeredMap: data[13],
+    joinPassword: data[15] || null,
+    requireAccount: data[16] || false,
+    banned: data[17] || {},
   }
 }
 
