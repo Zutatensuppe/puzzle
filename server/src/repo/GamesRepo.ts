@@ -1,24 +1,7 @@
-import { EncodedPlayer, EncodedPlayerIdx, GameId, ImageId, UserId } from '../../../common/src/Types'
+import { EncodedPlayer, EncodedPlayerIdx, GameId, GameRow, UserId } from '../../../common/src/Types'
 import Db from '../Db'
-import { ImageRow } from './ImagesRepo'
 
 const TABLE = 'games'
-
-export interface GameRow {
-  id: GameId
-  creator_user_id: UserId | null
-  image_id: ImageId
-  created: Date
-  finished: Date | null
-  data: string
-  private: number
-  pieces_count: number
-  image_snapshot_url: string | null
-}
-
-export interface GameRowWithImage extends GameRow {
-  image: ImageRow | null
-}
 
 export class GamesRepo {
   constructor(private readonly db: Db) {

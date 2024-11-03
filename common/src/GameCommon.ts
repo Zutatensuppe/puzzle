@@ -28,6 +28,7 @@ import {
   ShapeMode,
   SnapMode,
   Timestamp,
+  UserId,
 } from './Types'
 import Util from './Util'
 
@@ -91,6 +92,10 @@ function isGameLoading(gameId: GameId): boolean {
 
 function setRegisteredMap(gameId: GameId, registeredMap: RegisteredMap): void {
   GAMES[gameId].registeredMap = registeredMap
+}
+
+function setBanned(gameId: GameId, banned: Record<string, boolean>): void {
+  GAMES[gameId].banned = banned
 }
 
 function unsetGame(gameId: GameId): void {
@@ -157,6 +162,10 @@ function getIdlePlayers(gameId: GameId, ts: number): EncodedPlayer[] {
   return Game_getIdlePlayers(GAMES[gameId], ts)
 }
 
+function getBannedPlayers(gameId: GameId): EncodedPlayer[] {
+  return Game_getBannedPlayers(GAMES[gameId])
+}
+
 function getRegisteredMap(gameId: GameId): RegisteredMap {
   return Game_getRegisteredMap(GAMES[gameId])
 }
@@ -175,6 +184,33 @@ function addPlayer(
 
 function get(gameId: GameId): Game | null {
   return GAMES[gameId] || null
+}
+
+function getCreatorUserId(gameId: GameId): UserId | null {
+  return GAMES[gameId].creatorUserId
+}
+
+function isPlayerBanned(gameId: GameId, clientId: ClientId): boolean {
+  if (GAMES[gameId].banned[clientId]) {
+    return true
+  }
+  return false
+}
+
+function setPlayerBanned(gameId: GameId, clientId: ClientId): boolean {
+  if (!GAMES[gameId].banned[clientId]) {
+    GAMES[gameId].banned[clientId] = true
+    return true
+  }
+  return false
+}
+
+function setPlayerUnbanned(gameId: GameId, clientId: ClientId): boolean {
+  if (GAMES[gameId].banned[clientId]) {
+    GAMES[gameId].banned[clientId] = false
+    return true
+  }
+  return false
 }
 
 function getPieceCount(gameId: GameId): number {
@@ -215,6 +251,14 @@ function getEncodedPieces(gameId: GameId): EncodedPiece[] {
 
 function getEncodedPiecesSortedByZIndex(gameId: GameId): EncodedPiece[] {
   return Game_getEncodedPiecesSortedByZIndex(GAMES[gameId])
+}
+
+function joinPassword(gameId: GameId): string |null {
+  return Game_getJoinPassword(GAMES[gameId])
+}
+
+function requireAccount(gameId: GameId): boolean {
+  return Game_getRequireAccount(GAMES[gameId])
 }
 
 function changePlayer(
@@ -1141,6 +1185,14 @@ function Game_isPrivate(game: Game): boolean {
   return game.private
 }
 
+function Game_getRequireAccount(game: Game): boolean {
+  return game.requireAccount
+}
+
+function Game_getJoinPassword(game: Game): string | null {
+  return game.joinPassword
+}
+
 function Game_getStartTs(game: Game): number {
   return game.puzzle.data.started
 }
@@ -1268,6 +1320,10 @@ function Game_getIdlePlayers(game: Game, ts: number): EncodedPlayer[] {
   return Game_getAllPlayers(game).filter((p: EncodedPlayer) => p[EncodedPlayerIdx.TIMESTAMP] < minTs && p[EncodedPlayerIdx.POINTS] > 0)
 }
 
+function Game_getBannedPlayers(game: Game): EncodedPlayer[] {
+  return game.players.filter((p) => !!game.banned[p[EncodedPlayerIdx.ID]])
+}
+
 function Game_getRegisteredMap(game: Game): RegisteredMap {
   return game.registeredMap
 }
@@ -1292,81 +1348,92 @@ function Game_isFinished(game: Game): boolean {
 }
 
 export default {
-  onGameLoadingStateChange,
-  setGameLoading,
-  isGameLoading,
-  setGame,
-  setRegisteredMap,
-  unsetGame,
-  loaded,
-  playerExists,
-  getActivePlayers,
-  getIdlePlayers,
-  getRegisteredMap,
   addPlayer,
-  getFinishedPiecesCount,
-  getPieceCount,
-  getImageUrl,
-  get,
-  getGroupedPieceCount,
-  getPlayerBgColor,
-  getPlayerColor,
-  getPlayerName,
-  getPlayerIndexById,
-  getPlayerIdByIndex,
   changePlayer,
-  setPlayer,
-  setPiece,
-  setPuzzleData,
-  getBounds,
-  getMaxZIndex,
-  getTableWidth,
-  getTableHeight,
-  getTableDim,
+  get,
+  getActivePlayers,
+  getBannedPlayers,
   getBoardDim,
   getBoardPos,
-  getPieceDim,
-  getPuzzle,
-  getRng,
-  getPuzzleWidth,
-  getPuzzleHeight,
-  getSrcPosByPieceIdx,
+  getBounds,
+  getCreatorUserId,
   getEncodedPieces,
   getEncodedPiecesSortedByZIndex,
+  getFinalPiecePos,
+  getFinishedPiecesCount,
+  getFinishTs,
   getFirstOwnedPiece,
+  getGroupedPieceCount,
+  getIdlePlayers,
+  getImageUrl,
+  getMaxZIndex,
+  getPieceCount,
+  getPieceDim,
   getPieceDrawOffset,
   getPieceDrawSize,
-  getFinalPiecePos,
   getPiecesBounds,
-  getStartTs,
-  getFinishTs,
-  getScoreMode,
-  getSnapMode,
-  getShapeMode,
+  getPlayerBgColor,
+  getPlayerColor,
+  getPlayerIdByIndex,
+  getPlayerIndexById,
+  getPlayerName,
+  getPuzzle,
+  getPuzzleHeight,
+  getPuzzleWidth,
+  getRegisteredMap,
+  getRng,
   getRotationMode,
+  getScoreMode,
+  getShapeMode,
+  getSnapMode,
+  getSrcPosByPieceIdx,
+  getStartTs,
+  getTableDim,
+  getTableHeight,
+  getTableWidth,
   handleGameEvent,
   handleLogEntry,
+  isGameLoading,
+  isPlayerBanned,
+  joinPassword,
+  loaded,
+  onGameLoadingStateChange,
+  playerExists,
+  requireAccount,
+  setBanned,
+  setGame,
+  setGameLoading,
+  setPiece,
+  setPlayer,
+  setPlayerBanned,
+  setPlayerUnbanned,
+  setPuzzleData,
+  setRegisteredMap,
+  unsetGame,
 
   /// operate directly on the game object given
-  Game_getTableDim,
-  Game_getBoardDim,
-  Game_getPieceDrawOffset,
-  Game_getBoardPos,
-  Game_getPieceDim,
-  Game_getBounds,
-  Game_getPuzzle,
-  Game_isPrivate,
-  Game_getStartTs,
-  Game_getFinishTs,
-  Game_getFinishedPiecesCount,
-  Game_getPieceCount,
   Game_getActivePlayers,
-  Game_getPlayersWithScore,
+  Game_getBannedPlayers,
+  Game_getBoardDim,
+  Game_getBoardPos,
+  Game_getBounds,
+  Game_getFinishedPiecesCount,
+  Game_getFinishTs,
   Game_getImage,
   Game_getImageUrl,
-  Game_getScoreMode,
-  Game_getSnapMode,
-  Game_getShapeMode,
+  Game_getJoinPassword,
+  Game_getPieceCount,
+  Game_getPieceDim,
+  Game_getPieceDrawOffset,
+  Game_getPlayersWithScore,
+  Game_getPuzzle,
+  Game_getRequireAccount,
   Game_getRotationMode,
+  Game_getScoreMode,
+  Game_getShapeMode,
+  Game_getSnapMode,
+  Game_getStartTs,
+  Game_getTableDim,
   Game_isFinished,
+  Game_isPrivate,
 }

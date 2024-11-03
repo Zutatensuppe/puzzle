@@ -1,21 +1,8 @@
 import Crypto from '../Crypto'
 import Db, { WhereRaw } from '../Db'
-import { ClientId, UserGroupId, UserId } from '../../../common/src/Types'
+import { UserGroupRow, UserId, UserRow } from '../../../common/src/Types'
 
 const TABLE = 'users'
-
-export interface UserRow {
-  id: UserId
-  created: Date
-  client_id: ClientId
-  name: string
-  email: string
-}
-
-export interface UserGroupRow {
-  id: UserGroupId
-  name: string
-}
 
 export class UsersRepo {
   constructor(private readonly db: Db) {

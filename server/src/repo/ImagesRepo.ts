@@ -1,41 +1,7 @@
-import { ImageId, ImageSearchSort, TagId, UserId } from '../../../common/src/Types'
+import { ImageId, ImageRow, ImageRowWithCount, ImageSearchSort, ImageXTagRow, TagId, TagRow, TagRowWithCount, UserId } from '../../../common/src/Types'
 import Db, { OrderBy, WhereRaw } from '../Db'
 
 const TABLE = 'images'
-
-export interface ImageRow {
-  id: ImageId
-  uploader_user_id: UserId
-  created: Date
-  filename: string
-  filename_original: string
-  title: string
-  width: number
-  height: number
-  private: number
-  copyright_name: string
-  copyright_url: string
-}
-
-export interface ImageXTagRow {
-  image_id: ImageId
-  category_id: TagId
-}
-
-export interface TagRow {
-  id: TagId
-  slug: string
-  title: string
-}
-
-export interface TagRowWithCount extends TagRow {
-  images_count: number
-}
-
-export interface ImageRowWithCount extends ImageRow {
-  games_count: number
-  uploader_user_name: string
-}
 
 export class ImagesRepo {
   constructor(private readonly db: Db) {

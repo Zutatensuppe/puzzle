@@ -8,12 +8,14 @@
       v-model="username"
       density="compact"
       label="Username"
+      autocomplete="new-username"
       :rules="usernameRules"
     />
     <v-text-field
       v-model="email"
       density="compact"
       label="E-mail"
+      autocomplete="new-email"
       :rules="emailRules"
     />
     <v-text-field
@@ -23,6 +25,7 @@
       :append-inner-icon="showPassword ? 'mdi-eye' : 'mdi-eye-off'"
       :type="showPassword ? 'text' : 'password'"
       :rules="passwordRules"
+      autocomplete="new-password"
       @click:append-inner="showPassword = !showPassword"
       @keydown.enter.prevent="doRegister"
     />

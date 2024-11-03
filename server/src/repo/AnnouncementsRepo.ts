@@ -1,14 +1,7 @@
 import Db, { WhereRaw } from '../Db'
-import { AnnouncementId } from '../../../common/src/Types'
+import { AnnouncementId, AnnouncementsRow } from '../../../common/src/Types'
 
 const TABLE = 'announcements'
-
-export interface AnnouncementsRow {
-  id: AnnouncementId
-  created: Date
-  title: string
-  message: string
-}
 
 export class AnnouncementsRepo {
   constructor(private readonly db: Db) {

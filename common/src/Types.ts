@@ -57,6 +57,8 @@ export type GameEventInputRestorePos = [GAME_EVENT_TYPE.INPUT_EV_RESTORE_POS, nu
 export type GameEventInputConnectionClose = [GAME_EVENT_TYPE.INPUT_EV_CONNECTION_CLOSE]
 export type GameEventInputToggleTable = [GAME_EVENT_TYPE.INPUT_EV_TOGGLE_TABLE]
 export type GameEventInputToggleInterface = [GAME_EVENT_TYPE.INPUT_EV_TOGGLE_INTERFACE]
+export type GameEventBanPlayerEvent = [GAME_EVENT_TYPE.INPUT_EV_BAN_PLAYER, ClientId]
+export type GameEventUnbanPlayerEvent = [GAME_EVENT_TYPE.INPUT_EV_UNBAN_PLAYER, ClientId]
 export type GameEvent = GameEventInputMouseDown
   | GameEventInputMouseUp
   | GameEventInputMouseMove
@@ -81,13 +83,26 @@ export type GameEvent = GameEventInputMouseDown
   | GameEventInputConnectionClose
   | GameEventInputToggleTable
   | GameEventInputToggleInterface
+  | GameEventBanPlayerEvent
+  | GameEventUnbanPlayerEvent
 
 export type ServerInitEvent = [SERVER_EVENT_TYPE.INIT, EncodedGame | EncodedGameLegacy]
 export type ServerUpdateEvent = [SERVER_EVENT_TYPE.UPDATE, string, number, Change[]]
 export type ServerSyncEvent = [SERVER_EVENT_TYPE.SYNC, EncodedGame | EncodedGameLegacy]
-export type ServerEvent = ServerInitEvent | ServerUpdateEvent | ServerSyncEvent
 
-export type ClientInitEvent = [CLIENT_EVENT_TYPE.INIT]
+export type InsufficentAuthDetails = {
+  requireAccount: boolean
+  requirePassword: boolean
+  wrongPassword: boolean
+  banned: boolean
+}
+export type ServerInsufficientAuthEvent = [SERVER_EVENT_TYPE.INSUFFICIENT_AUTH, InsufficentAuthDetails]
+export type ServerEvent = ServerInitEvent | ServerUpdateEvent | ServerSyncEvent | ServerInsufficientAuthEvent
+
+export type ClientInitOptions = {
+  password: string
+}
+export type ClientInitEvent = [CLIENT_EVENT_TYPE.INIT] | [CLIENT_EVENT_TYPE.INIT, ClientInitOptions]
 export type ClientUpdateEvent = [CLIENT_EVENT_TYPE.UPDATE, number, GameEvent]
 export type ClientImageSnapshotEvent = [CLIENT_EVENT_TYPE.IMAGE_SNAPSHOT, string, number]
 export type ClientEvent = ClientInitEvent | ClientUpdateEvent | ClientImageSnapshotEvent
@@ -185,6 +200,9 @@ export type EncodedGame = FixedLengthArray<[
   Rect, // crop
   RegisteredMap,
   RotationMode | undefined,
+  string | null | undefined, // joinPassword
+  boolean | undefined, // requireAccount
+  Record<ClientId, boolean> | undefined, // banned
 ]>
 
 export type HeaderLogEntry = [
@@ -199,6 +217,8 @@ export type HeaderLogEntry = [
   number | null, // gameObject.creatorUserId,
   1 | 0, // gameObject.private ? 1 : 0,
   Rect | undefined, // gameSettings.crop,
+  boolean | undefined, // requireAccount
+  string | null | undefined, // joinPassword
 ]
 
 export type AddPlayerLogEntry = [
@@ -243,6 +263,7 @@ export interface Game {
   gameVersion: number
   creatorUserId: UserId | null
   players: EncodedPlayer[]
+  banned: Record<ClientId, boolean>
   puzzle: Puzzle
   scoreMode: ScoreMode
   shapeMode: ShapeMode
@@ -253,6 +274,8 @@ export interface Game {
   hasReplay: boolean
   crop?: Rect
   registeredMap: RegisteredMap
+  requireAccount: boolean
+  joinPassword: string | null
 }
 
 export interface Image {
@@ -277,6 +300,8 @@ export interface FrontendGameSettings {
 export interface GameSettings {
   tiles: number
   private: boolean
+  requireAccount: boolean
+  joinPassword: string | null
   image: ImageInfo
   scoreMode: ScoreMode
   shapeMode: ShapeMode
@@ -387,6 +412,8 @@ export interface BasicPlayerInfo {
   color: string | null
   points: number
 }
+
+export type BasicPlayerInfoWithBannedAndActive = BasicPlayerInfo & { banned: boolean, active: boolean }
 
 export enum RendererType {
   CANVAS = 'canvas',
@@ -680,6 +707,7 @@ export interface MailService {
 export interface GamePlayers {
   active: BasicPlayerInfo[]
   idle: BasicPlayerInfo[]
+  banned: BasicPlayerInfo[]
 }
 
 export enum CONN_STATE {
@@ -688,6 +716,7 @@ export enum CONN_STATE {
   CONNECTED = 2, // connected
   CONNECTING = 3, // connecting
   CLOSED = 4, // not connected (closed on purpose)
+  INSUFFICIENT_AUTH = 5, // not connected (insufficient auth details)
 }
 
 export interface Hud {
@@ -695,6 +724,7 @@ export interface Hud {
   setPlayers: (v: GamePlayers, r: RegisteredMap) => void
   setStatus: (v: GameStatus) => void
   setConnectionState: (v: CONN_STATE) => void
+  setConnectError: (v: InsufficentAuthDetails) => void
   togglePreview: (v: boolean) => void
   toggleInterface: (v: boolean) => void
   addStatusMessage: (what: string, value: any) => void
@@ -779,4 +809,76 @@ export interface ServerInfo {
 export interface DialogChangeData {
   type: string
   value: boolean | undefined
+}
+
+export interface GameRow {
+  id: GameId
+  creator_user_id: UserId | null
+  image_id: ImageId
+  created: Date
+  finished: Date | null
+  data: string
+  private: number
+  pieces_count: number
+  image_snapshot_url: string | null
+  join_password: string | null
+  require_account: number
+}
+
+export interface GameRowWithImage extends GameRow {
+  image: ImageRow | null
+}
+
+export interface ImageRow {
+  id: ImageId
+  uploader_user_id: UserId
+  created: Date
+  filename: string
+  filename_original: string
+  title: string
+  width: number
+  height: number
+  private: number
+  copyright_name: string
+  copyright_url: string
+}
+
+export interface ImageXTagRow {
+  image_id: ImageId
+  category_id: TagId
+}
+
+export interface TagRow {
+  id: TagId
+  slug: string
+  title: string
+}
+
+export interface TagRowWithCount extends TagRow {
+  images_count: number
+}
+
+export interface ImageRowWithCount extends ImageRow {
+  games_count: number
+  uploader_user_name: string
+}
+
+export interface UserRow {
+  id: UserId
+  created: Date
+  client_id: ClientId
+  name: string
+  email: string
+}
+
+export interface UserGroupRow {
+  id: UserGroupId
+  name: string
+}
+
+export interface AnnouncementsRow {
+  id: AnnouncementId
+  created: Date
+  title: string
+  message: string
 }

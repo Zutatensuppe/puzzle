@@ -1,7 +1,7 @@
 'use strict'
 
 import GameCommon from '../../common/src/GameCommon'
-import { Game as GameType, EncodedGame, Hud, GameEvent, EncodedGameLegacy, ServerUpdateEvent, ServerSyncEvent } from '../../common/src/Types'
+import { Game as GameType, EncodedGame, Hud, GameEvent, EncodedGameLegacy, ServerUpdateEvent, ServerSyncEvent, InsufficentAuthDetails } from '../../common/src/Types'
 import { Game } from './Game'
 import Communication from './Communication'
 import Util from '../../common/src/Util'
@@ -13,8 +13,9 @@ export class GamePlay extends Game<Hud> {
   private updateStatusInterval: ReturnType<typeof setTimeout> | null = null
   private lastSentImageSnapshotTs: number = 0
   private snapshotsIntervalMs: number = 5 * Time.MIN
+  public joinPassword: string = ''
 
-  public async connect(): Promise<void> {
+  private async connect(): Promise<void> {
     Communication.onConnectionStateChange((state) => {
       this.hud.setConnectionState(state)
     })
@@ -87,14 +88,24 @@ export class GamePlay extends Game<Hud> {
       const game: EncodedGame | EncodedGameLegacy = msg[1]
       const gameObject: GameType = Util.decodeGame(game)
       GameCommon.setRegisteredMap(gameObject.id, gameObject.registeredMap)
+      GameCommon.setBanned(gameObject.id, gameObject.banned)
     })
   }
 
+  public setJoinPassword(password: string): void {
+    this.joinPassword = password
+  }
+
   public async init(): Promise<void> {
-    await this.connect()
-    await this.initBaseProps()
-    this.initStatusInterval()
-    this.initServerEventCallbacks()
-    this.initGameLoop()
+    try {
+      await this.connect()
+      await this.initBaseProps()
+      this.initStatusInterval()
+      this.initServerEventCallbacks()
+      this.initGameLoop()
+    } catch (e) {
+      this.hud.setConnectError(e as InsufficentAuthDetails)
+      this.rerender = false
+    }
   }
 }

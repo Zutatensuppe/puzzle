@@ -1,4 +1,4 @@
-import { GameSettings, GameInfo, ApiDataIndexData, ApiDataFinishedGames, NewGameDataRequestData, ImagesRequestData, UserId, ImageId, ClientId } from '../../../../common/src/Types'
+import { GameSettings, GameInfo, ApiDataIndexData, ApiDataFinishedGames, NewGameDataRequestData, ImagesRequestData, UserId, ImageId, ClientId, UserRow } from '../../../../common/src/Types'
 import config from '../../Config'
 import express, { Response, Router } from 'express'
 import GameLog from '../../GameLog'
@@ -8,7 +8,6 @@ import Time from '../../../../common/src/Time'
 import Util, { logger, uniqId } from '../../../../common/src/Util'
 import { COOKIE_TOKEN, generateSalt, generateToken, passwordHash } from '../../Auth'
 import { Server } from '../../Server'
-import { UserRow } from '../../repo/UsersRepo'
 import fs from '../../FileSystem'
 
 const log = logger('web_routes/api/index.ts')

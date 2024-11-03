@@ -98,11 +98,15 @@ function connect(
   clientSeq = 0
   events = {}
   setConnectionState(CONN_STATE.CONNECTING)
-  return new Promise(resolve => {
+  return new Promise((resolve, reject) => {
     ws = new WebSocket(game.getWsAddres(), game.getClientId() + '|' + game.getGameId())
     ws.onopen = () => {
       setConnectionState(CONN_STATE.CONNECTED)
-      send([CLIENT_EVENT_TYPE.INIT])
+      if (game.joinPassword) {
+        send([CLIENT_EVENT_TYPE.INIT, { password: game.joinPassword }])
+      } else {
+        send([CLIENT_EVENT_TYPE.INIT])
+      }
     }
     ws.onmessage = (e: MessageEvent) => {
       if (e.data === 'SERVER_INIT') {
@@ -131,6 +135,8 @@ function connect(
           return
         }
         changesCallback(msg)
+      } else if (msgType === SERVER_EVENT_TYPE.INSUFFICIENT_AUTH) {
+        reject(msg[1])
       } else {
         throw `[ 2021-05-09 invalid connect msgType ${msgType} ]`
       }

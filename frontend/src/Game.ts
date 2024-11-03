@@ -64,7 +64,6 @@ export interface GameInterface {
   getCanvas(): HTMLCanvasElement
   getViewport(): Camera
   init(): Promise<void>
-  connect(): Promise<void>
   unload(): void
   registerEvents(): void
   unregisterEvents(): void
@@ -112,6 +111,8 @@ export interface GameInterface {
   changeColor(value: string): void
   changeName(value: string): void
   changeSoundsVolume(_value: number): void
+  banPlayer(clientId: string): void
+  unbanPlayer(clientId: string): void
 }
 
 export abstract class Game<HudType extends Hud> implements GameInterface {
@@ -192,8 +193,6 @@ export abstract class Game<HudType extends Hud> implements GameInterface {
 
   abstract init(): Promise<void>
 
-  abstract connect(): Promise<void>
-
   abstract unload(): void
 
   registerEvents(): void {
@@ -271,6 +270,14 @@ export abstract class Game<HudType extends Hud> implements GameInterface {
     this.evts.addEvent([GAME_EVENT_TYPE.INPUT_EV_PLAYER_NAME, this.playerSettings.name()])
 
     this.playerCursors.updatePlayerCursorColor(this.playerSettings.color())
+  }
+
+  public banPlayer(clientId: ClientId): void {
+    this.evts.addEvent([GAME_EVENT_TYPE.INPUT_EV_BAN_PLAYER, clientId])
+  }
+
+  public unbanPlayer(clientId: ClientId): void {
+    this.evts.addEvent([GAME_EVENT_TYPE.INPUT_EV_UNBAN_PLAYER, clientId])
   }
 
   initViewport(): void {

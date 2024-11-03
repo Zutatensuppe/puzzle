@@ -43,8 +43,9 @@ import { onMounted, ref } from 'vue'
 import user from '../../user'
 import api from '../../_api'
 import Nav from '../components/Nav.vue'
+import { AnnouncementsRow } from '../../Types'
 
-const announcements = ref<any[]>([])
+const announcements = ref<AnnouncementsRow[]>([])
 
 const title = ref<string>('')
 const message = ref<string>('')

@@ -25,9 +25,11 @@
     <CuttingOverlay v-model="cuttingPuzzle" />
 
     <ConnectionOverlay
-      v-if="!cuttingPuzzle"
+      v-if="!cuttingPuzzle || insufficientAuthDetails"
       :connection-state="connectionState"
+      :insufficient-auth-details="insufficientAuthDetails"
       @reconnect="reconnect"
+      @connect_with_password="connectWithPassword"
     />
 
     <div
@@ -58,6 +60,8 @@
         :players="players"
         :registered-map="registeredMap"
         :game="g"
+        @ban="banPlayer"
+        @unban="unbanPlayer"
       />
     </div>
 
@@ -67,7 +71,7 @@
   </div>
 </template>
 <script setup lang="ts">
-import { Hud, GameStatus, GamePlayers, CONN_STATE, RegisteredMap, GameId, DialogChangeData } from '../../../common/src/Types'
+import { Hud, GameStatus, GamePlayers, CONN_STATE, RegisteredMap, GameId, DialogChangeData, InsufficentAuthDetails, ClientId } from '../../../common/src/Types'
 import { GamePlay } from '../GamePlay'
 import { onMounted, onUnmounted, Ref, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
@@ -87,12 +91,13 @@ import user from '../user'
 import isEqual from 'lodash/isEqual'
 
 const statusMessages = ref<InstanceType<typeof StatusMessages>>() as Ref<InstanceType<typeof StatusMessages>>
-const players = ref<GamePlayers>({ active: [], idle: [] })
+const players = ref<GamePlayers>({ active: [], idle: [], banned: [] })
 const status = ref<GameStatus>({ finished: false, duration: 0, piecesDone: 0, piecesTotal: 0 })
 const dialog = ref<boolean>(false)
 const dialogPersistent = ref<boolean | undefined>(undefined)
 const overlay = ref<string>('')
 const connectionState = ref<CONN_STATE>(CONN_STATE.NOT_CONNECTED)
+const insufficientAuthDetails = ref<InsufficentAuthDetails | null>(null)
 const cuttingPuzzle = ref<boolean>(true)
 const showInterface = ref<boolean>(true)
 const canvasEl = ref<HTMLCanvasElement>() as Ref<HTMLCanvasElement>
@@ -117,8 +122,25 @@ const onResize = (): void => {
 
 const reconnect = (): void => {
   if (g.value) {
-    void g.value.connect()
+    cuttingPuzzle.value = true
+    void g.value.init()
   }
+}
+
+const connectWithPassword = (password: string): void => {
+  if (g.value) {
+    cuttingPuzzle.value = true
+    void g.value.setJoinPassword(password)
+    void g.value.init()
+  }
+}
+
+const banPlayer = (id: ClientId) => {
+  g.value?.banPlayer(id)
+}
+
+const unbanPlayer = (id: ClientId) => {
+  g.value?.unbanPlayer(id)
 }
 
 const sendEvents = (newValue: boolean, newOverlay: string, oldOverlay: string) => {
@@ -187,6 +209,11 @@ const hud: Hud = {
   },
   setStatus: (v: GameStatus) => {
     status.value = v
+  },
+  setConnectError: (e: InsufficentAuthDetails) => {
+    cuttingPuzzle.value = false
+    connectionState.value = CONN_STATE.INSUFFICIENT_AUTH
+    insufficientAuthDetails.value = e
   },
   setConnectionState: (v: CONN_STATE) => {
     connectionState.value = v

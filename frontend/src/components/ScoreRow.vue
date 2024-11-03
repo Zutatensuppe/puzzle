@@ -1,5 +1,8 @@
 <template>
-  <tr :style="style">
+  <tr
+    v-if="showPlayer"
+    :style="style"
+  >
     <td>
       <icon
         :style="iconStyle"
@@ -7,25 +10,62 @@
       />
     </td>
     <td class="pl-1">
-      {{ name }}
+      <s
+        v-if="player.banned"
+        :title="name"
+      >[banned]</s>
+      <span
+        v-else
+      >{{ name }}</span>
     </td>
     <td class="pl-1">
       {{ points }}
+    </td>
+    <td v-if="showAdminActions">
+      <Icon
+        v-if="!player.banned && !isCreator"
+        icon="boot"
+        class="is-clickable"
+        title="Ban this player"
+        @click="() => emit('ban', props.player.id)"
+      />
+      <Icon
+        v-if="player.banned && !isCreator"
+        icon="angel"
+        class="is-clickable"
+        title="Unban this player"
+        @click="() => emit('unban', props.player.id)"
+      />
     </td>
   </tr>
 </template>
 <script setup lang="ts">
 import { StyleValue, computed } from 'vue'
-import { BasicPlayerInfo, RegisteredMap } from '../../../common/src/Types'
+import { BasicPlayerInfoWithBannedAndActive, ClientId, RegisteredMap } from '../../../common/src/Types'
 import { GameInterface } from '../Game'
 import { getAnonBadge, getColoredBadge } from '../BadgeCreator'
+import Icon from './Icon.vue'
 
 const props = defineProps<{
-  player: BasicPlayerInfo,
-  active: boolean,
+  player: BasicPlayerInfoWithBannedAndActive,
   registeredMap: RegisteredMap,
   game: GameInterface,
+  showAdminActions: boolean,
 }>()
+
+const isCreator = computed(() => props.game.getClientId() === props.player.id)
+
+const emit = defineEmits<{
+  (e: 'ban', p: ClientId): void
+  (e: 'unban', p: ClientId): void
+}>()
+
+const showPlayer = computed(() => {
+  if (props.showAdminActions) {
+    return true
+  }
+  return props.player.points > 0 || props.player.active
+})
 
 const name = computed(() => {
   return props.player.name || '<No name>'
@@ -47,15 +87,18 @@ const style = computed(() => {
 
 const iconStyle = computed(() => {
   const url = !props.registeredMap[props.player.id]
-    ? getAnonBadge(props.game.graphics, props.game.assets, props.active)
-    : getColoredBadge(props.game.graphics, props.game.assets, props.player.color || '#ffffff', props.active)
+    ? getAnonBadge(props.game.graphics, props.game.assets, props.player.active)
+    : getColoredBadge(props.game.graphics, props.game.assets, props.player.color || '#ffffff', props.player.active)
   return {
     backgroundImage: `url(${url})`,
   }
 })
 
 const iconTitle = computed(() => {
-  const active = (props.active ? 'Active' : 'Idle')
+  if (props.player.banned) {
+    return 'Banned in this puzzle'
+  }
+  const active = (props.player.active ? 'Active' : 'Idle')
   if (!props.registeredMap[props.player.id]) {
     return active + ', anonymous user'
   }

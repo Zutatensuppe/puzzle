@@ -7,16 +7,20 @@ import {
   UserId,
   ClientId,
   GameInfo,
+  InsufficentAuthDetails,
+  ClientInitEvent,
+  GameRow,
+  UserRow,
 } from '../../common/src/Types'
 import Util, { logger } from '../../common/src/Util'
 import { Rng, RngSerialized } from '../../common/src/Rng'
 import GameLog from './GameLog'
 import { Rect } from '../../common/src/Geometry'
-import { GameRow } from './repo/GamesRepo'
 import { PuzzleService } from './PuzzleService'
 import GameCommon, { NEWGAME_MAX_PIECES, NEWGAME_MIN_PIECES } from '../../common/src/GameCommon'
 import { GAME_VERSION, LOG_TYPE } from '../../common/src/Protocol'
 import { Repos } from './repo/Repos'
+import Crypto from './Crypto'
 
 const log = logger('GameService.js')
 
@@ -38,6 +42,7 @@ interface GameStoreData {
   rotationMode?: RotationMode
   hasReplay: boolean
   crop?: Rect
+  banned?: Record<ClientId, boolean>
 }
 
 export class GameService {
@@ -95,7 +100,10 @@ export class GameService {
       rotationMode: DefaultRotationMode(game.rotationMode),
       hasReplay: await GameLog.hasReplay(game.id, gameVersion),
       private: !!gameRow.private,
+      requireAccount: !!gameRow.require_account,
+      joinPassword: gameRow.join_password,
       registeredMap: await this.generateRegisteredMap(game.players),
+      banned: game.banned || {},
       crop: game.crop,
     }
   }
@@ -154,8 +162,9 @@ export class GameService {
       log.info(`createNewGameObj, game object not created: ${gameId}`)
       return null
     }
+
     const gameObj = this.createGameObject(
-      gameRow.id,
+      gameObject.id,
       gameObject.gameVersion,
       gameObject.puzzle.info.targetTiles,
       gameObject.puzzle.info.image,
@@ -164,9 +173,11 @@ export class GameService {
       gameObject.shapeMode,
       gameObject.snapMode,
       gameObject.rotationMode,
-      gameRow.creator_user_id,
+      gameObject.creatorUserId,
       true, // hasReplay
-      !!gameRow.private,
+      gameObject.private,
+      gameObject.requireAccount,
+      gameObject.joinPassword,
       gameObject.crop,
     )
     gameObj.puzzle.info.image.gameCount = await this.repos.images.getGameCount(gameObj.puzzle.info.image.id)
@@ -233,6 +244,8 @@ export class GameService {
       data: JSON.stringify(await this.gameToStoreData(game)),
       private: game.private ? 1 : 0,
       pieces_count: game.puzzle.tiles.length,
+      require_account: game.requireAccount ? 1 : 0,
+      join_password: game.joinPassword,
       // the image_snapshot_url is not updated here, this is intended!
     })
     await this.repos.games.updatePlayerRelations(game.id, game.players)
@@ -303,6 +316,8 @@ export class GameService {
     creatorUserId: UserId | null,
     hasReplay: boolean,
     isPrivate: boolean,
+    requireAccount: boolean,
+    joinPassword: string | null,
     crop: Rect | undefined,
   ): Game {
     const seed = Util.hash(gameId + ' ' + ts)
@@ -321,7 +336,10 @@ export class GameService {
       hasReplay,
       private: isPrivate,
       crop,
+      requireAccount,
+      joinPassword,
       registeredMap: {},
+      banned: {},
     }
   }
 
@@ -351,6 +369,8 @@ export class GameService {
       creatorUserId,
       true, // hasReplay
       gameSettings.private,
+      gameSettings.requireAccount,
+      gameSettings.joinPassword ? Crypto.encrypt(gameSettings.joinPassword) : null,
       gameSettings.crop,
     )
 
@@ -369,6 +389,8 @@ export class GameService {
         gameObject.creatorUserId,
         gameObject.private ? 1 : 0,
         gameSettings.crop,
+        gameSettings.requireAccount,
+        gameSettings.joinPassword,
       ],
     )
 
@@ -418,5 +440,51 @@ export class GameService {
       }
     }
     return ret
+  }
+
+  public async checkAuth(
+    gameInitEvent: ClientInitEvent,
+    gameId: GameId,
+    clientId: ClientId,
+    user: UserRow | null,
+  ): Promise<InsufficentAuthDetails> {
+    const insufficentAuthDetails: InsufficentAuthDetails = {
+      requireAccount: false,
+      requirePassword: false,
+      wrongPassword: false,
+      banned: false,
+    }
+    // if user is the creator of the game, they can join anyway
+    if (user?.id === GameCommon.getCreatorUserId(gameId)) {
+      return insufficentAuthDetails
+    }
+    // if user is an admin, they can join anyway
+    if (user?.id && await this.repos.users.isInGroup(user.id, 'admin')) {
+      return insufficentAuthDetails
+    }
+
+    insufficentAuthDetails.banned = GameCommon.isPlayerBanned(gameId, clientId)
+
+    const msgData = gameInitEvent[1]
+    // check join requirements
+    if (GameCommon.requireAccount(gameId)) {
+      // check if user is logged in, otherwise reject connection
+      if (user?.email) {
+        // this is a registered user, all good
+      } else {
+        // user is not logged in, send a message for the client to handle
+        insufficentAuthDetails.requireAccount = true
+      }
+    }
+
+    // msg[1] is (optional) init data, also contains password
+    if (GameCommon.joinPassword(gameId)) {
+      if (!msgData?.password) {
+        insufficentAuthDetails.requirePassword = true
+      } else if (Crypto.encrypt(msgData.password) !== GameCommon.joinPassword(gameId)) {
+        insufficentAuthDetails.wrongPassword = true
+      }
+    }
+    return insufficentAuthDetails
   }
 }

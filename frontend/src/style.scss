@@ -62,6 +62,15 @@ $bg-color-transparent: rgba(0 0 0 / 70%);
   &.icon-mouse-wheel { background-image: url("assets/icons/mouse_wheel.png"); }
   &.icon-disconnect { background-image: url("assets/icons/disconnect.png"); }
   &.icon-ukraine-heart { background-image: url("assets/icons/ukraine_heart.png"); }
+  &.icon-boot { background-image: url("assets/icons/boot.png"); }
+  &.icon-angel { background-image: url("assets/icons/angel.png"); }
+  &.icon-lock-closed { background-image: url("assets/icons/lock_closed.png"); }
+  &.icon-no-anon { background-image: url("assets/icons/no_anon.png"); }
+  &.icon-puzzle-piece-normal { background-image: url("assets/icons/puzzle_piece_normal.png"); }
+  &.icon-puzzle-piece-flat { background-image: url("assets/icons/puzzle_piece_flat.png"); }
+  &.icon-puzzle-piece-any { background-image: url("assets/icons/puzzle_piece_any.png"); }
+  &.icon-rotation-simple { background-image: url("assets/icons/rotation_simple.png"); }
+  &.icon-rotation-none { background-image: url("assets/icons/rotation_none.png"); }
 }
 
 .view-game,
@@ -602,7 +611,7 @@ kbd {
 
 .v-dialog.overlay-connection {
   .v-overlay__content {
-    max-width: 320px;
+    max-width: 500px;
   }
 }
 

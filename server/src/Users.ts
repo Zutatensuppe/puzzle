@@ -1,10 +1,9 @@
-import { AccountId, ClientId, TokenRow, UserId } from '../../common/src/Types'
+import { AccountId, ClientId, TokenRow, UserGroupRow, UserId, UserRow } from '../../common/src/Types'
 import { COOKIE_TOKEN, generateToken } from './Auth'
 import Db, { WhereRaw } from './Db'
 import { AccountRow } from './repo/AccountsRepo'
 import { Repos } from './repo/Repos'
 import { IdentityRow } from './repo/UserIdentityRepo'
-import { UserGroupRow, UserRow } from './repo/UsersRepo'
 
 const HEADER_CLIENT_ID = 'client-id'
 

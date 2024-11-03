@@ -5,27 +5,7 @@
         <h4 class="justify-start">
           Settings
         </h4>
-        <div class="justify-end">
-          <div
-            v-if="me && loggedIn"
-            class="user-welcome-message"
-          >
-            Hello, {{ me.name }}
-            <v-btn
-              @click="logout"
-            >
-              Logout
-            </v-btn>
-          </div>
-          <v-btn
-            v-else
-            size="small"
-            class="ml-1"
-            @click="login"
-          >
-            Login
-          </v-btn>
-        </div>
+        <LoginBit />
       </div>
 
       <fieldset>
@@ -218,12 +198,12 @@
   </v-card>
 </template>
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { ref, watch } from 'vue'
 
 import IngameColorPicker from './IngameColorPicker.vue'
 import { DialogChangeData, PlayerSettingsData, RendererType } from '../../../common/src/Types'
-import user, { User } from '../user'
 import { GameInterface } from '../Game'
+import LoginBit from './LoginBit.vue'
 
 const props = defineProps<{
   game: GameInterface
@@ -275,35 +255,6 @@ const emitChanges = (): void => {
   props.game.getPlayerSettings().apply(newSettings)
   void props.game.loadTableTexture(newSettings)
 }
-
-const me = ref<User|null>(null)
-
-const loggedIn = computed(() => {
-  return !!(me.value && me.value.type === 'user')
-})
-
-async function logout() {
-  await user.logout()
-}
-
-const onInit = () => {
-  me.value = user.getMe()
-}
-
-const login = () => {
-  user.eventBus.emit('triggerLoginDialog')
-}
-
-onMounted(() => {
-  onInit()
-  user.eventBus.on('login', onInit)
-  user.eventBus.on('logout', onInit)
-})
-
-onBeforeUnmount(() => {
-  user.eventBus.off('login', onInit)
-  user.eventBus.off('logout', onInit)
-})
 
 watch(isUkraineColor, emitChanges)
 watch(playerSettings, () => {
