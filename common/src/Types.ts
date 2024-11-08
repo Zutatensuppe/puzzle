@@ -825,8 +825,9 @@ export interface GameRow {
   require_account: number
 }
 
-export interface GameRowWithImage extends GameRow {
+export interface GameRowWithImageAndUser extends GameRow {
   image: ImageRow | null
+  user: UserRow | null
 }
 
 export interface ImageRow {

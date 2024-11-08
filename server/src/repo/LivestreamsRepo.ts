@@ -1,5 +1,6 @@
 import Db, { WhereRaw } from '../Db'
 import { LivestreamId } from '../../../common/src/Types'
+import { Repos } from './Repos'
 
 const TABLE = 'twitch_livestreams'
 
@@ -16,7 +17,10 @@ export interface LivestreamsRow {
 }
 
 export class LivestreamsRepo {
-  constructor(private readonly db: Db) {
+  constructor(
+    private readonly db: Db,
+    private readonly repos: Repos,
+  ) {
     // pass
   }
 

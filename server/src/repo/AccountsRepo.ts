@@ -1,6 +1,7 @@
 import Crypto from '../Crypto'
 import Db, { WhereRaw } from '../Db'
 import { AccountId } from '../../../common/src/Types'
+import { Repos } from './Repos'
 
 const TABLE = 'accounts'
 
@@ -14,7 +15,10 @@ export interface AccountRow {
 }
 
 export class AccountsRepo {
-  constructor(private readonly db: Db) {
+  constructor(
+    private readonly db: Db,
+    private readonly repos: Repos,
+  ) {
     // pass
   }
 

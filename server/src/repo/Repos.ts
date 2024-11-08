@@ -21,14 +21,14 @@ export class Repos {
   public users: UsersRepo
 
   constructor(db: Db) {
-    this.accounts = new AccountsRepo(db)
-    this.announcements = new AnnouncementsRepo(db)
-    this.games = new GamesRepo(db)
-    this.images = new ImagesRepo(db)
-    this.leaderboard = new LeaderboardRepo(db)
-    this.livestreams = new LivestreamsRepo(db)
-    this.tokens = new TokensRepo(db)
-    this.userIdentity = new UserIdentityRepo(db)
-    this.users = new UsersRepo(db)
+    this.accounts = new AccountsRepo(db, this)
+    this.announcements = new AnnouncementsRepo(db, this)
+    this.games = new GamesRepo(db, this)
+    this.images = new ImagesRepo(db, this)
+    this.leaderboard = new LeaderboardRepo(db, this)
+    this.livestreams = new LivestreamsRepo(db, this)
+    this.tokens = new TokensRepo(db, this)
+    this.userIdentity = new UserIdentityRepo(db, this)
+    this.users = new UsersRepo(db, this)
   }
 }

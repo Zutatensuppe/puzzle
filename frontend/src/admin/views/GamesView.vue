@@ -19,113 +19,18 @@
           <th>Preview</th>
           <th>Players</th>
           <th>Infos</th>
-
           <th>Actions</th>
         </tr>
       </thead>
       <tbody>
-        <tr
-          v-for="item in games.items"
-          :key="item.id"
-        >
-          <td>
-            <a
-              v-if="item.image"
-              :href="`/uploads/${item.image.filename}`"
-              target="_blank"
-              class="image-holder"
-            ><img
-              :src="resizeUrl(`/image-service/image/${item.image.filename}`, 150, 100, 'contain')"
-              :class="item.image.private ? ['image-private', 'image'] : ['image']"
-            ></a>
-          </td>
-          <td valign="top">
-            <div>
-              <div v-if="serverInfo?.gameLogInfoByGameIds[item.id] && (serverInfo?.gameLogInfoByGameIds[item.id].logEntriesToFlush || 0) > 0">
-                📓 {{ (serverInfo?.gameLogInfoByGameIds[item.id].logEntriesToFlush || 0) }} log <span v-if="(serverInfo?.gameLogInfoByGameIds[item.id].logEntriesToFlush || 0) > 1">entries</span><span v-else>entry</span> to flush
-              </div>
-              <div v-if="(serverInfo?.socketCountsByGameIds[item.id] || 0) > 0">
-                🔴 {{ (serverInfo?.socketCountsByGameIds[item.id] || 0) }} player<span v-if="(serverInfo?.socketCountsByGameIds[item.id] || 0) > 1">s</span> connected
-              </div>
-              <div v-else>
-                No players connected
-              </div>
-              <hr>
-              <div style="height: 100px; overflow-y: auto;">
-                <div
-                  v-for="player in sortedPlayers(item)"
-                  :key="`${item.id}-${player[0]}`"
-                >
-                  <div
-                    :style="player[5] === 'ukraine' ? {
-                      'backgroundImage': 'linear-gradient(180deg, rgba(0,87,183,1) 0%, rgba(0,87,183,1) 50%, rgba(255,221,0,1) 50%)',
-                      '-webkit-background-clip': 'text',
-                      '-webkit-text-fill-color': 'transparent'
-                    } : { color: player[5] }"
-                  >
-                    {{ player[4] }} ({{ player[7] }})
-                  </div>
-                </div>
-              </div>
-            </div>
-          </td>
-          <td>
-            <div class="d-flex flex-wrap gc-3">
-              <span class="text-disabled">Id:</span> <a
-                :href="`/g/${item.id}`"
-                target="_blank"
-              >{{ item.id }}</a>
-              <span class="text-disabled">Image-Id: </span> {{ item.image_id }}
-              <span class="text-disabled">Private:</span> <span :class="{ 'color-private': item.private }">{{ item.private ? '✓' : '✖' }}</span>
-              <span class="text-disabled">Password:</span>
-              <Icon
-                v-if="item.join_password"
-                icon="lock-closed"
-                title="Password protected"
-              />
-              <span v-else>-</span>
-              <span class="text-disabled">Anon:</span>
-              <Icon
-                v-if="item.require_account"
-                icon="no-anon"
-                title="No anonymous players allowed"
-              />
-              <span v-else>✓</span>
-            </div>
-            <div class="d-flex flex-wrap gc-3">
-              <span class="text-disabled">Creator:</span> {{ item.creator_user_id || '-' }}
-              <span class="text-disabled">Created:</span> {{ item.created }}
-              <span class="text-disabled">Finished:</span> <span :class="{ 'color-finished': item.finished }">{{ item.finished || '-' }}</span>
-            </div>
-            <div class="d-flex flex-wrap gc-3">
-              <span class="text-disabled">Pieces:</span> {{ item.pieces_count }}
-              <span class="text-disabled">Game Version:</span> {{ gameVersion(item) }}
-              <span class="text-disabled">Has Replay:</span> {{ gameHasReplay(item) }}
-              <span class="text-disabled">Score Mode:</span> {{ gameScoreMode(item) }}
-              <span class="text-disabled">Shape Mode:</span>
-              <Icon :icon="shapeIcon(item)" />
-              <span class="text-disabled">Snap Mode:</span> {{ gameSnapMode(item) }}
-              <span class="text-disabled">Rotation Mode:</span>
-              <Icon :icon="rotationIcon(item)" />
-            </div>
-          </td>
-
-          <td>
-            <v-btn
-              block
-              @click="onDelete(item)"
-            >
-              DELETE
-            </v-btn>
-            <br>
-            <v-btn
-              block
-              @click="fixPieces(item.id)"
-            >
-              Fix Pieces
-            </v-btn>
-          </td>
-        </tr>
+        <GamesRow
+          v-for="game in games.items"
+          :key="game.id"
+          :game="game"
+          :server-info="serverInfo"
+          @delete="onDelete"
+          @fix-pieces="onFixPieces"
+        />
       </tbody>
     </v-table>
     <Pagination
@@ -137,51 +42,18 @@
 </template>
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
-import { resizeUrl } from '../../../../common/src/ImageService'
 import user from '../../user'
 import api from '../../_api'
 import Nav from '../components/Nav.vue'
 import Pagination from '../../components/Pagination.vue'
-import { rotationModeToString, scoreModeToString, shapeModeToString, snapModeToString } from '../../../../common/src/Util'
-import { EncodedPlayer, EncodedPlayerIdx, GameId, GameRowWithImage, Pagination as PaginationType, ServerInfo } from '../../../../common/src/Types'
-import Icon from '../../components/Icon.vue'
+import { GameRowWithImageAndUser, Pagination as PaginationType, ServerInfo } from '../../../../common/src/Types'
+import GamesRow from '../components/GamesRow.vue'
 
 const perPage = 50
-const games = ref<{ items: GameRowWithImage[], pagination: PaginationType } | null>(null)
+const games = ref<{ items: GameRowWithImageAndUser[], pagination: PaginationType } | null>(null)
 const serverInfo = ref<ServerInfo | null>(null)
 
-const gameVersion = (game: GameRowWithImage) => {
-  const parsed = JSON.parse(game.data)
-  return parsed.gameVersion || '-'
-}
-const gameHasReplay = (game: GameRowWithImage) => {
-  const parsed = JSON.parse(game.data)
-  return parsed.hasReplay || '-'
-}
-const gameScoreMode = (game: GameRowWithImage) => {
-  const parsed = JSON.parse(game.data)
-  return scoreModeToString(parsed.scoreMode)
-}
-const gameShapeMode = (game: GameRowWithImage) => {
-  const parsed = JSON.parse(game.data)
-  return shapeModeToString(parsed.shapeMode)
-}
-const shapeIcon = (game: GameRowWithImage) => {
-  return 'puzzle-piece-' + gameShapeMode(game).toLowerCase()
-}
-const gameSnapMode = (game: GameRowWithImage) => {
-  const parsed = JSON.parse(game.data)
-  return snapModeToString(parsed.snapMode)
-}
-const gameRotationMode = (game: GameRowWithImage) => {
-  const parsed = JSON.parse(game.data)
-  return rotationModeToString(parsed.rotationMode)
-}
-const rotationIcon = (game: GameRowWithImage) => {
-  return 'rotation-' + gameRotationMode(game).toLowerCase()
-}
-
-const onDelete = async (game: GameRowWithImage) => {
+const onDelete = async (game: GameRowWithImageAndUser) => {
   if (!confirm(`Really delete game ${game.id}?`)) {
     return
   }
@@ -197,22 +69,13 @@ const onDelete = async (game: GameRowWithImage) => {
   }
 }
 
-const fixPieces = async (gameId: GameId) => {
-  const resp = await api.admin.fixPieces(gameId)
+const onFixPieces = async (game: GameRowWithImageAndUser) => {
+  const resp = await api.admin.fixPieces(game.id)
   if (resp.ok) {
     alert('Successfully fixed ' + resp.changed + 'pieces!')
   } else {
     alert('Fixing pieces failed! ' + resp.error)
   }
-}
-
-const sortedPlayers = (item: GameRowWithImage) => {
-  const parsed = JSON.parse(item.data).players
-  // sort by score descending
-  parsed.sort((a: EncodedPlayer, b: EncodedPlayer) => {
-    return b[EncodedPlayerIdx.POINTS] - a[EncodedPlayerIdx.POINTS]
-  })
-  return parsed
 }
 
 const onPagination = async (q: { limit: number, offset: number }) => {

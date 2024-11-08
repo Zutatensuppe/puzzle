@@ -1,11 +1,15 @@
 import Crypto from '../Crypto'
 import Db, { WhereRaw } from '../Db'
 import { UserGroupRow, UserId, UserRow } from '../../../common/src/Types'
+import { Repos } from './Repos'
 
 const TABLE = 'users'
 
 export class UsersRepo {
-  constructor(private readonly db: Db) {
+  constructor(
+    private readonly db: Db,
+    private readonly repos: Repos,
+  ) {
     // pass
   }
 
@@ -33,6 +37,13 @@ export class UsersRepo {
 
   async getMany(where: WhereRaw): Promise<UserRow[]> {
     return await this.db.getMany(TABLE, where)
+  }
+
+  async getManyByIds(ids: UserId[]): Promise<UserRow[]> {
+    if (ids.length === 0) {
+      return []
+    }
+    return await this.db.getMany(TABLE, { id: { '$in': ids } })
   }
 
   async get(where: WhereRaw): Promise<UserRow | null> {
