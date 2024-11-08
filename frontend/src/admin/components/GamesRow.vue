@@ -25,7 +25,7 @@
         <hr>
         <div style="height: 100px; overflow-y: auto;">
           <div
-            v-for="player in sortedPlayers(game)"
+            v-for="player in sortedPlayers"
             :key="`${game.id}-${player[0]}`"
           >
             <div
@@ -133,19 +133,19 @@ const emit = defineEmits<{
   (e: 'fixPieces', game: GameRowWithImageAndUser): void
 }>()
 
-const gameData = computed(() => JSON.parse(props.game.data))
-const gameVersion = computed(() => gameData.value.gameVersion || '-')
-const gameHasReplay = computed(() => gameData.value.hasReplay ? 'Replay exists' : 'No Replay')
-const replayIcon = computed(() => gameData.value.hasReplay ? 'film-camera' : 'no-film-camera')
-const gameScoreMode = computed(() => 'Scoring: ' + scoreModeToString(gameData.value.scoreMode))
-const scoreIcon = computed(() => 'score-' + scoreModeToString(gameData.value.scoreMode).toLowerCase())
-const gameShapeMode = computed(() => 'Shapes: ' + shapeModeToString(gameData.value.shapeMode))
-const shapeIcon = computed(() => 'puzzle-piece-' + shapeModeToString(gameData.value.shapeMode).toLowerCase())
-const gameSnapMode = computed(() => 'Snapping: ' + snapModeToString(gameData.value.snapMode))
-const snapIcon = computed(() => 'snap-' + snapModeToString(gameData.value.snapMode).toLowerCase())
-const gameRotationMode = computed(() => 'Rotation: ' + rotationModeToString(gameData.value.rotationMode))
-const rotationIcon = computed(() => 'rotation-' + rotationModeToString(gameData.value.rotationMode).toLowerCase())
-const sortedPlayers = computed(() => gameData.value.players.toSorted((a: EncodedPlayer, b: EncodedPlayer) => b[EncodedPlayerIdx.POINTS] - a[EncodedPlayerIdx.POINTS]))
+const parsed = computed(() => JSON.parse(props.game.data))
+const gameVersion = computed(() => parsed.value.gameVersion || '-')
+const gameHasReplay = computed(() => parsed.value.hasReplay ? 'Replay exists' : 'No Replay')
+const replayIcon = computed(() => parsed.value.hasReplay ? 'film-camera' : 'no-film-camera')
+const gameScoreMode = computed(() => 'Scoring: ' + scoreModeToString(parsed.value.scoreMode))
+const scoreIcon = computed(() => 'score-' + scoreModeToString(parsed.value.scoreMode).toLowerCase())
+const gameShapeMode = computed(() => 'Shapes: ' + shapeModeToString(parsed.value.shapeMode))
+const shapeIcon = computed(() => 'puzzle-piece-' + shapeModeToString(parsed.value.shapeMode).toLowerCase())
+const gameSnapMode = computed(() => 'Snapping: ' + snapModeToString(parsed.value.snapMode))
+const snapIcon = computed(() => 'snap-' + snapModeToString(parsed.value.snapMode).toLowerCase())
+const gameRotationMode = computed(() => 'Rotation: ' + rotationModeToString(parsed.value.rotationMode))
+const rotationIcon = computed(() => 'rotation-' + rotationModeToString(parsed.value.rotationMode).toLowerCase())
+const sortedPlayers = computed(() => parsed.value.players.toSorted((a: EncodedPlayer, b: EncodedPlayer) => b[EncodedPlayerIdx.POINTS] - a[EncodedPlayerIdx.POINTS]))
 
 const onDelete = () => {
   emit('delete', props.game)
