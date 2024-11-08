@@ -1,10 +1,14 @@
 import { ImageId, ImageRow, ImageRowWithCount, ImageSearchSort, ImageXTagRow, TagId, TagRow, TagRowWithCount, UserId } from '../../../common/src/Types'
 import Db, { OrderBy, WhereRaw } from '../Db'
+import { Repos } from './Repos'
 
 const TABLE = 'images'
 
 export class ImagesRepo {
-  constructor(private readonly db: Db) {
+  constructor(
+    private readonly db: Db,
+    private readonly repos: Repos,
+  ) {
     // pass
   }
 
@@ -14,6 +18,13 @@ export class ImagesRepo {
 
   async getMany(where: WhereRaw): Promise<ImageRow[]> {
     return await this.db.getMany(TABLE, where)
+  }
+
+  async getManyByIds(ids: ImageId[]): Promise<ImageRow[]> {
+    if (ids.length === 0) {
+      return []
+    }
+    return await this.db.getMany(TABLE, { id: { '$in': ids } })
   }
 
   async count(): Promise<number> {

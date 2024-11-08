@@ -71,6 +71,12 @@ $bg-color-transparent: rgba(0 0 0 / 70%);
   &.icon-puzzle-piece-any { background-image: url("assets/icons/puzzle_piece_any.png"); }
   &.icon-rotation-simple { background-image: url("assets/icons/rotation_simple.png"); }
   &.icon-rotation-none { background-image: url("assets/icons/rotation_none.png"); }
+  &.icon-snap-normal { background-image: url("assets/icons/snap_normal.png"); }
+  &.icon-snap-real { background-image: url("assets/icons/snap_real.png"); }
+  &.icon-score-any { background-image: url("assets/icons/score_any.png"); }
+  &.icon-score-final { background-image: url("assets/icons/score_final.png"); }
+  &.icon-film-camera { background-image: url("assets/icons/film_camera.png"); }
+  &.icon-no-film-camera { background-image: url("assets/icons/no_film_camera.png"); }
 }
 
 .view-game,

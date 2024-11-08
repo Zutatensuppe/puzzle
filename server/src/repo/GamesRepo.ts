@@ -1,10 +1,14 @@
-import { EncodedPlayer, EncodedPlayerIdx, GameId, GameRow, UserId } from '../../../common/src/Types'
+import { EncodedPlayer, EncodedPlayerIdx, GameId, GameRow, GameRowWithImageAndUser, UserId } from '../../../common/src/Types'
 import Db from '../Db'
+import { Repos } from './Repos'
 
 const TABLE = 'games'
 
 export class GamesRepo {
-  constructor(private readonly db: Db) {
+  constructor(
+    private readonly db: Db,
+    private readonly repos: Repos,
+  ) {
     // pass
   }
 
@@ -14,6 +18,24 @@ export class GamesRepo {
 
   async getAll(offset: number, limit: number): Promise<GameRow[]> {
     return await this.db.getMany(TABLE, undefined, [{ created: -1 }], { offset, limit })
+  }
+
+  async getAllWithImagesAndUsers(offset: number, limit: number): Promise<GameRowWithImageAndUser[]> {
+    const items = await this.getAll(offset, limit)
+
+    const imageIds = items.map(item => item.image_id).filter(id => !!id)
+    const images = await this.repos.images.getManyByIds(imageIds)
+
+    const userIds = items.map(item => item.creator_user_id).filter(id => !!id) as UserId[]
+    const users = await this.repos.users.getManyByIds(userIds)
+
+    const gamesWithImagesAndUsers: GameRowWithImageAndUser[] = items.map(game => {
+      return Object.assign({}, game, {
+        image: images.find(image => image.id === game.image_id) || null,
+        user: users.find(user => user.id === game.creator_user_id) || null,
+      })
+    })
+    return gamesWithImagesAndUsers
   }
 
   async getGameRowById(gameId: GameId): Promise<GameRow | null> {

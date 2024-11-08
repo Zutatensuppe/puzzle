@@ -1,7 +1,7 @@
 import express, { NextFunction } from 'express'
 import { Server } from '../../../Server'
 import { MergeClientIdsIntoUser } from '../../../admin-tools/MergeClientIdsIntoUser'
-import { GameId, GameRowWithImage, ImageId, ServerInfo } from '../../../Types'
+import { GameId, ImageId, ServerInfo } from '../../../Types'
 import GameLog from '../../../GameLog'
 import { FixPieces } from '../../../admin-tools/FixPieces'
 
@@ -51,18 +51,9 @@ export default function createRouter(
     }
 
     const total = await server.repos.games.count()
-    const items = await server.repos.games.getAll(offset, limit)
-    const imageIdMap: Record<string, boolean> = {}
-    for (const item of items) {
-      imageIdMap[item.image_id] = true
-    }
-    const imageIds = Object.keys(imageIdMap)
-    const images = await server.repos.images.getMany({ id: { '$in': imageIds } })
-    const gamesWithImages: GameRowWithImage[] = items.map(game => {
-      return Object.assign({}, game, { image: images.find(image => image.id === game.image_id) || null })
-    })
+    const items = await server.repos.games.getAllWithImagesAndUsers(offset, limit)
     res.send({
-      items: gamesWithImages,
+      items,
       pagination: { total, offset, limit },
     })
   })
