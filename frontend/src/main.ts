@@ -51,7 +51,7 @@ const run = async () => {
     routes: [
       { name: 'index', path: '/', component: Index, meta: { title: 'Jigsaw Hyottoko Club' } },
       { name: 'new-game', path: '/new-game', component: NewGame, meta: { title: 'New Game' } },
-      { name: 'featured-artist', path: '/featured/:artist', component: FeaturedView, meta: { title: 'Featured Artist' } },
+      { name: 'featured-artist', path: '/featured-artist/:artist', component: FeaturedView, meta: { title: 'Featured Artist' } },
       { name: 'featured-category', path: '/featured-category/:category', component: FeaturedView, meta: { title: 'Featured Category' } },
 
       // Canny.io feedback
