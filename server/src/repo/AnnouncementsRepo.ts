@@ -1,13 +1,11 @@
 import Db, { WhereRaw } from '../Db'
 import { AnnouncementId, AnnouncementsRow } from '../../../common/src/Types'
-import { Repos } from './Repos'
 
 const TABLE = 'announcements'
 
 export class AnnouncementsRepo {
   constructor(
     private readonly db: Db,
-    private readonly repos: Repos,
   ) {
     // pass
   }

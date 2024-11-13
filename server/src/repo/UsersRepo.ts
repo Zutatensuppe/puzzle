@@ -1,14 +1,12 @@
 import Crypto from '../Crypto'
 import Db, { WhereRaw } from '../Db'
 import { UserGroupRow, UserId, UserRow } from '../../../common/src/Types'
-import { Repos } from './Repos'
 
 const TABLE = 'users'
 
 export class UsersRepo {
   constructor(
     private readonly db: Db,
-    private readonly repos: Repos,
   ) {
     // pass
   }

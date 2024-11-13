@@ -1,13 +1,11 @@
 import { TokenRow } from '../../../common/src/Types'
 import Db, { WhereRaw } from '../Db'
-import { Repos } from './Repos'
 
 const TABLE = 'tokens'
 
 export class TokensRepo {
   constructor(
     private readonly db: Db,
-    private readonly repos: Repos,
   ) {
     // pass
   }

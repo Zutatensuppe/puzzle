@@ -1,4 +1,4 @@
-import { ClientId, GameId, ImageId, ServerInfo, UserId } from '../../../common/src/Types'
+import { ClientId, FeaturedRowWithCollections, GameId, ImageId, ServerInfo, UserId } from '../../../common/src/Types'
 import xhr, { JSON_HEADERS } from './xhr'
 import Util from '../../../common/src/Util'
 
@@ -62,8 +62,46 @@ const getImages = async (data: { limit: number, offset: number }) => {
   return await res.json()
 }
 
+const getFeatureds = async (data: { limit: number, offset: number }) => {
+  const res = await xhr.get(`/admin/api/featureds${Util.asQueryArgs(data)}`, {})
+  return await res.json()
+}
+
+const getFeatured = async (id: number) => {
+  const res = await xhr.get(`/admin/api/featureds/${id}`, {})
+  return await res.json()
+}
+
+const saveFeatured = async (
+  featured: FeaturedRowWithCollections,
+) => {
+  const res = await xhr.put(`/admin/api/featureds/${featured.id}`, {
+    headers: JSON_HEADERS,
+    body: JSON.stringify({ featured }),
+  })
+  return await res.json()
+}
+
+const createFeatured = async (
+  type: 'artist' | 'category',
+  name: string,
+  introduction: string,
+  links: { url: string, title: string }[],
+) => {
+  const res = await xhr.post('/admin/api/featureds', {
+    headers: JSON_HEADERS,
+    body: JSON.stringify({ type, name, introduction, links }),
+  })
+  return await res.json()
+}
+
 const deleteImage = async (id: ImageId) => {
   const res = await xhr.delete(`/admin/api/images/${id}`, {})
+  return await res.json()
+}
+
+const getImage = async (id: ImageId) => {
+  const res = await xhr.get(`/admin/api/images/${id}`, {})
   return await res.json()
 }
 
@@ -78,7 +116,12 @@ export default {
   getGames,
   deleteGame,
   getUsers,
+  getFeatured,
+  getFeatureds,
+  createFeatured,
+  saveFeatured,
   getImages,
+  getImage,
   deleteImage,
   getGroups,
   getServerInfo,

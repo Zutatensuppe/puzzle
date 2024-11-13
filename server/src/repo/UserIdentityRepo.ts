@@ -1,7 +1,6 @@
 import Crypto from '../Crypto'
 import Db, { WhereRaw } from '../Db'
 import { IdentityId, UserId } from '../../../common/src/Types'
-import { Repos } from './Repos'
 
 const TABLE = 'user_identity'
 
@@ -16,7 +15,6 @@ export interface IdentityRow {
 export class UserIdentityRepo {
   constructor(
     private readonly db: Db,
-    private readonly repos: Repos,
   ) {
     // pass
   }

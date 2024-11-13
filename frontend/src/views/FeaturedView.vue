@@ -1,19 +1,19 @@
 <template>
   <v-container
-    v-if="artist"
+    v-if="featured"
     :fluid="true"
-    class="featured-artist-view p-0"
+    class="featured-view p-0"
   >
-    <div class="featured-artist-content">
+    <div class="featured-content">
       <v-card class="pa-5 mb-5 d-flex">
         <div class="justify-start flex-grow-1 mr-5 pr-5">
-          <h3>{{ artist.name }}</h3>
-          <div>{{ artist.introduction }}</div>
+          <h3>{{ featured.name }}</h3>
+          <div>{{ featured.introduction }}</div>
         </div>
-        <div class="justify-end featured-artist-links ml-5">
+        <div class="justify-end featured-links ml-5">
           <h3>Links</h3>
           <div
-            v-for="(link, idx) in artist.links"
+            v-for="(link, idx) in featured.links"
             :key="idx"
           >
             <a
@@ -24,11 +24,11 @@
         </div>
       </v-card>
 
-      <h3 v-if="collections.length > 0">
+      <h3 v-if="featured.collections.length > 0">
         Collections
       </h3>
       <v-card
-        v-for="(collection, idx) of collections"
+        v-for="(collection, idx) of featured.collections"
         :key="idx"
         class="pa-5 mb-5"
       >
@@ -56,7 +56,7 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { GameSettings, ImageId, ImageInfo } from '../../../common/src/Types'
+import { FeaturedRowWithCollections, GameSettings, ImageId, ImageInfo } from '../../../common/src/Types'
 import ImageLibrary from '../components/ImageLibrary.vue'
 import NewGameDialog from '../components/NewGameDialog.vue'
 import api from '../_api'
@@ -64,7 +64,7 @@ import api from '../_api'
 const route = useRoute()
 const router = useRouter()
 
-const artist = ref<any>(null)
+const featured = ref<FeaturedRowWithCollections | null>(null)
 const collections = ref<any[]>([])
 
 const image = ref<ImageInfo>({
@@ -111,11 +111,12 @@ const onImageClicked = (newImage: ImageInfo) => {
 }
 
 onMounted(async () => {
-  const res = await api.pub.getArtistData({
-    name: `${route.params.artist}`,
-  })
+  const type = route.params.artist ? 'artist' : 'category'
+  const name = `${route.params.artist || route.params.category}`
+
+  const res = await api.pub.getFeaturedData({ type, name })
   const data = await res.json()
-  artist.value = data.artist
+  featured.value = data.featured
   collections.value = data.collections
 })
 </script>

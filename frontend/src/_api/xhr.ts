@@ -94,6 +94,9 @@ export default {
   post: (url: string, options: any): Promise<Response> => {
     return request('post', url, options)
   },
+  put: (url: string, options: any): Promise<Response> => {
+    return request('put', url, options)
+  },
   clientId: () => xhrClientId,
   setClientId: (clientId: ClientId) => {
     xhrClientId = clientId

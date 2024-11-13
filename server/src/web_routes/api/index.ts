@@ -484,29 +484,20 @@ export default function createRouter(
 
     const requestData: NewGameDataRequestData = req.query as any
     res.send({
+      featured: await server.repos.featured.getManyWithCollections({}),
       images: await server.images.imagesFromDb(requestData.search, requestData.sort, false, 0, IMAGES_PER_PAGE_LIMIT, userId),
       tags: await server.images.getAllTags(),
     })
   })
 
-  router.get('/artist/:name', async (req, res): Promise<void> => {
+  router.get('/featured/:type/:name', async (req, res): Promise<void> => {
     const name = req.params.name
-    const artist = await server.db.get('artist', { name })
-    if (!artist) {
-      res.status(404).send({ reason: 'not found' })
-      return
-    }
-    const rel1 = await server.db.getMany('artist_x_collection', { artist_id: artist.id })
-    const collections = await server.db.getMany('collection', { id: { '$in': rel1.map((r: any) => r.collection_id) } })
-    const rel2 = await server.db.getMany('collection_x_image', { collection_id: { '$in': collections.map((r: any) => r.id) } })
-    const items = await server.images.imagesByIdsFromDb(rel2.map((r: any) => r.image_id))
-    for (const c of collections) {
-      c.images = items.filter(image => rel2.find(r => r.collection_id === c.id && r.image_id === image.id) ? true : false)
-    }
-    res.send({
-      artist,
-      collections,
-    })
+    const type = req.params.type
+    res.send({ featured: await server.repos.featured.getWithCollections({ name, type }) })
+  })
+
+  router.get('/featured-teasers', async (req, res): Promise<void> => {
+    res.send({ featuredTeasers: await server.repos.featured.getActiveTeasers() })
   })
 
   router.get('/images', async (req: any, res): Promise<void> => {
