@@ -24,18 +24,20 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { FeaturedRowWithCollections } from '../Types'
+import { resizeUrl } from '../../../common/src/ImageService'
 
 const props = defineProps<{
   featured: FeaturedRowWithCollections
 }>()
 
 const style = computed(() => {
-  const img = props.featured.collections[0]?.images[0]?.url || ''
-  if (!img) {
+  const firstImage = props.featured.collections[0]?.images[0]
+  if (!firstImage) {
     return {}
   }
+  const imgResized = resizeUrl(`/image-service/image/${firstImage.filename}`, 375, 0, 'cover')
   return ({
-    backgroundImage: `url(${img})`,
+    backgroundImage: `url(${imgResized})`,
   })
 })
 const type = computed(() => props.featured.type === 'category' ? 'Category' : 'Artist')
