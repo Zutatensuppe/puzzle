@@ -94,8 +94,12 @@ const newGame = (data: { gameSettings: GameSettings }) => {
   })
 }
 
-const getArtistData = (data: { name: string }) => {
-  return xhr.get(`/api/artist/${data.name}`, {})
+const getFeaturedData = (data: { type: 'category' | 'artist', name: string }) => {
+  return xhr.get(`/api/featured/${data.type}/${data.name}`, {})
+}
+
+const getFeaturedTeaserData = () => {
+  return xhr.get(`/api/featured-teasers`, {})
 }
 
 const upload = (data: { file: File, title: string, copyrightName: string, copyrightURL: string, tags: string[], isPrivate: boolean, onProgress: (progress: number) => void }) => {
@@ -125,7 +129,8 @@ export default {
   config,
   me,
   getAnnouncements,
-  getArtistData,
+  getFeaturedData,
+  getFeaturedTeaserData,
   indexData,
   newgameData,
   replayGameData,

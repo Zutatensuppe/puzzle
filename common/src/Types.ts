@@ -24,6 +24,7 @@ export type AccountId = Branded<number, 'AccountId'>
 export type ImageId = Branded<number, 'ImageId'>
 export type AnnouncementId = Branded<number, 'AnnouncementId'>
 export type TagId = Branded<number, 'TagId'>
+export type FeaturedId = Branded<number, 'FeaturedId'>
 export type LeaderboardId = Branded<number, 'LeaderboardId'>
 export type LivestreamId = Branded<string, 'LivestreamId'>
 
@@ -882,4 +883,31 @@ export interface AnnouncementsRow {
   created: Date
   title: string
   message: string
+}
+
+export interface FeaturedRow {
+  id: FeaturedId
+  created: Date
+  name: string
+  introduction: string
+  links: { url: string, title: string }[]
+  type: 'artist' | 'category'
+  sort_index: number
+  teaser_active: number
+  // TODO: icon
+  // TODO: teaser image id
+}
+
+export interface CollectionRow {
+  id: number
+  created: Date
+  name: string
+}
+
+export interface CollectionRowWithImages extends CollectionRow {
+  images: ImageInfo[]
+}
+
+export interface FeaturedRowWithCollections extends FeaturedRow {
+  collections: CollectionRowWithImages[]
 }

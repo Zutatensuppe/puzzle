@@ -1,7 +1,7 @@
 import express, { NextFunction } from 'express'
 import { Server } from '../../../Server'
 import { MergeClientIdsIntoUser } from '../../../admin-tools/MergeClientIdsIntoUser'
-import { GameId, ImageId, ServerInfo } from '../../../Types'
+import { FeaturedId, GameId, ImageId, ServerInfo } from '../../../Types'
 import GameLog from '../../../GameLog'
 import { FixPieces } from '../../../admin-tools/FixPieces'
 
@@ -84,10 +84,74 @@ export default function createRouter(
     })
   })
 
+  router.get('/featureds', async (req, res) => {
+    const offset = parseInt(`${req.query.offset}`, 10)
+    if (isNaN(offset) || offset < 0) {
+      res.status(400).send({ error: 'bad offset' })
+      return
+    }
+    const limit = parseInt(`${req.query.limit}`, 10)
+    if (isNaN(limit) || limit < 0) {
+      res.status(400).send({ error: 'bad limit' })
+      return
+    }
+
+    const total = await server.repos.featured.count()
+    const items = await server.repos.featured.getAll(offset, limit)
+    res.send({
+      items,
+      pagination: { total, offset, limit },
+    })
+  })
+
+  router.get('/featureds/:id', async (req, res) => {
+    const id = parseInt(req.params.id, 10) as FeaturedId
+    const featured = await server.repos.featured.getWithCollections({ id })
+    res.send({ featured })
+  })
+
+  router.put('/featureds/:id', express.json(), async (req, res) => {
+    await server.repos.featured.updateWithCollections(req.body.featured)
+    res.send({ ok: true })
+  })
+
+  router.post('/featureds', express.json(), async (req, res) => {
+    const type = req.body.type
+    const name = req.body.name
+    const introduction = req.body.introduction
+    const links = req.body.links
+
+    const id = await server.repos.featured.insert({
+      created: new Date(),
+      type,
+      name,
+      introduction,
+      links,
+      sort_index: 0,
+      teaser_active: 0,
+    })
+    const featured = await server.repos.featured.get({ id })
+    if (!featured) {
+      res.status(500).send({ ok: false, reason: 'unable_to_get_featured' })
+      return
+    }
+    res.send({ featured })
+  })
+
   router.delete('/images/:id', async (req, res) => {
     const id = parseInt(req.params.id, 10) as ImageId
     await server.repos.images.delete(id)
     res.send({ ok: true })
+  })
+
+  router.get('/images/:id', async (req, res) => {
+    const id = parseInt(req.params.id, 10) as ImageId
+    const images = await server.images.imagesByIdsFromDb([id])
+    if (images.length === 0) {
+      res.status(404).send({ error: 'not found' })
+      return
+    }
+    res.send({ image: images[0] })
   })
 
   router.get('/users', async (req, res) => {

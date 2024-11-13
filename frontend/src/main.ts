@@ -4,7 +4,7 @@ import * as Vue from 'vue'
 import App from './App.vue'
 import Index from './views/Index.vue'
 import NewGame from './views/NewGame.vue'
-import FeaturedArtistView from './views/FeaturedArtist.vue'
+import FeaturedView from './views/FeaturedView.vue'
 import Game from './views/Game.vue'
 import Replay from './views/Replay.vue'
 import CannyBugReportsView from './views/CannyBugReports.vue'
@@ -20,6 +20,8 @@ import AdminUsers from './admin/views/UsersView.vue'
 import AdminImages from './admin/views/ImagesView.vue'
 import AdminGroups from './admin/views/GroupsView.vue'
 import AdminAnnouncements from './admin/views/AnnouncementsView.vue'
+import AdminFeatured from './admin/views/FeaturedView.vue'
+import AdminFeaturedEdit from './admin/views/FeaturedEditView.vue'
 import debug from './debug'
 import api from './_api'
 import config from './config'
@@ -49,7 +51,8 @@ const run = async () => {
     routes: [
       { name: 'index', path: '/', component: Index, meta: { title: 'Jigsaw Hyottoko Club' } },
       { name: 'new-game', path: '/new-game', component: NewGame, meta: { title: 'New Game' } },
-      { name: 'featured-artist', path: '/featured-artist/:artist', component: FeaturedArtistView, meta: { title: 'Featured Artist' } },
+      { name: 'featured-artist', path: '/featured/:artist', component: FeaturedView, meta: { title: 'Featured Artist' } },
+      { name: 'featured-category', path: '/featured-category/:category', component: FeaturedView, meta: { title: 'Featured Category' } },
 
       // Canny.io feedback
       { path: '/feedback', redirect: { name: 'bug-reports' } },
@@ -69,6 +72,8 @@ const run = async () => {
       { name: 'admin_images', path: '/admin/images', component: AdminImages, meta: { admin: true, title: 'Admin - Images' } },
       { name: 'admin_groups', path: '/admin/groups', component: AdminGroups, meta: { admin: true, title: 'Admin - Groups' } },
       { name: 'admin_announcements', path: '/admin/announcements', component: AdminAnnouncements, meta: { admin: true, title: 'Admin - Announcements' } },
+      { name: 'admin_featured', path: '/admin/featured', component: AdminFeatured, meta: { admin: true, title: 'Admin - Featured' } },
+      { name: 'admin_featured_edit', path: '/admin/featured/:id', component: AdminFeaturedEdit, meta: { admin: true, title: 'Admin - Featured - Edit' } },
     ],
   })
 

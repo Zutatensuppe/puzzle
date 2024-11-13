@@ -30,6 +30,12 @@
     >
       Announcements
     </v-btn>
+    <v-btn
+      :to="{name: 'admin_featured'}"
+      prepend-icon="mdi-candycane"
+    >
+      Featured
+    </v-btn>
   </v-app-bar>
 </template>
 <script setup lang="ts">

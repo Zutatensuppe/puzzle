@@ -52,6 +52,7 @@ const run = async () => {
     new UrlUtil(),
     twitch,
   )
+  repos.init(server)
   server.start()
 
   const log = logger('main.js')

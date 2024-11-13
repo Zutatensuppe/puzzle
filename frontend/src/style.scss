@@ -173,6 +173,106 @@ $bg-color-transparent: rgba(0 0 0 / 70%);
   }
 }
 
+.featured-section {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr 1fr 1fr 1fr;
+  width: 100%;
+}
+
+.featured-button {
+  aspect-ratio: 16/9;
+  background-size: cover;
+  background-position: center;
+
+  .featured-button-inner {
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 50%);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: relative;
+    transition: background 0.2s ease-in;
+
+    &::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle, transparent, transparent, rgba(0, 0, 0, 80%));
+    }
+
+    &:hover {
+      background: rgba(0, 0, 0, 0%);
+    }
+  }
+
+  .featured-button-title {
+    text-transform: uppercase;
+    font-family: Teko, sans-serif;
+    text-shadow: 1px 1px 3px black;
+    font-size: 36px;
+    font-weight: bold;
+    line-height: 36px;
+    display: flex;
+    opacity: .8;
+  }
+
+  .featured-button-type {
+    text-transform: uppercase;
+    font-family: Teko, sans-serif;
+    text-shadow: 1px 1px 3px black;
+    font-size: 20px;
+    line-height: 1em;
+    position: absolute;
+    top: 0.25em;
+    left: 0.5em;
+    opacity: .5;
+  }
+}
+
+@media (width <= 1500px) {
+  .featured-section {
+    grid-template-columns: 1fr 1fr 1fr;
+  }
+
+  .featured-button {
+    aspect-ratio: 10/2;
+
+    .featured-button-inner {
+      .featured-button-title {
+        font-size: 28px;
+      }
+
+      .featured-button-type {
+        font-size: 18px;
+      }
+    }
+  }
+}
+
+@media (width <= 850px) {
+  .featured-section {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (width <= 600px) {
+  .featured-button {
+    aspect-ratio: 10/2;
+
+    .featured-button-inner {
+      .featured-button-title {
+        font-weight: normal;
+        font-size: 18px;
+      }
+
+      .featured-button-type {
+        font-size: 14px;
+      }
+    }
+  }
+}
+
 .v-card-actions {
   .v-btn {
     font-weight: bold;
@@ -320,7 +420,7 @@ $bg-color-transparent: rgba(0 0 0 / 70%);
   }
 }
 
-.featured-artist-view,
+.featured-view,
 .index-view,
 .new-game-view {
   background: url("assets/gfx/gokhan-polat-qyC7DTbWJJk-unsplash.jpg");
@@ -759,12 +859,12 @@ kbd {
   }
 }
 
-.featured-artist-content {
+.featured-content {
   margin: auto;
   width: 60%;
   max-width: 1024px;
 
-  .featured-artist-links {
+  .featured-links {
     min-width: 200px;
   }
 }

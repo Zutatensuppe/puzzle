@@ -1,13 +1,11 @@
 import { ImageId, ImageRow, ImageRowWithCount, ImageSearchSort, ImageXTagRow, TagId, TagRow, TagRowWithCount, UserId } from '../../../common/src/Types'
 import Db, { OrderBy, WhereRaw } from '../Db'
-import { Repos } from './Repos'
 
 const TABLE = 'images'
 
 export class ImagesRepo {
   constructor(
     private readonly db: Db,
-    private readonly repos: Repos,
   ) {
     // pass
   }

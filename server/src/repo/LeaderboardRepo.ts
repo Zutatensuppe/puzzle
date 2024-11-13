@@ -1,6 +1,5 @@
 import { Leaderboard, LeaderboardEntry, LeaderboardId, UserId } from '../../../common/src/Types'
 import Db from '../Db'
-import { Repos } from './Repos'
 
 interface LeaderboardRow {
   id: LeaderboardId
@@ -16,7 +15,6 @@ export class LeaderboardRepo {
 
   constructor(
     private readonly db: Db,
-    private readonly repos: Repos,
   ) {
     // pass
   }

@@ -36,35 +36,14 @@ in jigsawpuzzles.io
       :class="{blurred: dialog }"
       class="mb-2 d-flex"
     >
-      <h3 class="mr-5">
-        Featured Artists:
-      </h3>
-      <v-btn
-        variant="text"
-        :to="{ name: 'featured-artist', params: { artist: 'LisadiKaprio' }}"
-      >
-        <img
-          src="../assets/featured-artist/lisa.png"
-          width="32"
-          height="32"
-          style="border-radius:32px;"
-          class="mr-3"
-        >
-        LisadiKaprio
-      </v-btn>
-      <v-btn
-        variant="text"
-        :to="{ name: 'featured-artist', params: { artist: 'PEAKY_kun' }}"
-      >
-        <img
-          src="../assets/featured-artist/peaky.png"
-          width="32"
-          height="32"
-          style="border-radius:32px;"
-          class="mr-3"
-        >
-        PEAKY_kun
-      </v-btn>
+      <div class="featured-section mb-2 ga-5">
+        <FeaturedButton
+          v-for="teaser in featuredTeasers"
+          :key="teaser.id"
+          :featured="teaser"
+          @click="goToFeatured(teaser)"
+        />
+      </div>
     </v-container>
     <v-container
       :fluid="true"
@@ -141,15 +120,24 @@ import { onMounted, onBeforeUnmount, ref, watch } from 'vue'
 import NewImageDialog from './../components/NewImageDialog.vue'
 import EditImageDialog from './../components/EditImageDialog.vue'
 import NewGameDialog from './../components/NewGameDialog.vue'
-import { GameSettings, ImageInfo, Tag, NewGameDataRequestData, ImagesRequestData, ImageSearchSort, isImageSearchSort, ImageId } from '../../../common/src/Types'
+import { GameSettings, ImageInfo, Tag, NewGameDataRequestData, ImagesRequestData, ImageSearchSort, isImageSearchSort, ImageId, FeaturedRowWithCollections } from '../../../common/src/Types'
 import api from '../_api'
 import { XhrRequest } from '../_api/xhr'
 import { onBeforeRouteUpdate, RouteLocationNormalizedLoaded, useRouter } from 'vue-router'
 import ImageLibrary from './../components/ImageLibrary.vue'
 import Sentinel from '../components/Sentinel.vue'
 import { debounce } from '../util'
+import FeaturedButton from '../components/FeaturedButton.vue'
 
 const router = useRouter()
+
+const goToFeatured = async (featured: FeaturedRowWithCollections) => {
+  if (featured.type === 'artist') {
+    await router.push({ name: 'featured-artist', params: { artist: featured.name }})
+  } else {
+    await router.push({ name: 'featured-category', params: { category: featured.name }})
+  }
+}
 
 const filters = ref<{ sort: ImageSearchSort, search: string }>({
   sort: ImageSearchSort.DATE_DESC,
@@ -210,6 +198,13 @@ const autocompleteTags = (input: string, exclude: string[]): string[] => {
 watch(filters, () => {
   void filtersChangedDebounced()
 }, { deep: true })
+
+const featuredTeasers = ref<FeaturedRowWithCollections[]>([])
+const loadFeaturedTeasers = async () => {
+  const res = await api.pub.getFeaturedTeaserData()
+  const json = await res.json()
+  featuredTeasers.value = json.featuredTeasers
+}
 
 const currentRequest = ref<XhrRequest | null>(null)
 
@@ -367,6 +362,7 @@ onMounted(async () => {
   shouldInitFiltersFromRoute.value = false
   window.addEventListener('popstate', onPopstate)
   initFilters(router.currentRoute.value)
+  await loadFeaturedTeasers()
   await loadImages()
 })
 </script>
