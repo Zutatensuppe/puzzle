@@ -8,9 +8,9 @@
       <v-card class="pa-5 mb-5 d-flex">
         <div class="justify-start flex-grow-1 mr-5 pr-5">
           <h3>{{ featured.name }}</h3>
-          <div>{{ featured.introduction }}</div>
+          <div v-if="featured.introduction">{{ featured.introduction }}</div>
         </div>
-        <div class="justify-end featured-links ml-5">
+        <div class="justify-end featured-links ml-5" v-if="featured.links.length > 0">
           <h3>Links</h3>
           <div
             v-for="(link, idx) in featured.links"

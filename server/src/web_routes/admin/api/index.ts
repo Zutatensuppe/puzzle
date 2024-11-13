@@ -127,8 +127,6 @@ export default function createRouter(
       name,
       introduction,
       links,
-      sort_index: 0,
-      teaser_active: 0,
     })
     const featured = await server.repos.featured.get({ id })
     if (!featured) {
