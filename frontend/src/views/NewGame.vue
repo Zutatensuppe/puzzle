@@ -32,6 +32,7 @@ in jigsawpuzzles.io
       </v-col>
     </v-row>
     <v-container
+      v-if="featuredTeasers.length > 0"
       :fluid="true"
       :class="{blurred: dialog }"
       class="mb-2 d-flex"
