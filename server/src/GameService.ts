@@ -19,8 +19,8 @@ import { Rect } from '../../common/src/Geometry'
 import { PuzzleService } from './PuzzleService'
 import GameCommon, { NEWGAME_MAX_PIECES, NEWGAME_MIN_PIECES } from '../../common/src/GameCommon'
 import { GAME_VERSION, LOG_TYPE } from '../../common/src/Protocol'
-import { Repos } from './repo/Repos'
 import Crypto from './Crypto'
+import { Server } from './Server'
 
 const log = logger('GameService.js')
 
@@ -47,12 +47,16 @@ interface GameStoreData {
 
 export class GameService {
   private dirtyGames: Record<GameId, boolean> = {}
+  private server!: Server
 
   constructor(
-    private readonly repos: Repos,
     private readonly puzzleService: PuzzleService,
   ) {
     // pass
+  }
+
+  public init (server: Server) {
+    this.server = server
   }
 
   private setDirty(gameId: GameId): void {
@@ -81,7 +85,7 @@ export class GameService {
     if (!Array.isArray(game.players)) {
       game.players = Object.values(game.players)
     }
-    game.puzzle.info.image.gameCount = await this.repos.images.getGameCount(game.puzzle.info.image.id)
+    game.puzzle.info.image.gameCount = await this.server.repos.images.getGameCount(game.puzzle.info.image.id)
 
     const gameVersion = game.gameVersion || 1 // old games didnt have this stored
     return {
@@ -110,7 +114,7 @@ export class GameService {
 
   public async generateRegisteredMap(players: EncodedPlayer[]): Promise<RegisteredMap> {
     const registeredMap: RegisteredMap = {}
-    const users = await this.repos.users.getMany({
+    const users = await this.server.repos.users.getMany({
       client_id: { '$in': players.map(player => player[0]) },
     })
     for (const user of users) {
@@ -119,6 +123,14 @@ export class GameService {
       }
     }
     return registeredMap
+  }
+
+  public async delete(gameId: GameId): Promise<void> {
+    await this.server.repos.games.delete(gameId)
+    GameCommon.unsetGame(gameId)
+    GameLog.unsetGame(gameId)
+    this.server.gameSockets.disconnectAll(gameId)
+    this.server.gameSockets.removeSocketInfo(gameId)
   }
 
   public async ensureLoaded(gameId: GameId): Promise<boolean> {
@@ -152,7 +164,7 @@ export class GameService {
 
   public async createNewGameObjForReplay(gameId: GameId): Promise<Game | null> {
     log.info(`createNewGameObj: ${gameId}`)
-    const gameRow = await this.repos.games.getGameRowById(gameId)
+    const gameRow = await this.server.repos.games.getGameRowById(gameId)
     if (!gameRow) {
       log.info(`createNewGameObj, game not found: ${gameId}`)
       return null
@@ -180,14 +192,14 @@ export class GameService {
       gameObject.joinPassword,
       gameObject.crop,
     )
-    gameObj.puzzle.info.image.gameCount = await this.repos.images.getGameCount(gameObj.puzzle.info.image.id)
+    gameObj.puzzle.info.image.gameCount = await this.server.repos.images.getGameCount(gameObj.puzzle.info.image.id)
     gameObj.registeredMap = await this.generateRegisteredMap(gameObj.players)
     return gameObj
   }
 
   private async loadGame(gameId: GameId): Promise<Game | null> {
     log.info(`[INFO] loading game: ${gameId}`)
-    const gameRow = await this.repos.games.getGameRowById(gameId)
+    const gameRow = await this.server.repos.games.getGameRowById(gameId)
     if (!gameRow) {
       log.info(`[INFO] game not found: ${gameId}`)
       return null
@@ -210,23 +222,23 @@ export class GameService {
   }
 
   public async getPublicRunningGames(offset: number, limit: number, userId: UserId): Promise<GameRow[]> {
-    return await this.repos.games.getPublicRunningGames(offset, limit, userId)
+    return await this.server.repos.games.getPublicRunningGames(offset, limit, userId)
   }
 
   public async getPublicFinishedGames(offset: number, limit: number, userId: UserId): Promise<GameRow[]> {
-    return await this.repos.games.getPublicFinishedGames(offset, limit, userId)
+    return await this.server.repos.games.getPublicFinishedGames(offset, limit, userId)
   }
 
   public async countPublicRunningGames(userId: UserId): Promise<number> {
-    return await this.repos.games.countPublicRunningGames(userId)
+    return await this.server.repos.games.countPublicRunningGames(userId)
   }
 
   public async countPublicFinishedGames(userId: UserId): Promise<number> {
-    return await this.repos.games.countPublicFinishedGames(userId)
+    return await this.server.repos.games.countPublicFinishedGames(userId)
   }
 
   private async exists(gameId: GameId): Promise<boolean> {
-    return await this.repos.games.exists(gameId)
+    return await this.server.repos.games.exists(gameId)
   }
 
   public dirtyGameIds(): GameId[] {
@@ -235,7 +247,7 @@ export class GameService {
 
   public async persistGame(game: Game): Promise<void> {
     this.setClean(game.id)
-    await this.repos.games.upsert({
+    await this.server.repos.games.upsert({
       id: game.id,
       creator_user_id: game.creatorUserId,
       image_id: game.puzzle.info.image.id,
@@ -248,7 +260,7 @@ export class GameService {
       join_password: game.joinPassword,
       // the image_snapshot_url is not updated here, this is intended!
     })
-    await this.repos.games.updatePlayerRelations(game.id, game.players)
+    await this.server.repos.games.updatePlayerRelations(game.id, game.players)
 
     await GameLog.flushToDisk(game.id)
 
@@ -436,7 +448,7 @@ export class GameService {
         await this.persistGame(game)
 
         // no need to wait for leaderboard update
-        void this.repos.leaderboard.updateLeaderboards()
+        void this.server.repos.leaderboard.updateLeaderboards()
       }
     }
     return ret
@@ -459,7 +471,7 @@ export class GameService {
       return insufficentAuthDetails
     }
     // if user is an admin, they can join anyway
-    if (user?.id && await this.repos.users.isInGroup(user.id, 'admin')) {
+    if (user?.id && await this.server.repos.users.isInGroup(user.id, 'admin')) {
       return insufficentAuthDetails
     }
 

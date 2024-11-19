@@ -121,7 +121,8 @@ export class GamesRepo {
 
   async delete(gameId: GameId): Promise<void> {
     await this.db.delete(TABLE, { id: gameId })
+    await this.db.delete('user_x_game', { game_id: gameId })
 
-    // TODO: delete relation table entries, maybe recalculate leaderboards etc.
+    this.repos.leaderboard.updateLeaderboards()
   }
 }

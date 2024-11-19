@@ -24,6 +24,14 @@ export class GameSockets {
     return idleGameIds
   }
 
+  disconnectAll(gameId: GameId): void {
+    if (gameId in this.sockets) {
+      for (const socket of this.sockets[gameId]) {
+        socket.close()
+      }
+    }
+  }
+
   removeSocketInfo(gameId: GameId): void {
     if (gameId in this.sockets) {
       delete this.sockets[gameId]
