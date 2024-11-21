@@ -60,7 +60,7 @@ export default function createRouter(
 
   router.delete('/games/:id', async (req, res) => {
     const id = req.params.id as GameId
-    await server.repos.games.delete(id)
+    await server.gameService.delete(id)
     res.send({ ok: true })
   })
 

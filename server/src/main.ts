@@ -35,7 +35,7 @@ const run = async () => {
   const images = new Images(repos.images, imageExif)
   const imageResize = new ImageResize(imageExif)
   const puzzleService = new PuzzleService()
-  const gameService = new GameService(repos, puzzleService)
+  const gameService = new GameService(puzzleService)
   const twitch = new Twitch(config.auth.twitch)
 
   const server = new Server(
@@ -53,6 +53,7 @@ const run = async () => {
     twitch,
   )
   repos.init(server)
+  gameService.init(server)
   server.start()
 
   const log = logger('main.js')
