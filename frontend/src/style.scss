@@ -591,8 +591,9 @@ html.view-replay body { overflow: hidden; }
   .imageteaser-inner {
     position: absolute;
     inset: 0;
-    background: rgba(0 0 0 / 10%);
     padding: 1em;
+    opacity: 0;
+    transition: opacity 0.2s ease-in;
   }
 
   .imageteaser-title {
@@ -632,6 +633,7 @@ html.view-replay body { overflow: hidden; }
 
 .imageteaser:hover {
   .imageteaser-inner {
+    opacity: 1;
     background: rgba(0 0 0 / 50%);
   }
 
