@@ -123,6 +123,6 @@ export class GamesRepo {
     await this.db.delete(TABLE, { id: gameId })
     await this.db.delete('user_x_game', { game_id: gameId })
 
-    this.repos.leaderboard.updateLeaderboards()
+    await this.repos.leaderboard.updateLeaderboards()
   }
 }

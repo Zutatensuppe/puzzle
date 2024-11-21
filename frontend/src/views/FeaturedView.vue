@@ -10,7 +10,10 @@
           <h3>{{ featured.name }}</h3>
           <div v-if="featured.introduction">{{ featured.introduction }}</div>
         </div>
-        <div class="justify-end featured-links ml-5" v-if="featured.links.length > 0">
+        <div
+          v-if="featured.links.length > 0"
+          class="justify-end featured-links ml-5"
+        >
           <h3>Links</h3>
           <div
             v-for="(link, idx) in featured.links"
