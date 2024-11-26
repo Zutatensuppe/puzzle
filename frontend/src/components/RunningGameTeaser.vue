@@ -15,15 +15,17 @@
         class="game-teaser-image state-hovered"
         :style="styleHovered"
       />
+      <div class="game-teaser-banderole-holder">
+        <div
+          v-if="game.isPrivate"
+          class="game-teaser-banderole game-is-private-info"
+        >
+          <v-icon icon="mdi-incognito" /> Private Game
+        </div>
+      </div>
     </div>
 
     <div class="game-teaser-inner">
-      <div
-        v-if="game.isPrivate"
-        class="game-teaser-info game-is-private-info"
-      >
-        <v-icon icon="mdi-incognito" /> Private Game
-      </div>
       <div class="game-teaser-info">
         <v-icon icon="mdi-puzzle" /> {{ game.piecesFinished }}/{{ game.piecesTotal }} Pieces
       </div>
@@ -37,25 +39,25 @@
         class="game-teaser-info secondary"
         title="Scoring"
       >
-        <v-icon icon="mdi-counter" /> Scoring: {{ scoreMode }}
+        <v-icon icon="mdi-counter" /> Scoring: <span :class="{attention: scoreMode !== 'Any' }">{{ scoreMode }}</span>
       </div>
       <div
         class="game-teaser-info secondary"
         title="Shapes"
       >
-        <v-icon icon="mdi-shape" /> Shapes: {{ shapeMode }}
+        <v-icon icon="mdi-shape" /> Shapes: <span :class="{attention: shapeMode !== 'Normal' }">{{ shapeMode }}</span>
       </div>
       <div
         class="game-teaser-info secondary"
         title="Snapping"
       >
-        <v-icon icon="mdi-connection" /> Snapping: {{ snapMode }}
+        <v-icon icon="mdi-connection" /> Snapping: <span :class="{attention: snapMode !== 'Normal' }">{{ snapMode }}</span>
       </div>
       <div
         class="game-teaser-info secondary"
         title="Snapping"
       >
-        <v-icon icon="mdi-format-rotate-90" /> Rotation: {{ rotationMode }}
+        <v-icon icon="mdi-format-rotate-90" /> Rotation: <span :class="{attention: rotationMode !== 'None' }">{{ rotationMode }}</span>
       </div>
 
       <div class="game-teaser-buttons">
@@ -73,16 +75,27 @@
         >
           {{ joinPuzzleText }}
         </v-btn>
+        <v-btn
+          v-if="canDelete"
+          color="error"
+          block
+          class="mt-4"
+          prepend-icon="mdi-trash-can"
+          @click.stop="emit('delete', game)"
+        >
+          Delete Game
+        </v-btn>
       </div>
     </div>
   </v-card>
 </template>
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import Time from '../../../common/src/Time'
 import { resizeUrl } from '../../../common/src/ImageService'
 import { GameInfo, ImageInfo } from '../../../common/src/Types'
 import { rotationModeToString, scoreModeToString, shapeModeToString, snapModeToString } from '../../../common/src/Util'
+import user, { User } from '../user'
 
 const props = defineProps<{
   game: GameInfo,
@@ -91,6 +104,7 @@ const props = defineProps<{
 const emit = defineEmits<{
   (e: 'goToGame', val: GameInfo): void
   (e: 'showImageInfo', val: ImageInfo): void
+  (e: 'delete', val: GameInfo): void
 }>()
 
 const style = computed(() => {
@@ -122,4 +136,23 @@ const time = ((start: number, end: number) => {
   const timeDiffStr = Time.timeDiffStr(from, to)
   return `${timeDiffStr}`
 })(props.game.started, props.game.finished)
+
+const me = ref<User|null>(null)
+
+const canDelete = computed(() => {
+  return me.value && me.value.id === props.game.creatorUserId
+})
+
+const onInit = () => {
+  me.value = user.getMe()
+}
+onMounted(() => {
+  void onInit()
+  user.eventBus.on('login', onInit)
+  user.eventBus.on('logout', onInit)
+})
+onBeforeUnmount(() => {
+  user.eventBus.off('login', onInit)
+  user.eventBus.off('logout', onInit)
+})
 </script>

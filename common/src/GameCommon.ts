@@ -86,6 +86,10 @@ function setGameLoading(gameId: GameId, loading: boolean): void {
   }
 }
 
+function isFinished(gameId: GameId): boolean {
+  return Game_isFinished(GAMES[gameId])
+}
+
 function isGameLoading(gameId: GameId): boolean {
   return !!GAME_LOADING[gameId]
 }
@@ -1395,6 +1399,7 @@ export default {
   handleLogEntry,
   isGameLoading,
   isPlayerBanned,
+  isFinished,
   joinPassword,
   loaded,
   onGameLoadingStateChange,

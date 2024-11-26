@@ -44,7 +44,8 @@ export enum SERVER_EVENT_TYPE {
   UPDATE = 1,
   INIT = 4,
   SYNC = 5,
-  INSUFFICIENT_AUTH = 7,
+  ERROR = 7,
+  GAME_DOES_NOT_EXIST = 8,
 }
 
 export enum CLIENT_EVENT_TYPE {

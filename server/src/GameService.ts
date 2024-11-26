@@ -7,7 +7,7 @@ import {
   UserId,
   ClientId,
   GameInfo,
-  InsufficentAuthDetails,
+  ServerErrorDetails,
   ClientInitEvent,
   GameRow,
   UserRow,
@@ -133,6 +133,17 @@ export class GameService {
     this.server.gameSockets.removeSocketInfo(gameId)
   }
 
+  public async deleteRunningGameIfCreatedByUser(gameId: GameId, userId: UserId): Promise<void> {
+    await this.ensureLoaded(gameId)
+    if (GameCommon.isFinished(gameId)) {
+      throw new Error('game is already finished')
+    }
+    if (GameCommon.getCreatorUserId(gameId) !== userId) {
+      throw new Error('not the creator')
+    }
+    await this.delete(gameId)
+  }
+
   public async ensureLoaded(gameId: GameId): Promise<boolean> {
     if (GameCommon.loaded(gameId)) {
       return true
@@ -159,6 +170,8 @@ export class GameService {
       GameCommon.setGameLoading(gameId, false)
       return true
     }
+
+    GameCommon.setGameLoading(gameId, false)
     return false
   }
 
@@ -275,6 +288,7 @@ export class GameService {
     const finished = GameCommon.Game_getFinishTs(game)
     return {
       id: game.id,
+      creatorUserId: game.creatorUserId,
       hasReplay: game.hasReplay,
       isPrivate: GameCommon.Game_isPrivate(game),
       started: GameCommon.Game_getStartTs(game),
@@ -459,23 +473,21 @@ export class GameService {
     gameId: GameId,
     clientId: ClientId,
     user: UserRow | null,
-  ): Promise<InsufficentAuthDetails> {
-    const insufficentAuthDetails: InsufficentAuthDetails = {
-      requireAccount: false,
-      requirePassword: false,
-      wrongPassword: false,
-      banned: false,
+  ): Promise<ServerErrorDetails> {
+    const serverErrorDetails: ServerErrorDetails = {
     }
     // if user is the creator of the game, they can join anyway
     if (user?.id === GameCommon.getCreatorUserId(gameId)) {
-      return insufficentAuthDetails
+      return serverErrorDetails
     }
     // if user is an admin, they can join anyway
     if (user?.id && await this.server.repos.users.isInGroup(user.id, 'admin')) {
-      return insufficentAuthDetails
+      return serverErrorDetails
     }
 
-    insufficentAuthDetails.banned = GameCommon.isPlayerBanned(gameId, clientId)
+    if (GameCommon.isPlayerBanned(gameId, clientId)) {
+      serverErrorDetails.banned = true
+    }
 
     const msgData = gameInitEvent[1]
     // check join requirements
@@ -485,18 +497,18 @@ export class GameService {
         // this is a registered user, all good
       } else {
         // user is not logged in, send a message for the client to handle
-        insufficentAuthDetails.requireAccount = true
+        serverErrorDetails.requireAccount = true
       }
     }
 
     // msg[1] is (optional) init data, also contains password
     if (GameCommon.joinPassword(gameId)) {
       if (!msgData?.password) {
-        insufficentAuthDetails.requirePassword = true
+        serverErrorDetails.requirePassword = true
       } else if (Crypto.encrypt(msgData.password) !== GameCommon.joinPassword(gameId)) {
-        insufficentAuthDetails.wrongPassword = true
+        serverErrorDetails.wrongPassword = true
       }
     }
-    return insufficentAuthDetails
+    return serverErrorDetails
   }
 }

@@ -8,7 +8,9 @@
       <v-card class="pa-5 mb-5 d-flex">
         <div class="justify-start flex-grow-1 mr-5 pr-5">
           <h3>{{ featured.name }}</h3>
-          <div v-if="featured.introduction">{{ featured.introduction }}</div>
+          <div v-if="featured.introduction">
+            {{ featured.introduction }}
+          </div>
         </div>
         <div
           v-if="featured.links.length > 0"

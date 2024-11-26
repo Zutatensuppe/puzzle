@@ -25,9 +25,9 @@
     <CuttingOverlay v-model="cuttingPuzzle" />
 
     <ConnectionOverlay
-      v-if="!cuttingPuzzle || insufficientAuthDetails"
+      v-if="!cuttingPuzzle || serverError"
       :connection-state="connectionState"
-      :insufficient-auth-details="insufficientAuthDetails"
+      :server-error="serverError"
       @reconnect="reconnect"
       @connect_with_password="connectWithPassword"
     />
@@ -71,7 +71,7 @@
   </div>
 </template>
 <script setup lang="ts">
-import { Hud, GameStatus, GamePlayers, CONN_STATE, RegisteredMap, GameId, DialogChangeData, InsufficentAuthDetails, ClientId } from '../../../common/src/Types'
+import { Hud, GameStatus, GamePlayers, CONN_STATE, RegisteredMap, GameId, DialogChangeData, ServerErrorDetails, ClientId } from '../../../common/src/Types'
 import { GamePlay } from '../GamePlay'
 import { onMounted, onUnmounted, Ref, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
@@ -97,7 +97,7 @@ const dialog = ref<boolean>(false)
 const dialogPersistent = ref<boolean | undefined>(undefined)
 const overlay = ref<string>('')
 const connectionState = ref<CONN_STATE>(CONN_STATE.NOT_CONNECTED)
-const insufficientAuthDetails = ref<InsufficentAuthDetails | null>(null)
+const serverError = ref<ServerErrorDetails | null>(null)
 const cuttingPuzzle = ref<boolean>(true)
 const showInterface = ref<boolean>(true)
 const canvasEl = ref<HTMLCanvasElement>() as Ref<HTMLCanvasElement>
@@ -210,10 +210,10 @@ const hud: Hud = {
   setStatus: (v: GameStatus) => {
     status.value = v
   },
-  setConnectError: (e: InsufficentAuthDetails) => {
+  setConnectError: (e: ServerErrorDetails) => {
     cuttingPuzzle.value = false
-    connectionState.value = CONN_STATE.INSUFFICIENT_AUTH
-    insufficientAuthDetails.value = e
+    connectionState.value = CONN_STATE.SERVER_ERROR
+    serverError.value = e
   },
   setConnectionState: (v: CONN_STATE) => {
     connectionState.value = v

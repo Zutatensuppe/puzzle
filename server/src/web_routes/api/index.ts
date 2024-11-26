@@ -1,4 +1,4 @@
-import { GameSettings, GameInfo, ApiDataIndexData, ApiDataFinishedGames, NewGameDataRequestData, ImagesRequestData, UserId, ImageId, ClientId, UserRow } from '../../../../common/src/Types'
+import { GameSettings, GameInfo, ApiDataIndexData, ApiDataFinishedGames, NewGameDataRequestData, ImagesRequestData, UserId, ImageId, ClientId, UserRow, GameId } from '../../../../common/src/Types'
 import config from '../../Config'
 import express, { Response, Router } from 'express'
 import GameLog from '../../GameLog'
@@ -683,5 +683,23 @@ export default function createRouter(
       res.status(400).send({ reason: e.message })
     }
   })
+
+  router.delete('/games/:id', async (req: any, res) => {
+    const user: UserRow | null = req.user || null
+    if (!user || !user.id) {
+      res.status(403).send({ ok: false, error: 'forbidden' })
+      return
+    }
+    const id = req.params.id as GameId
+    try {
+      await server.gameService.deleteRunningGameIfCreatedByUser(id, user.id)
+    } catch (e: any) {
+      log.error(e)
+      res.status(400).send({ reason: e.message })
+      return
+    }
+    res.send({ ok: true })
+  })
+
   return router
 }

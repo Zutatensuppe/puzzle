@@ -7,20 +7,26 @@
     <v-card>
       <v-container :fluid="true">
         <v-form
-          v-if="insufficientAuth"
+          v-if="hasServerError"
           class="justify-center mb-2"
         >
-          <h4>Not authorized to join :(</h4>
+          <h4>Not possible to join :(</h4>
 
           <div
-            v-if="insufficientAuthDetails?.banned"
+            v-if="serverError?.gameDoesNotExist"
+            class="mb-3"
+          >
+            The game you are trying to join does not exist.
+          </div>
+          <div
+            v-else-if="serverError?.banned"
             class="mb-3"
           >
             You were banned from this puzzle.
           </div>
           <div v-else>
             <div
-              v-if="insufficientAuthDetails?.requireAccount"
+              v-if="serverError?.requireAccount"
               class="mb-3"
             >
               You need to be logged in to join this puzzle.
@@ -28,7 +34,7 @@
               <LoginBit />
             </div>
             <div
-              v-if="insufficientAuthDetails?.requirePassword"
+              v-if="serverError?.requirePassword"
               class="mb-3"
             >
               You need a password to join this puzzle.
@@ -44,7 +50,7 @@
               />
             </div>
             <div
-              v-else-if="insufficientAuthDetails?.wrongPassword"
+              v-else-if="serverError?.wrongPassword"
               class="mb-3"
             >
               The password you provided is wrong.
@@ -103,7 +109,7 @@
 </template>
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { CONN_STATE, InsufficentAuthDetails } from '../../../common/src/Types'
+import { CONN_STATE, ServerErrorDetails } from '../../../common/src/Types'
 import LoginBit from './LoginBit.vue'
 
 const emit = defineEmits<{
@@ -114,11 +120,11 @@ const emit = defineEmits<{
 
 const props = defineProps<{
   connectionState: CONN_STATE
-  insufficientAuthDetails: InsufficentAuthDetails | null
+  serverError: ServerErrorDetails | null
 }>()
 
-const insufficientAuth = computed((): boolean => {
-  return props.connectionState === CONN_STATE.INSUFFICIENT_AUTH
+const hasServerError = computed((): boolean => {
+  return props.connectionState === CONN_STATE.SERVER_ERROR
 })
 
 const lostConnection = computed((): boolean => {
@@ -130,7 +136,7 @@ const connecting = computed((): boolean => {
 })
 
 const show = computed((): boolean => {
-  return !!(lostConnection.value || connecting.value || insufficientAuth.value)
+  return !!(lostConnection.value || connecting.value || hasServerError.value)
 })
 
 const joinPassword = ref<string>('')
