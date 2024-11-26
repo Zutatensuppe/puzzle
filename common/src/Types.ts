@@ -892,6 +892,7 @@ export interface FeaturedRow {
   introduction: string
   links: { url: string, title: string }[]
   type: 'artist' | 'category'
+  slug: string
   // TODO: icon
   // TODO: teaser image id
 }

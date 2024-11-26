@@ -115,9 +115,10 @@ const onImageClicked = (newImage: ImageInfo) => {
 
 onMounted(async () => {
   const type = route.params.artist ? 'artist' : 'category'
-  const name = `${route.params.artist || route.params.category}`
+  // TODO: remove toLowerCase after a while, it is only required now because of old browser caches.
+  const slug = `${route.params.artist || route.params.category}`.toLowerCase()
 
-  const res = await api.pub.getFeaturedData({ type, name })
+  const res = await api.pub.getFeaturedData({ type, slug })
   const data = await res.json()
   featured.value = data.featured
   collections.value = data.collections

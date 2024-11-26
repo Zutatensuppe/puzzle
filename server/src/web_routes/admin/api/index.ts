@@ -120,6 +120,7 @@ export default function createRouter(
     const name = req.body.name
     const introduction = req.body.introduction
     const links = req.body.links
+    const slug = req.body.slug
 
     const id = await server.repos.featured.insert({
       created: new Date(),
@@ -127,6 +128,7 @@ export default function createRouter(
       name,
       introduction,
       links,
+      slug,
     })
     const featured = await server.repos.featured.get({ id })
     if (!featured) {

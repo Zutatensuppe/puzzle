@@ -14,7 +14,7 @@
     />
 
     <strong>Images</strong>
-    <div class="d-flex ga-5">
+    <div class="d-flex flex-wrap ga-5">
       <div
         v-for="image in val.images"
         :key="image.id"

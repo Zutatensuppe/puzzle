@@ -12,6 +12,10 @@
         v-model="featured.name"
         label="Name"
       />
+      <v-text-field
+        v-model="featured.slug"
+        label="Slug"
+      />
       <v-textarea
         v-model="featured.introduction"
         label="Introduction"
