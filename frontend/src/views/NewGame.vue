@@ -134,9 +134,9 @@ const router = useRouter()
 
 const goToFeatured = async (featured: FeaturedRowWithCollections) => {
   if (featured.type === 'artist') {
-    await router.push({ name: 'featured-artist', params: { artist: featured.name }})
+    await router.push({ name: 'featured-artist', params: { artist: featured.slug }})
   } else {
-    await router.push({ name: 'featured-category', params: { category: featured.name }})
+    await router.push({ name: 'featured-category', params: { category: featured.slug }})
   }
 }
 

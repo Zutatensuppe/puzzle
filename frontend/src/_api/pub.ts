@@ -94,8 +94,8 @@ const newGame = (data: { gameSettings: GameSettings }) => {
   })
 }
 
-const getFeaturedData = (data: { type: 'category' | 'artist', name: string }) => {
-  return xhr.get(`/api/featured/${data.type}/${data.name}`, {})
+const getFeaturedData = (data: { type: 'category' | 'artist', slug: string }) => {
+  return xhr.get(`/api/featured/${data.type}/${data.slug}`, {})
 }
 
 const getFeaturedTeaserData = () => {

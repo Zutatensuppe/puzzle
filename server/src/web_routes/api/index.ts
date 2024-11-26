@@ -490,10 +490,15 @@ export default function createRouter(
     })
   })
 
-  router.get('/featured/:type/:name', async (req, res): Promise<void> => {
-    const name = req.params.name
+  router.get('/featured/:type/:slug', async (req, res): Promise<void> => {
     const type = req.params.type
-    res.send({ featured: await server.repos.featured.getWithCollections({ name, type }) })
+    const slug = req.params.slug
+    try {
+      const featured = await server.repos.featured.getWithCollections({ type, slug })
+      res.send({ featured })
+    } catch (e: any) {
+      res.status(404).send({ reason: e.message })
+    }
   })
 
   router.get('/featured-teasers', async (req, res): Promise<void> => {

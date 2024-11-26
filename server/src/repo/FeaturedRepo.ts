@@ -140,14 +140,20 @@ export class FeaturedRepo {
       introduction: featured.introduction,
       links: featured.links,
       name: featured.name,
+      slug: featured.slug,
       type: featured.type,
     }, { id: featured.id })
   }
 
   public async getActiveTeasers(): Promise<FeaturedRowWithCollections[]> {
-    const rows = await this.db.getMany('featured_teaser', { active: 1 })
-    const ids = rows.map(r => r.featured_id)
-    // TODO: sort order
-    return await this.getManyWithCollections({ id: { $in: ids } })
+    const featuredTeaserRows = await this.db.getMany('featured_teaser', { active: 1 })
+    const ids = featuredTeaserRows.map(r => r.featured_id)
+    const featuredRows = await this.getManyWithCollections({ id: { $in: ids } })
+    // sort by property sort_index, ascending:
+    return featuredRows.toSorted((a, b) => {
+      const teaserA = featuredTeaserRows.find(r => r.featured_id === a.id)!
+      const teaserB = featuredTeaserRows.find(r => r.featured_id === b.id)!
+      return teaserA!.sort_index - teaserB!.sort_index
+    })
   }
 }
