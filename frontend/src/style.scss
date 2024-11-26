@@ -284,6 +284,11 @@ $bg-color-transparent: rgba(0 0 0 / 70%);
   overflow: visible;
   margin-right: 220px;
 
+  .attention {
+    color: orange;
+    font-weight: bold;
+  }
+
   .game-teaser-image-holder {
     display: block;
     position: relative;
@@ -301,7 +306,8 @@ $bg-color-transparent: rgba(0 0 0 / 70%);
   }
 
   > .v-card__overlay,
-  .game-teaser-image {
+  .game-teaser-image,
+  .game-teaser-banderole-holder {
     transition: transform 0.2s ease-in, opacity 0.2s ease-in;
     -moz-transition: transform 0.2s ease-in, opacity 0.2s ease-in;
     -ms-transition: transform 0.2s ease-in, opacity 0.2s ease-in;
@@ -339,9 +345,25 @@ $bg-color-transparent: rgba(0 0 0 / 70%);
   }
 
   &:hover > .v-card__overlay,
-  &:hover .game-teaser-image {
+  &:hover .game-teaser-image,
+  &:hover .game-teaser-banderole-holder {
     transform: scale(1.1);
   }
+
+  .game-teaser-banderole-holder {
+    overflow: hidden;
+    position: absolute;
+    inset: 0;
+
+    .game-teaser-banderole {
+      position: absolute;
+      top: 0;
+      left: 0;
+      padding: 5px 50px;
+      transform: translate(-50px, 50px) rotate(-45deg);
+    }
+  }
+
 
   .game-teaser-image.state-hovered {
     opacity: 0;
