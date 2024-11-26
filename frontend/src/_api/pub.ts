@@ -54,6 +54,10 @@ const indexData = () => {
   return xhr.get('/api/index-data', {})
 }
 
+const deleteGame = async (id: GameId) => {
+  return await xhr.delete(`/api/games/${id}`, {})
+}
+
 const finishedGames = (data: { limit: number, offset: number }) => {
   return xhr.get(`/api/finished-games${Util.asQueryArgs(data)}`, {})
 }
@@ -128,6 +132,7 @@ export default {
   logout,
   config,
   me,
+  deleteGame,
   getAnnouncements,
   getFeaturedData,
   getFeaturedTeaserData,

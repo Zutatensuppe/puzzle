@@ -135,7 +135,7 @@ function connect(
           return
         }
         changesCallback(msg)
-      } else if (msgType === SERVER_EVENT_TYPE.INSUFFICIENT_AUTH) {
+      } else if (msgType === SERVER_EVENT_TYPE.ERROR) {
         reject(msg[1])
       } else {
         throw `[ 2021-05-09 invalid connect msgType ${msgType} ]`

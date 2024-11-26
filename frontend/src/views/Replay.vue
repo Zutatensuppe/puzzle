@@ -174,7 +174,7 @@
 </template>
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, Ref, ref, watch } from 'vue'
-import { ReplayHud, GameStatus, GamePlayers, CONN_STATE, RegisteredMap, GameId, DialogChangeData, InsufficentAuthDetails } from '../../../common/src/Types'
+import { ReplayHud, GameStatus, GamePlayers, CONN_STATE, RegisteredMap, GameId, DialogChangeData, ServerErrorDetails } from '../../../common/src/Types'
 import { GameReplay } from './../GameReplay'
 import { useRoute } from 'vue-router'
 import api from '../_api'
@@ -196,7 +196,7 @@ const status = ref<GameStatus>({ finished: false, duration: 0, piecesDone: 0, pi
 const dialog = ref<boolean>(false)
 const dialogPersistent = ref<boolean | undefined>(undefined)
 const overlay = ref<string>('')
-const insufficientAuthDetails = ref<InsufficentAuthDetails | null>(null)
+const serverError = ref<ServerErrorDetails | null>(null)
 const connectionState = ref<number>(0)
 const cuttingPuzzle = ref<boolean>(true)
 const showInterface = ref<boolean>(true)
@@ -373,9 +373,9 @@ const hud: ReplayHud = {
   setConnectionState: (v: CONN_STATE) => {
     connectionState.value = v
   },
-  setConnectError: (e: InsufficentAuthDetails) => {
-    connectionState.value = CONN_STATE.INSUFFICIENT_AUTH
-    insufficientAuthDetails.value = e
+  setConnectError: (e: ServerErrorDetails) => {
+    connectionState.value = CONN_STATE.SERVER_ERROR
+    serverError.value = e
   },
   togglePreview: (v: boolean) => {
     if (v) {

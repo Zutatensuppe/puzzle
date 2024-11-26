@@ -186,13 +186,18 @@ export class Server {
         const ts = Time.timestamp()
         const clientSeq = -1 // client lost connection, so clientSeq doesn't matter
         const gameEvent: GameEventInputConnectionClose = [GAME_EVENT_TYPE.INPUT_EV_CONNECTION_CLOSE]
-        const ret = await this.gameService.handleGameEvent(gameId, clientId, gameEvent, ts)
-        const sockets = this.gameSockets.getSockets(gameId)
-        if (sockets.length) {
-          notify(
-            [SERVER_EVENT_TYPE.UPDATE, clientId, clientSeq, ret.changes],
-            sockets,
-          )
+
+        // the game can be unloaded here, eg. when it is being deleted while someone is playing
+        const loaded = await this.gameService.ensureLoaded(gameId)
+        if (loaded) {
+          const ret = await this.gameService.handleGameEvent(gameId, clientId, gameEvent, ts)
+          const sockets = this.gameSockets.getSockets(gameId)
+          if (sockets.length) {
+            notify(
+              [SERVER_EVENT_TYPE.UPDATE, clientId, clientSeq, ret.changes],
+              sockets,
+            )
+          }
         }
       } catch (e) {
         log.error(e)
@@ -210,16 +215,16 @@ export class Server {
         const msgType = msg[0]
         switch (msgType) {
           case CLIENT_EVENT_TYPE.INIT: {
-            log.log(`ws`, socket.protocol, msgType)
             const loaded = await this.gameService.ensureLoaded(gameId)
             if (!loaded) {
-              throw `[game ${gameId} does not exist... ]`
+              notify([SERVER_EVENT_TYPE.ERROR, { gameDoesNotExist: true }], [socket])
+              break
             }
 
             const user = await this.users.getUser({ client_id: clientId })
             const details = await this.gameService.checkAuth(msg, gameId, clientId, user)
             if (details.requireAccount || details.requirePassword || details.wrongPassword || details.banned) {
-              notify([SERVER_EVENT_TYPE.INSUFFICIENT_AUTH, details], [socket])
+              notify([SERVER_EVENT_TYPE.ERROR, details], [socket])
               break
             }
 
@@ -233,11 +238,12 @@ export class Server {
           } break
 
           case CLIENT_EVENT_TYPE.UPDATE: {
-            // log.log(`ws`, socket.protocol, msgType)
             const loaded = await this.gameService.ensureLoaded(gameId)
             if (!loaded) {
-              throw `[game ${gameId} does not exist... ]`
+              notify([SERVER_EVENT_TYPE.ERROR, { gameDoesNotExist: true }], [socket])
+              break
             }
+
             const clientSeq = msg[1]
             const gameEvent = msg[2]
             const ts = Time.timestamp()

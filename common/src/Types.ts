@@ -91,14 +91,15 @@ export type ServerInitEvent = [SERVER_EVENT_TYPE.INIT, EncodedGame | EncodedGame
 export type ServerUpdateEvent = [SERVER_EVENT_TYPE.UPDATE, string, number, Change[]]
 export type ServerSyncEvent = [SERVER_EVENT_TYPE.SYNC, EncodedGame | EncodedGameLegacy]
 
-export type InsufficentAuthDetails = {
-  requireAccount: boolean
-  requirePassword: boolean
-  wrongPassword: boolean
-  banned: boolean
+export type ServerErrorDetails = {
+  requireAccount?: boolean
+  requirePassword?: boolean
+  wrongPassword?: boolean
+  banned?: boolean
+  gameDoesNotExist?: boolean
 }
-export type ServerInsufficientAuthEvent = [SERVER_EVENT_TYPE.INSUFFICIENT_AUTH, InsufficentAuthDetails]
-export type ServerEvent = ServerInitEvent | ServerUpdateEvent | ServerSyncEvent | ServerInsufficientAuthEvent
+export type ServerErrorEvent = [SERVER_EVENT_TYPE.ERROR, ServerErrorDetails]
+export type ServerEvent = ServerInitEvent | ServerUpdateEvent | ServerSyncEvent | ServerErrorEvent
 
 export type ClientInitOptions = {
   password: string
@@ -582,6 +583,7 @@ export interface ImageSnapshots {
 
 export interface GameInfo {
   id: GameId
+  creatorUserId: UserId | null
   hasReplay: boolean
   isPrivate: boolean
   started: number
@@ -717,7 +719,7 @@ export enum CONN_STATE {
   CONNECTED = 2, // connected
   CONNECTING = 3, // connecting
   CLOSED = 4, // not connected (closed on purpose)
-  INSUFFICIENT_AUTH = 5, // not connected (insufficient auth details)
+  SERVER_ERROR = 5, // not connected (determined by server)
 }
 
 export interface Hud {
@@ -725,7 +727,7 @@ export interface Hud {
   setPlayers: (v: GamePlayers, r: RegisteredMap) => void
   setStatus: (v: GameStatus) => void
   setConnectionState: (v: CONN_STATE) => void
-  setConnectError: (v: InsufficentAuthDetails) => void
+  setConnectError: (v: ServerErrorDetails) => void
   togglePreview: (v: boolean) => void
   toggleInterface: (v: boolean) => void
   addStatusMessage: (what: string, value: any) => void
