@@ -160,7 +160,11 @@
       @close="imageInfoDialog = false"
     />
   </v-dialog>
-  <v-dialog v-model="confirmDeleteDialog" width="auto" v-if="confirmDeleteGame">
+  <v-dialog
+    v-model="confirmDeleteDialog"
+    width="auto"
+    v-if="confirmDeleteGame"
+  >
     <v-card max-width="670">
       <v-card-title>Delete Game</v-card-title>
 
@@ -168,7 +172,7 @@
         <img
           :src="resizeUrl(confirmDeleteGame.image.url, 640, 360, 'cover')"
           class="mb-3"
-        />
+        >
         <p>
           Really delete this game?
 

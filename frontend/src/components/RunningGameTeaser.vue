@@ -143,7 +143,7 @@ const canDelete = computed(() => {
   return me.value && me.value.id === props.game.creatorUserId
 })
 
-const onInit = async () => {
+const onInit = () => {
   me.value = user.getMe()
 }
 onMounted(() => {

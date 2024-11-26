@@ -27,7 +27,7 @@
     <ConnectionOverlay
       v-if="!cuttingPuzzle || serverError"
       :connection-state="connectionState"
-      :serverError="serverError"
+      :server-error="serverError"
       @reconnect="reconnect"
       @connect_with_password="connectWithPassword"
     />
