@@ -1,27 +1,26 @@
 <template>
-  <v-card class="new-game-dialog">
+  <v-card
+    class="new-game-dialog"
+    height="90vh"
+  >
     <v-card-title>New Game</v-card-title>
 
     <v-container :fluid="true">
-      <v-row>
-        <v-col :lg="8">
-          <div
-            class="has-image"
-            style="min-height: 50vh;"
-          >
-            <PuzzleCropper
-              :image="image"
-              :puzzle-creation-info="puzzleCreationInfo"
-              :shape-mode="shapeMode"
-              :pieces-preview="tab === 'settings'"
-              @crop-update="onCropUpdate"
-            />
-          </div>
-        </v-col>
-        <v-col
-          :lg="4"
-          class="area-settings"
+      <div class="new-game-dialog-layout">
+        <div
+          class="area-image has-image"
+          style="min-height: 50vh;"
         >
+          <PuzzleCropper
+            :image="image"
+            :puzzle-creation-info="puzzleCreationInfo"
+            :shape-mode="shapeMode"
+            :pieces-preview="tab === 'settings'"
+            @crop-update="onCropUpdate"
+          />
+        </div>
+
+        <div class="area-settings">
           <v-tabs v-model="tab">
             <v-tab value="settings">
               Settings
@@ -32,7 +31,7 @@
           </v-tabs>
 
           <v-window v-model="tab">
-            <v-window-item value="settings">
+            <v-window-item value="settings" class="window-settings">
               <v-form
                 ref="form"
                 v-model="valid"
@@ -152,25 +151,6 @@
                     :disabled="!isPrivate || !requirePassword"
                   />
                 </div>
-
-                <v-card-actions>
-                  <v-btn
-                    variant="elevated"
-                    :disabled="!canStartNewGame"
-                    prepend-icon="mdi-puzzle"
-                    color="success"
-                    @click="onNewGameClick"
-                  >
-                    Generate Puzzle
-                  </v-btn>
-                  <v-btn
-                    variant="elevated"
-                    color="error"
-                    @click="emit('close')"
-                  >
-                    Cancel
-                  </v-btn>
-                </v-card-actions>
               </v-form>
             </v-window-item>
             <v-window-item value="image-info">
@@ -180,8 +160,27 @@
               />
             </v-window-item>
           </v-window>
-        </v-col>
-      </v-row>
+
+          <v-card-actions>
+            <v-btn
+              variant="elevated"
+              :disabled="!canStartNewGame"
+              prepend-icon="mdi-puzzle"
+              color="success"
+              @click="onNewGameClick"
+            >
+              Generate Puzzle
+            </v-btn>
+            <v-btn
+              variant="elevated"
+              color="error"
+              @click="emit('close')"
+            >
+              Cancel
+            </v-btn>
+          </v-card-actions>
+        </div>
+      </div>
     </v-container>
   </v-card>
 </template>

@@ -950,6 +950,39 @@ fieldset {
   }
 }
 
+.new-game-dialog {
+  overflow: hidden !important;
+
+  .new-game-dialog-layout {
+    display: flex;
+    width: 100%;
+    height: calc(90vh - 55px - 32px);
+    column-gap: 16px;
+
+    .area-image {
+      width: 67%;
+      height: 100%;
+    }
+
+    .area-settings {
+      height: 100%;
+      width: 33%;
+      overflow: hidden;
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+
+      .v-window {
+        height: 100%;
+        overflow: hidden scroll;
+      }
+
+      .v-card-actions {
+        padding: 16px 0 0;
+      }
+    }
+  }
+}
+
 .image-info-table {
   td:first-child {
     white-space: nowrap;

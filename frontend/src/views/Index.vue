@@ -161,9 +161,9 @@
     />
   </v-dialog>
   <v-dialog
+    v-if="confirmDeleteGame"
     v-model="confirmDeleteDialog"
     width="auto"
-    v-if="confirmDeleteGame"
   >
     <v-card max-width="670">
       <v-card-title>Delete Game</v-card-title>
