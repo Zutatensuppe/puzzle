@@ -128,22 +128,18 @@ const onMousemove = (ev: MouseEvent) => {
 const calculateImageDrawRect = (): Rect => {
   const imgRatio = image.width / image.height
   const canvasRatio = canvas.value.width / canvas.value.height
-  let imgDrawWidth = image.width
-  let imgDrawHeight = image.height
-  let dx = 0
-  let dy = 0
   if (imgRatio > canvasRatio) {
     // image more landscape than the canvas
-    imgDrawWidth = canvas.value.width
-    imgDrawHeight = canvas.value.width / imgRatio
-    dy = canvas.value.height / 2 - imgDrawHeight / 2
-  } else {
-    // image less or equal landscape than the canvas
-    imgDrawHeight = canvas.value.height
-    imgDrawWidth = canvas.value.height * imgRatio
-    dx = canvas.value.width / 2 - imgDrawWidth / 2
+    const w = canvas.value.width
+    const h = w / imgRatio
+    return { w, h, x: 0, y: 0 }
   }
-  return { w: imgDrawWidth, h: imgDrawHeight, x: dx, y: dy}
+
+  // image less or equal landscape than the canvas
+  const h = canvas.value.height
+  const w = h * imgRatio
+  const x = (canvas.value.width - w) / 2
+  return { w, h, x, y: 0 }
 }
 
 const image = new Image(props.image.width, props.image.height)
