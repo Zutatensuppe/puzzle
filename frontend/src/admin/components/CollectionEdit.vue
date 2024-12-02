@@ -15,23 +15,12 @@
 
     <strong>Images</strong>
     <div class="d-flex flex-wrap ga-5">
-      <div
+      <CollectionEditImage
         v-for="image in val.images"
         :key="image.id"
-      >
-        <a
-          :href="`/uploads/${image.filename}`"
-          target="_blank"
-          class="image-holder"
-        ><img
-          :src="resizeUrl(`/image-service/image/${image.filename}`, 150, 100, 'contain')"
-          :class="image.private ? ['image-private', 'image'] : ['image']"
-        ></a>
-        <br>
-        <v-btn @click="onRemoveImageClick(image.id)">
-          Remove
-        </v-btn>
-      </div>
+        :image="image"
+        @remove="onRemoveImageClick(image.id)"
+      />
     </div>
 
     <div class="d-flex">
@@ -48,9 +37,9 @@
 </template>
 <script setup lang="ts">
 import { ref, watch } from 'vue'
-import { resizeUrl } from '../../../../common/src/ImageService'
 import { CollectionRowWithImages, ImageId } from '../../../../common/src/Types'
 import api from '../../_api'
+import CollectionEditImage from './CollectionEditImage.vue'
 
 const props = defineProps<{
   modelValue: CollectionRowWithImages
