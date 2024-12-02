@@ -21,50 +21,12 @@
         </tr>
       </thead>
       <tbody>
-        <tr
-          v-for="item in images.items"
-          :key="item.id"
-        >
-          <th>
-            <a
-              :href="`/uploads/${item.filename}`"
-              target="_blank"
-              class="image-holder"
-            ><img
-              :src="resizeUrl(`/image-service/image/${item.filename}`, 150, 100, 'contain')"
-              :class="item.private ? ['image-private', 'image'] : ['image']"
-            ></a>
-          </th>
-          <td>
-            <div class="d-flex ga-3">
-              <span class="text-disabled">Title:</span> {{ item.title || '-' }}
-              <span class="text-disabled">Dimensions:</span> {{ item.width }}×{{ item.height }}
-              <span class="text-disabled">Private:</span> <span :class="{ 'color-private': item.private }">{{ item.private ? '✓' : '✖' }}</span>
-            </div>
-            <div class="d-flex ga-3">
-              <span class="text-disabled">Id:</span> {{ item.id }}
-              <span class="text-disabled">Uploader:</span> {{ item.uploader_user_id || '-' }}
-              <span class="text-disabled">Created:</span> {{ item.created }}
-            </div>
-            <div class="d-flex ga-3">
-              <span class="text-disabled">Filename:</span> {{ item.filename || '-' }}
-            </div>
-            <div class="d-flex ga-3">
-              <span class="text-disabled">Original Filename:</span> {{ item.filename_original || '-' }}
-            </div>
-            <div class="d-flex ga-3">
-              <span class="text-disabled">Copyright-Name:</span> {{ item.copyright_name || '-' }}
-              <span class="text-disabled">Copyright-URL:</span> {{ item.copyright_url || '-' }}
-            </div>
-          </td>
-          <td>{{ item.games_count }}</td>
-          <td>
-            <span
-              class="is-clickable"
-              @click="onDelete(item)"
-            >DELETE</span>
-          </td>
-        </tr>
+        <ImagesRow
+          v-for="image in images.items"
+          :key="image.id"
+          :image="image"
+          @delete="onDelete(image)"
+        />
       </tbody>
     </v-table>
     <Pagination
@@ -76,12 +38,12 @@
 </template>
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
-import { resizeUrl } from '../../../../common/src/ImageService'
 import user from '../../user'
 import api from '../../_api'
 import Nav from '../components/Nav.vue'
 import Pagination from '../../components/Pagination.vue'
 import { ImageRowWithCount, Pagination as PaginationType } from '../../../../common/src/Types'
+import ImagesRow from '../components/ImagesRow.vue'
 
 const perPage = 50
 const images = ref<{ items: ImageRowWithCount[], pagination: PaginationType } | null>(null)

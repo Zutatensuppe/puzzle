@@ -31,7 +31,10 @@
           </v-tabs>
 
           <v-window v-model="tab">
-            <v-window-item value="settings" class="window-settings">
+            <v-window-item
+              value="settings"
+              class="window-settings"
+            >
               <v-form
                 ref="form"
                 v-model="valid"
