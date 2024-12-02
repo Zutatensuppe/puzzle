@@ -18,7 +18,7 @@ const style = computed((): StyleValue => {
     return {
       backgroundImage: 'linear-gradient(180deg, rgba(0,87,183,1) 0%, rgba(0,87,183,1) 50%, rgba(255,221,0,1) 50%)',
       '-webkit-background-clip': 'text',
-      '-webkit-text-fill-color': 'transparent'
+      '-webkit-text-fill-color': 'transparent',
     }
   }
   return {
