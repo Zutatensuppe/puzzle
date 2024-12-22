@@ -45,6 +45,7 @@
               </div>
 
               <v-text-field
+                ref="passwordField"
                 v-model="joinPassword"
                 hide-details
                 type="password"
@@ -52,7 +53,6 @@
                 label="Password"
                 autocomplete="game-password"
                 @keydown.enter.prevent="connectWithPassword"
-                ref="passwordField"
               />
             </div>
 
@@ -140,7 +140,7 @@ const connectWithPassword = () => {
 const tryFocusInput = () => {
   const err = props.serverError
   if (err?.requirePassword || err?.wrongPassword) {
-    nextTick(() => {
+    void nextTick(() => {
       passwordField.value?.focus()
     })
   }
