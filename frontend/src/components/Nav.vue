@@ -53,24 +53,9 @@
           >
             Login
           </v-btn>
-          <v-app-bar-nav-icon
-            class="mr-1"
-            size="small"
-            variant="text"
-            @click.stop="toggleAnnouncements"
-          >
-            <v-badge
-              v-if="unseenAnnouncementCount"
-              :content="unseenAnnouncementCount"
-              color="red-darken-2"
-            >
-              <v-icon icon="mdi-bullhorn" />
-            </v-badge>
-            <v-icon
-              v-else
-              icon="mdi-bullhorn"
-            />
-          </v-app-bar-nav-icon>
+          <AnnouncementsIcon
+            @click.stop="drawerAnnouncements = !drawerAnnouncements"
+          />
         </div>
       </div>
     </v-app-bar>
@@ -118,50 +103,18 @@
         </v-list-item>
       </v-list>
     </v-navigation-drawer>
-
-    <v-navigation-drawer
-      v-model="drawerAnnouncements"
-      class="announcements-drawer text-body-2"
-      location="right"
-      temporary
-      width="400"
-    >
-      <v-list class="pa-0">
-        <v-list-item
-          v-for="(announcement, idx) in announcements.announcements()"
-          :key="idx"
-          class="pt-3 pb-3 pl-5 pr-5"
-        >
-          <div class="d-flex justify-space-between mb-2">
-            <span class="font-weight-bold">
-              <span
-                v-if="new Date(announcement.created).getTime() > lastSeenAnnouncement"
-                class="text-red-darken-2"
-              >
-                NEW
-              </span>
-              {{ announcement.title }}
-            </span>
-            <span><v-icon icon="mdi-calendar" /> {{ dateformat('YYYY-MM-DD hh:mm', new Date(announcement.created)) }}</span>
-          </div>
-          <div
-            v-for="(line, idx2) of announcement.message.split('\n')"
-            :key="idx2"
-          >
-            {{ line }}
-          </div>
-        </v-list-item>
-      </v-list>
-    </v-navigation-drawer>
+    <AnnouncementsDrawer
+      :visible="drawerAnnouncements"
+      @close="drawerAnnouncements = false"
+    />
   </div>
 </template>
 <script setup lang="ts">
-import { computed, onMounted, onBeforeUnmount, ref, watch } from 'vue'
+import { computed, onMounted, onBeforeUnmount, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import user, { User } from '../user'
-import announcements from '../announcements'
-import { dateformat } from '../../../common/src/Util'
-import storage from '../storage'
+import AnnouncementsDrawer from './AnnouncementsDrawer.vue'
+import AnnouncementsIcon from './AnnouncementsIcon.vue'
 
 const login = () => {
   user.eventBus.emit('triggerLoginDialog')
@@ -176,21 +129,6 @@ const showNav = computed(() => {
 const drawerMenu = ref<boolean>(false)
 const drawerAnnouncements = ref<boolean>(false)
 const drawerUser = ref<boolean>(false)
-
-let lastSeenAnnouncement = storage.getInt('lastSeenAnnouncement', 0)
-const allAnnouncements = announcements.announcements()
-const lastAnnouncement = allAnnouncements.length ? new Date(allAnnouncements[0].created).getTime() : 0
-let unseenAnnouncementCount = allAnnouncements.filter(a => new Date(a.created).getTime() > lastSeenAnnouncement).length
-const toggleAnnouncements = () => {
-  drawerAnnouncements.value = !drawerAnnouncements.value
-}
-watch(drawerAnnouncements, () => {
-  if (!drawerAnnouncements.value) {
-    lastSeenAnnouncement = lastAnnouncement
-    unseenAnnouncementCount = 0
-    storage.setInt('lastSeenAnnouncement', lastSeenAnnouncement)
-  }
-})
 
 const me = ref<User|null>(null)
 
