@@ -70,7 +70,6 @@ export interface GameInterface {
   stopGameLoop(): void
   initBaseProps(): Promise<void>
   initViewport(): void
-  initFireworks(): void
   initFinishState(): void
   initGameLoop(): void
   previewImageUrl(): string
@@ -89,6 +88,7 @@ export interface GameInterface {
   getScoreMode(): ScoreMode
   getSnapMode(): SnapMode
   getShapeMode(): ShapeMode
+  getRotationMode(): RotationMode
   getImage(): ImageInfo
   onServerUpdateEvent(msg: ServerUpdateEvent): void
   onUpdate(): void
@@ -140,7 +140,7 @@ export abstract class Game<HudType extends Hud> implements GameInterface {
   private finished: boolean = false
   private longFinished: boolean = false
 
-  private gameLoop!: GameLoopInstance
+  private gameLoop: GameLoopInstance | null = null
 
   private onUpdateBound: () => void
   private onRenderBound: () => void
@@ -162,7 +162,6 @@ export abstract class Game<HudType extends Hud> implements GameInterface {
 
   async reinit(clientId: ClientId): Promise<void> {
     this.clientId = clientId
-    this.unload()
     await this.init()
   }
 
@@ -202,8 +201,10 @@ export abstract class Game<HudType extends Hud> implements GameInterface {
   abstract unload(): void
 
   registerEvents(): void {
+    this.evts.unregisterEvents()
     this.evts.registerEvents()
     if (this.fireworks) {
+      window.removeEventListener('resize', this.fireworks.resizeBound)
       window.addEventListener('resize', this.fireworks.resizeBound)
     }
   }
@@ -216,48 +217,34 @@ export abstract class Game<HudType extends Hud> implements GameInterface {
   }
 
   stopGameLoop(): void {
-    this.gameLoop.stop()
+    this.gameLoop?.stop()
+    this.gameLoop = null
   }
 
   async initBaseProps(): Promise<void> {
     await this.assets.init(this.graphics)
-    this.playerCursors = new PlayerCursors(this.canvas, this.assets, this.graphics)
 
-    this.playerSettings = new PlayerSettings(this)
-    this.playerSettings.init()
-
-    this.evts = new EventAdapter(this, this.playerSettings)
-    this.viewportSnapshots = new ViewportSnapshots(this.evts, this.viewport)
-
-    this.sounds = new Sounds(this.assets, this.playerSettings)
-
-    const puzzleTable = new PuzzleTable(this.graphics)
-
-    if (this.playerSettings.renderer() === RendererType.WEBGL2 && this.graphics.hasWebGL2Support()) {
-      this.rendererWebgl = new RendererWebgl(
-        this.gameId,
-        this.fireworks,
-        puzzleTable,
-        false,
-        this.canvas,
-        this.graphics,
-        this.assets,
-      )
-      await this.rendererWebgl.init()
-      await this.rendererWebgl.loadTableTexture(this.playerSettings.getSettings())
-    } else {
-      this.ctx = this.canvas.getContext('2d') as CanvasRenderingContext2D
-      this.initFireworks()
-      this.rendererCanvas2d = new Renderer(
-        this.gameId,
-        this.fireworks,
-        puzzleTable,
-        false,
-        this.graphics,
-      )
-      await this.rendererCanvas2d.init()
-      await this.rendererCanvas2d.loadTableTexture(this.playerSettings.getSettings())
+    if (!this.playerCursors) {
+      this.playerCursors = new PlayerCursors(this.canvas, this.assets, this.graphics)
     }
+
+    if (!this.playerSettings) {
+      this.playerSettings = new PlayerSettings(this)
+      this.playerSettings.init()
+    }
+
+    if (!this.evts) {
+      this.evts = new EventAdapter(this, this.playerSettings)
+    }
+    if (!this.viewportSnapshots) {
+      this.viewportSnapshots = new ViewportSnapshots(this.evts, this.viewport)
+    }
+
+    if (!this.sounds) {
+      this.sounds = new Sounds(this.assets, this.playerSettings)
+    }
+
+    await this.initRenderer()
 
     this.canvas.classList.add('loaded')
     this.hud.setPuzzleCut()
@@ -266,7 +253,9 @@ export abstract class Game<HudType extends Hud> implements GameInterface {
 
     this.initViewport()
 
-    this.puzzleStatus = new PuzzleStatus(this)
+    if (!this.puzzleStatus) {
+      this.puzzleStatus = new PuzzleStatus(this)
+    }
     this.puzzleStatus.update(this.time())
 
     this.initFinishState()
@@ -276,6 +265,44 @@ export abstract class Game<HudType extends Hud> implements GameInterface {
     this.evts.addEvent([GAME_EVENT_TYPE.INPUT_EV_PLAYER_NAME, this.playerSettings.name()])
 
     this.playerCursors.updatePlayerCursorColor(this.playerSettings.color())
+  }
+
+  private async initRenderer(): Promise<void> {
+    if (this.rendererWebgl || this.rendererCanvas2d) {
+      // nothing to do. renderer already set up
+      return
+    }
+
+    if (this.playerSettings.renderer() === RendererType.WEBGL2 && this.graphics.hasWebGL2Support()) {
+      this.rendererWebgl = new RendererWebgl(
+        this.gameId,
+        this.fireworks,
+        new PuzzleTable(this.graphics),
+        false,
+        this.canvas,
+        this.graphics,
+        this.assets,
+      )
+      await this.rendererWebgl.init()
+      await this.rendererWebgl.loadTableTexture(this.playerSettings.getSettings())
+    } else {
+      this.ctx = this.canvas.getContext('2d') as CanvasRenderingContext2D
+
+      if (!this.fireworks) {
+        this.fireworks = new fireworksController(this.canvas, GameCommon.getRng(this.gameId))
+        this.fireworks.init()
+      }
+
+      this.rendererCanvas2d = new Renderer(
+        this.gameId,
+        this.fireworks,
+        new PuzzleTable(this.graphics),
+        false,
+        this.graphics,
+      )
+      await this.rendererCanvas2d.init()
+      await this.rendererCanvas2d.loadTableTexture(this.playerSettings.getSettings())
+    }
   }
 
   public banPlayer(clientId: ClientId): void {
@@ -305,21 +332,18 @@ export abstract class Game<HudType extends Hud> implements GameInterface {
     this.viewportSnapshots.snap('center')
   }
 
-  initFireworks(): void {
-    this.fireworks = new fireworksController(this.canvas, GameCommon.getRng(this.gameId))
-    this.fireworks.init()
-  }
-
   initFinishState(): void {
     this.longFinished = !!GameCommon.getFinishTs(this.gameId)
     this.finished = this.longFinished
   }
 
   initGameLoop(): void {
-    this.gameLoop = run({
-      update: this.onUpdateBound,
-      render: this.onRenderBound,
-    })
+    if (!this.gameLoop) {
+      this.gameLoop = run({
+        update: this.onUpdateBound,
+        render: this.onRenderBound,
+      })
+    }
   }
 
   previewImageUrl(): string {
