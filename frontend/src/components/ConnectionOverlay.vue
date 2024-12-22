@@ -34,28 +34,18 @@
               <LoginBit />
             </div>
             <div
-              v-if="serverError?.requirePassword"
+              v-if="serverError?.requirePassword || serverError?.wrongPassword"
               class="mb-3"
             >
-              You need a password to join this puzzle.
+              <div v-if="serverError.requirePassword">
+                You need a password to join this puzzle.
+              </div>
+              <div v-else>
+                The password you provided is wrong.
+              </div>
 
               <v-text-field
-                v-model="joinPassword"
-                hide-details
-                type="password"
-                density="compact"
-                label="Password"
-                autocomplete="game-password"
-                @keydown.enter.prevent="connectWithPassword"
-              />
-            </div>
-            <div
-              v-else-if="serverError?.wrongPassword"
-              class="mb-3"
-            >
-              The password you provided is wrong.
-
-              <v-text-field
+                ref="passwordField"
                 v-model="joinPassword"
                 hide-details
                 type="password"
@@ -108,7 +98,7 @@
   </v-dialog>
 </template>
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, nextTick, ref, watch } from 'vue'
 import { CONN_STATE, ServerErrorDetails } from '../../../common/src/Types'
 import LoginBit from './LoginBit.vue'
 
@@ -122,6 +112,8 @@ const props = defineProps<{
   connectionState: CONN_STATE
   serverError: ServerErrorDetails | null
 }>()
+
+const passwordField = ref<HTMLInputElement | null>(null)
 
 const hasServerError = computed((): boolean => {
   return props.connectionState === CONN_STATE.SERVER_ERROR
@@ -144,4 +136,18 @@ const joinPassword = ref<string>('')
 const connectWithPassword = () => {
   emit('connect_with_password', joinPassword.value)
 }
+
+const tryFocusInput = () => {
+  const err = props.serverError
+  if (err?.requirePassword || err?.wrongPassword) {
+    void nextTick(() => {
+      passwordField.value?.focus()
+    })
+  }
+}
+
+tryFocusInput()
+watch(() => props.serverError, () => {
+  tryFocusInput()
+}, { deep: true })
 </script>

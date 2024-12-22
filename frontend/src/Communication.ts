@@ -9,6 +9,7 @@ const log = logger('Communication.js')
 
 const CODE_GOING_AWAY = 1001
 const CODE_CUSTOM_DISCONNECT = 4000
+const CODE_SERVER_ERROR = 4001
 
 let ws: WebSocket
 
@@ -136,6 +137,10 @@ function connect(
         }
         changesCallback(msg)
       } else if (msgType === SERVER_EVENT_TYPE.ERROR) {
+        if (e.target) {
+          const socket = e.target as WebSocket
+          socket.close(CODE_SERVER_ERROR)
+        }
         reject(msg[1])
       } else {
         throw `[ 2021-05-09 invalid connect msgType ${msgType} ]`
@@ -150,7 +155,9 @@ function connect(
 
     ws.onclose = (e: CloseEvent) => {
       cancelKeepAlive()
-      if (e.code === CODE_CUSTOM_DISCONNECT || e.code === CODE_GOING_AWAY) {
+      if (e.code === CODE_SERVER_ERROR) {
+        // do nothing!
+      } else if (e.code === CODE_CUSTOM_DISCONNECT || e.code === CODE_GOING_AWAY) {
         setConnectionState(CONN_STATE.CLOSED)
       } else {
         setConnectionState(CONN_STATE.DISCONNECTED)
