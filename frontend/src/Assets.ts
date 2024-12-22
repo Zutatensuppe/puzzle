@@ -27,6 +27,8 @@ import { Graphics } from './Graphics'
 import { COLOR_MAGENTA } from '../../common/src/Color'
 
 export class Assets {
+  public inited = false
+
   public Audio!: {
     CLICK: HTMLAudioElement
     CLICK_2: HTMLAudioElement
@@ -49,7 +51,11 @@ export class Assets {
   }
 
   async init (graphics: Graphics) {
-    // TODO: parallel loading
+    if (this.inited) {
+      return
+    }
+    this.inited = true
+
     this.Audio = {
       CLICK: new Audio(click),
       CLICK_2: new Audio(click2),

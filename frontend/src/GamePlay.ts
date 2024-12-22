@@ -74,6 +74,9 @@ export class GamePlay extends Game<Hud> {
   }
 
   private initStatusInterval(): void {
+    if (this.updateStatusInterval) {
+      clearInterval(this.updateStatusInterval)
+    }
     this.updateStatusInterval = setInterval(() => {
       this.puzzleStatus.update(this.time())
     }, 1000)
