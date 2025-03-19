@@ -11,6 +11,13 @@
     />
     <div class="game-teaser-inner">
       <div
+        class="game-teaser-report"
+        @click.stop="emit('reportClick', game)"
+        v-tooltip="'Report this game'"
+      >
+        <v-icon icon="mdi-exclamation-thick" />
+      </div>
+      <div
         v-if="game.isPrivate"
         class="game-teaser-info game-is-private-info"
       >
@@ -92,6 +99,7 @@ const emit = defineEmits<{
   (e: 'goToGame', val: GameInfo): void
   (e: 'goToReplay', val: GameInfo): void
   (e: 'showImageInfo', val: ImageInfo): void
+  (e: 'reportClick', val: GameInfo): void
 }>()
 
 const url = computed(() => resizeUrl(props.game.image.url, 375, 210, 'contain'))

@@ -106,6 +106,20 @@ const getFeaturedTeaserData = () => {
   return xhr.get(`/api/featured-teasers`, {})
 }
 
+const reportImage = (data: { id: ImageId, reason: string }) => {
+  return xhr.post('/api/moderation/report-image', {
+    headers: JSON_HEADERS,
+    body: JSON.stringify(data),
+  })
+}
+
+const reportGame = (data: { id: GameId, reason: string }) => {
+  return xhr.post('/api/moderation/report-game', {
+    headers: JSON_HEADERS,
+    body: JSON.stringify(data),
+  })
+}
+
 const upload = (data: { file: File, title: string, copyrightName: string, copyrightURL: string, tags: string[], isPrivate: boolean, onProgress: (progress: number) => void }) => {
   const formData = new FormData()
   formData.append('file', data.file, data.file.name)
@@ -126,23 +140,25 @@ const upload = (data: { file: File, title: string, copyrightName: string, copyri
 
 export default {
   auth,
-  register,
-  sendPasswordResetEmail,
   changePassword,
-  logout,
   config,
-  me,
   deleteGame,
+  finishedGames,
   getAnnouncements,
   getFeaturedData,
   getFeaturedTeaserData,
+  images,
   indexData,
+  logout,
+  me,
+  newGame,
   newgameData,
+  register,
   replayGameData,
   replayLogData,
+  reportGame,
+  reportImage,
   saveImage,
-  newGame,
+  sendPasswordResetEmail,
   upload,
-  finishedGames,
-  images,
 }

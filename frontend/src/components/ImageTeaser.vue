@@ -16,6 +16,15 @@
       <h4 class="imageteaser-title">
         {{ image.title || '<No Title>' }}
       </h4>
+
+      <div
+        class="imageteaser-report"
+        @click.stop="onReportClick"
+        v-tooltip="'Report this image'"
+      >
+        <v-icon icon="mdi-exclamation-thick" />
+      </div>
+
       <div
         v-if="image.copyrightName || image.copyrightURL"
         class="imageteaser-info"
@@ -79,6 +88,7 @@ const props = withDefaults(defineProps<{
 const emit = defineEmits<{
   (event: 'click'): void
   (event: 'editClick'): void
+  (event: 'reportClick'): void
 }>()
 
 const me = ref<User|null>(null)
@@ -119,8 +129,13 @@ const onClick = (ev: Event) => {
   }
   emit('click')
 }
+
 const onEditClick = () => {
   emit('editClick')
+}
+
+const onReportClick = () => {
+  emit('reportClick')
 }
 
 const onInit = () => {

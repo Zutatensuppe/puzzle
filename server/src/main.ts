@@ -19,6 +19,7 @@ import { UrlUtil } from './UrlUtil'
 import GameLog from './GameLog'
 import { ImageExif } from './ImageExif'
 import { Repos } from './repo/Repos'
+import { Moderation } from './Moderation'
 
 const run = async () => {
   const db = new Db(config.db.connectStr, config.dir.DB_PATCHES_DIR)
@@ -37,6 +38,7 @@ const run = async () => {
   const puzzleService = new PuzzleService()
   const gameService = new GameService(puzzleService)
   const twitch = new Twitch(config.auth.twitch)
+  const moderation = new Moderation()
 
   const server = new Server(
     db,
@@ -51,9 +53,11 @@ const run = async () => {
     imageResize,
     new UrlUtil(),
     twitch,
+    moderation,
   )
   repos.init(server)
   gameService.init(server)
+  moderation.init(server)
   server.start()
 
   const log = logger('main.js')

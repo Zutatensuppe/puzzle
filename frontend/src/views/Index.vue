@@ -80,6 +80,7 @@
             @go-to-game="goToGame"
             @show-image-info="showImageInfo"
             @delete="onDeleteGame"
+            @report-click="onReportClick"
           />
         </v-container>
       </div>
@@ -143,6 +144,7 @@
           @go-to-game="goToGame"
           @go-to-replay="goToReplay"
           @show-image-info="showImageInfo"
+          @report-click="onReportClick"
         />
       </v-container>
       <Pagination
@@ -200,6 +202,17 @@
       </v-card-actions>
     </v-card>
   </v-dialog>
+  <v-dialog
+    class="report-game"
+    v-model="reportGameDialog"
+  >
+    <ReportGameDialog
+      v-if="reportGame"
+      :game="reportGame"
+      @submit="onSubmitReport"
+      @close="reportGameDialog = false"
+    />
+  </v-dialog>
 </template>
 <script setup lang="ts">
 import { onMounted, onBeforeUnmount, ref, computed } from 'vue'
@@ -214,6 +227,7 @@ import user, { User } from '../user'
 import ImageInfoDialog from '../components/ImageInfoDialog.vue'
 import { resizeUrl } from '../../../common/src/ImageService'
 import { toast } from '../toast'
+import ReportGameDialog from '../components/ReportGameDialog.vue'
 
 const router = useRouter()
 const data = ref<ApiDataIndexData | null>(null)
@@ -311,6 +325,23 @@ const onPagination = async (q: { limit: number, offset: number }) => {
 
 const onTagClick = (tag: Tag): void => {
   void router.push({ name: 'new-game', query: { sort: ImageSearchSort.DATE_DESC, search: tag.title } })
+}
+
+const reportGameDialog = ref<boolean>(false)
+const reportGame = ref<GameInfo|null>(null)
+const onReportClick = (game: GameInfo) => {
+  reportGame.value = game
+  reportGameDialog.value = true
+}
+
+const onSubmitReport = async (data: any) => {
+  const res = await api.pub.reportGame(data)
+  if (res.status === 200) {
+    reportGameDialog.value = false
+    toast('Thank you for your report.', 'success')
+  } else {
+    toast('An error occured during reporting.', 'error')
+  }
 }
 
 onMounted(() => {

@@ -1,4 +1,4 @@
-import { DiscordConfig } from '../../common/src/Types'
+import { DiscordChannel, DiscordConfig } from '../../common/src/Types'
 import { logger } from '../../common/src/Util'
 
 const log = logger('Discord.ts')
@@ -10,26 +10,34 @@ export class Discord {
     // pass
   }
 
-  announce (message: string) {
+  public async report (message: string): Promise<void> {
+    await this.doAnnounce(message, this.config.report)
+  }
+
+  public async announce (message: string): Promise<void> {
+    await this.doAnnounce(message, this.config.announce)
+  }
+
+  private async doAnnounce (
+    message: string,
+    channel: DiscordChannel,
+  ): Promise<void> {
     if (
-      this.config.announce.channelId === 'CHANNEL ID' ||
-      this.config.announce.guildId === 'GUILD/SERVER ID'
-    ){
-      log.info('skipping Discord.announce, channelId or guildId is not set')
+      channel.channelId === 'CHANNEL ID' ||
+      channel.guildId === 'GUILD/SERVER ID'
+    ) {
+      log.info('skipping Discord.doAnnounce, channelId or guildId is not set')
       return
     }
 
-    void fetch(this.config.bot.url + '/announce', {
+    const { channelId, guildId } = channel
+    await fetch(`${this.config.bot.url}/announce`, {
       method: 'POST',
       headers: {
         'Accept': 'application/json',
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        guildId: this.config.announce.guildId,
-        channelId: this.config.announce.channelId,
-        message: message,
-      }),
+      body: JSON.stringify({ guildId, channelId, message }),
     })
   }
 }
