@@ -28,6 +28,7 @@ import { Twitch } from './Twitch'
 import { UrlUtil } from './UrlUtil'
 import fs from './FileSystem'
 import { Repos } from './repo/Repos'
+import { Moderation } from './Moderation'
 
 const sendHtml = (res: Response, tmpl: string, data: Record<string, string> = {}): void => {
   let str = tmpl
@@ -60,6 +61,7 @@ export class Server {
     public readonly imageResize: ImageResize,
     public readonly urlUtil: UrlUtil,
     public readonly twitch: Twitch,
+    public readonly moderation: Moderation,
   ) {
     // pass
   }

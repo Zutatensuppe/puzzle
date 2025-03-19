@@ -82,12 +82,16 @@ in jigsawpuzzles.io
       :images="images"
       @image-clicked="onImageClicked"
       @image-edit-clicked="onImageEditClicked"
+      @image-report-clicked="onImageReportClicked"
     />
     <Sentinel
       v-if="sentinelActive"
       @sighted="tryLoadMore"
     />
-    <v-dialog v-model="dialog">
+    <v-dialog
+      v-model="dialog"
+      :class="dialogContent"
+    >
       <NewImageDialog
         v-if="dialogContent==='new-image'"
         :autocomplete-tags="autocompleteTags"
@@ -112,6 +116,12 @@ in jigsawpuzzles.io
         @tag-click="onTagClick"
         @close="closeDialog"
       />
+      <ReportImageDialog
+        v-if="image && dialogContent==='report-image'"
+        :image="image"
+        @submit="onSubmitReport"
+        @close="closeDialog"
+      />
     </v-dialog>
   </v-container>
 </template>
@@ -121,6 +131,7 @@ import { onMounted, onBeforeUnmount, ref, watch } from 'vue'
 import NewImageDialog from './../components/NewImageDialog.vue'
 import EditImageDialog from './../components/EditImageDialog.vue'
 import NewGameDialog from './../components/NewGameDialog.vue'
+import ReportImageDialog from './../components/ReportImageDialog.vue'
 import { GameSettings, ImageInfo, Tag, NewGameDataRequestData, ImagesRequestData, ImageSearchSort, isImageSearchSort, ImageId, FeaturedRowWithCollections } from '../../../common/src/Types'
 import api from '../_api'
 import { XhrRequest } from '../_api/xhr'
@@ -128,6 +139,7 @@ import { onBeforeRouteUpdate, RouteLocationNormalizedLoaded, useRouter } from 'v
 import ImageLibrary from './../components/ImageLibrary.vue'
 import Sentinel from '../components/Sentinel.vue'
 import { debounce } from '../util'
+import { toast } from '../toast'
 import FeaturedButton from '../components/FeaturedButton.vue'
 
 const router = useRouter()
@@ -251,6 +263,11 @@ const onImageEditClicked = (newImage: ImageInfo) => {
   openDialog('edit-image')
 }
 
+const onImageReportClicked = (newImage: ImageInfo) => {
+  image.value = newImage
+  openDialog('report-image')
+}
+
 const uploadImage = async (data: any) => {
   uploadProgress.value = 0
   const res = await api.pub.upload({
@@ -297,6 +314,16 @@ const setupGameClick = async (data: any) => {
   void loadImages() // load images in background
   image.value = uploadedImage
   openDialog('new-game')
+}
+
+const onSubmitReport = async (data: any) => {
+  const res = await api.pub.reportImage(data)
+  if (res.status === 200) {
+    closeDialog()
+    toast('Thank you for your report.', 'success')
+  } else {
+    toast('An error occured during reporting.', 'error')
+  }
 }
 
 const onNewGame = async (gameSettings: GameSettings) => {

@@ -701,5 +701,42 @@ export default function createRouter(
     res.send({ ok: true })
   })
 
+  router.post('/moderation/report-game', express.json(), async (req: any, res): Promise<void> => {
+    const user: UserRow | null = req.user || null
+    const reason = req.body.reason || ''
+    const gameId = req.body.id as GameId
+    if (!gameId) {
+      res.status(400).send({ error: 'bad id' })
+      return
+    }
+
+    try {
+      await server.moderation.reportGame(gameId, user, reason)
+      await server.repos.games.reportGame(gameId)
+      res.send({ ok: true })
+    } catch {
+      res.status(500).send({ ok: false })
+    }
+  })
+
+  router.post('/moderation/report-image', express.json(), async (req: any, res): Promise<void> => {
+    const user: UserRow | null = req.user || null
+    const reason = req.body.reason || ''
+    const imageIdInt = parseInt(`${req.body.id}`, 10)
+    if (isNaN(imageIdInt) || imageIdInt < 0) {
+      res.status(400).send({ error: 'bad id' })
+      return
+    }
+    const imageId = imageIdInt as ImageId
+
+    try {
+      await server.moderation.reportImage(imageId, user, reason)
+      await server.repos.images.reportImage(imageId)
+      res.send({ ok: true })
+    } catch {
+      res.status(500).send({ ok: false })
+    }
+  })
+
   return router
 }

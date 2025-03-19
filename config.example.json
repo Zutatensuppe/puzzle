@@ -39,6 +39,10 @@
     "announce": {
       "guildId": "GUILD/SERVER ID",
       "channelId": "CHANNEL ID"
+    },
+    "report": {
+      "guildId": "GUILD/SERVER ID",
+      "channelId": "CHANNEL ID"
     }
   }
 }

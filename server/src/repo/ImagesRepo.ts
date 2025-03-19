@@ -225,4 +225,8 @@ export class ImagesRepo {
       group by c.id order by images_count desc;`
     return await this.db._getMany(query)
   }
+
+  async reportImage(imageId: ImageId): Promise<void> {
+    await this.db.run(`UPDATE ${TABLE} SET reported = reported + 1 WHERE id = $1`, [imageId])
+  }
 }

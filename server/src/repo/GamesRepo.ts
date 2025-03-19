@@ -125,4 +125,8 @@ export class GamesRepo {
 
     await this.repos.leaderboard.updateLeaderboards()
   }
+
+  async reportGame(gameId: GameId): Promise<void> {
+    await this.db.run(`UPDATE ${TABLE} SET reported = reported + 1 WHERE id = $1`, [gameId])
+  }
 }

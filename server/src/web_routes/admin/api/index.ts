@@ -209,7 +209,7 @@ export default function createRouter(
       res.status(500).send({ ok: false, reason: 'unable_to_get_announcement' })
       return
     }
-    server.discord.announce(`**${title}**\n${announcement.message}`)
+    void server.discord.announce(`**${title}**\n${announcement.message}`)
     res.send({ announcement })
   })
 

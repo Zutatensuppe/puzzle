@@ -670,15 +670,18 @@ export interface MailConfig {
   sendinblue_api_key: string
 }
 
+export interface DiscordChannel {
+  guildId: string
+  channelId: string
+}
+
 export interface DiscordConfig {
   bot: {
     url: string
     token: string
   }
-  announce: {
-    guildId: string
-    channelId: string
-  }
+  announce: DiscordChannel
+  report: DiscordChannel
 }
 
 export interface TokenRow {

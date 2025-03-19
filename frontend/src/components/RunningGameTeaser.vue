@@ -26,6 +26,13 @@
     </div>
 
     <div class="game-teaser-inner">
+      <div
+        class="game-teaser-report"
+        @click.stop="emit('reportClick', game)"
+        v-tooltip="'Report this game'"
+      >
+        <v-icon icon="mdi-exclamation-thick" />
+      </div>
       <div class="game-teaser-info">
         <v-icon icon="mdi-puzzle" /> {{ game.piecesFinished }}/{{ game.piecesTotal }} Pieces
       </div>
@@ -105,6 +112,7 @@ const emit = defineEmits<{
   (e: 'goToGame', val: GameInfo): void
   (e: 'showImageInfo', val: ImageInfo): void
   (e: 'delete', val: GameInfo): void
+  (e: 'reportClick', val: GameInfo): void
 }>()
 
 const style = computed(() => {

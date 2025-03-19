@@ -11,6 +11,7 @@
         :edit="edit"
         @click="emit('imageClicked', item)"
         @edit-click="emit('imageEditClicked', item)"
+        @report-click="emit('imageReportClicked', item)"
       />
     </template>
   </MasonryWall>
@@ -30,5 +31,6 @@ withDefaults(defineProps<{
 const emit = defineEmits<{
   (e: 'imageClicked', val: ImageInfo): void
   (e: 'imageEditClicked', val: ImageInfo): void
+  (e: 'imageReportClicked', val: ImageInfo): void
 }>()
 </script>

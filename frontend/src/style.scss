@@ -364,13 +364,35 @@ $bg-color-transparent: rgba(0 0 0 / 70%);
     }
   }
 
+  .game-teaser-report {
+    position: absolute;
+    right: 1em;
+    top: 1em;
+    color:white;
+    background: red;
+    padding-top: 3px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+  }
 
   .game-teaser-image.state-hovered {
     opacity: 0;
   }
 
-  &:hover .game-teaser-image.state-hovered {
-    opacity: 1;
+  &:hover {
+    .game-teaser-report {
+      opacity: 0.5;
+
+      &:hover {
+        opacity: 1;
+      }
+    }
+
+    .game-teaser-image.state-hovered {
+      opacity: 1;
+    }
   }
 }
 
@@ -427,7 +449,28 @@ $bg-color-transparent: rgba(0 0 0 / 70%);
     text-align: center;
   }
 
+  .game-teaser-report {
+    position: absolute;
+    right: 1em;
+    top: 1em;
+    color:white;
+    background: red;
+    padding-top: 3px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+  }
+
   &:hover {
+    .game-teaser-report {
+      opacity: 0.5;
+
+      &:hover {
+        opacity: 1;
+      }
+    }
+
     .game-teaser-inner {
       background: rgba(0 0 0 / 50%);
 
@@ -651,6 +694,23 @@ html.view-replay body { overflow: hidden; }
     padding: 5px 10px;
     text-align: center;
   }
+
+  .imageteaser-report {
+    position: absolute;
+    right: 1em;
+    top: 1em;
+    color:white;
+    background: red;
+    padding-top: 3px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: .5;
+
+    &:hover {
+      opacity: 1;
+    }
+  }
 }
 
 .imageteaser:hover {
@@ -783,6 +843,13 @@ kbd {
         background-size: contain;
       }
     }
+  }
+}
+
+.v-dialog.report-game,
+.v-dialog.report-image {
+  .v-overlay__content {
+    max-width: 500px;
   }
 }
 
