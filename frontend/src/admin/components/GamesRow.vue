@@ -24,20 +24,11 @@
         </div>
         <hr>
         <div style="height: 100px; overflow-y: auto;">
-          <div
+          <GamesRowPlayer
             v-for="player in sortedPlayers"
             :key="`${game.id}-${player[0]}`"
-          >
-            <div
-              :style="player[5] === 'ukraine' ? {
-                'backgroundImage': 'linear-gradient(180deg, rgba(0,87,183,1) 0%, rgba(0,87,183,1) 50%, rgba(255,221,0,1) 50%)',
-                '-webkit-background-clip': 'text',
-                '-webkit-text-fill-color': 'transparent'
-              } : { color: player[5] }"
-            >
-              {{ player[4] }} ({{ player[7] }})
-            </div>
-          </div>
+            :player="player"
+          />
         </div>
       </div>
     </td>
@@ -122,6 +113,7 @@ import { resizeUrl } from '../../../../common/src/ImageService'
 import { rotationModeToString, scoreModeToString, shapeModeToString, snapModeToString } from '../../../../common/src/Util'
 import { EncodedPlayer, EncodedPlayerIdx, GameRowWithImageAndUser, ServerInfo } from '../../../../common/src/Types'
 import Icon from '../../components/Icon.vue'
+import GamesRowPlayer from './GamesRowPlayer.vue'
 
 const props = defineProps<{
   game: GameRowWithImageAndUser
