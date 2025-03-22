@@ -132,7 +132,7 @@ import NewImageDialog from './../components/NewImageDialog.vue'
 import EditImageDialog from './../components/EditImageDialog.vue'
 import NewGameDialog from './../components/NewGameDialog.vue'
 import ReportImageDialog from './../components/ReportImageDialog.vue'
-import { GameSettings, ImageInfo, Tag, NewGameDataRequestData, ImagesRequestData, ImageSearchSort, isImageSearchSort, ImageId, FeaturedRowWithCollections } from '../../../common/src/Types'
+import { GameSettings, ImageInfo, Tag, NewGameDataRequestData, ImagesRequestData, ImageSearchSort, isImageSearchSort, FeaturedRowWithCollections, defaultImageInfo } from '../../../common/src/Types'
 import api from '../_api'
 import { XhrRequest } from '../_api/xhr'
 import { onBeforeRouteUpdate, RouteLocationNormalizedLoaded, useRouter } from 'vue-router'
@@ -163,22 +163,7 @@ const images = ref<ImageInfo[]>([])
 const sentinelActive = ref<boolean>(false)
 
 const tags = ref<Tag[]>([])
-const image = ref<ImageInfo>({
-  id: 0 as ImageId,
-  uploaderUserId: null,
-  uploaderName: '',
-  filename: '',
-  url: '',
-  title: '',
-  tags: [],
-  created: 0,
-  width: 0,
-  height: 0,
-  gameCount: 0,
-  copyrightName: '',
-  copyrightURL: '',
-  private: false,
-})
+const image = ref<ImageInfo>(defaultImageInfo())
 
 const dialog = ref<boolean>(false)
 const dialogContent = ref<string>('')
@@ -277,6 +262,7 @@ const uploadImage = async (data: any) => {
     copyrightURL: data.copyrightURL,
     tags: data.tags,
     isPrivate: data.isPrivate,
+    isNsfw: data.isNsfw,
     onProgress: (progress: number): void => {
       uploadProgress.value = progress
     },

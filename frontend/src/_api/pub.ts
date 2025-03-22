@@ -120,7 +120,18 @@ const reportGame = (data: { id: GameId, reason: string }) => {
   })
 }
 
-const upload = (data: { file: File, title: string, copyrightName: string, copyrightURL: string, tags: string[], isPrivate: boolean, onProgress: (progress: number) => void }) => {
+const upload = (
+  data: {
+    file: File
+    title: string
+    copyrightName: string
+    copyrightURL: string
+    tags: string[]
+    isPrivate: boolean
+    isNsfw: boolean
+    onProgress: (progress: number) => void
+  },
+) => {
   const formData = new FormData()
   formData.append('file', data.file, data.file.name)
   formData.append('title', data.title)
@@ -128,8 +139,8 @@ const upload = (data: { file: File, title: string, copyrightName: string, copyri
   formData.append('copyrightURL', data.copyrightURL)
   // @ts-ignore
   formData.append('tags', data.tags)
-  // @ts-ignore
-  formData.append('private', data.isPrivate)
+  formData.append('private', String(data.isPrivate))
+  formData.append('nsfw', String(data.isNsfw))
   return xhr.post('/api/upload', {
     body: formData,
     onUploadProgress: (evt: ProgressEvent<XMLHttpRequestEventTarget>): void => {

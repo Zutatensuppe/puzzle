@@ -203,8 +203,8 @@
     </v-card>
   </v-dialog>
   <v-dialog
-    class="report-game"
     v-model="reportGameDialog"
+    class="report-game"
   >
     <ReportGameDialog
       v-if="reportGame"

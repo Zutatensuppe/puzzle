@@ -56,6 +56,8 @@ export class Images {
       gameCount: row.games_count,
       copyrightName: row.copyright_name,
       copyrightURL: row.copyright_url,
+      reported: row.reported,
+      nsfw: !!row.nsfw,
     }
   }
 

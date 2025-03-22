@@ -642,6 +642,7 @@ export default function createRouter(
       )
       // post form, so booleans are submitted as 'true' | 'false'
       const isPrivate = req.body.private === 'false' ? 0 : 1
+      const nsfw = req.body.nsfw === 'true' ? 1 : 0
       const imageId = await im.insertImage({
         uploader_user_id: user.id,
         filename: req.file.filename,
@@ -653,6 +654,8 @@ export default function createRouter(
         width: dim.w,
         height: dim.h,
         private: isPrivate,
+        reported: 0,
+        nsfw,
       })
 
       if (req.body.tags) {
