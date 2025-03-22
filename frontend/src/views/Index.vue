@@ -117,7 +117,7 @@
         >
           <v-btn
             density="comfortable"
-            @click="login"
+            @click="openLoginDialog"
           >
             Login
           </v-btn> to show up on the leaderboard!
@@ -228,6 +228,9 @@ import ImageInfoDialog from '../components/ImageInfoDialog.vue'
 import { resizeUrl } from '../../../common/src/ImageService'
 import { toast } from '../toast'
 import ReportGameDialog from '../components/ReportGameDialog.vue'
+import { useDialog } from '../useDialog'
+
+const { openLoginDialog } = useDialog()
 
 const router = useRouter()
 const data = ref<ApiDataIndexData | null>(null)
@@ -238,10 +241,6 @@ const onInit = async () => {
   const res = await api.pub.indexData()
   const json = await res.json() as ApiDataIndexData
   data.value = json
-}
-
-const login = () => {
-  user.eventBus.emit('triggerLoginDialog')
 }
 
 const goToGame = ((game: GameInfo) => {

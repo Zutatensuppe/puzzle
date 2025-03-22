@@ -49,7 +49,7 @@
             v-else
             size="small"
             class="ml-1"
-            @click="login"
+            @click="openLoginDialog"
           >
             Login
           </v-btn>
@@ -115,10 +115,9 @@ import { useRoute } from 'vue-router'
 import user, { User } from '../user'
 import AnnouncementsDrawer from './AnnouncementsDrawer.vue'
 import AnnouncementsIcon from './AnnouncementsIcon.vue'
+import { useDialog } from '../useDialog'
 
-const login = () => {
-  user.eventBus.emit('triggerLoginDialog')
-}
+const { openLoginDialog } = useDialog()
 
 const route = useRoute()
 const showNav = computed(() => {

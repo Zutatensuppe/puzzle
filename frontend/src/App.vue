@@ -6,57 +6,29 @@
     <v-layout>
       <v-main>
         <Nav v-if="!route.meta.ingame" />
-        <LoginDialog
-          v-if="showLogin"
-          v-model="showLogin"
-          :tab="loginDialogTab"
-          :token="passwordResetToken"
-          @close="showLogin=false"
-        />
+        <Dialog />
         <router-view />
       </v-main>
     </v-layout>
   </v-app>
 </template>
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { onMounted } from 'vue'
 import { useRoute } from 'vue-router'
-import LoginDialog from './components/LoginDialog.vue'
+import Dialog from './components/Dialog.vue'
 import Nav from './components/Nav.vue'
-import user from './user'
+import { useDialog } from './useDialog'
 import { toast } from './toast'
 
 const route = useRoute()
-
-const showLogin = ref<boolean>(false)
-const loginDialogTab = ref<'login' | 'register' | 'forgot-password' | 'reset-password' | undefined>(undefined)
-const passwordResetToken = ref<string>('')
-
-const onInit = () => {
-  showLogin.value = false
-}
-
-const onTriggerLoginDialog = () => {
-  loginDialogTab.value = 'login'
-  showLogin.value = true
-}
-
-const onCloseLoginDialog = () => {
-  showLogin.value = false
-}
+const { openLoginDialog } = useDialog()
 
 onMounted(() => {
-  user.eventBus.on('login', onInit)
-  user.eventBus.on('triggerLoginDialog', onTriggerLoginDialog)
-  user.eventBus.on('closeLoginDialog', onCloseLoginDialog)
-
   if (window.location.hash) {
-    const urlParams = new URLSearchParams(window.location.hash.replace('#','?'))
-    const passwordResetTokenValue = urlParams.get('password-reset')
-    if (passwordResetTokenValue) {
-      loginDialogTab.value = 'reset-password'
-      showLogin.value = true
-      passwordResetToken.value = passwordResetTokenValue
+    const urlParams = new URLSearchParams(window.location.hash.replace('#', '?'))
+    const passwordResetToken = urlParams.get('password-reset')
+    if (passwordResetToken) {
+      openLoginDialog('reset-password', { passwordResetToken })
     }
     const emailVerified = urlParams.get('email-verified')
     if (emailVerified) {
