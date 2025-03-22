@@ -85,7 +85,12 @@ export class GameService {
     if (!Array.isArray(game.players)) {
       game.players = Object.values(game.players)
     }
-    game.puzzle.info.image.gameCount = await this.server.repos.images.getGameCount(game.puzzle.info.image.id)
+
+    const imageId = game.puzzle.info.image.id
+    const image = await this.server.repos.images.get({ id: imageId })
+    game.puzzle.info.image.gameCount = await this.server.repos.images.getGameCount(imageId)
+    game.puzzle.info.image.reported = image?.reported || 0
+    game.puzzle.info.image.nsfw = !!(image?.nsfw)
 
     const gameVersion = game.gameVersion || 1 // old games didnt have this stored
     return {
