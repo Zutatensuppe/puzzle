@@ -61,7 +61,7 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { FeaturedRowWithCollections, GameSettings, ImageId, ImageInfo } from '../../../common/src/Types'
+import { defaultImageInfo, FeaturedRowWithCollections, GameSettings, ImageInfo } from '../../../common/src/Types'
 import ImageLibrary from '../components/ImageLibrary.vue'
 import NewGameDialog from '../components/NewGameDialog.vue'
 import api from '../_api'
@@ -72,22 +72,7 @@ const router = useRouter()
 const featured = ref<FeaturedRowWithCollections | null>(null)
 const collections = ref<any[]>([])
 
-const image = ref<ImageInfo>({
-  id: 0 as ImageId,
-  uploaderUserId: null,
-  uploaderName: '',
-  filename: '',
-  url: '',
-  title: '',
-  tags: [],
-  created: 0,
-  width: 0,
-  height: 0,
-  gameCount: 0,
-  copyrightName: '',
-  copyrightURL: '',
-  private: false,
-})
+const image = ref<ImageInfo>(defaultImageInfo())
 
 const dialog = ref<boolean>(false)
 const dialogContent = ref<string>('')

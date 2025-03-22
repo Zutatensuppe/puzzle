@@ -297,6 +297,7 @@ export interface FrontendGameSettings {
   copyrightURL: string
   tags: string[]
   isPrivate: boolean
+  isNsfw: boolean
 }
 
 export interface GameSettings {
@@ -374,7 +375,28 @@ export interface ImageInfo {
   private: boolean
   copyrightName: string
   copyrightURL: string
+  reported: number
+  nsfw: boolean
 }
+
+export const defaultImageInfo = (): ImageInfo => ({
+  id: 0 as ImageId,
+  uploaderUserId: null,
+  uploaderName: '',
+  filename: '',
+  url: '',
+  title: '',
+  tags: [],
+  created: 0,
+  width: 0,
+  height: 0,
+  gameCount: 0,
+  copyrightName: '',
+  copyrightURL: '',
+  private: false,
+  reported: 0,
+  nsfw: false,
+})
 
 export interface PuzzleInfo {
   table: PuzzleTable
@@ -829,6 +851,7 @@ export interface GameRow {
   image_snapshot_url: string | null
   join_password: string | null
   require_account: number
+  reported: number
 }
 
 export interface GameRowWithImageAndUser extends GameRow {
@@ -848,6 +871,8 @@ export interface ImageRow {
   private: number
   copyright_name: string
   copyright_url: string
+  reported: number
+  nsfw: number
 }
 
 export interface ImageXTagRow {

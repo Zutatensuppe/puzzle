@@ -297,6 +297,20 @@ $bg-color-transparent: rgba(0 0 0 / 70%);
     min-height: 360px;
   }
 
+  &:not(.hoverable) {
+    .game-teaser-image-holder {
+      overflow: hidden;
+    }
+
+    .game-teaser-image {
+      filter: blur(120px);
+    }
+
+    .game-teaser-buttons {
+      display: none;
+    }
+  }
+
   .game-teaser-image {
     position: absolute;
     inset: 0;
@@ -344,9 +358,9 @@ $bg-color-transparent: rgba(0 0 0 / 70%);
     text-align: center;
   }
 
-  &:hover > .v-card__overlay,
-  &:hover .game-teaser-image,
-  &:hover .game-teaser-banderole-holder {
+  &.hoverable:hover > .v-card__overlay,
+  &.hoverable:hover .game-teaser-image,
+  &.hoverable:hover .game-teaser-banderole-holder {
     transform: scale(1.1);
   }
 
@@ -440,6 +454,20 @@ $bg-color-transparent: rgba(0 0 0 / 70%);
     }
   }
 
+  &:not(.hoverable) {
+    .game-teaser-image-holder {
+      overflow: hidden;
+    }
+
+    .game-teaser-image {
+      filter: blur(120px);
+    }
+
+    .game-teaser-buttons {
+      display: none;
+    }
+  }
+
   .game-is-private-info {
     position: absolute;
     right: 1em;
@@ -462,7 +490,7 @@ $bg-color-transparent: rgba(0 0 0 / 70%);
     opacity: 0;
   }
 
-  &:hover {
+  &.hoverable:hover {
     .game-teaser-report {
       opacity: 0.5;
 
@@ -483,6 +511,19 @@ $bg-color-transparent: rgba(0 0 0 / 70%);
       }
     }
   }
+}
+
+.teaser-nsfw-information {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  text-align: center;
+  align-items: center;
+  justify-content: center;
+  z-index: 1;
+  text-shadow: 1px 1px rgba(0 0 0 / 60%);
+  font-weight: bold;
+  font-size: 1.5em;
 }
 
 .featured-view,
@@ -646,6 +687,19 @@ html.view-replay body { overflow: hidden; }
 
 .masonry-item {
   margin-bottom: 10px;
+}
+
+
+.imageteaser-holder {
+  position: relative;
+
+  &:not(.hoverable) {
+    overflow: hidden;
+
+    .imageteaser {
+      filter: blur(120px);
+    }
+  }
 }
 
 .imageteaser {

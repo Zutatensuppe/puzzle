@@ -3,6 +3,7 @@ import api from './_api'
 import storage from './storage'
 import xhr from './_api/xhr'
 import { ClientId, PLAYER_SETTINGS, UserId } from '../../common/src/Types'
+import { ref } from 'vue'
 
 export interface User {
   id: UserId
@@ -12,6 +13,32 @@ export interface User {
   type: 'guest' | 'user'
   cannyToken: string | null
   groups: string[]
+}
+
+const showNsfw = ref(storage.getBool('showNsfw', false))
+const toggleNsfw = (): void => {
+  showNsfw.value = !showNsfw.value
+  storage.setBool('showNsfw', showNsfw.value)
+}
+
+// Temporarily make individual nsfw items visible.
+// This is deliberately not persisted.
+const nsfwItemsVisible = ref<string[]>([])
+const toggleNsfwItem = (id: string): void => {
+  if (nsfwItemsVisible.value.includes(id)) {
+    nsfwItemsVisible.value = nsfwItemsVisible.value.filter((i) => i !== id)
+  } else {
+    nsfwItemsVisible.value.push(id)
+  }
+}
+
+export const useNsfw = () => {
+  return {
+    showNsfw,
+    toggleNsfw,
+    toggleNsfwItem,
+    nsfwItemsVisible,
+  }
 }
 
 let me: null | User = null
