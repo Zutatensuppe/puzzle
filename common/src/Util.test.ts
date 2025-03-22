@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { EncodedGame, EncodedGameLegacy, EncodedPieceShape, Game, GameId, ImageId, PieceRotation, PieceShape, Puzzle, PuzzleInfo, UserId } from './Types'
+import { defaultImageInfo, EncodedGame, EncodedGameLegacy, EncodedPieceShape, Game, GameId, ImageId, PieceRotation, PieceShape, Puzzle, PuzzleInfo, UserId } from './Types'
 import Util, { clamp } from './Util'
 
 describe('Util.ts', () => {
@@ -179,22 +179,7 @@ describe('Util.ts', () => {
       tilesX: 0,
       tilesY: 0,
       shapes: [],
-      image: {
-        id: 0 as ImageId,
-        uploaderName: '',
-        uploaderUserId: 0 as UserId,
-        filename: '',
-        url: '',
-        copyrightName: '',
-        copyrightURL: '',
-        title: '',
-        tags: [],
-        created: 0,
-        gameCount: 0,
-        height: 0,
-        width: 0,
-        private: false,
-      },
+      image: defaultImageInfo(),
     }
     const puzzle: Puzzle = {
       tiles: [],
@@ -314,22 +299,7 @@ describe('Util.ts', () => {
       tilesX: 0,
       tilesY: 0,
       shapes: [],
-      image: {
-        id: 0 as ImageId,
-        uploaderName: '',
-        uploaderUserId: 0 as UserId,
-        filename: '',
-        url: '',
-        copyrightName: '',
-        copyrightURL: '',
-        title: '',
-        tags: [],
-        created: 0,
-        gameCount: 0,
-        height: 0,
-        width: 0,
-        private: false,
-      },
+      image: defaultImageInfo(),
     }
 
     it('works', () => {

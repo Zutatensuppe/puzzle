@@ -1,7 +1,7 @@
 <template>
   <v-card
     class="running-game-teaser"
-    :class="{ 'game-is-private': game.isPrivate }"
+    :class="{ 'game-is-private': game.isPrivate, hoverable }"
     elevation="10"
     @click="emit('goToGame', game)"
   >
@@ -11,10 +11,17 @@
         :style="style"
       />
       <div
-        v-if="styleHovered"
+        v-if="hoverable && styleHovered"
         class="game-teaser-image state-hovered"
         :style="styleHovered"
       />
+      <div
+        v-if="showNsfwInfo"
+        class="teaser-nsfw-information"
+        @click.stop="toggleNsfwItem(`${game.image.id}`)"
+      >
+        😳 NSFW (click to show)
+      </div>
       <div class="game-teaser-banderole-holder">
         <div
           v-if="game.isPrivate"
@@ -102,7 +109,7 @@ import Time from '../../../common/src/Time'
 import { resizeUrl } from '../../../common/src/ImageService'
 import { GameInfo, ImageInfo } from '../../../common/src/Types'
 import { rotationModeToString, scoreModeToString, shapeModeToString, snapModeToString } from '../../../common/src/Util'
-import user, { User } from '../user'
+import user, { useNsfw, User } from '../user'
 
 const props = defineProps<{
   game: GameInfo,
@@ -137,6 +144,10 @@ const scoreMode = computed(() => scoreModeToString(props.game.scoreMode))
 const shapeMode = computed(() => shapeModeToString(props.game.shapeMode))
 
 const rotationMode = computed(() => rotationModeToString(props.game.rotationMode))
+
+const { showNsfw, toggleNsfwItem, nsfwItemsVisible } = useNsfw()
+const hoverable = computed(() => (!props.game.image.nsfw || showNsfw.value || nsfwItemsVisible.value.includes(`${props.game.image.id}`)))
+const showNsfwInfo = computed(() => props.game.image.nsfw && !showNsfw.value && !nsfwItemsVisible.value.includes(`${props.game.image.id}`))
 
 const time = ((start: number, end: number) => {
   const from = start

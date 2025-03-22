@@ -1,82 +1,97 @@
 <template>
-  <v-card
-    class="imageteaser is-clickable"
-    :class="{ 'image-is-private': image.private }"
-    elevation="10"
-    :style="styles"
-    @click="onClick"
+  <div
+    class="imageteaser-holder is-clickable"
+    :class="{ 'image-is-private': image.private, hoverable }"
   >
-    <div class="imageteaser-inner">
-      <div
-        v-if="image.private"
-        class="imageteaser-info image-is-private-info"
-      >
-        <v-icon icon="mdi-incognito" /> Private Image
-      </div>
-      <h4 class="imageteaser-title">
-        {{ image.title || '<No Title>' }}
-      </h4>
-
-      <div
-        class="imageteaser-report"
-        @click.stop="onReportClick"
-        v-tooltip="'Report this image'"
-      >
-        <v-icon icon="mdi-exclamation-thick" />
-      </div>
-
-      <div
-        v-if="image.copyrightName || image.copyrightURL"
-        class="imageteaser-info"
-      >
-        <v-icon icon="mdi-copyright" />
-        <a
-          v-if="image.copyrightURL"
-          :href="image.copyrightURL"
-          target="_blank"
-          class="ml-1"
-        >{{ image.copyrightName || 'Source' }} <v-icon icon="mdi-open-in-new" /></a>
-        <span
-          v-else
-          class="ml-1"
-        >{{ image.copyrightName }}</span>
-      </div>
-      <div class="imageteaser-info">
-        <v-icon icon="mdi-motion-play" /> {{ image.gameCount }}x plays
-      </div>
-      <div class="imageteaser-info">
-        <v-icon icon="mdi-calendar-month" /> {{ date }}
-      </div>
-      <div class="imageteaser-info">
-        <v-icon icon="mdi-ruler-square" /> {{ image.width }}x{{ image.height }}
-      </div>
-      <div
-        v-if="image.tags.length"
-        class="imageteaser-info"
-      >
-        <v-icon icon="mdi-tag" /> {{ image.tags.map((t: Tag) => t.title).join(', ') }}
-      </div>
-      <div class="imageteaser-click-info">
-        <h5>Click to setup a game</h5>
-      </div>
-      <div class="imageteaser-actions">
-        <v-btn
-          v-if="canEdit"
-          variant="text"
-          icon="mdi-pencil"
-          size="x-small"
-          class="imageteaser-edit"
-          @click.stop="onEditClick"
-        />
-      </div>
+    <div
+      v-if="showNsfwInfo"
+      class="teaser-nsfw-information"
+      @click.stop="toggleNsfwItem(`${image.id}`)"
+    >
+      😳 NSFW (click to show)
     </div>
-  </v-card>
+    <v-card
+      class="imageteaser"
+      elevation="10"
+      :style="styles"
+      @click="onClick"
+    >
+      <div class="imageteaser-inner">
+        <div
+          v-if="image.private"
+          class="imageteaser-info image-is-private-info"
+        >
+          <v-icon icon="mdi-incognito" /> Private Image
+        </div>
+        <h4 class="imageteaser-title">
+          {{ image.title || '<No Title>' }}
+        </h4>
+
+        <div
+          class="imageteaser-report"
+          @click.stop="onReportClick"
+          v-tooltip="'Report this image'"
+        >
+          <v-icon icon="mdi-exclamation-thick" />
+        </div>
+
+        <div
+          v-if="image.copyrightName || image.copyrightURL"
+          class="imageteaser-info"
+        >
+          <v-icon icon="mdi-copyright" />
+          <a
+            v-if="image.copyrightURL"
+            :href="image.copyrightURL"
+            target="_blank"
+            class="ml-1"
+          >{{ image.copyrightName || 'Source' }} <v-icon icon="mdi-open-in-new" /></a>
+          <span
+            v-else
+            class="ml-1"
+          >{{ image.copyrightName }}</span>
+        </div>
+        <div class="imageteaser-info">
+          <v-icon icon="mdi-motion-play" /> {{ image.gameCount }}x plays
+        </div>
+        <div class="imageteaser-info">
+          <v-icon icon="mdi-calendar-month" /> {{ date }}
+        </div>
+        <div class="imageteaser-info">
+          <v-icon icon="mdi-ruler-square" /> {{ image.width }}x{{ image.height }}
+        </div>
+        <div
+          v-if="image.tags.length"
+          class="imageteaser-info"
+        >
+          <v-icon icon="mdi-tag" /> {{ image.tags.map((t: Tag) => t.title).join(', ') }}
+        </div>
+        <div class="imageteaser-click-info">
+          <h5>Click to setup a game</h5>
+        </div>
+        <div class="imageteaser-actions">
+          <v-btn
+            v-if="canEdit"
+            variant="text"
+            icon="mdi-pencil"
+            size="x-small"
+            class="imageteaser-edit"
+            @click.stop="onEditClick"
+          />
+        </div>
+      </div>
+    </v-card>
+  </div>
 </template>
 <script setup lang="ts">
 import { computed, onMounted, onBeforeUnmount, ref } from 'vue'
 import { resizeUrl } from '../../../common/src/ImageService'
 import { ImageInfo, Tag } from '../../../common/src/Types'
-import user, { User } from '../user'
+import user, { useNsfw, User } from '../user'
+
+const { showNsfw, toggleNsfwItem, nsfwItemsVisible } = useNsfw()
+const hoverable = computed(() => (!props.image.nsfw || showNsfw.value || nsfwItemsVisible.value.includes(`${props.image.id}`)))
+const showNsfwInfo = computed(() => props.image.nsfw && !showNsfw.value && !nsfwItemsVisible.value.includes(`${props.image.id}`))
 
 const props = withDefaults(defineProps<{
   image: ImageInfo

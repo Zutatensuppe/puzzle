@@ -38,6 +38,12 @@
           >
             <icon icon="ukraine-heart" /> <span class="ml-2 mr-2">Stand with Ukraine</span> <icon icon="ukraine-heart" />
           </v-btn>
+          <v-switch
+            class="mr-1"
+            :model-value="showNsfw"
+            @update:model-value="toggleNsfw"
+            hide-details
+            label="Show All NSFW"></v-switch>
           <v-btn
             v-if="me && loggedIn"
             class="user-welcome-message"
@@ -112,13 +118,15 @@
 <script setup lang="ts">
 import { computed, onMounted, onBeforeUnmount, ref } from 'vue'
 import { useRoute } from 'vue-router'
-import user, { User } from '../user'
+import user, { useNsfw, User } from '../user'
 import AnnouncementsDrawer from './AnnouncementsDrawer.vue'
 import AnnouncementsIcon from './AnnouncementsIcon.vue'
 
 const login = () => {
   user.eventBus.emit('triggerLoginDialog')
 }
+
+const { showNsfw, toggleNsfw } = useNsfw()
 
 const route = useRoute()
 const showNav = computed(() => {

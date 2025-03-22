@@ -97,6 +97,13 @@
               label="Private Image (Private images won't show up in the public gallery, but are visible to the admin for moderation purposes)"
             />
           </div>
+          <div>
+            <v-checkbox
+              v-model="isNsfw"
+              density="comfortable"
+              label="NSFW Image (Check this if the image is not safe for work. Image will be available publically, but hidden by default.)"
+            />
+          </div>
 
           <v-card-actions>
             <!-- isPrivate -->
@@ -210,6 +217,7 @@ const copyrightName = ref<string>('')
 const copyrightURL = ref<string>('')
 const tags = ref<string[]>([])
 const isPrivate = ref<boolean>(false)
+const isNsfw = ref<boolean>(false)
 const droppable = ref<boolean>(false)
 const inputFocused = ref<boolean>(false)
 
@@ -327,6 +335,7 @@ const postToGallery = () => {
     copyrightURL: copyrightURL.value,
     tags: tags.value,
     isPrivate: isPrivate.value,
+    isNsfw: isNsfw.value
   })
   reset()
 }
@@ -343,6 +352,7 @@ const setupGameClick = () => {
     copyrightURL: copyrightURL.value,
     tags: tags.value,
     isPrivate: isPrivate.value,
+    isNsfw: isNsfw.value
   })
   reset()
 }
