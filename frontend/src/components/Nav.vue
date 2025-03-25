@@ -38,13 +38,6 @@
           >
             <icon icon="ukraine-heart" /> <span class="ml-2 mr-2">Stand with Ukraine</span> <icon icon="ukraine-heart" />
           </v-btn>
-          <v-switch
-            class="mr-1"
-            :model-value="showNsfw"
-            hide-details
-            label="Show All NSFW"
-            @update:model-value="toggleNsfw"
-          />
           <v-btn
             v-if="me && loggedIn"
             class="user-welcome-message"
@@ -89,6 +82,17 @@
           target="_blank"
         >
           <v-icon icon="mdi-chat-outline" /> Discord
+        </v-list-item>
+        <v-divider />
+        <v-list-item>
+          <v-checkbox
+            :model-value="showNsfw"
+            color="primary"
+            hide-details
+            density="compact"
+            label="Show NSFW Content"
+            @update:model-value="toggleNsfw"
+          />
         </v-list-item>
       </v-list>
     </v-navigation-drawer>
