@@ -1,11 +1,14 @@
 import { ref } from 'vue'
 import user from './user'
-import { ImageInfo } from '../../common/src/Types'
+import { GameId, GameInfo, ImageId, ImageInfo } from '../../common/src/Types'
+import _api from './_api'
+import { toast } from './toast'
 
 // global dialog settings
 const width = ref<'auto' | number | undefined>(undefined)
 const minWidth = ref<number | undefined>(undefined)
-const currentDialog = ref<'login-dialog' | 'edit-image-dialog' |''>('')
+const dialogClass = ref<string|undefined>(undefined)
+const currentDialog = ref<'login-dialog' | 'edit-image-dialog' | 'report-game-dialog' | 'report-image-dialog' | ''>('')
 const dialogOpen = ref<boolean>(false)
 
 const closeDialog = () => {
@@ -33,6 +36,8 @@ const openEditImageDialog = (
   editImageImage.value = image
   editImageAutocompleteTags.value = autocompleteTags
   editOnSaveImageClick.value = onSaveImageClick
+
+  // =================================================================
   currentDialog.value = 'edit-image-dialog'
   dialogClass.value = 'edit-image'
   width.value = undefined
@@ -52,13 +57,60 @@ const openLoginDialog = (
 ) => {
   loginDialogData.value = data
   loginDialogTab.value = tab
+
+  // =================================================================
   currentDialog.value = 'login-dialog'
+  dialogClass.value = undefined
   width.value = 'auto'
   minWidth.value = 450
   dialogOpen.value = true
 }
 
-const dialogClass = ref<string|undefined>(undefined)
+// report game dialog specific
+const reportGame = ref<GameInfo|null>(null)
+const openReportGameDialog = (game: GameInfo) => {
+  reportGame.value = game
+
+  // =================================================================
+  currentDialog.value = 'report-game-dialog'
+  dialogClass.value = 'report-game'
+  width.value = undefined
+  minWidth.value = undefined
+  dialogOpen.value = true
+}
+
+const submitReportGame = async (data: { id: GameId, reason: string }) => {
+  const res = await _api.pub.reportGame(data)
+  if (res.status === 200) {
+    closeDialog()
+    toast('Thank you for your report.', 'success')
+  } else {
+    toast('An error occured during reporting.', 'error')
+  }
+}
+
+// report image dialog specific
+const reportImage = ref<ImageInfo|null>(null)
+const openReportImageDialog = (image: ImageInfo) => {
+  reportImage.value = image
+
+  // =================================================================
+  currentDialog.value = 'report-image-dialog'
+  dialogClass.value = 'report-image'
+  width.value = undefined
+  minWidth.value = undefined
+  dialogOpen.value = true
+}
+
+const submitReportImage = async (data: { id: ImageId, reason: string }) => {
+  const res = await _api.pub.reportImage(data)
+  if (res.status === 200) {
+    closeDialog()
+    toast('Thank you for your report.', 'success')
+  } else {
+    toast('An error occured during reporting.', 'error')
+  }
+}
 
 export function useDialog() {
   return {
@@ -72,6 +124,12 @@ export function useDialog() {
     loginDialogData,
     openLoginDialog,
     openEditImageDialog,
+    openReportGameDialog,
+    submitReportGame,
+    reportGame,
+    openReportImageDialog,
+    submitReportImage,
+    reportImage,
     editImageImage,
     editImageAutocompleteTags,
     editOnSaveImageClick,

@@ -20,7 +20,7 @@
       <div
         v-tooltip="'Report this game'"
         class="game-teaser-report"
-        @click.stop="emit('reportClick', game)"
+        @click.stop="openReportGameDialog(game)"
       >
         <v-icon icon="mdi-exclamation-thick" />
       </div>
@@ -98,6 +98,9 @@ import Time from '../../../common/src/Time'
 import { GameInfo, ImageInfo } from '../../../common/src/Types'
 import { rotationModeToString, scoreModeToString, shapeModeToString, snapModeToString } from '../../../common/src/Util'
 import { useNsfw } from '../user'
+import { useDialog } from '../useDialog'
+
+const { openReportGameDialog } = useDialog()
 
 const props = defineProps<{
   game: GameInfo,
@@ -107,7 +110,6 @@ const emit = defineEmits<{
   (e: 'goToGame', val: GameInfo): void
   (e: 'goToReplay', val: GameInfo): void
   (e: 'showImageInfo', val: ImageInfo): void
-  (e: 'reportClick', val: GameInfo): void
 }>()
 
 const url = computed(() => resizeUrl(props.game.image.url, 375, 210, 'contain'))
