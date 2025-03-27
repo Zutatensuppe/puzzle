@@ -8,7 +8,7 @@ import { toast } from './toast'
 const width = ref<'auto' | number | undefined>(undefined)
 const minWidth = ref<number | undefined>(undefined)
 const dialogClass = ref<string|undefined>(undefined)
-const currentDialog = ref<'login-dialog' | 'edit-image-dialog' | 'report-game-dialog' | 'report-image-dialog' | ''>('')
+const currentDialog = ref<'login-dialog' | 'edit-image-dialog' | 'report-game-dialog' | 'report-image-dialog' | 'image-info-dialog' | ''>('')
 const dialogOpen = ref<boolean>(false)
 
 const closeDialog = () => {
@@ -112,26 +112,41 @@ const submitReportImage = async (data: { id: ImageId, reason: string }) => {
   }
 }
 
+// image info dialog specific
+const imageInfoImage = ref<ImageInfo|null>(null)
+const openImageInfoDialog = (image: ImageInfo) => {
+  imageInfoImage.value = image
+
+  // =================================================================
+  currentDialog.value = 'image-info-dialog'
+  dialogClass.value = undefined
+  width.value = undefined
+  minWidth.value = undefined
+  dialogOpen.value = true
+}
+
 export function useDialog() {
   return {
-    dialogClass,
-    dialogOpen,
-    width,
-    minWidth,
     closeDialog,
     currentDialog,
-    loginDialogTab,
-    loginDialogData,
-    openLoginDialog,
-    openEditImageDialog,
-    openReportGameDialog,
-    submitReportGame,
-    reportGame,
-    openReportImageDialog,
-    submitReportImage,
-    reportImage,
-    editImageImage,
+    dialogClass,
+    dialogOpen,
     editImageAutocompleteTags,
+    editImageImage,
     editOnSaveImageClick,
+    imageInfoImage,
+    loginDialogData,
+    loginDialogTab,
+    minWidth,
+    openEditImageDialog,
+    openImageInfoDialog,
+    openLoginDialog,
+    openReportGameDialog,
+    openReportImageDialog,
+    reportGame,
+    reportImage,
+    submitReportGame,
+    submitReportImage,
+    width,
   }
 }

@@ -78,7 +78,7 @@
         <v-btn
           block
           prepend-icon="mdi-image"
-          @click.stop="emit('showImageInfo', game.image)"
+          @click.stop="openImageInfoDialog(game.image)"
         >
           Image info
         </v-btn>
@@ -112,7 +112,7 @@ import { rotationModeToString, scoreModeToString, shapeModeToString, snapModeToS
 import user, { useNsfw, User } from '../user'
 import { useDialog } from '../useDialog'
 
-const { openReportGameDialog } = useDialog()
+const { openReportGameDialog, openImageInfoDialog } = useDialog()
 
 const props = defineProps<{
   game: GameInfo,
@@ -120,7 +120,6 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   (e: 'goToGame', val: GameInfo): void
-  (e: 'showImageInfo', val: ImageInfo): void
   (e: 'delete', val: GameInfo): void
 }>()
 

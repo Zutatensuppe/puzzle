@@ -9,6 +9,7 @@
     <EditImageDialog v-if="currentDialog === 'edit-image-dialog'" />
     <ReportGameDialog v-if="currentDialog === 'report-game-dialog'" />
     <ReportImageDialog v-if="currentDialog === 'report-image-dialog'" />
+    <ImageInfoDialog v-if="currentDialog === 'image-info-dialog'" />
   </v-dialog>
 </template>
 <script setup lang="ts">
@@ -18,6 +19,7 @@ import LoginDialog from './dialogs/LoginDialog.vue'
 import EditImageDialog from './dialogs/EditImageDialog.vue'
 import ReportGameDialog from './dialogs/ReportGameDialog.vue'
 import ReportImageDialog from './dialogs/ReportImageDialog.vue'
+import ImageInfoDialog from './dialogs/ImageInfoDialog.vue'
 
 const { dialogClass, width, minWidth, dialogOpen, currentDialog } = useDialog()
 </script>

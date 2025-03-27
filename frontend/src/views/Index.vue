@@ -78,7 +78,6 @@
             :key="idx"
             :game="g"
             @go-to-game="goToGame"
-            @show-image-info="showImageInfo"
             @delete="onDeleteGame"
           />
         </v-container>
@@ -142,7 +141,6 @@
           :game="g"
           @go-to-game="goToGame"
           @go-to-replay="goToReplay"
-          @show-image-info="showImageInfo"
         />
       </v-container>
       <Pagination
@@ -151,15 +149,6 @@
       />
     </template>
   </v-container>
-
-  <v-dialog v-model="imageInfoDialog">
-    <ImageInfoDialog
-      v-if="imageInfo"
-      :image="imageInfo"
-      @tag-click="onTagClick"
-      @close="imageInfoDialog = false"
-    />
-  </v-dialog>
   <v-dialog
     v-if="confirmDeleteGame"
     v-model="confirmDeleteDialog"
@@ -204,14 +193,13 @@
 <script setup lang="ts">
 import { onMounted, onBeforeUnmount, ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
-import { ApiDataFinishedGames, ApiDataIndexData, GameInfo, ImageInfo, ImageSearchSort, Tag } from '../../../common/src/Types'
+import { ApiDataFinishedGames, ApiDataIndexData, GameInfo } from '../../../common/src/Types'
 import RunningGameTeaser from '../components/RunningGameTeaser.vue'
 import FinishedGameTeaser from '../components/FinishedGameTeaser.vue'
 import Pagination from '../components/Pagination.vue'
 import api from '../_api'
 import Leaderboard from '../components/Leaderboard.vue'
 import user, { User } from '../user'
-import ImageInfoDialog from '../components/ImageInfoDialog.vue'
 import { resizeUrl } from '../../../common/src/ImageService'
 import { toast } from '../toast'
 import { useDialog } from '../useDialog'
@@ -266,13 +254,6 @@ const onConfirmDeleteGame = async (game: GameInfo) => {
   }
 }
 
-const imageInfoDialog = ref<boolean>(false)
-const imageInfo = ref<ImageInfo|null>(null)
-const showImageInfo = ((image: ImageInfo) => {
-  imageInfoDialog.value = true
-  imageInfo.value = image
-})
-
 const leaderboardConfigs: Record<string, { title: string, description: string }> = {
   week: {
     title: 'Weekly',
@@ -306,10 +287,6 @@ const onPagination = async (q: { limit: number, offset: number }) => {
   const res = await api.pub.finishedGames(q)
   const json = await res.json() as ApiDataFinishedGames
   data.value.gamesFinished = json
-}
-
-const onTagClick = (tag: Tag): void => {
-  void router.push({ name: 'new-game', query: { sort: ImageSearchSort.DATE_DESC, search: tag.title } })
 }
 
 onMounted(() => {
