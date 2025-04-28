@@ -92,22 +92,23 @@
           </fieldset>
           <div>
             <v-checkbox
-              v-model="isPrivate"
+              v-model="isPublic"
+              :disabled="isNsfw"
               density="comfortable"
-              label="Private Image (Private images won't show up in the public gallery, but are visible to the admin for moderation purposes)"
+              label="Public Image (The image will be visible in the gallery for other users to use.)"
             />
           </div>
           <div>
             <v-checkbox
               v-model="isNsfw"
               density="comfortable"
-              label="NSFW Image (Check this if the image is not safe for work. Image will be available publically, but hidden by default.)"
+              label="NSFW Image (Check this if the image is not safe for work. NSFW images will be private automatically.)"
             />
           </div>
 
           <v-card-actions>
             <!-- isPrivate -->
-            <template v-if="isPrivate">
+            <template v-if="!isPublic || isNsfw">
               <v-btn
                 v-if="uploading"
                 variant="elevated"
@@ -216,7 +217,7 @@ const title = ref<string>('')
 const copyrightName = ref<string>('')
 const copyrightURL = ref<string>('')
 const tags = ref<string[]>([])
-const isPrivate = ref<boolean>(false)
+const isPublic = ref<boolean>(false)
 const isNsfw = ref<boolean>(false)
 const droppable = ref<boolean>(false)
 const inputFocused = ref<boolean>(false)
@@ -239,7 +240,8 @@ const reset = (): void => {
   copyrightName.value = ''
   copyrightURL.value = ''
   tags.value = []
-  isPrivate.value = false
+  isPublic.value = false
+  isNsfw.value = false
   droppable.value = false
 }
 
@@ -334,7 +336,7 @@ const postToGallery = () => {
     copyrightName: copyrightName.value,
     copyrightURL: copyrightURL.value,
     tags: tags.value,
-    isPrivate: isPrivate.value,
+    isPrivate: !isPublic.value || isNsfw.value,
     isNsfw: isNsfw.value,
   })
   reset()
@@ -351,7 +353,7 @@ const setupGameClick = () => {
     copyrightName: copyrightName.value,
     copyrightURL: copyrightURL.value,
     tags: tags.value,
-    isPrivate: isPrivate.value,
+    isPrivate: !isPublic.value || isNsfw.value,
     isNsfw: isNsfw.value,
   })
   reset()
