@@ -14,14 +14,14 @@
           variant="elevated"
           color="success"
           prepend-icon="mdi-exclamation-thick"
-          @click="submitReport"
+          @click="onSubmitReport"
         >
           Submit Report
         </v-btn>
         <v-btn
           color="error"
           variant="elevated"
-          @click="emit('close')"
+          @click="closeDialog"
         >
           Cancel
         </v-btn>
@@ -30,33 +30,19 @@
   </v-card>
 </template>
 <script setup lang="ts">
-import { ref, watch } from 'vue'
-import { ImageId, ImageInfo } from '../../../common/src/Types'
+import { ref } from 'vue'
+import { useDialog } from '../../useDialog'
 
-const props = defineProps<{
-  image: ImageInfo
-}>()
-
-const emit = defineEmits<{
-  (e: 'submit', val: { id: ImageId, reason: string }): void
-  (e: 'close'): void
-}>()
+const { reportImage, submitReportImage, closeDialog } = useDialog()
 
 const reason = ref<string>('')
 
-const init = (_image: ImageInfo) => {
-  // nothing to do for now
-}
+const onSubmitReport = () => {
+  if (!reportImage.value) return
 
-const submitReport = () => {
-  emit('submit', {
-    id: props.image.id,
+  submitReportImage({
+    id: reportImage.value.id,
     reason: reason.value,
   })
 }
-
-init(props.image)
-watch(() => props.image, (newValue) => {
-  init(newValue)
-})
 </script>

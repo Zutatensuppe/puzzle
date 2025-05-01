@@ -30,7 +30,7 @@
         <div
           v-tooltip="'Report this image'"
           class="imageteaser-report"
-          @click.stop="onReportClick"
+          @click.stop="openReportImageDialog(image)"
         >
           <v-icon icon="mdi-exclamation-thick" />
         </div>
@@ -88,6 +88,9 @@ import { computed, onMounted, onBeforeUnmount, ref } from 'vue'
 import { resizeUrl } from '../../../common/src/ImageService'
 import { ImageInfo, Tag } from '../../../common/src/Types'
 import user, { useNsfw, User } from '../user'
+import { useDialog } from '../useDialog'
+
+const { openReportImageDialog } = useDialog()
 
 const { showNsfw, toggleNsfwItem, nsfwItemsVisible } = useNsfw()
 const hoverable = computed(() => (!props.image.nsfw || showNsfw.value || nsfwItemsVisible.value.includes(`${props.image.id}`)))
@@ -103,7 +106,6 @@ const props = withDefaults(defineProps<{
 const emit = defineEmits<{
   (event: 'click'): void
   (event: 'editClick'): void
-  (event: 'reportClick'): void
 }>()
 
 const me = ref<User|null>(null)
@@ -147,10 +149,6 @@ const onClick = (ev: Event) => {
 
 const onEditClick = () => {
   emit('editClick')
-}
-
-const onReportClick = () => {
-  emit('reportClick')
 }
 
 const onInit = () => {

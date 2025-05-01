@@ -41,6 +41,7 @@ import TextDivider from './TextDivider.vue'
 
 const emit = defineEmits<{
   (e: 'login'): void
+  (e: 'reset-success'): void
 }>()
 
 const email = ref<string>('')
@@ -63,7 +64,7 @@ async function doSendPasswordResetEmail() {
     toast(res.error, 'error')
   } else {
     toast('Thank you, please check your emails for the password reset email.', 'success', 10000)
-    user.eventBus.emit('closeLoginDialog')
+    emit('reset-success')
   }
   busy.value = false
 }

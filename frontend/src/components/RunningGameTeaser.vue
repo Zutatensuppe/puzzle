@@ -36,7 +36,7 @@
       <div
         v-tooltip="'Report this game'"
         class="game-teaser-report"
-        @click.stop="emit('reportClick', game)"
+        @click.stop="openReportGameDialog(game)"
       >
         <v-icon icon="mdi-exclamation-thick" />
       </div>
@@ -78,7 +78,7 @@
         <v-btn
           block
           prepend-icon="mdi-image"
-          @click.stop="emit('showImageInfo', game.image)"
+          @click.stop="openImageInfoDialog(game.image)"
         >
           Image info
         </v-btn>
@@ -110,6 +110,9 @@ import { resizeUrl } from '../../../common/src/ImageService'
 import { GameInfo, ImageInfo } from '../../../common/src/Types'
 import { rotationModeToString, scoreModeToString, shapeModeToString, snapModeToString } from '../../../common/src/Util'
 import user, { useNsfw, User } from '../user'
+import { useDialog } from '../useDialog'
+
+const { openReportGameDialog, openImageInfoDialog } = useDialog()
 
 const props = defineProps<{
   game: GameInfo,
@@ -117,9 +120,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   (e: 'goToGame', val: GameInfo): void
-  (e: 'showImageInfo', val: ImageInfo): void
   (e: 'delete', val: GameInfo): void
-  (e: 'reportClick', val: GameInfo): void
 }>()
 
 const style = computed(() => {

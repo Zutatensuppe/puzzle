@@ -58,6 +58,7 @@ import TextDivider from './TextDivider.vue'
 
 const emit = defineEmits<{
   (e: 'login'): void
+  (e: 'register-success'): void
 }>()
 
 const username = ref<string>('')
@@ -92,7 +93,7 @@ async function doRegister() {
     toast(res.error, 'error')
   } else {
     toast('Thank you for registering. Please check your email and click the verify link to complete the registration.', 'success', 10000)
-    user.eventBus.emit('closeLoginDialog')
+    emit('register-success')
   }
   busy.value = false
 }

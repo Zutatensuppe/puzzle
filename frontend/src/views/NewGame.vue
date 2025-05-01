@@ -82,7 +82,6 @@ in jigsawpuzzles.io
       :images="images"
       @image-clicked="onImageClicked"
       @image-edit-clicked="onImageEditClicked"
-      @image-report-clicked="onImageReportClicked"
     />
     <Sentinel
       v-if="sentinelActive"
@@ -100,27 +99,14 @@ in jigsawpuzzles.io
         @post-to-gallery-click="postToGalleryClick"
         @setup-game-click="setupGameClick"
         @tag-click="onTagClick"
-        @close="closeDialog"
-      />
-      <EditImageDialog
-        v-if="dialogContent==='edit-image'"
-        :autocomplete-tags="autocompleteTags"
-        :image="image"
-        @save-click="onSaveImageClick"
-        @close="closeDialog"
+        @close="closeNewGameDialogs"
       />
       <NewGameDialog
-        v-if="image && dialogContent==='new-game'"
+        v-if="dialogContent==='new-game'"
         :image="image"
         @new-game="onNewGame"
         @tag-click="onTagClick"
-        @close="closeDialog"
-      />
-      <ReportImageDialog
-        v-if="image && dialogContent==='report-image'"
-        :image="image"
-        @submit="onSubmitReport"
-        @close="closeDialog"
+        @close="closeNewGameDialogs"
       />
     </v-dialog>
   </v-container>
@@ -129,9 +115,7 @@ in jigsawpuzzles.io
 <script setup lang="ts">
 import { onMounted, onBeforeUnmount, ref, watch } from 'vue'
 import NewImageDialog from './../components/NewImageDialog.vue'
-import EditImageDialog from './../components/EditImageDialog.vue'
 import NewGameDialog from './../components/NewGameDialog.vue'
-import ReportImageDialog from './../components/ReportImageDialog.vue'
 import { GameSettings, ImageInfo, Tag, NewGameDataRequestData, ImagesRequestData, ImageSearchSort, isImageSearchSort, FeaturedRowWithCollections, defaultImageInfo } from '../../../common/src/Types'
 import api from '../_api'
 import { XhrRequest } from '../_api/xhr'
@@ -139,8 +123,8 @@ import { onBeforeRouteUpdate, RouteLocationNormalizedLoaded, useRouter } from 'v
 import ImageLibrary from './../components/ImageLibrary.vue'
 import Sentinel from '../components/Sentinel.vue'
 import { debounce } from '../util'
-import { toast } from '../toast'
 import FeaturedButton from '../components/FeaturedButton.vue'
+import { useDialog } from '../useDialog'
 
 const router = useRouter()
 
@@ -171,14 +155,14 @@ const dialogContent = ref<string>('')
 const uploading = ref<'postToGallery' | 'setupGame' | ''>('')
 const uploadProgress = ref<number>(0)
 
-// const relevantTags = computed((): Tag[] => tags.value.filter((tag: Tag) => tag.total > 0))
+const { openEditImageDialog, closeDialog } = useDialog()
 
 const openDialog = (content: string) => {
   dialogContent.value = content
   dialog.value = true
 }
 
-const closeDialog = () => {
+const closeNewGameDialogs = () => {
   dialogContent.value = ''
   dialog.value = false
 }
@@ -233,7 +217,7 @@ const filtersChanged = async () => {
 const filtersChangedDebounced = debounce(filtersChanged, 300)
 
 const onTagClick = (tag: Tag): void => {
-  closeDialog()
+  closeNewGameDialogs()
   shouldInitFiltersFromRoute.value = true
   void router.push({ name: 'new-game', query: { sort: ImageSearchSort.DATE_DESC, search: tag.title } })
 }
@@ -244,13 +228,19 @@ const onImageClicked = (newImage: ImageInfo) => {
 }
 
 const onImageEditClicked = (newImage: ImageInfo) => {
-  image.value = newImage
-  openDialog('edit-image')
-}
-
-const onImageReportClicked = (newImage: ImageInfo) => {
-  image.value = newImage
-  openDialog('report-image')
+  openEditImageDialog(newImage, autocompleteTags, async (data: any) => {
+    const res = await api.pub.saveImage(data)
+    const json = await res.json()
+    if (json.ok) {
+      closeDialog()
+      // TODO: the image could now not match the filters anymore.
+      //       but it is probably fine to not reload the whole list at this point
+      const idx = images.value.findIndex(img => img.id === data.id)
+      images.value[idx] = json.image
+    } else {
+      alert(json.error)
+    }
+  })
 }
 
 const uploadImage = async (data: any) => {
@@ -271,25 +261,11 @@ const uploadImage = async (data: any) => {
   return await res.json()
 }
 
-const onSaveImageClick = async (data: any) => {
-  const res = await api.pub.saveImage(data)
-  const json = await res.json()
-  if (json.ok) {
-    closeDialog()
-    // TODO: the image could now not match the filters anymore.
-    //       but it is probably fine to not reload the whole list at this point
-    const idx = images.value.findIndex(img => img.id === data.id)
-    images.value[idx] = json.image
-  } else {
-    alert(json.error)
-  }
-}
-
 const postToGalleryClick = async (data: any) => {
   uploading.value = 'postToGallery'
   await uploadImage(data)
   uploading.value = ''
-  closeDialog()
+  closeNewGameDialogs()
   await loadImages()
 }
 
@@ -300,16 +276,6 @@ const setupGameClick = async (data: any) => {
   void loadImages() // load images in background
   image.value = uploadedImage
   openDialog('new-game')
-}
-
-const onSubmitReport = async (data: any) => {
-  const res = await api.pub.reportImage(data)
-  if (res.status === 200) {
-    closeDialog()
-    toast('Thank you for your report.', 'success')
-  } else {
-    toast('An error occured during reporting.', 'error')
-  }
 }
 
 const onNewGame = async (gameSettings: GameSettings) => {
