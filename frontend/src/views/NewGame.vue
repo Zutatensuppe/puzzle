@@ -268,13 +268,32 @@ const uploadImage = async (data: any): Promise<{ error: string } | { imageInfo: 
         uploadProgress.value = progress
       },
     })
+
+    // ⡀⡀⡀⡀⡀⡀⡀⣠⣴⣶⣶⣶⣶⣤⡀⡀⡀⡀⡀⡀⡀⡀
+    // ⡀⡀⡀⡀⡀⣤⣿⣿⣿⣿⣿⣿⣿⣿⣿⣦⡀⡀⡀⡀⡀⡀
+    // ⡀⡀⡀⡀⣼⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⢧⡀⡀⡀⡀⡀
+    // ⡀⡀⡀⢠⣿⣿⣿⢻⢸⣿⣿⠇⢿⣿⣿⣿⣿⡀⡀⡀⡀⡀
+    // ⡀⡀⡈⣾⣿⣿⡟⣘ ⠹⢿   ⣎⢿⣿⣿⡇⡀⡀⡀⡀
+    // ⡀⡀⡀⡇⣿⣿⠏⣾⡧    ⣿⡆⠇⣿⣿⡇⡀⡀⡀⡀
+    // ⡀⡀⡀⠁⣿⣿⡀          ⢼⣿⣼⡇⡀⡀⡀⡀
+    // ⡀⡀⡀⢠⣿⣿⣧⡀  ⡠⢄   ⣾⣿⣿⡻⡀⡀⡀⡀
+    // ⡀⡀⡀⠁⣿⣿⣿⣿⡦⣀⡀⡠⢶⣿⣿⣿⣿⣇⢂⡀⡀⡀
+    // ⡀⡀⠆⣼⣿⣿⣿⣿⡀⢄⢀⠔⡀⣿⣿⣿⣿⡟⡀⡀⡀⡀
+    // ⡀⡀⣿⣿⣿⣿⣿⣿⣿⣿⢿⣿⣿⣿⣿⣿⣿⣿⣿⡀⡀⡀
+    // ⡀⢰⡏⠉⠉⠉⠉⠉⠉⠉⠁⠉⠉⠉⠉⠉⠉⠉⠉⣿⡀⡀
+    // ⡀ ⣼⡇ 413 Request Entity  ⣿⡀⡀
+    // ⢀ ⠟⠃⡀    Too Large     ⣿⡇⡀⡀
+    // ⡀⡀⠿⠿⠿⠿⠿⠿⠿⠿⠿⠿⠿⠿⠿⠿⠿⠿⠇⡀⡀⡀
+    // Comment requested during nC_para_ stream :)
     if (res.status === 413) {
       throw 'The image you tried to upload is too large. Max file size is 20MB.'
     }
+
     const imageInfo = await res.json()
     if (!imageInfo) {
       throw 'The image upload failed for unknown reasons.'
     }
+
     uploadProgress.value = 1
     return { imageInfo }
   } catch (e) {
