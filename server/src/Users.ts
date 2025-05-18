@@ -4,13 +4,22 @@ import Db, { WhereRaw } from './Db'
 import { AccountRow } from './repo/AccountsRepo'
 import { Repos } from './repo/Repos'
 import { IdentityRow } from './repo/UserIdentityRepo'
+import express from 'express'
 
 const HEADER_CLIENT_ID = 'client-id'
 
-interface UserInfo {
-  token: string | null,
-  user: UserRow | null,
-  user_type: 'guest' | 'user' | null,
+export type UserInfo = {
+  token: string
+  user: UserRow
+  user_type: 'user'
+} | {
+  token: null,
+  user: UserRow
+  user_type: 'guest'
+} | {
+  token: null,
+  user: null,
+  user_type: null,
 }
 
 export class Users {
@@ -62,7 +71,7 @@ export class Users {
     return await this.repos.users.getGroupsByUserId(userId)
   }
 
-  async createAccount(account: any): Promise<AccountRow> {
+  async createAccount(account: Omit<AccountRow, 'id'>): Promise<AccountRow> {
     const accountId = await this.repos.accounts.insert(account)
     return await this.repos.accounts.get({ id: accountId }) as AccountRow
   }
@@ -72,7 +81,7 @@ export class Users {
     return await this.repos.userIdentity.get({ id: identityId }) as IdentityRow
   }
 
-  async updateIdentity(identity: any): Promise<void> {
+  async updateIdentity(identity: IdentityRow): Promise<void> {
     await this.repos.userIdentity.update(identity)
   }
 
@@ -97,19 +106,19 @@ export class Users {
     return await this.getUser({ id: userId }) as UserRow
   }
 
-  async updateUser(user: any): Promise<void> {
+  async updateUser(user: UserRow): Promise<void> {
     await this.repos.users.update(user)
   }
 
-  async getOrCreateUserByRequest(req: any): Promise<UserRow> {
+  async getOrCreateUserByRequest(req: express.Request): Promise<UserRow> {
     // if user is already set on the request use that one
-    if (req.user) {
-      return req.user
+    if (req.userInfo?.user) {
+      return req.userInfo.user
     }
     let data = await this.getUserInfoByRequest(req)
     if (!data.user) {
       const user = await this.createUser({
-        client_id: req.headers[HEADER_CLIENT_ID],
+        client_id: String(req.headers[HEADER_CLIENT_ID]) as ClientId,
         // TODO: date gets converted to string automatically. fix this type hint
         // @ts-ignore
         created: new Date(),
@@ -136,7 +145,7 @@ export class Users {
     return token
   }
 
-  async getUserInfoByRequest(req: any): Promise<UserInfo> {
+  async getUserInfoByRequest(req: express.Request): Promise<UserInfo> {
     const token = req.cookies[COOKIE_TOKEN] || null
     const tokenRow: TokenRow | null = token
       ? await this.getToken({ token, type: 'auth' })
@@ -154,10 +163,18 @@ export class Users {
     // when no token is given or the token is not found or the user is not found
     // we fall back to check the request for client id.
     user = await this.getUser({ client_id: req.headers[HEADER_CLIENT_ID] })
+    if (user) {
+      return {
+        token: null,
+        user: user,
+        user_type: 'guest',
+      }
+    }
+
     return {
       token: null,
-      user: user,
-      user_type: user ? 'guest' : null,
+      user: null,
+      user_type: null,
     }
   }
 

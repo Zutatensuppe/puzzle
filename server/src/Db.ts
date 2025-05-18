@@ -26,7 +26,7 @@ export interface Limit {
 
 interface Where {
   sql: string
-  values: any[]
+  values: unknown[]
   $i: number
 }
 
@@ -331,7 +331,7 @@ class Db {
     }
 
     const keys = Object.keys(datas[0])
-    const values: any[] = []
+    const values: unknown[] = []
 
     let $i = 1
     const valueRows: string[] = []

@@ -75,7 +75,7 @@ export class PlayerSettings {
     return this.settings
   }
 
-  showStatusMessage(what: string, value: any = undefined) {
+  showStatusMessage(what: string, value: number | string | boolean | undefined = undefined) {
     this.game.showStatusMessage(what, value)
   }
 

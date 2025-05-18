@@ -217,7 +217,7 @@
 <script setup lang="ts">
 import { onMounted, onBeforeUnmount, ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
-import { ApiDataFinishedGames, ApiDataIndexData, GameInfo, ImageInfo, ImageSearchSort, Tag, User } from '../../../common/src/Types'
+import { ApiDataIndexData, GameInfo, ImageInfo, ImageSearchSort, Tag, User, GameId } from '../../../common/src/Types'
 import RunningGameTeaser from '../components/RunningGameTeaser.vue'
 import FinishedGameTeaser from '../components/FinishedGameTeaser.vue'
 import Pagination from '../components/Pagination.vue'
@@ -319,7 +319,11 @@ const onPagination = async (q: { limit: number, offset: number }) => {
     return
   }
   const res = await api.pub.finishedGames(q)
-  const json = await res.json() as ApiDataFinishedGames
+  const json = await res.json()
+  if ('error' in json) {
+    toast(`Failed to load finished games: ${json.error}`, 'error')
+    return
+  }
   data.value.gamesFinished = json
 }
 
@@ -334,7 +338,7 @@ const onReportClick = (game: GameInfo) => {
   reportGameDialog.value = true
 }
 
-const onSubmitReport = async (data: any) => {
+const onSubmitReport = async (data: { id: GameId, reason: string }) => {
   const res = await api.pub.reportGame(data)
   if (res.status === 200) {
     reportGameDialog.value = false

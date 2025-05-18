@@ -9,7 +9,8 @@
     "rootDirs": [
       "src",
       "../common/src"
-    ]
+    ],
+    "typeRoots": ["./types"]
   },
   "include": [
     "./**/*.ts", "./**/*.d.ts"

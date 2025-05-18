@@ -74,7 +74,7 @@
 </template>
 <script setup lang="ts">
 import { ref, watch } from 'vue'
-import { ImageId, ImageInfo, Tag } from '../../../common/src/Types'
+import { ImageInfo, SaveImageRequestData, Tag } from '../../../common/src/Types'
 import TagsInput from '../components/TagsInput.vue'
 import ResponsiveImage from './ResponsiveImage.vue'
 
@@ -84,7 +84,7 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
-  (e: 'saveClick', val: { id: ImageId, copyrightName: string, copyrightURL: string, title: string, tags: string[] }): void
+  (e: 'saveClick', val: SaveImageRequestData): void
   (e: 'close'): void
 }>()
 

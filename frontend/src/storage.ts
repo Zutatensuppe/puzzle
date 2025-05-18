@@ -4,11 +4,11 @@ const set = (setting: string, value: string): void => {
   localStorage.setItem(setting, value)
 }
 
-const get = (setting: string): any => {
+const get = (setting: string): string | null => {
   return localStorage.getItem(setting)
 }
 
-const remove = (setting: string): any => {
+const remove = (setting: string): void => {
   return localStorage.removeItem(setting)
 }
 

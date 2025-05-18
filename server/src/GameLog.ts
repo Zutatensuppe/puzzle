@@ -92,7 +92,7 @@ const loadFromDisk = async (gameId: GameId): Promise<void> => {
   }
 
   const idxfile = idxname(gameId)
-  let idxObj: any
+  let idxObj: LogIndex
   try {
     const idxData = await fs.readFile(idxfile)
     idxObj = JSON.parse(idxData)

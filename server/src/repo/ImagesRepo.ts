@@ -191,7 +191,7 @@ export class ImagesRepo {
   }
 
   async getImagesWithCountByIds(imageIds: ImageId[]): Promise<ImageRowWithCount[]> {
-    const params: any[] = []
+    const params: unknown[] = []
     const dbWhere = this.db._buildWhere({'images.id': { '$in': imageIds }})
     params.push(...dbWhere.values)
     return await this.db._getMany(`

@@ -1,16 +1,16 @@
 import {
   AnnouncementsResponseData,
-  ApiDataFinishedGames,
+  FinishedGamesResponseData,
   ApiDataIndexData,
   AuthLocalResponseData,
   ChangePasswordResponseData,
   ConfigResponseData,
   DeleteGameResponseData,
+  FeaturedRequestData,
   FeaturedResponseData,
   FeaturedTeasersResponseData,
+  FinishedGamesRequestData,
   GameId,
-  GameSettings,
-  ImageId,
   ImageInfo,
   ImagesRequestData,
   ImagesResponseData,
@@ -18,12 +18,19 @@ import {
   MeResponseData,
   NewGameDataRequestData,
   NewGameDataResponseData,
+  NewGameRequestData,
   NewGameResponseData,
   RegisterResponseData,
+  ReplayGameDataRequestData,
   ReplayGameDataResponseData,
+  ReplayLogDataRequestData,
+  ReportGameRequestData,
+  ReportImageRequestData,
   ReportResponseData,
+  SaveImageRequestData,
   SaveImageResponseData,
   SendPasswordResetEmailResponseData,
+  UploadRequestDataWithProgress,
 } from '../../../common/src/Types'
 import Util from '../../../common/src/Util'
 import xhr, { JSON_HEADERS, Response, XhrRequest } from './xhr'
@@ -73,80 +80,73 @@ const logout = (
 ): Promise<Response<LogoutResponseData>> => {
   return xhr.post('/api/logout', {
     headers: JSON_HEADERS,
-    body: {},
   })
 }
 
 const getAnnouncements = async (
   // no args
 ): Promise<AnnouncementsResponseData> => {
-  const res = await xhr.get<AnnouncementsResponseData>('/api/announcements', {})
+  const res = await xhr.get<AnnouncementsResponseData>('/api/announcements')
   return await res.json()
 }
 
 const config = (
   // no args
 ): Promise<Response<ConfigResponseData>> => {
-  return xhr.get(`/api/conf`, {})
+  return xhr.get(`/api/conf`)
 }
 
 const me = (
   // no args
 ): Promise<Response<MeResponseData>> => {
-  return xhr.get(`/api/me`, {})
+  return xhr.get(`/api/me`)
 }
 
 const indexData = (
   // no args
 ): Promise<Response<ApiDataIndexData>> => {
-  return xhr.get('/api/index-data', {})
+  return xhr.get('/api/index-data')
 }
 
 const deleteGame = (
   id: GameId,
 ): Promise<Response<DeleteGameResponseData>> => {
-  return xhr.delete(`/api/games/${id}`, {})
+  return xhr.delete(`/api/games/${id}`)
 }
 
-const finishedGames = (data: {
-  limit: number
-  offset: number
-}): Promise<Response<ApiDataFinishedGames>> => {
-  return xhr.get(`/api/finished-games${Util.asQueryArgs(data)}`, {})
+const finishedGames = (
+  data: FinishedGamesRequestData,
+): Promise<Response<FinishedGamesResponseData>> => {
+  return xhr.get(`/api/finished-games${Util.asQueryArgs(data)}`)
 }
 
 const newgameData = (
   data: NewGameDataRequestData,
 ): XhrRequest<NewGameDataResponseData> => {
-  return xhr.getRequest(`/api/newgame-data${Util.asQueryArgs(data)}`, {})
+  return xhr.getRequest(`/api/newgame-data${Util.asQueryArgs(data)}`)
 }
 
 const images = (
   data: ImagesRequestData,
 ): XhrRequest<ImagesResponseData> => {
-  return xhr.getRequest(`/api/images${Util.asQueryArgs(data)}`, {})
+  return xhr.getRequest(`/api/images${Util.asQueryArgs(data)}`)
 }
 
-const replayGameData = (data: {
-  gameId: GameId
-}): Promise<Response<ReplayGameDataResponseData>> => {
-  return xhr.get(`/api/replay-game-data${Util.asQueryArgs(data)}`, {})
+const replayGameData = (
+  data: ReplayGameDataRequestData,
+): Promise<Response<ReplayGameDataResponseData>> => {
+  return xhr.get(`/api/replay-game-data${Util.asQueryArgs(data)}`)
 }
 
-const replayLogData =  (data: {
-  gameId: GameId
-  logFileIdx: number
-}): Promise<Response<unknown>> => {
-  return xhr.get(`/api/replay-log-data${Util.asQueryArgs(data)}`, {})
+const replayLogData =  (
+  data: ReplayLogDataRequestData,
+): Promise<Response<unknown>> => {
+  return xhr.get(`/api/replay-log-data${Util.asQueryArgs(data)}`)
 }
 
-const saveImage = (data: {
-  id: ImageId
-  title: any
-  copyrightName: string
-  copyrightURL: string
-  tags: any
-}): Promise<Response<SaveImageResponseData>> => {
+const saveImage = (
+  data: SaveImageRequestData,
+): Promise<Response<SaveImageResponseData>> => {
   return xhr.post('/api/save-image', {
     headers: JSON_HEADERS,
     body: JSON.stringify({
@@ -159,42 +159,39 @@ const saveImage = (data: {
   })
 }
 
-const newGame = (data: {
-  gameSettings: GameSettings
-}): Promise<Response<NewGameResponseData>> => {
+const newGame = (
+  data: NewGameRequestData,
+): Promise<Response<NewGameResponseData>> => {
   return xhr.post('/api/newgame', {
     headers: JSON_HEADERS,
     body: JSON.stringify(data.gameSettings),
   })
 }
 
-const getFeaturedData = (data: {
-  type: 'category' | 'artist'
-  slug: string
-}): Promise<Response<FeaturedResponseData>> => {
-  return xhr.get(`/api/featured/${data.type}/${data.slug}`, {})
+const getFeaturedData = (
+  data: FeaturedRequestData,
+): Promise<Response<FeaturedResponseData>> => {
+  return xhr.get(`/api/featured/${data.type}/${data.slug}`)
 }
 
 const getFeaturedTeaserData = (
   // no args
 ): Promise<Response<FeaturedTeasersResponseData>> => {
-  return xhr.get(`/api/featured-teasers`, {})
+  return xhr.get(`/api/featured-teasers`)
 }
 
-const reportImage = (data: {
-  id: ImageId
-  reason: string,
-}): Promise<Response<ReportResponseData>> => {
+const reportImage = (
+  data: ReportImageRequestData,
+): Promise<Response<ReportResponseData>> => {
   return xhr.post('/api/moderation/report-image', {
     headers: JSON_HEADERS,
     body: JSON.stringify(data),
   })
 }
 
-const reportGame = (data: {
-  id: GameId
-  reason: string,
-}): Promise<Response<ReportResponseData>> => {
+const reportGame = (
+  data: ReportGameRequestData,
+): Promise<Response<ReportResponseData>> => {
   return xhr.post('/api/moderation/report-game', {
     headers: JSON_HEADERS,
     body: JSON.stringify(data),
@@ -202,16 +199,7 @@ const reportGame = (data: {
 }
 
 const upload = (
-  data: {
-    file: File
-    title: string
-    copyrightName: string
-    copyrightURL: string
-    tags: string[]
-    isPrivate: boolean
-    isNsfw: boolean
-    onProgress: (progress: number) => void
-  },
+  data: UploadRequestDataWithProgress,
 ): Promise<Response<ImageInfo>> => {
   const formData = new FormData()
   formData.append('file', data.file, data.file.name)

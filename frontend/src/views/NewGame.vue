@@ -132,7 +132,7 @@ import NewImageDialog from './../components/NewImageDialog.vue'
 import EditImageDialog from './../components/EditImageDialog.vue'
 import NewGameDialog from './../components/NewGameDialog.vue'
 import ReportImageDialog from './../components/ReportImageDialog.vue'
-import { GameSettings, ImageInfo, Tag, NewGameDataRequestData, ImagesRequestData, ImageSearchSort, isImageSearchSort, FeaturedRowWithCollections, defaultImageInfo, NewGameDataResponseData, ImagesResponseData } from '../../../common/src/Types'
+import { GameSettings, ImageInfo, Tag, NewGameDataRequestData, ImagesRequestData, ImageSearchSort, isImageSearchSort, FeaturedRowWithCollections, defaultImageInfo, NewGameDataResponseData, ImagesResponseData, ImageId, SaveImageRequestData, UploadRequestData } from '../../../common/src/Types'
 import api from '../_api'
 import { XhrRequest } from '../_api/xhr'
 import { onBeforeRouteUpdate, RouteLocationNormalizedLoaded, useRouter } from 'vue-router'
@@ -257,7 +257,7 @@ const onImageReportClicked = (newImage: ImageInfo) => {
   openDialog('report-image')
 }
 
-const uploadImage = async (data: any): Promise<{ error: string } | { imageInfo: ImageInfo }> => {
+const uploadImage = async (data: UploadRequestData): Promise<{ error: string } | { imageInfo: ImageInfo }> => {
   uploadProgress.value = 0
   try {
     const res = await api.pub.upload({
@@ -306,7 +306,7 @@ const uploadImage = async (data: any): Promise<{ error: string } | { imageInfo: 
   }
 }
 
-const onSaveImageClick = async (data: any) => {
+const onSaveImageClick = async (data: SaveImageRequestData) => {
   const res = await api.pub.saveImage(data)
   const json = await res.json()
   if (json.ok) {
@@ -320,7 +320,7 @@ const onSaveImageClick = async (data: any) => {
   }
 }
 
-const postToGalleryClick = async (data: any) => {
+const postToGalleryClick = async (data: UploadRequestData) => {
   uploading.value = 'postToGallery'
   const result = await uploadImage(data)
   uploading.value = ''
@@ -334,7 +334,7 @@ const postToGalleryClick = async (data: any) => {
   await loadImages()
 }
 
-const setupGameClick = async (data: any) => {
+const setupGameClick = async (data: UploadRequestData) => {
   uploading.value = 'setupGame'
   const result = await uploadImage(data)
   uploading.value = ''
@@ -349,7 +349,7 @@ const setupGameClick = async (data: any) => {
   openDialog('new-game')
 }
 
-const onSubmitReport = async (data: any) => {
+const onSubmitReport = async (data: { id: ImageId, reason: string }) => {
   const res = await api.pub.reportImage(data)
   if (res.status === 200) {
     closeDialog()

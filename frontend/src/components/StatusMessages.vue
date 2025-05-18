@@ -16,7 +16,7 @@ import { ref } from 'vue'
 
 const messages = ref<string[]>([])
 
-const buildMessage = (what: string, value: any): string => {
+const buildMessage = (what: string, value: number | string | boolean | undefined): string => {
   if (typeof value === 'undefined') {
     return `${what}`
   }
@@ -26,7 +26,7 @@ const buildMessage = (what: string, value: any): string => {
 
   return `${what} changed to ${value}`
 }
-const addMessage = (what: string, value: any): void => {
+const addMessage = (what: string, value: number | string | boolean | undefined): void => {
   messages.value.push(buildMessage(what, value))
   setTimeout(() => {
     messages.value.shift()

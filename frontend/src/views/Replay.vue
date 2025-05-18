@@ -230,7 +230,7 @@ const onResize = (): void => {
 }
 
 let mediaRecorder: MediaRecorder | null = null
-let recordedChunks: any[] = []
+let recordedChunks: Blob[] = []
 const mediaRecorderToStop = ref<boolean>(false)
 const isRecording = ref<boolean>(false)
 const videoUrl = ref<string>('')
@@ -387,7 +387,7 @@ const hud: ReplayHud = {
   toggleInterface: (v: boolean) => {
     showInterface.value = !!v
   },
-  addStatusMessage: (what: string, value: any) => statusMessages.value.addMessage(what, value),
+  addStatusMessage: (what: string, value: number | string | boolean | undefined) => statusMessages.value.addMessage(what, value),
   setReplaySpeed: (v: number) => {
     replay.value.speed = v
   },

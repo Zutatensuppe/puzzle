@@ -6,14 +6,14 @@ const getGames = async (data: {
   limit: number
   offset: number
 }) => {
-  const res = await xhr.get(`/admin/api/games${Util.asQueryArgs(data)}`, {})
+  const res = await xhr.get(`/admin/api/games${Util.asQueryArgs(data)}`)
   return await res.json()
 }
 
 const deleteGame = async (
   id: GameId,
 ) => {
-  const res = await xhr.delete(`/admin/api/games/${id}`, {})
+  const res = await xhr.delete(`/admin/api/games/${id}`)
   return await res.json()
 }
 
@@ -21,14 +21,14 @@ const getUsers = async (data: {
   limit: number
   offset: number
 }) => {
-  const res = await xhr.get(`/admin/api/users${Util.asQueryArgs(data)}`, {})
+  const res = await xhr.get(`/admin/api/users${Util.asQueryArgs(data)}`)
   return await res.json()
 }
 
 const getServerInfo = async (
   // no args
 ): Promise<ServerInfo> => {
-  const res = await xhr.get<ServerInfo>('/admin/api/server-info', {})
+  const res = await xhr.get<ServerInfo>('/admin/api/server-info')
   return await res.json()
 }
 
@@ -57,7 +57,7 @@ const fixPieces = async (
 const getAnnouncements = async (
   // no args
 ) => {
-  const res = await xhr.get('/admin/api/announcements', {})
+  const res = await xhr.get('/admin/api/announcements')
   return await res.json()
 }
 
@@ -76,7 +76,7 @@ const getImages = async (data: {
   limit: number
   offset: number
 }) => {
-  const res = await xhr.get(`/admin/api/images${Util.asQueryArgs(data)}`, {})
+  const res = await xhr.get(`/admin/api/images${Util.asQueryArgs(data)}`)
   return await res.json()
 }
 
@@ -84,14 +84,14 @@ const getFeatureds = async (data: {
   limit: number
   offset: number
 }) => {
-  const res = await xhr.get(`/admin/api/featureds${Util.asQueryArgs(data)}`, {})
+  const res = await xhr.get(`/admin/api/featureds${Util.asQueryArgs(data)}`)
   return await res.json()
 }
 
 const getFeatured = async (
   id: number,
 ) => {
-  const res = await xhr.get(`/admin/api/featureds/${id}`, {})
+  const res = await xhr.get(`/admin/api/featureds/${id}`)
   return await res.json()
 }
 
@@ -121,21 +121,21 @@ const createFeatured = async (
 const deleteImage = async (
   id: ImageId,
 ) => {
-  const res = await xhr.delete(`/admin/api/images/${id}`, {})
+  const res = await xhr.delete(`/admin/api/images/${id}`)
   return await res.json()
 }
 
 const getImage = async (
   id: ImageId,
 ) => {
-  const res = await xhr.get(`/admin/api/images/${id}`, {})
+  const res = await xhr.get(`/admin/api/images/${id}`)
   return await res.json()
 }
 
 const getGroups = async (
   // no args
 ) => {
-  const res = await xhr.get('/admin/api/groups', {})
+  const res = await xhr.get('/admin/api/groups')
   return await res.json()
 }
 

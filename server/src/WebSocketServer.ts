@@ -1,6 +1,7 @@
 import WebSocket, { WebSocketServer as WsServer } from 'ws'
 import { logger } from '../../common/src/Util'
 import { ServerEvent } from './Types'
+import { WsConfig } from './Config'
 
 const log = logger('WebSocketServer.js')
 
@@ -27,7 +28,7 @@ class EvtBus {
     this._on[type].push(callback)
   }
 
-  dispatch (type: string, ...args: any[]): void {
+  dispatch (type: string, ...args: unknown[]): void {
     for (const cb of this._on[type] || []) {
       cb(...args)
     }
@@ -37,9 +38,9 @@ class EvtBus {
 class WebSocketServer {
   evt: EvtBus
   private _websocketserver: WsServer|null
-  config: any
+  config: WsConfig
 
-  constructor(config: any) {
+  constructor(config: WsConfig) {
     this.config = config
     this._websocketserver = null
 

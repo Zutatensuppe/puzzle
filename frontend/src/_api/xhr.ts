@@ -12,18 +12,18 @@ export interface Response<T> {
   json: () => Promise<T>,
 }
 
-export interface Options {
-  body: FormData|string,
+export type Options = {
+  body?: FormData|string,
   headers?: any,
   onUploadProgress?: (ev: ProgressEvent<XMLHttpRequestEventTarget>) => any,
-}
+} | null
 
 export class XhrRequest<T> {
   private xhr: XMLHttpRequest | null = null
   constructor(
     private readonly method: string,
     private readonly url: string,
-    private readonly options: Options,
+    private readonly options: Options | null = null,
   ) {
     // pass
   }
@@ -33,8 +33,8 @@ export class XhrRequest<T> {
       this.xhr = new window.XMLHttpRequest()
       this.xhr.open(this.method, this.url, true)
       this.xhr.withCredentials = true
-      for (const k in this.options.headers || {}) {
-        this.xhr.setRequestHeader(k, this.options.headers[k])
+      for (const k in this.options?.headers || {}) {
+        this.xhr.setRequestHeader(k, this.options?.headers[k])
       }
 
       this.xhr.setRequestHeader('Client-Id', xhrClientId)
@@ -50,15 +50,15 @@ export class XhrRequest<T> {
       this.xhr.addEventListener('error', function (_ev: ProgressEvent<XMLHttpRequestEventTarget>) {
         reject(new Error('xhr error'))
       })
-      if (this.xhr.upload && this.options.onUploadProgress) {
+      if (this.xhr.upload && this.options?.onUploadProgress) {
         this.xhr.upload.addEventListener('progress', (ev: ProgressEvent<XMLHttpRequestEventTarget>) => {
           // typescript complains without this extra check
-          if (this.options.onUploadProgress) {
+          if (this.options?.onUploadProgress) {
             this.options.onUploadProgress(ev)
           }
         })
       }
-      this.xhr.send(this.options.body || null)
+      this.xhr.send(this.options?.body || null)
     })
   }
 
@@ -71,7 +71,7 @@ let xhrClientId: ClientId = '' as ClientId
 const request = async <T>(
   method: string,
   url: string,
-  options: Options,
+  options: Options | null = null,
 ): Promise<Response<T>> => {
   const r = new XhrRequest<T>(method, url, options)
   return await r.send()
@@ -81,19 +81,19 @@ export default {
   init: () => {
     xhrClientId = storage.uniq('ID') as ClientId
   },
-  get: <T>(url: string, options: any): Promise<Response<T>> => {
-    return request('get', url, options)
+  get: <T>(url: string): Promise<Response<T>> => {
+    return request('get', url)
   },
-  getRequest: <T>(url: string, options: any): XhrRequest<T> => {
-    return new XhrRequest('get', url, options)
+  getRequest: <T>(url: string): XhrRequest<T> => {
+    return new XhrRequest('get', url)
   },
-  delete: <T>(url: string, options: any): Promise<Response<T>> => {
-    return request('delete', url, options)
+  delete: <T>(url: string): Promise<Response<T>> => {
+    return request('delete', url)
   },
-  post: <T>(url: string, options: any): Promise<Response<T>> => {
+  post: <T>(url: string, options: Options): Promise<Response<T>> => {
     return request('post', url, options)
   },
-  put: <T>(url: string, options: any): Promise<Response<T>> => {
+  put: <T>(url: string, options: Options): Promise<Response<T>> => {
     return request('put', url, options)
   },
   clientId: () => xhrClientId,

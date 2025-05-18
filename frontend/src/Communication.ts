@@ -66,9 +66,9 @@ function send(message: ClientEvent): void {
 let clientSeq: number
 let events: Record<number, GameEvent>
 
-let timerId: any = 0
+let timerId: ReturnType<typeof setTimeout> | null = null
 let gotPong: boolean = false
-let pongWaitTimerId: any = 0
+let pongWaitTimerId: ReturnType<typeof setTimeout> | null = null
 
 function keepAlive(timeout = 20000) {
   if (ws && ws.readyState == ws.OPEN) {

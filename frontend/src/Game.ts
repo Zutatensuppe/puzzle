@@ -101,7 +101,7 @@ export interface GameInterface {
   getGameId(): GameId
   getClientId(): ClientId
   requireRerender(): void
-  showStatusMessage(what: string, value: any): void
+  showStatusMessage(what: string, value: number | string | boolean | undefined): void
   bgChange(value: string): void
   changeTableTexture(_value: string): void
   changeUseCustomTableTexture(_value: boolean): void
