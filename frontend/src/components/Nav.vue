@@ -21,10 +21,13 @@
         <div class="justify-center">
           <img
             src="./../assets/gfx/icon.png"
-            class="mr-4"
+            class="title-icon"
             :class="{ index: route.name === 'index' }"
           >
-          <h4 :class="{ index: route.name === 'index' }">
+          <h4
+            class="ml-4"
+            :class="{ index: route.name === 'index' }"
+          >
             {{ route.meta.title }}
           </h4>
           <slot name="title" />
