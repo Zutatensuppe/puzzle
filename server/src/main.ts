@@ -74,7 +74,7 @@ const run = async () => {
   memoryUsageHuman()
 
   // persist games in fixed interval
-  let persistInterval: any = null
+  let persistInterval: ReturnType<typeof setTimeout> | null = null
   const doPersist = async () => {
     log.log('Persisting games...')
     await server.persistGames()
@@ -84,7 +84,7 @@ const run = async () => {
   persistInterval = setTimeout(doPersist, config.persistence.interval)
 
   // unload games in fixed interval
-  let idlecheckInterval: any = null
+  let idlecheckInterval: ReturnType<typeof setTimeout> | null = null
   const doIdlecheck = async () => {
     log.log('doIdlecheck...')
     const idleGameIds = server.gameSockets.updateIdle()
@@ -101,7 +101,7 @@ const run = async () => {
 
 
   // check for livestreams
-  let checkLivestreamsInterval: any = null
+  let checkLivestreamsInterval: ReturnType<typeof setTimeout> | null = null
   const updateLivestreamsInfo = () => {
     log.log('Checking for livestreams...')
     server.updateLivestreamsInfo().then(() => {
@@ -116,13 +116,19 @@ const run = async () => {
     log.log(`${signal} received...`)
 
     log.log('clearing persist interval...')
-    clearTimeout(persistInterval)
+    if (persistInterval) {
+      clearTimeout(persistInterval)
+    }
 
     log.log('clearing idlecheck interval...')
-    clearTimeout(idlecheckInterval)
+    if (idlecheckInterval) {
+      clearTimeout(idlecheckInterval)
+    }
 
     log.log('clearing check livestreams interval...')
-    clearTimeout(checkLivestreamsInterval)
+    if (checkLivestreamsInterval) {
+      clearTimeout(checkLivestreamsInterval)
+    }
 
     log.log('Persisting games...')
     await server.persistGames()

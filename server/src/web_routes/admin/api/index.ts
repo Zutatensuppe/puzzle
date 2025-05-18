@@ -10,12 +10,12 @@ export default function createRouter(
 ): express.Router {
   const router = express.Router()
 
-  const requireLoginApi = async (req: any, res: any, next: NextFunction) => {
-    if (!req.token) {
+  const requireLoginApi = async (req: express.Request, res: express.Response, next: NextFunction) => {
+    if (!req.userInfo?.token) {
       res.status(401).send({})
       return
     }
-    const user = req.user || null
+    const user = req.userInfo.user || null
     if (!user || !user.id) {
       res.status(403).send({ ok: false, error: 'forbidden' })
       return

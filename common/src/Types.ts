@@ -299,16 +299,6 @@ export interface Image {
   created: number
 }
 
-export interface FrontendGameSettings {
-  file: File
-  title: string
-  copyrightName: string
-  copyrightURL: string
-  tags: string[]
-  isPrivate: boolean
-  isNsfw: boolean
-}
-
 export interface GameSettings {
   tiles: number
   private: boolean
@@ -686,7 +676,14 @@ export interface ApiDataIndexData {
   livestreams: LivestreamsRow[]
 }
 
-export type ApiDataFinishedGames = ApiGamesData
+export type FinishedGamesRequestData = {
+  limit: number
+  offset: number
+}
+
+export type FinishedGamesResponseData = ApiGamesData | {
+  error: string
+}
 
 export interface CannyConfig {
   sso_private_key: string
@@ -764,7 +761,7 @@ export interface Hud {
   setConnectError: (v: ServerErrorDetails) => void
   togglePreview: (v: boolean) => void
   toggleInterface: (v: boolean) => void
-  addStatusMessage: (what: string, value: any) => void
+  addStatusMessage: (what: string, value: number | string | boolean | undefined) => void
 }
 
 export interface ReplayHud extends Hud {
@@ -786,6 +783,20 @@ export interface User {
   type: 'guest' | 'user'
   cannyToken: string | null
   groups: string[]
+}
+
+export type UploadRequestData = {
+  file: File
+  title: string
+  copyrightName: string
+  copyrightURL: string
+  tags: string[]
+  isPrivate: boolean
+  isNsfw: boolean
+}
+
+export type UploadRequestDataWithProgress = UploadRequestData & {
+  onProgress: (progress: number) => void
 }
 
 export type MeResponseData = User | { reason: string }
@@ -829,6 +840,19 @@ export interface NewGameDataResponseData {
   tags: Tag[]
 }
 
+export type ReplayLogDataRequestData = {
+  gameId: GameId
+  logFileIdx: number
+}
+
+export type SaveImageRequestData = {
+  id: ImageId
+  title: string
+  copyrightName: string
+  copyrightURL: string
+  tags: string[]
+}
+
 export type SaveImageResponseData = {
   ok: true
   imageInfo: ImageInfo
@@ -837,15 +861,34 @@ export type SaveImageResponseData = {
   error: string
 }
 
+export type NewGameRequestData = {
+  gameSettings: GameSettings
+}
+
 export type NewGameResponseData = {
   id: GameId
 } | {
   reason: string
 }
 
+export type FeaturedRequestData = {
+  type: 'category' | 'artist'
+  slug: string
+}
+
 export type FeaturedResponseData = {
   featured: FeaturedRowWithCollections
 } | {
+  reason: string
+}
+
+export type ReportImageRequestData = {
+  id: ImageId
+  reason: string
+}
+
+export type ReportGameRequestData = {
+  id: GameId
   reason: string
 }
 
@@ -877,6 +920,10 @@ export type DeleteGameResponseData = {
 } | {
   ok: false
   error: string
+}
+
+export type ReplayGameDataRequestData = {
+  gameId: GameId
 }
 
 export type ReplayGameDataResponseData = ReplayGameData | {

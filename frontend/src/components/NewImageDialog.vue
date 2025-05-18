@@ -188,7 +188,7 @@
 </template>
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref } from 'vue'
-import { FrontendGameSettings as FrontendNewImageEventData } from '../../../common/src/Types'
+import { UploadRequestData } from '../../../common/src/Types'
 import { logger } from '../../../common/src/Util'
 import TagsInput from '../components/TagsInput.vue'
 import ResponsiveImage from './ResponsiveImage.vue'
@@ -206,8 +206,8 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
-  (e: 'setupGameClick', val: FrontendNewImageEventData): void
-  (e: 'postToGalleryClick', val: FrontendNewImageEventData): void
+  (e: 'setupGameClick', val: UploadRequestData): void
+  (e: 'postToGalleryClick', val: UploadRequestData): void
   (e: 'close'): void
 }>()
 
@@ -319,7 +319,11 @@ const preview = (newFile: File | Blob) => {
   }
   const r = new FileReader()
   r.readAsDataURL(newFile)
-  r.onload = (ev: any) => {
+  r.onload = (ev: ProgressEvent<FileReader>) => {
+    if (!ev.target || !ev.target.result || typeof ev.target.result !== 'string') {
+      log.error('file reader error')
+      return
+    }
     previewUrl.value = ev.target.result
     file.value = newFile as File
   }

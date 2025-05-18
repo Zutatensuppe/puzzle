@@ -116,11 +116,9 @@ export class Server {
     app.use(compression())
 
     // add user info to all requests
-    app.use(async (req: any, _res, next: NextFunction) => {
+    app.use(async (req, _res, next: NextFunction) => {
       const data = await this.users.getUserInfoByRequest(req)
-      req.token = data.token
-      req.user = data.user
-      req.user_type = data.user_type
+      req.userInfo = data
       next()
     })
 
@@ -129,7 +127,7 @@ export class Server {
     app.use('/image-service', createImageServiceRouter(this))
     app.use('/uploads/', express.static(config.dir.UPLOAD_DIR))
 
-    app.get('/', async (req: any, res) => {
+    app.get('/', async (_req, res) => {
       sendHtml(res, await this.indexFileContents(), {
         '<!-- og:image -->': '<meta property="og:image" content="/assets/textures/poster.webp" />',
       })
@@ -162,7 +160,7 @@ export class Server {
       })
     })
 
-    app.all('*', async (req: any, res) => {
+    app.all('*', async (_req, res) => {
       sendHtml(res, await this.indexFileContents(), {
         '<!-- og:image -->': '<meta property="og:image" content="/assets/textures/poster.webp" />',
       })

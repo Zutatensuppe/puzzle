@@ -228,7 +228,7 @@ const hud: Hud = {
   toggleInterface: (v: boolean) => {
     showInterface.value = !!v
   },
-  addStatusMessage: (what: string, value: any) => statusMessages.value.addMessage(what, value),
+  addStatusMessage: (what: string, value: number | string | boolean | undefined) => statusMessages.value.addMessage(what, value),
 }
 
 const onLoginStateChange = async () => {

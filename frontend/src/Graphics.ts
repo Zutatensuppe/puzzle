@@ -81,7 +81,11 @@ export class Graphics {
     return new Promise<Blob>((resolve, reject) => {
       const r = new FileReader()
       r.readAsDataURL(file)
-      r.onload = async (ev: any) => {
+      r.onload = async (ev: ProgressEvent<FileReader>) => {
+        if (!ev.target || !ev.target.result || typeof ev.target.result !== 'string') {
+          reject(new Error('Could not read file'))
+          return
+        }
         try {
           const blob = await this.loadImageToBlob(ev.target.result)
           resolve(blob)

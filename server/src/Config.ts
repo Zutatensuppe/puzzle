@@ -16,6 +16,12 @@ const UPLOAD_URL = `/uploads`
 const PUBLIC_DIR = process.env.PUBLIC_DIR || `${BASE_DIR}/build/public`
 const DB_PATCHES_DIR = process.env.DB_PATCHES_DIR || `${BASE_DIR}/db/dbpatches`
 
+export interface WsConfig {
+  hostname: string
+  port: number
+  connectstring: string
+}
+
 export interface Config {
   db: {
     connectStr: string
@@ -25,11 +31,7 @@ export interface Config {
     hostname: string
     port: number
   }
-  ws: {
-    hostname: string
-    port: number
-    connectstring: string
-  }
+  ws: WsConfig
   persistence: {
     interval: number
   }
