@@ -1,6 +1,6 @@
 import { GameId, GameSettings, ImageId, ImagesRequestData, NewGameDataRequestData } from '../../../common/src/Types'
 import Util from '../../../common/src/Util'
-import xhr, { JSON_HEADERS, XhrRequest } from './xhr'
+import xhr, { JSON_HEADERS, Response, XhrRequest } from './xhr'
 
 const auth = async (email: string, password: string) => {
   return await xhr.post('/api/auth/local', {
@@ -131,7 +131,7 @@ const upload = (
     isNsfw: boolean
     onProgress: (progress: number) => void
   },
-) => {
+): Promise<Response> => {
   const formData = new FormData()
   formData.append('file', data.file, data.file.name)
   formData.append('title', data.title)
