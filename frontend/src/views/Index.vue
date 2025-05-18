@@ -217,13 +217,13 @@
 <script setup lang="ts">
 import { onMounted, onBeforeUnmount, ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
-import { ApiDataFinishedGames, ApiDataIndexData, GameInfo, ImageInfo, ImageSearchSort, Tag } from '../../../common/src/Types'
+import { ApiDataFinishedGames, ApiDataIndexData, GameInfo, ImageInfo, ImageSearchSort, Tag, User } from '../../../common/src/Types'
 import RunningGameTeaser from '../components/RunningGameTeaser.vue'
 import FinishedGameTeaser from '../components/FinishedGameTeaser.vue'
 import Pagination from '../components/Pagination.vue'
 import api from '../_api'
 import Leaderboard from '../components/Leaderboard.vue'
-import user, { User } from '../user'
+import user from '../user'
 import ImageInfoDialog from '../components/ImageInfoDialog.vue'
 import { resizeUrl } from '../../../common/src/ImageService'
 import { toast } from '../toast'
@@ -236,8 +236,7 @@ const me = ref<User|null>(null)
 const onInit = async () => {
   me.value = user.getMe()
   const res = await api.pub.indexData()
-  const json = await res.json() as ApiDataIndexData
-  data.value = json
+  data.value = await res.json()
 }
 
 const login = () => {
@@ -267,14 +266,15 @@ const onCancelDeleteGame = () => {
 const onConfirmDeleteGame = async (game: GameInfo) => {
   try {
     const res = await api.pub.deleteGame(game.id)
-    if (res.status === 200) {
+    const responseData = await res.json()
+    if (responseData.ok) {
       confirmDeleteDialog.value = false
       confirmDeleteGame.value = null
       // remove the game from the list of running games without reloading everything
       data.value!.gamesRunning.items = data.value!.gamesRunning.items.filter(g => g.id !== game.id)
       toast('Game deleted successfully.', 'success', 7000)
     } else {
-      toast('Failed to delete game.', 'error')
+      toast(`Failed to delete game: ${responseData.error}`, 'error')
     }
   } catch {
     toast('Failed to delete game.', 'error')

@@ -177,7 +177,7 @@ export const playerToBasicPlayerInfo = (p: EncodedPlayer): BasicPlayerInfo => {
   }
 }
 
-const isEncodedGameLegacy = (data: EncodedGame | EncodedGameLegacy): data is EncodedGameLegacy => {
+export const isEncodedGameLegacy = (data: EncodedGame | EncodedGameLegacy): data is EncodedGameLegacy => {
   return data.length <= 12
 }
 

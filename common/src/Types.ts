@@ -162,9 +162,18 @@ export type EncodedPiece = FixedLengthArray<[
   EncodedPieceIdx.ROTATION extends 6 ? undefined|PieceRotation : never,
 ]>
 
+// for reading from db
 export interface Announcement {
   id: AnnouncementId
   created: string // date string
+  title: string
+  message: string
+}
+
+// for inserting to db
+export interface AnnouncementsRow {
+  id: AnnouncementId
+  created: Date
   title: string
   message: string
 }
@@ -769,10 +778,109 @@ export interface NewGameDataRequestData {
   search: string
 }
 
+export interface User {
+  id: UserId
+  name: string
+  created: string
+  clientId: ClientId
+  type: 'guest' | 'user'
+  cannyToken: string | null
+  groups: string[]
+}
+
+export type MeResponseData = User | { reason: string }
+
+export type LogoutResponseData = {
+  success: true
+} | {
+  reason: string
+}
+
+export type RegisterResponseData = {
+  success: true
+} | {
+  reason: string
+}
+
+export type SendPasswordResetEmailResponseData = {
+  success: true
+} | {
+  reason: string
+}
+export type ChangePasswordResponseData = {
+  success: true
+} | {
+  reason: string
+}
+
+export type AuthLocalResponseData = {
+  success: true
+} | {
+  reason: string
+}
+
+export type ConfigResponseData = {
+  WS_ADDRESS: string
+}
+
+export interface NewGameDataResponseData {
+  featured: FeaturedRowWithCollections[]
+  images: ImageInfo[]
+  tags: Tag[]
+}
+
+export type SaveImageResponseData = {
+  ok: true
+  imageInfo: ImageInfo
+} | {
+  ok: false
+  error: string
+}
+
+export type NewGameResponseData = {
+  id: GameId
+} | {
+  reason: string
+}
+
+export type FeaturedResponseData = {
+  featured: FeaturedRowWithCollections
+} | {
+  reason: string
+}
+
+export type ReportResponseData = {
+  ok: true
+} | {
+  ok: false
+  error: string
+}
+
+export interface FeaturedTeasersResponseData {
+  featuredTeasers: FeaturedRowWithCollections[]
+}
+
 export interface ImagesRequestData {
   sort: string
   search: string
   offset: number
+}
+
+export interface ImagesResponseData {
+  images: ImageInfo[]
+}
+
+export type AnnouncementsResponseData = Announcement[]
+
+export type DeleteGameResponseData = {
+  ok: true
+} | {
+  ok: false
+  error: string
+}
+
+export type ReplayGameDataResponseData = ReplayGameData | {
+  reason: string
 }
 
 export enum ImageSearchSort {
@@ -897,7 +1005,7 @@ export interface ImageRowWithCount extends ImageRow {
 
 export interface UserRow {
   id: UserId
-  created: Date
+  created: string // Date when creating, string when reading from db
   client_id: ClientId
   name: string
   email: string
@@ -906,13 +1014,6 @@ export interface UserRow {
 export interface UserGroupRow {
   id: UserGroupId
   name: string
-}
-
-export interface AnnouncementsRow {
-  id: AnnouncementId
-  created: Date
-  title: string
-  message: string
 }
 
 export interface FeaturedRow {
