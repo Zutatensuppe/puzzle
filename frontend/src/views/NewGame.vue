@@ -253,22 +253,53 @@ const onImageReportClicked = (newImage: ImageInfo) => {
   openDialog('report-image')
 }
 
-const uploadImage = async (data: any) => {
+const uploadImage = async (data: any): Promise<{ error: string } | { imageInfo: ImageInfo }> => {
   uploadProgress.value = 0
-  const res = await api.pub.upload({
-    file: data.file,
-    title: data.title,
-    copyrightName: data.copyrightName,
-    copyrightURL: data.copyrightURL,
-    tags: data.tags,
-    isPrivate: data.isPrivate,
-    isNsfw: data.isNsfw,
-    onProgress: (progress: number): void => {
-      uploadProgress.value = progress
-    },
-  })
-  uploadProgress.value = 1
-  return await res.json()
+  try {
+    const res = await api.pub.upload({
+      file: data.file,
+      title: data.title,
+      copyrightName: data.copyrightName,
+      copyrightURL: data.copyrightURL,
+      tags: data.tags,
+      isPrivate: data.isPrivate,
+      isNsfw: data.isNsfw,
+      onProgress: (progress: number): void => {
+        uploadProgress.value = progress
+      },
+    })
+
+    // ⡀⡀⡀⡀⡀⡀⡀⣠⣴⣶⣶⣶⣶⣤⡀⡀⡀⡀⡀⡀⡀⡀
+    // ⡀⡀⡀⡀⡀⣤⣿⣿⣿⣿⣿⣿⣿⣿⣿⣦⡀⡀⡀⡀⡀⡀
+    // ⡀⡀⡀⡀⣼⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⢧⡀⡀⡀⡀⡀
+    // ⡀⡀⡀⢠⣿⣿⣿⢻⢸⣿⣿⠇⢿⣿⣿⣿⣿⡀⡀⡀⡀⡀
+    // ⡀⡀⡈⣾⣿⣿⡟⣘ ⠹⢿   ⣎⢿⣿⣿⡇⡀⡀⡀⡀
+    // ⡀⡀⡀⡇⣿⣿⠏⣾⡧    ⣿⡆⠇⣿⣿⡇⡀⡀⡀⡀
+    // ⡀⡀⡀⠁⣿⣿⡀          ⢼⣿⣼⡇⡀⡀⡀⡀
+    // ⡀⡀⡀⢠⣿⣿⣧⡀  ⡠⢄   ⣾⣿⣿⡻⡀⡀⡀⡀
+    // ⡀⡀⡀⠁⣿⣿⣿⣿⡦⣀⡀⡠⢶⣿⣿⣿⣿⣇⢂⡀⡀⡀
+    // ⡀⡀⠆⣼⣿⣿⣿⣿⡀⢄⢀⠔⡀⣿⣿⣿⣿⡟⡀⡀⡀⡀
+    // ⡀⡀⣿⣿⣿⣿⣿⣿⣿⣿⢿⣿⣿⣿⣿⣿⣿⣿⣿⡀⡀⡀
+    // ⡀⢰⡏⠉⠉⠉⠉⠉⠉⠉⠁⠉⠉⠉⠉⠉⠉⠉⠉⣿⡀⡀
+    // ⡀ ⣼⡇ 413 Request Entity  ⣿⡀⡀
+    // ⢀ ⠟⠃⡀    Too Large     ⣿⡇⡀⡀
+    // ⡀⡀⠿⠿⠿⠿⠿⠿⠿⠿⠿⠿⠿⠿⠿⠿⠿⠿⠇⡀⡀⡀
+    // Comment requested during nC_para_ stream :)
+    if (res.status === 413) {
+      throw 'The image you tried to upload is too large. Max file size is 20MB.'
+    }
+
+    const imageInfo = await res.json()
+    if (!imageInfo) {
+      throw 'The image upload failed for unknown reasons.'
+    }
+
+    uploadProgress.value = 1
+    return { imageInfo }
+  } catch (e) {
+    uploadProgress.value = 0
+    return { error: String(e) }
+  }
 }
 
 const onSaveImageClick = async (data: any) => {
@@ -287,18 +318,30 @@ const onSaveImageClick = async (data: any) => {
 
 const postToGalleryClick = async (data: any) => {
   uploading.value = 'postToGallery'
-  await uploadImage(data)
+  const result = await uploadImage(data)
   uploading.value = ''
+
+  if ('error' in result) {
+    toast(result.error, 'error')
+    return
+  }
+
   closeDialog()
   await loadImages()
 }
 
 const setupGameClick = async (data: any) => {
   uploading.value = 'setupGame'
-  const uploadedImage = await uploadImage(data)
+  const result = await uploadImage(data)
   uploading.value = ''
+
+  if ('error' in result) {
+    toast(result.error, 'error')
+    return
+  }
+
   void loadImages() // load images in background
-  image.value = uploadedImage
+  image.value = result.imageInfo
   openDialog('new-game')
 }
 
