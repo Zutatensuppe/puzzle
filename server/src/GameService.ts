@@ -378,7 +378,7 @@ export class GameService {
     gameSettings: GameSettings,
     ts: Timestamp,
     creatorUserId: UserId,
-  ): Promise<string> {
+  ): Promise<GameId> {
     if (gameSettings.tiles < NEWGAME_MIN_PIECES || gameSettings.tiles > NEWGAME_MAX_PIECES) {
       throw new Error(`Target pieces count must be between ${NEWGAME_MIN_PIECES} and ${NEWGAME_MAX_PIECES}`)
     }

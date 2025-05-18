@@ -31,11 +31,12 @@ export default function createRouter(
   router.use(requireLoginApi)
 
   router.get('/server-info', (_req, res) => {
-    res.send(<ServerInfo>{
+    const responseData: ServerInfo = {
       socketCount: server.gameSockets.getSocketCount(),
       socketCountsByGameIds: server.gameSockets.getSocketCountsByGameIds(),
       gameLogInfoByGameIds: GameLog.getGameLogInfos(),
-    })
+    }
+    res.send(responseData)
   })
 
   router.get('/games', async (req, res) => {

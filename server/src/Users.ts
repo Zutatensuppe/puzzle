@@ -110,6 +110,8 @@ export class Users {
     if (!data.user) {
       const user = await this.createUser({
         client_id: req.headers[HEADER_CLIENT_ID],
+        // TODO: date gets converted to string automatically. fix this type hint
+        // @ts-ignore
         created: new Date(),
         name: '',
         email: '',

@@ -6,10 +6,10 @@ export const JSON_HEADERS = {
   'Content-Type': 'application/json',
 }
 
-export interface Response {
+export interface Response<T> {
   status: number,
   text: string,
-  json: () => Promise<any>,
+  json: () => Promise<T>,
 }
 
 export interface Options {
@@ -18,7 +18,7 @@ export interface Options {
   onUploadProgress?: (ev: ProgressEvent<XMLHttpRequestEventTarget>) => any,
 }
 
-export class XhrRequest {
+export class XhrRequest<T> {
   private xhr: XMLHttpRequest | null = null
   constructor(
     private readonly method: string,
@@ -28,7 +28,7 @@ export class XhrRequest {
     // pass
   }
 
-  send(): Promise<Response> {
+  send(): Promise<Response<T>> {
     return new Promise((resolve, reject) => {
       this.xhr = new window.XMLHttpRequest()
       this.xhr.open(this.method, this.url, true)
@@ -68,12 +68,12 @@ export class XhrRequest {
 }
 
 let xhrClientId: ClientId = '' as ClientId
-const request = async (
+const request = async <T>(
   method: string,
   url: string,
   options: Options,
-): Promise<Response> => {
-  const r = new XhrRequest(method, url, options)
+): Promise<Response<T>> => {
+  const r = new XhrRequest<T>(method, url, options)
   return await r.send()
 }
 
@@ -81,20 +81,19 @@ export default {
   init: () => {
     xhrClientId = storage.uniq('ID') as ClientId
   },
-  request,
-  get: (url: string, options: any): Promise<Response> => {
+  get: <T>(url: string, options: any): Promise<Response<T>> => {
     return request('get', url, options)
   },
-  getRequest: (url: string, options: any): XhrRequest => {
+  getRequest: <T>(url: string, options: any): XhrRequest<T> => {
     return new XhrRequest('get', url, options)
   },
-  delete: (url: string, options: any): Promise<Response> => {
+  delete: <T>(url: string, options: any): Promise<Response<T>> => {
     return request('delete', url, options)
   },
-  post: (url: string, options: any): Promise<Response> => {
+  post: <T>(url: string, options: any): Promise<Response<T>> => {
     return request('post', url, options)
   },
-  put: (url: string, options: any): Promise<Response> => {
+  put: <T>(url: string, options: any): Promise<Response<T>> => {
     return request('put', url, options)
   },
   clientId: () => xhrClientId,

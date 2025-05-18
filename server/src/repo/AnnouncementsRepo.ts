@@ -1,5 +1,5 @@
 import Db, { WhereRaw } from '../Db'
-import { AnnouncementId, AnnouncementsRow } from '../../../common/src/Types'
+import { Announcement, AnnouncementId, AnnouncementsRow } from '../../../common/src/Types'
 
 const TABLE = 'announcements'
 
@@ -10,7 +10,7 @@ export class AnnouncementsRepo {
     // pass
   }
 
-  async getAll(): Promise<AnnouncementsRow[]> {
+  async getAll(): Promise<Announcement[]> {
     return await this.db.getMany(TABLE, undefined, [{ created: -1 }])
   }
 
@@ -18,7 +18,7 @@ export class AnnouncementsRepo {
     return await this.db.insert(TABLE, announcement, 'id') as AnnouncementId
   }
 
-  async get(where: WhereRaw): Promise<AnnouncementsRow | null> {
+  async get(where: WhereRaw): Promise<Announcement | null> {
     return await this.db.get('announcements', where)
   }
 }

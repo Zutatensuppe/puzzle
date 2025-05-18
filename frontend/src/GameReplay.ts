@@ -3,7 +3,7 @@
 import GameCommon from '../../common/src/GameCommon'
 import { GAME_EVENT_TYPE, LOG_TYPE } from '../../common/src/Protocol'
 import Time from '../../common/src/Time'
-import { Game as GameType, GameEvent, ReplayHud, Timestamp, HeaderLogEntry, LogEntry, ReplayGameData, EncodedPlayer } from '../../common/src/Types'
+import { Game as GameType, GameEvent, ReplayHud, Timestamp, HeaderLogEntry, LogEntry, EncodedPlayer } from '../../common/src/Types'
 import Util from '../../common/src/Util'
 import { Game } from './Game'
 import { parseLogFileContents } from '../../common/src/GameLog'
@@ -61,15 +61,15 @@ export class GameReplay extends Game<ReplayHud> {
 
   private async connect(): Promise<void> {
     const replayGameDataRes = await _api.pub.replayGameData({ gameId: this.gameId })
-    if (replayGameDataRes.status !== 200) {
-      throw '[ 2024-04-14 no replay data received ]'
+    const data = await replayGameDataRes.json()
+    if ('reason' in data) {
+      throw `[ 2025-05-18 ${data.reason} ]`
     }
-    const replayGameData: ReplayGameData = await replayGameDataRes.json() as ReplayGameData
     const logEntries: LogEntry[] = await this.queryNextReplayBatch()
     if (!logEntries.length) {
       throw '[ 2023-02-12 no replay data received ]'
     }
-    const gameObject: GameType = Util.decodeGame(replayGameData.game)
+    const gameObject: GameType = Util.decodeGame(data.game)
     GameCommon.setGame(gameObject.id, gameObject)
     GameCommon.setRegisteredMap(gameObject.id, gameObject.registeredMap)
 

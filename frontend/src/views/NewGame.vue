@@ -132,7 +132,7 @@ import NewImageDialog from './../components/NewImageDialog.vue'
 import EditImageDialog from './../components/EditImageDialog.vue'
 import NewGameDialog from './../components/NewGameDialog.vue'
 import ReportImageDialog from './../components/ReportImageDialog.vue'
-import { GameSettings, ImageInfo, Tag, NewGameDataRequestData, ImagesRequestData, ImageSearchSort, isImageSearchSort, FeaturedRowWithCollections, defaultImageInfo } from '../../../common/src/Types'
+import { GameSettings, ImageInfo, Tag, NewGameDataRequestData, ImagesRequestData, ImageSearchSort, isImageSearchSort, FeaturedRowWithCollections, defaultImageInfo, NewGameDataResponseData, ImagesResponseData } from '../../../common/src/Types'
 import api from '../_api'
 import { XhrRequest } from '../_api/xhr'
 import { onBeforeRouteUpdate, RouteLocationNormalizedLoaded, useRouter } from 'vue-router'
@@ -204,7 +204,8 @@ const loadFeaturedTeasers = async () => {
   featuredTeasers.value = json.featuredTeasers
 }
 
-const currentRequest = ref<XhrRequest | null>(null)
+const currentNewGameDataRequest = ref<XhrRequest<NewGameDataResponseData> | null>(null)
+const currentImagesRequest = ref<XhrRequest<ImagesResponseData> | null>(null)
 
 const loadImages = async () => {
   sentinelActive.value = false
@@ -213,12 +214,15 @@ const loadImages = async () => {
     sort: filters.value.sort,
     search: filters.value.search,
   }
-  if (currentRequest.value) {
-    currentRequest.value.abort()
+  if (currentNewGameDataRequest.value) {
+    currentNewGameDataRequest.value.abort()
   }
-  currentRequest.value = api.pub.newgameData(requestData)
-  const res = await currentRequest.value.send()
-  currentRequest.value = null
+  if (currentImagesRequest.value) {
+    currentImagesRequest.value.abort()
+  }
+  currentNewGameDataRequest.value = api.pub.newgameData(requestData)
+  const res = await currentNewGameDataRequest.value.send()
+  currentNewGameDataRequest.value = null
   const json = await res.json()
   images.value = json.images
   tags.value = json.tags
@@ -310,9 +314,9 @@ const onSaveImageClick = async (data: any) => {
     // TODO: the image could now not match the filters anymore.
     //       but it is probably fine to not reload the whole list at this point
     const idx = images.value.findIndex(img => img.id === data.id)
-    images.value[idx] = json.image
+    images.value[idx] = json.imageInfo
   } else {
-    alert(json.error)
+    toast(json.error, 'error')
   }
 }
 
@@ -357,14 +361,16 @@ const onSubmitReport = async (data: any) => {
 
 const onNewGame = async (gameSettings: GameSettings) => {
   const res = await api.pub.newGame({ gameSettings })
-  if (res.status === 200) {
-    const game = await res.json()
+  const game = await res.json()
+  if ('id' in game) {
     void router.push({ name: 'game', params: { id: game.id } })
+  } else {
+    toast('An error occured while creating the game.', 'error')
   }
 }
 
 const tryLoadMore = async () => {
-  if (currentRequest.value) {
+  if (currentNewGameDataRequest.value || currentImagesRequest.value) {
     // still loading
     return
   }
@@ -375,14 +381,14 @@ const tryLoadMore = async () => {
     search: filters.value.search,
     offset: offset.value,
   }
-  currentRequest.value = api.pub.images(requestData)
+  currentImagesRequest.value = api.pub.images(requestData)
   let json: { images: ImageInfo[] }
   try {
-    const res = await currentRequest.value.send()
+    const res = await currentImagesRequest.value.send()
     json = await res.json()
-    currentRequest.value = null
+    currentImagesRequest.value = null
   } catch {
-    currentRequest.value = null
+    currentImagesRequest.value = null
     return
   }
 
