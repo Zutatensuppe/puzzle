@@ -56,6 +56,15 @@
                   </span>
                 </fieldset>
                 <div>
+                  <v-label><v-icon icon="mdi-cog-outline mr-1" /> Misc</v-label>
+                  <v-checkbox
+                    v-model="showImagePreviewInBackground"
+                    density="comfortable"
+                    label="Show image preview in background"
+                    hide-details
+                  />
+                </div>
+                <div>
                   <v-label><v-icon icon="mdi-counter mr-1" /> Scoring</v-label>
                   <v-radio-group
                     v-model="scoreMode"
@@ -222,6 +231,7 @@ const tab = ref<string>('settings')
 const forcePrivate = ref<boolean>(props.image.private)
 const pieces = ref<string | number>(1000)
 const isPrivate = ref<boolean>(forcePrivate.value)
+const showImagePreviewInBackground = ref<boolean>(false)
 const requireAccount = ref<boolean>(false)
 const requirePassword = ref<boolean>(false)
 const joinPassword = ref<string>('')
@@ -292,7 +302,7 @@ const onNewGameClick = () => {
   const isPriv = isPrivate.value
   const reqAccount = isPriv ? requireAccount.value : false
   const joinPass = isPriv && requirePassword.value ? joinPassword.value || null : null
-  emit('newGame', {
+  const gameSettings: GameSettings = {
     tiles: piecesInt.value,
     private: isPriv,
     requireAccount: reqAccount,
@@ -303,7 +313,9 @@ const onNewGameClick = () => {
     snapMode: snapModeInt.value,
     rotationMode: rotationModeInt.value,
     crop: crop.value,
-  })
+    showImagePreviewInBackground: showImagePreviewInBackground.value,
+  }
+  emit('newGame', gameSettings)
 }
 
 const form = ref<any>()

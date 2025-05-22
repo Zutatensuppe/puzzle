@@ -214,6 +214,7 @@ export type EncodedGame = FixedLengthArray<[
   string | null | undefined, // joinPassword
   boolean | undefined, // requireAccount
   Record<ClientId, boolean> | undefined, // banned
+  boolean, // showImagePreviewInBackground
 ]>
 
 export type HeaderLogEntry = [
@@ -287,6 +288,7 @@ export interface Game {
   registeredMap: RegisteredMap
   requireAccount: boolean
   joinPassword: string | null
+  showImagePreviewInBackground: boolean
 }
 
 export interface Image {
@@ -310,6 +312,7 @@ export interface GameSettings {
   snapMode: SnapMode
   rotationMode: RotationMode
   crop: Rect
+  showImagePreviewInBackground: boolean
 }
 
 export interface Puzzle {
@@ -1007,6 +1010,7 @@ export interface GameRow {
   join_password: string | null
   require_account: number
   reported: number
+  show_image_preview_in_background: number
 }
 
 export interface GameRowWithImageAndUser extends GameRow {

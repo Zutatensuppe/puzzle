@@ -257,6 +257,10 @@ function getEncodedPiecesSortedByZIndex(gameId: GameId): EncodedPiece[] {
   return Game_getEncodedPiecesSortedByZIndex(GAMES[gameId])
 }
 
+function getShowImagePreviewInBackground(gameId: GameId): boolean {
+  return Game_getShowImagePreviewInBackground(GAMES[gameId])
+}
+
 function joinPassword(gameId: GameId): string |null {
   return Game_getJoinPassword(GAMES[gameId])
 }
@@ -1272,6 +1276,10 @@ function Game_getEncodedPiecesSortedByZIndex(game: Game): EncodedPiece[] {
   return pieces.toSorted((t1, t2) => t1[EncodedPieceIdx.Z] - t2[EncodedPieceIdx.Z])
 }
 
+function Game_getShowImagePreviewInBackground(game: Game): boolean {
+  return game.showImagePreviewInBackground
+}
+
 function Game_getPuzzle(game: Game): Puzzle {
   return game.puzzle
 }
@@ -1363,6 +1371,7 @@ export default {
   getCreatorUserId,
   getEncodedPieces,
   getEncodedPiecesSortedByZIndex,
+  getShowImagePreviewInBackground,
   getFinalPiecePos,
   getFinishedPiecesCount,
   getFinishTs,

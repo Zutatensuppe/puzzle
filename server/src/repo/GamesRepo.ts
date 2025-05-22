@@ -96,7 +96,7 @@ export class GamesRepo {
     return !!gameRow
   }
 
-  async upsert(row: Partial<GameRow>): Promise<void> {
+  async upsert(row: Omit<GameRow, 'image_snapshot_url' | 'reported'>): Promise<void> {
     await this.db.upsert(TABLE, row, ['id'])
   }
 
