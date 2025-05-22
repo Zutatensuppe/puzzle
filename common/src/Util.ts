@@ -152,6 +152,7 @@ function encodeGame(data: Game): EncodedGame | EncodedGameLegacy {
     data.joinPassword,
     data.requireAccount,
     data.banned,
+    data.showImagePreviewInBackground,
   ] : [
     data.id,
     data.rng.type || '',
@@ -203,6 +204,7 @@ function decodeGame(data: EncodedGame | EncodedGameLegacy): Game {
       joinPassword: null,
       requireAccount: false,
       banned: {},
+      showImagePreviewInBackground: false,
     }
   }
 
@@ -227,6 +229,7 @@ function decodeGame(data: EncodedGame | EncodedGameLegacy): Game {
     joinPassword: data[15] || null,
     requireAccount: data[16] || false,
     banned: data[17] || {},
+    showImagePreviewInBackground: data[18] || false,
   }
 }
 

@@ -114,6 +114,7 @@ export class GameService {
       registeredMap: await this.generateRegisteredMap(game.players),
       banned: game.banned || {},
       crop: game.crop,
+      showImagePreviewInBackground: !!gameRow.show_image_preview_in_background,
     }
   }
 
@@ -209,6 +210,7 @@ export class GameService {
       gameObject.requireAccount,
       gameObject.joinPassword,
       gameObject.crop,
+      gameObject.showImagePreviewInBackground,
     )
     gameObj.puzzle.info.image.gameCount = await this.server.repos.images.getGameCount(gameObj.puzzle.info.image.id)
     gameObj.registeredMap = await this.generateRegisteredMap(gameObj.players)
@@ -276,7 +278,7 @@ export class GameService {
       pieces_count: game.puzzle.tiles.length,
       require_account: game.requireAccount ? 1 : 0,
       join_password: game.joinPassword,
-      // the image_snapshot_url is not updated here, this is intended!
+      show_image_preview_in_background: game.showImagePreviewInBackground ? 1 : 0,
     })
     await this.server.repos.games.updatePlayerRelations(game.id, game.players)
 
@@ -350,6 +352,7 @@ export class GameService {
     requireAccount: boolean,
     joinPassword: string | null,
     crop: Rect | undefined,
+    showImagePreviewInBackground: boolean,
   ): Game {
     const seed = Util.hash(gameId + ' ' + ts)
     const rng = new Rng(seed)
@@ -371,6 +374,7 @@ export class GameService {
       joinPassword,
       registeredMap: {},
       banned: {},
+      showImagePreviewInBackground,
     }
   }
 
@@ -403,6 +407,7 @@ export class GameService {
       gameSettings.requireAccount,
       gameSettings.joinPassword ? Crypto.encrypt(gameSettings.joinPassword) : null,
       gameSettings.crop,
+      gameSettings.showImagePreviewInBackground,
     )
 
     GameLog.create(gameId, ts)

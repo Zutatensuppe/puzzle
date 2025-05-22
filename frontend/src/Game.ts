@@ -579,7 +579,7 @@ export abstract class Game<HudType extends Hud> implements GameInterface {
         (piece: EncodedPiece) => this.shouldDrawEncodedPiece(piece),
         (player: EncodedPlayer) => this.shouldDrawPlayer(player),
         this.justFinished(),
-        false,
+        this.showImagePreviewInBackground(),
       )
     } else if (this.rendererCanvas2d) {
       this.rendererCanvas2d.debug = debug.isDebugEnabled()
@@ -594,11 +594,15 @@ export abstract class Game<HudType extends Hud> implements GameInterface {
         (piece: EncodedPiece) => this.shouldDrawEncodedPiece(piece),
         (player: EncodedPlayer) => this.shouldDrawPlayer(player),
         this.justFinished(),
-        false,
+        this.showImagePreviewInBackground(),
       )
     }
 
     this.rerender = false
+  }
+
+  showImagePreviewInBackground(): boolean {
+    return GameCommon.getShowImagePreviewInBackground(this.gameId)
   }
 
   hasReplay(): boolean {
