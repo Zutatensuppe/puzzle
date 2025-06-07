@@ -29,7 +29,31 @@ export class ImagesRepo {
     return await this.db.count(TABLE)
   }
 
-  async getAllWithGameCount(offset: number, limit: number): Promise<ImageRowWithCount[]> {
+  async getWithGameCount(args: {
+    offset: number
+    limit: number
+    filter: {
+      ids: ImageId[]
+      tags: string[]
+    }
+  }): Promise<ImageRowWithCount[]> {
+    const { offset, limit, filter } = args
+
+    const rawWhere: WhereRaw = {}
+    let joins = ''
+    if (filter.tags.length > 0) {
+      rawWhere['categories.slug'] = { '$in': filter.tags }
+      joins = `
+        INNER JOIN image_x_category ixt ON ixt.image_id = images.id
+        INNER JOIN categories ON categories.id = ixt.category_id
+      `
+    }
+
+    if (filter.ids.length > 0) {
+      rawWhere['images.id'] = { '$in': filter.ids }
+    }
+
+    const where = this.db._buildWhere(rawWhere)
     return await this.db._getMany(`
       WITH counts AS (
         SELECT
@@ -46,9 +70,11 @@ export class ImagesRepo {
       FROM ${TABLE} images
         LEFT JOIN counts ON counts.image_id = images.id
         LEFT JOIN users u ON u.id = images.uploader_user_id
+        ${joins}
+      ${where.sql}
       ORDER BY images.id DESC
       ${this.db._buildLimit({ offset, limit })};
-    `)
+    `, where.values)
   }
 
   async delete(imageId: ImageId): Promise<void> {
