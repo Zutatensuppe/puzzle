@@ -1,7 +1,7 @@
 import _api from './_api'
-import { ConfigResponseData } from './Types'
+import { Api } from './Types'
 
-let conf: ConfigResponseData
+let conf: Api.ConfigResponseData
 
 const init = async () => {
   const confRes = await _api.pub.config()

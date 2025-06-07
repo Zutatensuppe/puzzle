@@ -1,44 +1,11 @@
-import {
-  AnnouncementsResponseData,
-  FinishedGamesResponseData,
-  ApiDataIndexData,
-  AuthLocalResponseData,
-  ChangePasswordResponseData,
-  ConfigResponseData,
-  DeleteGameResponseData,
-  FeaturedRequestData,
-  FeaturedResponseData,
-  FeaturedTeasersResponseData,
-  FinishedGamesRequestData,
-  GameId,
-  ImageInfo,
-  ImagesRequestData,
-  ImagesResponseData,
-  LogoutResponseData,
-  MeResponseData,
-  NewGameDataRequestData,
-  NewGameDataResponseData,
-  NewGameRequestData,
-  NewGameResponseData,
-  RegisterResponseData,
-  ReplayGameDataRequestData,
-  ReplayGameDataResponseData,
-  ReplayLogDataRequestData,
-  ReportGameRequestData,
-  ReportImageRequestData,
-  ReportResponseData,
-  SaveImageRequestData,
-  SaveImageResponseData,
-  SendPasswordResetEmailResponseData,
-  UploadRequestDataWithProgress,
-} from '../../../common/src/Types'
+import { GameId, ImageInfo, Api } from '../../../common/src/Types'
 import Util from '../../../common/src/Util'
 import xhr, { JSON_HEADERS, Response, XhrRequest } from './xhr'
 
 const auth = (
   email: string,
   password: string,
-): Promise<Response<AuthLocalResponseData>> => {
+): Promise<Response<Api.AuthLocalResponseData>> => {
   return xhr.post('/api/auth/local', {
     headers: JSON_HEADERS,
     body: JSON.stringify({ email, password }),
@@ -49,7 +16,7 @@ const register = (
   username: string,
   email: string,
   password: string,
-): Promise<Response<RegisterResponseData>> => {
+): Promise<Response<Api.RegisterResponseData>> => {
   return xhr.post('/api/register', {
     headers: JSON_HEADERS,
     body: JSON.stringify({ username, email, password }),
@@ -58,7 +25,7 @@ const register = (
 
 const sendPasswordResetEmail = (
   email: string,
-): Promise<Response<SendPasswordResetEmailResponseData>> => {
+): Promise<Response<Api.SendPasswordResetEmailResponseData>> => {
   return xhr.post('/api/send-password-reset-email', {
     headers: JSON_HEADERS,
     body: JSON.stringify({ email }),
@@ -68,7 +35,7 @@ const sendPasswordResetEmail = (
 const changePassword = (
   password: string,
   token: string,
-): Promise<Response<ChangePasswordResponseData>> => {
+): Promise<Response<Api.ChangePasswordResponseData>> => {
   return xhr.post('/api/change-password', {
     headers: JSON_HEADERS,
     body: JSON.stringify({ password, token }),
@@ -77,7 +44,7 @@ const changePassword = (
 
 const logout = (
   // no args
-): Promise<Response<LogoutResponseData>> => {
+): Promise<Response<Api.LogoutResponseData>> => {
   return xhr.post('/api/logout', {
     headers: JSON_HEADERS,
   })
@@ -85,68 +52,68 @@ const logout = (
 
 const getAnnouncements = async (
   // no args
-): Promise<AnnouncementsResponseData> => {
-  const res = await xhr.get<AnnouncementsResponseData>('/api/announcements')
+): Promise<Api.AnnouncementsResponseData> => {
+  const res = await xhr.get<Api.AnnouncementsResponseData>('/api/announcements')
   return await res.json()
 }
 
 const config = (
   // no args
-): Promise<Response<ConfigResponseData>> => {
+): Promise<Response<Api.ConfigResponseData>> => {
   return xhr.get(`/api/conf`)
 }
 
 const me = (
   // no args
-): Promise<Response<MeResponseData>> => {
+): Promise<Response<Api.MeResponseData>> => {
   return xhr.get(`/api/me`)
 }
 
 const indexData = (
   // no args
-): Promise<Response<ApiDataIndexData>> => {
+): Promise<Response<Api.ApiDataIndexData>> => {
   return xhr.get('/api/index-data')
 }
 
 const deleteGame = (
   id: GameId,
-): Promise<Response<DeleteGameResponseData>> => {
+): Promise<Response<Api.DeleteGameResponseData>> => {
   return xhr.delete(`/api/games/${id}`)
 }
 
 const finishedGames = (
-  data: FinishedGamesRequestData,
-): Promise<Response<FinishedGamesResponseData>> => {
+  data: Api.FinishedGamesRequestData,
+): Promise<Response<Api.FinishedGamesResponseData>> => {
   return xhr.get(`/api/finished-games${Util.asQueryArgs(data)}`)
 }
 
 const newgameData = (
-  data: NewGameDataRequestData,
-): XhrRequest<NewGameDataResponseData> => {
+  data: Api.NewGameDataRequestData,
+): XhrRequest<Api.NewGameDataResponseData> => {
   return xhr.getRequest(`/api/newgame-data${Util.asQueryArgs(data)}`)
 }
 
 const images = (
-  data: ImagesRequestData,
-): XhrRequest<ImagesResponseData> => {
+  data: Api.ImagesRequestData,
+): XhrRequest<Api.ImagesResponseData> => {
   return xhr.getRequest(`/api/images${Util.asQueryArgs(data)}`)
 }
 
 const replayGameData = (
-  data: ReplayGameDataRequestData,
-): Promise<Response<ReplayGameDataResponseData>> => {
+  data: Api.ReplayGameDataRequestData,
+): Promise<Response<Api.ReplayGameDataResponseData>> => {
   return xhr.get(`/api/replay-game-data${Util.asQueryArgs(data)}`)
 }
 
 const replayLogData =  (
-  data: ReplayLogDataRequestData,
+  data: Api.ReplayLogDataRequestData,
 ): Promise<Response<unknown>> => {
   return xhr.get(`/api/replay-log-data${Util.asQueryArgs(data)}`)
 }
 
 const saveImage = (
-  data: SaveImageRequestData,
-): Promise<Response<SaveImageResponseData>> => {
+  data: Api.SaveImageRequestData,
+): Promise<Response<Api.SaveImageResponseData>> => {
   return xhr.post('/api/save-image', {
     headers: JSON_HEADERS,
     body: JSON.stringify({
@@ -160,8 +127,8 @@ const saveImage = (
 }
 
 const newGame = (
-  data: NewGameRequestData,
-): Promise<Response<NewGameResponseData>> => {
+  data: Api.NewGameRequestData,
+): Promise<Response<Api.NewGameResponseData>> => {
   return xhr.post('/api/newgame', {
     headers: JSON_HEADERS,
     body: JSON.stringify(data.gameSettings),
@@ -169,20 +136,20 @@ const newGame = (
 }
 
 const getFeaturedData = (
-  data: FeaturedRequestData,
-): Promise<Response<FeaturedResponseData>> => {
+  data: Api.FeaturedRequestData,
+): Promise<Response<Api.FeaturedResponseData>> => {
   return xhr.get(`/api/featured/${data.type}/${data.slug}`)
 }
 
 const getFeaturedTeaserData = (
   // no args
-): Promise<Response<FeaturedTeasersResponseData>> => {
+): Promise<Response<Api.FeaturedTeasersResponseData>> => {
   return xhr.get(`/api/featured-teasers`)
 }
 
 const reportImage = (
-  data: ReportImageRequestData,
-): Promise<Response<ReportResponseData>> => {
+  data: Api.ReportImageRequestData,
+): Promise<Response<Api.ReportResponseData>> => {
   return xhr.post('/api/moderation/report-image', {
     headers: JSON_HEADERS,
     body: JSON.stringify(data),
@@ -190,8 +157,8 @@ const reportImage = (
 }
 
 const reportGame = (
-  data: ReportGameRequestData,
-): Promise<Response<ReportResponseData>> => {
+  data: Api.ReportGameRequestData,
+): Promise<Response<Api.ReportResponseData>> => {
   return xhr.post('/api/moderation/report-game', {
     headers: JSON_HEADERS,
     body: JSON.stringify(data),
@@ -199,7 +166,7 @@ const reportGame = (
 }
 
 const upload = (
-  data: UploadRequestDataWithProgress,
+  data: Api.UploadRequestDataWithProgress,
 ): Promise<Response<ImageInfo>> => {
   const formData = new FormData()
   formData.append('file', data.file, data.file.name)

@@ -82,14 +82,18 @@ const route = useRoute()
 
 const load = async () => {
   const id = route.params.id as unknown as FeaturedId
-  const res = await api.admin.getFeatured(id)
-  featured.value = res.featured
+  const responseData = await api.admin.getFeatured(id)
+  if ('error' in responseData) {
+    console.error('Error loading featured:', responseData.error)
+    return null
+  }
+  return responseData.featured
 }
 
 const save = async () => {
   if (featured.value) {
     await api.admin.saveFeatured(featured.value)
-    await load()
+    featured.value = await load()
   }
 }
 
@@ -102,10 +106,10 @@ const onDeleteCollection = (collection: CollectionRowWithImages) => {
 
 onMounted(async () => {
   if (user.getMe()) {
-    await load()
+    featured.value = await load()
   }
   user.eventBus.on('login', async () => {
-    await load()
+    featured.value = await load()
   })
   user.eventBus.on('logout', () => {
     featured.value = null

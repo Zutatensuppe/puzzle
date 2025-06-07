@@ -81,6 +81,19 @@ const featureds = ref<{ items: FeaturedRow[], pagination: PaginationType } | nul
 const type = ref<'artist' | 'category'>('artist')
 const name = ref<string>('')
 const introduction = ref<string>('')
+
+const loadFeatureds = async (data: {
+    limit: number;
+    offset: number;
+}) => {
+  const responseData = await api.admin.getFeatureds(data)
+  if ('error' in responseData) {
+    console.error('Error loading featureds:', responseData.error)
+    return null
+  }
+  return responseData
+}
+
 const create = async () => {
   await api.admin.createFeatured(
     type.value,
@@ -88,23 +101,22 @@ const create = async () => {
     introduction.value,
     [],
   )
-  featureds.value = await api.admin.getFeatureds({ limit: perPage, offset: 0 })
+  featureds.value = await loadFeatureds({ limit: perPage, offset: 0 })
 }
-
 
 const onPagination = async (q: { limit: number, offset: number }) => {
   if (!featureds.value) {
     return
   }
-  featureds.value = await api.admin.getFeatureds(q)
+  featureds.value = await loadFeatureds(q)
 }
 
 onMounted(async () => {
   if (user.getMe()) {
-    featureds.value = await api.admin.getFeatureds({ limit: perPage, offset: 0 })
+    featureds.value = await loadFeatureds({ limit: perPage, offset: 0 })
   }
   user.eventBus.on('login', async () => {
-    featureds.value = await api.admin.getFeatureds({ limit: perPage, offset: 0 })
+    featureds.value = await loadFeatureds({ limit: perPage, offset: 0 })
   })
   user.eventBus.on('logout', () => {
     featureds.value = null
