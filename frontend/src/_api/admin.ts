@@ -1,28 +1,35 @@
-import { ClientId, FeaturedRowWithCollections, GameId, ImageId, ServerInfo, UserId } from '../../../common/src/Types'
+import {
+  Api,
+  ClientId,
+  FeaturedRowWithCollections,
+  GameId,
+  ImageId,
+  ServerInfo,
+  UserId,
+} from '../../../common/src/Types'
 import xhr, { JSON_HEADERS } from './xhr'
 import Util from '../../../common/src/Util'
-import { DeleteImageResponseData, GetAnnouncementsResponseData, GetFeaturedResponseData, GetFeaturedsResponseData, GetGroupsResponseData, GetImageResponseData, GetImagesResponseData, PostAnnouncementsResponseData, PostFeaturedsResponseData, PostGamesFixPiecesResponseData, PostUsersMergeClientIdsIntoUsersResponseData, PutFeaturedResponseData, type DeleteGameResponseData, type GetGamesResponseData, type GetUsersResponseData } from '../TypesAdminApi'
 
 const getGames = async (data: {
   limit: number
   offset: number
-}): Promise<GetGamesResponseData> => {
-  const res = await xhr.get<GetGamesResponseData>(`/admin/api/games${Util.asQueryArgs(data)}`)
+}): Promise<Api.Admin.GetGamesResponseData> => {
+  const res = await xhr.get<Api.Admin.GetGamesResponseData>(`/admin/api/games${Util.asQueryArgs(data)}`)
   return await res.json()
 }
 
 const deleteGame = async (
   id: GameId,
-): Promise<DeleteGameResponseData> => {
-  const res = await xhr.delete<DeleteGameResponseData>(`/admin/api/games/${id}`)
+): Promise<Api.Admin.DeleteGameResponseData> => {
+  const res = await xhr.delete<Api.Admin.DeleteGameResponseData>(`/admin/api/games/${id}`)
   return await res.json()
 }
 
 const getUsers = async (data: {
   limit: number
   offset: number
-}): Promise<GetUsersResponseData> => {
-  const res = await xhr.get<GetUsersResponseData>(`/admin/api/users${Util.asQueryArgs(data)}`)
+}): Promise<Api.Admin.GetUsersResponseData> => {
+  const res = await xhr.get<Api.Admin.GetUsersResponseData>(`/admin/api/users${Util.asQueryArgs(data)}`)
   return await res.json()
 }
 
@@ -37,8 +44,8 @@ const mergeClientIdsIntoUser = async (
   userId: UserId,
   clientIds: ClientId[],
   dry: boolean,
-): Promise<PostUsersMergeClientIdsIntoUsersResponseData> => {
-  const res = await xhr.post<PostUsersMergeClientIdsIntoUsersResponseData>('/admin/api/users/_merge_client_ids_into_user', {
+): Promise<Api.Admin.PostUsersMergeClientIdsIntoUsersResponseData> => {
+  const res = await xhr.post<Api.Admin.PostUsersMergeClientIdsIntoUsersResponseData>('/admin/api/users/_merge_client_ids_into_user', {
     headers: JSON_HEADERS,
     body: JSON.stringify({ userId, clientIds, dry }),
   })
@@ -47,8 +54,8 @@ const mergeClientIdsIntoUser = async (
 
 const fixPieces = async (
   gameId: GameId,
-): Promise<PostGamesFixPiecesResponseData> => {
-  const res = await xhr.post<PostGamesFixPiecesResponseData>('/admin/api/games/_fix_pieces', {
+): Promise<Api.Admin.PostGamesFixPiecesResponseData> => {
+  const res = await xhr.post<Api.Admin.PostGamesFixPiecesResponseData>('/admin/api/games/_fix_pieces', {
     headers: JSON_HEADERS,
     body: JSON.stringify({ gameId }),
   })
@@ -57,16 +64,16 @@ const fixPieces = async (
 
 const getAnnouncements = async (
   // no args
-): Promise<GetAnnouncementsResponseData> => {
-  const res = await xhr.get<GetAnnouncementsResponseData>('/admin/api/announcements')
+): Promise<Api.Admin.GetAnnouncementsResponseData> => {
+  const res = await xhr.get<Api.Admin.GetAnnouncementsResponseData>('/admin/api/announcements')
   return await res.json()
 }
 
 const postAnnouncement = async (
   title: string,
   message: string,
-): Promise<PostAnnouncementsResponseData> => {
-  const res = await xhr.post<PostAnnouncementsResponseData>('/admin/api/announcements', {
+): Promise<Api.Admin.PostAnnouncementsResponseData> => {
+  const res = await xhr.post<Api.Admin.PostAnnouncementsResponseData>('/admin/api/announcements', {
     headers: JSON_HEADERS,
     body: JSON.stringify({ title, message }),
   })
@@ -78,30 +85,30 @@ const getImages = async (data: {
   offset: number
   ids?: ImageId[]
   tags?: string[]
-}): Promise<GetImagesResponseData> => {
-  const res = await xhr.get<GetImagesResponseData>(`/admin/api/images${Util.asQueryArgs(data)}`)
+}): Promise<Api.Admin.GetImagesResponseData> => {
+  const res = await xhr.get<Api.Admin.GetImagesResponseData>(`/admin/api/images${Util.asQueryArgs(data)}`)
   return await res.json()
 }
 
 const getFeatureds = async (data: {
   limit: number
   offset: number
-}): Promise<GetFeaturedsResponseData> => {
-  const res = await xhr.get<GetFeaturedsResponseData>(`/admin/api/featureds${Util.asQueryArgs(data)}`)
+}): Promise<Api.Admin.GetFeaturedsResponseData> => {
+  const res = await xhr.get<Api.Admin.GetFeaturedsResponseData>(`/admin/api/featureds${Util.asQueryArgs(data)}`)
   return await res.json()
 }
 
 const getFeatured = async (
   id: number,
-): Promise<GetFeaturedResponseData> => {
-  const res = await xhr.get<GetFeaturedResponseData>(`/admin/api/featureds/${id}`)
+): Promise<Api.Admin.GetFeaturedResponseData> => {
+  const res = await xhr.get<Api.Admin.GetFeaturedResponseData>(`/admin/api/featureds/${id}`)
   return await res.json()
 }
 
 const saveFeatured = async (
   featured: FeaturedRowWithCollections,
-): Promise<PutFeaturedResponseData> => {
-  const res = await xhr.put<PutFeaturedResponseData>(`/admin/api/featureds/${featured.id}`, {
+): Promise<Api.Admin.PutFeaturedResponseData> => {
+  const res = await xhr.put<Api.Admin.PutFeaturedResponseData>(`/admin/api/featureds/${featured.id}`, {
     headers: JSON_HEADERS,
     body: JSON.stringify({ featured }),
   })
@@ -113,8 +120,8 @@ const createFeatured = async (
   name: string,
   introduction: string,
   links: { url: string, title: string }[],
-): Promise<PostFeaturedsResponseData> => {
-  const res = await xhr.post<PostFeaturedsResponseData>('/admin/api/featureds', {
+): Promise<Api.Admin.PostFeaturedsResponseData> => {
+  const res = await xhr.post<Api.Admin.PostFeaturedsResponseData>('/admin/api/featureds', {
     headers: JSON_HEADERS,
     body: JSON.stringify({ type, name, introduction, links }),
   })
@@ -123,22 +130,22 @@ const createFeatured = async (
 
 const deleteImage = async (
   id: ImageId,
-): Promise<DeleteImageResponseData> => {
-  const res = await xhr.delete<DeleteImageResponseData>(`/admin/api/images/${id}`)
+): Promise<Api.Admin.DeleteImageResponseData> => {
+  const res = await xhr.delete<Api.Admin.DeleteImageResponseData>(`/admin/api/images/${id}`)
   return await res.json()
 }
 
 const getImage = async (
   id: ImageId,
-): Promise<GetImageResponseData> => {
-  const res = await xhr.get<GetImageResponseData>(`/admin/api/images/${id}`)
+): Promise<Api.Admin.GetImageResponseData> => {
+  const res = await xhr.get<Api.Admin.GetImageResponseData>(`/admin/api/images/${id}`)
   return await res.json()
 }
 
 const getGroups = async (
   // no args
-): Promise<GetGroupsResponseData> => {
-  const res = await xhr.get<GetGroupsResponseData>('/admin/api/groups')
+): Promise<Api.Admin.GetGroupsResponseData> => {
+  const res = await xhr.get<Api.Admin.GetGroupsResponseData>('/admin/api/groups')
   return await res.json()
 }
 

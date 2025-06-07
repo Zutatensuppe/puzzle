@@ -1,4 +1,13 @@
-import { GameSettings, GameInfo, ApiDataIndexData, FinishedGamesResponseData, NewGameDataRequestData, ImagesRequestData, UserId, ImageId, ClientId, UserRow, GameId, NewGameDataResponseData, FeaturedTeasersResponseData, ImagesResponseData, NewGameResponseData, FeaturedResponseData, ReportResponseData, AuthLocalResponseData, MeResponseData, LogoutResponseData, RegisterResponseData, SendPasswordResetEmailResponseData, ChangePasswordResponseData, ConfigResponseData, AnnouncementsResponseData, DeleteGameResponseData, ReplayGameDataResponseData } from '../../../../common/src/Types'
+import type {
+  Api,
+  GameSettings,
+  GameInfo,
+  UserId,
+  ImageId,
+  ClientId,
+  UserRow,
+  GameId,
+} from '../../../../common/src/Types'
 import config from '../../Config'
 import express from 'express'
 import GameLog from '../../GameLog'
@@ -74,7 +83,7 @@ export default function createRouter(
     if (req.userInfo?.user) {
       const user: UserRow = req.userInfo.user
       const groups = await server.users.getGroups(user.id)
-      const responseData: MeResponseData = {
+      const responseData: Api.MeResponseData = {
         id: user.id,
         name: user.name,
         clientId: user.client_id,
@@ -87,7 +96,7 @@ export default function createRouter(
       return
     }
 
-    const responseData: MeResponseData = { reason: 'no user' }
+    const responseData: Api.MeResponseData = { reason: 'no user' }
     res.status(401).send(responseData)
     return
   })
@@ -234,19 +243,19 @@ export default function createRouter(
     const passwordPlain = req.body.password
     const account = await server.users.getAccountByEmailPlain(emailPlain)
     if (!account) {
-      const responseData: AuthLocalResponseData = { reason: 'bad email' }
+      const responseData: Api.AuthLocalResponseData = { reason: 'bad email' }
       res.status(401).send(responseData)
       return
     }
     if (account.status !== 'verified') {
-      const responseData: AuthLocalResponseData = { reason: 'email not verified' }
+      const responseData: Api.AuthLocalResponseData = { reason: 'email not verified' }
       res.status(401).send(responseData)
       return
     }
     const salt = account.salt
     const passHashed = passwordHash(passwordPlain, salt)
     if (account.password !== passHashed) {
-      const responseData: AuthLocalResponseData = { reason: 'bad password' }
+      const responseData: Api.AuthLocalResponseData = { reason: 'bad password' }
       res.status(401).send(responseData)
       return
     }
@@ -255,13 +264,13 @@ export default function createRouter(
       provider_id: account.id,
     })
     if (!identity) {
-      const responseData: AuthLocalResponseData = { reason: 'no identity' }
+      const responseData: Api.AuthLocalResponseData = { reason: 'no identity' }
       res.status(401).send(responseData)
       return
     }
 
     await addAuthToken(identity.user_id, res)
-    const responseData: AuthLocalResponseData = { success: true }
+    const responseData: Api.AuthLocalResponseData = { success: true }
     res.send(responseData)
   })
 
@@ -272,7 +281,7 @@ export default function createRouter(
     const tokenRow = await server.repos.tokens.get({ type: 'password-reset', token })
 
     if (!tokenRow) {
-      const responseData: ChangePasswordResponseData = { reason: 'no such token' }
+      const responseData: Api.ChangePasswordResponseData = { reason: 'no such token' }
       res.status(400).send(responseData)
       return
     }
@@ -280,7 +289,7 @@ export default function createRouter(
     // note: token contains account id, not user id ...
     const account = await server.users.getAccount({ id: tokenRow.user_id })
     if (!account) {
-      const responseData: ChangePasswordResponseData = { reason: 'no such account' }
+      const responseData: Api.ChangePasswordResponseData = { reason: 'no such account' }
       res.status(400).send(responseData)
       return
     }
@@ -292,7 +301,7 @@ export default function createRouter(
     // remove token, already used
     await server.repos.tokens.delete(tokenRow)
 
-    const responseData: ChangePasswordResponseData = { success: true }
+    const responseData: Api.ChangePasswordResponseData = { success: true }
     res.send(responseData)
   })
 
@@ -301,7 +310,7 @@ export default function createRouter(
     const emailPlain = `${req.body.email}`
     const account = await server.users.getAccountByEmailPlain(emailPlain)
     if (!account) {
-      const responseData: SendPasswordResetEmailResponseData = { reason: 'an error occured' }
+      const responseData: Api.SendPasswordResetEmailResponseData = { reason: 'an error occured' }
       res.send(responseData)
       return
     }
@@ -310,7 +319,7 @@ export default function createRouter(
       provider_id: account.id,
     })
     if (!identity) {
-      const responseData: SendPasswordResetEmailResponseData = { reason: 'an error occured' }
+      const responseData: Api.SendPasswordResetEmailResponseData = { reason: 'an error occured' }
       res.send(responseData)
       return
     }
@@ -318,7 +327,7 @@ export default function createRouter(
       id: identity.user_id,
     })
     if (!user) {
-      const responseData: SendPasswordResetEmailResponseData = { reason: 'an error occured' }
+      const responseData: Api.SendPasswordResetEmailResponseData = { reason: 'an error occured' }
       res.send(responseData)
       return
     }
@@ -332,7 +341,7 @@ export default function createRouter(
     }
     await server.repos.tokens.insert(tokenRow)
     server.mail.sendPasswordResetMail({ user: { name: user.name, email: emailPlain }, token: tokenRow })
-    const responseData: SendPasswordResetEmailResponseData = { success: true }
+    const responseData: Api.SendPasswordResetEmailResponseData = { success: true }
     res.send(responseData)
   })
 
@@ -346,13 +355,13 @@ export default function createRouter(
     const usernameRaw = `${req.body.username}`
 
     if (await server.users.usernameTaken(usernameRaw)) {
-      const responseData: RegisterResponseData = { reason: 'username already taken' }
+      const responseData: Api.RegisterResponseData = { reason: 'username already taken' }
       res.status(409).send(responseData)
       return
     }
 
     if (await server.users.emailTaken(emailRaw)) {
-      const responseData: RegisterResponseData = { reason: 'email already taken' }
+      const responseData: Api.RegisterResponseData = { reason: 'email already taken' }
       res.status(409).send(responseData)
       return
     }
@@ -399,7 +408,7 @@ export default function createRouter(
     // TODO: dont misuse token table user id <> account id
     await server.repos.tokens.insert(tokenRow)
     server.mail.sendRegistrationMail({ user: userInfo, token: tokenRow })
-    const responseData: RegisterResponseData = { success: true }
+    const responseData: Api.RegisterResponseData = { success: true }
     res.send(responseData)
   })
 
@@ -440,18 +449,18 @@ export default function createRouter(
 
   router.post('/logout', async (req, res): Promise<void> => {
     if (!req.userInfo?.token) {
-      const responseData: LogoutResponseData = { reason: 'no token' }
+      const responseData: Api.LogoutResponseData = { reason: 'no token' }
       res.status(401).send(responseData)
       return
     }
     await server.repos.tokens.delete({ token: req.userInfo.token })
     res.clearCookie(COOKIE_TOKEN)
-    const responseData: LogoutResponseData = { success: true }
+    const responseData: Api.LogoutResponseData = { success: true }
     res.send(responseData)
   })
 
   router.get('/conf', (_req, res): void => {
-    const responseData: ConfigResponseData = {
+    const responseData: Api.ConfigResponseData = {
       WS_ADDRESS: config.ws.connectstring,
     }
     res.send(responseData)
@@ -461,24 +470,24 @@ export default function createRouter(
     const q: Record<string, any> = req.query
     const gameId = q.gameId || ''
     if (!await GameLog.exists(q.gameId)) {
-      const responseData: ReplayGameDataResponseData = { reason: 'no log found' }
+      const responseData: Api.ReplayGameDataResponseData = { reason: 'no log found' }
       res.status(404).send(responseData)
       return
     }
     const gameObj = await server.gameService.createNewGameObjForReplay(gameId)
     if (!gameObj) {
-      const responseData: ReplayGameDataResponseData = { reason: 'no game found' }
+      const responseData: Api.ReplayGameDataResponseData = { reason: 'no game found' }
       res.status(404).send(responseData)
       return
     }
     const game = Util.encodeGame(gameObj)
     if (isEncodedGameLegacy(game)) {
-      const responseData: ReplayGameDataResponseData = { reason: 'legacy game cannot be replayed' }
+      const responseData: Api.ReplayGameDataResponseData = { reason: 'legacy game cannot be replayed' }
       res.status(404).send(responseData)
       return
     }
 
-    const responseData: ReplayGameDataResponseData = { game }
+    const responseData: Api.ReplayGameDataResponseData = { game }
     res.send(responseData)
   })
 
@@ -513,8 +522,8 @@ export default function createRouter(
     const userInfo = req.userInfo
     const userId = userInfo?.user_type === 'user' ? userInfo.user.id : 0 as UserId
 
-    const requestData: NewGameDataRequestData = req.query as any
-    const responseData: NewGameDataResponseData = {
+    const requestData: Api.NewGameDataRequestData = req.query as any
+    const responseData: Api.NewGameDataResponseData = {
       featured: await server.repos.featured.getManyWithCollections({}),
       images: await server.images.imagesFromDb(requestData.search, requestData.sort, false, 0, IMAGES_PER_PAGE_LIMIT, userId),
       tags: await server.images.getAllTags(),
@@ -526,7 +535,7 @@ export default function createRouter(
     const type = req.params.type
     const slug = req.params.slug
     try {
-      const responseData: FeaturedResponseData = {
+      const responseData: Api.FeaturedResponseData = {
         featured: await server.repos.featured.getWithCollections({ type, slug }),
       }
       res.send(responseData)
@@ -536,14 +545,14 @@ export default function createRouter(
   })
 
   router.get('/featured-teasers', async (req, res): Promise<void> => {
-    const responseData: FeaturedTeasersResponseData = {
+    const responseData: Api.FeaturedTeasersResponseData = {
       featuredTeasers: await server.repos.featured.getActiveTeasers(),
     }
     res.send(responseData)
   })
 
   router.get('/images', async (req, res): Promise<void> => {
-    const requestData: ImagesRequestData = req.query as any
+    const requestData: Api.ImagesRequestData = req.query as any
     const offset = parseInt(`${requestData.offset}`, 10)
     if (isNaN(offset) || offset < 0) {
       res.status(400).send({ error: 'bad offset' })
@@ -551,7 +560,7 @@ export default function createRouter(
     }
     const userId = req.userInfo?.user_type === 'user' ? req.userInfo.user.id : 0 as UserId
 
-    const responseData: ImagesResponseData = {
+    const responseData: Api.ImagesResponseData = {
       images: await server.images.imagesFromDb(requestData.search, requestData.sort, false, offset, IMAGES_PER_PAGE_LIMIT, userId),
     }
     res.send(responseData)
@@ -580,7 +589,7 @@ export default function createRouter(
 
     const livestreams = await server.repos.livestreams.getLive()
 
-    const responseData: ApiDataIndexData = {
+    const responseData: Api.ApiDataIndexData = {
       gamesRunning: {
         items: gamesRunning,
         pagination: { total: runningCount, offset: 0, limit: 0 },
@@ -600,7 +609,7 @@ export default function createRouter(
 
     const offset = parseInt(`${req.query.offset}`, 10)
     if (isNaN(offset) || offset < 0) {
-      const responseData: FinishedGamesResponseData = { error: 'bad offset' }
+      const responseData: Api.FinishedGamesResponseData = { error: 'bad offset' }
       res.status(400).send(responseData)
       return
     }
@@ -611,7 +620,7 @@ export default function createRouter(
     for (const row of finishedRows) {
       gamesFinished.push(await server.gameService.gameToGameInfo(row, ts))
     }
-    const responseData: FinishedGamesResponseData = {
+    const responseData: Api.FinishedGamesResponseData = {
       items: gamesFinished,
       pagination: { total: finishedCount, offset: offset, limit: GAMES_PER_PAGE_LIMIT },
     }
@@ -725,7 +734,7 @@ export default function createRouter(
 
   router.get('/announcements', async (req, res) => {
     const items = await server.repos.announcements.getAll()
-    const responseData: AnnouncementsResponseData = items
+    const responseData: Api.AnnouncementsResponseData = items
     res.send(responseData)
   })
 
@@ -737,11 +746,11 @@ export default function createRouter(
         Time.timestamp(),
         user.id,
       )
-      const responseData: NewGameResponseData = { id: gameId }
+      const responseData: Api.NewGameResponseData = { id: gameId }
       res.send(responseData)
     } catch (e: unknown) {
       log.error(e)
-      const responseData: NewGameResponseData = { reason: e instanceof Error ? e.message : String(e) }
+      const responseData: Api.NewGameResponseData = { reason: e instanceof Error ? e.message : String(e) }
       res.status(400).send(responseData)
     }
   })
@@ -749,7 +758,7 @@ export default function createRouter(
   router.delete('/games/:id', async (req, res) => {
     const user: UserRow | null = req.userInfo?.user || null
     if (!user || !user.id) {
-      const responseData: DeleteGameResponseData = { ok: false, error: 'forbidden' }
+      const responseData: Api.DeleteGameResponseData = { ok: false, error: 'forbidden' }
       res.status(403).send(responseData)
       return
     }
@@ -758,11 +767,11 @@ export default function createRouter(
       await server.gameService.deleteRunningGameIfCreatedByUser(id, user.id)
     } catch (e: unknown) {
       log.error(e)
-      const responseData: DeleteGameResponseData = { ok: false, error: e instanceof Error ? e.message : String(e) }
+      const responseData: Api.DeleteGameResponseData = { ok: false, error: e instanceof Error ? e.message : String(e) }
       res.status(400).send(responseData)
       return
     }
-    const responseData: DeleteGameResponseData = { ok: true }
+    const responseData: Api.DeleteGameResponseData = { ok: true }
     res.send(responseData)
   })
 
@@ -771,7 +780,7 @@ export default function createRouter(
     const reason = req.body.reason || ''
     const gameId = req.body.id as GameId
     if (!gameId) {
-      const responseData: ReportResponseData = { ok: false, error: 'bad id' }
+      const responseData: Api.ReportResponseData = { ok: false, error: 'bad id' }
       res.status(400).send(responseData)
       return
     }
@@ -779,10 +788,10 @@ export default function createRouter(
     try {
       await server.moderation.reportGame(gameId, user, reason)
       await server.repos.games.reportGame(gameId)
-      const responseData: ReportResponseData = { ok: true }
+      const responseData: Api.ReportResponseData = { ok: true }
       res.send(responseData)
     } catch {
-      const responseData: ReportResponseData = { ok: false, error: 'unknown error' }
+      const responseData: Api.ReportResponseData = { ok: false, error: 'unknown error' }
       res.status(500).send(responseData)
     }
   })
@@ -792,7 +801,7 @@ export default function createRouter(
     const reason = req.body.reason || ''
     const imageIdInt = parseInt(`${req.body.id}`, 10)
     if (isNaN(imageIdInt) || imageIdInt < 0) {
-      const responseData: ReportResponseData = { ok: false, error: 'bad id' }
+      const responseData: Api.ReportResponseData = { ok: false, error: 'bad id' }
       res.status(400).send(responseData)
       return
     }
@@ -801,10 +810,10 @@ export default function createRouter(
     try {
       await server.moderation.reportImage(imageId, user, reason)
       await server.repos.images.reportImage(imageId)
-      const responseData: ReportResponseData = { ok: true }
+      const responseData: Api.ReportResponseData = { ok: true }
       res.send(responseData)
     } catch {
-      const responseData: ReportResponseData = { ok: false, error: 'unknown error' }
+      const responseData: Api.ReportResponseData = { ok: false, error: 'unknown error' }
       res.status(500).send(responseData)
     }
   })

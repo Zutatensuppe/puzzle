@@ -1,10 +1,16 @@
+import type {
+  Api,
+  FeaturedId,
+  GameId,
+  ImageId,
+  ServerInfo,
+} from '../../../Types'
+
 import express, { NextFunction } from 'express'
 import { Server } from '../../../Server'
 import { MergeClientIdsIntoUser } from '../../../admin-tools/MergeClientIdsIntoUser'
-import { DeleteGameResponseData, FeaturedId, GameId, ImageId, ServerInfo } from '../../../Types'
 import GameLog from '../../../GameLog'
 import { FixPieces } from '../../../admin-tools/FixPieces'
-import type { DeleteImageResponseData, ErrorResponseData, GetAnnouncementsResponseData, GetFeaturedResponseData, GetFeaturedsResponseData, GetGamesResponseData, GetGroupsResponseData, GetImageResponseData, GetImagesResponseData, GetUsersResponseData, PostAnnouncementsResponseData, PostFeaturedsResponseData, PostGamesFixPiecesResponseData, PostUsersMergeClientIdsIntoUsersResponseData, PutFeaturedResponseData } from '../../../../../common/src/TypesAdminApi'
 
 export default function createRouter(
   server: Server,
@@ -56,7 +62,7 @@ export default function createRouter(
 
   const createErrorResponseData = (
     error: unknown,
-  ): ErrorResponseData => {
+  ): Api.Admin.ErrorResponseData => {
     return {
       error: (error instanceof Error) ? error.message : String(error),
     }
@@ -67,7 +73,7 @@ export default function createRouter(
       const { offset, limit } = getPaginationParams(req)
       const total = await server.repos.games.count()
       const items = await server.repos.games.getAllWithImagesAndUsers(offset, limit)
-      const responseData: GetGamesResponseData = {
+      const responseData: Api.Admin.GetGamesResponseData = {
         items,
         pagination: { total, offset, limit },
       }
@@ -80,7 +86,7 @@ export default function createRouter(
   router.delete('/games/:id', async (req, res) => {
     const id = req.params.id as GameId
     await server.gameService.delete(id)
-    const responseData: DeleteGameResponseData = { ok: true }
+    const responseData: Api.Admin.DeleteGameResponseData = { ok: true }
     res.send(responseData)
   })
 
@@ -110,7 +116,7 @@ export default function createRouter(
           tags,
         },
       })
-      const responseData: GetImagesResponseData = {
+      const responseData: Api.Admin.GetImagesResponseData = {
         items,
         pagination: { total, offset, limit },
       }
@@ -125,7 +131,7 @@ export default function createRouter(
       const { offset, limit } = getPaginationParams(req)
       const total = await server.repos.featured.count()
       const items = await server.repos.featured.getAll(offset, limit)
-      const responseData: GetFeaturedsResponseData = {
+      const responseData: Api.Admin.GetFeaturedsResponseData = {
         items,
         pagination: { total, offset, limit },
       }
@@ -138,13 +144,13 @@ export default function createRouter(
   router.get('/featureds/:id', async (req, res) => {
     const id = parseInt(req.params.id, 10) as FeaturedId
     const featured = await server.repos.featured.getWithCollections({ id })
-    const responseData: GetFeaturedResponseData = { featured }
+    const responseData: Api.Admin.GetFeaturedResponseData = { featured }
     res.send(responseData)
   })
 
   router.put('/featureds/:id', express.json(), async (req, res) => {
     await server.repos.featured.updateWithCollections(req.body.featured)
-    const responseData: PutFeaturedResponseData = { ok: true }
+    const responseData: Api.Admin.PutFeaturedResponseData = { ok: true }
     res.send(responseData)
   })
 
@@ -165,21 +171,21 @@ export default function createRouter(
     })
     const featured = await server.repos.featured.get({ id })
     if (!featured) {
-      const responseData: PostFeaturedsResponseData = {
+      const responseData: Api.Admin.PostFeaturedsResponseData = {
         ok: false,
         reason: 'unable_to_get_featured',
       }
       res.status(500).send(responseData)
       return
     }
-    const responseData: PostFeaturedsResponseData = { featured }
+    const responseData: Api.Admin.PostFeaturedsResponseData = { featured }
     res.send(responseData)
   })
 
   router.delete('/images/:id', async (req, res) => {
     const id = parseInt(req.params.id, 10) as ImageId
     await server.repos.images.delete(id)
-    const responseData: DeleteImageResponseData = { ok: true }
+    const responseData: Api.Admin.DeleteImageResponseData = { ok: true }
     res.send(responseData)
   })
 
@@ -187,11 +193,11 @@ export default function createRouter(
     const id = parseInt(req.params.id, 10) as ImageId
     const images = await server.images.imagesByIdsFromDb([id])
     if (images.length === 0) {
-      const responseData: GetImageResponseData = { error: 'not found' }
+      const responseData: Api.Admin.GetImageResponseData = { error: 'not found' }
       res.status(404).send(responseData)
       return
     }
-    const responseData: GetImageResponseData = { image: images[0] }
+    const responseData: Api.Admin.GetImageResponseData = { image: images[0] }
     res.send(responseData)
   })
 
@@ -200,7 +206,7 @@ export default function createRouter(
       const { offset, limit } = getPaginationParams(req)
       const total = await server.repos.users.count()
       const items = await server.repos.users.getAll(offset, limit)
-      const responseData: GetUsersResponseData = {
+      const responseData: Api.Admin.GetUsersResponseData = {
         items,
         pagination: { total, offset, limit },
       }
@@ -216,7 +222,7 @@ export default function createRouter(
     const dry = req.body.dry === false ? false : true
     const job = new MergeClientIdsIntoUser(server.db)
     const result = await job.run(userId, clientIds, dry)
-    const responseData: PostUsersMergeClientIdsIntoUsersResponseData = result
+    const responseData: Api.Admin.PostUsersMergeClientIdsIntoUsersResponseData = result
     res.send(responseData)
   })
 
@@ -224,19 +230,19 @@ export default function createRouter(
     const gameId = req.body.gameId
     const job = new FixPieces(server)
     const result = await job.run(gameId)
-    const responseData: PostGamesFixPiecesResponseData = result
+    const responseData: Api.Admin.PostGamesFixPiecesResponseData = result
     res.send(responseData)
   })
 
   router.get('/groups', async (_req, res) => {
     const items = await server.repos.users.getUserGroups()
-    const responseData: GetGroupsResponseData = items
+    const responseData: Api.Admin.GetGroupsResponseData = items
     res.send(responseData)
   })
 
   router.get('/announcements', async (_req, res) => {
     const items = await server.repos.announcements.getAll()
-    const responseData: GetAnnouncementsResponseData = items
+    const responseData: Api.Admin.GetAnnouncementsResponseData = items
     res.send(responseData)
   })
 
@@ -246,7 +252,7 @@ export default function createRouter(
     const id = await server.repos.announcements.insert({ created: new Date(), title, message })
     const announcement = await server.repos.announcements.get({ id })
     if (!announcement) {
-      const responseData: PostAnnouncementsResponseData = {
+      const responseData: Api.Admin.PostAnnouncementsResponseData = {
         ok: false,
         reason: 'unable_to_get_announcement',
       }
@@ -254,7 +260,7 @@ export default function createRouter(
       return
     }
     void server.discord.announce(`**${title}**\n${announcement.message}`)
-    const responseData: PostAnnouncementsResponseData = { announcement }
+    const responseData: Api.Admin.PostAnnouncementsResponseData = { announcement }
     res.send(responseData)
   })
 

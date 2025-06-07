@@ -139,19 +139,28 @@ const mergeClientIdsIntoUser = async () => {
   busy.value = false
 }
 
+const loadUsers = async (data: { limit: number, offset: number }) => {
+  const responseData = await api.admin.getUsers(data)
+  if ('error' in responseData) {
+    console.error('Error loading users:', responseData.error)
+    return null
+  }
+  return responseData
+}
+
 const onPagination = async (q: { limit: number, offset: number }) => {
   if (!users.value) {
     return
   }
-  users.value = await api.admin.getUsers(q)
+  users.value = await loadUsers(q)
 }
 
 onMounted(async () => {
   if (user.getMe()) {
-    users.value = await api.admin.getUsers({ limit: perPage, offset: 0 })
+    users.value = await loadUsers({ limit: perPage, offset: 0 })
   }
   user.eventBus.on('login', async () => {
-    users.value = await api.admin.getUsers({ limit: perPage, offset: 0 })
+    users.value = await loadUsers({ limit: perPage, offset: 0 })
   })
   user.eventBus.on('logout', () => {
     users.value = null

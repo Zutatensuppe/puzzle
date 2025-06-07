@@ -103,19 +103,28 @@ const onDelete = async (image: ImageRowWithCount) => {
   }
 }
 
+const loadImages = async (data: { limit: number, offset: number }) => {
+  const responseData = await api.admin.getImages(data)
+  if ('error' in responseData) {
+    console.error('Error loading images:', responseData.error)
+    return null
+  }
+  return responseData
+}
+
 const onPagination = async (q: { limit: number, offset: number }) => {
   if (!images.value) {
     return
   }
-  images.value = await api.admin.getImages(q)
+  images.value = await loadImages(q)
 }
 
 onMounted(async () => {
   if (user.getMe()) {
-    images.value = await api.admin.getImages({ limit: perPage, offset: 0 })
+    images.value = await loadImages({ limit: perPage, offset: 0 })
   }
   user.eventBus.on('login', async () => {
-    images.value = await api.admin.getImages({ limit: perPage, offset: 0 })
+    images.value = await loadImages({ limit: perPage, offset: 0 })
   })
   user.eventBus.on('logout', () => {
     images.value = null
