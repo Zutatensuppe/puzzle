@@ -129,7 +129,7 @@ import { useRoute } from 'vue-router'
 import user, { useNsfw } from '../user'
 import AnnouncementsDrawer from './AnnouncementsDrawer.vue'
 import AnnouncementsIcon from './AnnouncementsIcon.vue'
-import type { User } from '../Types'
+import type { User } from '../../../common/src/Types'
 
 const login = () => {
   user.eventBus.emit('triggerLoginDialog')

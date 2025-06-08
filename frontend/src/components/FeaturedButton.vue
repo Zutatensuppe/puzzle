@@ -23,7 +23,7 @@
 </template>
 <script setup lang="ts">
 import { computed } from 'vue'
-import type { FeaturedRowWithCollections } from '../Types'
+import type { FeaturedRowWithCollections } from '../../../common/src/Types'
 import { resizeUrl } from '../../../common/src/ImageService'
 
 const props = defineProps<{

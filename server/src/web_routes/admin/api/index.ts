@@ -5,7 +5,7 @@ import type {
   GameId,
   ImageId,
   ServerInfo,
-} from '../../../Types'
+} from '../../../../../common/src/Types'
 
 import express, { NextFunction } from 'express'
 import { Server } from '../../../Server'
