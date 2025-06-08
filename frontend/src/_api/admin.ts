@@ -2,6 +2,7 @@ import {
   Api,
   ClientId,
   FeaturedRowWithCollections,
+  FeaturedTeaserRow,
   GameId,
   ImageId,
   ServerInfo,
@@ -90,11 +91,27 @@ const getImages = async (data: {
   return await res.json()
 }
 
-const getFeatureds = async (data: {
-  limit: number
-  offset: number
-}): Promise<Api.Admin.GetFeaturedsResponseData> => {
-  const res = await xhr.get<Api.Admin.GetFeaturedsResponseData>(`/admin/api/featureds${Util.asQueryArgs(data)}`)
+const getFeatureds = async (
+  // no args
+): Promise<Api.Admin.GetFeaturedsResponseData> => {
+  const res = await xhr.get<Api.Admin.GetFeaturedsResponseData>('/admin/api/featureds')
+  return await res.json()
+}
+
+const getFeaturedTeasers = async (
+  // no args
+): Promise<Api.Admin.GetFeaturedTeasersResponseData> => {
+  const res = await xhr.get<Api.Admin.GetFeaturedTeasersResponseData>('/admin/api/featured-teasers')
+  return await res.json()
+}
+
+const saveFeaturedTeasers = async (
+  featuredTeasers: FeaturedTeaserRow[],
+): Promise<Api.Admin.PostFeaturedTeasersResponseData> => {
+  const res = await xhr.post<Api.Admin.PostFeaturedTeasersResponseData>('/admin/api/featured-teasers', {
+    headers: JSON_HEADERS,
+    body: JSON.stringify({ featuredTeasers }),
+  })
   return await res.json()
 }
 
@@ -116,14 +133,17 @@ const saveFeatured = async (
 }
 
 const createFeatured = async (
-  type: 'artist' | 'category',
-  name: string,
-  introduction: string,
-  links: { url: string, title: string }[],
+  featured: FeaturedRowWithCollections,
 ): Promise<Api.Admin.PostFeaturedsResponseData> => {
   const res = await xhr.post<Api.Admin.PostFeaturedsResponseData>('/admin/api/featureds', {
     headers: JSON_HEADERS,
-    body: JSON.stringify({ type, name, introduction, links }),
+    body: JSON.stringify({
+      type: featured.type,
+      name: featured.name,
+      slug: featured.slug,
+      introduction: featured.introduction,
+      links: featured.links,
+    }),
   })
   return await res.json()
 }
@@ -157,8 +177,10 @@ export default {
   getUsers,
   getFeatured,
   getFeatureds,
+  getFeaturedTeasers,
   createFeatured,
   saveFeatured,
+  saveFeaturedTeasers,
   getImages,
   getImage,
   deleteImage,

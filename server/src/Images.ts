@@ -49,7 +49,7 @@ export class Images {
         title: t.title,
         total: 0,
       })) : [],
-      created: row.created.getTime(),
+      created: (new Date(row.created)).getTime(),
       width: row.width,
       height: row.height,
       private: !!row.private,

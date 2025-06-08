@@ -367,7 +367,7 @@ export default function createRouter(
     }
 
     const account = await server.users.createAccount({
-      created: new Date(),
+      created: JSON.stringify(new Date()),
       email: emailRaw,
       password: passwordHash(passwordRaw, salt),
       salt: salt,
@@ -710,7 +710,7 @@ export default function createRouter(
         title: req.body.title || '',
         copyright_name: req.body.copyrightName || '',
         copyright_url: server.urlUtil.fixUrl(req.body.copyrightURL || ''),
-        created: new Date(),
+        created: JSON.stringify(new Date()),
         width: dim.w,
         height: dim.h,
         private: isPrivate,

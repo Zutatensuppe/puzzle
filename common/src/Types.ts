@@ -164,18 +164,9 @@ export type EncodedPiece = FixedLengthArray<[
   EncodedPieceIdx.ROTATION extends 6 ? undefined|PieceRotation : never,
 ]>
 
-// for reading from db
 export interface Announcement {
   id: AnnouncementId
-  created: string // date string
-  title: string
-  message: string
-}
-
-// for inserting to db
-export interface AnnouncementsRow {
-  id: AnnouncementId
-  created: Date
+  created: string // JSON date string
   title: string
   message: string
 }
@@ -832,7 +823,7 @@ export interface GameRow {
   id: GameId
   creator_user_id: UserId | null
   image_id: ImageId
-  created: Date
+  created: string // JSON date string
   finished: Date | null
   data: string
   private: number
@@ -852,7 +843,7 @@ export interface GameRowWithImageAndUser extends GameRow {
 export interface ImageRow {
   id: ImageId
   uploader_user_id: UserId
-  created: Date
+  created: string // JSON date string
   filename: string
   filename_original: string
   title: string
@@ -900,7 +891,7 @@ export interface UserGroupRow {
 
 export interface FeaturedRow {
   id: FeaturedId
-  created: Date
+  created: string // JSON Date string
   name: string
   introduction: string
   links: { url: string, title: string }[]
@@ -912,7 +903,7 @@ export interface FeaturedRow {
 
 export interface CollectionRow {
   id: number
-  created: Date
+  created: string // JSON Date string
   name: string
 }
 
@@ -922,4 +913,11 @@ export interface CollectionRowWithImages extends CollectionRow {
 
 export interface FeaturedRowWithCollections extends FeaturedRow {
   collections: CollectionRowWithImages[]
+}
+
+export interface FeaturedTeaserRow {
+  id: number
+  featured_id: FeaturedId
+  sort_index: number
+  active: number // 1 for active, 0 for inactive
 }

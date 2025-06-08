@@ -37,7 +37,7 @@
   </v-card>
 </template>
 <script setup lang="ts">
-import { ImageInfo, Tag } from './../../../common/src/Types'
+import type { ImageInfo, Tag } from './../../../common/src/Types'
 import ImageInfoTable from './ImageInfoTable.vue'
 import ResponsiveImage from './ResponsiveImage.vue'
 

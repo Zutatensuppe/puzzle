@@ -6,7 +6,7 @@ const TABLE = 'accounts'
 
 export interface AccountRow {
   id: AccountId
-  created: Date
+  created: string // JSON date string
   email: string
   password: string
   salt: string

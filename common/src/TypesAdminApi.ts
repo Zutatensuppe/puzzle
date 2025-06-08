@@ -1,4 +1,4 @@
-import type { Announcement, FeaturedRow, FeaturedRowWithCollections, FixPiecesResult, GameRowWithImageAndUser, ImageInfo, ImageRowWithCount, MergeClientIdsIntoUserResult, Pagination, UserGroupRow, UserRow } from './Types'
+import type { Announcement, FeaturedRow, FeaturedRowWithCollections, FeaturedTeaserRow, FixPiecesResult, GameRowWithImageAndUser, ImageInfo, ImageRowWithCount, MergeClientIdsIntoUserResult, Pagination, UserGroupRow, UserRow } from './Types'
 
 export type ErrorResponseData = {
   error: string
@@ -19,9 +19,14 @@ export type GetImagesResponseData = {
 } | ErrorResponseData
 
 export type GetFeaturedsResponseData = {
-  items: FeaturedRow[]
-  pagination: Pagination
+  items: FeaturedRowWithCollections[]
 } | ErrorResponseData
+
+export type GetFeaturedTeasersResponseData = {
+  items: FeaturedTeaserRow[]
+} | ErrorResponseData
+
+export type PostFeaturedTeasersResponseData = AcknowledgeResponseData
 
 export type GetFeaturedResponseData = {
   featured: FeaturedRowWithCollections

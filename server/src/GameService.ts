@@ -77,7 +77,7 @@ export class GameService {
       return null
     }
     if (typeof game.puzzle.data.started === 'undefined') {
-      game.puzzle.data.started = gameRow.created.getTime()
+      game.puzzle.data.started = (new Date(gameRow.created)).getTime()
     }
     if (typeof game.puzzle.data.finished === 'undefined') {
       game.puzzle.data.finished = gameRow.finished ? gameRow.finished.getTime() : 0
@@ -271,7 +271,7 @@ export class GameService {
       id: game.id,
       creator_user_id: game.creatorUserId,
       image_id: game.puzzle.info.image.id,
-      created: new Date(game.puzzle.data.started),
+      created: JSON.stringify(new Date(game.puzzle.data.started)),
       finished: game.puzzle.data.finished ? new Date(game.puzzle.data.finished) : null,
       data: JSON.stringify(await this.gameToStoreData(game)),
       private: game.private ? 1 : 0,
