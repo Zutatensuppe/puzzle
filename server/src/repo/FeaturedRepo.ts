@@ -7,8 +7,9 @@ import type {
   FeaturedTeaserRow,
   ImageInfo,
 } from '../../../common/src/Types'
-import Db, { WhereRaw } from '../Db'
-import { Server } from '../Server'
+import type Db from '../Db'
+import type { WhereRaw } from '../Db'
+import type { Server } from '../Server'
 
 const TABLE = 'featured'
 

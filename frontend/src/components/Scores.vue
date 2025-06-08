@@ -20,7 +20,7 @@ import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import type { BasicPlayerInfo, RegisteredMap, GamePlayers, BasicPlayerInfoWithBannedAndActive, ClientId, User } from '../../../common/src/Types'
 import ScoreRow from './ScoreRow.vue'
 import sortBy from 'lodash/sortBy'
-import { GameInterface } from '../Game'
+import type { GameInterface } from '../Game'
 
 import user from '../user'
 import GameCommon from '../../../common/src/GameCommon'

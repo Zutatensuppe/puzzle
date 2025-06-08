@@ -1,15 +1,22 @@
-import Geometry, { Dim, Point, Rect } from './Geometry'
+import Geometry from './Geometry'
+import type { Dim, Point, Rect } from './Geometry'
 import { cropUrl } from './ImageService'
 import { CHANGE_TYPE, GAME_EVENT_TYPE, LOG_TYPE } from './Protocol'
-import { Rng } from './Rng'
+import type { Rng } from './Rng'
 import Time from './Time'
 import {
+  EncodedPieceIdx,
+  EncodedPlayerIdx,
+  PieceRotation,
+  RotationMode,
+  ScoreMode,
+  SnapMode,
+} from './Types'
+import type {
   Change,
   ClientId,
   EncodedPiece,
-  EncodedPieceIdx,
   EncodedPlayer,
-  EncodedPlayerIdx,
   Game,
   GameEvent,
   GameId,
@@ -17,16 +24,12 @@ import {
   ImageInfo,
   LogEntry,
   PieceChange,
-  PieceRotation,
   PlayerChange,
   Puzzle,
   PuzzleData,
   PuzzleDataChange,
   RegisteredMap,
-  RotationMode,
-  ScoreMode,
   ShapeMode,
-  SnapMode,
   Timestamp,
   UserId,
 } from './Types'

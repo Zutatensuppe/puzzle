@@ -1,6 +1,6 @@
 import { logger } from '../../common/src/Util'
-import { ClientId, GameId } from '../../common/src/Types'
-import WebSocket from 'ws'
+import type { ClientId, GameId } from '../../common/src/Types'
+import type WebSocket from 'ws'
 
 const log = logger('GameSocket.js')
 

@@ -1,7 +1,8 @@
-import WebSocket, { WebSocketServer as WsServer } from 'ws'
+import { WebSocketServer as WsServer } from 'ws'
+import type WebSocket from 'ws'
 import { logger } from '../../common/src/Util'
-import { ServerEvent } from './Types'
-import { WsConfig } from './Config'
+import type { ServerEvent } from './Types'
+import type { WsConfig } from './Config'
 
 const log = logger('WebSocketServer.js')
 

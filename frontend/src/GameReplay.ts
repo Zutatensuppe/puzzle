@@ -3,7 +3,7 @@
 import GameCommon from '../../common/src/GameCommon'
 import { GAME_EVENT_TYPE, LOG_TYPE } from '../../common/src/Protocol'
 import Time from '../../common/src/Time'
-import { Game as GameType, GameEvent, ReplayHud, Timestamp, HeaderLogEntry, LogEntry, EncodedPlayer } from '../../common/src/Types'
+import type { Game as GameType, GameEvent, ReplayHud, Timestamp, HeaderLogEntry, LogEntry, EncodedPlayer } from '../../common/src/Types'
 import Util from '../../common/src/Util'
 import { Game } from './Game'
 import { parseLogFileContents } from '../../common/src/GameLog'

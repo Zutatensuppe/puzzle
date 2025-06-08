@@ -1,6 +1,6 @@
-import { Rect } from './Geometry'
-import { SERVER_EVENT_TYPE, LOG_TYPE, CLIENT_EVENT_TYPE, CHANGE_TYPE, GAME_EVENT_TYPE } from './Protocol'
-import { Rng, RngSerialized } from './Rng'
+import type { Rect } from './Geometry'
+import type { SERVER_EVENT_TYPE, LOG_TYPE, CLIENT_EVENT_TYPE, CHANGE_TYPE, GAME_EVENT_TYPE } from './Protocol'
+import type { Rng, RngSerialized } from './Rng'
 
 export type * as Api from './TypesApi'
 
@@ -262,7 +262,7 @@ export interface Tag {
 
 interface GameRng {
   obj: Rng
-  type?: string
+  type?: string | undefined
 }
 
 export interface Game {
@@ -279,7 +279,7 @@ export interface Game {
   rng: GameRng
   private: boolean
   hasReplay: boolean
-  crop?: Rect
+  crop?: Rect | undefined
   registeredMap: RegisteredMap
   requireAccount: boolean
   joinPassword: string | null

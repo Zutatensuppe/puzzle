@@ -1,7 +1,8 @@
 'use strict'
 
-import { Color, colorEquals } from '../../common/src/Color'
-import { Rect } from './Geometry'
+import { colorEquals } from '../../common/src/Color'
+import type { Color } from '../../common/src/Color'
+import type { Rect } from './Geometry'
 
 export class Graphics {
   private static instance: Graphics

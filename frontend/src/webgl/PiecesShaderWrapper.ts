@@ -1,4 +1,4 @@
-import { Camera } from '../Camera'
+import type { Camera } from '../Camera'
 import GameCommon from '../../../common/src/GameCommon'
 import Util from '../../../common/src/Util'
 import { EncodedPieceIdx, PieceRotation } from '../../../common/src/Types'
@@ -6,7 +6,8 @@ import type { EncodedPiece, EncodedPieceShape, GameId } from '../../../common/sr
 import { Shader } from './Shader'
 import piecesFragment from './shaders/piecesFragment'
 import piecesVertex from './shaders/piecesVertex'
-import { SpriteBatch, PieceSpriteInfo } from './SpriteBatch'
+import { SpriteBatch } from './SpriteBatch'
+import type { PieceSpriteInfo } from './SpriteBatch'
 import { TextureAtlas } from './TextureAtlas'
 import m4 from './m4'
 

@@ -1,5 +1,6 @@
-import { Graphics } from './Graphics'
-import { EncodedPlayer, EncodedPlayerIdx } from '../../common/src/Types'
+import type { Graphics } from './Graphics'
+import { EncodedPlayerIdx } from '../../common/src/Types'
+import type { EncodedPlayer } from '../../common/src/Types'
 
 type PlayerNameCacheEntry = {
   text: string

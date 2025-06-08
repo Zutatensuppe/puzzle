@@ -5,7 +5,7 @@
   >
     <v-btn
       size="small"
-      :disabled="currentPage <= 1 ? true : undefined"
+      :disabled="currentPage <= 1"
       @click="onPageClick(currentPage - 1)"
     >
       <v-icon icon="mdi-chevron-left" />
@@ -14,14 +14,14 @@
       v-for="(page, idx) in paginationItems"
       :key="idx"
       size="small"
-      :disabled="page === currentPage ? true : undefined"
+      :disabled="page === currentPage"
       @click="onPageClick(page)"
     >
       {{ page }}
     </v-btn>
     <v-btn
       size="small"
-      :disabled="currentPage === totalPages ? true : undefined"
+      :disabled="currentPage === totalPages"
       @click="onPageClick(currentPage + 1)"
     >
       <v-icon icon="mdi-chevron-right" />
@@ -30,7 +30,7 @@
 </template>
 <script setup lang="ts">
 import { computed } from 'vue'
-import { Pagination } from '../../../common/src/Types'
+import type { Pagination } from '../../../common/src/Types'
 
 // TODO: limit the number of page links that are generated
 

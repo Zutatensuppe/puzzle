@@ -1,8 +1,6 @@
-'use strict'
-
 import { Controller as FireworksController } from './Fireworks/Controller'
-import { Rng } from './Rng'
-import { FireworksInterface } from './Types'
+import type { Rng } from './Rng'
+import type { FireworksInterface } from './Types'
 
 class Controller implements FireworksInterface {
   controller: FireworksController

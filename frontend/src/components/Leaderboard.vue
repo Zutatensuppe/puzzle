@@ -64,7 +64,7 @@
   </v-table>
 </template>
 <script setup lang="ts">
-import { Leaderboard } from '../../../common/src/Types'
+import type { Leaderboard } from '../../../common/src/Types'
 
 defineProps<{
   lb: Leaderboard

@@ -23,7 +23,7 @@ import click from './assets/sounds/click.mp3'
 import click2 from './assets/sounds/click2.mp3'
 // @ts-ignore
 import rotate from './assets/sounds/rotate2.mp3'
-import { Graphics } from './Graphics'
+import type { Graphics } from './Graphics'
 import { COLOR_MAGENTA } from '../../common/src/Color'
 
 export class Assets {

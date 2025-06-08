@@ -61,7 +61,8 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { defaultImageInfo, FeaturedRowWithCollections, GameSettings, ImageInfo } from '../../../common/src/Types'
+import { defaultImageInfo } from '../../../common/src/Types'
+import type { FeaturedRowWithCollections, GameSettings, ImageInfo } from '../../../common/src/Types'
 import ImageLibrary from '../components/ImageLibrary.vue'
 import NewGameDialog from '../components/NewGameDialog.vue'
 import api from '../_api'

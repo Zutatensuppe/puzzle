@@ -1,4 +1,4 @@
-import { Bomb } from './Bomb'
+import type { Bomb } from './Bomb'
 
 export class Particle {
   public px!: number

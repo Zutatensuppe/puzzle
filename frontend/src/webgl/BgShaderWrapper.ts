@@ -2,10 +2,11 @@ import { Shader } from './Shader'
 import bgVertex from './shaders/bgVertex'
 import bgFragment from './shaders/bgFragment'
 import m4 from './m4'
-import { Dim, Point, Rect } from '../Geometry'
-import { PuzzleTableTextureInfo } from '../PuzzleTableTextureInfo'
-import { Graphics } from '../Graphics'
-import { Color, hexToColor } from '../../../common/src/Color'
+import type { Dim, Point, Rect } from '../Geometry'
+import type { PuzzleTableTextureInfo } from '../PuzzleTableTextureInfo'
+import type { Graphics } from '../Graphics'
+import { hexToColor } from '../../../common/src/Color'
+import type { Color } from '../../../common/src/Color'
 
 type TextureInfo = {
   texture: WebGLTexture

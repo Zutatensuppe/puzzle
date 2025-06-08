@@ -36,7 +36,8 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useRouter } from 'vue-router'
-import { ImageSearchSort, Tag } from '../../../common/src/Types'
+import { ImageSearchSort } from '../../../common/src/Types'
+import type { Tag } from '../../../common/src/Types'
 import ImageInfoTable from './ImageInfoTable.vue'
 import {
   rotationModeDescriptionToString,
@@ -48,7 +49,7 @@ import {
   snapModeDescriptionToString,
   snapModeToString,
 } from '../../../common/src/Util'
-import { GameInterface } from '../Game'
+import type { GameInterface } from '../Game'
 const router = useRouter()
 
 const props = defineProps<{

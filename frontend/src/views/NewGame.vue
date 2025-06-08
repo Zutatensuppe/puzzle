@@ -1,10 +1,3 @@
-"New Game" page: Upload button big, centered, at the top of the page, as
-visible as possible. Upload button has a warning that the image will
-be added to public gallery, just so noone uploads anything naughty on
-accident. The page can show all the images by default, or one of the categories
-of images. Instead of categories, you can make the system tag-based, like
-in jigsawpuzzles.io
-
 <template>
   <v-container
     :fluid="true"
@@ -132,10 +125,12 @@ import NewImageDialog from './../components/NewImageDialog.vue'
 import EditImageDialog from './../components/EditImageDialog.vue'
 import NewGameDialog from './../components/NewGameDialog.vue'
 import ReportImageDialog from './../components/ReportImageDialog.vue'
-import { GameSettings, ImageInfo, Tag, NewGameDataRequestData, ImagesRequestData, ImageSearchSort, isImageSearchSort, FeaturedRowWithCollections, defaultImageInfo, NewGameDataResponseData, ImagesResponseData, ImageId, SaveImageRequestData, UploadRequestData } from '../../../common/src/Types'
+import { defaultImageInfo, ImageSearchSort, isImageSearchSort } from '../../../common/src/Types'
+import type { Api, GameSettings, ImageInfo, Tag, FeaturedRowWithCollections, ImageId } from '../../../common/src/Types'
 import api from '../_api'
-import { XhrRequest } from '../_api/xhr'
-import { onBeforeRouteUpdate, RouteLocationNormalizedLoaded, useRouter } from 'vue-router'
+import type { XhrRequest } from '../_api/xhr'
+import { onBeforeRouteUpdate, useRouter } from 'vue-router'
+import type { RouteLocationNormalizedLoaded } from 'vue-router'
 import ImageLibrary from './../components/ImageLibrary.vue'
 import Sentinel from '../components/Sentinel.vue'
 import { debounce } from '../util'
@@ -204,13 +199,13 @@ const loadFeaturedTeasers = async () => {
   featuredTeasers.value = json.featuredTeasers
 }
 
-const currentNewGameDataRequest = ref<XhrRequest<NewGameDataResponseData> | null>(null)
-const currentImagesRequest = ref<XhrRequest<ImagesResponseData> | null>(null)
+const currentNewGameDataRequest = ref<XhrRequest<Api.NewGameDataResponseData> | null>(null)
+const currentImagesRequest = ref<XhrRequest<Api.ImagesResponseData> | null>(null)
 
 const loadImages = async () => {
   sentinelActive.value = false
   offset.value = 0
-  const requestData: NewGameDataRequestData = {
+  const requestData: Api.NewGameDataRequestData = {
     sort: filters.value.sort,
     search: filters.value.search,
   }
@@ -257,7 +252,7 @@ const onImageReportClicked = (newImage: ImageInfo) => {
   openDialog('report-image')
 }
 
-const uploadImage = async (data: UploadRequestData): Promise<{ error: string } | { imageInfo: ImageInfo }> => {
+const uploadImage = async (data: Api.UploadRequestData): Promise<{ error: string } | { imageInfo: ImageInfo }> => {
   uploadProgress.value = 0
   try {
     const res = await api.pub.upload({
@@ -306,7 +301,7 @@ const uploadImage = async (data: UploadRequestData): Promise<{ error: string } |
   }
 }
 
-const onSaveImageClick = async (data: SaveImageRequestData) => {
+const onSaveImageClick = async (data: Api.SaveImageRequestData) => {
   const res = await api.pub.saveImage(data)
   const json = await res.json()
   if (json.ok) {
@@ -320,7 +315,7 @@ const onSaveImageClick = async (data: SaveImageRequestData) => {
   }
 }
 
-const postToGalleryClick = async (data: UploadRequestData) => {
+const postToGalleryClick = async (data: Api.UploadRequestData) => {
   uploading.value = 'postToGallery'
   const result = await uploadImage(data)
   uploading.value = ''
@@ -334,7 +329,7 @@ const postToGalleryClick = async (data: UploadRequestData) => {
   await loadImages()
 }
 
-const setupGameClick = async (data: UploadRequestData) => {
+const setupGameClick = async (data: Api.UploadRequestData) => {
   uploading.value = 'setupGame'
   const result = await uploadImage(data)
   uploading.value = ''
@@ -376,7 +371,7 @@ const tryLoadMore = async () => {
   }
 
   offset.value = images.value.length
-  const requestData: ImagesRequestData = {
+  const requestData: Api.ImagesRequestData = {
     sort: filters.value.sort,
     search: filters.value.search,
     offset: offset.value,

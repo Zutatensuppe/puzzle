@@ -16,7 +16,7 @@ import request from 'request'
 import Time from '../../../../common/src/Time'
 import Util, { isEncodedGameLegacy, logger, newJSONDateString, uniqId } from '../../../../common/src/Util'
 import { COOKIE_TOKEN, generateSalt, generateToken, passwordHash } from '../../Auth'
-import { Server } from '../../Server'
+import type { Server } from '../../Server'
 import fs from '../../FileSystem'
 
 const log = logger('web_routes/api/index.ts')

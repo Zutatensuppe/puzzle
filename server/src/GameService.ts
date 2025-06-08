@@ -1,7 +1,23 @@
 import {
-  DefaultScoreMode, DefaultShapeMode, DefaultSnapMode, Game, Puzzle,
-  EncodedPlayer, ScoreMode, ShapeMode, SnapMode, ImageInfo, Timestamp, GameSettings, GameEvent, RegisteredMap, ImageSnapshots, HandleGameEventResult,
+  DefaultScoreMode,
+  DefaultShapeMode,
+  DefaultSnapMode,
   DefaultRotationMode,
+} from '../../common/src/Types'
+import type {
+  Game,
+  Puzzle,
+  EncodedPlayer,
+  ScoreMode,
+  ShapeMode,
+  SnapMode,
+  ImageInfo,
+  Timestamp,
+  GameSettings,
+  GameEvent,
+  RegisteredMap,
+  ImageSnapshots,
+  HandleGameEventResult,
   RotationMode,
   GameId,
   UserId,
@@ -13,14 +29,15 @@ import {
   UserRow,
 } from '../../common/src/Types'
 import Util, { logger, toJSONDateString } from '../../common/src/Util'
-import { Rng, RngSerialized } from '../../common/src/Rng'
+import { Rng } from '../../common/src/Rng'
+import type { RngSerialized } from '../../common/src/Rng'
 import GameLog from './GameLog'
-import { Rect } from '../../common/src/Geometry'
-import { PuzzleService } from './PuzzleService'
+import type { Rect } from '../../common/src/Geometry'
+import type { PuzzleService } from './PuzzleService'
 import GameCommon, { NEWGAME_MAX_PIECES, NEWGAME_MIN_PIECES } from '../../common/src/GameCommon'
 import { GAME_VERSION, LOG_TYPE } from '../../common/src/Protocol'
 import Crypto from './Crypto'
-import { Server } from './Server'
+import type { Server } from './Server'
 
 const log = logger('GameService.js')
 
@@ -28,7 +45,7 @@ interface GameStoreData {
   id: GameId
   gameVersion: number
   rng: {
-    type?: string
+    type?: string | undefined
     obj: RngSerialized
   }
   puzzle: Puzzle
@@ -41,7 +58,7 @@ interface GameStoreData {
   snapMode: SnapMode
   rotationMode?: RotationMode
   hasReplay: boolean
-  crop?: Rect
+  crop?: Rect | undefined
   banned?: Record<ClientId, boolean>
 }
 

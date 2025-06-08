@@ -31,7 +31,7 @@
 </template>
 <script setup lang="ts">
 import { ref, watch } from 'vue'
-import { GameId, GameInfo } from '../../../common/src/Types'
+import type { GameId, GameInfo } from '../../../common/src/Types'
 
 const props = defineProps<{
   game: GameInfo

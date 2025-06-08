@@ -1,6 +1,6 @@
 import { realpathSync, existsSync, readFileSync } from 'fs'
 import { logger } from '../../common/src/Util'
-import { CannyConfig, DiscordConfig, MailConfig, TwitchConfig } from '../../common/src/Types'
+import type { CannyConfig, DiscordConfig, MailConfig, TwitchConfig } from '../../common/src/Types'
 import dotenv from 'dotenv'
 
 dotenv.config()

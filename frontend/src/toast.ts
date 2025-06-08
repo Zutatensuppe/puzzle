@@ -1,5 +1,6 @@
-import { App } from 'vue'
-import Vue3Toastify, { toast as vue3Toast, ToastOptions, type ToastContainerOptions } from 'vue3-toastify'
+import type { App } from 'vue'
+import Vue3Toastify, { toast as vue3Toast } from 'vue3-toastify'
+import type { ToastOptions, ToastContainerOptions } from 'vue3-toastify'
 import 'vue3-toastify/dist/index.css'
 
 export const init = (app: App) => {

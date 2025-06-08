@@ -1,5 +1,5 @@
-import { Assets } from './Assets'
-import { PlayerSettings } from './PlayerSettings'
+import type { Assets } from './Assets'
+import type { PlayerSettings } from './PlayerSettings'
 
 export class Sounds {
   constructor (

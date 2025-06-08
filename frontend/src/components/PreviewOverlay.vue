@@ -13,7 +13,7 @@
 </template>
 <script setup lang="ts">
 import { computed } from 'vue'
-import { GameInterface } from '../Game'
+import type { GameInterface } from '../Game'
 
 const props = defineProps<{
   game: GameInterface,

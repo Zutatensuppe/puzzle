@@ -1,4 +1,4 @@
-import { Rng } from './Rng'
+import type { Rng } from './Rng'
 
 export type Color = [number, number, number, number] | Uint8ClampedArray | Uint8Array
 

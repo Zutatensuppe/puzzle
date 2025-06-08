@@ -1,6 +1,7 @@
 import { AttributeSet, floatAttrib, ubyteAttrib, vec2Attrib } from './AttributeSet'
-import { Buffer, Float32, Uint8 } from './Buffer'
-import { TextureAtlas } from './TextureAtlas'
+import { Buffer } from './Buffer'
+import type { Float32, Uint8 } from './Buffer'
+import type { TextureAtlas } from './TextureAtlas'
 
 
 export type PieceSpriteInfo = {

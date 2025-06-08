@@ -1,8 +1,8 @@
 import GameCommon from '../../common/src/GameCommon'
-import { Dim, Point, Rect } from './Geometry'
-import { GameId, PlayerSettingsData } from '../../common/src/Types'
+import type { Dim, Point, Rect } from './Geometry'
+import type { GameId, PlayerSettingsData } from '../../common/src/Types'
 import { logger } from '../../common/src/Util'
-import { Graphics } from './Graphics'
+import type { Graphics } from './Graphics'
 import { getTextureInfoByPlayerSettings } from './PuzzleTableTextureInfo'
 
 const log = logger('PuzzleTable.ts')

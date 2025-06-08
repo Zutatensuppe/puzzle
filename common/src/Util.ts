@@ -1,23 +1,25 @@
-import { PuzzleCreationInfo } from './Puzzle'
+import type { PuzzleCreationInfo } from './Puzzle'
 import {
-  BasicPlayerInfo,
   DefaultRotationMode,
-  EncodedGame,
-  EncodedGameLegacy,
-  EncodedPieceShape,
-  EncodedPlayer,
   EncodedPlayerIdx,
-  Game,
-  JSONDateString,
   PieceRotation,
-  PieceShape,
-  PuzzleInfo,
   RotationMode,
   ScoreMode,
   ShapeMode,
   SnapMode,
 } from './Types'
-import { Point } from './Geometry'
+import type {
+  BasicPlayerInfo,
+  EncodedGame,
+  EncodedGameLegacy,
+  EncodedPieceShape,
+  EncodedPlayer,
+  Game,
+  JSONDateString,
+  PieceShape,
+  PuzzleInfo,
+} from './Types'
+import type { Point } from './Geometry'
 import { Rng } from './Rng'
 
 const slug = (str: string): string => {

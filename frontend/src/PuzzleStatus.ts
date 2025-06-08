@@ -1,6 +1,6 @@
 import GameCommon from '../../common/src/GameCommon'
-import { GameInterface } from './Game'
-import { PuzzleStatusInterface } from '../../common/src/Types'
+import type { GameInterface } from './Game'
+import type { PuzzleStatusInterface } from '../../common/src/Types'
 import { playerToBasicPlayerInfo } from '../../common/src/Util'
 
 export class PuzzleStatus implements PuzzleStatusInterface {

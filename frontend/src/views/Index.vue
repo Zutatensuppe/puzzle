@@ -217,7 +217,8 @@
 <script setup lang="ts">
 import { onMounted, onBeforeUnmount, ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
-import { ApiDataIndexData, GameInfo, ImageInfo, ImageSearchSort, Tag, User, GameId } from '../../../common/src/Types'
+import { ImageSearchSort } from '../../../common/src/Types'
+import type { Api, GameInfo, ImageInfo, Tag, User, GameId } from '../../../common/src/Types'
 import RunningGameTeaser from '../components/RunningGameTeaser.vue'
 import FinishedGameTeaser from '../components/FinishedGameTeaser.vue'
 import Pagination from '../components/Pagination.vue'
@@ -230,7 +231,7 @@ import { toast } from '../toast'
 import ReportGameDialog from '../components/ReportGameDialog.vue'
 
 const router = useRouter()
-const data = ref<ApiDataIndexData | null>(null)
+const data = ref<Api.ApiDataIndexData | null>(null)
 const me = ref<User|null>(null)
 
 const onInit = async () => {

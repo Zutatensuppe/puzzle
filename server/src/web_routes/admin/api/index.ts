@@ -7,12 +7,13 @@ import type {
   ServerInfo,
 } from '../../../../../common/src/Types'
 
-import express, { NextFunction } from 'express'
-import { Server } from '../../../Server'
+import express from 'express'
+import type { NextFunction } from 'express'
+import type { Server } from '../../../Server'
 import { MergeClientIdsIntoUser } from '../../../admin-tools/MergeClientIdsIntoUser'
 import GameLog from '../../../GameLog'
 import { FixPieces } from '../../../admin-tools/FixPieces'
-import { newJSONDateString } from '../../../Util'
+import { newJSONDateString } from '../../../../../common/src/Util'
 
 export default function createRouter(
   server: Server,

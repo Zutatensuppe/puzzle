@@ -1,8 +1,9 @@
 import { MODE_REPLAY } from './GameMode'
 import storage from './storage'
 import GameCommon from '../../common/src/GameCommon'
-import { GameInterface } from './Game'
-import { PLAYER_SETTINGS, PLAYER_SETTINGS_DEFAULTS, PlayerSettingsData, RendererType } from '../../common/src/Types'
+import type { GameInterface } from './Game'
+import { PLAYER_SETTINGS, PLAYER_SETTINGS_DEFAULTS, RendererType } from '../../common/src/Types'
+import type { PlayerSettingsData } from '../../common/src/Types'
 
 export class PlayerSettings {
 

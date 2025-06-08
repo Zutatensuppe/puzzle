@@ -1,7 +1,8 @@
-import { Rng } from '../Rng'
+import type { Rng } from '../Rng'
 import { Bomb } from './Bomb'
-import { defaultOptions, Options } from './Options'
-import { Particle } from './Particle'
+import { defaultOptions } from './Options'
+import type { Options } from './Options'
+import type { Particle } from './Particle'
 
 export class Controller {
   public tick: number = 0

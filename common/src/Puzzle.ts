@@ -1,6 +1,7 @@
-import { Dim } from './Geometry'
-import { Rng } from './Rng'
-import { EncodedPieceShape, PieceShape, ShapeMode } from './Types'
+import type { Dim } from './Geometry'
+import type { Rng } from './Rng'
+import { ShapeMode } from './Types'
+import type { EncodedPieceShape, PieceShape } from './Types'
 import Util from './Util'
 
 export interface PuzzleCreationInfo {

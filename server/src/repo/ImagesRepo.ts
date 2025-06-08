@@ -1,5 +1,7 @@
-import { ImageId, ImageRow, ImageRowWithCount, ImageSearchSort, ImageXTagRow, TagId, TagRow, TagRowWithCount, UserId } from '../../../common/src/Types'
-import Db, { OrderBy, WhereRaw } from '../Db'
+import { ImageSearchSort } from '../../../common/src/Types'
+import type { ImageId, ImageRow, ImageRowWithCount, ImageXTagRow, TagId, TagRow, TagRowWithCount, UserId } from '../../../common/src/Types'
+import type Db from '../Db'
+import type { OrderBy, WhereRaw } from '../Db'
 
 const TABLE = 'images'
 

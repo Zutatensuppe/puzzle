@@ -1,5 +1,5 @@
-import { Leaderboard, LeaderboardEntry, LeaderboardId, UserId } from '../../../common/src/Types'
-import Db from '../Db'
+import type Db from '../Db'
+import type { Leaderboard, LeaderboardEntry, LeaderboardId, UserId } from '../../../common/src/Types'
 
 interface LeaderboardRow {
   id: LeaderboardId
