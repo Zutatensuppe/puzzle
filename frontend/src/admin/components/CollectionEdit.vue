@@ -21,8 +21,14 @@
       >
         <div>Id: {{ image.id }}</div>
         <div class="d-flex ga-3">
-          <span class="is-clickable" @click="moveImage(idx, -1)">◀</span>
-          <span class="is-clickable" @click="moveImage(idx, +1)">▶</span>
+          <span
+            class="is-clickable"
+            @click="moveImage(idx, -1)"
+          >◀</span>
+          <span
+            class="is-clickable"
+            @click="moveImage(idx, +1)"
+          >▶</span>
         </div>
         <div>
           <a

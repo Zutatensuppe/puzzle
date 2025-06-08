@@ -8,11 +8,19 @@
         :color="hasChanges ? 'success' : undefined"
         :disabled="!hasChanges"
         @click="onSaveClick"
-      >Save</v-btn>
+      >
+        Save
+      </v-btn>
     </div>
 
-    <div v-if="featuredTeasers" class="featured-section mb-2 ga-5">
-      <div v-for="(item, idx) in featuredTeasers.items" :key="item.id">
+    <div
+      v-if="featuredTeasers"
+      class="featured-section mb-2 ga-5"
+    >
+      <div
+        v-for="(item, idx) in featuredTeasers.items"
+        :key="item.id"
+      >
         <v-checkbox
           v-model="item.active"
           :false-value="0"
@@ -22,8 +30,14 @@
           label="Active"
         />
         <div class="d-flex ga-3">
-          <span class="is-clickable" @click="moveTeaser(idx, -1)">◀</span>
-          <span class="is-clickable" @click="moveTeaser(idx, +1)">▶</span>
+          <span
+            class="is-clickable"
+            @click="moveTeaser(idx, -1)"
+          >◀</span>
+          <span
+            class="is-clickable"
+            @click="moveTeaser(idx, +1)"
+          >▶</span>
         </div>
         <FeaturedButton
           :featured="item.featured"
@@ -126,7 +140,7 @@ const loadFeaturedTeasers = async () => {
     return { items: featuredTeasers }
   }
 
-  const featuredTeasers: FeaturedTeaserRowFeaturedRow[] = featureds.value?.items.map((value, idx) => {
+  const featuredTeasers: FeaturedTeaserRowFeaturedRow[] = featureds.value?.items.map((value) => {
     const item = responseData.items.find((item: FeaturedTeaserRow) => item.featured_id === value.id)
     return {
       id: item?.id || 0,

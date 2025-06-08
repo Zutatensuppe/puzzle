@@ -27,8 +27,14 @@
         :key="idx"
       >
         <div class="d-flex gc-3 mb-3 align-center">
-          <span class="is-clickable" @click="moveLink(idx, -1)">▲</span>
-          <span class="is-clickable" @click="moveLink(idx, +1)">▼</span>
+          <span
+            class="is-clickable"
+            @click="moveLink(idx, -1)"
+          >▲</span>
+          <span
+            class="is-clickable"
+            @click="moveLink(idx, +1)"
+          >▼</span>
           <v-text-field
             v-model="link.title"
             label="Title"
@@ -41,12 +47,16 @@
             density="compact"
             :hide-details="true"
           />
-          <v-btn @click="featured.links = featured.links.filter((_, i) => i !== idx)">
+          <v-btn
+            @click="featured.links = featured.links.filter((_, i) => i !== idx)"
+          >
             Delete
           </v-btn>
         </div>
       </div>
-      <v-btn @click="featured.links.push({url: '', title: ''})">
+      <v-btn
+        @click="featured.links.push({url: '', title: ''})"
+      >
         Add Link
       </v-btn>
 
@@ -58,12 +68,7 @@
         @delete="onDeleteCollection(collection)"
       />
 
-      <v-btn @click="featured.collections.push({
-        id: 0,
-        created: newJSONDateString(),
-        name: 'New Collection',
-        images: [],
-      })">
+      <v-btn @click="onAddCollectionClick">
         Add Collection
       </v-btn>
 
@@ -103,7 +108,7 @@ const load = async () => {
       type: 'artist',
       introduction: '',
       links: [],
-      collections: []
+      collections: [],
     } as FeaturedRowWithCollections
   }
   const responseData = await api.admin.getFeatured(id)
@@ -129,7 +134,7 @@ const save = async () => {
     }
     featured.value.id = result.featured.id
     await api.admin.saveFeatured(featured.value)
-    router.push({ name: 'admin_featured_edit', params: { id: featured.value.id } })
+    await router.push({ name: 'admin_featured_edit', params: { id: featured.value.id } })
     return
   }
 
@@ -143,6 +148,19 @@ const moveLink = (idx: number, direction: -1 | 1) => {
   }
 
   featured.value.links = arrayMove(featured.value.links, idx, direction)
+}
+
+const onAddCollectionClick = () => {
+  if (!featured.value) {
+    return
+  }
+
+  featured.value.collections.push({
+    id: 0,
+    created: newJSONDateString(),
+    name: 'New Collection',
+    images: [],
+  })
 }
 
 const onDeleteCollection = (collection: CollectionRowWithImages) => {
