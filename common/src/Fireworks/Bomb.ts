@@ -1,5 +1,5 @@
 import { randomColor, rgb255ToHue, rgb255ToRgba } from '../Color'
-import { Controller } from './Controller'
+import type { Controller } from './Controller'
 import { Particle } from './Particle'
 
 export class Bomb {

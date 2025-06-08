@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { defaultImageInfo, EncodedGame, EncodedGameLegacy, EncodedPieceShape, Game, GameId, PieceRotation, PieceShape, Puzzle, PuzzleInfo, UserId } from './Types'
+import { defaultImageInfo, PieceRotation } from './Types'
+import type { EncodedGame, EncodedGameLegacy, EncodedPieceShape, Game, GameId, PieceShape, Puzzle, PuzzleInfo, UserId } from './Types'
 import Util, { clamp } from './Util'
 
 describe('Util.ts', () => {

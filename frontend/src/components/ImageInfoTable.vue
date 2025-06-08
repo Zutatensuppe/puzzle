@@ -32,7 +32,7 @@
 </template>
 <script setup lang="ts">
 import { computed } from 'vue'
-import { ImageInfo, Tag } from '../../../common/src/Types'
+import type { ImageInfo, Tag } from '../../../common/src/Types'
 
 const props = defineProps<{
   image: ImageInfo,

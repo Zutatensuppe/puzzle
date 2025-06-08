@@ -1,6 +1,6 @@
-import { Rect } from './Geometry'
-import { SERVER_EVENT_TYPE, LOG_TYPE, CLIENT_EVENT_TYPE, CHANGE_TYPE, GAME_EVENT_TYPE } from './Protocol'
-import { Rng, RngSerialized } from './Rng'
+import type { Rect } from './Geometry'
+import type { SERVER_EVENT_TYPE, LOG_TYPE, CLIENT_EVENT_TYPE, CHANGE_TYPE, GAME_EVENT_TYPE } from './Protocol'
+import type { Rng, RngSerialized } from './Rng'
 
 export type * as Api from './TypesApi'
 
@@ -29,6 +29,8 @@ export type TagId = Branded<number, 'TagId'>
 export type FeaturedId = Branded<number, 'FeaturedId'>
 export type LeaderboardId = Branded<number, 'LeaderboardId'>
 export type LivestreamId = Branded<string, 'LivestreamId'>
+
+export type JSONDateString = Branded<string, 'JSONDateString'> // e.g. "2023-10-01T12:34:56.789Z"
 
 export type ChangePiece = [CHANGE_TYPE.PIECE, EncodedPiece]
 export type ChangePlayer = [CHANGE_TYPE.PLAYER, EncodedPlayer]
@@ -164,18 +166,9 @@ export type EncodedPiece = FixedLengthArray<[
   EncodedPieceIdx.ROTATION extends 6 ? undefined|PieceRotation : never,
 ]>
 
-// for reading from db
 export interface Announcement {
   id: AnnouncementId
-  created: string // date string
-  title: string
-  message: string
-}
-
-// for inserting to db
-export interface AnnouncementsRow {
-  id: AnnouncementId
-  created: Date
+  created: JSONDateString
   title: string
   message: string
 }
@@ -269,7 +262,7 @@ export interface Tag {
 
 interface GameRng {
   obj: Rng
-  type?: string
+  type?: string | undefined
 }
 
 export interface Game {
@@ -286,7 +279,7 @@ export interface Game {
   rng: GameRng
   private: boolean
   hasReplay: boolean
-  crop?: Rect
+  crop?: Rect | undefined
   registeredMap: RegisteredMap
   requireAccount: boolean
   joinPassword: string | null
@@ -757,7 +750,7 @@ export interface ReplayHud extends Hud {
 export interface User {
   id: UserId
   name: string
-  created: string
+  created: JSONDateString
   clientId: ClientId
   type: 'guest' | 'user'
   cannyToken: string | null
@@ -832,8 +825,8 @@ export interface GameRow {
   id: GameId
   creator_user_id: UserId | null
   image_id: ImageId
-  created: Date
-  finished: Date | null
+  created: JSONDateString
+  finished: JSONDateString | null
   data: string
   private: number
   pieces_count: number
@@ -852,7 +845,7 @@ export interface GameRowWithImageAndUser extends GameRow {
 export interface ImageRow {
   id: ImageId
   uploader_user_id: UserId
-  created: Date
+  created: JSONDateString
   filename: string
   filename_original: string
   title: string
@@ -887,7 +880,7 @@ export interface ImageRowWithCount extends ImageRow {
 
 export interface UserRow {
   id: UserId
-  created: string // Date when creating, string when reading from db
+  created: JSONDateString
   client_id: ClientId
   name: string
   email: string
@@ -900,7 +893,7 @@ export interface UserGroupRow {
 
 export interface FeaturedRow {
   id: FeaturedId
-  created: Date
+  created: JSONDateString
   name: string
   introduction: string
   links: { url: string, title: string }[]
@@ -912,7 +905,7 @@ export interface FeaturedRow {
 
 export interface CollectionRow {
   id: number
-  created: Date
+  created: JSONDateString
   name: string
 }
 
@@ -922,4 +915,11 @@ export interface CollectionRowWithImages extends CollectionRow {
 
 export interface FeaturedRowWithCollections extends FeaturedRow {
   collections: CollectionRowWithImages[]
+}
+
+export interface FeaturedTeaserRow {
+  id: number
+  featured_id: FeaturedId
+  sort_index: number
+  active: number // 1 for active, 0 for inactive
 }

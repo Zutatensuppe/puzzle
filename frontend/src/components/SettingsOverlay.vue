@@ -184,7 +184,7 @@
             :key="option.value"
             :label="option.label"
             :value="option.value"
-            :disabled="option.disabled"
+            :disabled="option.disabled || null"
           />
         </v-radio-group>
         <div v-if="!webGlSupported">
@@ -201,8 +201,9 @@
 import { ref, watch } from 'vue'
 
 import IngameColorPicker from './IngameColorPicker.vue'
-import { DialogChangeData, PlayerSettingsData, RendererType } from '../../../common/src/Types'
-import { GameInterface } from '../Game'
+import { RendererType } from '../../../common/src/Types'
+import type { DialogChangeData, PlayerSettingsData } from '../../../common/src/Types'
+import type { GameInterface } from '../Game'
 import LoginBit from './LoginBit.vue'
 
 const props = defineProps<{

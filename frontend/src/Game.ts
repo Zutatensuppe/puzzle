@@ -2,12 +2,18 @@
 
 import { Camera } from '../../common/src/Camera'
 import { CHANGE_TYPE, GAME_EVENT_TYPE } from '../../common/src/Protocol'
-import { GameLoopInstance, run } from './gameloop'
+import { run } from './gameloop'
+import type { GameLoopInstance } from './gameloop'
 import fireworksController from '../../common/src/Fireworks'
 import GameCommon from '../../common/src/GameCommon'
 import Time from '../../common/src/Time'
 import { logger } from '../../common/src/Util'
 import {
+  RendererType,
+  EncodedPieceIdx,
+  EncodedPlayerIdx,
+} from '../../common/src/Types'
+import type {
   Hud,
   ScoreMode,
   SnapMode,
@@ -23,11 +29,8 @@ import {
   RotationMode,
   GameId,
   ClientId,
-  RendererType,
   EncodedPiece,
-  EncodedPieceIdx,
   EncodedPlayer,
-  EncodedPlayerIdx,
 } from '../../common/src/Types'
 import _api from './_api'
 import { Assets } from './Assets'

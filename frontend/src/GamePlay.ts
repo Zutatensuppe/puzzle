@@ -1,7 +1,7 @@
 'use strict'
 
 import GameCommon from '../../common/src/GameCommon'
-import { Game as GameType, EncodedGame, Hud, GameEvent, EncodedGameLegacy, ServerUpdateEvent, ServerSyncEvent, ServerErrorDetails } from '../../common/src/Types'
+import type { Game as GameType, EncodedGame, Hud, GameEvent, EncodedGameLegacy, ServerUpdateEvent, ServerSyncEvent, ServerErrorDetails } from '../../common/src/Types'
 import { Game } from './Game'
 import Communication from './Communication'
 import Util from '../../common/src/Util'

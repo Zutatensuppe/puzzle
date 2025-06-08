@@ -46,7 +46,7 @@ import user from '../../user'
 import api from '../../_api'
 import Nav from '../components/Nav.vue'
 import Pagination from '../../components/Pagination.vue'
-import { GameRowWithImageAndUser, Pagination as PaginationType, ServerInfo } from '../../../../common/src/Types'
+import type { GameRowWithImageAndUser, Pagination as PaginationType, ServerInfo } from '../../../../common/src/Types'
 import GamesRow from '../components/GamesRow.vue'
 
 const perPage = 50

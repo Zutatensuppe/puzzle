@@ -1,5 +1,6 @@
-import Db, { WhereRaw } from '../Db'
-import { Announcement, AnnouncementId, AnnouncementsRow } from '../../../common/src/Types'
+import type Db from '../Db'
+import type { WhereRaw } from '../Db'
+import type { Announcement, AnnouncementId } from '../../../common/src/Types'
 
 const TABLE = 'announcements'
 
@@ -14,7 +15,7 @@ export class AnnouncementsRepo {
     return await this.db.getMany(TABLE, undefined, [{ created: -1 }])
   }
 
-  async insert(announcement: Omit<AnnouncementsRow, 'id'>): Promise<AnnouncementId> {
+  async insert(announcement: Omit<Announcement, 'id'>): Promise<AnnouncementId> {
     return await this.db.insert(TABLE, announcement, 'id') as AnnouncementId
   }
 

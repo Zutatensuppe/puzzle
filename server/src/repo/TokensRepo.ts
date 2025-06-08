@@ -1,5 +1,6 @@
-import { TokenRow } from '../../../common/src/Types'
-import Db, { WhereRaw } from '../Db'
+import type Db from '../Db'
+import type { WhereRaw } from '../Db'
+import type { TokenRow } from '../../../common/src/Types'
 
 const TABLE = 'tokens'
 

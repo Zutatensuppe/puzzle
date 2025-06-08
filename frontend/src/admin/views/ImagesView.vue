@@ -82,7 +82,7 @@ import user from '../../user'
 import api from '../../_api'
 import Nav from '../components/Nav.vue'
 import Pagination from '../../components/Pagination.vue'
-import { ImageRowWithCount, Pagination as PaginationType } from '../../../../common/src/Types'
+import type { ImageRowWithCount, Pagination as PaginationType } from '../../../../common/src/Types'
 
 const perPage = 50
 const images = ref<{ items: ImageRowWithCount[], pagination: PaginationType } | null>(null)

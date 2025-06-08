@@ -16,18 +16,30 @@
     <strong>Images</strong>
     <div class="d-flex flex-wrap ga-5">
       <div
-        v-for="image in val.images"
+        v-for="(image, idx) in val.images"
         :key="image.id"
       >
-        <a
-          :href="`/uploads/${image.filename}`"
-          target="_blank"
-          class="image-holder"
-        ><img
-          :src="resizeUrl(`/image-service/image/${image.filename}`, 150, 100, 'contain')"
-          :class="image.private ? ['image-private', 'image'] : ['image']"
-        ></a>
-        <br>
+        <div>Id: {{ image.id }}</div>
+        <div class="d-flex ga-3">
+          <span
+            class="is-clickable"
+            @click="moveImage(idx, -1)"
+          >◀</span>
+          <span
+            class="is-clickable"
+            @click="moveImage(idx, +1)"
+          >▶</span>
+        </div>
+        <div>
+          <a
+            :href="`/uploads/${image.filename}`"
+            target="_blank"
+            class="image-holder"
+          ><img
+            :src="resizeUrl(`/image-service/image/${image.filename}`, 150, 100, 'contain')"
+            :class="image.private ? ['image-private', 'image'] : ['image']"
+          ></a>
+        </div>
         <v-btn @click="onRemoveImageClick(image.id)">
           Remove
         </v-btn>
@@ -73,8 +85,9 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
 import { resizeUrl } from '../../../../common/src/ImageService'
-import { CollectionRowWithImages, ImageId, ImageRowWithCount } from '../../../../common/src/Types'
+import type { CollectionRowWithImages, ImageId, ImageRowWithCount } from '../../../../common/src/Types'
 import api from '../../_api'
+import { arrayMove } from '../../../../common/src/Util'
 
 const props = defineProps<{
   modelValue: CollectionRowWithImages
@@ -96,6 +109,10 @@ const search = ref<{
 })
 
 const searchResults = ref<ImageRowWithCount[]>([])
+
+const moveImage = (idx: number, direction: -1 | 1) => {
+  val.value.images = arrayMove(val.value.images, idx, direction)
+}
 
 const onSearchClick = async () => {
   const ids = search.value.idCsv.split(',').map(id => parseInt(id.trim(), 10)).filter(id => !isNaN(id)) as ImageId[]

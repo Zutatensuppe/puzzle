@@ -1,6 +1,7 @@
-import { EncodedPlayer, EncodedPlayerIdx, GameId, GameRow, GameRowWithImageAndUser, UserId } from '../../../common/src/Types'
-import Db from '../Db'
-import { Repos } from './Repos'
+import { EncodedPlayerIdx } from '../../../common/src/Types'
+import type { EncodedPlayer, GameId, GameRow, GameRowWithImageAndUser, UserId } from '../../../common/src/Types'
+import type Db from '../Db'
+import type { Repos } from './Repos'
 
 const TABLE = 'games'
 

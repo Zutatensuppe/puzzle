@@ -3,7 +3,7 @@
     <v-dialog
       v-model="dialog"
       :class="`overlay-${overlay}`"
-      :persistent="dialogPersistent"
+      :persistent="dialogPersistent || false"
     >
       <SettingsOverlay
         v-if="g && overlay === 'settings'"
@@ -173,8 +173,10 @@
   </div>
 </template>
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, Ref, ref, watch } from 'vue'
-import { ReplayHud, GameStatus, GamePlayers, CONN_STATE, RegisteredMap, GameId, DialogChangeData, ServerErrorDetails } from '../../../common/src/Types'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
+import type { Ref } from 'vue'
+import { CONN_STATE } from '../../../common/src/Types'
+import type { ReplayHud, GameStatus, GamePlayers, RegisteredMap, GameId, DialogChangeData, ServerErrorDetails } from '../../../common/src/Types'
 import { GameReplay } from './../GameReplay'
 import { useRoute } from 'vue-router'
 import api from '../_api'

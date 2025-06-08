@@ -199,11 +199,13 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 
-import { GameSettings, ImageInfo, RotationMode, ScoreMode, ShapeMode, SnapMode, Tag } from '../../../common/src/Types'
+import { RotationMode, ScoreMode, ShapeMode, SnapMode } from '../../../common/src/Types'
+import type { GameSettings, ImageInfo, Tag } from '../../../common/src/Types'
 import { NEWGAME_MIN_PIECES, NEWGAME_MAX_PIECES } from '../../../common/src/GameCommon'
 import PuzzleCropper from './PuzzleCropper.vue'
-import { determinePuzzleInfo, PuzzleCreationInfo } from '../../../common/src/Puzzle'
-import { Rect } from '../../../common/src/Geometry'
+import { determinePuzzleInfo } from '../../../common/src/Puzzle'
+import type { PuzzleCreationInfo } from '../../../common/src/Puzzle'
+import type { Rect } from '../../../common/src/Geometry'
 import ImageInfoTable from './ImageInfoTable.vue'
 import {
   rotationModeDescriptionToString,

@@ -1,6 +1,7 @@
-import { GameId, ImageInfo, Api } from '../../../common/src/Types'
+import type { GameId, ImageInfo, Api } from '../../../common/src/Types'
 import Util from '../../../common/src/Util'
-import xhr, { JSON_HEADERS, Response, XhrRequest } from './xhr'
+import xhr, { JSON_HEADERS } from './xhr'
+import type { Response, XhrRequest } from './xhr'
 
 const auth = (
   email: string,

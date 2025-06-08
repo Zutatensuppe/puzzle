@@ -14,9 +14,9 @@ import GameLog from '../../GameLog'
 import multer from 'multer'
 import request from 'request'
 import Time from '../../../../common/src/Time'
-import Util, { isEncodedGameLegacy, logger, uniqId } from '../../../../common/src/Util'
+import Util, { isEncodedGameLegacy, logger, newJSONDateString, uniqId } from '../../../../common/src/Util'
 import { COOKIE_TOKEN, generateSalt, generateToken, passwordHash } from '../../Auth'
-import { Server } from '../../Server'
+import type { Server } from '../../Server'
 import fs from '../../FileSystem'
 
 const log = logger('web_routes/api/index.ts')
@@ -367,7 +367,7 @@ export default function createRouter(
     }
 
     const account = await server.users.createAccount({
-      created: new Date(),
+      created: newJSONDateString(),
       email: emailRaw,
       password: passwordHash(passwordRaw, salt),
       salt: salt,
@@ -383,9 +383,7 @@ export default function createRouter(
     } else {
       user = await server.users.createUser({
         client_id,
-        // TODO: date gets converted to string automatically. fix this type hint
-        // @ts-ignore
-        created: new Date(),
+        created: newJSONDateString(),
         email: emailRaw,
         name: usernameRaw,
       })
@@ -710,7 +708,7 @@ export default function createRouter(
         title: req.body.title || '',
         copyright_name: req.body.copyrightName || '',
         copyright_url: server.urlUtil.fixUrl(req.body.copyrightURL || ''),
-        created: new Date(),
+        created: newJSONDateString(),
         width: dim.w,
         height: dim.h,
         private: isPrivate,

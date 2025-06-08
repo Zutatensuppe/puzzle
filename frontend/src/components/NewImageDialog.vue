@@ -188,7 +188,7 @@
 </template>
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref } from 'vue'
-import { UploadRequestData } from '../../../common/src/Types'
+import type { Api } from '../../../common/src/Types'
 import { logger } from '../../../common/src/Util'
 import TagsInput from '../components/TagsInput.vue'
 import ResponsiveImage from './ResponsiveImage.vue'
@@ -206,8 +206,8 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
-  (e: 'setupGameClick', val: UploadRequestData): void
-  (e: 'postToGalleryClick', val: UploadRequestData): void
+  (e: 'setupGameClick', val: Api.UploadRequestData): void
+  (e: 'postToGalleryClick', val: Api.UploadRequestData): void
   (e: 'close'): void
 }>()
 

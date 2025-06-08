@@ -1,9 +1,10 @@
 import { GAME_EVENT_TYPE } from '../../common/src/Protocol'
-import { GameEvent } from '../../common/src/Types'
-import { Camera, Snapshot } from '../../common/src/Camera'
-import { GameInterface } from './Game'
+import type { GameEvent } from '../../common/src/Types'
+import { Camera } from '../../common/src/Camera'
+import type { Snapshot } from '../../common/src/Camera'
+import type { GameInterface } from './Game'
 import { MODE_REPLAY } from './GameMode'
-import { PlayerSettings } from './PlayerSettings'
+import type { PlayerSettings } from './PlayerSettings'
 
 export class EventAdapter {
   private events: GameEvent[] = []

@@ -1,6 +1,7 @@
-import { Assets } from './Assets'
-import { EncodedPlayer, EncodedPlayerIdx } from '../../common/src/Types'
-import { Graphics } from './Graphics'
+import type { Assets } from './Assets'
+import { EncodedPlayerIdx } from '../../common/src/Types'
+import type { EncodedPlayer } from '../../common/src/Types'
+import type { Graphics } from './Graphics'
 
 export class PlayerCursors
 {

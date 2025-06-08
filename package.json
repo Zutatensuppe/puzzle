@@ -14,7 +14,7 @@
     "build:versionfile": "git rev-parse --short HEAD > build/version.txt",
     "build:app": "npm run build:frontend && npm run build:server && npm run build:versionfile",
     "build:archive": "rimraf dist/build.zip && 7z a -mx0 dist/build.zip ./build/* ./db",
-    "build": "npm run build:app && npm run build:archive",
+    "build": "rimraf build && npm run build:app && npm run build:archive",
 
     "lint:common": "cd common && npm run lint",
     "lint:frontend": "cd frontend && npm run lint",

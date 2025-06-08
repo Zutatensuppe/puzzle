@@ -40,9 +40,10 @@
   </tr>
 </template>
 <script setup lang="ts">
-import { StyleValue, computed } from 'vue'
-import { BasicPlayerInfoWithBannedAndActive, ClientId, RegisteredMap } from '../../../common/src/Types'
-import { GameInterface } from '../Game'
+import { computed } from 'vue'
+import type { StyleValue } from 'vue'
+import type { BasicPlayerInfoWithBannedAndActive, ClientId, RegisteredMap } from '../../../common/src/Types'
+import type { GameInterface } from '../Game'
 import { getAnonBadge, getColoredBadge } from '../BadgeCreator'
 import Icon from './Icon.vue'
 

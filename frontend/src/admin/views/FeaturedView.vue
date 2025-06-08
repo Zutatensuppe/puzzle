@@ -1,31 +1,57 @@
 <template>
   <v-container>
     <Nav />
-    <h1>Featured</h1>
+
+    <div class="d-flex justify-space-between">
+      <h1>Featured Teasers</h1>
+      <v-btn
+        :color="hasChanges ? 'success' : undefined"
+        :disabled="!hasChanges"
+        @click="onSaveClick"
+      >
+        Save
+      </v-btn>
+    </div>
+
+    <div
+      v-if="featuredTeasers"
+      class="featured-section mb-2 ga-5"
+    >
+      <div
+        v-for="(item, idx) in featuredTeasers.items"
+        :key="item.id"
+      >
+        <v-checkbox
+          v-model="item.active"
+          :false-value="0"
+          :true-value="1"
+          density="compact"
+          :hide-details="true"
+          label="Active"
+        />
+        <div class="d-flex ga-3">
+          <span
+            class="is-clickable"
+            @click="moveTeaser(idx, -1)"
+          >◀</span>
+          <span
+            class="is-clickable"
+            @click="moveTeaser(idx, +1)"
+          >▶</span>
+        </div>
+        <FeaturedButton
+          :featured="item.featured"
+        />
+      </div>
+    </div>
+
+    <h1>Items</h1>
     <div>
-      <v-select
-        v-model="type"
-        :items="['artist', 'category']"
-        label="Type"
-      />
-      <v-text-field
-        v-model="name"
-        label="Name"
-      />
-      <v-textarea
-        v-model="introduction"
-        label="Introduction"
-      />
-      <v-btn @click="create">
+      <v-btn :to="{name: 'admin_featured_edit', params: { id: 0 } }">
         Create
       </v-btn>
     </div>
 
-    <Pagination
-      v-if="featureds"
-      :pagination="featureds.pagination"
-      @click="onPagination"
-    />
     <v-table
       v-if="featureds"
       density="compact"
@@ -60,33 +86,36 @@
         </tr>
       </tbody>
     </v-table>
-    <Pagination
-      v-if="featureds"
-      :pagination="featureds.pagination"
-      @click="onPagination"
-    />
   </v-container>
 </template>
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import user from '../../user'
 import api from '../../_api'
 import Nav from '../components/Nav.vue'
-import Pagination from '../../components/Pagination.vue'
-import { FeaturedRow, Pagination as PaginationType } from '../../../../common/src/Types'
+import type { FeaturedRowWithCollections, FeaturedTeaserRow } from '../../../../common/src/Types'
+import FeaturedButton from '../../components/FeaturedButton.vue'
+import { arrayMove } from '../../../../common/src/Util'
 
-const perPage = 50
-const featureds = ref<{ items: FeaturedRow[], pagination: PaginationType } | null>(null)
+type FeaturedTeaserRowFeaturedRow = FeaturedTeaserRow & { featured: FeaturedRowWithCollections }
 
-const type = ref<'artist' | 'category'>('artist')
-const name = ref<string>('')
-const introduction = ref<string>('')
+const featureds = ref<{ items: FeaturedRowWithCollections[] } | null>(null)
+const featuredTeasers = ref<{ items: FeaturedTeaserRowFeaturedRow[] } | null>(null)
 
-const loadFeatureds = async (data: {
-    limit: number;
-    offset: number;
-}) => {
-  const responseData = await api.admin.getFeatureds(data)
+const featuredTeasersJson = ref<string>(JSON.stringify(featuredTeasers.value))
+
+const hasChanges = computed(() => {
+  return JSON.stringify(featuredTeasers.value) !== featuredTeasersJson.value
+})
+
+const reinit = async () => {
+  featureds.value = await loadFeatureds()
+  featuredTeasers.value = await loadFeaturedTeasers()
+  featuredTeasersJson.value = JSON.stringify(featuredTeasers.value)
+}
+
+const loadFeatureds = async () => {
+  const responseData = await api.admin.getFeatureds()
   if ('error' in responseData) {
     console.error('Error loading featureds:', responseData.error)
     return null
@@ -94,32 +123,70 @@ const loadFeatureds = async (data: {
   return responseData
 }
 
-const create = async () => {
-  await api.admin.createFeatured(
-    type.value,
-    name.value,
-    introduction.value,
-    [],
-  )
-  featureds.value = await loadFeatureds({ limit: perPage, offset: 0 })
+const loadFeaturedTeasers = async () => {
+  const responseData = await api.admin.getFeaturedTeasers()
+  if ('error' in responseData) {
+    console.error('Error loading featureds:', responseData.error)
+
+    const featuredTeasers: FeaturedTeaserRowFeaturedRow[] = featureds.value?.items.map((value, idx) => {
+      return {
+        id: 0,
+        active: 0,
+        featured_id: value.id,
+        sort_index: idx,
+        featured: value,
+      }
+    }) || []
+    return { items: featuredTeasers }
+  }
+
+  const featuredTeasers: FeaturedTeaserRowFeaturedRow[] = featureds.value?.items.map((value) => {
+    const item = responseData.items.find((item: FeaturedTeaserRow) => item.featured_id === value.id)
+    return {
+      id: item?.id || 0,
+      active: item?.active || 0,
+      featured_id: value.id,
+      sort_index: item ? item.sort_index : Number.MAX_SAFE_INTEGER,
+      featured: value,
+    }
+  }).filter(item => item.featured) || []
+  // sort by sort_index
+  featuredTeasers.sort((a, b) => {
+    return a.sort_index < b.sort_index ? -1 : (a.sort_index > b.sort_index ? 1 : 0)
+  })
+  return { items: featuredTeasers }
 }
 
-const onPagination = async (q: { limit: number, offset: number }) => {
-  if (!featureds.value) {
+const moveTeaser = (idx: number, direction: -1 | 1) => {
+  if (!featuredTeasers.value) {
     return
   }
-  featureds.value = await loadFeatureds(q)
+  featuredTeasers.value.items = arrayMove(featuredTeasers.value.items, idx, direction)
+}
+
+const onSaveClick = async () => {
+  if (!featuredTeasers.value) {
+    return
+  }
+  const teasers: FeaturedTeaserRow[] = featuredTeasers.value.items.map((item, idx) => ({
+    id: item.id,
+    active: item.active ? 1 : 0,
+    featured_id: item.featured_id,
+    sort_index: idx,
+  }))
+  await api.admin.saveFeaturedTeasers(teasers)
+  await reinit()
 }
 
 onMounted(async () => {
   if (user.getMe()) {
-    featureds.value = await loadFeatureds({ limit: perPage, offset: 0 })
+    await reinit()
   }
   user.eventBus.on('login', async () => {
-    featureds.value = await loadFeatureds({ limit: perPage, offset: 0 })
+    await reinit()
   })
-  user.eventBus.on('logout', () => {
-    featureds.value = null
+  user.eventBus.on('logout', async () => {
+    await reinit()
   })
 })
 </script>

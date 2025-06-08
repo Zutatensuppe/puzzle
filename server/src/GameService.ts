@@ -1,7 +1,23 @@
 import {
-  DefaultScoreMode, DefaultShapeMode, DefaultSnapMode, Game, Puzzle,
-  EncodedPlayer, ScoreMode, ShapeMode, SnapMode, ImageInfo, Timestamp, GameSettings, GameEvent, RegisteredMap, ImageSnapshots, HandleGameEventResult,
+  DefaultScoreMode,
+  DefaultShapeMode,
+  DefaultSnapMode,
   DefaultRotationMode,
+} from '../../common/src/Types'
+import type {
+  Game,
+  Puzzle,
+  EncodedPlayer,
+  ScoreMode,
+  ShapeMode,
+  SnapMode,
+  ImageInfo,
+  Timestamp,
+  GameSettings,
+  GameEvent,
+  RegisteredMap,
+  ImageSnapshots,
+  HandleGameEventResult,
   RotationMode,
   GameId,
   UserId,
@@ -12,15 +28,16 @@ import {
   GameRow,
   UserRow,
 } from '../../common/src/Types'
-import Util, { logger } from '../../common/src/Util'
-import { Rng, RngSerialized } from '../../common/src/Rng'
+import Util, { logger, toJSONDateString } from '../../common/src/Util'
+import { Rng } from '../../common/src/Rng'
+import type { RngSerialized } from '../../common/src/Rng'
 import GameLog from './GameLog'
-import { Rect } from '../../common/src/Geometry'
-import { PuzzleService } from './PuzzleService'
+import type { Rect } from '../../common/src/Geometry'
+import type { PuzzleService } from './PuzzleService'
 import GameCommon, { NEWGAME_MAX_PIECES, NEWGAME_MIN_PIECES } from '../../common/src/GameCommon'
 import { GAME_VERSION, LOG_TYPE } from '../../common/src/Protocol'
 import Crypto from './Crypto'
-import { Server } from './Server'
+import type { Server } from './Server'
 
 const log = logger('GameService.js')
 
@@ -28,7 +45,7 @@ interface GameStoreData {
   id: GameId
   gameVersion: number
   rng: {
-    type?: string
+    type?: string | undefined
     obj: RngSerialized
   }
   puzzle: Puzzle
@@ -41,7 +58,7 @@ interface GameStoreData {
   snapMode: SnapMode
   rotationMode?: RotationMode
   hasReplay: boolean
-  crop?: Rect
+  crop?: Rect | undefined
   banned?: Record<ClientId, boolean>
 }
 
@@ -77,10 +94,10 @@ export class GameService {
       return null
     }
     if (typeof game.puzzle.data.started === 'undefined') {
-      game.puzzle.data.started = gameRow.created.getTime()
+      game.puzzle.data.started = (new Date(gameRow.created)).getTime()
     }
     if (typeof game.puzzle.data.finished === 'undefined') {
-      game.puzzle.data.finished = gameRow.finished ? gameRow.finished.getTime() : 0
+      game.puzzle.data.finished = gameRow.finished ? (new Date(gameRow.finished)).getTime() : 0
     }
     if (!Array.isArray(game.players)) {
       game.players = Object.values(game.players)
@@ -271,8 +288,8 @@ export class GameService {
       id: game.id,
       creator_user_id: game.creatorUserId,
       image_id: game.puzzle.info.image.id,
-      created: new Date(game.puzzle.data.started),
-      finished: game.puzzle.data.finished ? new Date(game.puzzle.data.finished) : null,
+      created: toJSONDateString(new Date(game.puzzle.data.started)),
+      finished: game.puzzle.data.finished ? toJSONDateString(new Date(game.puzzle.data.finished)) : null,
       data: JSON.stringify(await this.gameToStoreData(game)),
       private: game.private ? 1 : 0,
       pieces_count: game.puzzle.tiles.length,

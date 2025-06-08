@@ -1,4 +1,4 @@
-import { ClientId } from '../../../common/src/Types'
+import type { ClientId } from '../../../common/src/Types'
 import storage from '../storage'
 
 export const JSON_HEADERS = {

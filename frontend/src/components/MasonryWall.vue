@@ -30,16 +30,15 @@
 <script setup lang="ts">
 import {
   computed,
-  CSSProperties,
   nextTick,
   onBeforeUnmount,
   onMounted,
-  Ref,
   ref,
   toRefs,
   watch,
 } from 'vue'
-import { ImageInfo } from '../../../common/src/Types'
+import type { CSSProperties, Ref } from 'vue'
+import type { ImageInfo } from '../../../common/src/Types'
 
 type Column = number[]
 

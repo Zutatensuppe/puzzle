@@ -126,9 +126,10 @@
 <script setup lang="ts">
 import { computed, onMounted, onBeforeUnmount, ref } from 'vue'
 import { useRoute } from 'vue-router'
-import user, { useNsfw, User } from '../user'
+import user, { useNsfw } from '../user'
 import AnnouncementsDrawer from './AnnouncementsDrawer.vue'
 import AnnouncementsIcon from './AnnouncementsIcon.vue'
+import type { User } from '../../../common/src/Types'
 
 const login = () => {
   user.eventBus.emit('triggerLoginDialog')

@@ -1,16 +1,19 @@
 import type {
   Api,
   FeaturedId,
+  FeaturedTeaserRow,
   GameId,
   ImageId,
   ServerInfo,
-} from '../../../Types'
+} from '../../../../../common/src/Types'
 
-import express, { NextFunction } from 'express'
-import { Server } from '../../../Server'
+import express from 'express'
+import type { NextFunction } from 'express'
+import type { Server } from '../../../Server'
 import { MergeClientIdsIntoUser } from '../../../admin-tools/MergeClientIdsIntoUser'
 import GameLog from '../../../GameLog'
 import { FixPieces } from '../../../admin-tools/FixPieces'
+import { newJSONDateString } from '../../../../../common/src/Util'
 
 export default function createRouter(
   server: Server,
@@ -128,17 +131,33 @@ export default function createRouter(
 
   router.get('/featureds', async (req, res) => {
     try {
-      const { offset, limit } = getPaginationParams(req)
-      const total = await server.repos.featured.count()
-      const items = await server.repos.featured.getAll(offset, limit)
+      const items = await server.repos.featured.getManyWithCollections({})
       const responseData: Api.Admin.GetFeaturedsResponseData = {
         items,
-        pagination: { total, offset, limit },
       }
       res.send(responseData)
     } catch (error) {
       res.status(400).send(createErrorResponseData(error))
     }
+  })
+
+  router.get('/featured-teasers', async (req, res) => {
+    try {
+      const items = await server.repos.featured.getAllTeasers()
+      const responseData: Api.Admin.GetFeaturedTeasersResponseData = {
+        items,
+      }
+      res.send(responseData)
+    } catch (error) {
+      res.status(400).send(createErrorResponseData(error))
+    }
+  })
+
+  router.post('/featured-teasers', express.json(), async (req, res) => {
+    const featuredTeasers: FeaturedTeaserRow[] = req.body.featuredTeasers
+    await server.repos.featured.saveTeasers(featuredTeasers)
+    const responseData: Api.Admin.PostFeaturedTeasersResponseData = { ok: true }
+    res.send(responseData)
   })
 
   router.get('/featureds/:id', async (req, res) => {
@@ -162,7 +181,7 @@ export default function createRouter(
     const slug = req.body.slug
 
     const id = await server.repos.featured.insert({
-      created: new Date(),
+      created: newJSONDateString(),
       type,
       name,
       introduction,
@@ -249,7 +268,11 @@ export default function createRouter(
   router.post('/announcements', express.json(), async (req, res) => {
     const message = req.body.message
     const title = req.body.title
-    const id = await server.repos.announcements.insert({ created: new Date(), title, message })
+    const id = await server.repos.announcements.insert({
+      created: newJSONDateString(),
+      title,
+      message,
+    })
     const announcement = await server.repos.announcements.get({ id })
     if (!announcement) {
       const responseData: Api.Admin.PostAnnouncementsResponseData = {

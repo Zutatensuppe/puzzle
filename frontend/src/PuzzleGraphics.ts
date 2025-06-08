@@ -1,12 +1,16 @@
 'use strict'
 
-import Geometry, { Dim, Point, Rect } from '../../common/src/Geometry'
+import Geometry from '../../common/src/Geometry'
+import type { Dim, Point, Rect } from '../../common/src/Geometry'
 import Util, { logger } from '../../common/src/Util'
-import { Color, COLOR_MAGENTA, colorEquals, colorIsGrayscale } from '../../common/src/Color'
-import { Puzzle, PuzzleInfo, PieceShape, EncodedPiece, ShapeMode, EncodedPieceShape, EncodedPieceIdx } from '../../common/src/Types'
-import { determinePuzzlePieceShapes, PuzzleCreationInfo } from '../../common/src/Puzzle'
+import { COLOR_MAGENTA, colorEquals, colorIsGrayscale } from '../../common/src/Color'
+import type { Color } from '../../common/src/Color'
+import { EncodedPieceIdx } from '../../common/src/Types'
+import type { Puzzle, PuzzleInfo, PieceShape, EncodedPiece, ShapeMode, EncodedPieceShape } from '../../common/src/Types'
+import { determinePuzzlePieceShapes } from '../../common/src/Puzzle'
+import type { PuzzleCreationInfo } from '../../common/src/Puzzle'
 import { Rng } from '../../common/src/Rng'
-import { Graphics } from './Graphics'
+import type { Graphics } from './Graphics'
 
 const log = logger('PuzzleGraphics.js')
 

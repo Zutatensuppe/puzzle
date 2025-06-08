@@ -1,4 +1,5 @@
-import { DefaultScoreMode, DefaultShapeMode, DefaultSnapMode, LogEntry } from './Types'
+import { DefaultScoreMode, DefaultShapeMode, DefaultSnapMode } from './Types'
+import type { LogEntry } from './Types'
 
 export const parseLogFileContents = (
   contents: string,

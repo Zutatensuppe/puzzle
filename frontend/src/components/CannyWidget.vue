@@ -27,7 +27,8 @@
 
 <script setup lang="ts">
 import { ref, onMounted, onBeforeUnmount } from 'vue'
-import user, { User } from '../user'
+import user from '../user'
+import type { User } from '../../../common/src/Types'
 
 const me = ref<User|null>(null)
 

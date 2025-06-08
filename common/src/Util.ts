@@ -1,22 +1,25 @@
-import { PuzzleCreationInfo } from './Puzzle'
+import type { PuzzleCreationInfo } from './Puzzle'
 import {
-  BasicPlayerInfo,
   DefaultRotationMode,
-  EncodedGame,
-  EncodedGameLegacy,
-  EncodedPieceShape,
-  EncodedPlayer,
   EncodedPlayerIdx,
-  Game,
   PieceRotation,
-  PieceShape,
-  PuzzleInfo,
   RotationMode,
   ScoreMode,
   ShapeMode,
   SnapMode,
 } from './Types'
-import { Point } from './Geometry'
+import type {
+  BasicPlayerInfo,
+  EncodedGame,
+  EncodedGameLegacy,
+  EncodedPieceShape,
+  EncodedPlayer,
+  Game,
+  JSONDateString,
+  PieceShape,
+  PuzzleInfo,
+} from './Types'
+import type { Point } from './Geometry'
 import { Rng } from './Rng'
 
 const slug = (str: string): string => {
@@ -361,7 +364,32 @@ export const rotationModeDescriptionToString = (m: RotationMode) => {
   }
 }
 
+export const arrayMove = <T>(arr: T[], idx: number, direction: 1 | -1): T[] => {
+  if (idx < 0 || idx >= arr.length) {
+    return arr
+  }
+  const newIdx = idx + direction
+  if (newIdx < 0 || newIdx >= arr.length) {
+    return arr
+  }
+  const newArr = [...arr]
+  const tmp = newArr[idx]
+  newArr[idx] = newArr[newIdx]
+  newArr[newIdx] = tmp
+  return newArr
+}
+
+export const toJSONDateString = (date: Date): JSONDateString => {
+  return JSON.stringify(date) as JSONDateString
+}
+
+export const newJSONDateString = (): JSONDateString => {
+  return toJSONDateString(new Date())
+}
+
 export default {
+  arrayMove,
+
   hash,
   slug,
   pad,

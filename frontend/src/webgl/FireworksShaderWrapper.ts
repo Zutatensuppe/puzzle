@@ -1,5 +1,5 @@
 import { Controller } from '../../../common/src/Fireworks/Controller'
-import { Rng } from '../Rng'
+import type { Rng } from '../Rng'
 import { Shader } from './Shader'
 import fireworksFragment from './shaders/fireworksFragment'
 import fireworksVertex from './shaders/fireworksVertex'

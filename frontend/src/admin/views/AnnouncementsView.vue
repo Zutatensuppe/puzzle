@@ -43,7 +43,7 @@ import { onMounted, ref } from 'vue'
 import user from '../../user'
 import api from '../../_api'
 import Nav from '../components/Nav.vue'
-import { Announcement } from '../../Types'
+import type { Announcement } from '../../../../common/src/Types'
 
 const announcements = ref<Announcement[]>([])
 

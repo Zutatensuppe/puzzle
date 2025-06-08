@@ -31,7 +31,7 @@
 </template>
 <script setup lang="ts">
 import { ref, watch } from 'vue'
-import { ImageId, ImageInfo } from '../../../common/src/Types'
+import type { ImageId, ImageInfo } from '../../../common/src/Types'
 
 const props = defineProps<{
   image: ImageInfo

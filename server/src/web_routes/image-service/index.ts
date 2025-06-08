@@ -1,7 +1,8 @@
-import express, { Request, Response, Router } from 'express'
+import express from 'express'
+import type { Request, Response, Router } from 'express'
 import path from 'path'
 import config from '../../Config'
-import { Server } from '../../Server'
+import type { Server } from '../../Server'
 import fs from '../../FileSystem'
 
 export default function createRouter(
