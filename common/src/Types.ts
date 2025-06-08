@@ -30,6 +30,8 @@ export type FeaturedId = Branded<number, 'FeaturedId'>
 export type LeaderboardId = Branded<number, 'LeaderboardId'>
 export type LivestreamId = Branded<string, 'LivestreamId'>
 
+export type JSONDateString = Branded<string, 'JSONDateString'> // e.g. "2023-10-01T12:34:56.789Z"
+
 export type ChangePiece = [CHANGE_TYPE.PIECE, EncodedPiece]
 export type ChangePlayer = [CHANGE_TYPE.PLAYER, EncodedPlayer]
 export type ChangeData = [CHANGE_TYPE.DATA, PuzzleData]
@@ -166,7 +168,7 @@ export type EncodedPiece = FixedLengthArray<[
 
 export interface Announcement {
   id: AnnouncementId
-  created: string // JSON date string
+  created: JSONDateString
   title: string
   message: string
 }
@@ -748,7 +750,7 @@ export interface ReplayHud extends Hud {
 export interface User {
   id: UserId
   name: string
-  created: string
+  created: JSONDateString
   clientId: ClientId
   type: 'guest' | 'user'
   cannyToken: string | null
@@ -823,8 +825,8 @@ export interface GameRow {
   id: GameId
   creator_user_id: UserId | null
   image_id: ImageId
-  created: string // JSON date string
-  finished: Date | null
+  created: JSONDateString
+  finished: JSONDateString | null
   data: string
   private: number
   pieces_count: number
@@ -843,7 +845,7 @@ export interface GameRowWithImageAndUser extends GameRow {
 export interface ImageRow {
   id: ImageId
   uploader_user_id: UserId
-  created: string // JSON date string
+  created: JSONDateString
   filename: string
   filename_original: string
   title: string
@@ -878,7 +880,7 @@ export interface ImageRowWithCount extends ImageRow {
 
 export interface UserRow {
   id: UserId
-  created: string // Date when creating, string when reading from db
+  created: JSONDateString
   client_id: ClientId
   name: string
   email: string
@@ -891,7 +893,7 @@ export interface UserGroupRow {
 
 export interface FeaturedRow {
   id: FeaturedId
-  created: string // JSON Date string
+  created: JSONDateString
   name: string
   introduction: string
   links: { url: string, title: string }[]
@@ -903,7 +905,7 @@ export interface FeaturedRow {
 
 export interface CollectionRow {
   id: number
-  created: string // JSON Date string
+  created: JSONDateString
   name: string
 }
 

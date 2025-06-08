@@ -8,6 +8,7 @@ import {
   EncodedPlayer,
   EncodedPlayerIdx,
   Game,
+  JSONDateString,
   PieceRotation,
   PieceShape,
   PuzzleInfo,
@@ -374,6 +375,14 @@ export const arrayMove = <T>(arr: T[], idx: number, direction: 1 | -1): T[] => {
   newArr[idx] = newArr[newIdx]
   newArr[newIdx] = tmp
   return newArr
+}
+
+export const toJSONDateString = (date: Date): JSONDateString => {
+  return JSON.stringify(date) as JSONDateString
+}
+
+export const newJSONDateString = (): JSONDateString => {
+  return toJSONDateString(new Date())
 }
 
 export default {

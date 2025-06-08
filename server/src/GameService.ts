@@ -12,7 +12,7 @@ import {
   GameRow,
   UserRow,
 } from '../../common/src/Types'
-import Util, { logger } from '../../common/src/Util'
+import Util, { logger, toJSONDateString } from '../../common/src/Util'
 import { Rng, RngSerialized } from '../../common/src/Rng'
 import GameLog from './GameLog'
 import { Rect } from '../../common/src/Geometry'
@@ -80,7 +80,7 @@ export class GameService {
       game.puzzle.data.started = (new Date(gameRow.created)).getTime()
     }
     if (typeof game.puzzle.data.finished === 'undefined') {
-      game.puzzle.data.finished = gameRow.finished ? gameRow.finished.getTime() : 0
+      game.puzzle.data.finished = gameRow.finished ? (new Date(gameRow.finished)).getTime() : 0
     }
     if (!Array.isArray(game.players)) {
       game.players = Object.values(game.players)
@@ -271,8 +271,8 @@ export class GameService {
       id: game.id,
       creator_user_id: game.creatorUserId,
       image_id: game.puzzle.info.image.id,
-      created: JSON.stringify(new Date(game.puzzle.data.started)),
-      finished: game.puzzle.data.finished ? new Date(game.puzzle.data.finished) : null,
+      created: toJSONDateString(new Date(game.puzzle.data.started)),
+      finished: game.puzzle.data.finished ? toJSONDateString(new Date(game.puzzle.data.finished)) : null,
       data: JSON.stringify(await this.gameToStoreData(game)),
       private: game.private ? 1 : 0,
       pieces_count: game.puzzle.tiles.length,

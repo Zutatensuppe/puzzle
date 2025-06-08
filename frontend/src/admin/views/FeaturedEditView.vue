@@ -58,7 +58,12 @@
         @delete="onDeleteCollection(collection)"
       />
 
-      <v-btn @click="featured.collections.push({id: 0, created: JSON.stringify(new Date()), name: 'New Collection', images: [] })">
+      <v-btn @click="featured.collections.push({
+        id: 0,
+        created: newJSONDateString(),
+        name: 'New Collection',
+        images: [],
+      })">
         Add Collection
       </v-btn>
 
@@ -80,7 +85,7 @@ import Nav from '../components/Nav.vue'
 import type { CollectionRowWithImages, FeaturedId, FeaturedRowWithCollections } from '../../../../common/src/Types'
 import { useRoute, useRouter } from 'vue-router'
 import CollectionEdit from '../components/CollectionEdit.vue'
-import { arrayMove } from '../../../../common/src/Util'
+import { arrayMove, newJSONDateString } from '../../../../common/src/Util'
 
 const featured = ref<FeaturedRowWithCollections | null>(null)
 const route = useRoute()
@@ -92,7 +97,7 @@ const load = async () => {
     // creating a new featured entry
     return {
       id: 0 as FeaturedId,
-      created: JSON.stringify(new Date()),
+      created: newJSONDateString(),
       name: '',
       slug: '',
       type: 'artist',

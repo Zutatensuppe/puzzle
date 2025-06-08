@@ -1,12 +1,12 @@
 import Crypto from '../Crypto'
 import Db, { WhereRaw } from '../Db'
-import { AccountId } from '../../../common/src/Types'
+import { AccountId, JSONDateString } from '../../../common/src/Types'
 
 const TABLE = 'accounts'
 
 export interface AccountRow {
   id: AccountId
-  created: string // JSON date string
+  created: JSONDateString
   email: string
   password: string
   salt: string

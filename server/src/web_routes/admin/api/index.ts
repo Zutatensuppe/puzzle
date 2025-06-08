@@ -12,6 +12,7 @@ import { Server } from '../../../Server'
 import { MergeClientIdsIntoUser } from '../../../admin-tools/MergeClientIdsIntoUser'
 import GameLog from '../../../GameLog'
 import { FixPieces } from '../../../admin-tools/FixPieces'
+import { newJSONDateString } from '../../../Util'
 
 export default function createRouter(
   server: Server,
@@ -179,7 +180,7 @@ export default function createRouter(
     const slug = req.body.slug
 
     const id = await server.repos.featured.insert({
-      created: JSON.stringify(new Date()),
+      created: newJSONDateString(),
       type,
       name,
       introduction,
@@ -267,7 +268,7 @@ export default function createRouter(
     const message = req.body.message
     const title = req.body.title
     const id = await server.repos.announcements.insert({
-      created: JSON.stringify(new Date()),
+      created: newJSONDateString(),
       title,
       message,
     })
