@@ -182,7 +182,7 @@ export class EventAdapter {
       this.addEvent([GAME_EVENT_TYPE.INPUT_EV_TOGGLE_PLAYER_NAMES])
     } else if (ev.code === 'KeyT') {
       this.addEvent([GAME_EVENT_TYPE.INPUT_EV_TOGGLE_TABLE])
-    } else if (ev.code === 'KeyP') {
+    } else if (ev.code === 'KeyB') {
       this.addEvent([GAME_EVENT_TYPE.INPUT_EV_TOGGLE_PUZZLE_BACKGROUND])
     } else if (ev.code === 'KeyC') {
       this.addEvent([GAME_EVENT_TYPE.INPUT_EV_CENTER_FIT_PUZZLE])
