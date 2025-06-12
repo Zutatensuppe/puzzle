@@ -111,6 +111,7 @@ export interface GameInterface {
   changeCustomTableTexture(_value: string): void
   changeCustomTableTextureScale(_value: number): void
   changeShowTable(_value: boolean): void
+  changeShowPuzzleBackground(_value: boolean): void
   changeColor(value: string): void
   changeName(value: string): void
   changeSoundsVolume(_value: number): void
@@ -363,10 +364,12 @@ export abstract class Game<HudType extends Hud> implements GameInterface {
   }
 
   async loadTableTexture(settings: PlayerSettingsData): Promise<void> {
-    if (this.rendererWebgl) {
-      await this.rendererWebgl.loadTableTexture(settings)
-    } else if (this.rendererCanvas2d){
-      await this.rendererCanvas2d.loadTableTexture(settings)
+    if (settings.showTable) {
+      if (this.rendererWebgl) {
+        await this.rendererWebgl.loadTableTexture(settings)
+      } else if (this.rendererCanvas2d){
+        await this.rendererCanvas2d.loadTableTexture(settings)
+      }
     }
     this.requireRerender()
   }
@@ -548,6 +551,10 @@ export abstract class Game<HudType extends Hud> implements GameInterface {
       this.toggleViewLoosePieces()
     } else if (type === GAME_EVENT_TYPE.INPUT_EV_TOGGLE_TABLE) {
       this.playerSettings.toggleShowTable()
+      void this.loadTableTexture(this.playerSettings.getSettings())
+    } else if (type === GAME_EVENT_TYPE.INPUT_EV_TOGGLE_PUZZLE_BACKGROUND) {
+      this.playerSettings.toggleShowPuzzleBackground()
+      void this.loadTableTexture(this.playerSettings.getSettings())
     } else if (type === GAME_EVENT_TYPE.INPUT_EV_CENTER_FIT_PUZZLE) {
       const slot = 'center'
       const handled = this.viewportSnapshots.handle(slot)
@@ -657,6 +664,10 @@ export abstract class Game<HudType extends Hud> implements GameInterface {
   }
 
   changeShowTable(_value: boolean): void {
+    this.requireRerender()
+  }
+
+  changeShowPuzzleBackground(_value: boolean): void {
     this.requireRerender()
   }
 

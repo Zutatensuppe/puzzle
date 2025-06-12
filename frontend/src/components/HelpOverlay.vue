@@ -21,6 +21,7 @@
           <tr><td><icon icon="puzzle-piece-locked" /> Toggle fixed pieces:</td><td><div><kbd>F</kbd></div></td></tr>
           <tr><td><icon icon="puzzle-piece-free" /> Toggle loose pieces:</td><td><div><kbd>G</kbd></div></td></tr>
           <tr><td><icon icon="table" /> Toggle table:</td><td><div><kbd>T</kbd></div></td></tr>
+          <tr><td><icon icon="puzzle-background" /> Toggle puzzle background:</td><td><div><kbd>P</kbd></div></td></tr>
           <tr><td><icon icon="eye" /> Toggle interface:</td><td><div><kbd>H</kbd></div></td></tr>
 
           <tr><td><icon icon="player-name" /> Toggle player names:</td><td><div><kbd>N</kbd></div></td></tr>

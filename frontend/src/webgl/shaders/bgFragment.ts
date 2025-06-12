@@ -9,6 +9,7 @@ uniform vec2 u_texScale;
 uniform vec4 u_color;
 uniform int u_isDark;
 uniform int u_showTable;
+uniform int u_showPuzzleBackground;
 uniform vec4 u_innerRect;
 uniform vec4 u_puzzleFinalRect;
 uniform vec4 u_puzzleFinalRectBorder;
@@ -35,19 +36,21 @@ void main() {
 
   vec4 tmpColor;
   if (u_showTable == 1 && is_point_in_box(v_texCoord, u_innerRect)) {
+    // TABLE AREA
     vec4 borderOverlayColor = vec4(0.0, 0.0, 0.0, 0.5);
     tmpColor = mix(bgColor, borderOverlayColor, borderOverlayColor.a);
   } else if (is_point_in_box(v_texCoord, u_puzzleFinalRectBorder)) {
+    // TABLE AREA (INSIDE OF TABLE BORDER)
     tmpColor = bgColor;
   } else if (is_point_in_box(v_texCoord, u_puzzleFinalRect)) {
-    if (u_showTable == 1) {
-      vec4 borderOverlayColor = vec4(0.0, 0.0, 0.0, 0.5);
-      tmpColor = mix(bgColor, borderOverlayColor, borderOverlayColor.a);
-    } else {
-      tmpColor = bgColor;
-    }
+    // BORDER AROUND THE FINAL RECTANGLE
+    vec4 borderOverlayColor = vec4(0.0, 0.0, 0.0, 0.5);
+    tmpColor = mix(bgColor, borderOverlayColor, borderOverlayColor.a);
   } else {
-    if (u_showPreview == 1) {
+    // AREA INSIDE THE FINAL RECTANGLE
+    if (u_showPuzzleBackground == 0) {
+      tmpColor = bgColor;
+    } else if (u_showPreview == 1) {
       vec4 previewColor = texture(u_texture1, (v_texCoord - vec2(u_puzzleFinalRect)) / u_previewDim);
       // preview to greyscale:
       float avg = (previewColor.r + previewColor.g + previewColor.b) / 3.0;
