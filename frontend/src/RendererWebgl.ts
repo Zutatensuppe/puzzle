@@ -114,7 +114,14 @@ export class RendererWebgl {
     // draw background
     const pos = camera.worldToViewportRaw(this.tableBounds)
     const dim = camera.worldDimToViewportRaw(this.tableBounds)
-    this.bgShaderWrapper?.render(settings.showTable, renderPreview, settings.background, dim, pos)
+    this.bgShaderWrapper?.render(
+      settings.showTable,
+      settings.showPuzzleBackground,
+      renderPreview,
+      settings.background,
+      dim,
+      pos,
+    )
 
     // draw pieces
     this.piecesShaderWrapper?.render(camera, shouldDrawEncodedPiece)
@@ -150,6 +157,7 @@ export class RendererWebgl {
     // draw background
     this.bgShaderWrapper?.render(
       settings.showTable,
+      settings.showPuzzleBackground,
       renderPreview,
       settings.background,
       camera.worldDimToViewportRaw(this.tableBounds),

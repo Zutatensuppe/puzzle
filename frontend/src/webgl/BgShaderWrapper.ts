@@ -113,6 +113,7 @@ export class BgShaderWrapper {
 
   private drawBackground(
     showTable: boolean,
+    showPuzzleBackground: boolean,
     showPreview: boolean,
     color: Color,
     dim: Dim,
@@ -133,8 +134,9 @@ export class BgShaderWrapper {
     } else {
       this.shader.setUniform('u_showTable', 0)
     }
+    this.shader.setUniform('u_showPuzzleBackground', showPuzzleBackground ? 1 : 0)
     this.shader.setUniform('u_color', color as number[])
-    this.shader.setUniform('u_showPreview', showPreview ? 1 : 0)
+    this.shader.setUniform('u_showPreview', showPuzzleBackground && showPreview ? 1 : 0)
     this.shader.setUniform('u_matrix', this.createMatrix(pos.x, pos.y, dim.w, dim.h))
     this.shader.setUniform('u_texture0', 0)
     this.shader.setUniform('u_texture1', 1)
@@ -157,11 +159,12 @@ export class BgShaderWrapper {
 
   public render(
     showTable: boolean,
+    showPuzzleBackground: boolean,
     showPreview: boolean,
     colorStr: string,
     dim: Dim,
     pos: Point,
   ) {
-    this.drawBackground(showTable, showPreview, hexToColor(colorStr), dim, pos)
+    this.drawBackground(showTable, showPuzzleBackground, showPreview, hexToColor(colorStr), dim, pos)
   }
 }

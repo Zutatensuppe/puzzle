@@ -61,6 +61,7 @@ export type GameEventInputStorePos = [GAME_EVENT_TYPE.INPUT_EV_STORE_POS, number
 export type GameEventInputRestorePos = [GAME_EVENT_TYPE.INPUT_EV_RESTORE_POS, number]
 export type GameEventInputConnectionClose = [GAME_EVENT_TYPE.INPUT_EV_CONNECTION_CLOSE]
 export type GameEventInputToggleTable = [GAME_EVENT_TYPE.INPUT_EV_TOGGLE_TABLE]
+export type GameEventInputTogglePuzzleBackground = [GAME_EVENT_TYPE.INPUT_EV_TOGGLE_PUZZLE_BACKGROUND]
 export type GameEventInputToggleInterface = [GAME_EVENT_TYPE.INPUT_EV_TOGGLE_INTERFACE]
 export type GameEventBanPlayerEvent = [GAME_EVENT_TYPE.INPUT_EV_BAN_PLAYER, ClientId]
 export type GameEventUnbanPlayerEvent = [GAME_EVENT_TYPE.INPUT_EV_UNBAN_PLAYER, ClientId]
@@ -87,6 +88,7 @@ export type GameEvent = GameEventInputMouseDown
   | GameEventInputRestorePos
   | GameEventInputConnectionClose
   | GameEventInputToggleTable
+  | GameEventInputTogglePuzzleBackground
   | GameEventInputToggleInterface
   | GameEventBanPlayerEvent
   | GameEventUnbanPlayerEvent
@@ -453,6 +455,7 @@ export interface PlayerSettingsData {
   rotateSoundEnabled: boolean
   showPlayerNames: boolean
   showTable: boolean
+  showPuzzleBackground: boolean
   soundsEnabled: boolean
   soundsVolume: number
   tableTexture: string
@@ -471,6 +474,7 @@ export const PLAYER_SETTINGS = {
   ROTATE_SOUND_ENABLED: 'rotate_sound_enabled',
   SHOW_PLAYER_NAMES: 'show_player_names',
   SHOW_TABLE: 'show_table',
+  SHOW_PUZZLE_BACKGROUND: 'show_puzzle_background',
   SOUND_ENABLED: 'sound_enabled',
   SOUND_VOLUME: 'sound_volume',
   TABLE_TEXTURE: 'table_texture',
@@ -489,6 +493,7 @@ export const PLAYER_SETTINGS_DEFAULTS = {
   ROTATE_SOUND_ENABLED: true,
   SHOW_PLAYER_NAMES: true,
   SHOW_TABLE: true,
+  SHOW_PUZZLE_BACKGROUND: true,
   SOUND_ENABLED: true,
   SOUND_VOLUME: 100,
   TABLE_TEXTURE: 'dark',
@@ -507,6 +512,7 @@ export const createDefaultPlayerSettingsData = (): PlayerSettingsData => ({
   rotateSoundEnabled: PLAYER_SETTINGS_DEFAULTS.ROTATE_SOUND_ENABLED,
   showPlayerNames: PLAYER_SETTINGS_DEFAULTS.SHOW_PLAYER_NAMES,
   showTable: PLAYER_SETTINGS_DEFAULTS.SHOW_TABLE,
+  showPuzzleBackground: PLAYER_SETTINGS_DEFAULTS.SHOW_PUZZLE_BACKGROUND,
   soundsEnabled: PLAYER_SETTINGS_DEFAULTS.SOUND_ENABLED,
   soundsVolume: PLAYER_SETTINGS_DEFAULTS.SOUND_VOLUME,
   tableTexture: PLAYER_SETTINGS_DEFAULTS.TABLE_TEXTURE,

@@ -145,15 +145,29 @@ export class Renderer {
 
       // DRAW PREVIEW or BOARD
       // ---------------------------------------------------------------
-      if (renderPreview) {
+      if (renderPreview && settings.showPuzzleBackground) {
         pos = viewport.worldToViewportRaw(this.boardPos)
         dim = viewport.worldDimToViewportRaw(this.boardDim)
         ctx.drawImage(puzzleBitmapGrayscaled[this.gameId], pos.x, pos.y, dim.w, dim.h)
       } else if (!settings.showTable || !this.puzzleTable) {
         pos = viewport.worldToViewportRaw(this.boardPos)
         dim = viewport.worldDimToViewportRaw(this.boardDim)
-        ctx.fillStyle = 'rgba(255, 255, 255, .3)'
-        ctx.fillRect(pos.x, pos.y, dim.w, dim.h)
+
+        // board background
+        if (settings.showPuzzleBackground) {
+          ctx.fillStyle = 'rgba(255, 255, 255, .3)'
+          ctx.fillRect(pos.x, pos.y, dim.w, dim.h)
+        }
+
+        // board border
+        {
+          const border = viewport.worldDimToViewportRaw({ w: 8, h: 8 })
+          ctx.fillStyle = 'rgba(0, 0, 0, .5)'
+          ctx.fillRect(pos.x - border.w, pos.y - border.h, dim.w + 2 * border.w, border.h)
+          ctx.fillRect(pos.x - border.w, pos.y, border.w, dim.h)
+          ctx.fillRect(pos.x + dim.w, pos.y, border.w, dim.h)
+          ctx.fillRect(pos.x - border.w, pos.y + dim.h, dim.w + 2 * border.w, border.h)
+        }
       }
       if (this.debug) Debug.checkpoint('preview/board done')
       // ---------------------------------------------------------------

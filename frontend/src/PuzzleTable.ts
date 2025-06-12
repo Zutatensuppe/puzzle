@@ -10,6 +10,8 @@ const log = logger('PuzzleTable.ts')
 const cache: Record<string, HTMLCanvasElement | null> = {}
 
 export class PuzzleTable {
+  private lastWorkingCacheKey: string | null = null
+
   constructor(
     private readonly graphics: Graphics,
   ) {}
@@ -22,7 +24,7 @@ export class PuzzleTable {
     if (!textureInfo) {
       return null
     }
-    const cacheKey = `${gameId}___${textureInfo.url}___${textureInfo.scale}`
+    const cacheKey = `${gameId}___${textureInfo.url}___${textureInfo.scale}___${settings.showPuzzleBackground}`
     if (cache[cacheKey]) {
       return cache[cacheKey]
     }
@@ -42,7 +44,15 @@ export class PuzzleTable {
         : textureInfo.url
       const bitmap = await this.graphics.loadImageToBitmap(url)
 
-      const texture = this._createTableGfx(bounds, boardPos, boardDim, bitmap, textureInfo.scale, this.graphics.isDark(bitmap))
+      const texture = this._createTableGfx(
+        bounds,
+        boardPos,
+        boardDim,
+        bitmap,
+        textureInfo.scale,
+        this.graphics.isDark(bitmap),
+        settings.showPuzzleBackground,
+      )
       cache[cacheKey] = texture
       return cache[cacheKey]
     } catch (e) {
@@ -60,8 +70,18 @@ export class PuzzleTable {
     if (!textureInfo) {
       return null
     }
-    const cacheKey = `${gameId}___${textureInfo.url}___${textureInfo.scale}`
-    return cache[cacheKey] || null
+    const cacheKey = `${gameId}___${textureInfo.url}___${textureInfo.scale}___${settings.showPuzzleBackground}`
+    if (cache[cacheKey]) {
+      this.lastWorkingCacheKey = cacheKey
+      return cache[cacheKey]
+    }
+
+    if (this.lastWorkingCacheKey && cache[this.lastWorkingCacheKey]) {
+      // prevent flickering by returning the last working cache entry
+      return cache[this.lastWorkingCacheKey]
+    }
+
+    return null
   }
 
   private _createTableGfx(
@@ -71,6 +91,7 @@ export class PuzzleTable {
     bitmap: ImageBitmap,
     scale: number,
     isDark: boolean,
+    showPuzzleBackground: boolean,
   ): HTMLCanvasElement {
     const tableCanvas = this.graphics.repeat(bitmap, bounds, scale)
     const adjustedBounds: Dim = { w: tableCanvas.width, h: tableCanvas.height }
@@ -142,7 +163,7 @@ export class PuzzleTable {
     }
 
     // draw the board
-    {
+    if (showPuzzleBackground) {
       tableCtx.fillStyle = isDark ? 'rgba(0, 0, 0, .3)' : 'rgba(255, 255, 255, .3)'
       tableCtx.fillRect(
         ratio * boardX,
