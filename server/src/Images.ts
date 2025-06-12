@@ -2,12 +2,12 @@ import probe from 'probe-image-size'
 import fs from 'fs'
 
 import config from './Config'
-import { Dim } from '../../common/src/Geometry'
+import type { Dim } from '../../common/src/Geometry'
 import Util, { logger } from '../../common/src/Util'
-import { Tag, ImageInfo, UserId, ImageId, ImageRowWithCount, TagRow, ImageRow } from '../../common/src/Types'
-import { ImagesRepo } from './repo/ImagesRepo'
-import { WhereRaw } from './Db'
-import { ImageExif } from './ImageExif'
+import type { Tag, ImageInfo, UserId, ImageId, ImageRowWithCount, TagRow, ImageRow } from '../../common/src/Types'
+import type { ImagesRepo } from './repo/ImagesRepo'
+import type { WhereRaw } from './Db'
+import type { ImageExif } from './ImageExif'
 
 const log = logger('Images.ts')
 
@@ -49,7 +49,7 @@ export class Images {
         title: t.title,
         total: 0,
       })) : [],
-      created: row.created.getTime(),
+      created: (new Date(row.created)).getTime(),
       width: row.width,
       height: row.height,
       private: !!row.private,

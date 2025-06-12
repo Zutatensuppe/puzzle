@@ -1,6 +1,7 @@
-import { EncodedPlayer, EncodedPlayerIdx, GameId, GameRow, GameRowWithImageAndUser, UserId } from '../../../common/src/Types'
-import Db from '../Db'
-import { Repos } from './Repos'
+import { EncodedPlayerIdx } from '../../../common/src/Types'
+import type { EncodedPlayer, GameId, GameRow, GameRowWithImageAndUser, UserId } from '../../../common/src/Types'
+import type Db from '../Db'
+import type { Repos } from './Repos'
 
 const TABLE = 'games'
 
@@ -96,7 +97,7 @@ export class GamesRepo {
     return !!gameRow
   }
 
-  async upsert(row: Partial<GameRow>): Promise<void> {
+  async upsert(row: Omit<GameRow, 'image_snapshot_url' | 'reported'>): Promise<void> {
     await this.db.upsert(TABLE, row, ['id'])
   }
 

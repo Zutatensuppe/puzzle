@@ -1,8 +1,9 @@
 import { MODE_REPLAY } from './GameMode'
 import storage from './storage'
 import GameCommon from '../../common/src/GameCommon'
-import { GameInterface } from './Game'
-import { PLAYER_SETTINGS, PLAYER_SETTINGS_DEFAULTS, PlayerSettingsData, RendererType } from '../../common/src/Types'
+import type { GameInterface } from './Game'
+import { PLAYER_SETTINGS, PLAYER_SETTINGS_DEFAULTS, RendererType } from '../../common/src/Types'
+import type { PlayerSettingsData } from '../../common/src/Types'
 
 export class PlayerSettings {
 
@@ -21,6 +22,7 @@ export class PlayerSettings {
     this.settings.soundsEnabled = storage.getBool(PLAYER_SETTINGS.SOUND_ENABLED, PLAYER_SETTINGS_DEFAULTS.SOUND_ENABLED)
     this.settings.showPlayerNames = storage.getBool(PLAYER_SETTINGS.SHOW_PLAYER_NAMES, PLAYER_SETTINGS_DEFAULTS.SHOW_PLAYER_NAMES)
     this.settings.showTable = storage.getBool(PLAYER_SETTINGS.SHOW_TABLE, PLAYER_SETTINGS_DEFAULTS.SHOW_TABLE)
+    this.settings.showPuzzleBackground = storage.getBool(PLAYER_SETTINGS.SHOW_PUZZLE_BACKGROUND, PLAYER_SETTINGS_DEFAULTS.SHOW_PUZZLE_BACKGROUND)
     this.settings.tableTexture = storage.getStr(PLAYER_SETTINGS.TABLE_TEXTURE, PLAYER_SETTINGS_DEFAULTS.TABLE_TEXTURE)
     this.settings.useCustomTableTexture = storage.getBool(PLAYER_SETTINGS.USE_CUSTOM_TABLE_TEXTURE, PLAYER_SETTINGS_DEFAULTS.USE_CUSTOM_TABLE_TEXTURE)
     this.settings.customTableTexture = storage.getStr(PLAYER_SETTINGS.CUSTOM_TABLE_TEXTURE, PLAYER_SETTINGS_DEFAULTS.CUSTOM_TABLE_TEXTURE)
@@ -55,6 +57,7 @@ export class PlayerSettings {
 
   apply(data: PlayerSettingsData) {
     this.setShowTable(data.showTable)
+    this.setShowPuzzleBackground(data.showPuzzleBackground)
     this.setTableTexture(data.tableTexture)
     this.setUseCustomTableTexture(data.useCustomTableTexture)
     this.setCustomTableTexture(data.customTableTexture)
@@ -75,7 +78,7 @@ export class PlayerSettings {
     return this.settings
   }
 
-  showStatusMessage(what: string, value: any = undefined) {
+  showStatusMessage(what: string, value: number | string | boolean | undefined = undefined) {
     this.game.showStatusMessage(what, value)
   }
 
@@ -140,6 +143,17 @@ export class PlayerSettings {
       storage.setBool(PLAYER_SETTINGS.SHOW_TABLE, value)
       this.showStatusMessage('Table', value)
       this.game.changeShowTable(value)
+      return true
+    }
+    return false
+  }
+
+  setShowPuzzleBackground(value: boolean) {
+    if (this.settings.showPuzzleBackground !== value) {
+      this.settings.showPuzzleBackground = value
+      storage.setBool(PLAYER_SETTINGS.SHOW_PUZZLE_BACKGROUND, value)
+      this.showStatusMessage('Puzzle Background/Preview', value)
+      this.game.changeShowPuzzleBackground(value)
       return true
     }
     return false
@@ -256,6 +270,13 @@ export class PlayerSettings {
     const value = this.settings.showTable
     storage.setBool(PLAYER_SETTINGS.SHOW_TABLE, value)
     this.showStatusMessage('Table', value)
+  }
+
+  toggleShowPuzzleBackground() {
+    this.settings.showPuzzleBackground = !this.settings.showPuzzleBackground
+    const value = this.settings.showPuzzleBackground
+    storage.setBool(PLAYER_SETTINGS.SHOW_PUZZLE_BACKGROUND, value)
+    this.showStatusMessage('Puzzle Background/Preview', value)
   }
 
   soundsVolume() {

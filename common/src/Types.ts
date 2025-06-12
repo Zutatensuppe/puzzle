@@ -1,6 +1,8 @@
-import { Rect } from './Geometry'
-import { SERVER_EVENT_TYPE, LOG_TYPE, CLIENT_EVENT_TYPE, CHANGE_TYPE, GAME_EVENT_TYPE } from './Protocol'
-import { Rng, RngSerialized } from './Rng'
+import type { Rect } from './Geometry'
+import type { SERVER_EVENT_TYPE, LOG_TYPE, CLIENT_EVENT_TYPE, CHANGE_TYPE, GAME_EVENT_TYPE } from './Protocol'
+import type { Rng, RngSerialized } from './Rng'
+
+export type * as Api from './TypesApi'
 
 // @see https://stackoverflow.com/a/59906630/392905
 type ArrayLengthMutationKeys = 'splice' | 'push' | 'pop' | 'shift' | 'unshift' | number
@@ -27,6 +29,8 @@ export type TagId = Branded<number, 'TagId'>
 export type FeaturedId = Branded<number, 'FeaturedId'>
 export type LeaderboardId = Branded<number, 'LeaderboardId'>
 export type LivestreamId = Branded<string, 'LivestreamId'>
+
+export type JSONDateString = Branded<string, 'JSONDateString'> // e.g. "2023-10-01T12:34:56.789Z"
 
 export type ChangePiece = [CHANGE_TYPE.PIECE, EncodedPiece]
 export type ChangePlayer = [CHANGE_TYPE.PLAYER, EncodedPlayer]
@@ -57,6 +61,7 @@ export type GameEventInputStorePos = [GAME_EVENT_TYPE.INPUT_EV_STORE_POS, number
 export type GameEventInputRestorePos = [GAME_EVENT_TYPE.INPUT_EV_RESTORE_POS, number]
 export type GameEventInputConnectionClose = [GAME_EVENT_TYPE.INPUT_EV_CONNECTION_CLOSE]
 export type GameEventInputToggleTable = [GAME_EVENT_TYPE.INPUT_EV_TOGGLE_TABLE]
+export type GameEventInputTogglePuzzleBackground = [GAME_EVENT_TYPE.INPUT_EV_TOGGLE_PUZZLE_BACKGROUND]
 export type GameEventInputToggleInterface = [GAME_EVENT_TYPE.INPUT_EV_TOGGLE_INTERFACE]
 export type GameEventBanPlayerEvent = [GAME_EVENT_TYPE.INPUT_EV_BAN_PLAYER, ClientId]
 export type GameEventUnbanPlayerEvent = [GAME_EVENT_TYPE.INPUT_EV_UNBAN_PLAYER, ClientId]
@@ -83,6 +88,7 @@ export type GameEvent = GameEventInputMouseDown
   | GameEventInputRestorePos
   | GameEventInputConnectionClose
   | GameEventInputToggleTable
+  | GameEventInputTogglePuzzleBackground
   | GameEventInputToggleInterface
   | GameEventBanPlayerEvent
   | GameEventUnbanPlayerEvent
@@ -164,7 +170,7 @@ export type EncodedPiece = FixedLengthArray<[
 
 export interface Announcement {
   id: AnnouncementId
-  created: string // date string
+  created: JSONDateString
   title: string
   message: string
 }
@@ -205,6 +211,7 @@ export type EncodedGame = FixedLengthArray<[
   string | null | undefined, // joinPassword
   boolean | undefined, // requireAccount
   Record<ClientId, boolean> | undefined, // banned
+  boolean, // showImagePreviewInBackground
 ]>
 
 export type HeaderLogEntry = [
@@ -257,7 +264,7 @@ export interface Tag {
 
 interface GameRng {
   obj: Rng
-  type?: string
+  type?: string | undefined
 }
 
 export interface Game {
@@ -274,10 +281,11 @@ export interface Game {
   rng: GameRng
   private: boolean
   hasReplay: boolean
-  crop?: Rect
+  crop?: Rect | undefined
   registeredMap: RegisteredMap
   requireAccount: boolean
   joinPassword: string | null
+  showImagePreviewInBackground: boolean
 }
 
 export interface Image {
@@ -288,16 +296,6 @@ export interface Image {
   title: string
   tags: Tag[]
   created: number
-}
-
-export interface FrontendGameSettings {
-  file: File
-  title: string
-  copyrightName: string
-  copyrightURL: string
-  tags: string[]
-  isPrivate: boolean
-  isNsfw: boolean
 }
 
 export interface GameSettings {
@@ -311,6 +309,7 @@ export interface GameSettings {
   snapMode: SnapMode
   rotationMode: RotationMode
   crop: Rect
+  showImagePreviewInBackground: boolean
 }
 
 export interface Puzzle {
@@ -456,6 +455,7 @@ export interface PlayerSettingsData {
   rotateSoundEnabled: boolean
   showPlayerNames: boolean
   showTable: boolean
+  showPuzzleBackground: boolean
   soundsEnabled: boolean
   soundsVolume: number
   tableTexture: string
@@ -474,6 +474,7 @@ export const PLAYER_SETTINGS = {
   ROTATE_SOUND_ENABLED: 'rotate_sound_enabled',
   SHOW_PLAYER_NAMES: 'show_player_names',
   SHOW_TABLE: 'show_table',
+  SHOW_PUZZLE_BACKGROUND: 'show_puzzle_background',
   SOUND_ENABLED: 'sound_enabled',
   SOUND_VOLUME: 'sound_volume',
   TABLE_TEXTURE: 'table_texture',
@@ -492,6 +493,7 @@ export const PLAYER_SETTINGS_DEFAULTS = {
   ROTATE_SOUND_ENABLED: true,
   SHOW_PLAYER_NAMES: true,
   SHOW_TABLE: true,
+  SHOW_PUZZLE_BACKGROUND: true,
   SOUND_ENABLED: true,
   SOUND_VOLUME: 100,
   TABLE_TEXTURE: 'dark',
@@ -510,6 +512,7 @@ export const createDefaultPlayerSettingsData = (): PlayerSettingsData => ({
   rotateSoundEnabled: PLAYER_SETTINGS_DEFAULTS.ROTATE_SOUND_ENABLED,
   showPlayerNames: PLAYER_SETTINGS_DEFAULTS.SHOW_PLAYER_NAMES,
   showTable: PLAYER_SETTINGS_DEFAULTS.SHOW_TABLE,
+  showPuzzleBackground: PLAYER_SETTINGS_DEFAULTS.SHOW_PUZZLE_BACKGROUND,
   soundsEnabled: PLAYER_SETTINGS_DEFAULTS.SOUND_ENABLED,
   soundsVolume: PLAYER_SETTINGS_DEFAULTS.SOUND_VOLUME,
   tableTexture: PLAYER_SETTINGS_DEFAULTS.TABLE_TEXTURE,
@@ -627,11 +630,6 @@ export interface Pagination {
   total: number
 }
 
-export interface ApiGamesData {
-  items: GameInfo[]
-  pagination: Pagination
-}
-
 export interface Leaderboard {
   id: LeaderboardId
   name: string
@@ -669,15 +667,6 @@ export interface LivestreamsRow {
   language: string
   viewers: number
 }
-
-export interface ApiDataIndexData {
-  gamesRunning: ApiGamesData
-  gamesFinished: ApiGamesData
-  leaderboards: Leaderboard[]
-  livestreams: LivestreamsRow[]
-}
-
-export type ApiDataFinishedGames = ApiGamesData
 
 export interface CannyConfig {
   sso_private_key: string
@@ -755,7 +744,7 @@ export interface Hud {
   setConnectError: (v: ServerErrorDetails) => void
   togglePreview: (v: boolean) => void
   toggleInterface: (v: boolean) => void
-  addStatusMessage: (what: string, value: any) => void
+  addStatusMessage: (what: string, value: number | string | boolean | undefined) => void
 }
 
 export interface ReplayHud extends Hud {
@@ -764,15 +753,14 @@ export interface ReplayHud extends Hud {
   setReplayFinished: () => void
 }
 
-export interface NewGameDataRequestData {
-  sort: string
-  search: string
-}
-
-export interface ImagesRequestData {
-  sort: string
-  search: string
-  offset: number
+export interface User {
+  id: UserId
+  name: string
+  created: JSONDateString
+  clientId: ClientId
+  type: 'guest' | 'user'
+  cannyToken: string | null
+  groups: string[]
 }
 
 export enum ImageSearchSort {
@@ -843,8 +831,8 @@ export interface GameRow {
   id: GameId
   creator_user_id: UserId | null
   image_id: ImageId
-  created: Date
-  finished: Date | null
+  created: JSONDateString
+  finished: JSONDateString | null
   data: string
   private: number
   pieces_count: number
@@ -852,6 +840,7 @@ export interface GameRow {
   join_password: string | null
   require_account: number
   reported: number
+  show_image_preview_in_background: number
 }
 
 export interface GameRowWithImageAndUser extends GameRow {
@@ -862,7 +851,7 @@ export interface GameRowWithImageAndUser extends GameRow {
 export interface ImageRow {
   id: ImageId
   uploader_user_id: UserId
-  created: Date
+  created: JSONDateString
   filename: string
   filename_original: string
   title: string
@@ -897,7 +886,7 @@ export interface ImageRowWithCount extends ImageRow {
 
 export interface UserRow {
   id: UserId
-  created: Date
+  created: JSONDateString
   client_id: ClientId
   name: string
   email: string
@@ -908,16 +897,9 @@ export interface UserGroupRow {
   name: string
 }
 
-export interface AnnouncementsRow {
-  id: AnnouncementId
-  created: Date
-  title: string
-  message: string
-}
-
 export interface FeaturedRow {
   id: FeaturedId
-  created: Date
+  created: JSONDateString
   name: string
   introduction: string
   links: { url: string, title: string }[]
@@ -929,7 +911,7 @@ export interface FeaturedRow {
 
 export interface CollectionRow {
   id: number
-  created: Date
+  created: JSONDateString
   name: string
 }
 
@@ -939,4 +921,11 @@ export interface CollectionRowWithImages extends CollectionRow {
 
 export interface FeaturedRowWithCollections extends FeaturedRow {
   collections: CollectionRowWithImages[]
+}
+
+export interface FeaturedTeaserRow {
+  id: number
+  featured_id: FeaturedId
+  sort_index: number
+  active: number // 1 for active, 0 for inactive
 }

@@ -1,7 +1,23 @@
 import {
-  DefaultScoreMode, DefaultShapeMode, DefaultSnapMode, Game, Puzzle,
-  EncodedPlayer, ScoreMode, ShapeMode, SnapMode, ImageInfo, Timestamp, GameSettings, GameEvent, RegisteredMap, ImageSnapshots, HandleGameEventResult,
+  DefaultScoreMode,
+  DefaultShapeMode,
+  DefaultSnapMode,
   DefaultRotationMode,
+} from '../../common/src/Types'
+import type {
+  Game,
+  Puzzle,
+  EncodedPlayer,
+  ScoreMode,
+  ShapeMode,
+  SnapMode,
+  ImageInfo,
+  Timestamp,
+  GameSettings,
+  GameEvent,
+  RegisteredMap,
+  ImageSnapshots,
+  HandleGameEventResult,
   RotationMode,
   GameId,
   UserId,
@@ -12,15 +28,16 @@ import {
   GameRow,
   UserRow,
 } from '../../common/src/Types'
-import Util, { logger } from '../../common/src/Util'
-import { Rng, RngSerialized } from '../../common/src/Rng'
+import Util, { logger, toJSONDateString } from '../../common/src/Util'
+import { Rng } from '../../common/src/Rng'
+import type { RngSerialized } from '../../common/src/Rng'
 import GameLog from './GameLog'
-import { Rect } from '../../common/src/Geometry'
-import { PuzzleService } from './PuzzleService'
+import type { Rect } from '../../common/src/Geometry'
+import type { PuzzleService } from './PuzzleService'
 import GameCommon, { NEWGAME_MAX_PIECES, NEWGAME_MIN_PIECES } from '../../common/src/GameCommon'
 import { GAME_VERSION, LOG_TYPE } from '../../common/src/Protocol'
 import Crypto from './Crypto'
-import { Server } from './Server'
+import type { Server } from './Server'
 
 const log = logger('GameService.js')
 
@@ -28,7 +45,7 @@ interface GameStoreData {
   id: GameId
   gameVersion: number
   rng: {
-    type?: string
+    type?: string | undefined
     obj: RngSerialized
   }
   puzzle: Puzzle
@@ -41,7 +58,7 @@ interface GameStoreData {
   snapMode: SnapMode
   rotationMode?: RotationMode
   hasReplay: boolean
-  crop?: Rect
+  crop?: Rect | undefined
   banned?: Record<ClientId, boolean>
 }
 
@@ -77,10 +94,10 @@ export class GameService {
       return null
     }
     if (typeof game.puzzle.data.started === 'undefined') {
-      game.puzzle.data.started = gameRow.created.getTime()
+      game.puzzle.data.started = (new Date(gameRow.created)).getTime()
     }
     if (typeof game.puzzle.data.finished === 'undefined') {
-      game.puzzle.data.finished = gameRow.finished ? gameRow.finished.getTime() : 0
+      game.puzzle.data.finished = gameRow.finished ? (new Date(gameRow.finished)).getTime() : 0
     }
     if (!Array.isArray(game.players)) {
       game.players = Object.values(game.players)
@@ -114,6 +131,7 @@ export class GameService {
       registeredMap: await this.generateRegisteredMap(game.players),
       banned: game.banned || {},
       crop: game.crop,
+      showImagePreviewInBackground: !!gameRow.show_image_preview_in_background,
     }
   }
 
@@ -209,6 +227,7 @@ export class GameService {
       gameObject.requireAccount,
       gameObject.joinPassword,
       gameObject.crop,
+      gameObject.showImagePreviewInBackground,
     )
     gameObj.puzzle.info.image.gameCount = await this.server.repos.images.getGameCount(gameObj.puzzle.info.image.id)
     gameObj.registeredMap = await this.generateRegisteredMap(gameObj.players)
@@ -269,14 +288,14 @@ export class GameService {
       id: game.id,
       creator_user_id: game.creatorUserId,
       image_id: game.puzzle.info.image.id,
-      created: new Date(game.puzzle.data.started),
-      finished: game.puzzle.data.finished ? new Date(game.puzzle.data.finished) : null,
+      created: toJSONDateString(new Date(game.puzzle.data.started)),
+      finished: game.puzzle.data.finished ? toJSONDateString(new Date(game.puzzle.data.finished)) : null,
       data: JSON.stringify(await this.gameToStoreData(game)),
       private: game.private ? 1 : 0,
       pieces_count: game.puzzle.tiles.length,
       require_account: game.requireAccount ? 1 : 0,
       join_password: game.joinPassword,
-      // the image_snapshot_url is not updated here, this is intended!
+      show_image_preview_in_background: game.showImagePreviewInBackground ? 1 : 0,
     })
     await this.server.repos.games.updatePlayerRelations(game.id, game.players)
 
@@ -350,6 +369,7 @@ export class GameService {
     requireAccount: boolean,
     joinPassword: string | null,
     crop: Rect | undefined,
+    showImagePreviewInBackground: boolean,
   ): Game {
     const seed = Util.hash(gameId + ' ' + ts)
     const rng = new Rng(seed)
@@ -371,6 +391,7 @@ export class GameService {
       joinPassword,
       registeredMap: {},
       banned: {},
+      showImagePreviewInBackground,
     }
   }
 
@@ -378,7 +399,7 @@ export class GameService {
     gameSettings: GameSettings,
     ts: Timestamp,
     creatorUserId: UserId,
-  ): Promise<string> {
+  ): Promise<GameId> {
     if (gameSettings.tiles < NEWGAME_MIN_PIECES || gameSettings.tiles > NEWGAME_MAX_PIECES) {
       throw new Error(`Target pieces count must be between ${NEWGAME_MIN_PIECES} and ${NEWGAME_MAX_PIECES}`)
     }
@@ -403,6 +424,7 @@ export class GameService {
       gameSettings.requireAccount,
       gameSettings.joinPassword ? Crypto.encrypt(gameSettings.joinPassword) : null,
       gameSettings.crop,
+      gameSettings.showImagePreviewInBackground,
     )
 
     GameLog.create(gameId, ts)

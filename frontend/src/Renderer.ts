@@ -1,13 +1,14 @@
 import Debug from '../../common/src/Debug'
 import GameCommon from '../../common/src/GameCommon'
-import { Dim, Point, Rect } from '../../common/src/Geometry'
-import { EncodedPiece, EncodedPieceIdx, EncodedPlayer, EncodedPlayerIdx, FireworksInterface, GameId, PieceRotation, PlayerSettingsData, PuzzleStatusInterface, Timestamp } from '../../common/src/Types'
+import type { Dim, Point, Rect } from '../../common/src/Geometry'
+import { PieceRotation, EncodedPieceIdx, EncodedPlayerIdx } from '../../common/src/Types'
+import type { EncodedPiece, EncodedPlayer, FireworksInterface, GameId, PlayerSettingsData, PuzzleStatusInterface, Timestamp } from '../../common/src/Types'
 import { Camera } from '../../common/src/Camera'
 import PuzzleGraphics from './PuzzleGraphics'
 import { logger } from '../../common/src/Util'
-import { PlayerCursors } from './PlayerCursors'
-import { PuzzleTable } from './PuzzleTable'
-import { Graphics } from './Graphics'
+import type { PlayerCursors } from './PlayerCursors'
+import type { PuzzleTable } from './PuzzleTable'
+import type { Graphics } from './Graphics'
 import { getPlayerNameCanvas } from './PlayerNames'
 
 const log = logger('Renderer.ts')
@@ -144,15 +145,29 @@ export class Renderer {
 
       // DRAW PREVIEW or BOARD
       // ---------------------------------------------------------------
-      if (renderPreview) {
+      if (renderPreview && settings.showPuzzleBackground) {
         pos = viewport.worldToViewportRaw(this.boardPos)
         dim = viewport.worldDimToViewportRaw(this.boardDim)
         ctx.drawImage(puzzleBitmapGrayscaled[this.gameId], pos.x, pos.y, dim.w, dim.h)
       } else if (!settings.showTable || !this.puzzleTable) {
         pos = viewport.worldToViewportRaw(this.boardPos)
         dim = viewport.worldDimToViewportRaw(this.boardDim)
-        ctx.fillStyle = 'rgba(255, 255, 255, .3)'
-        ctx.fillRect(pos.x, pos.y, dim.w, dim.h)
+
+        // board background
+        if (settings.showPuzzleBackground) {
+          ctx.fillStyle = 'rgba(255, 255, 255, .3)'
+          ctx.fillRect(pos.x, pos.y, dim.w, dim.h)
+        }
+
+        // board border
+        {
+          const border = viewport.worldDimToViewportRaw({ w: 8, h: 8 })
+          ctx.fillStyle = 'rgba(0, 0, 0, .5)'
+          ctx.fillRect(pos.x - border.w, pos.y - border.h, dim.w + 2 * border.w, border.h)
+          ctx.fillRect(pos.x - border.w, pos.y, border.w, dim.h)
+          ctx.fillRect(pos.x + dim.w, pos.y, border.w, dim.h)
+          ctx.fillRect(pos.x - border.w, pos.y + dim.h, dim.w + 2 * border.w, border.h)
+        }
       }
       if (this.debug) Debug.checkpoint('preview/board done')
       // ---------------------------------------------------------------

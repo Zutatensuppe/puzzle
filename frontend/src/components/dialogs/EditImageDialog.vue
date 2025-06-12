@@ -45,6 +45,7 @@
           <fieldset>
             <legend>Tags</legend>
             <TagsInput
+              v-if="editImageAutocompleteTags"
               v-model="tags"
               :autocomplete-tags="editImageAutocompleteTags"
             />

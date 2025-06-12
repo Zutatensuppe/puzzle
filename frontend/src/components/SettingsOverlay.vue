@@ -47,6 +47,21 @@
       </fieldset>
 
       <fieldset>
+        <legend>Puzzle Background</legend>
+        <div>
+          <v-checkbox-btn
+            v-model="playerSettings.showPuzzleBackground"
+            label="Show Puzzle Background / Preview"
+            density="comfortable"
+          />
+          <div class="text-disabled">
+            If preview is set for the puzzle, the preview will be shown in the background.
+            Otherwise, the background will be a simple highlight color.
+          </div>
+        </div>
+      </fieldset>
+
+      <fieldset>
         <legend>Table</legend>
         <div class="d-flex">
           <v-checkbox-btn
@@ -55,7 +70,7 @@
             density="comfortable"
           />
           <v-checkbox-btn
-            v-if="playerSettings.showTable"
+            :disabled="!playerSettings.showTable"
             v-model="playerSettings.useCustomTableTexture"
             label="Custom Texture"
             density="comfortable"
@@ -184,7 +199,7 @@
             :key="option.value"
             :label="option.label"
             :value="option.value"
-            :disabled="option.disabled"
+            :disabled="option.disabled || null"
           />
         </v-radio-group>
         <div v-if="!webGlSupported">
@@ -201,8 +216,9 @@
 import { ref, watch } from 'vue'
 
 import IngameColorPicker from './IngameColorPicker.vue'
-import { DialogChangeData, PlayerSettingsData, RendererType } from '../../../common/src/Types'
-import { GameInterface } from '../Game'
+import { RendererType } from '../../../common/src/Types'
+import type { DialogChangeData, PlayerSettingsData } from '../../../common/src/Types'
+import type { GameInterface } from '../Game'
 import LoginBit from './LoginBit.vue'
 
 const props = defineProps<{

@@ -1,13 +1,14 @@
-import { Assets } from '../Assets'
-import { Camera } from '../Camera'
+import type { Assets } from '../Assets'
+import type { Camera } from '../Camera'
 import GameCommon from '../../../common/src/GameCommon'
-import { EncodedPlayer, EncodedPlayerIdx, GameId, Timestamp } from '../../../common/src/Types'
+import { EncodedPlayerIdx } from '../../../common/src/Types'
+import type { EncodedPlayer, GameId, Timestamp } from '../../../common/src/Types'
 import m4 from './m4'
 import { Shader } from './Shader'
 import playersFragment from './shaders/playersFragment'
 import playersVertex from './shaders/playersVertex'
 import { COLOR_BLUE, hexToColor } from '../../../common/src/Color'
-import { Graphics } from '../Graphics'
+import type { Graphics } from '../Graphics'
 import { getPlayerNameCanvas } from '../PlayerNames'
 
 export class PlayersShaderWrapper {
@@ -17,8 +18,8 @@ export class PlayersShaderWrapper {
   private positionBuffer!: WebGLBuffer
   private texcoordBuffer!: WebGLBuffer
 
-  private textureInfoHand!: any
-  private textureInfoGrab!: any
+  private textureInfoHand!: { width: number, height: number, texture: WebGLTexture }
+  private textureInfoGrab!: { width: number, height: number, texture: WebGLTexture }
 
   private texName!: WebGLTexture
 
@@ -55,7 +56,7 @@ export class PlayersShaderWrapper {
     this.gl.bufferData(this.gl.ARRAY_BUFFER, new Float32Array(texcoords), this.gl.STATIC_DRAW)
 
     // LOAD TEXTURE INFO
-    const texHand = this.gl.createTexture()
+    const texHand = this.gl.createTexture()!
     this.gl.bindTexture(this.gl.TEXTURE_2D, texHand)
     this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_WRAP_S, this.gl.CLAMP_TO_EDGE)
     this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_WRAP_T, this.gl.CLAMP_TO_EDGE)
@@ -63,7 +64,7 @@ export class PlayersShaderWrapper {
     this.gl.texImage2D(this.gl.TEXTURE_2D, 0, this.gl.RGBA, this.gl.RGBA, this.gl.UNSIGNED_BYTE, this.assets.Gfx.HAND_RAW)
     this.textureInfoHand = { width: this.assets.Gfx.HAND_RAW.width, height: this.assets.Gfx.HAND_RAW.height, texture: texHand }
 
-    const texGrab = this.gl.createTexture()
+    const texGrab = this.gl.createTexture()!
     this.gl.bindTexture(this.gl.TEXTURE_2D, texGrab)
     this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_WRAP_S, this.gl.CLAMP_TO_EDGE)
     this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_WRAP_T, this.gl.CLAMP_TO_EDGE)

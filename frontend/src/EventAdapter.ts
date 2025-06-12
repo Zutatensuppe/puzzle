@@ -1,9 +1,10 @@
 import { GAME_EVENT_TYPE } from '../../common/src/Protocol'
-import { GameEvent } from '../../common/src/Types'
-import { Camera, Snapshot } from '../../common/src/Camera'
-import { GameInterface } from './Game'
+import type { GameEvent } from '../../common/src/Types'
+import { Camera } from '../../common/src/Camera'
+import type { Snapshot } from '../../common/src/Camera'
+import type { GameInterface } from './Game'
 import { MODE_REPLAY } from './GameMode'
-import { PlayerSettings } from './PlayerSettings'
+import type { PlayerSettings } from './PlayerSettings'
 
 export class EventAdapter {
   private events: GameEvent[] = []
@@ -181,6 +182,8 @@ export class EventAdapter {
       this.addEvent([GAME_EVENT_TYPE.INPUT_EV_TOGGLE_PLAYER_NAMES])
     } else if (ev.code === 'KeyT') {
       this.addEvent([GAME_EVENT_TYPE.INPUT_EV_TOGGLE_TABLE])
+    } else if (ev.code === 'KeyB') {
+      this.addEvent([GAME_EVENT_TYPE.INPUT_EV_TOGGLE_PUZZLE_BACKGROUND])
     } else if (ev.code === 'KeyC') {
       this.addEvent([GAME_EVENT_TYPE.INPUT_EV_CENTER_FIT_PUZZLE])
     } else {

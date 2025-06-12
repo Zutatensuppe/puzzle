@@ -21,10 +21,13 @@
         <div class="justify-center">
           <img
             src="./../assets/gfx/icon.png"
-            class="mr-4"
+            class="title-icon"
             :class="{ index: route.name === 'index' }"
           >
-          <h4 :class="{ index: route.name === 'index' }">
+          <h4
+            class="ml-4"
+            :class="{ index: route.name === 'index' }"
+          >
             {{ route.meta.title }}
           </h4>
           <slot name="title" />
@@ -123,10 +126,11 @@
 <script setup lang="ts">
 import { computed, onMounted, onBeforeUnmount, ref } from 'vue'
 import { useRoute } from 'vue-router'
-import user, { useNsfw, User } from '../user'
+import user, { useNsfw } from '../user'
 import AnnouncementsDrawer from './AnnouncementsDrawer.vue'
 import AnnouncementsIcon from './AnnouncementsIcon.vue'
 import { useDialog } from '../useDialog'
+import type { User } from '../Types'
 
 const { openLoginDialog } = useDialog()
 

@@ -1,6 +1,6 @@
 import { AppTokenAuthProvider } from '@twurple/auth'
 import { ApiClient } from '@twurple/api'
-import { TwitchLivestream, LivestreamId, TwitchConfig } from '../../common/src/Types'
+import type { TwitchLivestream, LivestreamId, TwitchConfig } from '../../common/src/Types'
 import { logger } from '../../common/src/Util'
 
 const log = logger('Twitch.ts')

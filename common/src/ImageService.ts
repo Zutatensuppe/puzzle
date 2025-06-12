@@ -1,4 +1,4 @@
-import { Rect } from './Geometry'
+import type { Rect } from './Geometry'
 import Util from './Util'
 
 export const resizeUrl = (imageUrl: string, w: number, h: number, fit: string) => {

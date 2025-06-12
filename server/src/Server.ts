@@ -1,34 +1,35 @@
 import WebSocketServer from './WebSocketServer'
-import WebSocket from 'ws'
-import express, { NextFunction, Request, Response } from 'express'
+import type WebSocket from 'ws'
+import express from 'express'
+import type { NextFunction, Request, Response } from 'express'
 import compression from 'compression'
 import { CLIENT_EVENT_TYPE, GAME_EVENT_TYPE, SERVER_EVENT_TYPE } from '../../common/src/Protocol'
 import Util, { logger } from '../../common/src/Util'
-import { GameSockets } from './GameSockets'
+import type { GameSockets } from './GameSockets'
 import Time from '../../common/src/Time'
 import config from './Config'
 import GameCommon from '../../common/src/GameCommon'
-import { ServerEvent, Game as GameType, ClientEvent, GameEventInputConnectionClose, GameId, ClientId, EncodedGame, EncodedGameLegacy } from '../../common/src/Types'
-import { GameService } from './GameService'
+import type { ServerEvent, Game as GameType, ClientEvent, GameEventInputConnectionClose, GameId, ClientId, EncodedGame, EncodedGameLegacy } from '../../common/src/Types'
+import type { GameService } from './GameService'
 import createApiRouter from './web_routes/api'
 import createAdminApiRouter from './web_routes/admin/api'
 import createImageServiceRouter from './web_routes/image-service'
 import cookieParser from 'cookie-parser'
-import { Users } from './Users'
-import Mail from './Mail'
-import { Canny } from './Canny'
-import { Discord } from './Discord'
-import Db from './Db'
-import { Server as HttpServer } from 'http'
+import type { Users } from './Users'
+import type Mail from './Mail'
+import type { Canny } from './Canny'
+import type { Discord } from './Discord'
+import type Db from './Db'
+import type { Server as HttpServer } from 'http'
 import path from 'path'
-import { Images } from './Images'
-import { ImageResize } from './ImageResize'
+import type { Images } from './Images'
+import type { ImageResize } from './ImageResize'
 import { storeImageSnapshot } from './ImageSnapshots'
-import { Twitch } from './Twitch'
-import { UrlUtil } from './UrlUtil'
+import type { Twitch } from './Twitch'
+import type { UrlUtil } from './UrlUtil'
 import fs from './FileSystem'
-import { Repos } from './repo/Repos'
-import { Moderation } from './Moderation'
+import type { Repos } from './repo/Repos'
+import type { Moderation } from './Moderation'
 
 const sendHtml = (res: Response, tmpl: string, data: Record<string, string> = {}): void => {
   let str = tmpl
@@ -116,11 +117,9 @@ export class Server {
     app.use(compression())
 
     // add user info to all requests
-    app.use(async (req: any, _res, next: NextFunction) => {
+    app.use(async (req, _res, next: NextFunction) => {
       const data = await this.users.getUserInfoByRequest(req)
-      req.token = data.token
-      req.user = data.user
-      req.user_type = data.user_type
+      req.userInfo = data
       next()
     })
 
@@ -129,7 +128,7 @@ export class Server {
     app.use('/image-service', createImageServiceRouter(this))
     app.use('/uploads/', express.static(config.dir.UPLOAD_DIR))
 
-    app.get('/', async (req: any, res) => {
+    app.get('/', async (_req, res) => {
       sendHtml(res, await this.indexFileContents(), {
         '<!-- og:image -->': '<meta property="og:image" content="/assets/textures/poster.webp" />',
       })
@@ -162,7 +161,7 @@ export class Server {
       })
     })
 
-    app.all('*', async (req: any, res) => {
+    app.all('*', async (_req, res) => {
       sendHtml(res, await this.indexFileContents(), {
         '<!-- og:image -->': '<meta property="og:image" content="/assets/textures/poster.webp" />',
       })

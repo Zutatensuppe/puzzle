@@ -86,9 +86,9 @@
 <script setup lang="ts">
 import { computed, onMounted, onBeforeUnmount, ref } from 'vue'
 import { resizeUrl } from '../../../common/src/ImageService'
-import { ImageInfo, Tag } from '../../../common/src/Types'
-import user, { useNsfw, User } from '../user'
+import type { ImageInfo, Tag, User } from '../../../common/src/Types'
 import { useDialog } from '../useDialog'
+import user, { useNsfw } from '../user'
 
 const { openReportImageDialog } = useDialog()
 

@@ -1,17 +1,17 @@
 import Debug from '../../common/src/Debug'
 import GameCommon from '../../common/src/GameCommon'
-import { Dim, Point, Rect } from '../../common/src/Geometry'
-import { EncodedPiece, EncodedPieceShape, EncodedPlayer, FireworksInterface, GameId, PlayerSettingsData, PuzzleStatusInterface, Timestamp } from '../../common/src/Types'
+import type { Dim, Point, Rect } from '../../common/src/Geometry'
+import type { EncodedPiece, EncodedPieceShape, EncodedPlayer, FireworksInterface, GameId, PlayerSettingsData, PuzzleStatusInterface, Timestamp } from '../../common/src/Types'
 import { Camera } from '../../common/src/Camera'
 import { logger } from '../../common/src/Util'
-import { PlayerCursors } from './PlayerCursors'
-import { PuzzleTable } from './PuzzleTable'
-import { Graphics } from './Graphics'
+import type { PlayerCursors } from './PlayerCursors'
+import type { PuzzleTable } from './PuzzleTable'
+import type { Graphics } from './Graphics'
 import { BgShaderWrapper } from './webgl/BgShaderWrapper'
 import { getTextureInfoByPlayerSettings } from './PuzzleTableTextureInfo'
 import { PiecesShaderWrapper } from './webgl/PiecesShaderWrapper'
 import { PlayersShaderWrapper } from './webgl/PlayersShaderWrapper'
-import { Assets } from './Assets'
+import type { Assets } from './Assets'
 import { FireworksShaderWrapper } from './webgl/FireworksShaderWrapper'
 import PuzzleGraphics from './PuzzleGraphics'
 
@@ -114,7 +114,14 @@ export class RendererWebgl {
     // draw background
     const pos = camera.worldToViewportRaw(this.tableBounds)
     const dim = camera.worldDimToViewportRaw(this.tableBounds)
-    this.bgShaderWrapper?.render(settings.showTable, renderPreview, settings.background, dim, pos)
+    this.bgShaderWrapper?.render(
+      settings.showTable,
+      settings.showPuzzleBackground,
+      renderPreview,
+      settings.background,
+      dim,
+      pos,
+    )
 
     // draw pieces
     this.piecesShaderWrapper?.render(camera, shouldDrawEncodedPiece)
@@ -150,6 +157,7 @@ export class RendererWebgl {
     // draw background
     this.bgShaderWrapper?.render(
       settings.showTable,
+      settings.showPuzzleBackground,
       renderPreview,
       settings.background,
       camera.worldDimToViewportRaw(this.tableBounds),

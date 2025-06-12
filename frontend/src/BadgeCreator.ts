@@ -1,5 +1,5 @@
-import { Assets } from './Assets'
-import { Graphics } from './Graphics'
+import type { Assets } from './Assets'
+import type { Graphics } from './Graphics'
 
 const badgeMap: Record<string, string> = {}
 export const getColoredBadge = (graphics: Graphics, assets: Assets, color: string, active: boolean): string => {

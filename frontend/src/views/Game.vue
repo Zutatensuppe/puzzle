@@ -3,7 +3,7 @@
     <v-dialog
       v-model="dialog"
       :class="`overlay-${overlay}`"
-      :persistent="dialogPersistent"
+      :persistent="dialogPersistent || false"
     >
       <SettingsOverlay
         v-if="g && overlay === 'settings'"
@@ -71,9 +71,11 @@
   </div>
 </template>
 <script setup lang="ts">
-import { Hud, GameStatus, GamePlayers, CONN_STATE, RegisteredMap, GameId, DialogChangeData, ServerErrorDetails, ClientId } from '../../../common/src/Types'
+import { CONN_STATE } from '../../../common/src/Types'
+import type { Hud, GameStatus, GamePlayers, RegisteredMap, GameId, DialogChangeData, ServerErrorDetails, ClientId } from '../../../common/src/Types'
 import { GamePlay } from '../GamePlay'
-import { onMounted, onUnmounted, Ref, ref, watch } from 'vue'
+import { onMounted, onUnmounted, ref, watch } from 'vue'
+import type { Ref } from 'vue'
 import { useRoute } from 'vue-router'
 import api from '../_api'
 import config from '../config'
@@ -228,7 +230,7 @@ const hud: Hud = {
   toggleInterface: (v: boolean) => {
     showInterface.value = !!v
   },
-  addStatusMessage: (what: string, value: any) => statusMessages.value.addMessage(what, value),
+  addStatusMessage: (what: string, value: number | string | boolean | undefined) => statusMessages.value.addMessage(what, value),
 }
 
 const onLoginStateChange = async () => {

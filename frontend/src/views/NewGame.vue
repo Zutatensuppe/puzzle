@@ -1,10 +1,3 @@
-"New Game" page: Upload button big, centered, at the top of the page, as
-visible as possible. Upload button has a warning that the image will
-be added to public gallery, just so noone uploads anything naughty on
-accident. The page can show all the images by default, or one of the categories
-of images. Instead of categories, you can make the system tag-based, like
-in jigsawpuzzles.io
-
 <template>
   <v-container
     :fluid="true"
@@ -116,15 +109,18 @@ in jigsawpuzzles.io
 import { onMounted, onBeforeUnmount, ref, watch } from 'vue'
 import NewImageDialog from './../components/NewImageDialog.vue'
 import NewGameDialog from './../components/NewGameDialog.vue'
-import { GameSettings, ImageInfo, Tag, NewGameDataRequestData, ImagesRequestData, ImageSearchSort, isImageSearchSort, FeaturedRowWithCollections, defaultImageInfo } from '../../../common/src/Types'
+import { defaultImageInfo, ImageSearchSort, isImageSearchSort } from '../../../common/src/Types'
+import type { Api, GameSettings, ImageInfo, Tag, FeaturedRowWithCollections, ImageId } from '../../../common/src/Types'
 import api from '../_api'
-import { XhrRequest } from '../_api/xhr'
-import { onBeforeRouteUpdate, RouteLocationNormalizedLoaded, useRouter } from 'vue-router'
+import type { XhrRequest } from '../_api/xhr'
+import { onBeforeRouteUpdate, useRouter } from 'vue-router'
+import type { RouteLocationNormalizedLoaded } from 'vue-router'
 import ImageLibrary from './../components/ImageLibrary.vue'
 import Sentinel from '../components/Sentinel.vue'
 import { debounce } from '../util'
 import FeaturedButton from '../components/FeaturedButton.vue'
 import { useDialog } from '../useDialog'
+import { toast } from '../toast'
 
 const router = useRouter()
 
@@ -188,21 +184,25 @@ const loadFeaturedTeasers = async () => {
   featuredTeasers.value = json.featuredTeasers
 }
 
-const currentRequest = ref<XhrRequest | null>(null)
+const currentNewGameDataRequest = ref<XhrRequest<Api.NewGameDataResponseData> | null>(null)
+const currentImagesRequest = ref<XhrRequest<Api.ImagesResponseData> | null>(null)
 
 const loadImages = async () => {
   sentinelActive.value = false
   offset.value = 0
-  const requestData: NewGameDataRequestData = {
+  const requestData: Api.NewGameDataRequestData = {
     sort: filters.value.sort,
     search: filters.value.search,
   }
-  if (currentRequest.value) {
-    currentRequest.value.abort()
+  if (currentNewGameDataRequest.value) {
+    currentNewGameDataRequest.value.abort()
   }
-  currentRequest.value = api.pub.newgameData(requestData)
-  const res = await currentRequest.value.send()
-  currentRequest.value = null
+  if (currentImagesRequest.value) {
+    currentImagesRequest.value.abort()
+  }
+  currentNewGameDataRequest.value = api.pub.newgameData(requestData)
+  const res = await currentNewGameDataRequest.value.send()
+  currentNewGameDataRequest.value = null
   const json = await res.json()
   images.value = json.images
   tags.value = json.tags
@@ -236,76 +236,122 @@ const onImageEditClicked = (newImage: ImageInfo) => {
       // TODO: the image could now not match the filters anymore.
       //       but it is probably fine to not reload the whole list at this point
       const idx = images.value.findIndex(img => img.id === data.id)
-      images.value[idx] = json.image
+      images.value[idx] = json.imageInfo
     } else {
-      alert(json.error)
+      toast(json.error, 'error')
     }
   })
 }
 
-const uploadImage = async (data: any) => {
+const uploadImage = async (data: Api.UploadRequestData): Promise<{ error: string } | { imageInfo: ImageInfo }> => {
   uploadProgress.value = 0
-  const res = await api.pub.upload({
-    file: data.file,
-    title: data.title,
-    copyrightName: data.copyrightName,
-    copyrightURL: data.copyrightURL,
-    tags: data.tags,
-    isPrivate: data.isPrivate,
-    isNsfw: data.isNsfw,
-    onProgress: (progress: number): void => {
-      uploadProgress.value = progress
-    },
-  })
-  uploadProgress.value = 1
-  return await res.json()
+  try {
+    const res = await api.pub.upload({
+      file: data.file,
+      title: data.title,
+      copyrightName: data.copyrightName,
+      copyrightURL: data.copyrightURL,
+      tags: data.tags,
+      isPrivate: data.isPrivate,
+      isNsfw: data.isNsfw,
+      onProgress: (progress: number): void => {
+        uploadProgress.value = progress
+      },
+    })
+
+    // ⡀⡀⡀⡀⡀⡀⡀⣠⣴⣶⣶⣶⣶⣤⡀⡀⡀⡀⡀⡀⡀⡀
+    // ⡀⡀⡀⡀⡀⣤⣿⣿⣿⣿⣿⣿⣿⣿⣿⣦⡀⡀⡀⡀⡀⡀
+    // ⡀⡀⡀⡀⣼⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⢧⡀⡀⡀⡀⡀
+    // ⡀⡀⡀⢠⣿⣿⣿⢻⢸⣿⣿⠇⢿⣿⣿⣿⣿⡀⡀⡀⡀⡀
+    // ⡀⡀⡈⣾⣿⣿⡟⣘ ⠹⢿   ⣎⢿⣿⣿⡇⡀⡀⡀⡀
+    // ⡀⡀⡀⡇⣿⣿⠏⣾⡧    ⣿⡆⠇⣿⣿⡇⡀⡀⡀⡀
+    // ⡀⡀⡀⠁⣿⣿⡀          ⢼⣿⣼⡇⡀⡀⡀⡀
+    // ⡀⡀⡀⢠⣿⣿⣧⡀  ⡠⢄   ⣾⣿⣿⡻⡀⡀⡀⡀
+    // ⡀⡀⡀⠁⣿⣿⣿⣿⡦⣀⡀⡠⢶⣿⣿⣿⣿⣇⢂⡀⡀⡀
+    // ⡀⡀⠆⣼⣿⣿⣿⣿⡀⢄⢀⠔⡀⣿⣿⣿⣿⡟⡀⡀⡀⡀
+    // ⡀⡀⣿⣿⣿⣿⣿⣿⣿⣿⢿⣿⣿⣿⣿⣿⣿⣿⣿⡀⡀⡀
+    // ⡀⢰⡏⠉⠉⠉⠉⠉⠉⠉⠁⠉⠉⠉⠉⠉⠉⠉⠉⣿⡀⡀
+    // ⡀ ⣼⡇ 413 Request Entity  ⣿⡀⡀
+    // ⢀ ⠟⠃⡀    Too Large     ⣿⡇⡀⡀
+    // ⡀⡀⠿⠿⠿⠿⠿⠿⠿⠿⠿⠿⠿⠿⠿⠿⠿⠿⠇⡀⡀⡀
+    // Comment requested during nC_para_ stream :)
+    if (res.status === 413) {
+      throw 'The image you tried to upload is too large. Max file size is 20MB.'
+    }
+
+    const imageInfo = await res.json()
+    if (!imageInfo) {
+      throw 'The image upload failed for unknown reasons.'
+    }
+
+    uploadProgress.value = 1
+    return { imageInfo }
+  } catch (e) {
+    uploadProgress.value = 0
+    return { error: String(e) }
+  }
 }
 
-const postToGalleryClick = async (data: any) => {
+const postToGalleryClick = async (data: Api.UploadRequestData) => {
   uploading.value = 'postToGallery'
-  await uploadImage(data)
+  const result = await uploadImage(data)
   uploading.value = ''
   closeNewGameDialogs()
+
+  if ('error' in result) {
+    toast(result.error, 'error')
+    return
+  }
+
+  closeDialog()
   await loadImages()
 }
 
-const setupGameClick = async (data: any) => {
+const setupGameClick = async (data: Api.UploadRequestData) => {
   uploading.value = 'setupGame'
-  const uploadedImage = await uploadImage(data)
+  const result = await uploadImage(data)
   uploading.value = ''
+
+  if ('error' in result) {
+    toast(result.error, 'error')
+    return
+  }
+
   void loadImages() // load images in background
-  image.value = uploadedImage
+  image.value = result.imageInfo
   openDialog('new-game')
 }
 
 const onNewGame = async (gameSettings: GameSettings) => {
   const res = await api.pub.newGame({ gameSettings })
-  if (res.status === 200) {
-    const game = await res.json()
+  const game = await res.json()
+  if ('id' in game) {
     void router.push({ name: 'game', params: { id: game.id } })
+  } else {
+    toast('An error occured while creating the game.', 'error')
   }
 }
 
 const tryLoadMore = async () => {
-  if (currentRequest.value) {
+  if (currentNewGameDataRequest.value || currentImagesRequest.value) {
     // still loading
     return
   }
 
   offset.value = images.value.length
-  const requestData: ImagesRequestData = {
+  const requestData: Api.ImagesRequestData = {
     sort: filters.value.sort,
     search: filters.value.search,
     offset: offset.value,
   }
-  currentRequest.value = api.pub.images(requestData)
+  currentImagesRequest.value = api.pub.images(requestData)
   let json: { images: ImageInfo[] }
   try {
-    const res = await currentRequest.value.send()
+    const res = await currentImagesRequest.value.send()
     json = await res.json()
-    currentRequest.value = null
+    currentImagesRequest.value = null
   } catch {
-    currentRequest.value = null
+    currentImagesRequest.value = null
     return
   }
 

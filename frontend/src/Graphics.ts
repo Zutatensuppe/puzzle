@@ -1,7 +1,8 @@
 'use strict'
 
-import { Color, colorEquals } from '../../common/src/Color'
-import { Rect } from './Geometry'
+import { colorEquals } from '../../common/src/Color'
+import type { Color } from '../../common/src/Color'
+import type { Rect } from './Geometry'
 
 export class Graphics {
   private static instance: Graphics
@@ -81,7 +82,11 @@ export class Graphics {
     return new Promise<Blob>((resolve, reject) => {
       const r = new FileReader()
       r.readAsDataURL(file)
-      r.onload = async (ev: any) => {
+      r.onload = async (ev: ProgressEvent<FileReader>) => {
+        if (!ev.target || !ev.target.result || typeof ev.target.result !== 'string') {
+          reject(new Error('Could not read file'))
+          return
+        }
         try {
           const blob = await this.loadImageToBlob(ev.target.result)
           resolve(blob)

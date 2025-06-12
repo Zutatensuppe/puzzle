@@ -1,4 +1,4 @@
-import { Buffer, BufferType } from './Buffer'
+import type { Buffer, BufferType } from './Buffer'
 
 /**
  * Describes a set of attributes to be bound to a VAO.

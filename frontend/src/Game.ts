@@ -2,12 +2,18 @@
 
 import { Camera } from '../../common/src/Camera'
 import { CHANGE_TYPE, GAME_EVENT_TYPE } from '../../common/src/Protocol'
-import { GameLoopInstance, run } from './gameloop'
+import { run } from './gameloop'
+import type { GameLoopInstance } from './gameloop'
 import fireworksController from '../../common/src/Fireworks'
 import GameCommon from '../../common/src/GameCommon'
 import Time from '../../common/src/Time'
 import { logger } from '../../common/src/Util'
 import {
+  RendererType,
+  EncodedPieceIdx,
+  EncodedPlayerIdx,
+} from '../../common/src/Types'
+import type {
   Hud,
   ScoreMode,
   SnapMode,
@@ -23,11 +29,8 @@ import {
   RotationMode,
   GameId,
   ClientId,
-  RendererType,
   EncodedPiece,
-  EncodedPieceIdx,
   EncodedPlayer,
-  EncodedPlayerIdx,
 } from '../../common/src/Types'
 import _api from './_api'
 import { Assets } from './Assets'
@@ -101,13 +104,14 @@ export interface GameInterface {
   getGameId(): GameId
   getClientId(): ClientId
   requireRerender(): void
-  showStatusMessage(what: string, value: any): void
+  showStatusMessage(what: string, value: number | string | boolean | undefined): void
   bgChange(value: string): void
   changeTableTexture(_value: string): void
   changeUseCustomTableTexture(_value: boolean): void
   changeCustomTableTexture(_value: string): void
   changeCustomTableTextureScale(_value: number): void
   changeShowTable(_value: boolean): void
+  changeShowPuzzleBackground(_value: boolean): void
   changeColor(value: string): void
   changeName(value: string): void
   changeSoundsVolume(_value: number): void
@@ -360,10 +364,12 @@ export abstract class Game<HudType extends Hud> implements GameInterface {
   }
 
   async loadTableTexture(settings: PlayerSettingsData): Promise<void> {
-    if (this.rendererWebgl) {
-      await this.rendererWebgl.loadTableTexture(settings)
-    } else if (this.rendererCanvas2d){
-      await this.rendererCanvas2d.loadTableTexture(settings)
+    if (settings.showTable) {
+      if (this.rendererWebgl) {
+        await this.rendererWebgl.loadTableTexture(settings)
+      } else if (this.rendererCanvas2d){
+        await this.rendererCanvas2d.loadTableTexture(settings)
+      }
     }
     this.requireRerender()
   }
@@ -545,6 +551,10 @@ export abstract class Game<HudType extends Hud> implements GameInterface {
       this.toggleViewLoosePieces()
     } else if (type === GAME_EVENT_TYPE.INPUT_EV_TOGGLE_TABLE) {
       this.playerSettings.toggleShowTable()
+      void this.loadTableTexture(this.playerSettings.getSettings())
+    } else if (type === GAME_EVENT_TYPE.INPUT_EV_TOGGLE_PUZZLE_BACKGROUND) {
+      this.playerSettings.toggleShowPuzzleBackground()
+      void this.loadTableTexture(this.playerSettings.getSettings())
     } else if (type === GAME_EVENT_TYPE.INPUT_EV_CENTER_FIT_PUZZLE) {
       const slot = 'center'
       const handled = this.viewportSnapshots.handle(slot)
@@ -579,7 +589,7 @@ export abstract class Game<HudType extends Hud> implements GameInterface {
         (piece: EncodedPiece) => this.shouldDrawEncodedPiece(piece),
         (player: EncodedPlayer) => this.shouldDrawPlayer(player),
         this.justFinished(),
-        false,
+        this.showImagePreviewInBackground(),
       )
     } else if (this.rendererCanvas2d) {
       this.rendererCanvas2d.debug = debug.isDebugEnabled()
@@ -594,11 +604,15 @@ export abstract class Game<HudType extends Hud> implements GameInterface {
         (piece: EncodedPiece) => this.shouldDrawEncodedPiece(piece),
         (player: EncodedPlayer) => this.shouldDrawPlayer(player),
         this.justFinished(),
-        false,
+        this.showImagePreviewInBackground(),
       )
     }
 
     this.rerender = false
+  }
+
+  showImagePreviewInBackground(): boolean {
+    return GameCommon.getShowImagePreviewInBackground(this.gameId)
   }
 
   hasReplay(): boolean {
@@ -650,6 +664,10 @@ export abstract class Game<HudType extends Hud> implements GameInterface {
   }
 
   changeShowTable(_value: boolean): void {
+    this.requireRerender()
+  }
+
+  changeShowPuzzleBackground(_value: boolean): void {
     this.requireRerender()
   }
 

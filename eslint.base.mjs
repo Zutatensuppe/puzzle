@@ -18,6 +18,7 @@ export default {
         'no-void': ['error', { allowAsStatement: true }],
         'require-await': 'error',
         'space-infix-ops': 'error',
+        '@typescript-eslint/consistent-type-imports': 'error',
         '@typescript-eslint/no-floating-promises': ['error', { ignoreVoid: true }],
         '@typescript-eslint/no-inferrable-types': 'off',
         '@typescript-eslint/ban-ts-comment': 'off',

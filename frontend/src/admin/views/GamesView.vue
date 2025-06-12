@@ -46,7 +46,7 @@ import user from '../../user'
 import api from '../../_api'
 import Nav from '../components/Nav.vue'
 import Pagination from '../../components/Pagination.vue'
-import { GameRowWithImageAndUser, Pagination as PaginationType, ServerInfo } from '../../../../common/src/Types'
+import type { GameRowWithImageAndUser, Pagination as PaginationType, ServerInfo } from '../../../../common/src/Types'
 import GamesRow from '../components/GamesRow.vue'
 
 const perPage = 50
@@ -78,20 +78,29 @@ const onFixPieces = async (game: GameRowWithImageAndUser) => {
   }
 }
 
+const loadGames = async (data: { limit: number; offset: number }) => {
+  const responseData = await api.admin.getGames(data)
+  if ('error' in responseData) {
+    console.error('Error loading games:', responseData.error)
+    return null
+  }
+  return responseData
+}
+
 const onPagination = async (q: { limit: number, offset: number }) => {
   if (!games.value) {
     return
   }
-  games.value = await api.admin.getGames(q)
+  games.value = await loadGames(q)
 }
 
 onMounted(async () => {
   if (user.getMe()) {
-    games.value = await api.admin.getGames({ limit: perPage, offset: 0 })
+    games.value = await loadGames({ limit: perPage, offset: 0 })
     serverInfo.value = await api.admin.getServerInfo()
   }
   user.eventBus.on('login', async () => {
-    games.value = await api.admin.getGames({ limit: perPage, offset: 0 })
+    games.value = await loadGames({ limit: perPage, offset: 0 })
     serverInfo.value = await api.admin.getServerInfo()
   })
   user.eventBus.on('logout', () => {

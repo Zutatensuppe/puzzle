@@ -1,6 +1,7 @@
 import Crypto from '../Crypto'
-import Db, { WhereRaw } from '../Db'
-import { IdentityId, UserId } from '../../../common/src/Types'
+import type Db from '../Db'
+import type { WhereRaw } from '../Db'
+import type { IdentityId, UserId } from '../../../common/src/Types'
 
 const TABLE = 'user_identity'
 

@@ -1,9 +1,10 @@
 'use strict'
 
-import { CONN_STATE, ClientEvent, EncodedGame, EncodedGameLegacy, GameEvent, ServerEvent, ServerSyncEvent, ServerUpdateEvent } from '../../common/src/Types'
+import { CONN_STATE } from '../../common/src/Types'
+import type { ClientEvent, EncodedGame, EncodedGameLegacy, GameEvent, ServerEvent, ServerSyncEvent, ServerUpdateEvent } from '../../common/src/Types'
 import { logger } from '../../common/src/Util'
 import { CLIENT_EVENT_TYPE, SERVER_EVENT_TYPE } from '../../common/src/Protocol'
-import { GamePlay } from './GamePlay'
+import type { GamePlay } from './GamePlay'
 
 const log = logger('Communication.js')
 
@@ -66,9 +67,9 @@ function send(message: ClientEvent): void {
 let clientSeq: number
 let events: Record<number, GameEvent>
 
-let timerId: any = 0
+let timerId: ReturnType<typeof setTimeout> | null = null
 let gotPong: boolean = false
-let pongWaitTimerId: any = 0
+let pongWaitTimerId: ReturnType<typeof setTimeout> | null = null
 
 function keepAlive(timeout = 20000) {
   if (ws && ws.readyState == ws.OPEN) {

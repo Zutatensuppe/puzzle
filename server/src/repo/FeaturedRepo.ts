@@ -1,6 +1,15 @@
-import { CollectionRow, CollectionRowWithImages, FeaturedId, FeaturedRow, FeaturedRowWithCollections, ImageInfo } from '../../../common/src/Types'
-import Db, { WhereRaw } from '../Db'
-import { Server } from '../Server'
+import type {
+  CollectionRow,
+  CollectionRowWithImages,
+  FeaturedId,
+  FeaturedRow,
+  FeaturedRowWithCollections,
+  FeaturedTeaserRow,
+  ImageInfo,
+} from '../../../common/src/Types'
+import type Db from '../Db'
+import type { WhereRaw } from '../Db'
+import type { Server } from '../Server'
 
 const TABLE = 'featured'
 
@@ -93,10 +102,6 @@ export class FeaturedRepo {
     return many[0]
   }
 
-  async getAll(offset: number, limit: number): Promise<FeaturedRow[]> {
-    return await this.db.getMany(TABLE, undefined, undefined, { offset, limit })
-  }
-
   async insert(featured: Omit<FeaturedRow, 'id'>): Promise<FeaturedId> {
     return await this.db.insert(TABLE, {
       ...featured,
@@ -155,5 +160,21 @@ export class FeaturedRepo {
       const teaserB = featuredTeaserRows.find(r => r.featured_id === b.id)!
       return teaserA!.sort_index - teaserB!.sort_index
     })
+  }
+
+  public async getAllTeasers(): Promise<FeaturedTeaserRow[]> {
+    return await this.db.getMany('featured_teaser')
+  }
+
+  public async saveTeasers(featuredTeasers: FeaturedTeaserRow[]): Promise<void> {
+    await this.db.delete('featured_teaser', {})
+    await this.db.insertMany('featured_teaser', featuredTeasers.map(teaser => {
+      const withoutId: Omit<FeaturedTeaserRow, 'id'> = {
+        featured_id: teaser.featured_id,
+        sort_index: teaser.sort_index,
+        active: teaser.active ? 1 : 0,
+      }
+      return withoutId
+    }))
   }
 }

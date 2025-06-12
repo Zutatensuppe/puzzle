@@ -1,13 +1,22 @@
-import { GameSettings, GameInfo, ApiDataIndexData, ApiDataFinishedGames, NewGameDataRequestData, ImagesRequestData, UserId, ImageId, ClientId, UserRow, GameId } from '../../../../common/src/Types'
+import type {
+  Api,
+  GameSettings,
+  GameInfo,
+  UserId,
+  ImageId,
+  ClientId,
+  UserRow,
+  GameId,
+} from '../../../../common/src/Types'
 import config from '../../Config'
-import express, { Response, Router } from 'express'
+import express from 'express'
 import GameLog from '../../GameLog'
 import multer from 'multer'
 import request from 'request'
 import Time from '../../../../common/src/Time'
-import Util, { logger, uniqId } from '../../../../common/src/Util'
+import Util, { isEncodedGameLegacy, logger, newJSONDateString, uniqId } from '../../../../common/src/Util'
 import { COOKIE_TOKEN, generateSalt, generateToken, passwordHash } from '../../Auth'
-import { Server } from '../../Server'
+import type { Server } from '../../Server'
 import fs from '../../FileSystem'
 
 const log = logger('web_routes/api/index.ts')
@@ -24,9 +33,9 @@ const IMAGES_PER_PAGE_LIMIT = 20
 
 export default function createRouter(
   server: Server,
-): Router {
+): express.Router {
 
-  const determineNewUserClientId = async (originalClientId: ClientId): Promise<ClientId> => {
+  const determineNewUserClientId = async (originalClientId: ClientId | ''): Promise<ClientId> => {
     // if a client id is given, we will use it, if it doesnt
     // correspond to a registered user. this way, guests will
     // continue to have their client id after logging in.
@@ -37,7 +46,7 @@ export default function createRouter(
       : uniqId() as ClientId
   }
 
-  const addAuthToken = async (userId: UserId, res: Response): Promise<void> => {
+  const addAuthToken = async (userId: UserId, res: express.Response): Promise<void> => {
     const token = await server.users.addAuthToken(userId)
     res.cookie(COOKIE_TOKEN, token, { maxAge: 356 * Time.DAY, httpOnly: true })
   }
@@ -70,26 +79,30 @@ export default function createRouter(
   const upload = multer({ storage }).single('file')
 
   const router = express.Router()
-  router.get('/me', async (req: any, res): Promise<void> => {
-    if (req.user) {
-      const groups = await server.users.getGroups(req.user.id)
-      res.send({
-        id: req.user.id,
-        name: req.user.name,
-        clientId: req.user.client_id,
-        created: req.user.created,
-        type: req.user_type,
-        cannyToken: server.canny.createToken(req.user),
+  router.get('/me', async (req, res): Promise<void> => {
+    if (req.userInfo?.user) {
+      const user: UserRow = req.userInfo.user
+      const groups = await server.users.getGroups(user.id)
+      const responseData: Api.MeResponseData = {
+        id: user.id,
+        name: user.name,
+        clientId: user.client_id,
+        created: user.created,
+        type: req.userInfo.user_type,
+        cannyToken: server.canny.createToken(user),
         groups: groups.map(g => g.name),
-      })
+      }
+      res.send(responseData)
       return
     }
-    res.status(401).send({ reason: 'no user' })
+
+    const responseData: Api.MeResponseData = { reason: 'no user' }
+    res.status(401).send(responseData)
     return
   })
 
   // login via twitch (callback url called from twitch after authentication)
-  router.get('/auth/twitch/redirect_uri', async (req: any, res): Promise<void> => {
+  router.get('/auth/twitch/redirect_uri', async (req, res): Promise<void> => {
     if (!req.query.code) {
       // in error case:
       // http://localhost:3000/
@@ -159,7 +172,7 @@ export default function createRouter(
       // in the auth/twitch request, no client_id header is sent, so we also
       // cannot use req.user
       // instead, the client_id is passed via req.query.state (but it can be empty)
-      const client_id = req.query.state || ''
+      const client_id = String(req.query.state || '') as ClientId
       // first try to find user by the identity
       // the client_id should only be used if no identity is found
       let user: UserRow | null = null
@@ -172,6 +185,8 @@ export default function createRouter(
       if (!user) {
         user = await server.users.createUser({
           client_id: await determineNewUserClientId(client_id),
+          // TODO: date gets converted to string automatically. fix this type hint
+          // @ts-ignore
           created: new Date(),
           email: provider_email,
           name: userData.data[0].display_name,
@@ -228,17 +243,20 @@ export default function createRouter(
     const passwordPlain = req.body.password
     const account = await server.users.getAccountByEmailPlain(emailPlain)
     if (!account) {
-      res.status(401).send({ reason: 'bad email' })
+      const responseData: Api.AuthLocalResponseData = { reason: 'bad email' }
+      res.status(401).send(responseData)
       return
     }
     if (account.status !== 'verified') {
-      res.status(401).send({ reason: 'email not verified' })
+      const responseData: Api.AuthLocalResponseData = { reason: 'email not verified' }
+      res.status(401).send(responseData)
       return
     }
     const salt = account.salt
     const passHashed = passwordHash(passwordPlain, salt)
     if (account.password !== passHashed) {
-      res.status(401).send({ reason: 'bad password' })
+      const responseData: Api.AuthLocalResponseData = { reason: 'bad password' }
+      res.status(401).send(responseData)
       return
     }
     const identity = await server.users.getIdentity({
@@ -246,29 +264,33 @@ export default function createRouter(
       provider_id: account.id,
     })
     if (!identity) {
-      res.status(401).send({ reason: 'no identity' })
+      const responseData: Api.AuthLocalResponseData = { reason: 'no identity' }
+      res.status(401).send(responseData)
       return
     }
 
     await addAuthToken(identity.user_id, res)
-    res.send({ success: true })
+    const responseData: Api.AuthLocalResponseData = { success: true }
+    res.send(responseData)
   })
 
-  router.post('/change-password', express.json(), async (req: any, res): Promise<void> => {
+  router.post('/change-password', express.json(), async (req, res): Promise<void> => {
     const token = `${req.body.token}`
     const passwordRaw = `${req.body.password}`
 
     const tokenRow = await server.repos.tokens.get({ type: 'password-reset', token })
 
     if (!tokenRow) {
-      res.status(400).send({ reason: 'no such token' })
+      const responseData: Api.ChangePasswordResponseData = { reason: 'no such token' }
+      res.status(400).send(responseData)
       return
     }
 
     // note: token contains account id, not user id ...
     const account = await server.users.getAccount({ id: tokenRow.user_id })
     if (!account) {
-      res.status(400).send({ reason: 'no such account' })
+      const responseData: Api.ChangePasswordResponseData = { reason: 'no such account' }
+      res.status(400).send(responseData)
       return
     }
 
@@ -279,18 +301,17 @@ export default function createRouter(
     // remove token, already used
     await server.repos.tokens.delete(tokenRow)
 
-    res.send({ success: true })
+    const responseData: Api.ChangePasswordResponseData = { success: true }
+    res.send(responseData)
   })
 
-  router.post('/send-password-reset-email', express.json(), async (req: any, res): Promise<void> => {
-    // we always respond with success, so that the user cannot
-    // as easily guess if an email is registered or not
+  router.post('/send-password-reset-email', express.json(), async (req, res): Promise<void> => {
 
     const emailPlain = `${req.body.email}`
     const account = await server.users.getAccountByEmailPlain(emailPlain)
     if (!account) {
-      // res.status(400).send({ reason: 'no such email' })
-      res.send({ success: true })
+      const responseData: Api.SendPasswordResetEmailResponseData = { reason: 'an error occured' }
+      res.send(responseData)
       return
     }
     const identity = await server.users.getIdentity({
@@ -298,16 +319,16 @@ export default function createRouter(
       provider_id: account.id,
     })
     if (!identity) {
-      // res.status(400).send({ reason: 'no such identity' })
-      res.send({ success: true })
+      const responseData: Api.SendPasswordResetEmailResponseData = { reason: 'an error occured' }
+      res.send(responseData)
       return
     }
     const user = await server.users.getUser({
       id: identity.user_id,
     })
     if (!user) {
-      // res.status(400).send({ reason: 'no such user' })
-      res.send({ success: true })
+      const responseData: Api.SendPasswordResetEmailResponseData = { reason: 'an error occured' }
+      res.send(responseData)
       return
     }
 
@@ -320,30 +341,33 @@ export default function createRouter(
     }
     await server.repos.tokens.insert(tokenRow)
     server.mail.sendPasswordResetMail({ user: { name: user.name, email: emailPlain }, token: tokenRow })
-    res.send({ success: true })
+    const responseData: Api.SendPasswordResetEmailResponseData = { success: true }
+    res.send(responseData)
   })
 
-  router.post('/register', express.json(), async (req: any, res): Promise<void> => {
+  router.post('/register', express.json(), async (req, res): Promise<void> => {
     const salt = generateSalt()
 
-    const client_id = await determineNewUserClientId(req.user ? req.user.client_id : '')
+    const client_id = await determineNewUserClientId(req.userInfo?.user ? req.userInfo.user.client_id : '')
 
     const emailRaw = `${req.body.email}`
     const passwordRaw = `${req.body.password}`
     const usernameRaw = `${req.body.username}`
 
     if (await server.users.usernameTaken(usernameRaw)) {
-      res.status(409).send({ reason: 'username already taken' })
+      const responseData: Api.RegisterResponseData = { reason: 'username already taken' }
+      res.status(409).send(responseData)
       return
     }
 
     if (await server.users.emailTaken(emailRaw)) {
-      res.status(409).send({ reason: 'email already taken' })
+      const responseData: Api.RegisterResponseData = { reason: 'email already taken' }
+      res.status(409).send(responseData)
       return
     }
 
     const account = await server.users.createAccount({
-      created: new Date(),
+      created: newJSONDateString(),
       email: emailRaw,
       password: passwordHash(passwordRaw, salt),
       salt: salt,
@@ -359,7 +383,7 @@ export default function createRouter(
     } else {
       user = await server.users.createUser({
         client_id,
-        created: new Date(),
+        created: newJSONDateString(),
         email: emailRaw,
         name: usernameRaw,
       })
@@ -382,7 +406,8 @@ export default function createRouter(
     // TODO: dont misuse token table user id <> account id
     await server.repos.tokens.insert(tokenRow)
     server.mail.sendRegistrationMail({ user: userInfo, token: tokenRow })
-    res.send({ success: true })
+    const responseData: Api.RegisterResponseData = { success: true }
+    res.send(responseData)
   })
 
   router.get('/verify-email/:token', async (req, res): Promise<void> => {
@@ -420,35 +445,48 @@ export default function createRouter(
     res.redirect(302, '/#email-verified=true')
   })
 
-  router.post('/logout', async (req: any, res): Promise<void> => {
-    if (!req.token) {
-      res.status(401).send({})
+  router.post('/logout', async (req, res): Promise<void> => {
+    if (!req.userInfo?.token) {
+      const responseData: Api.LogoutResponseData = { reason: 'no token' }
+      res.status(401).send(responseData)
       return
     }
-    await server.repos.tokens.delete({ token: req.token })
+    await server.repos.tokens.delete({ token: req.userInfo.token })
     res.clearCookie(COOKIE_TOKEN)
-    res.send({ success: true })
+    const responseData: Api.LogoutResponseData = { success: true }
+    res.send(responseData)
   })
 
   router.get('/conf', (_req, res): void => {
-    res.send({
+    const responseData: Api.ConfigResponseData = {
       WS_ADDRESS: config.ws.connectstring,
-    })
+    }
+    res.send(responseData)
   })
 
   router.get('/replay-game-data', async (req, res): Promise<void> => {
     const q: Record<string, any> = req.query
     const gameId = q.gameId || ''
     if (!await GameLog.exists(q.gameId)) {
-      res.status(404).send({ reason: 'no log found' })
+      const responseData: Api.ReplayGameDataResponseData = { reason: 'no log found' }
+      res.status(404).send(responseData)
       return
     }
     const gameObj = await server.gameService.createNewGameObjForReplay(gameId)
     if (!gameObj) {
-      res.status(404).send({ reason: 'no game found' })
+      const responseData: Api.ReplayGameDataResponseData = { reason: 'no game found' }
+      res.status(404).send(responseData)
       return
     }
-    res.send({ game: Util.encodeGame(gameObj) })
+    const game = Util.encodeGame(gameObj)
+    if (isEncodedGameLegacy(game)) {
+      const responseData: Api.ReplayGameDataResponseData = { reason: 'legacy game cannot be replayed' }
+      res.status(404).send(responseData)
+      return
+    }
+
+    const responseData: Api.ReplayGameDataResponseData = { game }
+    res.send(responseData)
   })
 
   router.get('/replay-log-data', async (req, res): Promise<void> => {
@@ -478,51 +516,56 @@ export default function createRouter(
     res.send(await fs.readFileRaw(f))
   })
 
-  router.get('/newgame-data', async (req: any, res): Promise<void> => {
-    const user: UserRow | null = req.user || null
-    const userId = user && req.user_type === 'user' ? user.id : 0 as UserId
+  router.get('/newgame-data', async (req, res): Promise<void> => {
+    const userInfo = req.userInfo
+    const userId = userInfo?.user_type === 'user' ? userInfo.user.id : 0 as UserId
 
-    const requestData: NewGameDataRequestData = req.query as any
-    res.send({
+    const requestData: Api.NewGameDataRequestData = req.query as any
+    const responseData: Api.NewGameDataResponseData = {
       featured: await server.repos.featured.getManyWithCollections({}),
       images: await server.images.imagesFromDb(requestData.search, requestData.sort, false, 0, IMAGES_PER_PAGE_LIMIT, userId),
       tags: await server.images.getAllTags(),
-    })
+    }
+    res.send(responseData)
   })
 
   router.get('/featured/:type/:slug', async (req, res): Promise<void> => {
     const type = req.params.type
     const slug = req.params.slug
     try {
-      const featured = await server.repos.featured.getWithCollections({ type, slug })
-      res.send({ featured })
-    } catch (e: any) {
-      res.status(404).send({ reason: e.message })
+      const responseData: Api.FeaturedResponseData = {
+        featured: await server.repos.featured.getWithCollections({ type, slug }),
+      }
+      res.send(responseData)
+    } catch (e: unknown) {
+      res.status(404).send({ reason: e instanceof Error ? e.message : String(e) })
     }
   })
 
   router.get('/featured-teasers', async (req, res): Promise<void> => {
-    res.send({ featuredTeasers: await server.repos.featured.getActiveTeasers() })
+    const responseData: Api.FeaturedTeasersResponseData = {
+      featuredTeasers: await server.repos.featured.getActiveTeasers(),
+    }
+    res.send(responseData)
   })
 
-  router.get('/images', async (req: any, res): Promise<void> => {
-    const requestData: ImagesRequestData = req.query as any
+  router.get('/images', async (req, res): Promise<void> => {
+    const requestData: Api.ImagesRequestData = req.query as any
     const offset = parseInt(`${requestData.offset}`, 10)
     if (isNaN(offset) || offset < 0) {
       res.status(400).send({ error: 'bad offset' })
       return
     }
-    const user: UserRow | null = req.user || null
-    const userId = user && req.user_type === 'user' ? user.id : 0 as UserId
+    const userId = req.userInfo?.user_type === 'user' ? req.userInfo.user.id : 0 as UserId
 
-    res.send({
+    const responseData: Api.ImagesResponseData = {
       images: await server.images.imagesFromDb(requestData.search, requestData.sort, false, offset, IMAGES_PER_PAGE_LIMIT, userId),
-    })
+    }
+    res.send(responseData)
   })
 
-  router.get('/index-data', async (req: any, res): Promise<void> => {
-    const user: UserRow | null = req.user || null
-    const userId = user && req.user_type === 'user' ? user.id : 0 as UserId
+  router.get('/index-data', async (req, res): Promise<void> => {
+    const userId = req.userInfo?.user_type === 'user' ? req.userInfo.user.id : 0 as UserId
 
     const ts = Time.timestamp()
     // all running rows
@@ -544,7 +587,7 @@ export default function createRouter(
 
     const livestreams = await server.repos.livestreams.getLive()
 
-    const indexData: ApiDataIndexData = {
+    const responseData: Api.ApiDataIndexData = {
       gamesRunning: {
         items: gamesRunning,
         pagination: { total: runningCount, offset: 0, limit: 0 },
@@ -556,16 +599,16 @@ export default function createRouter(
       leaderboards,
       livestreams,
     }
-    res.send(indexData)
+    res.send(responseData)
   })
 
-  router.get('/finished-games', async (req: any, res): Promise<void> => {
-    const user: UserRow | null = req.user || null
-    const userId = user && req.user_type === 'user' ? user.id : 0 as UserId
+  router.get('/finished-games', async (req, res): Promise<void> => {
+    const userId = req.userInfo?.user_type === 'user' ? req.userInfo.user.id : 0 as UserId
 
     const offset = parseInt(`${req.query.offset}`, 10)
     if (isNaN(offset) || offset < 0) {
-      res.status(400).send({ error: 'bad offset' })
+      const responseData: Api.FinishedGamesResponseData = { error: 'bad offset' }
+      res.status(400).send(responseData)
       return
     }
     const ts = Time.timestamp()
@@ -575,28 +618,28 @@ export default function createRouter(
     for (const row of finishedRows) {
       gamesFinished.push(await server.gameService.gameToGameInfo(row, ts))
     }
-    const indexData: ApiDataFinishedGames = {
+    const responseData: Api.FinishedGamesResponseData = {
       items: gamesFinished,
       pagination: { total: finishedCount, offset: offset, limit: GAMES_PER_PAGE_LIMIT },
     }
-    res.send(indexData)
+    res.send(responseData)
   })
 
-  router.post('/save-image', express.json(), async (req: any, res): Promise<void> => {
-    const user: UserRow | null = req.user || null
+  router.post('/save-image', express.json(), async (req: express.Request, res): Promise<void> => {
+    const user: UserRow | null = req.userInfo?.user || null
     if (!user || !user.id) {
       res.status(403).send({ ok: false, error: 'forbidden' })
       return
     }
 
     const data = req.body as SaveImageRequestData
-    const image = await server.images.getImageById(data.id)
-    if (!image) {
+    const imageRow = await server.images.getImageById(data.id)
+    if (!imageRow) {
       res.status(404).send({ ok: false, error: 'not_found' })
       return
     }
 
-    if (image.uploader_user_id !== user.id) {
+    if (imageRow.uploader_user_id !== user.id) {
       res.status(403).send({ ok: false, error: 'forbidden' })
       return
     }
@@ -609,11 +652,21 @@ export default function createRouter(
 
     await server.images.setTags(data.id, data.tags || [])
 
-    res.send({ ok: true, image: await server.images.imageFromDb(data.id) })
+    const imageInfo = await server.images.imageFromDb(data.id)
+    if (!imageInfo) {
+      res.status(404).send({ ok: false, error: 'not_found' })
+      return
+    }
+
+    res.send({ ok: true, imageInfo })
   })
 
-  router.get('/proxy', (req: any, res): void => {
+  router.get('/proxy', (req, res): void => {
     log.info('proxy request for url:', req.query.url)
+    if (!req.query.url || typeof req.query.url !== 'string') {
+      res.status(400).send({ ok: false })
+      return
+    }
     request(req.query.url).on('error', (e) => {
       log.error(e)
       res.status(400).send({ ok: false })
@@ -623,10 +676,15 @@ export default function createRouter(
     })
   })
 
-  router.post('/upload', (req: any, res): void => {
-    void upload(req, res, async (err: any): Promise<void> => {
+  router.post('/upload', (req, res): void => {
+    void upload(req, res, async (err: unknown): Promise<void> => {
       if (err) {
         log.log('/api/upload/', 'error', err)
+        res.status(400).send('Something went wrong!')
+        return
+      }
+      if (!req.file) {
+        log.log('/api/upload/', 'error', 'no file')
         res.status(400).send('Something went wrong!')
         return
       }
@@ -650,7 +708,7 @@ export default function createRouter(
         title: req.body.title || '',
         copyright_name: req.body.copyrightName || '',
         copyright_url: server.urlUtil.fixUrl(req.body.copyrightURL || ''),
-        created: new Date(),
+        created: newJSONDateString(),
         width: dim.w,
         height: dim.h,
         private: isPrivate,
@@ -663,13 +721,19 @@ export default function createRouter(
         await im.setTags(imageId, tags)
       }
 
-      res.send(await im.imageFromDb(imageId))
+      const imageInfo = await im.imageFromDb(imageId)
+      if (!imageInfo) {
+        res.status(400).send('Something went wrong!')
+      } else {
+        res.send(imageInfo)
+      }
     })
   })
 
   router.get('/announcements', async (req, res) => {
     const items = await server.repos.announcements.getAll()
-    res.send(items)
+    const responseData: Api.AnnouncementsResponseData = items
+    res.send(responseData)
   })
 
   router.post('/newgame', express.json(), async (req, res): Promise<void> => {
@@ -680,54 +744,63 @@ export default function createRouter(
         Time.timestamp(),
         user.id,
       )
-      res.send({ id: gameId })
-    } catch (e: any) {
+      const responseData: Api.NewGameResponseData = { id: gameId }
+      res.send(responseData)
+    } catch (e: unknown) {
       log.error(e)
-      res.status(400).send({ reason: e.message })
+      const responseData: Api.NewGameResponseData = { reason: e instanceof Error ? e.message : String(e) }
+      res.status(400).send(responseData)
     }
   })
 
-  router.delete('/games/:id', async (req: any, res) => {
-    const user: UserRow | null = req.user || null
+  router.delete('/games/:id', async (req, res) => {
+    const user: UserRow | null = req.userInfo?.user || null
     if (!user || !user.id) {
-      res.status(403).send({ ok: false, error: 'forbidden' })
+      const responseData: Api.DeleteGameResponseData = { ok: false, error: 'forbidden' }
+      res.status(403).send(responseData)
       return
     }
     const id = req.params.id as GameId
     try {
       await server.gameService.deleteRunningGameIfCreatedByUser(id, user.id)
-    } catch (e: any) {
+    } catch (e: unknown) {
       log.error(e)
-      res.status(400).send({ reason: e.message })
+      const responseData: Api.DeleteGameResponseData = { ok: false, error: e instanceof Error ? e.message : String(e) }
+      res.status(400).send(responseData)
       return
     }
-    res.send({ ok: true })
+    const responseData: Api.DeleteGameResponseData = { ok: true }
+    res.send(responseData)
   })
 
-  router.post('/moderation/report-game', express.json(), async (req: any, res): Promise<void> => {
-    const user: UserRow | null = req.user || null
+  router.post('/moderation/report-game', express.json(), async (req, res): Promise<void> => {
+    const user: UserRow | null = req.userInfo?.user || null
     const reason = req.body.reason || ''
     const gameId = req.body.id as GameId
     if (!gameId) {
-      res.status(400).send({ error: 'bad id' })
+      const responseData: Api.ReportResponseData = { ok: false, error: 'bad id' }
+      res.status(400).send(responseData)
       return
     }
 
     try {
       await server.moderation.reportGame(gameId, user, reason)
       await server.repos.games.reportGame(gameId)
-      res.send({ ok: true })
+      const responseData: Api.ReportResponseData = { ok: true }
+      res.send(responseData)
     } catch {
-      res.status(500).send({ ok: false })
+      const responseData: Api.ReportResponseData = { ok: false, error: 'unknown error' }
+      res.status(500).send(responseData)
     }
   })
 
-  router.post('/moderation/report-image', express.json(), async (req: any, res): Promise<void> => {
-    const user: UserRow | null = req.user || null
+  router.post('/moderation/report-image', express.json(), async (req, res): Promise<void> => {
+    const user: UserRow | null = req.userInfo?.user || null
     const reason = req.body.reason || ''
     const imageIdInt = parseInt(`${req.body.id}`, 10)
     if (isNaN(imageIdInt) || imageIdInt < 0) {
-      res.status(400).send({ error: 'bad id' })
+      const responseData: Api.ReportResponseData = { ok: false, error: 'bad id' }
+      res.status(400).send(responseData)
       return
     }
     const imageId = imageIdInt as ImageId
@@ -735,9 +808,11 @@ export default function createRouter(
     try {
       await server.moderation.reportImage(imageId, user, reason)
       await server.repos.images.reportImage(imageId)
-      res.send({ ok: true })
+      const responseData: Api.ReportResponseData = { ok: true }
+      res.send(responseData)
     } catch {
-      res.status(500).send({ ok: false })
+      const responseData: Api.ReportResponseData = { ok: false, error: 'unknown error' }
+      res.status(500).send(responseData)
     }
   })
 

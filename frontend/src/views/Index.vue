@@ -193,13 +193,13 @@
 <script setup lang="ts">
 import { onMounted, onBeforeUnmount, ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
-import { ApiDataFinishedGames, ApiDataIndexData, GameInfo } from '../../../common/src/Types'
+import type { Api, GameInfo, User } from '../../../common/src/Types'
 import RunningGameTeaser from '../components/RunningGameTeaser.vue'
 import FinishedGameTeaser from '../components/FinishedGameTeaser.vue'
 import Pagination from '../components/Pagination.vue'
 import api from '../_api'
 import Leaderboard from '../components/Leaderboard.vue'
-import user, { User } from '../user'
+import user from '../user'
 import { resizeUrl } from '../../../common/src/ImageService'
 import { toast } from '../toast'
 import { useDialog } from '../useDialog'
@@ -207,14 +207,13 @@ import { useDialog } from '../useDialog'
 const { openLoginDialog } = useDialog()
 
 const router = useRouter()
-const data = ref<ApiDataIndexData | null>(null)
+const data = ref<Api.ApiDataIndexData | null>(null)
 const me = ref<User|null>(null)
 
 const onInit = async () => {
   me.value = user.getMe()
   const res = await api.pub.indexData()
-  const json = await res.json() as ApiDataIndexData
-  data.value = json
+  data.value = await res.json()
 }
 
 const goToGame = ((game: GameInfo) => {
@@ -240,14 +239,15 @@ const onCancelDeleteGame = () => {
 const onConfirmDeleteGame = async (game: GameInfo) => {
   try {
     const res = await api.pub.deleteGame(game.id)
-    if (res.status === 200) {
+    const responseData = await res.json()
+    if (responseData.ok) {
       confirmDeleteDialog.value = false
       confirmDeleteGame.value = null
       // remove the game from the list of running games without reloading everything
       data.value!.gamesRunning.items = data.value!.gamesRunning.items.filter(g => g.id !== game.id)
       toast('Game deleted successfully.', 'success', 7000)
     } else {
-      toast('Failed to delete game.', 'error')
+      toast(`Failed to delete game: ${responseData.error}`, 'error')
     }
   } catch {
     toast('Failed to delete game.', 'error')
@@ -285,7 +285,11 @@ const onPagination = async (q: { limit: number, offset: number }) => {
     return
   }
   const res = await api.pub.finishedGames(q)
-  const json = await res.json() as ApiDataFinishedGames
+  const json = await res.json()
+  if ('error' in json) {
+    toast(`Failed to load finished games: ${json.error}`, 'error')
+    return
+  }
   data.value.gamesFinished = json
 }
 

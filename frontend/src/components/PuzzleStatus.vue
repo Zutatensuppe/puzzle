@@ -19,7 +19,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import Time from './../../../common/src/Time'
-import { GameStatus } from '../../../common/src/Types'
+import type { GameStatus } from '../../../common/src/Types'
 
 const props = defineProps<{
   status: GameStatus,

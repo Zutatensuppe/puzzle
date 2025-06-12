@@ -56,6 +56,15 @@
                   </span>
                 </fieldset>
                 <div>
+                  <v-label><v-icon icon="mdi-cog-outline mr-1" /> Misc</v-label>
+                  <v-checkbox
+                    v-model="showImagePreviewInBackground"
+                    density="comfortable"
+                    label="Show image preview in background"
+                    hide-details
+                  />
+                </div>
+                <div>
                   <v-label><v-icon icon="mdi-counter mr-1" /> Scoring</v-label>
                   <v-radio-group
                     v-model="scoreMode"
@@ -190,11 +199,13 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 
-import { GameSettings, ImageInfo, RotationMode, ScoreMode, ShapeMode, SnapMode, Tag } from '../../../common/src/Types'
+import { RotationMode, ScoreMode, ShapeMode, SnapMode } from '../../../common/src/Types'
+import type { GameSettings, ImageInfo, Tag } from '../../../common/src/Types'
 import { NEWGAME_MIN_PIECES, NEWGAME_MAX_PIECES } from '../../../common/src/GameCommon'
 import PuzzleCropper from './PuzzleCropper.vue'
-import { determinePuzzleInfo, PuzzleCreationInfo } from '../../../common/src/Puzzle'
-import { Rect } from '../../../common/src/Geometry'
+import { determinePuzzleInfo } from '../../../common/src/Puzzle'
+import type { PuzzleCreationInfo } from '../../../common/src/Puzzle'
+import type { Rect } from '../../../common/src/Geometry'
 import ImageInfoTable from './ImageInfoTable.vue'
 import {
   rotationModeDescriptionToString,
@@ -222,6 +233,7 @@ const tab = ref<string>('settings')
 const forcePrivate = ref<boolean>(props.image.private)
 const pieces = ref<string | number>(1000)
 const isPrivate = ref<boolean>(forcePrivate.value)
+const showImagePreviewInBackground = ref<boolean>(false)
 const requireAccount = ref<boolean>(false)
 const requirePassword = ref<boolean>(false)
 const joinPassword = ref<string>('')
@@ -292,7 +304,7 @@ const onNewGameClick = () => {
   const isPriv = isPrivate.value
   const reqAccount = isPriv ? requireAccount.value : false
   const joinPass = isPriv && requirePassword.value ? joinPassword.value || null : null
-  emit('newGame', {
+  const gameSettings: GameSettings = {
     tiles: piecesInt.value,
     private: isPriv,
     requireAccount: reqAccount,
@@ -303,7 +315,9 @@ const onNewGameClick = () => {
     snapMode: snapModeInt.value,
     rotationMode: rotationModeInt.value,
     crop: crop.value,
-  })
+    showImagePreviewInBackground: showImagePreviewInBackground.value,
+  }
+  emit('newGame', gameSettings)
 }
 
 const form = ref<any>()

@@ -12,11 +12,12 @@
   </div>
 </template>
 <script setup lang="ts">
-import { onMounted, onBeforeUnmount, ref, Ref, watch } from 'vue'
-import { Dim, Point, Rect } from '../../../common/src/Geometry'
+import { onMounted, onBeforeUnmount, ref, watch } from 'vue'
+import type { Ref } from 'vue'
+import type { Dim, Point, Rect } from '../../../common/src/Geometry'
 import { clamp } from '../../../common/src/Util'
-import { PuzzleCreationInfo } from '../../../common/src/Puzzle'
-import { ImageInfo, ShapeMode } from '../../../common/src/Types'
+import type { PuzzleCreationInfo } from '../../../common/src/Puzzle'
+import type { ImageInfo, ShapeMode } from '../../../common/src/Types'
 import { drawPuzzlePreview } from '../PuzzleGraphics'
 import { NEWGAME_MAX_PIECES, NEWGAME_MIN_PIECES } from '../../../common/src/GameCommon'
 

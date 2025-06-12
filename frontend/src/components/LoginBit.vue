@@ -23,8 +23,9 @@
 </template>
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
-import user, { User } from '../user'
 import { useDialog } from '../useDialog'
+import user from '../user'
+import type { User } from '../../../common/src/Types'
 
 const me = ref<User|null>(null)
 

@@ -5,7 +5,8 @@
   />
 </template>
 <script setup lang="ts">
-import { onMounted, onUnmounted, Ref, ref } from 'vue'
+import { onMounted, onUnmounted, ref } from 'vue'
+import type { Ref } from 'vue'
 
 const el = ref<HTMLDivElement>() as Ref<HTMLDivElement>
 

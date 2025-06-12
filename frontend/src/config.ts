@@ -1,8 +1,7 @@
 import _api from './_api'
+import type { Api } from './Types'
 
-let conf: {
-  WS_ADDRESS: string
-}
+let conf: Api.ConfigResponseData
 
 const init = async () => {
   const confRes = await _api.pub.config()

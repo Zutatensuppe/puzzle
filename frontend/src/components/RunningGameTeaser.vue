@@ -107,9 +107,9 @@
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import Time from '../../../common/src/Time'
 import { resizeUrl } from '../../../common/src/ImageService'
-import { GameInfo, ImageInfo } from '../../../common/src/Types'
+import type { GameInfo, User } from '../../../common/src/Types'
 import { rotationModeToString, scoreModeToString, shapeModeToString, snapModeToString } from '../../../common/src/Util'
-import user, { useNsfw, User } from '../user'
+import user, { useNsfw } from '../user'
 import { useDialog } from '../useDialog'
 
 const { openReportGameDialog, openImageInfoDialog } = useDialog()

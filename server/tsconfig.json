@@ -3,13 +3,16 @@
     "target": "ES2023",
     "module": "CommonJS",
     "strict": true,
+    // "noUncheckedIndexedAccess": true,
+    "exactOptionalPropertyTypes": true,
     "moduleResolution": "node",
     "esModuleInterop": true,
     "skipLibCheck": true,
     "rootDirs": [
       "src",
       "../common/src"
-    ]
+    ],
+    "typeRoots": ["./types"]
   },
   "include": [
     "./**/*.ts", "./**/*.d.ts"

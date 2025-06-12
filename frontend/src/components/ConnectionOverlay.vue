@@ -99,7 +99,8 @@
 </template>
 <script setup lang="ts">
 import { computed, nextTick, ref, watch } from 'vue'
-import { CONN_STATE, ServerErrorDetails } from '../../../common/src/Types'
+import { CONN_STATE } from '../../../common/src/Types'
+import type { ServerErrorDetails } from '../../../common/src/Types'
 import LoginBit from './LoginBit.vue'
 
 const emit = defineEmits<{

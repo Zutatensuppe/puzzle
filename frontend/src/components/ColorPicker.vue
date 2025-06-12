@@ -58,7 +58,7 @@ const onPickerCancel = () => {
   emit('close')
 }
 
-watch(val, (value: any) => {
+watch(val, (value: string | { hex: string }) => {
   if (typeof value === 'string') {
     emit('update:modelValue', value)
   } else {

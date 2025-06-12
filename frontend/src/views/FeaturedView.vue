@@ -61,16 +61,17 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { defaultImageInfo, FeaturedRowWithCollections, GameSettings, ImageInfo } from '../../../common/src/Types'
+import { defaultImageInfo } from '../../../common/src/Types'
+import type { FeaturedRowWithCollections, GameSettings, ImageInfo } from '../../../common/src/Types'
 import ImageLibrary from '../components/ImageLibrary.vue'
 import NewGameDialog from '../components/NewGameDialog.vue'
 import api from '../_api'
+import { toast } from '../toast'
 
 const route = useRoute()
 const router = useRouter()
 
 const featured = ref<FeaturedRowWithCollections | null>(null)
-const collections = ref<any[]>([])
 
 const image = ref<ImageInfo>(defaultImageInfo())
 
@@ -89,9 +90,11 @@ const closeDialog = () => {
 
 const onNewGame = async (gameSettings: GameSettings) => {
   const res = await api.pub.newGame({ gameSettings })
-  if (res.status === 200) {
-    const game = await res.json()
+  const game = await res.json()
+  if ('id' in game) {
     void router.push({ name: 'game', params: { id: game.id } })
+  } else {
+    toast('An error occured while creating the game.', 'error')
   }
 }
 
@@ -107,7 +110,10 @@ onMounted(async () => {
 
   const res = await api.pub.getFeaturedData({ type, slug })
   const data = await res.json()
-  featured.value = data.featured
-  collections.value = data.collections
+  if ('featured' in data) {
+    featured.value = data.featured
+  } else {
+    toast('An error occured while loading the featured data.', 'error')
+  }
 })
 </script>

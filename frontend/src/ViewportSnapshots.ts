@@ -1,5 +1,5 @@
-import { Camera, Snapshot } from '../../common/src/Camera'
-import { EventAdapter } from './EventAdapter'
+import type { Camera, Snapshot } from '../../common/src/Camera'
+import type { EventAdapter } from './EventAdapter'
 
 export class ViewportSnapshots {
   public static readonly LAST = 'last'
