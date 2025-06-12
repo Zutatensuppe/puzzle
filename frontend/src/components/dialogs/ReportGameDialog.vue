@@ -37,10 +37,10 @@ const { reportGame, submitReportGame, closeDialog } = useDialog()
 
 const reason = ref<string>('')
 
-const onSubmitReport = () => {
+const onSubmitReport = async () => {
   if (!reportGame.value) return
 
-  submitReportGame({
+  await submitReportGame({
     id: reportGame.value.id,
     reason: reason.value,
   })

@@ -1,5 +1,8 @@
 <template>
-  <v-card class="image-info-dialog" v-if="imageInfoImage">
+  <v-card
+    v-if="imageInfoImage"
+    class="image-info-dialog"
+  >
     <v-card-title>Image Info</v-card-title>
 
     <v-container :fluid="true">
@@ -37,7 +40,8 @@
   </v-card>
 </template>
 <script setup lang="ts">
-import { ImageSearchSort, Tag } from './../../../../common/src/Types'
+import { ImageSearchSort } from './../../../../common/src/Types'
+import type { Tag } from './../../../../common/src/Types'
 import ImageInfoTable from '../ImageInfoTable.vue'
 import ResponsiveImage from '../ResponsiveImage.vue'
 import { useDialog } from '../../useDialog'

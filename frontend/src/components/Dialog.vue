@@ -1,9 +1,9 @@
 <template>
   <v-dialog
+    v-model="dialogOpen"
     :width="width"
     :min-width="minWidth"
     :class="dialogClass"
-    v-model="dialogOpen"
   >
     <LoginDialog v-if="currentDialog === 'login-dialog'" />
     <EditImageDialog v-if="currentDialog === 'edit-image-dialog'" />

@@ -70,8 +70,8 @@
             density="comfortable"
           />
           <v-checkbox-btn
-            :disabled="!playerSettings.showTable"
             v-model="playerSettings.useCustomTableTexture"
+            :disabled="!playerSettings.showTable"
             label="Custom Texture"
             density="comfortable"
           />

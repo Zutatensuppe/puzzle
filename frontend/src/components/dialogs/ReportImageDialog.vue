@@ -37,10 +37,10 @@ const { reportImage, submitReportImage, closeDialog } = useDialog()
 
 const reason = ref<string>('')
 
-const onSubmitReport = () => {
+const onSubmitReport = async () => {
   if (!reportImage.value) return
 
-  submitReportImage({
+  await submitReportImage({
     id: reportImage.value.id,
     reason: reason.value,
   })

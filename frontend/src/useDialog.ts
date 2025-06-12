@@ -1,6 +1,6 @@
 import { ref } from 'vue'
 import user from './user'
-import { GameId, GameInfo, ImageId, ImageInfo } from '../../common/src/Types'
+import type { GameId, GameInfo, ImageId, ImageInfo } from '../../common/src/Types'
 import _api from './_api'
 import { toast } from './toast'
 
@@ -26,7 +26,7 @@ user.eventBus.on('login', onInit)
 // edit-image dialog specific
 const editImageImage = ref<ImageInfo | undefined>(undefined)
 const editImageAutocompleteTags = ref<((input: string, exclude: string[]) => string[]) | undefined>(undefined)
-const editOnSaveImageClick = ref<(((data: any) => Promise<void>)) | undefined>(undefined)
+const editOnSaveImageClick = ref<((data: any) => Promise<void>) | undefined>(undefined)
 
 const openEditImageDialog = (
   image: ImageInfo,

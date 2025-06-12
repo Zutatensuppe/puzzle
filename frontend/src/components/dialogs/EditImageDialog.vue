@@ -1,5 +1,8 @@
 <template>
-  <v-card class="edit-image-dialog" v-if="editImageImage">
+  <v-card
+    v-if="editImageImage"
+    class="edit-image-dialog"
+  >
     <v-card-title>Edit Image</v-card-title>
 
     <v-container :fluid="true">
@@ -75,7 +78,7 @@
 </template>
 <script setup lang="ts">
 import { ref, watch } from 'vue'
-import { ImageInfo, Tag } from '../../../../common/src/Types'
+import type { ImageInfo, Tag } from '../../../../common/src/Types'
 import TagsInput from '../TagsInput.vue'
 import ResponsiveImage from '../ResponsiveImage.vue'
 import { useDialog } from '../../useDialog'
@@ -96,10 +99,10 @@ const init = (image: ImageInfo | undefined) => {
   tags.value = image.tags.map((t: Tag) => t.title)
 }
 
-const saveImage = () => {
+const saveImage = async () => {
   if (!editImageImage.value || !editOnSaveImageClick.value) return
 
-  editOnSaveImageClick.value({
+  await editOnSaveImageClick.value({
     id: editImageImage.value.id,
     title: title.value,
     copyrightName: copyrightName.value,

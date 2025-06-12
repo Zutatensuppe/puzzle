@@ -95,7 +95,7 @@
 import { computed } from 'vue'
 import { resizeUrl } from '../../../common/src/ImageService'
 import Time from '../../../common/src/Time'
-import type { GameInfo, ImageInfo } from '../../../common/src/Types'
+import type { GameInfo } from '../../../common/src/Types'
 import { rotationModeToString, scoreModeToString, shapeModeToString, snapModeToString } from '../../../common/src/Util'
 import { useNsfw } from '../user'
 import { useDialog } from '../useDialog'
