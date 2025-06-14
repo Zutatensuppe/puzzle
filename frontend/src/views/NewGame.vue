@@ -6,7 +6,7 @@
     <v-row class="mt-2 mb-2">
       <v-col>
         <div
-          :class="{blurred: dialog}"
+          :class="{ blurred: currentDialog }"
           class="text-center"
         >
           <v-btn
@@ -14,7 +14,7 @@
             prepend-icon="mdi-image-plus-outline"
             size="large"
             color="info"
-            @click="openDialog('new-image')"
+            @click="onUploadImageClicked"
           >
             Upload your image
           </v-btn>
@@ -27,7 +27,7 @@
     <v-container
       v-if="featuredTeasers.length > 0"
       :fluid="true"
-      :class="{blurred: dialog }"
+      :class="{ blurred: currentDialog }"
       class="mb-2 d-flex"
     >
       <div class="featured-section mb-2 ga-5">
@@ -41,7 +41,7 @@
     </v-container>
     <v-container
       :fluid="true"
-      :class="{blurred: dialog }"
+      :class="{ blurred: currentDialog }"
       class="filters mb-2"
     >
       <div>
@@ -71,62 +71,22 @@
       </div>
     </v-container>
     <ImageLibrary
-      :class="{blurred: dialog }"
+      :class="{ blurred: currentDialog }"
       :images="images"
       @image-clicked="onImageClicked"
       @image-edit-clicked="onImageEditClicked"
-      @image-report-clicked="onImageReportClicked"
     />
     <Sentinel
       v-if="sentinelActive"
       @sighted="tryLoadMore"
     />
-    <v-dialog
-      v-model="dialog"
-      :class="dialogContent"
-    >
-      <NewImageDialog
-        v-if="dialogContent==='new-image'"
-        :autocomplete-tags="autocompleteTags"
-        :upload-progress="uploadProgress"
-        :uploading="uploading"
-        @post-to-gallery-click="postToGalleryClick"
-        @setup-game-click="setupGameClick"
-        @tag-click="onTagClick"
-        @close="closeDialog"
-      />
-      <EditImageDialog
-        v-if="dialogContent==='edit-image'"
-        :autocomplete-tags="autocompleteTags"
-        :image="image"
-        @save-click="onSaveImageClick"
-        @close="closeDialog"
-      />
-      <NewGameDialog
-        v-if="image && dialogContent==='new-game'"
-        :image="image"
-        @new-game="onNewGame"
-        @tag-click="onTagClick"
-        @close="closeDialog"
-      />
-      <ReportImageDialog
-        v-if="image && dialogContent==='report-image'"
-        :image="image"
-        @submit="onSubmitReport"
-        @close="closeDialog"
-      />
-    </v-dialog>
   </v-container>
 </template>
 
 <script setup lang="ts">
 import { onMounted, onBeforeUnmount, ref, watch } from 'vue'
-import NewImageDialog from './../components/NewImageDialog.vue'
-import EditImageDialog from './../components/EditImageDialog.vue'
-import NewGameDialog from './../components/NewGameDialog.vue'
-import ReportImageDialog from './../components/ReportImageDialog.vue'
-import { defaultImageInfo, ImageSearchSort, isImageSearchSort } from '../../../common/src/Types'
-import type { Api, GameSettings, ImageInfo, Tag, FeaturedRowWithCollections, ImageId } from '../../../common/src/Types'
+import { ImageSearchSort, isImageSearchSort } from '../../../common/src/Types'
+import type { Api, GameSettings, ImageInfo, Tag, FeaturedRowWithCollections } from '../../../common/src/Types'
 import api from '../_api'
 import type { XhrRequest } from '../_api/xhr'
 import { onBeforeRouteUpdate, useRouter } from 'vue-router'
@@ -134,8 +94,9 @@ import type { RouteLocationNormalizedLoaded } from 'vue-router'
 import ImageLibrary from './../components/ImageLibrary.vue'
 import Sentinel from '../components/Sentinel.vue'
 import { debounce } from '../util'
-import { toast } from '../toast'
 import FeaturedButton from '../components/FeaturedButton.vue'
+import { useDialog } from '../useDialog'
+import { toast } from '../toast'
 
 const router = useRouter()
 
@@ -158,25 +119,11 @@ const images = ref<ImageInfo[]>([])
 const sentinelActive = ref<boolean>(false)
 
 const tags = ref<Tag[]>([])
-const image = ref<ImageInfo>(defaultImageInfo())
-
-const dialog = ref<boolean>(false)
-const dialogContent = ref<string>('')
 
 const uploading = ref<'postToGallery' | 'setupGame' | ''>('')
 const uploadProgress = ref<number>(0)
 
-// const relevantTags = computed((): Tag[] => tags.value.filter((tag: Tag) => tag.total > 0))
-
-const openDialog = (content: string) => {
-  dialogContent.value = content
-  dialog.value = true
-}
-
-const closeDialog = () => {
-  dialogContent.value = ''
-  dialog.value = false
-}
+const { openEditImageDialog, openNewImageDialog, openNewGameDialog, closeDialog, currentDialog } = useDialog()
 
 const autocompleteTags = (input: string, exclude: string[]): string[] => {
   return tags.value
@@ -238,18 +185,35 @@ const onTagClick = (tag: Tag): void => {
 }
 
 const onImageClicked = (newImage: ImageInfo) => {
-  image.value = newImage
-  openDialog('new-game')
+  openNewGameDialog(
+    newImage,
+    onNewGame,
+    onTagClick,
+  )
 }
 
 const onImageEditClicked = (newImage: ImageInfo) => {
-  image.value = newImage
-  openDialog('edit-image')
+  openEditImageDialog(newImage, autocompleteTags, async (data: any) => {
+    const res = await api.pub.saveImage(data)
+    const json = await res.json()
+    if (json.ok) {
+      closeDialog()
+      // TODO: the image could now not match the filters anymore.
+      //       but it is probably fine to not reload the whole list at this point
+      const idx = images.value.findIndex(img => img.id === data.id)
+      images.value[idx] = json.imageInfo
+    } else {
+      toast(json.error, 'error')
+    }
+  })
 }
 
-const onImageReportClicked = (newImage: ImageInfo) => {
-  image.value = newImage
-  openDialog('report-image')
+const onUploadImageClicked = () => {
+  openNewImageDialog(
+    autocompleteTags,
+    postToGalleryClick,
+    setupGameClick,
+  )
 }
 
 const uploadImage = async (data: Api.UploadRequestData): Promise<{ error: string } | { imageInfo: ImageInfo }> => {
@@ -301,31 +265,17 @@ const uploadImage = async (data: Api.UploadRequestData): Promise<{ error: string
   }
 }
 
-const onSaveImageClick = async (data: Api.SaveImageRequestData) => {
-  const res = await api.pub.saveImage(data)
-  const json = await res.json()
-  if (json.ok) {
-    closeDialog()
-    // TODO: the image could now not match the filters anymore.
-    //       but it is probably fine to not reload the whole list at this point
-    const idx = images.value.findIndex(img => img.id === data.id)
-    images.value[idx] = json.imageInfo
-  } else {
-    toast(json.error, 'error')
-  }
-}
-
 const postToGalleryClick = async (data: Api.UploadRequestData) => {
   uploading.value = 'postToGallery'
   const result = await uploadImage(data)
   uploading.value = ''
+  closeDialog()
 
   if ('error' in result) {
     toast(result.error, 'error')
     return
   }
 
-  closeDialog()
   await loadImages()
 }
 
@@ -340,24 +290,19 @@ const setupGameClick = async (data: Api.UploadRequestData) => {
   }
 
   void loadImages() // load images in background
-  image.value = result.imageInfo
-  openDialog('new-game')
-}
 
-const onSubmitReport = async (data: { id: ImageId, reason: string }) => {
-  const res = await api.pub.reportImage(data)
-  if (res.status === 200) {
-    closeDialog()
-    toast('Thank you for your report.', 'success')
-  } else {
-    toast('An error occured during reporting.', 'error')
-  }
+  openNewGameDialog(
+    result.imageInfo,
+    onNewGame,
+    onTagClick,
+  )
 }
 
 const onNewGame = async (gameSettings: GameSettings) => {
   const res = await api.pub.newGame({ gameSettings })
   const game = await res.json()
   if ('id' in game) {
+    closeDialog()
     void router.push({ name: 'game', params: { id: game.id } })
   } else {
     toast('An error occured while creating the game.', 'error')

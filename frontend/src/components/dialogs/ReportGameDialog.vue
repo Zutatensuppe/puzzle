@@ -14,14 +14,14 @@
           variant="elevated"
           color="success"
           prepend-icon="mdi-exclamation-thick"
-          @click="submitReport"
+          @click="onSubmitReport"
         >
           Submit Report
         </v-btn>
         <v-btn
           color="error"
           variant="elevated"
-          @click="emit('close')"
+          @click="closeDialog"
         >
           Cancel
         </v-btn>
@@ -30,33 +30,19 @@
   </v-card>
 </template>
 <script setup lang="ts">
-import { ref, watch } from 'vue'
-import type { GameId, GameInfo } from '../../../common/src/Types'
+import { ref } from 'vue'
+import { useDialog } from '../../useDialog'
 
-const props = defineProps<{
-  game: GameInfo
-}>()
-
-const emit = defineEmits<{
-  (e: 'submit', val: { id: GameId, reason: string }): void
-  (e: 'close'): void
-}>()
+const { reportGame, submitReportGame, closeDialog } = useDialog()
 
 const reason = ref<string>('')
 
-const init = (_game: GameInfo) => {
-  // nothing to do for now
-}
+const onSubmitReport = async () => {
+  if (!reportGame.value) return
 
-const submitReport = () => {
-  emit('submit', {
-    id: props.game.id,
+  await submitReportGame({
+    id: reportGame.value.id,
     reason: reason.value,
   })
 }
-
-init(props.game)
-watch(() => props.game, (newValue) => {
-  init(newValue)
-})
 </script>

@@ -48,45 +48,23 @@
       </v-card>
     </div>
   </v-container>
-
-  <v-dialog v-model="dialog">
-    <NewGameDialog
-      v-if="image && dialogContent==='new-game'"
-      :image="image"
-      @new-game="onNewGame"
-      @close="closeDialog"
-    />
-  </v-dialog>
 </template>
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { defaultImageInfo } from '../../../common/src/Types'
-import type { FeaturedRowWithCollections, GameSettings, ImageInfo } from '../../../common/src/Types'
+import { ImageSearchSort } from '../../../common/src/Types'
+import type { FeaturedRowWithCollections, GameSettings, ImageInfo, Tag } from '../../../common/src/Types'
 import ImageLibrary from '../components/ImageLibrary.vue'
-import NewGameDialog from '../components/NewGameDialog.vue'
 import api from '../_api'
 import { toast } from '../toast'
+import { useDialog } from '../useDialog'
+
+const { openNewGameDialog, closeDialog } = useDialog()
 
 const route = useRoute()
 const router = useRouter()
 
 const featured = ref<FeaturedRowWithCollections | null>(null)
-
-const image = ref<ImageInfo>(defaultImageInfo())
-
-const dialog = ref<boolean>(false)
-const dialogContent = ref<string>('')
-
-const openDialog = (content: string) => {
-  dialogContent.value = content
-  dialog.value = true
-}
-
-const closeDialog = () => {
-  dialogContent.value = ''
-  dialog.value = false
-}
 
 const onNewGame = async (gameSettings: GameSettings) => {
   const res = await api.pub.newGame({ gameSettings })
@@ -99,8 +77,16 @@ const onNewGame = async (gameSettings: GameSettings) => {
 }
 
 const onImageClicked = (newImage: ImageInfo) => {
-  image.value = newImage
-  openDialog('new-game')
+  openNewGameDialog(
+    newImage,
+    onNewGame,
+    onTagClick,
+  )
+}
+
+const onTagClick = (tag: Tag): void => {
+  closeDialog()
+  void router.push({ name: 'new-game', query: { sort: ImageSearchSort.DATE_DESC, search: tag.title } })
 }
 
 onMounted(async () => {

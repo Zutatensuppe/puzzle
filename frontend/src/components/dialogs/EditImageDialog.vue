@@ -1,5 +1,8 @@
 <template>
-  <v-card class="edit-image-dialog">
+  <v-card
+    v-if="editImageImage"
+    class="edit-image-dialog"
+  >
     <v-card-title>Edit Image</v-card-title>
 
     <v-container :fluid="true">
@@ -10,8 +13,8 @@
             style="min-height: 50vh;"
           >
             <ResponsiveImage
-              :src="image.url"
-              :title="image.title"
+              :src="editImageImage.url"
+              :title="editImageImage.title"
             />
           </div>
         </v-col>
@@ -45,8 +48,9 @@
           <fieldset>
             <legend>Tags</legend>
             <TagsInput
+              v-if="editImageAutocompleteTags"
               v-model="tags"
-              :autocomplete-tags="autocompleteTags"
+              :autocomplete-tags="editImageAutocompleteTags"
             />
           </fieldset>
 
@@ -62,7 +66,7 @@
             <v-btn
               color="error"
               variant="elevated"
-              @click="emit('close')"
+              @click="closeDialog"
             >
               Cancel
             </v-btn>
@@ -74,35 +78,32 @@
 </template>
 <script setup lang="ts">
 import { ref, watch } from 'vue'
-import type { Api, ImageInfo, Tag } from '../../../common/src/Types'
-import TagsInput from '../components/TagsInput.vue'
-import ResponsiveImage from './ResponsiveImage.vue'
+import type { ImageInfo, Tag } from '../../../../common/src/Types'
+import TagsInput from '../TagsInput.vue'
+import ResponsiveImage from '../ResponsiveImage.vue'
+import { useDialog } from '../../useDialog'
 
-const props = defineProps<{
-  image: ImageInfo
-  autocompleteTags: (input: string, exclude: string[]) => string[]
-}>()
-
-const emit = defineEmits<{
-  (e: 'saveClick', val: Api.SaveImageRequestData): void
-  (e: 'close'): void
-}>()
+const { closeDialog, editImageImage, editImageAutocompleteTags, editOnSaveImageClick } = useDialog()
 
 const title = ref<string>('')
 const copyrightName = ref<string>('')
 const copyrightURL = ref<string>('')
 const tags = ref<string[]>([])
 
-const init = (image: ImageInfo) => {
+const init = (image: ImageInfo | undefined) => {
+  if (!image) return
+
   title.value = image.title
   copyrightName.value = image.copyrightName
   copyrightURL.value = image.copyrightURL
   tags.value = image.tags.map((t: Tag) => t.title)
 }
 
-const saveImage = () => {
-  emit('saveClick', {
-    id: props.image.id,
+const saveImage = async () => {
+  if (!editImageImage.value || !editOnSaveImageClick.value) return
+
+  await editOnSaveImageClick.value({
+    id: editImageImage.value.id,
     title: title.value,
     copyrightName: copyrightName.value,
     copyrightURL: copyrightURL.value,
@@ -110,8 +111,8 @@ const saveImage = () => {
   })
 }
 
-init(props.image)
-watch(() => props.image, (newValue) => {
+init(editImageImage.value)
+watch(() => editImageImage.value, (newValue) => {
   init(newValue)
 })
 </script>
