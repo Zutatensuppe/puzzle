@@ -14,7 +14,7 @@
             prepend-icon="mdi-image-plus-outline"
             size="large"
             color="info"
-            @click="openDialog('new-image')"
+            @click="onUploadImageClicked"
           >
             Upload your image
           </v-btn>
@@ -84,16 +84,6 @@
       v-model="dialog"
       :class="dialogContent"
     >
-      <NewImageDialog
-        v-if="dialogContent==='new-image'"
-        :autocomplete-tags="autocompleteTags"
-        :upload-progress="uploadProgress"
-        :uploading="uploading"
-        @post-to-gallery-click="postToGalleryClick"
-        @setup-game-click="setupGameClick"
-        @tag-click="onTagClick"
-        @close="closeNewGameDialogs"
-      />
       <NewGameDialog
         v-if="dialogContent==='new-game'"
         :image="image"
@@ -107,7 +97,6 @@
 
 <script setup lang="ts">
 import { onMounted, onBeforeUnmount, ref, watch } from 'vue'
-import NewImageDialog from './../components/NewImageDialog.vue'
 import NewGameDialog from './../components/NewGameDialog.vue'
 import { defaultImageInfo, ImageSearchSort, isImageSearchSort } from '../../../common/src/Types'
 import type { Api, GameSettings, ImageInfo, Tag, FeaturedRowWithCollections } from '../../../common/src/Types'
@@ -151,7 +140,7 @@ const dialogContent = ref<string>('')
 const uploading = ref<'postToGallery' | 'setupGame' | ''>('')
 const uploadProgress = ref<number>(0)
 
-const { openEditImageDialog, closeDialog } = useDialog()
+const { openEditImageDialog, openNewImageDialog, closeDialog } = useDialog()
 
 const openDialog = (content: string) => {
   dialogContent.value = content
@@ -159,6 +148,7 @@ const openDialog = (content: string) => {
 }
 
 const closeNewGameDialogs = () => {
+  closeDialog()
   dialogContent.value = ''
   dialog.value = false
 }
@@ -224,6 +214,7 @@ const onTagClick = (tag: Tag): void => {
 
 const onImageClicked = (newImage: ImageInfo) => {
   image.value = newImage
+  closeDialog()
   openDialog('new-game')
 }
 
@@ -241,6 +232,15 @@ const onImageEditClicked = (newImage: ImageInfo) => {
       toast(json.error, 'error')
     }
   })
+}
+
+const onUploadImageClicked = () => {
+  openNewImageDialog(
+    autocompleteTags,
+    postToGalleryClick,
+    setupGameClick,
+    closeNewGameDialogs,
+  )
 }
 
 const uploadImage = async (data: Api.UploadRequestData): Promise<{ error: string } | { imageInfo: ImageInfo }> => {
@@ -319,6 +319,7 @@ const setupGameClick = async (data: Api.UploadRequestData) => {
 
   void loadImages() // load images in background
   image.value = result.imageInfo
+  closeDialog()
   openDialog('new-game')
 }
 

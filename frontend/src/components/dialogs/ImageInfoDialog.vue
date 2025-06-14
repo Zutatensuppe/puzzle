@@ -51,6 +51,7 @@ const { closeDialog, imageInfoImage } = useDialog()
 const router = useRouter()
 
 const onTagClick = (tag: Tag) => {
+  closeDialog()
   void router.push({ name: 'new-game', query: { sort: ImageSearchSort.DATE_DESC, search: tag.title } })
 }
 </script>

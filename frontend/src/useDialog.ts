@@ -1,6 +1,6 @@
 import { ref } from 'vue'
 import user from './user'
-import type { GameId, GameInfo, ImageId, ImageInfo } from '../../common/src/Types'
+import type { Api, GameId, GameInfo, ImageId, ImageInfo } from '../../common/src/Types'
 import _api from './_api'
 import { toast } from './toast'
 
@@ -8,7 +8,15 @@ import { toast } from './toast'
 const width = ref<'auto' | number | undefined>(undefined)
 const minWidth = ref<number | undefined>(undefined)
 const dialogClass = ref<string|undefined>(undefined)
-const currentDialog = ref<'login-dialog' | 'edit-image-dialog' | 'report-game-dialog' | 'report-image-dialog' | 'image-info-dialog' | ''>('')
+const currentDialog = ref<
+  'login-dialog' |
+  'edit-image-dialog' |
+  'report-game-dialog' |
+  'report-image-dialog' |
+  'image-info-dialog' |
+  'new-image-dialog' |
+  ''
+>('')
 const dialogOpen = ref<boolean>(false)
 
 const closeDialog = () => {
@@ -125,6 +133,33 @@ const openImageInfoDialog = (image: ImageInfo) => {
   dialogOpen.value = true
 }
 
+// new image dialog specific
+const newImageUploadProgress = ref<number>(0)
+const newImageUploading = ref<'' | 'postToGallery' | 'setupGame'>('')
+const newImageAutocompleteTags = ref<((input: string, exclude: string[]) => string[]) | undefined>(undefined)
+const newImagePostToGalleryClick = ref<((data: Api.UploadRequestData) => Promise<void>) | undefined>(undefined)
+const newImageSetupGameClick = ref<((data: Api.UploadRequestData) => Promise<void>) | undefined>(undefined)
+const newImageOnClose = ref<(() => void) | undefined>(undefined)
+
+const openNewImageDialog = (
+  autocompleteTags: (input: string, exclude: string[]) => string[],
+  postToGalleryClick: (data: Api.UploadRequestData) => Promise<void>,
+  setupGameClick: (data: Api.UploadRequestData) => Promise<void>,
+  onClose: () => void,
+) => {
+  newImageAutocompleteTags.value = autocompleteTags
+  newImagePostToGalleryClick.value = postToGalleryClick
+  newImageSetupGameClick.value = setupGameClick
+  newImageOnClose.value = onClose
+
+  // =================================================================
+  currentDialog.value = 'new-image-dialog'
+  dialogClass.value = 'new-image'
+  width.value = undefined
+  minWidth.value = undefined
+  dialogOpen.value = true
+}
+
 export function useDialog() {
   return {
     closeDialog,
@@ -134,11 +169,18 @@ export function useDialog() {
     editImageAutocompleteTags,
     editImageImage,
     editOnSaveImageClick,
+    newImageUploadProgress,
+    newImageUploading,
+    newImageAutocompleteTags,
+    newImagePostToGalleryClick,
+    newImageSetupGameClick,
+    newImageOnClose,
     imageInfoImage,
     loginDialogData,
     loginDialogTab,
     minWidth,
     openEditImageDialog,
+    openNewImageDialog,
     openImageInfoDialog,
     openLoginDialog,
     openReportGameDialog,

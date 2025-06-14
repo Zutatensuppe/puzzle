@@ -1,5 +1,8 @@
 <template>
-  <v-card class="new-image-dialog">
+  <v-card
+    v-if="newImageOnClose && newImageAutocompleteTags"
+    class="new-image-dialog"
+  >
     <v-card-title>New Image</v-card-title>
 
     <v-container :fluid="true">
@@ -87,7 +90,7 @@
             <legend>Tags</legend>
             <TagsInput
               v-model="tags"
-              :autocomplete-tags="autocompleteTags"
+              :autocomplete-tags="newImageAutocompleteTags"
             />
           </fieldset>
           <div>
@@ -110,7 +113,7 @@
             <!-- isPrivate -->
             <template v-if="!isPublic || isNsfw">
               <v-btn
-                v-if="uploading"
+                v-if="newImageUploading"
                 variant="elevated"
                 :disabled="true"
                 prepend-icon="mdi-timer-sand-empty"
@@ -133,7 +136,7 @@
             <!-- not isPrivate -->
             <template v-else>
               <v-btn
-                v-if="uploading === 'postToGallery'"
+                v-if="newImageUploading === 'postToGallery'"
                 variant="elevated"
                 :disabled="true"
                 prepend-icon="mdi-timer-sand-empty"
@@ -153,7 +156,7 @@
               </v-btn>
 
               <v-btn
-                v-if="uploading === 'setupGame'"
+                v-if="newImageUploading === 'setupGame'"
                 variant="elevated"
                 :disabled="true"
                 prepend-icon="mdi-timer-sand-empty"
@@ -176,7 +179,7 @@
             <v-btn
               variant="elevated"
               color="error"
-              @click="emit('close')"
+              @click="newImageOnClose()"
             >
               Cancel
             </v-btn>
@@ -188,28 +191,25 @@
 </template>
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref } from 'vue'
-import type { Api } from '../../../common/src/Types'
-import { logger } from '../../../common/src/Util'
-import TagsInput from '../components/TagsInput.vue'
-import ResponsiveImage from './ResponsiveImage.vue'
-import { toast } from '../toast'
-import { Graphics } from '../Graphics'
+import { logger } from '../../../../common/src/Util'
+import TagsInput from '../../components/TagsInput.vue'
+import ResponsiveImage from '../ResponsiveImage.vue'
+import { toast } from '../../toast'
+import { Graphics } from '../../Graphics'
+import { useDialog } from '../../useDialog'
 
 const log = logger('NewImageDialog.vue')
 
 const gfx = Graphics.getInstance()
 
-const props = defineProps<{
-  autocompleteTags: (input: string, exclude: string[]) => string[]
-  uploadProgress: number
-  uploading: '' | 'postToGallery' | 'setupGame'
-}>()
-
-const emit = defineEmits<{
-  (e: 'setupGameClick', val: Api.UploadRequestData): void
-  (e: 'postToGalleryClick', val: Api.UploadRequestData): void
-  (e: 'close'): void
-}>()
+const {
+  newImageAutocompleteTags,
+  newImageOnClose,
+  newImagePostToGalleryClick,
+  newImageSetupGameClick,
+  newImageUploadProgress,
+  newImageUploading,
+} = useDialog()
 
 const previewUrl = ref<string>('')
 const file = ref<File|null>(null)
@@ -223,11 +223,11 @@ const droppable = ref<boolean>(false)
 const inputFocused = ref<boolean>(false)
 
 const uploadProgressPercent = computed((): number => {
-  return props.uploadProgress ? Math.round(props.uploadProgress * 100) : 0
+  return newImageUploadProgress.value ? Math.round(newImageUploadProgress.value * 100) : 0
 })
 
 const canClick = computed((): boolean => {
-  if (props.uploading) {
+  if (newImageUploading.value) {
     return false
   }
   return !!(previewUrl.value && file.value)
@@ -329,12 +329,12 @@ const preview = (newFile: File | Blob) => {
   }
 }
 
-const postToGallery = () => {
-  if (!file.value) {
+const postToGallery = async () => {
+  if (!file.value || !newImagePostToGalleryClick.value) {
     return
   }
 
-  emit('postToGalleryClick', {
+  await newImagePostToGalleryClick.value({
     file: file.value,
     title: title.value,
     copyrightName: copyrightName.value,
@@ -346,12 +346,12 @@ const postToGallery = () => {
   reset()
 }
 
-const setupGameClick = () => {
-  if (!file.value) {
+const setupGameClick = async () => {
+  if (!file.value || !newImageSetupGameClick.value) {
     return
   }
 
-  emit('setupGameClick', {
+  await newImageSetupGameClick.value({
     file: file.value,
     title: title.value,
     copyrightName: copyrightName.value,
