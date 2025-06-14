@@ -6,7 +6,7 @@
     <v-row class="mt-2 mb-2">
       <v-col>
         <div
-          :class="{blurred: dialog}"
+          :class="{ blurred: currentDialog }"
           class="text-center"
         >
           <v-btn
@@ -27,7 +27,7 @@
     <v-container
       v-if="featuredTeasers.length > 0"
       :fluid="true"
-      :class="{blurred: dialog }"
+      :class="{ blurred: currentDialog }"
       class="mb-2 d-flex"
     >
       <div class="featured-section mb-2 ga-5">
@@ -41,7 +41,7 @@
     </v-container>
     <v-container
       :fluid="true"
-      :class="{blurred: dialog }"
+      :class="{ blurred: currentDialog }"
       class="filters mb-2"
     >
       <div>
@@ -71,7 +71,7 @@
       </div>
     </v-container>
     <ImageLibrary
-      :class="{blurred: dialog }"
+      :class="{ blurred: currentDialog }"
       :images="images"
       @image-clicked="onImageClicked"
       @image-edit-clicked="onImageEditClicked"
@@ -80,25 +80,12 @@
       v-if="sentinelActive"
       @sighted="tryLoadMore"
     />
-    <v-dialog
-      v-model="dialog"
-      :class="dialogContent"
-    >
-      <NewGameDialog
-        v-if="dialogContent==='new-game'"
-        :image="image"
-        @new-game="onNewGame"
-        @tag-click="onTagClick"
-        @close="closeNewGameDialogs"
-      />
-    </v-dialog>
   </v-container>
 </template>
 
 <script setup lang="ts">
 import { onMounted, onBeforeUnmount, ref, watch } from 'vue'
-import NewGameDialog from './../components/NewGameDialog.vue'
-import { defaultImageInfo, ImageSearchSort, isImageSearchSort } from '../../../common/src/Types'
+import { ImageSearchSort, isImageSearchSort } from '../../../common/src/Types'
 import type { Api, GameSettings, ImageInfo, Tag, FeaturedRowWithCollections } from '../../../common/src/Types'
 import api from '../_api'
 import type { XhrRequest } from '../_api/xhr'
@@ -132,26 +119,11 @@ const images = ref<ImageInfo[]>([])
 const sentinelActive = ref<boolean>(false)
 
 const tags = ref<Tag[]>([])
-const image = ref<ImageInfo>(defaultImageInfo())
-
-const dialog = ref<boolean>(false)
-const dialogContent = ref<string>('')
 
 const uploading = ref<'postToGallery' | 'setupGame' | ''>('')
 const uploadProgress = ref<number>(0)
 
-const { openEditImageDialog, openNewImageDialog, closeDialog } = useDialog()
-
-const openDialog = (content: string) => {
-  dialogContent.value = content
-  dialog.value = true
-}
-
-const closeNewGameDialogs = () => {
-  closeDialog()
-  dialogContent.value = ''
-  dialog.value = false
-}
+const { openEditImageDialog, openNewImageDialog, openNewGameDialog, closeDialog, currentDialog } = useDialog()
 
 const autocompleteTags = (input: string, exclude: string[]): string[] => {
   return tags.value
@@ -207,15 +179,17 @@ const filtersChanged = async () => {
 const filtersChangedDebounced = debounce(filtersChanged, 300)
 
 const onTagClick = (tag: Tag): void => {
-  closeNewGameDialogs()
+  closeDialog()
   shouldInitFiltersFromRoute.value = true
   void router.push({ name: 'new-game', query: { sort: ImageSearchSort.DATE_DESC, search: tag.title } })
 }
 
 const onImageClicked = (newImage: ImageInfo) => {
-  image.value = newImage
-  closeDialog()
-  openDialog('new-game')
+  openNewGameDialog(
+    newImage,
+    onNewGame,
+    onTagClick,
+  )
 }
 
 const onImageEditClicked = (newImage: ImageInfo) => {
@@ -239,7 +213,6 @@ const onUploadImageClicked = () => {
     autocompleteTags,
     postToGalleryClick,
     setupGameClick,
-    closeNewGameDialogs,
   )
 }
 
@@ -296,14 +269,13 @@ const postToGalleryClick = async (data: Api.UploadRequestData) => {
   uploading.value = 'postToGallery'
   const result = await uploadImage(data)
   uploading.value = ''
-  closeNewGameDialogs()
+  closeDialog()
 
   if ('error' in result) {
     toast(result.error, 'error')
     return
   }
 
-  closeDialog()
   await loadImages()
 }
 
@@ -318,15 +290,19 @@ const setupGameClick = async (data: Api.UploadRequestData) => {
   }
 
   void loadImages() // load images in background
-  image.value = result.imageInfo
-  closeDialog()
-  openDialog('new-game')
+
+  openNewGameDialog(
+    result.imageInfo,
+    onNewGame,
+    onTagClick,
+  )
 }
 
 const onNewGame = async (gameSettings: GameSettings) => {
   const res = await api.pub.newGame({ gameSettings })
   const game = await res.json()
   if ('id' in game) {
+    closeDialog()
     void router.push({ name: 'game', params: { id: game.id } })
   } else {
     toast('An error occured while creating the game.', 'error')

@@ -1,5 +1,6 @@
 <template>
   <v-card
+    v-if="newGameImageInfo && newGameOnTagClick"
     class="new-game-dialog"
     height="90vh"
   >
@@ -12,7 +13,7 @@
           style="min-height: 50vh;"
         >
           <PuzzleCropper
-            :image="image"
+            :image="newGameImageInfo"
             :puzzle-creation-info="puzzleCreationInfo"
             :shape-mode="shapeMode"
             :pieces-preview="tab === 'settings'"
@@ -167,8 +168,8 @@
             </v-window-item>
             <v-window-item value="image-info">
               <ImageInfoTable
-                :image="image"
-                @tag-click="emit('tagClick', $event)"
+                :image="newGameImageInfo"
+                @tag-click="newGameOnTagClick"
               />
             </v-window-item>
           </v-window>
@@ -186,7 +187,7 @@
             <v-btn
               variant="elevated"
               color="error"
-              @click="emit('close')"
+              @click="closeDialog"
             >
               Cancel
             </v-btn>
@@ -199,14 +200,14 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 
-import { RotationMode, ScoreMode, ShapeMode, SnapMode } from '../../../common/src/Types'
-import type { GameSettings, ImageInfo, Tag } from '../../../common/src/Types'
-import { NEWGAME_MIN_PIECES, NEWGAME_MAX_PIECES } from '../../../common/src/GameCommon'
-import PuzzleCropper from './PuzzleCropper.vue'
-import { determinePuzzleInfo } from '../../../common/src/Puzzle'
-import type { PuzzleCreationInfo } from '../../../common/src/Puzzle'
-import type { Rect } from '../../../common/src/Geometry'
-import ImageInfoTable from './ImageInfoTable.vue'
+import { RotationMode, ScoreMode, ShapeMode, SnapMode } from '../../../../common/src/Types'
+import type { GameSettings } from '../../../../common/src/Types'
+import { NEWGAME_MIN_PIECES, NEWGAME_MAX_PIECES } from '../../../../common/src/GameCommon'
+import PuzzleCropper from '../PuzzleCropper.vue'
+import { determinePuzzleInfo } from '../../../../common/src/Puzzle'
+import type { PuzzleCreationInfo } from '../../../../common/src/Puzzle'
+import type { Rect } from '../../../../common/src/Geometry'
+import ImageInfoTable from '../ImageInfoTable.vue'
 import {
   rotationModeDescriptionToString,
   rotationModeToString,
@@ -216,21 +217,14 @@ import {
   shapeModeToString,
   snapModeDescriptionToString,
   snapModeToString,
-} from '../../../common/src/Util'
+} from '../../../../common/src/Util'
+import { useDialog } from '../../useDialog'
 
-const props = defineProps<{
-  image: ImageInfo
-}>()
-
-const emit = defineEmits<{
-  (e: 'newGame', val: GameSettings): void
-  (e: 'tagClick', val: Tag): void
-  (e: 'close'): void
-}>()
+const { newGameImageInfo, newGameOnNewGameClick, newGameOnTagClick, closeDialog } = useDialog()
 
 const tab = ref<string>('settings')
 
-const forcePrivate = ref<boolean>(props.image.private)
+const forcePrivate = ref<boolean>(newGameImageInfo.value?.private || false)
 const pieces = ref<string | number>(1000)
 const isPrivate = ref<boolean>(forcePrivate.value)
 const showImagePreviewInBackground = ref<boolean>(false)
@@ -242,7 +236,7 @@ const shapeMode = ref<ShapeMode>(ShapeMode.NORMAL)
 const snapMode = ref<SnapMode>(SnapMode.NORMAL)
 const rotationMode = ref<RotationMode>(RotationMode.NONE)
 
-const crop = ref<Rect>({ x: 0, y: 0, w: props.image.width, h: props.image.height })
+const crop = ref<Rect>({ x: 0, y: 0, w: newGameImageInfo.value?.width || 0, h: newGameImageInfo.value?.height  || 0 })
 
 const valid = ref<boolean>(true)
 
@@ -250,6 +244,9 @@ const valid = ref<boolean>(true)
 const creating = ref<boolean>(false)
 
 const canStartNewGame = computed((): boolean => {
+  if (!newGameImageInfo.value) {
+    return false
+  }
   if (creating.value) {
     return false
   }
@@ -258,8 +255,8 @@ const canStartNewGame = computed((): boolean => {
   }
   if (
     !piecesInt.value
-    || !props.image
-    || !props.image.url
+    || !newGameImageInfo.value
+    || !newGameImageInfo.value.url
     || ![0, 1].includes(scoreModeInt.value)
   ) {
     return false
@@ -282,7 +279,7 @@ const piecesInt = computed((): number => {
   return parseInt(`${pieces.value}`, 10)
 })
 const puzzleCreationInfo = computed((): PuzzleCreationInfo => {
-  const dim = { w: props.image.width, h: props.image.height }
+  const dim = { w: newGameImageInfo.value?.width || 0, h: newGameImageInfo.value?.height || 0 }
   return determinePuzzleInfo(dim, piecesInt.value)
 })
 
@@ -298,7 +295,11 @@ const onCropUpdate = (newCrop: Rect) => {
   crop.value = newCrop
 }
 
-const onNewGameClick = () => {
+const onNewGameClick = async () => {
+  if (!newGameImageInfo.value || !newGameOnNewGameClick.value) {
+    return
+  }
+
   creating.value = true
 
   const isPriv = isPrivate.value
@@ -309,7 +310,7 @@ const onNewGameClick = () => {
     private: isPriv,
     requireAccount: reqAccount,
     joinPassword: joinPass,
-    image: props.image,
+    image: newGameImageInfo.value,
     scoreMode: scoreModeInt.value,
     shapeMode: shapeModeInt.value,
     snapMode: snapModeInt.value,
@@ -317,7 +318,7 @@ const onNewGameClick = () => {
     crop: crop.value,
     showImagePreviewInBackground: showImagePreviewInBackground.value,
   }
-  emit('newGame', gameSettings)
+  await newGameOnNewGameClick.value(gameSettings)
 }
 
 const form = ref<any>()

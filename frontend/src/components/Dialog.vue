@@ -11,17 +11,19 @@
     <ReportImageDialog v-if="currentDialog === 'report-image-dialog'" />
     <ImageInfoDialog v-if="currentDialog === 'image-info-dialog'" />
     <NewImageDialog v-if="currentDialog === 'new-image-dialog'" />
+    <NewGameDialog v-if="currentDialog === 'new-game-dialog'" />
   </v-dialog>
 </template>
 <script setup lang="ts">
 import { useDialog } from '../useDialog'
 
-import LoginDialog from './dialogs/LoginDialog.vue'
 import EditImageDialog from './dialogs/EditImageDialog.vue'
+import ImageInfoDialog from './dialogs/ImageInfoDialog.vue'
+import LoginDialog from './dialogs/LoginDialog.vue'
+import NewGameDialog from './dialogs/NewGameDialog.vue'
+import NewImageDialog from './dialogs/NewImageDialog.vue'
 import ReportGameDialog from './dialogs/ReportGameDialog.vue'
 import ReportImageDialog from './dialogs/ReportImageDialog.vue'
-import ImageInfoDialog from './dialogs/ImageInfoDialog.vue'
-import NewImageDialog from './dialogs/NewImageDialog.vue'
 
 const { dialogClass, width, minWidth, dialogOpen, currentDialog } = useDialog()
 </script>

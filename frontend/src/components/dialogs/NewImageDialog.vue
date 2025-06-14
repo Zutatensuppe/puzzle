@@ -1,6 +1,6 @@
 <template>
   <v-card
-    v-if="newImageOnClose && newImageAutocompleteTags"
+    v-if="newImageAutocompleteTags"
     class="new-image-dialog"
   >
     <v-card-title>New Image</v-card-title>
@@ -179,7 +179,7 @@
             <v-btn
               variant="elevated"
               color="error"
-              @click="newImageOnClose()"
+              @click="closeDialog()"
             >
               Cancel
             </v-btn>
@@ -204,11 +204,11 @@ const gfx = Graphics.getInstance()
 
 const {
   newImageAutocompleteTags,
-  newImageOnClose,
   newImagePostToGalleryClick,
   newImageSetupGameClick,
   newImageUploadProgress,
   newImageUploading,
+  closeDialog,
 } = useDialog()
 
 const previewUrl = ref<string>('')

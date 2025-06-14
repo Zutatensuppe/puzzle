@@ -1,6 +1,6 @@
 import { ref } from 'vue'
 import user from './user'
-import type { Api, GameId, GameInfo, ImageId, ImageInfo } from '../../common/src/Types'
+import type { Api, GameId, GameInfo, GameSettings, ImageId, ImageInfo, Tag } from '../../common/src/Types'
 import _api from './_api'
 import { toast } from './toast'
 
@@ -15,6 +15,7 @@ const currentDialog = ref<
   'report-image-dialog' |
   'image-info-dialog' |
   'new-image-dialog' |
+  'new-game-dialog' |
   ''
 >('')
 const dialogOpen = ref<boolean>(false)
@@ -139,22 +140,41 @@ const newImageUploading = ref<'' | 'postToGallery' | 'setupGame'>('')
 const newImageAutocompleteTags = ref<((input: string, exclude: string[]) => string[]) | undefined>(undefined)
 const newImagePostToGalleryClick = ref<((data: Api.UploadRequestData) => Promise<void>) | undefined>(undefined)
 const newImageSetupGameClick = ref<((data: Api.UploadRequestData) => Promise<void>) | undefined>(undefined)
-const newImageOnClose = ref<(() => void) | undefined>(undefined)
 
 const openNewImageDialog = (
   autocompleteTags: (input: string, exclude: string[]) => string[],
   postToGalleryClick: (data: Api.UploadRequestData) => Promise<void>,
   setupGameClick: (data: Api.UploadRequestData) => Promise<void>,
-  onClose: () => void,
 ) => {
   newImageAutocompleteTags.value = autocompleteTags
   newImagePostToGalleryClick.value = postToGalleryClick
   newImageSetupGameClick.value = setupGameClick
-  newImageOnClose.value = onClose
 
   // =================================================================
   currentDialog.value = 'new-image-dialog'
   dialogClass.value = 'new-image'
+  width.value = undefined
+  minWidth.value = undefined
+  dialogOpen.value = true
+}
+
+// new game dialog specific
+const newGameImageInfo = ref<ImageInfo|null>(null)
+const newGameOnNewGameClick = ref<((data: GameSettings) => Promise<void>) | undefined>(undefined)
+const newGameOnTagClick = ref<((tag: Tag) => void) | undefined>(undefined)
+
+const openNewGameDialog = (
+  imageInfo: ImageInfo,
+  onNewGameClick: (data: GameSettings) => Promise<void>,
+  onTagClick: (tag: Tag) => void,
+) => {
+  newGameImageInfo.value = imageInfo
+  newGameOnNewGameClick.value = onNewGameClick
+  newGameOnTagClick.value = onTagClick
+
+  // =================================================================
+  currentDialog.value = 'new-game-dialog'
+  dialogClass.value = 'new-game'
   width.value = undefined
   minWidth.value = undefined
   dialogOpen.value = true
@@ -174,13 +194,16 @@ export function useDialog() {
     newImageAutocompleteTags,
     newImagePostToGalleryClick,
     newImageSetupGameClick,
-    newImageOnClose,
+    newGameImageInfo,
+    newGameOnNewGameClick,
+    newGameOnTagClick,
     imageInfoImage,
     loginDialogData,
     loginDialogTab,
     minWidth,
     openEditImageDialog,
     openNewImageDialog,
+    openNewGameDialog,
     openImageInfoDialog,
     openLoginDialog,
     openReportGameDialog,
