@@ -736,12 +736,13 @@ export enum CONN_STATE {
   SERVER_ERROR = 5, // not connected (determined by server)
 }
 
+export type ConnectionState = { state: CONN_STATE, errorDetails?: ServerErrorDetails }
+
 export interface Hud {
   setPuzzleCut: () => void
   setPlayers: (v: GamePlayers, r: RegisteredMap) => void
   setStatus: (v: GameStatus) => void
-  setConnectionState: (v: CONN_STATE) => void
-  setConnectError: (v: ServerErrorDetails) => void
+  setConnectionState: (connectionState: ConnectionState) => void
   togglePreview: (v: boolean) => void
   toggleInterface: (v: boolean) => void
   addStatusMessage: (what: string, value: number | string | boolean | undefined) => void

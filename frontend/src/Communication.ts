@@ -1,7 +1,7 @@
 'use strict'
 
 import { CONN_STATE } from '../../common/src/Types'
-import type { ClientEvent, EncodedGame, EncodedGameLegacy, GameEvent, ServerEvent, ServerSyncEvent, ServerUpdateEvent } from '../../common/src/Types'
+import type { ClientEvent, ConnectionState, EncodedGame, EncodedGameLegacy, GameEvent, ServerEvent, ServerSyncEvent, ServerUpdateEvent } from '../../common/src/Types'
 import { logger } from '../../common/src/Util'
 import { CLIENT_EVENT_TYPE, SERVER_EVENT_TYPE } from '../../common/src/Protocol'
 import type { GamePlay } from './GamePlay'
@@ -22,9 +22,9 @@ let syncCallback = (_evt: ServerSyncEvent) => {
   // noop
 }
 
-let missedStateChanges: number[] = []
-let connectionStateChangeCallback = (state: number) => {
-  missedStateChanges.push(state)
+let missedStateChanges: ConnectionState[] = []
+let connectionStateChangeCallback = (connectionState: ConnectionState) => {
+  missedStateChanges.push(connectionState)
 }
 
 function onServerSync(callback: (evt: ServerSyncEvent) => void): void {
@@ -39,7 +39,7 @@ function onServerUpdate(callback: (msg: ServerUpdateEvent) => void): void {
   missedMessages = []
 }
 
-function onConnectionStateChange(callback: (state: number) => void): void {
+function onConnectionStateChange(callback: (connectionState: ConnectionState) => void): void {
   connectionStateChangeCallback = callback
   for (const missedStateChange of missedStateChanges) {
     connectionStateChangeCallback(missedStateChange)
@@ -47,15 +47,19 @@ function onConnectionStateChange(callback: (state: number) => void): void {
   missedStateChanges = []
 }
 
-let connectionState = CONN_STATE.NOT_CONNECTED
-const setConnectionState = (state: number): void => {
-  if (connectionState !== state) {
+let connectionState: ConnectionState = { state: CONN_STATE.NOT_CONNECTED }
+const setConnectionState = (state: ConnectionState): void => {
+  if (
+    // first simply compare state, to avoid JSON.stringify overhead
+    connectionState.state !== state.state ||
+    JSON.stringify(connectionState) !== JSON.stringify(state)
+  ) {
     connectionState = state
     connectionStateChangeCallback(state)
   }
 }
 function send(message: ClientEvent): void {
-  if (connectionState === CONN_STATE.CONNECTED) {
+  if (connectionState.state === CONN_STATE.CONNECTED) {
     try {
       ws.send(JSON.stringify(message))
     } catch {
@@ -99,11 +103,11 @@ function connect(
 ): Promise<EncodedGame | EncodedGameLegacy> {
   clientSeq = 0
   events = {}
-  setConnectionState(CONN_STATE.CONNECTING)
+  setConnectionState({ state: CONN_STATE.CONNECTING })
   return new Promise((resolve, reject) => {
     ws = new WebSocket(game.getWsAddres(), game.getClientId() + '|' + game.getGameId())
     ws.onopen = () => {
-      setConnectionState(CONN_STATE.CONNECTED)
+      setConnectionState({ state: CONN_STATE.CONNECTED })
       if (game.joinPassword) {
         send([CLIENT_EVENT_TYPE.INIT, { password: game.joinPassword }])
       } else {
@@ -150,7 +154,7 @@ function connect(
 
     ws.onerror = () => {
       cancelKeepAlive()
-      setConnectionState(CONN_STATE.DISCONNECTED)
+      setConnectionState({ state: CONN_STATE.DISCONNECTED })
       throw `[ 2021-05-15 onerror ]`
     }
 
@@ -159,9 +163,9 @@ function connect(
       if (e.code === CODE_SERVER_ERROR) {
         // do nothing!
       } else if (e.code === CODE_CUSTOM_DISCONNECT || e.code === CODE_GOING_AWAY) {
-        setConnectionState(CONN_STATE.CLOSED)
+        setConnectionState({ state: CONN_STATE.CLOSED })
       } else {
-        setConnectionState(CONN_STATE.DISCONNECTED)
+        setConnectionState({ state: CONN_STATE.DISCONNECTED })
       }
     }
   })

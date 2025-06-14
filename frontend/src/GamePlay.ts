@@ -1,7 +1,7 @@
 'use strict'
 
 import GameCommon from '../../common/src/GameCommon'
-import type { Game as GameType, EncodedGame, Hud, GameEvent, EncodedGameLegacy, ServerUpdateEvent, ServerSyncEvent, ServerErrorDetails } from '../../common/src/Types'
+import { type Game as GameType, type EncodedGame, type Hud, type GameEvent, type EncodedGameLegacy, type ServerUpdateEvent, type ServerSyncEvent, type ServerErrorDetails, CONN_STATE } from '../../common/src/Types'
 import { Game } from './Game'
 import Communication from './Communication'
 import Util from '../../common/src/Util'
@@ -16,8 +16,8 @@ export class GamePlay extends Game<Hud> {
   public joinPassword: string = ''
 
   private async connect(): Promise<void> {
-    Communication.onConnectionStateChange((state) => {
-      this.hud.setConnectionState(state)
+    Communication.onConnectionStateChange(connectionState => {
+      this.hud.setConnectionState(connectionState)
     })
 
     const game: EncodedGame | EncodedGameLegacy = await Communication.connect(this)
@@ -107,7 +107,7 @@ export class GamePlay extends Game<Hud> {
       this.initServerEventCallbacks()
       this.initGameLoop()
     } catch (e) {
-      this.hud.setConnectError(e as ServerErrorDetails)
+      this.hud.setConnectionState({ state: CONN_STATE.SERVER_ERROR, errorDetails: e as ServerErrorDetails })
       this.rerender = false
     }
   }

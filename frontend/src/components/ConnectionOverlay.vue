@@ -13,20 +13,20 @@
           <h4>Not possible to join :(</h4>
 
           <div
-            v-if="serverError?.gameDoesNotExist"
+            v-if="connectionState.errorDetails?.gameDoesNotExist"
             class="mb-3"
           >
             The game you are trying to join does not exist.
           </div>
           <div
-            v-else-if="serverError?.banned"
+            v-else-if="connectionState.errorDetails?.banned"
             class="mb-3"
           >
             You were banned from this puzzle.
           </div>
           <div v-else>
             <div
-              v-if="serverError?.requireAccount"
+              v-if="connectionState.errorDetails?.requireAccount"
               class="mb-3"
             >
               You need to be logged in to join this puzzle.
@@ -34,10 +34,10 @@
               <LoginBit />
             </div>
             <div
-              v-if="serverError?.requirePassword || serverError?.wrongPassword"
+              v-if="connectionState.errorDetails?.requirePassword || connectionState.errorDetails?.wrongPassword"
               class="mb-3"
             >
-              <div v-if="serverError.requirePassword">
+              <div v-if="connectionState.errorDetails.requirePassword">
                 You need a password to join this puzzle.
               </div>
               <div v-else>
@@ -100,7 +100,7 @@
 <script setup lang="ts">
 import { computed, nextTick, ref, watch } from 'vue'
 import { CONN_STATE } from '../../../common/src/Types'
-import type { ServerErrorDetails } from '../../../common/src/Types'
+import type { ConnectionState } from '../../../common/src/Types'
 import LoginBit from './LoginBit.vue'
 
 const emit = defineEmits<{
@@ -110,22 +110,21 @@ const emit = defineEmits<{
 }>()
 
 const props = defineProps<{
-  connectionState: CONN_STATE
-  serverError: ServerErrorDetails | null
+  connectionState: ConnectionState
 }>()
 
 const passwordField = ref<HTMLInputElement | null>(null)
 
 const hasServerError = computed((): boolean => {
-  return props.connectionState === CONN_STATE.SERVER_ERROR
+  return props.connectionState.state === CONN_STATE.SERVER_ERROR
 })
 
 const lostConnection = computed((): boolean => {
-  return props.connectionState === CONN_STATE.DISCONNECTED
+  return props.connectionState.state === CONN_STATE.DISCONNECTED
 })
 
 const connecting = computed((): boolean => {
-  return props.connectionState === CONN_STATE.CONNECTING
+  return props.connectionState.state === CONN_STATE.CONNECTING
 })
 
 const show = computed((): boolean => {
@@ -139,7 +138,7 @@ const connectWithPassword = () => {
 }
 
 const tryFocusInput = () => {
-  const err = props.serverError
+  const err = props.connectionState.errorDetails
   if (err?.requirePassword || err?.wrongPassword) {
     void nextTick(() => {
       passwordField.value?.focus()
@@ -148,7 +147,7 @@ const tryFocusInput = () => {
 }
 
 tryFocusInput()
-watch(() => props.serverError, () => {
+watch(() => props.connectionState, () => {
   tryFocusInput()
 }, { deep: true })
 </script>
