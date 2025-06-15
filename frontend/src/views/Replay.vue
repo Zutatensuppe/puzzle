@@ -175,8 +175,7 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import type { Ref } from 'vue'
-import { CONN_STATE } from '../../../common/src/Types'
-import type { ReplayHud, GameStatus, GamePlayers, RegisteredMap, GameId, DialogChangeData, ServerErrorDetails } from '../../../common/src/Types'
+import type { ReplayHud, GameStatus, GamePlayers, RegisteredMap, GameId, DialogChangeData, ConnectionState } from '../../../common/src/Types'
 import { GameReplay } from './../GameReplay'
 import { useRoute } from 'vue-router'
 import api from '../_api'
@@ -198,8 +197,6 @@ const status = ref<GameStatus>({ finished: false, duration: 0, piecesDone: 0, pi
 const dialog = ref<boolean>(false)
 const dialogPersistent = ref<boolean | undefined>(undefined)
 const overlay = ref<string>('')
-const serverError = ref<ServerErrorDetails | null>(null)
-const connectionState = ref<number>(0)
 const cuttingPuzzle = ref<boolean>(true)
 const showInterface = ref<boolean>(true)
 const canvasEl = ref<HTMLCanvasElement>() as Ref<HTMLCanvasElement>
@@ -372,12 +369,8 @@ const hud: ReplayHud = {
   setStatus: (v: GameStatus) => {
     status.value = v
   },
-  setConnectionState: (v: CONN_STATE) => {
-    connectionState.value = v
-  },
-  setConnectError: (e: ServerErrorDetails) => {
-    connectionState.value = CONN_STATE.SERVER_ERROR
-    serverError.value = e
+  setConnectionState: (_connectionState: ConnectionState) => {
+    // not used in replay
   },
   togglePreview: (v: boolean) => {
     if (v) {

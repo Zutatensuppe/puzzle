@@ -25,9 +25,8 @@
     <CuttingOverlay v-model="cuttingPuzzle" />
 
     <ConnectionOverlay
-      v-if="!cuttingPuzzle || serverError"
+      v-if="!cuttingPuzzle || connectionState.errorDetails"
       :connection-state="connectionState"
-      :server-error="serverError"
       @reconnect="reconnect"
       @connect_with_password="connectWithPassword"
     />
@@ -72,7 +71,7 @@
 </template>
 <script setup lang="ts">
 import { CONN_STATE } from '../../../common/src/Types'
-import type { Hud, GameStatus, GamePlayers, RegisteredMap, GameId, DialogChangeData, ServerErrorDetails, ClientId } from '../../../common/src/Types'
+import type { Hud, GameStatus, GamePlayers, RegisteredMap, GameId, DialogChangeData, ClientId, ConnectionState } from '../../../common/src/Types'
 import { GamePlay } from '../GamePlay'
 import { onMounted, onUnmounted, ref, watch } from 'vue'
 import type { Ref } from 'vue'
@@ -98,8 +97,7 @@ const status = ref<GameStatus>({ finished: false, duration: 0, piecesDone: 0, pi
 const dialog = ref<boolean>(false)
 const dialogPersistent = ref<boolean | undefined>(undefined)
 const overlay = ref<string>('')
-const connectionState = ref<CONN_STATE>(CONN_STATE.NOT_CONNECTED)
-const serverError = ref<ServerErrorDetails | null>(null)
+const connectionState = ref<ConnectionState>({ state: CONN_STATE.NOT_CONNECTED })
 const cuttingPuzzle = ref<boolean>(true)
 const showInterface = ref<boolean>(true)
 const canvasEl = ref<HTMLCanvasElement>() as Ref<HTMLCanvasElement>
@@ -212,13 +210,14 @@ const hud: Hud = {
   setStatus: (v: GameStatus) => {
     status.value = v
   },
-  setConnectError: (e: ServerErrorDetails) => {
-    cuttingPuzzle.value = false
-    connectionState.value = CONN_STATE.SERVER_ERROR
-    serverError.value = e
-  },
-  setConnectionState: (v: CONN_STATE) => {
-    connectionState.value = v
+  setConnectionState: (newConnectionState: ConnectionState) => {
+    if (
+      newConnectionState.state === CONN_STATE.SERVER_ERROR ||
+      newConnectionState.state === CONN_STATE.DISCONNECTED
+    ) {
+      cuttingPuzzle.value = false
+    }
+    connectionState.value = newConnectionState
   },
   togglePreview: (v: boolean) => {
     if (v) {

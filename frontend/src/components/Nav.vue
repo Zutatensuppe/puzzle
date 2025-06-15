@@ -52,7 +52,7 @@
             v-else
             size="small"
             class="ml-1"
-            @click="login"
+            @click="openLoginDialog"
           >
             Login
           </v-btn>
@@ -129,11 +129,10 @@ import { useRoute } from 'vue-router'
 import user, { useNsfw } from '../user'
 import AnnouncementsDrawer from './AnnouncementsDrawer.vue'
 import AnnouncementsIcon from './AnnouncementsIcon.vue'
-import type { User } from '../../../common/src/Types'
+import { useDialog } from '../useDialog'
+import type { User } from '../Types'
 
-const login = () => {
-  user.eventBus.emit('triggerLoginDialog')
-}
+const { openLoginDialog } = useDialog()
 
 const { showNsfw, toggleNsfw } = useNsfw()
 

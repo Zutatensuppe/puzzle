@@ -78,9 +78,7 @@
             :key="idx"
             :game="g"
             @go-to-game="goToGame"
-            @show-image-info="showImageInfo"
             @delete="onDeleteGame"
-            @report-click="onReportClick"
           />
         </v-container>
       </div>
@@ -117,7 +115,7 @@
         >
           <v-btn
             density="comfortable"
-            @click="login"
+            @click="openLoginDialog"
           >
             Login
           </v-btn> to show up on the leaderboard!
@@ -143,8 +141,6 @@
           :game="g"
           @go-to-game="goToGame"
           @go-to-replay="goToReplay"
-          @show-image-info="showImageInfo"
-          @report-click="onReportClick"
         />
       </v-container>
       <Pagination
@@ -153,15 +149,6 @@
       />
     </template>
   </v-container>
-
-  <v-dialog v-model="imageInfoDialog">
-    <ImageInfoDialog
-      v-if="imageInfo"
-      :image="imageInfo"
-      @tag-click="onTagClick"
-      @close="imageInfoDialog = false"
-    />
-  </v-dialog>
   <v-dialog
     v-if="confirmDeleteGame"
     v-model="confirmDeleteDialog"
@@ -202,33 +189,22 @@
       </v-card-actions>
     </v-card>
   </v-dialog>
-  <v-dialog
-    v-model="reportGameDialog"
-    class="report-game"
-  >
-    <ReportGameDialog
-      v-if="reportGame"
-      :game="reportGame"
-      @submit="onSubmitReport"
-      @close="reportGameDialog = false"
-    />
-  </v-dialog>
 </template>
 <script setup lang="ts">
 import { onMounted, onBeforeUnmount, ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
-import { ImageSearchSort } from '../../../common/src/Types'
-import type { Api, GameInfo, ImageInfo, Tag, User, GameId } from '../../../common/src/Types'
+import type { Api, GameInfo, User } from '../../../common/src/Types'
 import RunningGameTeaser from '../components/RunningGameTeaser.vue'
 import FinishedGameTeaser from '../components/FinishedGameTeaser.vue'
 import Pagination from '../components/Pagination.vue'
 import api from '../_api'
 import Leaderboard from '../components/Leaderboard.vue'
 import user from '../user'
-import ImageInfoDialog from '../components/ImageInfoDialog.vue'
 import { resizeUrl } from '../../../common/src/ImageService'
 import { toast } from '../toast'
-import ReportGameDialog from '../components/ReportGameDialog.vue'
+import { useDialog } from '../useDialog'
+
+const { openLoginDialog } = useDialog()
 
 const router = useRouter()
 const data = ref<Api.ApiDataIndexData | null>(null)
@@ -238,10 +214,6 @@ const onInit = async () => {
   me.value = user.getMe()
   const res = await api.pub.indexData()
   data.value = await res.json()
-}
-
-const login = () => {
-  user.eventBus.emit('triggerLoginDialog')
 }
 
 const goToGame = ((game: GameInfo) => {
@@ -282,13 +254,6 @@ const onConfirmDeleteGame = async (game: GameInfo) => {
   }
 }
 
-const imageInfoDialog = ref<boolean>(false)
-const imageInfo = ref<ImageInfo|null>(null)
-const showImageInfo = ((image: ImageInfo) => {
-  imageInfoDialog.value = true
-  imageInfo.value = image
-})
-
 const leaderboardConfigs: Record<string, { title: string, description: string }> = {
   week: {
     title: 'Weekly',
@@ -326,27 +291,6 @@ const onPagination = async (q: { limit: number, offset: number }) => {
     return
   }
   data.value.gamesFinished = json
-}
-
-const onTagClick = (tag: Tag): void => {
-  void router.push({ name: 'new-game', query: { sort: ImageSearchSort.DATE_DESC, search: tag.title } })
-}
-
-const reportGameDialog = ref<boolean>(false)
-const reportGame = ref<GameInfo|null>(null)
-const onReportClick = (game: GameInfo) => {
-  reportGame.value = game
-  reportGameDialog.value = true
-}
-
-const onSubmitReport = async (data: { id: GameId, reason: string }) => {
-  const res = await api.pub.reportGame(data)
-  if (res.status === 200) {
-    reportGameDialog.value = false
-    toast('Thank you for your report.', 'success')
-  } else {
-    toast('An error occured during reporting.', 'error')
-  }
 }
 
 onMounted(() => {

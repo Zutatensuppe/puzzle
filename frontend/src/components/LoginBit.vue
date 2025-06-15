@@ -15,7 +15,7 @@
       v-else
       size="small"
       class="ml-1"
-      @click="login"
+      @click="openLoginDialog"
     >
       Login
     </v-btn>
@@ -23,10 +23,13 @@
 </template>
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { useDialog } from '../useDialog'
 import user from '../user'
 import type { User } from '../../../common/src/Types'
 
 const me = ref<User|null>(null)
+
+const { openLoginDialog } = useDialog()
 
 const loggedIn = computed(() => {
   return !!(me.value && me.value.type === 'user')
@@ -38,10 +41,6 @@ async function logout() {
 
 const onInit = () => {
   me.value = user.getMe()
-}
-
-const login = () => {
-  user.eventBus.emit('triggerLoginDialog')
 }
 
 onMounted(() => {
