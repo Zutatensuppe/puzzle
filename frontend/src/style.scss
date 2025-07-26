@@ -8,6 +8,10 @@ body {
   height: 100%;
 }
 
+canvas {
+  user-select: none;
+}
+
 $link-color: #808db0;
 $link-color-hover: #c5cfeb;
 $bg-color-transparent: rgba(0 0 0 / 70%);
