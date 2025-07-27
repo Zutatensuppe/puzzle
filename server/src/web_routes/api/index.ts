@@ -182,6 +182,7 @@ export default function createRouter(
       if (!user) {
         user = await server.users.getUser({ client_id })
       }
+
       if (!user) {
         user = await server.users.createUser({
           client_id: await determineNewUserClientId(client_id),
@@ -193,7 +194,7 @@ export default function createRouter(
         })
       } else {
         let updateNeeded = false
-        if (!user.name) {
+        if (!user.name || user.name !== userData.data[0].display_name) {
           user.name = userData.data[0].display_name
           updateNeeded = true
         }
