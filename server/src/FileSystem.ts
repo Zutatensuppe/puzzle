@@ -1,5 +1,16 @@
 import fs from 'fs/promises'
 
+// Hyottoko moving boxes:
+//
+//   .----.                                     ______
+//  /| o..o)                                   |      |
+//  \|__==O ______                         ____|______|_______
+//   |==\==|     |                        |       |          |
+//   |  /  |_____|                        |_______|__________|
+//
+// Comment added during para stream as result of viewer reward for duke
+// 2025-08-03
+
 const exists = async (file: string): Promise<boolean> => await fs.access(file).then(() => true).catch(() => false)
 const readFile = async (file: string): Promise<string> => await fs.readFile(file, 'utf-8')
 const readFileRaw = async (file: string): Promise<Buffer> => await fs.readFile(file)
