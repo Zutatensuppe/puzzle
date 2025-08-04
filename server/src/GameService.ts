@@ -216,7 +216,7 @@ export class GameService {
       gameObject.gameVersion,
       gameObject.puzzle.info.targetTiles,
       gameObject.puzzle.info.image,
-      (new Date(gameRow.created)).getTime(),
+      gameObject.puzzle.data.started,
       gameObject.scoreMode,
       gameObject.shapeMode,
       gameObject.snapMode,
@@ -230,7 +230,7 @@ export class GameService {
       gameObject.showImagePreviewInBackground,
     )
     gameObj.puzzle.info.image.gameCount = await this.server.repos.images.getGameCount(gameObj.puzzle.info.image.id)
-    gameObj.registeredMap = await this.generateRegisteredMap(gameObj.players)
+    gameObj.registeredMap = await this.generateRegisteredMap(gameObject.players)
     return gameObj
   }
 
