@@ -25,6 +25,7 @@ import click2 from './assets/sounds/click2.mp3'
 import rotate from './assets/sounds/rotate2.mp3'
 import type { Graphics } from './Graphics'
 import { COLOR_MAGENTA } from '../../common/src/Color'
+import type { ImageDataURL } from './Types'
 
 export class Assets {
   public inited = false
@@ -38,15 +39,15 @@ export class Assets {
   public Gfx!: {
     GRAB_RAW: ImageBitmap
     HAND_RAW: ImageBitmap
-    GRAB: ImageBitmap
-    HAND: ImageBitmap
-    GRAB_MASK: ImageBitmap
-    HAND_MASK: ImageBitmap
+    GRAB: HTMLCanvasElement
+    HAND: HTMLCanvasElement
+    GRAB_MASK: HTMLCanvasElement
+    HAND_MASK: HTMLCanvasElement
     badgeMask: ImageBitmap
     badgeOver: ImageBitmap
     badgeOverIdle: ImageBitmap
-    badgeAnon: ImageBitmap
-    badgeAnonIdle: ImageBitmap
+    badgeAnon: ImageDataURL
+    badgeAnonIdle: ImageDataURL
     stencilsDefault: ImageBitmap
   }
 
@@ -62,21 +63,21 @@ export class Assets {
       ROTATE: new Audio(rotate),
     }
 
-    const grabGfx = await graphics.loadImageToBitmap(grab)
-    const handGfx = await graphics.loadImageToBitmap(hand)
+    const grabGfx = await graphics.loader.imageBitmapFromSrc(grab)
+    const handGfx = await graphics.loader.imageBitmapFromSrc(hand)
     this.Gfx = {
       GRAB_RAW: grabGfx,
       HAND_RAW: handGfx,
-      GRAB: await graphics.removeColor(grabGfx, COLOR_MAGENTA),
-      HAND: await graphics.removeColor(handGfx, COLOR_MAGENTA),
-      GRAB_MASK: await graphics.extractColor(grabGfx, COLOR_MAGENTA),
-      HAND_MASK: await graphics.extractColor(handGfx, COLOR_MAGENTA),
-      badgeMask: await graphics.loadImageToBitmap(badgeMask),
-      badgeOver: await graphics.loadImageToBitmap(badgeOver),
-      badgeOverIdle: await graphics.loadImageToBitmap(badgeOverIdle),
-      badgeAnon: await graphics.loadImageToBitmap(badgeAnon),
-      badgeAnonIdle: await graphics.loadImageToBitmap(badgeAnonIdle),
-      stencilsDefault: await graphics.loadImageToBitmap(stencilsDefault),
+      GRAB: graphics.op.removeColor(grabGfx, COLOR_MAGENTA),
+      HAND: graphics.op.removeColor(handGfx, COLOR_MAGENTA),
+      GRAB_MASK: graphics.op.extractColor(grabGfx, COLOR_MAGENTA),
+      HAND_MASK: graphics.op.extractColor(handGfx, COLOR_MAGENTA),
+      badgeMask: await graphics.loader.imageBitmapFromSrc(badgeMask),
+      badgeOver: await graphics.loader.imageBitmapFromSrc(badgeOver),
+      badgeOverIdle: await graphics.loader.imageBitmapFromSrc(badgeOverIdle),
+      badgeAnon: await graphics.loader.dataUrlFromSrc(badgeAnon),
+      badgeAnonIdle: await graphics.loader.dataUrlFromSrc(badgeAnonIdle),
+      stencilsDefault: await graphics.loader.imageBitmapFromSrc(stencilsDefault),
     }
   }
 }

@@ -29,7 +29,12 @@ export class BgShaderWrapper {
   ) {
   }
 
-  public init(tableBounds: Rect, boardDim: Dim, boardPos: Point, puzzleBitmap: HTMLCanvasElement) {
+  public init(
+    tableBounds: Rect,
+    boardDim: Dim,
+    boardPos: Point,
+    puzzleBitmap: TexImageSource,
+  ) {
     this.shader = new Shader(this.gl, bgVertex, bgFragment)
     this.shader.bind()
 
@@ -46,13 +51,13 @@ export class BgShaderWrapper {
 
     const tH = tableBounds.h
     const tW = tableBounds.w
-    const texcoordBuffer = this.gl.createBuffer()!
-    this.gl.bindBuffer(this.gl.ARRAY_BUFFER, texcoordBuffer)
-    const texcoords = [0, 0, 0, tH, tW, 0, tW, 0, 0, tH, tW, tH]
-    this.gl.bufferData(this.gl.ARRAY_BUFFER, new Float32Array(texcoords), this.gl.STATIC_DRAW)
-    const texcoordAttributeLocation = this.gl.getAttribLocation(this.shader.program, 'a_texCoord')
-    this.gl.enableVertexAttribArray(texcoordAttributeLocation)
-    this.gl.vertexAttribPointer(texcoordAttributeLocation, 2, this.gl.FLOAT, true, 0, 0)
+    const texCoordBuffer = this.gl.createBuffer()!
+    this.gl.bindBuffer(this.gl.ARRAY_BUFFER, texCoordBuffer)
+    const texCoords = [0, 0, 0, tH, tW, 0, tW, 0, 0, tH, tW, tH]
+    this.gl.bufferData(this.gl.ARRAY_BUFFER, new Float32Array(texCoords), this.gl.STATIC_DRAW)
+    const texCoordAttributeLocation = this.gl.getAttribLocation(this.shader.program, 'a_texCoord')
+    this.gl.enableVertexAttribArray(texCoordAttributeLocation)
+    this.gl.vertexAttribPointer(texCoordAttributeLocation, 2, this.gl.FLOAT, true, 0, 0)
 
     const outerBorderSize = 16
     this.shader.setUniform('u_innerRect', [
@@ -87,26 +92,27 @@ export class BgShaderWrapper {
   }
 
   public loadTexture(tableTextureInfo: PuzzleTableTextureInfo): Promise<void> {
-    return new Promise<void>((resolve) => {
-      const img = new Image()
-      img.addEventListener('load', () => {
+    return new Promise<void>((resolve, reject) => {
+      void this.graphics.loader.canvasFromSrc(tableTextureInfo.url).then((canvas) => {
         const texture = this.gl.createTexture()!
+
         this.gl.bindTexture(this.gl.TEXTURE_2D, texture)
         this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_WRAP_S, this.gl.REPEAT)
         this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_WRAP_T, this.gl.REPEAT)
-        this.gl.texImage2D(this.gl.TEXTURE_2D, 0, this.gl.RGBA, this.gl.RGBA, this.gl.UNSIGNED_BYTE, img)
+        this.gl.texImage2D(this.gl.TEXTURE_2D, 0, this.gl.RGBA, this.gl.RGBA, this.gl.UNSIGNED_BYTE, canvas)
         this.gl.generateMipmap(this.gl.TEXTURE_2D)
+
         this.textureInfo = {
           texture,
-          width: img.width * tableTextureInfo.scale,
-          height: img.height * tableTextureInfo.scale,
-          isDark: this.graphics.isDark(img),
+          width: canvas.width * tableTextureInfo.scale,
+          height: canvas.height * tableTextureInfo.scale,
+          isDark: this.graphics.op.isDark(canvas),
         }
         resolve()
+      }).catch((error) => {
+        console.error('Error loading texture:', error)
+        reject(error)
       })
-      img.src = tableTextureInfo.url.match(/^https?:\/\//)
-        ? `/api/proxy?${new URLSearchParams({ url: tableTextureInfo.url })}`
-        : tableTextureInfo.url
     })
   }
 

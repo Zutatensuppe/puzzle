@@ -25,14 +25,6 @@ export const colorEquals = (a: Color, b: Color, tolerance: number = 2) => {
   )
 }
 
-export const colorIsGrayscale = (color: Color, tolerance: number = 2): boolean => {
-  return (
-    Math.abs(color[0] - color[1]) <= tolerance &&
-    Math.abs(color[1] - color[2]) <= tolerance &&
-    Math.abs(color[0] - color[2]) <= tolerance
-  )
-}
-
 export function hueToRgb(h: number): [number, number, number] {
   const k = (n: number) => (n + h * 6) % 6
   const f = (n: number) => Math.max(0, Math.min(1, Math.abs(k(n) - 3) - 1))

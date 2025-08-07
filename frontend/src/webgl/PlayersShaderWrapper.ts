@@ -14,9 +14,9 @@ import { getPlayerNameCanvas } from '../PlayerNames'
 export class PlayersShaderWrapper {
   private shader!: Shader
   private positionLocation!: GLint
-  private texcoordLocation!: GLint
+  private texCoordLocation!: GLint
   private positionBuffer!: WebGLBuffer
-  private texcoordBuffer!: WebGLBuffer
+  private texCoordBuffer!: WebGLBuffer
 
   private textureInfoHand!: { width: number, height: number, texture: WebGLTexture }
   private textureInfoGrab!: { width: number, height: number, texture: WebGLTexture }
@@ -37,7 +37,7 @@ export class PlayersShaderWrapper {
 
     // look up where the vertex data needs to go.
     this.positionLocation = this.gl.getAttribLocation(this.shader.program, 'a_position')
-    this.texcoordLocation = this.gl.getAttribLocation(this.shader.program, 'a_texcoord')
+    this.texCoordLocation = this.gl.getAttribLocation(this.shader.program, 'a_texCoord')
 
     // Create a buffer.
     this.positionBuffer = this.gl.createBuffer()!
@@ -48,12 +48,12 @@ export class PlayersShaderWrapper {
     this.gl.bufferData(this.gl.ARRAY_BUFFER, new Float32Array(positions), this.gl.STATIC_DRAW)
 
     // Create a buffer for texture coords
-    this.texcoordBuffer = this.gl.createBuffer()!
-    this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.texcoordBuffer)
+    this.texCoordBuffer = this.gl.createBuffer()!
+    this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.texCoordBuffer)
 
-    // Put texcoords in the buffer
-    const texcoords = [0, 0, 0, 1, 1, 0, 1, 0, 0, 1, 1, 1]
-    this.gl.bufferData(this.gl.ARRAY_BUFFER, new Float32Array(texcoords), this.gl.STATIC_DRAW)
+    // Put texCoords in the buffer
+    const texCoords = [0, 0, 0, 1, 1, 0, 1, 0, 0, 1, 1, 1]
+    this.gl.bufferData(this.gl.ARRAY_BUFFER, new Float32Array(texCoords), this.gl.STATIC_DRAW)
 
     // LOAD TEXTURE INFO
     const texHand = this.gl.createTexture()!
@@ -108,13 +108,13 @@ export class PlayersShaderWrapper {
     this.gl.enableVertexAttribArray(this.positionLocation)
     this.gl.vertexAttribPointer(this.positionLocation, 2, this.gl.FLOAT, false, 0, 0)
 
-    this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.texcoordBuffer)
-    this.gl.enableVertexAttribArray(this.texcoordLocation)
-    this.gl.vertexAttribPointer(this.texcoordLocation, 2, this.gl.FLOAT, false, 0, 0)
+    this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.texCoordBuffer)
+    this.gl.enableVertexAttribArray(this.texCoordLocation)
+    this.gl.vertexAttribPointer(this.texCoordLocation, 2, this.gl.FLOAT, false, 0, 0)
 
     this.gl.drawArrays(this.gl.TRIANGLES, 0, 6)
     this.gl.disableVertexAttribArray(this.positionLocation)
-    this.gl.disableVertexAttribArray(this.texcoordLocation)
+    this.gl.disableVertexAttribArray(this.texCoordLocation)
   }
 
   private createMatrix(translateX: number, translateY: number, scaleW: number, scaleH: number) {

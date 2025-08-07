@@ -88,7 +88,7 @@ const style = computed(() => {
 
 const iconStyle = computed(() => {
   const url = !props.registeredMap[props.player.id]
-    ? getAnonBadge(props.game.graphics, props.game.assets, props.player.active)
+    ? getAnonBadge(props.game.assets, props.player.active)
     : getColoredBadge(props.game.graphics, props.game.assets, props.player.color || '#ffffff', props.player.active)
   return {
     backgroundImage: `url(${url})`,

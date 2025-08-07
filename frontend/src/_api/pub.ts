@@ -170,7 +170,7 @@ const upload = (
   data: Api.UploadRequestDataWithProgress,
 ): Promise<Response<ImageInfo>> => {
   const formData = new FormData()
-  formData.append('file', data.file, data.file.name)
+  formData.append('file', data.file)
   formData.append('title', data.title)
   formData.append('copyrightName', data.copyrightName)
   formData.append('copyrightURL', data.copyrightURL)

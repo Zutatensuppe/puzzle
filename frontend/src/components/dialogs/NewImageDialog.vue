@@ -197,6 +197,7 @@ import ResponsiveImage from '../ResponsiveImage.vue'
 import { toast } from '../../toast'
 import { Graphics } from '../../Graphics'
 import { useDialog } from '../../useDialog'
+import type { ImageDataURL } from '../../Types'
 
 const log = logger('NewImageDialog.vue')
 
@@ -212,7 +213,7 @@ const {
 } = useDialog()
 
 const previewUrl = ref<string>('')
-const file = ref<File|null>(null)
+const file = ref<Blob|null>(null)
 const title = ref<string>('')
 const copyrightName = ref<string>('')
 const copyrightURL = ref<string>('')
@@ -270,10 +271,8 @@ const onPaste = async (evt: ClipboardEvent): Promise<void> => {
 
     if (imageUrl.match(/^https?:\/\//)) {
       // need to proxy because of X-Origin
-      const proxiedUrl = `/api/proxy?${new URLSearchParams({ url: imageUrl })}`
       try {
-        const imgBlob = await gfx.loadImageToBlob(proxiedUrl)
-        preview(imgBlob)
+        await preview(await gfx.loader.blobFromSrc(imageUrl))
       } catch (e) {
         // url could not be transformed into a blob.
         log.error('unable to transform image http url into blob', e)
@@ -284,11 +283,11 @@ const onPaste = async (evt: ClipboardEvent): Promise<void> => {
 
     if (imageUrl.match(/^data:image\/([a-z]+);base64,/)) {
       try {
-        const imgBlob = gfx.dataUrlToBlob(imageUrl)
-        preview(imgBlob)
+        await preview(gfx.loader.blobFromDataUrl(imageUrl as ImageDataURL))
       } catch (e) {
         // url could not be transformed into a blob.
         log.error('unable to transform image data url into blob', e)
+        toast('Unable to process the pasted image, please upload the image file directly.', 'error')
       }
       return
     }
@@ -301,31 +300,29 @@ const onPaste = async (evt: ClipboardEvent): Promise<void> => {
   // check if an image was pasted
   const file = evt.clipboardData.files[0]
   if (!file) return
-  preview(file)
+  await preview(file)
 }
 
-const onFileSelect = (evt: Event) => {
+const onFileSelect = async (evt: Event) => {
   const target = (evt.target as HTMLInputElement)
   if (!target.files) return
   const file = target.files[0]
   if (!file) return
-  preview(file)
+  await preview(file)
 }
 
-const preview = (newFile: File | Blob) => {
-  if (!newFile.type.startsWith('image/')) {
-    log.error('file type is not supported', newFile.type)
+const preview = async (blob: Blob): Promise<void> => {
+  if (!blob.type.startsWith('image/')) {
+    log.error('file type is not supported', blob.type)
+    toast('Image could not be loaded (Error 3)', 'error')
     return
   }
-  const r = new FileReader()
-  r.readAsDataURL(newFile)
-  r.onload = (ev: ProgressEvent<FileReader>) => {
-    if (!ev.target || !ev.target.result || typeof ev.target.result !== 'string') {
-      log.error('file reader error')
-      return
-    }
-    previewUrl.value = ev.target.result
-    file.value = newFile as File
+  try {
+    previewUrl.value = await gfx.loader.dataUrlFromBlob(blob)
+    file.value = blob
+  } catch (e) {
+    log.error(e)
+    toast('Image could not be loaded (Error 4)', 'error')
   }
 }
 
@@ -376,8 +373,7 @@ const onDrop = async (evt: DragEvent): Promise<boolean> => {
     return false
   }
   try {
-    const f = await gfx.loadFileToBlob(file)
-    preview(f)
+    await preview(await gfx.loader.blobFromFile(file))
   } catch {
     toast('Image could not be loaded (Error 2)', 'error')
   }
