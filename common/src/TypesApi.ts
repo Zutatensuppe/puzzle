@@ -29,7 +29,7 @@ export interface NewGameDataRequestData {
 }
 
 export type UploadRequestData = {
-  file: File
+  file: Blob
   title: string
   copyrightName: string
   copyrightURL: string

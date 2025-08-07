@@ -102,7 +102,7 @@ export class SpriteBatch {
 
     this.attribs = new AttributeSet(gl, [
       {
-        buffer: this.quad, // position, texcoord
+        buffer: this.quad, // position, texCoord
         attributes: [vec2Attrib(0), vec2Attrib(1)],
       },
       {

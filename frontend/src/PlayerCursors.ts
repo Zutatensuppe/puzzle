@@ -1,14 +1,14 @@
 import type { Assets } from './Assets'
 import { EncodedPlayerIdx } from '../../common/src/Types'
-import type { EncodedPlayer } from '../../common/src/Types'
+import type { EncodedPlayer, ImageDataURL } from '../../common/src/Types'
 import type { Graphics } from './Graphics'
 
 export class PlayerCursors
 {
-  private cursorImages: Record<string, ImageBitmap | HTMLCanvasElement> = {}
+  private cursorImages: Record<string, HTMLCanvasElement> = {}
 
-  private cursorDown: string = ''
-  private cursor: string = ''
+  private cursorDown: ImageDataURL | null = null
+  private cursor: ImageDataURL | null = null
   private cursorState: boolean = false
 
   public readonly CURSOR_W: number
@@ -28,29 +28,29 @@ export class PlayerCursors
     this.CURSOR_H_2 = Math.round(this.CURSOR_H / 2)
   }
 
-  public get (p: EncodedPlayer): ImageBitmap | HTMLCanvasElement {
+  public get (p: EncodedPlayer): HTMLCanvasElement {
     const color = p[EncodedPlayerIdx.COLOR] || '#ffffff'
     const key = color + ' ' + p[EncodedPlayerIdx.MOUSEDOWN]
     if (!this.cursorImages[key]) {
       const cursor = p[EncodedPlayerIdx.MOUSEDOWN] ? this.assets.Gfx.GRAB : this.assets.Gfx.HAND
       const mask = p[EncodedPlayerIdx.MOUSEDOWN] ? this.assets.Gfx.GRAB_MASK : this.assets.Gfx.HAND_MASK
-      this.cursorImages[key] = this.graphics.colorizedCanvas(cursor, mask, color)
+      this.cursorImages[key] = this.graphics.op.colorize(cursor, mask, color)
     }
     return this.cursorImages[key]
   }
 
   public updatePlayerCursorState(d: boolean) {
     this.cursorState = d
-    if (d) {
+    if (d && this.cursorDown) {
       this.canvas.style.cursor = `url('${this.cursorDown}') ${this.CURSOR_W_2} ${this.CURSOR_H_2}, grab`
-    } else {
+    } else if (this.cursor) {
       this.canvas.style.cursor = `url('${this.cursor}') ${this.CURSOR_W_2} ${this.CURSOR_H_2}, default`
     }
   }
 
   public updatePlayerCursorColor(color: string) {
-    this.cursorDown = this.graphics.colorizedCanvas(this.assets.Gfx.GRAB, this.assets.Gfx.GRAB_MASK, color).toDataURL()
-    this.cursor = this.graphics.colorizedCanvas(this.assets.Gfx.HAND, this.assets.Gfx.HAND_MASK, color).toDataURL()
+    this.cursorDown = this.graphics.op.colorize(this.assets.Gfx.GRAB, this.assets.Gfx.GRAB_MASK, color).toDataURL() as ImageDataURL
+    this.cursor = this.graphics.op.colorize(this.assets.Gfx.HAND, this.assets.Gfx.HAND_MASK, color).toDataURL() as ImageDataURL
     this.updatePlayerCursorState(this.cursorState)
   }
 }

@@ -1,4 +1,4 @@
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
 import user from './user'
 import type { Api, GameId, GameInfo, GameSettings, ImageId, ImageInfo, Tag } from '../../common/src/Types'
 import _api from './_api'
@@ -23,7 +23,17 @@ const dialogOpen = ref<boolean>(false)
 const closeDialog = () => {
   currentDialog.value = ''
   dialogOpen.value = false
+  dialogClass.value = undefined
+  width.value = undefined
+  minWidth.value = undefined
 }
+
+watch(dialogOpen, (open, oldOpen) => {
+  if (!open && oldOpen !== open) {
+    closeDialog()
+  }
+})
+
 
 const onInit = () => {
   console.log('onInit')

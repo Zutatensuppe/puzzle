@@ -224,6 +224,14 @@ function getPieceCount(gameId: GameId): number {
   return Game_getPieceCount(GAMES[gameId])
 }
 
+function getImage(gameId: GameId): ImageInfo {
+  return Game_getImage(GAMES[gameId])
+}
+
+function hasReplay(gameId: GameId): boolean {
+  return Game_hasReplay(GAMES[gameId])
+}
+
 function getImageUrl(gameId: GameId): string {
   return Game_getImageUrl(GAMES[gameId])
 }
@@ -264,7 +272,7 @@ function getShowImagePreviewInBackground(gameId: GameId): boolean {
   return Game_getShowImagePreviewInBackground(GAMES[gameId])
 }
 
-function joinPassword(gameId: GameId): string |null {
+function joinPassword(gameId: GameId): string | null {
   return Game_getJoinPassword(GAMES[gameId])
 }
 
@@ -662,12 +670,6 @@ const setPiecesOwner = (
   }
 }
 
-// returns the count of pieces in the same group as
-// the piece identified by pieceIdx
-function getGroupedPieceCount(gameId: GameId, pieceIdx: number): number {
-  return getGroupedPieceIdxs(gameId, pieceIdx).length
-}
-
 // get all grouped pieces for a piece
 function getGroupedPieceIdxs(gameId: GameId, pieceIdx: number): number[] {
   const pieces = GAMES[gameId].puzzle.tiles
@@ -782,14 +784,6 @@ const getPuzzle = (gameId: GameId): Puzzle => {
 
 const getRng = (gameId: GameId): Rng => {
   return GAMES[gameId].rng.obj
-}
-
-const getPuzzleWidth = (gameId: GameId): number => {
-  return GAMES[gameId].puzzle.info.width
-}
-
-const getPuzzleHeight = (gameId: GameId): number => {
-  return GAMES[gameId].puzzle.info.height
 }
 
 const maySnapToFinal = (gameId: GameId, pieceIdxs: number[]): boolean => {
@@ -946,10 +940,10 @@ function handleGameEvent(
       const maxZ = getMaxZIndex(gameId) + 1
       changeData(gameId, { maxZ })
       _dataChange()
-      const tileIdxs = getGroupedPieceIdxs(gameId, tileIdxAtPos)
-      setPiecesZIndex(gameId, tileIdxs, getMaxZIndex(gameId))
-      setPiecesOwner(gameId, tileIdxs, clientId)
-      _pieceChanges(tileIdxs)
+      const pieceIdxs = getGroupedPieceIdxs(gameId, tileIdxAtPos)
+      setPiecesZIndex(gameId, pieceIdxs, getMaxZIndex(gameId))
+      setPiecesOwner(gameId, pieceIdxs, clientId)
+      _pieceChanges(pieceIdxs)
     }
   } else if (type === GAME_EVENT_TYPE.INPUT_EV_MOUSE_MOVE) {
     const x = gameEvent[1]
@@ -1076,13 +1070,13 @@ function handleGameEvent(
         }
 
         let snapped = false
-        for (const pieceIdxTmp of getGroupedPieceIdxs(gameId, pieceIdx)) {
-          const othersIdxs = getSurroundingPiecesByIdx(gameId, pieceIdxTmp)
+        for (const pieceIdxsTmp of getGroupedPieceIdxs(gameId, pieceIdx)) {
+          const othersIdxs = getSurroundingPiecesByIdx(gameId, pieceIdxsTmp)
           if (
-            check(gameId, pieceIdxTmp, othersIdxs[0], { x: 0, y: 1 }) // top
-            || check(gameId, pieceIdxTmp, othersIdxs[1], { x: -1, y: 0 }) // right
-            || check(gameId, pieceIdxTmp, othersIdxs[2], { x: 0, y: -1 }) // bottom
-            || check(gameId, pieceIdxTmp, othersIdxs[3], { x: 1, y: 0 }) // left
+            check(gameId, pieceIdxsTmp, othersIdxs[0], { x: 0, y: 1 }) // top
+            || check(gameId, pieceIdxsTmp, othersIdxs[1], { x: -1, y: 0 }) // right
+            || check(gameId, pieceIdxsTmp, othersIdxs[2], { x: 0, y: -1 }) // bottom
+            || check(gameId, pieceIdxsTmp, othersIdxs[3], { x: 1, y: 0 }) // left
           ) {
             snapped = true
             break
@@ -1347,6 +1341,10 @@ function Game_getImage(game: Game): ImageInfo {
   return game.puzzle.info.image
 }
 
+function Game_hasReplay(game: Game): boolean {
+  return game.hasReplay ? true : false
+}
+
 function Game_getImageUrl(game: Game): string {
   const imageUrl = Game_getImage(game).url
   if (!imageUrl) {
@@ -1379,8 +1377,8 @@ export default {
   getFinishedPiecesCount,
   getFinishTs,
   getFirstOwnedPiece,
-  getGroupedPieceCount,
   getIdlePlayers,
+  getImage,
   getImageUrl,
   getMaxZIndex,
   getPieceCount,
@@ -1394,8 +1392,6 @@ export default {
   getPlayerIndexById,
   getPlayerName,
   getPuzzle,
-  getPuzzleHeight,
-  getPuzzleWidth,
   getRegisteredMap,
   getRng,
   getRotationMode,
@@ -1409,6 +1405,7 @@ export default {
   getTableWidth,
   handleGameEvent,
   handleLogEntry,
+  hasReplay,
   isGameLoading,
   isPlayerBanned,
   isFinished,

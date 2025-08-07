@@ -1,7 +1,7 @@
 export default /*glsl*/`#version 300 es
 precision highp float;
 
-in vec2 v_texcoord;
+in vec2 v_texCoord;
 
 out vec4 fragColor;
 
@@ -17,7 +17,7 @@ bool is_magenta(vec4 color) {
 }
 
 vec4 determine_frag_color() {
-  vec4 color = texture(u_texture, v_texcoord);
+  vec4 color = texture(u_texture, v_texCoord);
   // magenta is the mask color
   if (!is_magenta(color)) {
     return color;
@@ -27,7 +27,7 @@ vec4 determine_frag_color() {
     vec4 color1 = vec4(0., 0.341, 0.718, 1); // 0057B7
     vec4 color2 = vec4(1., 0.867, 0., 1); // FFDD00
     // a bit more than half looks just about right
-    if (v_texcoord.y < 0.57) {
+    if (v_texCoord.y < 0.57) {
       return color1;
     }
     return color2;

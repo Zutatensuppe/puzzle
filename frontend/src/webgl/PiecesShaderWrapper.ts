@@ -23,9 +23,18 @@ export class PiecesShaderWrapper {
   ) {
   }
 
-  public init(puzzleBitmap: HTMLCanvasElement, stencils: Record<EncodedPieceShape, ImageBitmap>) {
+  public init(
+    puzzleBitmap: TexImageSource,
+    stencils: Record<EncodedPieceShape, Exclude<TexImageSource, VideoFrame>>,
+  ) {
     console.time('textureAtlas')
-    this.atlas = new TextureAtlas(this.gl, Object.keys(stencils).map((key) => [key as unknown as EncodedPieceShape, stencils[key as unknown as EncodedPieceShape]]))
+    this.atlas = new TextureAtlas(
+      this.gl,
+      Object.keys(stencils).map((key) => [
+        key as unknown as EncodedPieceShape,
+        stencils[key as unknown as EncodedPieceShape],
+      ]),
+    )
     console.timeEnd('textureAtlas')
 
     console.time('rest')

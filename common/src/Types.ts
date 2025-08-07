@@ -32,6 +32,8 @@ export type LivestreamId = Branded<string, 'LivestreamId'>
 
 export type JSONDateString = Branded<string, 'JSONDateString'> // e.g. "2023-10-01T12:34:56.789Z"
 
+export type ImageDataURL = Branded<string, 'ImageDataURL'> // e.g. "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAA..."
+
 export type ChangePiece = [CHANGE_TYPE.PIECE, EncodedPiece]
 export type ChangePlayer = [CHANGE_TYPE.PLAYER, EncodedPlayer]
 export type ChangeData = [CHANGE_TYPE.DATA, PuzzleData]

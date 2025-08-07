@@ -8,8 +8,8 @@ uniform vec2 puzzle_image_size;
 flat in uint v_tid;
 flat in uint v_rotation;
 flat in uint v_visible;
-in vec2 v_texcoord;
-in vec2 v_puzcoord;
+in vec2 v_texCoord;
+in vec2 v_puzCoord;
 
 out vec4 fragColor;
 
@@ -34,31 +34,31 @@ vec3 blendLightenDarken(vec3 baseColor, vec4 gradient) {
   return clamp(result, 0.0, 1.0);
 }
 
-vec2 unrotateTexcoord(vec2 texcoord) {
+vec2 unrotateTexCoord(vec2 texCoord) {
   if (v_rotation == 1u) {
-    // rotate texcoord by -90 degrees
-    return vec2(1.0 - texcoord.y, texcoord.x);
+    // rotate texCoord by -90 degrees
+    return vec2(1.0 - texCoord.y, texCoord.x);
   }
   if (v_rotation == 2u) {
-    // rotate texcoord by -180 degrees
-    return vec2(1.0 - texcoord.x, 1.0 - texcoord.y);
+    // rotate texCoord by -180 degrees
+    return vec2(1.0 - texCoord.x, 1.0 - texCoord.y);
   }
   if (v_rotation == 3u) {
-    // rotate texcoord by -270 degrees
-    return vec2(texcoord.y, 1.0 - texcoord.x);
+    // rotate texCoord by -270 degrees
+    return vec2(texCoord.y, 1.0 - texCoord.x);
   }
-  return texcoord;
+  return texCoord;
 }
 
 vec4 determine_frag_color() {
-  vec2 adjustedTexcoord = unrotateTexcoord(v_texcoord);
+  vec2 adjustedTexCoord = unrotateTexCoord(v_texCoord);
 
   // Calculate the position in the puzzle image
-  vec2 puzzleCoord = v_puzcoord + v_texcoord * (PIECE_SIZE + 2.0 * PADDING_SIZE) - PADDING_SIZE;
+  vec2 puzzleCoord = v_puzCoord + v_texCoord * (PIECE_SIZE + 2.0 * PADDING_SIZE) - PADDING_SIZE;
   puzzleCoord /= puzzle_image_size; // Normalize to [0, 1] range
 
   // Sample the stencil and puzzle image
-  vec4 stencil = texture(atlas, vec3(adjustedTexcoord, float(v_tid)));
+  vec4 stencil = texture(atlas, vec3(adjustedTexCoord, float(v_tid)));
   vec4 puzzleImage = texture(atlas2, puzzleCoord);
 
   // Determine the final color before blur

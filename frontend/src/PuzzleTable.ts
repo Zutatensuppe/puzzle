@@ -14,7 +14,7 @@ export class PuzzleTable {
 
   constructor(
     private readonly graphics: Graphics,
-  ) {}
+  ) { }
 
   public async loadTextureToCanvas(
     gameId: GameId,
@@ -39,18 +39,14 @@ export class PuzzleTable {
     const boardDim = GameCommon.getBoardDim(gameId)
 
     try {
-      const url = textureInfo.url.match(/^https?:\/\//)
-        ? `/api/proxy?${new URLSearchParams({ url: textureInfo.url })}`
-        : textureInfo.url
-      const bitmap = await this.graphics.loadImageToBitmap(url)
-
+      const canvas = await this.graphics.loader.canvasFromSrc(textureInfo.url)
       const texture = this._createTableGfx(
         bounds,
         boardPos,
         boardDim,
-        bitmap,
+        canvas,
         textureInfo.scale,
-        this.graphics.isDark(bitmap),
+        this.graphics.op.isDark(canvas),
         settings.showPuzzleBackground,
       )
       cache[cacheKey] = texture
@@ -88,15 +84,15 @@ export class PuzzleTable {
     bounds: Rect,
     boardPos: Point,
     boardDim: Dim,
-    bitmap: ImageBitmap,
+    canvas: HTMLCanvasElement,
     scale: number,
     isDark: boolean,
     showPuzzleBackground: boolean,
   ): HTMLCanvasElement {
-    const tableCanvas = this.graphics.repeat(bitmap, bounds, scale)
+    const tableCanvas = this.graphics.op.repeat(canvas, bounds, scale)
     const adjustedBounds: Dim = { w: tableCanvas.width, h: tableCanvas.height }
     const ratio = adjustedBounds.w / bounds.w
-    const tableCtx = tableCanvas.getContext('2d') as CanvasRenderingContext2D
+    const tableCtx = tableCanvas.getContext('2d')!
 
     // darken the outer edges of the table a bit
     {

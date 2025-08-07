@@ -290,7 +290,7 @@ export abstract class Game<HudType extends Hud> implements GameInterface {
       await this.rendererWebgl.init()
       await this.rendererWebgl.loadTableTexture(this.playerSettings.getSettings())
     } else {
-      this.ctx = this.canvas.getContext('2d') as CanvasRenderingContext2D
+      this.ctx = this.canvas.getContext('2d')!
 
       if (!this.fireworks) {
         this.fireworks = new fireworksController(this.canvas, GameCommon.getRng(this.gameId))
@@ -440,7 +440,7 @@ export abstract class Game<HudType extends Hud> implements GameInterface {
   }
 
   getImage(): ImageInfo {
-    return GameCommon.getPuzzle(this.gameId).info.image
+    return GameCommon.getImage(this.gameId)
   }
 
   onServerUpdateEvent(msg: ServerUpdateEvent): void {
@@ -616,7 +616,7 @@ export abstract class Game<HudType extends Hud> implements GameInterface {
   }
 
   hasReplay(): boolean {
-    return GameCommon.get(this.gameId)?.hasReplay ? true : false
+    return GameCommon.hasReplay(this.gameId)
   }
 
   getPlayerSettings(): PlayerSettings {

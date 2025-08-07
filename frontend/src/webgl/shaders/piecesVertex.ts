@@ -5,7 +5,7 @@ uniform mat4 projection;
 uniform mat4 view;
 
 layout(location = 0) in vec2 position;
-layout(location = 1) in vec2 texcoord;
+layout(location = 1) in vec2 texCoord;
 
 layout(location = 2) in uint tid;
 layout(location = 3) in float x; // world space
@@ -21,8 +21,8 @@ layout(location = 9) in uint visible; // visibility of piece
 flat out uint v_tid;
 flat out uint v_rotation;
 flat out uint v_visible;
-out vec2 v_texcoord;
-out vec2 v_puzcoord;
+out vec2 v_texCoord;
+out vec2 v_puzCoord;
 
 // TODO: replace hardcoded values (build shader with a template string?)
 const float SPRITE_SIZE = 64.0;
@@ -32,8 +32,8 @@ void main() {
     v_tid = tid;
     v_rotation = rotation;
     v_visible = visible;
-    v_texcoord = texcoord;
-    v_puzcoord = vec2(t_x, t_y);
+    v_texCoord = texCoord;
+    v_puzCoord = vec2(t_x, t_y);
 
     mat4 model = mat4(
       SPRITE_SIZE + PADDING_SIZE * 2.0, 0, 0, 0,

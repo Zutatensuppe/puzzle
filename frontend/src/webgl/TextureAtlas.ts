@@ -6,7 +6,7 @@ export class TextureAtlas {
   //       without creating a new texture.
   private texture: WebGLTexture
 
-  constructor(gl: WebGL2RenderingContext, images: [number, ImageBitmap][]) {
+  constructor(gl: WebGL2RenderingContext, images: [number, Exclude<TexImageSource, VideoFrame>][]) {
     if (images.length === 0) {
       throw new Error('Cannot create texture atlas: no images provided')
     }

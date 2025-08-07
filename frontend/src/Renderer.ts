@@ -80,12 +80,11 @@ export class Renderer {
     }
     if (!puzzleBitmapGrayscaled[this.gameId]) {
       // log.log('loading grayscaled puzzle bitmap', this.gameId)
-      const bmpGrayscaled = this.graphics.grayscaledCanvas(
+      puzzleBitmapGrayscaled[this.gameId] = this.graphics.op.toGrayscale(
         puzzleBitmapCache[this.gameId],
         'black',
         0.3,
       )
-      puzzleBitmapGrayscaled[this.gameId] = bmpGrayscaled
     }
   }
 
@@ -95,7 +94,7 @@ export class Renderer {
     }
   }
 
-  render (
+  render(
     canvas: HTMLCanvasElement,
     ctx: CanvasRenderingContext2D,
     viewport: Camera,
@@ -110,7 +109,7 @@ export class Renderer {
   ) {
     let pos: Point
     let dim: Dim
-    let bmp: ImageBitmap | HTMLCanvasElement
+    let bmp: HTMLCanvasElement
     let tmpCanvas: HTMLCanvasElement
 
     if (this.debug) Debug.checkpoint_start(0)
@@ -274,7 +273,7 @@ export class Renderer {
     viewport.centerFit(boardDim, tableDim, boardDim, 0)
 
     const canvas = this.graphics.createCanvas(boardDim.w, boardDim.h)
-    const ctx = canvas.getContext('2d') as CanvasRenderingContext2D
+    const ctx = canvas.getContext('2d')!
     this.render(
       canvas,
       ctx,

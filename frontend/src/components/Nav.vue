@@ -1,7 +1,10 @@
 <template>
   <div v-if="showNav">
     <v-app-bar>
-      <div class="header-bar-container d-flex">
+      <div
+        class="header-bar-container d-flex"
+        :class="{ blurred: currentDialog }"
+      >
         <div class="justify-start">
           <v-app-bar-nav-icon
             class="mr-1"
@@ -132,7 +135,7 @@ import AnnouncementsIcon from './AnnouncementsIcon.vue'
 import { useDialog } from '../useDialog'
 import type { User } from '../Types'
 
-const { openLoginDialog } = useDialog()
+const { openLoginDialog, currentDialog } = useDialog()
 
 const { showNsfw, toggleNsfw } = useNsfw()
 
