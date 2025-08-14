@@ -25,6 +25,13 @@ export class GameReplay extends Game<ReplayHud> {
   private gameTs!: number
   private to: ReturnType<typeof setTimeout> | null = null
 
+  private readonly PRELOAD_BATCHES_COUNT: number = 2
+  private loadedAll: boolean = false
+  private determinedBatchSize: number = 0
+  private loadingPromise: Promise<void> | null = null
+  private loadingResolve: (() => void) | null = null
+  private nextBatches: LogEntry[][] = []
+
   public getMode(): string {
     return MODE_REPLAY
   }
@@ -37,16 +44,54 @@ export class GameReplay extends Game<ReplayHud> {
     return this.lastGameTs
   }
 
-  public async queryNextReplayBatch (): Promise<LogEntry[]> {
-    const logFileIdx = this.logFileIdx
-    this.logFileIdx++
-
-    const res = await _api.pub.replayLogData({ gameId: this.gameId, logFileIdx })
-    if (res.status !== 200) {
-      throw new Error('Replay not found')
+  private async prepareNextReplayBatch(): Promise<void> {
+    if (
+      this.loadingPromise
+      || this.loadedAll
+      || this.nextBatches.length >= this.PRELOAD_BATCHES_COUNT
+    ) {
+      return this.loadingPromise ?? Promise.resolve()
     }
-    const text = res.text
-    const log = parseLogFileContents(text, logFileIdx)
+
+    this.loadingPromise = new Promise<void>((resolve) => {
+      this.loadingResolve = resolve
+    })
+
+    const logFileIdx = this.logFileIdx++
+
+    try {
+      const res = await _api.pub.replayLogData({ gameId: this.gameId, logFileIdx })
+      if (res.status !== 200) {
+        throw new Error('Replay not found')
+      }
+
+      const text = res.text
+      const log = parseLogFileContents(text, logFileIdx)
+
+      if (log.length === 0) {
+        this.loadedAll = true
+      }
+
+      this.nextBatches.push(log)
+    } finally {
+      if (this.loadingResolve) {
+        this.loadingResolve()
+      }
+      this.loadingPromise = null
+      this.loadingResolve = null
+    }
+  }
+
+  public async nextBatch (): Promise<LogEntry[]> {
+    // if currently loading, wait for that to finish.
+    if (this.loadingPromise) {
+      await this.loadingPromise
+    }
+
+    const log = this.nextBatches.shift()
+    if (!log) {
+      throw new Error('No next batch available')
+    }
 
     // cut log that was already handled
     this.log = this.log.slice(this.logPointer)
@@ -65,10 +110,18 @@ export class GameReplay extends Game<ReplayHud> {
     if ('reason' in data) {
       throw `[ 2025-05-18 ${data.reason} ]`
     }
-    const logEntries: LogEntry[] = await this.queryNextReplayBatch()
+
+    for (let i = 0; i < this.PRELOAD_BATCHES_COUNT; i++) {
+      await this.prepareNextReplayBatch()
+    }
+
+    const logEntries: LogEntry[] = await this.nextBatch()
     if (!logEntries.length) {
       throw '[ 2023-02-12 no replay data received ]'
     }
+
+    this.determinedBatchSize = logEntries.length
+
     const gameObject: GameType = Util.decodeGame(data.game)
     GameCommon.setGame(gameObject.id, gameObject)
     GameCommon.setRegisteredMap(gameObject.id, gameObject.registeredMap)
@@ -126,8 +179,16 @@ export class GameReplay extends Game<ReplayHud> {
   }
 
   private async next() {
+    // `determinedBatchSize / 2` means we will load the next batch when we have
+    // processed half the current batch. This hopefully prevents stuttering
+    // at higher playback speeds. It currently takes roughly 100ms to load one batch.
+    // we have usually a batch size of 10000.
+    if (this.logPointer + 1 + (this.determinedBatchSize / 2) >= this.log.length) {
+      void this.prepareNextReplayBatch()
+    }
+
     if (this.logPointer + 1 >= this.log.length) {
-      await this.queryNextReplayBatch()
+      await this.nextBatch()
     }
 
     const realTs = Time.timestamp()
