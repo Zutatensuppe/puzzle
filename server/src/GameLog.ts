@@ -33,7 +33,7 @@ const shouldLog = (gameId: GameId, finishTs: Timestamp, currentTs: Timestamp): b
 
 const basedir = (gameId: GameId): string => `${config.dir.DATA_DIR}/log/${gameId}`
 
-const relativeFilename = (gameId: GameId, offset: number): string => `/log_${gameId}_${offset}.log`
+const relativeFilename = (gameId: GameId, offset: number): string => `/log_${gameId}-${offset}.log`
 
 const fullFilename = (gameId: GameId, offset: number) => `${basedir(gameId)}${relativeFilename(gameId, offset)}`
 const fullFilenameGz = (gameId: GameId, offset: number) => `${fullFilename(gameId, offset)}.gz`
@@ -43,13 +43,16 @@ const fullIndexFilename = (gameId: GameId) => `${basedir(gameId)}/log_${gameId}.
 export const gzFilenameOrFilename = async (gameId: GameId, offset: number) => {
   const gz = fullFilenameGz(gameId, offset)
   if (await fs.exists(gz)) {
+    console.log('gz file exists', gz)
     return gz
   }
 
   const raw = fullFilename(gameId, offset)
   if (await fs.exists(raw)) {
+    console.log('raw file exists', raw)
     return raw
   }
+  console.log('no file exists for', gz, raw)
   return ''
 }
 
@@ -109,12 +112,15 @@ const loadFromDisk = async (gameId: GameId): Promise<void> => {
   let lines = []
 
   let currentFile = idxObj.currentFile
-  if (currentFile.startsWith(basedir(gameId))) {
+  const baseDir = basedir(gameId)
+  const currentFileClean = currentFile.replace(/\\/g, '/')
+  const basedirClean = baseDir.replace(/\\/g, '/')
+  if (currentFileClean.startsWith(basedirClean)) {
     // old log files (until around id mebwdo033) have the basedir prepended
     // for those we can just use the currentFile as is
     // this will to be removed in the future
   } else {
-    currentFile = `${basedir(gameId)}/${currentFile}`
+    currentFile = `${baseDir}${currentFile}`
   }
 
   try {
