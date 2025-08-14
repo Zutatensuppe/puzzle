@@ -31,17 +31,22 @@ const shouldLog = (gameId: GameId, finishTs: Timestamp, currentTs: Timestamp): b
   return timeSinceGameEnd <= POST_GAME_LOG_DURATION
 }
 
-export const filename = (gameId: GameId, offset: number) => `${config.dir.DATA_DIR}/log/${gameId}/log_${gameId}-${offset}.log`
-export const filenameGz = (gameId: GameId, offset: number) => `${filename(gameId, offset)}.gz`
-export const idxname = (gameId: GameId) => `${config.dir.DATA_DIR}/log/${gameId}/log_${gameId}.idx.log`
+const basedir = (gameId: GameId): string => `${config.dir.DATA_DIR}/log/${gameId}`
+
+const relativeFilename = (gameId: GameId, offset: number): string => `/log_${gameId}_${offset}.log`
+
+const fullFilename = (gameId: GameId, offset: number) => `${basedir(gameId)}${relativeFilename(gameId, offset)}`
+const fullFilenameGz = (gameId: GameId, offset: number) => `${fullFilename(gameId, offset)}.gz`
+
+const fullIndexFilename = (gameId: GameId) => `${basedir(gameId)}/log_${gameId}.idx.log`
 
 export const gzFilenameOrFilename = async (gameId: GameId, offset: number) => {
-  const gz = filenameGz(gameId, offset)
+  const gz = fullFilenameGz(gameId, offset)
   if (await fs.exists(gz)) {
     return gz
   }
 
-  const raw = filename(gameId, offset)
+  const raw = fullFilename(gameId, offset)
   if (await fs.exists(raw)) {
     return raw
   }
@@ -67,7 +72,7 @@ const flushToDisk = async (gameId: GameId): Promise<void> => {
   await prepareLogDir(gameId)
 
   // write index file
-  const idxfile = idxname(gameId)
+  const idxfile = fullIndexFilename(gameId)
   await fs.writeFile(idxfile, JSON.stringify(GAME_LOG_IDX[gameId]))
 
   // write each log file
@@ -91,7 +96,7 @@ const loadFromDisk = async (gameId: GameId): Promise<void> => {
     return
   }
 
-  const idxfile = idxname(gameId)
+  const idxfile = fullIndexFilename(gameId)
   let idxObj: LogIndex
   try {
     const idxData = await fs.readFile(idxfile)
@@ -102,11 +107,21 @@ const loadFromDisk = async (gameId: GameId): Promise<void> => {
     return
   }
   let lines = []
+
+  let currentFile = idxObj.currentFile
+  if (currentFile.startsWith(basedir(gameId))) {
+    // old log files (until around id mebwdo033) have the basedir prepended
+    // for those we can just use the currentFile as is
+    // this will to be removed in the future
+  } else {
+    currentFile = `${basedir(gameId)}/${currentFile}`
+  }
+
   try {
-    const currentFileContents = await fs.readFile(idxObj.currentFile)
+    const currentFileContents = await fs.readFile(currentFile)
     lines = currentFileContents.split('\n')
   } catch {
-    log.error('failed to read currentFile', idxObj.currentFile)
+    log.error('failed to read currentFile', currentFile)
     return
   }
   GAME_LOG_IDX[gameId] = idxObj
@@ -125,7 +140,7 @@ const create = (gameId: GameId, ts: Timestamp): void => {
     gameId: gameId,
     total: 0,
     lastTs: ts,
-    currentFile: filename(gameId, 0),
+    currentFile: relativeFilename(gameId, 0),
     perFile: LINES_PER_LOG_FILE,
   }
   GAME_LOG[gameId] = {
@@ -163,7 +178,7 @@ const _log = (gameId: GameId, logRow: LogEntry): void => {
 
   const idxObj = GAME_LOG_IDX[gameId]
   if (idxObj.total % idxObj.perFile === 0) {
-    idxObj.currentFile = filename(gameId, idxObj.total)
+    idxObj.currentFile = relativeFilename(gameId, idxObj.total)
   }
 
   const type = logRow[0]
@@ -184,7 +199,7 @@ const _log = (gameId: GameId, logRow: LogEntry): void => {
 }
 
 const prepareLogDir = async (gameId: GameId): Promise<void> => {
-  const dir = `${config.dir.DATA_DIR}/log/${gameId}`
+  const dir = basedir(gameId)
   if (!await fs.exists(dir)) {
     await fs.mkdir(dir)
   }
