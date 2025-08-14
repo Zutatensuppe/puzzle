@@ -48,6 +48,21 @@ describe('determinePuzzleInfo', () => {
         desiredPieceCount: 735,
       },
     },
+    {
+      dim: { w: 1706, h: 1000 },
+      desiredPieceCount: 2_000_000,
+      expected: {
+        width: 118208,
+        height: 69312,
+        pieceSize: 64,
+        pieceMarginWidth: 32,
+        pieceDrawSize: 128,
+        pieceCount: 2000301,
+        pieceCountHorizontal: 1847,
+        pieceCountVertical: 1083,
+        desiredPieceCount: 2_000_000,
+      },
+    },
   ].forEach(({ dim, desiredPieceCount, expected }) => it('determinePieceCount', () => {
     const actual = determinePuzzleInfo(dim, desiredPieceCount)
     assert.deepStrictEqual(actual, expected)

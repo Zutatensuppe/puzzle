@@ -21,13 +21,20 @@ const CURVY_COORDS = [
   63, 5, 65, 15, 100, 0,
 ]
 
-function createPathForShape(shape: PieceShape, x: number, y: number, pieceSize: number) {
+function createPathForShape(
+  shapeEncoded: EncodedPieceShape,
+  x: number,
+  y: number,
+  pieceSize: number,
+): Path2D {
   const pieceRatio = pieceSize / 100.0
   const path = new Path2D()
   const topLeftEdge = { x, y }
   const topRightEdge = Geometry.pointAdd(topLeftEdge, { x: pieceSize, y: 0 })
   const bottomRightEdge = Geometry.pointAdd(topRightEdge, { x: 0, y: pieceSize })
   const bottomLeftEdge = Geometry.pointSub(bottomRightEdge, { x: pieceSize, y: 0 })
+
+  const shape = Util.decodeShape(shapeEncoded)
 
   path.moveTo(topLeftEdge.x, topLeftEdge.y)
   if (shape.top !== 0) {
@@ -96,15 +103,18 @@ export function drawPuzzlePreview(
   ctx.fillStyle = '#000'
   ctx.lineWidth = .3
   ctx.globalAlpha = .7
+
+  const shapeToPathMap: Record<EncodedPieceShape, Path2D> = {}
   for (let y = 0; y < puzzleCreationInfo.pieceCountVertical; y++) {
     for (let x = 0; x < puzzleCreationInfo.pieceCountHorizontal; x++) {
-      const path = createPathForShape(
-        Util.decodeShape(shapes.shift() as number),
-        imageRect.x + off.x + x * previewPieceSize,
-        imageRect.y + off.y + y * previewPieceSize,
-        previewPieceSize,
-      )
-      ctx.stroke(path)
+      const shape = shapes.shift() as EncodedPieceShape
+      if (!shapeToPathMap[shape]) {
+        shapeToPathMap[shape] = createPathForShape(shape, 0, 0, previewPieceSize)
+      }
+      ctx.save()
+      ctx.translate(imageRect.x + off.x + x * previewPieceSize, imageRect.y + off.y + y * previewPieceSize)
+      ctx.stroke(shapeToPathMap[shape])
+      ctx.restore()
     }
   }
   ctx.restore()
@@ -124,14 +134,7 @@ function loadPuzzleBitmaps(
 
   const images: HTMLCanvasElement[] = new Array(pieces.length)
 
-  const paths: Record<number, Path2D> = {}
-  function pathForShape(shape: PieceShape) {
-    const key = Util.encodeShape(shape)
-    if (!(key in paths)) {
-      paths[key] = createPathForShape(shape, pieceMarginWidth, pieceMarginWidth, pieceSize)
-    }
-    return paths[key]
-  }
+  const shapeToPathMap: Record<number, Path2D> = {}
 
   for (const piece of pieces) {
     const c = graphics.createCanvas(pieceDrawSize)
@@ -140,7 +143,11 @@ function loadPuzzleBitmaps(
     const ctx2 = c2.getContext('2d')!
     const pieceIdx = piece[EncodedPieceIdx.IDX]
     const srcRect = srcRectByIdx(info, pieceIdx)
-    const path = pathForShape(Util.decodeShape(info.shapes[pieceIdx]))
+    const shape = info.shapes[pieceIdx]
+    if (!shapeToPathMap[shape]) {
+      shapeToPathMap[shape] = createPathForShape(shape, pieceMarginWidth, pieceMarginWidth, pieceSize)
+    }
+    const path = shapeToPathMap[shape]
 
     ctx.clearRect(0, 0, pieceDrawSize, pieceDrawSize)
 

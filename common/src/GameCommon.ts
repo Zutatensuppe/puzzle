@@ -36,7 +36,7 @@ import type {
 import Util from './Util'
 
 export const NEWGAME_MIN_PIECES = 10
-export const NEWGAME_MAX_PIECES = 5000
+export const NEWGAME_MAX_PIECES = 10_000
 
 const IDLE_TIMEOUT_SEC = 30
 
