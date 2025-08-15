@@ -108,7 +108,13 @@ export class Server {
     return this._indexFileContents
   }
 
-  start() {
+  init(): void {
+    this.repos.init(this)
+    this.gameService.init(this)
+    this.moderation.init(this)
+  }
+
+  listen() {
     const port = config.http.port
     const hostname = config.http.hostname
     const app = express()

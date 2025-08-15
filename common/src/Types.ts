@@ -865,6 +865,7 @@ export interface ImageRow {
   copyright_url: string
   reported: number
   nsfw: number
+  checksum: string | null
 }
 
 export interface ImageXTagRow {

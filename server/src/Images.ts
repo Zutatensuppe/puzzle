@@ -3,13 +3,11 @@ import fs from 'fs'
 
 import config from './Config'
 import type { Dim } from '../../common/src/Geometry'
-import Util, { logger } from '../../common/src/Util'
+import Util from '../../common/src/Util'
 import type { Tag, ImageInfo, UserId, ImageId, ImageRowWithCount, TagRow, ImageRow } from '../../common/src/Types'
 import type { ImagesRepo } from './repo/ImagesRepo'
 import type { WhereRaw } from './Db'
 import type { ImageExif } from './ImageExif'
-
-const log = logger('Images.ts')
 
 export class Images {
   constructor(
@@ -123,5 +121,9 @@ export class Images {
 
   public async getImageById(imageId: ImageId): Promise<ImageRow | null> {
     return await this.imagesRepo.get({ id: imageId })
+  }
+
+  public getImagePath(filename: string): string {
+    return `${config.dir.UPLOAD_DIR}/${filename}`
   }
 }

@@ -20,6 +20,7 @@ import GameLog from './GameLog'
 import { ImageExif } from './ImageExif'
 import { Repos } from './repo/Repos'
 import { Moderation } from './Moderation'
+import { ImageChecksumMigration } from './migrations/ImageChecksumMigration'
 
 const run = async () => {
   const db = new Db(config.db.connectStr, config.dir.DB_PATCHES_DIR)
@@ -55,10 +56,13 @@ const run = async () => {
     twitch,
     moderation,
   )
-  repos.init(server)
-  gameService.init(server)
-  moderation.init(server)
-  server.start()
+  server.init()
+
+  // TODO: remove after the migration has run
+  const migration = new ImageChecksumMigration(server)
+  void migration.run()
+
+  server.listen()
 
   const log = logger('main.js')
 
