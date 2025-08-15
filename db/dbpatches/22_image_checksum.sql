@@ -1,0 +1,1 @@
+ALTER TABLE images ADD COLUMN checksum TEXT DEFAULT null;

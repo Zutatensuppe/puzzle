@@ -1,3 +1,5 @@
+import { createHash } from 'crypto'
+import { createReadStream } from 'fs'
 import fs from 'fs/promises'
 
 // Hyottoko moving boxes:
@@ -19,8 +21,20 @@ const appendFile = async (file: string, text: string) => await fs.appendFile(fil
 const mkdir = async (dir: string) => await fs.mkdir(dir, { recursive: true })
 const readdir = async (dir: string) => await fs.readdir(dir)
 const unlink = async (file: string) => await fs.unlink(file)
+const checksum = (file: string): Promise<string> => {
+  return new Promise<string>((resolve, reject) => {
+    const hash = createHash('sha256')
+    const stream = createReadStream(file)
+    hash.on('error', (error) => reject(error))
+    stream.on('error', (error) => reject(error))
+
+    stream.on('data', chunk => hash.update(chunk))
+    stream.on('end', () => resolve(hash.digest('hex')))
+  })
+}
 
 export default {
+  checksum,
   exists,
   readFile,
   readFileRaw,

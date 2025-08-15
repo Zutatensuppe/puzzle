@@ -18,6 +18,7 @@ import Util, { isEncodedGameLegacy, logger, newJSONDateString, uniqId } from '..
 import { COOKIE_TOKEN, generateSalt, generateToken, passwordHash } from '../../Auth'
 import type { Server } from '../../Server'
 import fs from '../../FileSystem'
+import FileSystem from '../../FileSystem'
 
 const log = logger('web_routes/api/index.ts')
 
@@ -696,9 +697,10 @@ export default function createRouter(
 
       const user = await server.users.getOrCreateUserByRequest(req)
 
-      const dim = await im.getDimensions(
-        `${config.dir.UPLOAD_DIR}/${req.file.filename}`,
-      )
+      const imagePath = im.getImagePath(req.file.filename)
+      const dim = await im.getDimensions(imagePath)
+      const checksum = await FileSystem.checksum(imagePath)
+
       // post form, so booleans are submitted as 'true' | 'false'
       const isPrivate = req.body.private === 'false' ? 0 : 1
       const nsfw = req.body.nsfw === 'true' ? 1 : 0
@@ -715,6 +717,7 @@ export default function createRouter(
         private: isPrivate,
         reported: 0,
         nsfw,
+        checksum,
       })
 
       if (req.body.tags) {
