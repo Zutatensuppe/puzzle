@@ -299,7 +299,14 @@ export class GameService {
     })
     await this.server.repos.games.updatePlayerRelations(game.id, game.players)
 
-    await GameLog.flushToDisk(game.id)
+    try {
+      await GameLog.flushToDisk(game.id)
+    } catch (err) {
+      log.error(`[ERR] unable to flush game log to disk for game ${game.id}`, err)
+      // if we cannot write the log, we still persisted the game
+      // but the log will not be available
+      // this is not a critical error, so we just log it
+    }
 
     log.info(`[INFO] persisted game ${game.id}`)
   }
