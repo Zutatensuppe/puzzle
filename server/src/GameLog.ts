@@ -80,7 +80,8 @@ const flushToDisk = async (gameId: GameId): Promise<void> => {
 
   // write each log file
   for (const file in GAME_LOG[gameId]) {
-    await fs.writeFile(file, GAME_LOG[gameId][file].join('\n'))
+    const filePath = basedir(gameId) + file
+    await fs.writeFile(filePath, GAME_LOG[gameId][file].join('\n'))
     if (GAME_LOG[gameId][file].length === GAME_LOG_IDX[gameId].perFile) {
       delete GAME_LOG[gameId][file]
     }
