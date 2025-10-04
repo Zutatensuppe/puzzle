@@ -70,7 +70,6 @@
                 <td>
                   <RankIcon
                     :rank="userProfile.stats.leaderboardRanks.alltime.rank"
-                    :number-fallback="false"
                     :unranked-fallback="'<no rank>'"
                   />
                   <span
@@ -86,7 +85,6 @@
                 <td>
                   <RankIcon
                     :rank="userProfile.stats.leaderboardRanks.month.rank"
-                    :number-fallback="false"
                     :unranked-fallback="'<no rank>'"
                   />
                   <span
@@ -102,7 +100,6 @@
                 <td>
                   <RankIcon
                     :rank="userProfile.stats.leaderboardRanks.week.rank"
-                    :number-fallback="false"
                     :unranked-fallback="'<no rank>'"
                   />
                   <span
