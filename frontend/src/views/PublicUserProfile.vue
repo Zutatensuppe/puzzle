@@ -160,10 +160,16 @@
         </v-window-item>
       </v-window>
     </div>
+    <div v-else-if="loading">
+      Loading profile...
+    </div>
+    <div v-else>
+      No profile found
+    </div>
   </v-container>
 </template>
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import api from '../_api'
 import { toast } from '../toast'
@@ -183,6 +189,7 @@ const tab = ref<'latest-images'|'latest-finished-games'>('latest-images')
 const route = useRoute()
 const router = useRouter()
 
+const loading = ref<boolean>(true)
 const userProfile = ref<CompleteUserProfile|null>(null)
 
 const joinDate = computed(() => {
@@ -287,17 +294,21 @@ const load = async () => {
 }
 
 const onLoginStateChange = async () => {
-  await load()
-}
-
-onMounted(async () => {
+  userProfile.value = null
+  loading.value = true
   const tmpId = parseInt(`${route.params.id}`, 10) as UserId
   if (isNaN(tmpId) || tmpId <= 0) {
     toast('An error occured while loading the profile.', 'error')
+    loading.value = false
     return
   }
   id.value = tmpId
   await load()
+  loading.value = false
+}
+
+onMounted(async () => {
+  await onLoginStateChange()
 
   user.eventBus.on('login', onLoginStateChange)
   user.eventBus.on('logout', onLoginStateChange)
@@ -305,5 +316,9 @@ onMounted(async () => {
 onUnmounted(() => {
   user.eventBus.off('login', onLoginStateChange)
   user.eventBus.off('logout', onLoginStateChange)
+})
+
+watch(() => route.params.id, async () => {
+  await onLoginStateChange()
 })
 </script>
