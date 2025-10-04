@@ -1,11 +1,16 @@
-import type { AccountId, ClientId, TokenRow, UserGroupRow, UserId, UserRow } from '../../common/src/Types'
+import type { GameInfo} from '../../common/src/Types'
+import { ImageSearchSort, type AccountId, type ClientId, type CompleteUserProfile, type TokenRow, type UserGroupRow, type UserId, type UserRow } from '../../common/src/Types'
 import { COOKIE_TOKEN, generateToken } from './Auth'
 import type Db from './Db'
 import type { WhereRaw } from './Db'
+import type { GameService } from './GameService'
+import type { Images } from './Images'
 import type { AccountRow } from './repo/AccountsRepo'
 import type { Repos } from './repo/Repos'
 import type { IdentityRow } from './repo/UserIdentityRepo'
 import type express from 'express'
+import Time from '../../common/src/Time'
+import { toJSONDateString } from '../../common/src/Util'
 
 const HEADER_CLIENT_ID = 'client-id'
 
@@ -27,6 +32,8 @@ export class Users {
   constructor(
     private db: Db,
     private repos: Repos,
+    private images: Images,
+    private games: GameService,
   ) {
   }
 
@@ -181,5 +188,50 @@ export class Users {
 
   getUserByIdentity(identity: IdentityRow): Promise<UserRow | null> {
     return this.getUser({ id: identity.user_id })
+  }
+
+  public async getCompleteUserProfile(
+    currentUserId: UserId,
+    limitToUserId: UserId,
+  ): Promise<CompleteUserProfile> {
+    const user = await this.repos.users.get({ id: limitToUserId })
+    if (!user) {
+      throw new Error('not found')
+    }
+
+    const currentTimestamp = Time.timestamp()
+    const totalGamesCount = await this.repos.games.countGamesByUser(currentUserId, limitToUserId)
+    const totalPiecesCount = await this.repos.games.countGamePiecesByUser(currentUserId, limitToUserId)
+
+    const finishedRows = await this.games.getPublicFinishedGames(0, 8, currentUserId, limitToUserId)
+    const gamesFinished: GameInfo[] = []
+    for (const row of finishedRows) {
+      gamesFinished.push(await this.games.gameToGameInfo(row, currentTimestamp))
+    }
+
+    return {
+      user: {
+        id: user.id,
+        joinDate: new Date(user.created),
+        username: user.name,
+      },
+      stats: {
+        totalGamesCount: totalGamesCount,
+        totalPiecesCount: totalPiecesCount,
+      },
+      // not sure if we have a connection yet
+      // (username maybe or livestream id == user id??)
+      isLiveOnTwitch: false,
+      games: gamesFinished,
+      images: await this.images.imagesFromDb(
+        '',
+        ImageSearchSort.DATE_DESC,
+        false,
+        0,
+        8,
+        currentUserId,
+        limitToUserId,
+      ),
+    }
   }
 }

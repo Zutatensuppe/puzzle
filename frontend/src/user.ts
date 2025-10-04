@@ -12,23 +12,10 @@ const toggleNsfw = (): void => {
   storage.setBool('showNsfw', showNsfw.value)
 }
 
-// Temporarily make individual nsfw items visible.
-// This is deliberately not persisted.
-const nsfwItemsVisible = ref<string[]>([])
-const toggleNsfwItem = (id: string): void => {
-  if (nsfwItemsVisible.value.includes(id)) {
-    nsfwItemsVisible.value = nsfwItemsVisible.value.filter((i) => i !== id)
-  } else {
-    nsfwItemsVisible.value.push(id)
-  }
-}
-
 export const useNsfw = () => {
   return {
     showNsfw,
     toggleNsfw,
-    toggleNsfwItem,
-    nsfwItemsVisible,
   }
 }
 
@@ -41,6 +28,7 @@ async function init(): Promise<void> {
   try {
     const data = await res.json()
     if ('reason' in data) {
+      me = null
       console.log('not logged in')
       eventBus.emit('logout')
     } else {

@@ -142,6 +142,12 @@ const getFeaturedData = (
   return xhr.get(`/api/featured/${data.type}/${data.slug}`)
 }
 
+const getUserProfileData = (
+  data: Api.UserProfileRequestData,
+): Promise<Response<Api.UserProfileResponseData>> => {
+  return xhr.get(`/api/user-profile/${data.id}`)
+}
+
 const getFeaturedTeaserData = (
   // no args
 ): Promise<Response<Api.FeaturedTeasersResponseData>> => {
@@ -152,6 +158,15 @@ const reportImage = (
   data: Api.ReportImageRequestData,
 ): Promise<Response<Api.ReportResponseData>> => {
   return xhr.post('/api/moderation/report-image', {
+    headers: JSON_HEADERS,
+    body: JSON.stringify(data),
+  })
+}
+
+const reportPlayer = (
+  data: Api.ReportPlayerRequestData,
+): Promise<Response<Api.ReportResponseData>> => {
+  return xhr.post('/api/moderation/report-player', {
     headers: JSON_HEADERS,
     body: JSON.stringify(data),
   })
@@ -194,6 +209,7 @@ export default {
   finishedGames,
   getAnnouncements,
   getFeaturedData,
+  getUserProfileData,
   getFeaturedTeaserData,
   images,
   indexData,
@@ -206,6 +222,7 @@ export default {
   replayLogData,
   reportGame,
   reportImage,
+  reportPlayer,
   saveImage,
   sendPasswordResetEmail,
   upload,

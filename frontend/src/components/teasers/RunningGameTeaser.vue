@@ -18,7 +18,7 @@
       <div
         v-if="showNsfwInfo"
         class="teaser-nsfw-information"
-        @click.stop="toggleNsfwItem(`${game.image.id}`)"
+        @click.stop="nsfwToggled = true"
       >
         😳 NSFW (click to show)
       </div>
@@ -105,12 +105,12 @@
 </template>
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
-import Time from '../../../common/src/Time'
-import { resizeUrl } from '../../../common/src/ImageService'
-import type { GameInfo, User } from '../../../common/src/Types'
-import { rotationModeToString, scoreModeToString, shapeModeToString, snapModeToString } from '../../../common/src/Util'
-import user, { useNsfw } from '../user'
-import { useDialog } from '../useDialog'
+import Time from '../../../../common/src/Time'
+import { resizeUrl } from '../../../../common/src/ImageService'
+import type { GameInfo, User } from '../../../../common/src/Types'
+import { rotationModeToString, scoreModeToString, shapeModeToString, snapModeToString } from '../../../../common/src/Util'
+import user, { useNsfw } from '../../user'
+import { useDialog } from '../../useDialog'
 
 const { openReportGameDialog, openImageInfoDialog } = useDialog()
 
@@ -146,9 +146,10 @@ const shapeMode = computed(() => shapeModeToString(props.game.shapeMode))
 
 const rotationMode = computed(() => rotationModeToString(props.game.rotationMode))
 
-const { showNsfw, toggleNsfwItem, nsfwItemsVisible } = useNsfw()
-const hoverable = computed(() => (!props.game.image.nsfw || showNsfw.value || nsfwItemsVisible.value.includes(`${props.game.image.id}`)))
-const showNsfwInfo = computed(() => props.game.image.nsfw && !showNsfw.value && !nsfwItemsVisible.value.includes(`${props.game.image.id}`))
+const { showNsfw } = useNsfw()
+const nsfwToggled = ref<boolean>(false)
+const hoverable = computed(() => (!props.game.image.nsfw || showNsfw.value || nsfwToggled.value))
+const showNsfwInfo = computed(() => props.game.image.nsfw && !showNsfw.value && !nsfwToggled.value)
 
 const time = ((start: number, end: number) => {
   const from = start

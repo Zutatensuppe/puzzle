@@ -258,20 +258,20 @@ export class GameService {
     return games
   }
 
-  public async getPublicRunningGames(offset: number, limit: number, userId: UserId): Promise<GameRow[]> {
-    return await this.server.repos.games.getPublicRunningGames(offset, limit, userId)
+  public async getPublicRunningGames(offset: number, limit: number, currentUserId: UserId, limitToUserId: UserId | null): Promise<GameRow[]> {
+    return await this.server.repos.games.getPublicRunningGames(offset, limit, currentUserId, limitToUserId)
   }
 
-  public async getPublicFinishedGames(offset: number, limit: number, userId: UserId): Promise<GameRow[]> {
-    return await this.server.repos.games.getPublicFinishedGames(offset, limit, userId)
+  public async getPublicFinishedGames(offset: number, limit: number, currentUserId: UserId, limitToUserId: UserId | null): Promise<GameRow[]> {
+    return await this.server.repos.games.getPublicFinishedGames(offset, limit, currentUserId, limitToUserId)
   }
 
-  public async countPublicRunningGames(userId: UserId): Promise<number> {
-    return await this.server.repos.games.countPublicRunningGames(userId)
+  public async countPublicRunningGames(currentUserId: UserId): Promise<number> {
+    return await this.server.repos.games.countPublicRunningGames(currentUserId)
   }
 
-  public async countPublicFinishedGames(userId: UserId): Promise<number> {
-    return await this.server.repos.games.countPublicFinishedGames(userId)
+  public async countPublicFinishedGames(currentUserId: UserId): Promise<number> {
+    return await this.server.repos.games.countPublicFinishedGames(currentUserId)
   }
 
   private async exists(gameId: GameId): Promise<boolean> {
@@ -311,7 +311,7 @@ export class GameService {
     log.info(`[INFO] persisted game ${game.id}`)
   }
 
-  async gameToGameInfo (gameRow: GameRow, ts: number): Promise<GameInfo> {
+  async gameToGameInfo (gameRow: GameRow, currentTimestamp: number): Promise<GameInfo> {
     const game = await this.gameRowToGameObject(gameRow)
     if (!game) {
       throw new Error('invalid game row')
@@ -328,7 +328,7 @@ export class GameService {
       piecesTotal: GameCommon.Game_getPieceCount(game),
       players: finished
         ? GameCommon.Game_getPlayersWithScore(game).length
-        : GameCommon.Game_getActivePlayers(game, ts).length,
+        : GameCommon.Game_getActivePlayers(game, currentTimestamp).length,
       image: GameCommon.Game_getImage(game),
       imageSnapshots: gameRow.image_snapshot_url
         ? { current: { url: gameRow.image_snapshot_url } }

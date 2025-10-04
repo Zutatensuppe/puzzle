@@ -9,6 +9,7 @@ import Game from './views/Game.vue'
 import Replay from './views/Replay.vue'
 import CannyBugReportsView from './views/CannyBugReports.vue'
 import CannyFeatureRequestsView from './views/CannyFeatureRequests.vue'
+import PublicUserProfile from './views/PublicUserProfile.vue'
 
 import Icon from './components/Icon.vue'
 import user from './user'
@@ -53,6 +54,7 @@ const run = async () => {
       { name: 'new-game', path: '/new-game', component: NewGame, meta: { title: 'New Game' } },
       { name: 'featured-artist', path: '/featured-artist/:artist', component: FeaturedView, meta: { title: 'Featured Artist' } },
       { name: 'featured-category', path: '/featured-category/:category', component: FeaturedView, meta: { title: 'Featured Category' } },
+      { name: 'user', path: '/user/:id', component: PublicUserProfile, meta: { title: 'User Profile' } },
 
       // Canny.io feedback
       { path: '/feedback', redirect: { name: 'bug-reports' } },

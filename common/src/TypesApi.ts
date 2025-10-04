@@ -1,4 +1,4 @@
-import type { Announcement, FeaturedRowWithCollections, GameId, GameInfo, GameSettings, ImageId, ImageInfo, Leaderboard, LivestreamsRow, Pagination, ReplayGameData, Tag, User } from './Types'
+import type { Announcement, CompleteUserProfile, FeaturedRowWithCollections, GameId, GameInfo, GameSettings, ImageId, ImageInfo, Leaderboard, LivestreamsRow, Pagination, ReplayGameData, Tag, User, UserId } from './Types'
 
 export type * as Admin from './TypesAdminApi'
 
@@ -125,6 +125,16 @@ export type FeaturedResponseData = {
   reason: string
 }
 
+export type UserProfileRequestData = {
+  id: UserId
+}
+
+export type UserProfileResponseData = {
+  userProfile: CompleteUserProfile
+} | {
+  reason: string
+}
+
 export type ReportImageRequestData = {
   id: ImageId
   reason: string
@@ -132,6 +142,11 @@ export type ReportImageRequestData = {
 
 export type ReportGameRequestData = {
   id: GameId
+  reason: string
+}
+
+export type ReportPlayerRequestData = {
+  id: UserId
   reason: string
 }
 

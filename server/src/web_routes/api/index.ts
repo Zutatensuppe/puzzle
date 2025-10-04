@@ -519,13 +519,12 @@ export default function createRouter(
   })
 
   router.get('/newgame-data', async (req, res): Promise<void> => {
-    const userInfo = req.userInfo
-    const userId = userInfo?.user_type === 'user' ? userInfo.user.id : 0 as UserId
+    const currentUserId = req.userInfo?.user?.id ?? 0 as UserId
 
     const requestData: Api.NewGameDataRequestData = req.query as any
     const responseData: Api.NewGameDataResponseData = {
       featured: await server.repos.featured.getManyWithCollections({}),
-      images: await server.images.imagesFromDb(requestData.search, requestData.sort, false, 0, IMAGES_PER_PAGE_LIMIT, userId),
+      images: await server.images.imagesFromDb(requestData.search, requestData.sort, false, 0, IMAGES_PER_PAGE_LIMIT, currentUserId, null),
       tags: await server.images.getAllTags(),
     }
     res.send(responseData)
@@ -537,6 +536,20 @@ export default function createRouter(
     try {
       const responseData: Api.FeaturedResponseData = {
         featured: await server.repos.featured.getWithCollections({ type, slug }),
+      }
+      res.send(responseData)
+    } catch (e: unknown) {
+      res.status(404).send({ reason: e instanceof Error ? e.message : String(e) })
+    }
+  })
+
+  router.get('/user-profile/:id', async (req, res): Promise<void> => {
+    const limitToUserId = parseInt(`${req.params.id}`, 10) as UserId
+    const currentUserId = req.userInfo?.user?.id ?? 0 as UserId
+    try {
+      console.log(currentUserId, limitToUserId)
+      const responseData: Api.UserProfileResponseData = {
+        userProfile: await server.users.getCompleteUserProfile(currentUserId, limitToUserId),
       }
       res.send(responseData)
     } catch (e: unknown) {
@@ -558,34 +571,34 @@ export default function createRouter(
       res.status(400).send({ error: 'bad offset' })
       return
     }
-    const userId = req.userInfo?.user_type === 'user' ? req.userInfo.user.id : 0 as UserId
+    const currentUserId = req.userInfo?.user_type === 'user' ? req.userInfo.user.id : 0 as UserId
 
     const responseData: Api.ImagesResponseData = {
-      images: await server.images.imagesFromDb(requestData.search, requestData.sort, false, offset, IMAGES_PER_PAGE_LIMIT, userId),
+      images: await server.images.imagesFromDb(requestData.search, requestData.sort, false, offset, IMAGES_PER_PAGE_LIMIT, currentUserId, null),
     }
     res.send(responseData)
   })
 
   router.get('/index-data', async (req, res): Promise<void> => {
-    const userId = req.userInfo?.user_type === 'user' ? req.userInfo.user.id : 0 as UserId
+    const currentUserId = req.userInfo?.user?.id ?? 0 as UserId
 
-    const ts = Time.timestamp()
+    const currentTimestamp = Time.timestamp()
     // all running rows
-    const runningRows = await server.gameService.getPublicRunningGames(-1, -1, userId)
-    const runningCount = await server.gameService.countPublicRunningGames(userId)
-    const finishedRows = await server.gameService.getPublicFinishedGames(0, GAMES_PER_PAGE_LIMIT, userId)
-    const finishedCount = await server.gameService.countPublicFinishedGames(userId)
+    const runningRows = await server.gameService.getPublicRunningGames(-1, -1, currentUserId, null)
+    const runningCount = await server.gameService.countPublicRunningGames(currentUserId)
+    const finishedRows = await server.gameService.getPublicFinishedGames(0, GAMES_PER_PAGE_LIMIT, currentUserId, null)
+    const finishedCount = await server.gameService.countPublicFinishedGames(currentUserId)
 
     const gamesRunning: GameInfo[] = []
     const gamesFinished: GameInfo[] = []
     for (const row of runningRows) {
-      gamesRunning.push(await server.gameService.gameToGameInfo(row, ts))
+      gamesRunning.push(await server.gameService.gameToGameInfo(row, currentTimestamp))
     }
     for (const row of finishedRows) {
-      gamesFinished.push(await server.gameService.gameToGameInfo(row, ts))
+      gamesFinished.push(await server.gameService.gameToGameInfo(row, currentTimestamp))
     }
 
-    const leaderboards = await server.repos.leaderboard.getTop10(userId)
+    const leaderboards = await server.repos.leaderboard.getTop10(currentUserId)
 
     const livestreams = await server.repos.livestreams.getLive()
 
@@ -605,7 +618,7 @@ export default function createRouter(
   })
 
   router.get('/finished-games', async (req, res): Promise<void> => {
-    const userId = req.userInfo?.user_type === 'user' ? req.userInfo.user.id : 0 as UserId
+    const currentUserId = req.userInfo?.user?.id ?? 0 as UserId
 
     const offset = parseInt(`${req.query.offset}`, 10)
     if (isNaN(offset) || offset < 0) {
@@ -614,8 +627,8 @@ export default function createRouter(
       return
     }
     const ts = Time.timestamp()
-    const finishedRows = await server.gameService.getPublicFinishedGames(offset, GAMES_PER_PAGE_LIMIT, userId)
-    const finishedCount = await server.gameService.countPublicFinishedGames(userId)
+    const finishedRows = await server.gameService.getPublicFinishedGames(offset, GAMES_PER_PAGE_LIMIT, currentUserId, null)
+    const finishedCount = await server.gameService.countPublicFinishedGames(currentUserId)
     const gamesFinished: GameInfo[] = []
     for (const row of finishedRows) {
       gamesFinished.push(await server.gameService.gameToGameInfo(row, ts))

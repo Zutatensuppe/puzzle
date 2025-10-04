@@ -384,16 +384,10 @@ $bg-color-transparent: rgba(0 0 0 / 70%);
     }
   }
 
-  .game-teaser-report {
+  .report-button {
     position: absolute;
     right: 1em;
     top: 1em;
-    color:white;
-    background: red;
-    padding-top: 3px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
     opacity: 0;
   }
 
@@ -402,8 +396,8 @@ $bg-color-transparent: rgba(0 0 0 / 70%);
   }
 
   &:hover {
-    .game-teaser-report {
-      opacity: 0.5;
+    .report-button {
+      opacity: 0.3;
 
       &:hover {
         opacity: 1;
@@ -478,27 +472,21 @@ $bg-color-transparent: rgba(0 0 0 / 70%);
     position: absolute;
     right: 1em;
     top: 1em;
-    background: rgba(122, 85, 165, 100%);
+    background: rgba(122 85 165 / 100%);
     padding: 3px 5px;
     text-align: center;
   }
 
-  .game-teaser-report {
+  .report-button {
     position: absolute;
     right: 1em;
     top: 1em;
-    color:white;
-    background: red;
-    padding-top: 3px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
     opacity: 0;
   }
 
   &.hoverable:hover {
-    .game-teaser-report {
-      opacity: 0.5;
+    .report-button {
+      opacity: 0.3;
 
       &:hover {
         opacity: 1;
@@ -534,7 +522,8 @@ $bg-color-transparent: rgba(0 0 0 / 70%);
 
 .featured-view,
 .index-view,
-.new-game-view {
+.new-game-view,
+.user-profile-view {
   background: url("assets/gfx/gokhan-polat-qyC7DTbWJJk-unsplash.jpg");
   height: 100%;
   background-repeat: no-repeat;
@@ -755,17 +744,11 @@ html.view-replay body { overflow: hidden; }
     text-align: center;
   }
 
-  .imageteaser-report {
+  .report-button {
     position: absolute;
     right: 1em;
     top: 1em;
-    color:white;
-    background: red;
-    padding-top: 3px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    opacity: .5;
+    opacity: .3;
 
     &:hover {
       opacity: 1;
@@ -907,7 +890,8 @@ kbd {
 }
 
 .v-dialog.report-game,
-.v-dialog.report-image {
+.v-dialog.report-image,
+.v-dialog.report-player {
   .v-overlay__content {
     max-width: 500px;
   }
@@ -1183,5 +1167,65 @@ fieldset {
     &:hover img.image-private {
       filter: blur(0);
     }
+  }
+}
+
+.user-profile-table-wrapper {
+  display: flex;
+  justify-content: center;
+  padding: 40px 0 20px;
+}
+
+.user-profile-table-div {
+  display: inline-block;
+  background: rgb(228, 227, 224);
+  color: rgb(15, 15, 15);
+  border: solid 4px rgb(255, 255, 255);
+  border-radius: 4px;
+  position: relative;
+  box-shadow: inset 1px 1px 5px rgba(0 0 0 / 40%);
+  padding: 2px;
+  transform: rotate(2deg);
+
+  td {
+    padding: 0.5em 2em;
+    white-space: nowrap;
+  }
+
+  .avatar-cell {
+    padding: 0;
+    vertical-align: top;
+  }
+
+  .no-avatar {
+    background-image: url('assets/gfx/hyottokun.png');
+    background-size: contain;
+    aspect-ratio: 439/357;
+    margin:  30px 15px;
+    width: 200px;
+    display: inline-block;
+    filter: grayscale(1);
+    opacity: .3;
+  }
+}
+
+.user-profile-actions {
+  position: absolute;
+  bottom: .5em;
+  left: .5em;
+  height: 2em;
+}
+
+.report-button {
+  background-image: url('assets/gfx/warningsign.png');
+  background-size: contain;
+  aspect-ratio: 243/212;
+  height: 2em;
+  opacity: .3;
+  filter: grayscale(1);
+
+  &:hover {
+    filter: grayscale(0);
+    opacity: 1;
   }
 }

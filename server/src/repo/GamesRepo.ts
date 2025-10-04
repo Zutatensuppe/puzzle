@@ -44,7 +44,32 @@ export class GamesRepo {
     return (gameRow as GameRow) || null
   }
 
-  async getPublicRunningGames(offset: number, limit: number, userId: UserId): Promise<GameRow[]> {
+  async getPublicRunningGames(
+    offset: number,
+    limit: number,
+    currentUserId: UserId,
+    limitByUserId: UserId | null,
+  ): Promise<GameRow[]> {
+    if (limitByUserId) {
+      // pieces count only is misleading because the user can help
+      // in the puzzle without connecting a piece
+      const limitSql = this.db._buildLimit({ limit, offset })
+      return await this.db._getMany(`
+        SELECT g.* FROM ${TABLE} g
+        INNER JOIN user_x_game uxg on uxg.game_id = g.id
+        WHERE
+          (g."private" = 0 OR g.creator_user_id = $1)
+          AND
+          uxg.user_id = $2
+          AND
+          uxg.pieces_count > 0
+          AND
+          (g.finished is null)
+        ORDER BY
+          g.created DESC
+        ${limitSql}
+      `, [currentUserId, limitByUserId]) as GameRow[]
+    }
     const limitSql = this.db._buildLimit({ limit, offset })
     return await this.db._getMany(`
       SELECT * FROM ${TABLE}
@@ -55,10 +80,35 @@ export class GamesRepo {
       ORDER BY
         created DESC
       ${limitSql}
-    `, [userId]) as GameRow[]
+    `, [currentUserId]) as GameRow[]
   }
 
-  async getPublicFinishedGames(offset: number, limit: number, userId: UserId): Promise<GameRow[]> {
+  async getPublicFinishedGames(
+    offset: number,
+    limit: number,
+    currentUserId: UserId,
+    limitByUserId: UserId | null,
+  ): Promise<GameRow[]> {
+    if (limitByUserId) {
+      // pieces count only is misleading because the user can help
+      // in the puzzle without connecting a piece
+      const limitSql = this.db._buildLimit({ limit, offset })
+      return await this.db._getMany(`
+        SELECT g.* FROM ${TABLE} g
+        INNER JOIN user_x_game uxg on uxg.game_id = g.id
+        WHERE
+          (g."private" = 0 OR g.creator_user_id = $1)
+          AND
+          uxg.user_id = $2
+          AND
+          uxg.pieces_count > 0
+          AND
+          (g.finished is not null)
+        ORDER BY
+          g.finished DESC
+        ${limitSql}
+      `, [currentUserId, limitByUserId]) as GameRow[]
+    }
     const limitSql = this.db._buildLimit({ limit, offset })
     return await this.db._getMany(`
       SELECT * FROM ${TABLE}
@@ -69,11 +119,11 @@ export class GamesRepo {
       ORDER BY
         finished DESC
       ${limitSql}
-    `, [userId]) as GameRow[]
+    `, [currentUserId]) as GameRow[]
   }
 
   async countPublicRunningGames(userId: UserId): Promise<number> {
-    const sql = `SELECT COUNT(*)::int FROM ${TABLE} WHERE
+    const sql = `SELECT COUNT(*)::int AS count FROM ${TABLE} WHERE
       ("private" = 0 OR creator_user_id = $1)
       AND
       (finished is null)
@@ -83,12 +133,56 @@ export class GamesRepo {
   }
 
   async countPublicFinishedGames(userId: UserId): Promise<number> {
-    const sql = `SELECT COUNT(*)::int FROM ${TABLE} WHERE
+    const sql = `SELECT COUNT(*)::int AS count FROM ${TABLE} WHERE
       ("private" = 0 OR creator_user_id = $1)
       AND
       (finished is not null)
     `
     const row = await this.db._get(sql, [userId])
+    return row.count
+  }
+
+  async countGamesByUser(
+    currentUserId: UserId,
+    limitToUserId: UserId,
+  ): Promise<number> {
+    // pieces count only is misleading because the user can help
+    // in the puzzle without connecting a piece
+    const sql = `
+      SELECT
+        COUNT(*)::int AS count
+      FROM
+        user_x_game uxg
+      INNER JOIN
+        ${TABLE} g ON g.id = uxg.game_id
+      WHERE
+        (g.private = 0 OR uxg.user_id = $1)
+      AND
+        uxg.user_id = $2
+      AND
+        uxg.pieces_count > 0`
+    const row = await this.db._get(sql, [currentUserId, limitToUserId])
+    return row.count
+  }
+
+  async countGamePiecesByUser(
+    currentUserId: UserId,
+    limitToUserId: UserId,
+  ): Promise<number> {
+    // pieces count only is misleading because the user can help
+    // in the puzzle without connecting a piece
+    const sql = `
+      SELECT
+        SUM(uxg.pieces_count)::int AS count
+      FROM
+        user_x_game uxg
+      INNER JOIN
+        ${TABLE} g ON g.id = uxg.game_id
+      WHERE
+        (g.private = 0 OR uxg.user_id = $1)
+      AND
+        uxg.user_id = $2`
+    const row = await this.db._get(sql, [currentUserId, limitToUserId])
     return row.count
   }
 

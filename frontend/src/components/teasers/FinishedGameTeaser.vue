@@ -12,18 +12,16 @@
     <div
       v-if="showNsfwInfo"
       class="teaser-nsfw-information"
-      @click.stop="toggleNsfwItem(`${game.image.id}`)"
+      @click.stop="nsfwToggled = true"
     >
       😳 NSFW (click to show)
     </div>
     <div class="game-teaser-inner">
       <div
         v-tooltip="'Report this game'"
-        class="game-teaser-report"
+        class="report-button game-teaser-report"
         @click.stop="openReportGameDialog(game)"
-      >
-        <v-icon icon="mdi-exclamation-thick" />
-      </div>
+      />
       <div
         v-if="game.isPrivate"
         class="game-teaser-info game-is-private-info"
@@ -92,13 +90,13 @@
   </v-card>
 </template>
 <script setup lang="ts">
-import { computed } from 'vue'
-import { resizeUrl } from '../../../common/src/ImageService'
-import Time from '../../../common/src/Time'
-import type { GameInfo } from '../../../common/src/Types'
-import { rotationModeToString, scoreModeToString, shapeModeToString, snapModeToString } from '../../../common/src/Util'
-import { useNsfw } from '../user'
-import { useDialog } from '../useDialog'
+import { computed, ref } from 'vue'
+import { resizeUrl } from '../../../../common/src/ImageService'
+import Time from '../../../../common/src/Time'
+import type { GameInfo } from '../../../../common/src/Types'
+import { rotationModeToString, scoreModeToString, shapeModeToString, snapModeToString } from '../../../../common/src/Util'
+import { useNsfw } from '../../user'
+import { useDialog } from '../../useDialog'
 
 const { openReportGameDialog, openImageInfoDialog } = useDialog()
 
@@ -124,9 +122,11 @@ const shapeMode = computed(() => shapeModeToString(props.game.shapeMode))
 
 const rotationMode = computed(() => rotationModeToString(props.game.rotationMode))
 
-const { showNsfw, toggleNsfwItem, nsfwItemsVisible } = useNsfw()
-const hoverable = computed(() => (!props.game.image.nsfw || showNsfw.value || nsfwItemsVisible.value.includes(`${props.game.image.id}`)))
-const showNsfwInfo = computed(() => props.game.image.nsfw && !showNsfw.value && !nsfwItemsVisible.value.includes(`${props.game.image.id}`))
+const { showNsfw } = useNsfw()
+
+const nsfwToggled = ref<boolean>(false)
+const hoverable = computed(() => (!props.game.image.nsfw || showNsfw.value || nsfwToggled.value))
+const showNsfwInfo = computed(() => props.game.image.nsfw && !showNsfw.value && !nsfwToggled.value)
 
 const time = (start: number, end: number) => {
   const from = start

@@ -1,6 +1,6 @@
 import { ref, watch } from 'vue'
 import user from './user'
-import type { Api, GameId, GameInfo, GameSettings, ImageId, ImageInfo, Tag } from '../../common/src/Types'
+import type { Api, GameId, GameInfo, GameSettings, ImageId, ImageInfo, Tag, UserId } from '../../common/src/Types'
 import _api from './_api'
 import { toast } from './toast'
 
@@ -13,6 +13,7 @@ const currentDialog = ref<
   'edit-image-dialog' |
   'report-game-dialog' |
   'report-image-dialog' |
+  'report-player-dialog' |
   'image-info-dialog' |
   'new-image-dialog' |
   'new-game-dialog' |
@@ -131,6 +132,29 @@ const submitReportImage = async (data: { id: ImageId, reason: string }) => {
   }
 }
 
+// report image dialog specific
+const reportPlayerId = ref<UserId|null>(null)
+const openReportPlayerDialog = (userId: UserId) => {
+  reportPlayerId.value = userId
+
+  // =================================================================
+  currentDialog.value = 'report-player-dialog'
+  dialogClass.value = 'report-player'
+  width.value = undefined
+  minWidth.value = undefined
+  dialogOpen.value = true
+}
+
+const submitReportPlayer = async (data: { id: UserId, reason: string }) => {
+  const res = await _api.pub.reportPlayer(data)
+  if (res.status === 200) {
+    closeDialog()
+    toast('Thank you for your report.', 'success')
+  } else {
+    toast('An error occured during reporting.', 'error')
+  }
+}
+
 // image info dialog specific
 const imageInfoImage = ref<ImageInfo|null>(null)
 const openImageInfoDialog = (image: ImageInfo) => {
@@ -218,10 +242,13 @@ export function useDialog() {
     openLoginDialog,
     openReportGameDialog,
     openReportImageDialog,
+    openReportPlayerDialog,
     reportGame,
     reportImage,
+    reportPlayerId,
     submitReportGame,
     submitReportImage,
+    submitReportPlayer,
     width,
   }
 }

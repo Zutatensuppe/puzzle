@@ -6,6 +6,7 @@
   "eslint.validate": [
     "typescript",
     "javascript",
+    "vue"
   ],
   "eslint.workingDirectories": [
     "frontend",
