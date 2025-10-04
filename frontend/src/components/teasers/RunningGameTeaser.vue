@@ -35,11 +35,9 @@
     <div class="game-teaser-inner">
       <div
         v-tooltip="'Report this game'"
-        class="game-teaser-report"
+        class="report-button game-teaser-report"
         @click.stop="openReportGameDialog(game)"
-      >
-        <v-icon icon="mdi-exclamation-thick" />
-      </div>
+      />
       <div class="game-teaser-info">
         <v-icon icon="mdi-puzzle" /> {{ game.piecesFinished }}/{{ game.piecesTotal }} Pieces
       </div>
