@@ -70,6 +70,7 @@ const onNewGame = async (gameSettings: GameSettings) => {
   const res = await api.pub.newGame({ gameSettings })
   const game = await res.json()
   if ('id' in game) {
+    closeDialog()
     void router.push({ name: 'game', params: { id: game.id } })
   } else {
     toast('An error occured while creating the game.', 'error')

@@ -134,7 +134,8 @@ export class ImagesRepo {
     isPrivate: boolean,
     offset: number,
     limit: number,
-    userId: UserId,
+    currentUserId: UserId | null,
+    limitToUserId: UserId | null,
   ): Promise<ImageRowWithCount[]> {
     const orderByMap = {
       [ImageSearchSort.ALPHA_ASC]: [{ title: 1 }, { created: -1 }],
@@ -169,13 +170,25 @@ export class ImagesRepo {
       }
     }
 
-    const params: (string|number)[] = [userId]
+    let i = 1
+    let idxCurrentUserId = 0
+    const params: (string|number)[] = []
+    if (currentUserId) {
+      params.push(currentUserId)
+      idxCurrentUserId = i
+      i++
+    }
+    let idxLimitToUserId = 0
+    if (limitToUserId) {
+      params.push(limitToUserId)
+      idxLimitToUserId = i
+      i++
+    }
     const ors: string[] = []
     if (imageIds.length > 0) {
       ors.push(`images.id IN (${imageIds.join(',')})`)
     }
     if (searches.length) {
-      let i = 2
       for (search of searches) {
         ors.push(`users.name ilike $${i++}`)
         params.push(`%${search}%`)
@@ -206,7 +219,11 @@ export class ImagesRepo {
         LEFT JOIN counts ON counts.image_id = images.id
         LEFT JOIN users ON users.id = images.uploader_user_id
       WHERE
-        (private = ${isPrivate ? 1 : 0} OR images.uploader_user_id = $1)
+        (
+          private = ${isPrivate ? 1 : 0}
+          ${currentUserId ? `OR images.uploader_user_id = $${idxCurrentUserId}` : ''}
+        )
+        ${limitToUserId ? ` AND images.uploader_user_id = $${idxLimitToUserId}` : ''}
         ${ors.length > 0 ? ` AND (${ors.join(' OR ')})` : ''}
       ${this.db._buildOrderBy(orderByMap[orderBy])}
       ${this.db._buildLimit({ offset, limit })}

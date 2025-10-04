@@ -933,3 +933,18 @@ export interface FeaturedTeaserRow {
   sort_index: number
   active: number // 1 for active, 0 for inactive
 }
+
+export type CompleteUserProfile = {
+  user: {
+    id: UserId
+    username: string
+    joinDate: Date
+  }
+  stats: {
+    totalGamesCount: number
+    totalPiecesCount: number
+  }
+  isLiveOnTwitch: boolean
+  images: ImageInfo[]
+  games: GameInfo[]
+}

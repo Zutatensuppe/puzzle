@@ -6,7 +6,7 @@
     <div
       v-if="showNsfwInfo"
       class="teaser-nsfw-information"
-      @click.stop="toggleNsfwItem(`${image.id}`)"
+      @click.stop="nsfwToggled = true"
     >
       😳 NSFW (click to show)
     </div>
@@ -29,11 +29,9 @@
 
         <div
           v-tooltip="'Report this image'"
-          class="imageteaser-report"
+          class="report-button imageteaser-report"
           @click.stop="openReportImageDialog(image)"
-        >
-          <v-icon icon="mdi-exclamation-thick" />
-        </div>
+        />
 
         <div
           v-if="image.copyrightName || image.copyrightURL"
@@ -85,16 +83,14 @@
 </template>
 <script setup lang="ts">
 import { computed, onMounted, onBeforeUnmount, ref } from 'vue'
-import { resizeUrl } from '../../../common/src/ImageService'
-import type { ImageInfo, Tag, User } from '../../../common/src/Types'
-import { useDialog } from '../useDialog'
-import user, { useNsfw } from '../user'
+import { resizeUrl } from '../../../../common/src/ImageService'
+import type { ImageInfo, Tag, User } from '../../../../common/src/Types'
+import { useDialog } from '../../useDialog'
+import user, { useNsfw } from '../../user'
 
 const { openReportImageDialog } = useDialog()
 
-const { showNsfw, toggleNsfwItem, nsfwItemsVisible } = useNsfw()
-const hoverable = computed(() => (!props.image.nsfw || showNsfw.value || nsfwItemsVisible.value.includes(`${props.image.id}`)))
-const showNsfwInfo = computed(() => props.image.nsfw && !showNsfw.value && !nsfwItemsVisible.value.includes(`${props.image.id}`))
+const { showNsfw } = useNsfw()
 
 const props = withDefaults(defineProps<{
   image: ImageInfo
@@ -102,6 +98,10 @@ const props = withDefaults(defineProps<{
 }>(), {
   edit: true,
 })
+
+const nsfwToggled = ref<boolean>(false)
+const hoverable = computed(() => (!props.image.nsfw || showNsfw.value || nsfwToggled.value))
+const showNsfwInfo = computed(() => props.image.nsfw && !showNsfw.value && !nsfwToggled.value)
 
 const emit = defineEmits<{
   (event: 'click'): void
@@ -112,14 +112,20 @@ const me = ref<User|null>(null)
 
 const url = computed(() => resizeUrl(props.image.url, 375, 0, 'cover'))
 
+const aspectRatio = computed(() => props.image.width / props.image.height)
+
 const MIN_HEIGHT = 300
 
-const styles = computed(() => ({
-  paddingTop: (Math.max(MIN_HEIGHT, props.image.height) / props.image.width * 100) + '%',
-  backgroundImage: `url('${url.value}')`,
-  backgroundSize: 'cover',
-  backgroundPosition: '50% 50%',
-}))
+const styles = computed(() => {
+  const height = Math.max(MIN_HEIGHT, props.image.height)
+  const width = height * aspectRatio.value
+  return {
+    paddingTop: (height / width * 100) + '%',
+    backgroundImage: `url('${url.value}')`,
+    backgroundSize: 'cover',
+    backgroundPosition: '50% 50%',
+  }
+})
 
 const date = computed((): string => {
   // TODO: use date format that is same everywhere

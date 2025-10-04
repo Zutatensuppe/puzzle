@@ -17,7 +17,7 @@
 </template>
 <script setup lang="ts">
 import type { ImageInfo } from '../../../common/src/Types'
-import ImageTeaser from './ImageTeaser.vue'
+import ImageTeaser from './teasers/ImageTeaser.vue'
 import MasonryWall from './MasonryWall.vue'
 
 withDefaults(defineProps<{

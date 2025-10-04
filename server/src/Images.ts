@@ -65,9 +65,10 @@ export class Images {
     isPrivate: boolean,
     offset: number,
     limit: number,
-    userId: UserId,
+    currentUserId: UserId | null,
+    limitToUserId: UserId | null,
   ): Promise<ImageInfo[]> {
-    const rows = await this.imagesRepo.searchImagesWithCount(search, orderBy, isPrivate, offset, limit, userId)
+    const rows = await this.imagesRepo.searchImagesWithCount(search, orderBy, isPrivate, offset, limit, currentUserId, limitToUserId)
     const tags = await this.imagesRepo.getTagsByImageIds(rows.map(row => row.id))
     return rows.map(row => this.imageWithCountToImageInfo(row, tags))
   }

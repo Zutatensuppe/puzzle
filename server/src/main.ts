@@ -32,7 +32,6 @@ const run = async () => {
   const canny = new Canny(config.canny)
   const discord = new Discord(config.discord)
   const gameSockets = new GameSockets()
-  const users = new Users(db, repos)
   const imageExif = new ImageExif()
   const images = new Images(repos.images, imageExif)
   const imageResize = new ImageResize(imageExif)
@@ -40,6 +39,7 @@ const run = async () => {
   const gameService = new GameService(puzzleService)
   const twitch = new Twitch(config.auth.twitch)
   const moderation = new Moderation()
+  const users = new Users(db, repos, images, gameService)
 
   const server = new Server(
     db,
