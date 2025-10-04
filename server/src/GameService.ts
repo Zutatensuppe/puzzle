@@ -142,7 +142,7 @@ export class GameService {
     })
     for (const user of users) {
       if (user.email) {
-        registeredMap[user.client_id] = true
+        registeredMap[user.client_id] = user.id
       }
     }
     return registeredMap

@@ -1,7 +1,7 @@
 <template>
   <tr
     v-if="showPlayer"
-    :style="style"
+    :style
   >
     <td>
       <icon
@@ -14,6 +14,14 @@
         v-if="player.banned"
         :title="name"
       >[banned]</s>
+      <router-link
+        v-else-if="registeredMap[player.id]"
+        :to="{ name: 'user', params: { id: registeredMap[player.id] } }"
+        target="_blank"
+        :style
+      >
+        {{ name }}
+      </router-link>
       <span
         v-else
       >{{ name }}</span>
