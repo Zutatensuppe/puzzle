@@ -1,7 +1,10 @@
 <template>
   <v-table class="image-info-table">
     <tbody>
-      <tr><td><v-icon icon="mdi-subtitles-outline" /> Title: </td><td>{{ image.title || '<No Title>' }}</td></tr>
+      <tr>
+        <td><v-icon icon="mdi-subtitles-outline" /> Title: </td>
+        <td>{{ image.title || '<No Title>' }}</td>
+      </tr>
       <tr v-if="image.copyrightURL || image.copyrightName">
         <td><v-icon icon="mdi-copyright" /> Copyright: </td>
         <td>
@@ -13,9 +16,29 @@
           <span v-else>{{ image.copyrightName }}</span>
         </td>
       </tr>
-      <tr><td><v-icon icon="mdi-account-arrow-up" /> Uploader: </td><td>{{ image.uploaderName || '<Unknown>' }}</td></tr>
-      <tr><td><v-icon icon="mdi-account-arrow-up" /> Upload date: </td><td>{{ date }}</td></tr>
-      <tr><td><v-icon icon="mdi-ruler-square" /> Dimensions: </td><td>{{ image.width }}x{{ image.height }}</td></tr>
+      <tr>
+        <td><v-icon icon="mdi-account-arrow-up" /> Uploader: </td>
+        <td>
+          <router-link
+            v-if="image.uploaderUserId && image.uploaderName"
+            :to="{ name: 'user', params: { id: image.uploaderUserId } }"
+            target="_blank"
+          >
+            {{ image.uploaderName }}
+          </router-link>
+          <span v-else>
+            {{ '<Unknown>' }}
+          </span>
+        </td>
+      </tr>
+      <tr>
+        <td><v-icon icon="mdi-account-arrow-up" /> Upload date: </td>
+        <td>{{ date }}</td>
+      </tr>
+      <tr>
+        <td><v-icon icon="mdi-ruler-square" /> Dimensions: </td>
+        <td>{{ image.width }}x{{ image.height }}</td>
+      </tr>
       <tr v-if="image.tags.length">
         <td><v-icon icon="mdi-tag" /> Tags: </td><td>
           <a
@@ -26,7 +49,10 @@
           >{{ t.title }}<span v-if="idx < image.tags.length - 1">,</span></a>
         </td>
       </tr>
-      <tr><td><v-icon icon="mdi-puzzle" /> Game count: </td><td>{{ image.gameCount }}</td></tr>
+      <tr>
+        <td><v-icon icon="mdi-puzzle" /> Game count: </td>
+        <td>{{ image.gameCount }}</td>
+      </tr>
     </tbody>
   </v-table>
 </template>

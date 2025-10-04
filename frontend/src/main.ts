@@ -32,6 +32,9 @@ import { createVuetify } from 'vuetify'
 import * as components from 'vuetify/components'
 import * as directives from 'vuetify/directives'
 import { init as initToast, toast } from './toast'
+import { useDialog } from './useDialog'
+
+const { closeDialog } = useDialog()
 
 const run = async () => {
   debug.init()
@@ -80,6 +83,8 @@ const run = async () => {
   })
 
   router.beforeEach((to, from) => {
+    closeDialog()
+
     if (to.meta && to.meta.admin && !user.getMe()?.groups.includes('admin')) {
       return { name: 'index' }
     }

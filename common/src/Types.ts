@@ -141,7 +141,7 @@ export type EncodedPlayer = FixedLengthArray<[
   EncodedPlayerIdx.TIMESTAMP extends 8 ? Timestamp : never,
 ]>
 
-export type RegisteredMap = Record<ClientId, boolean>
+export type RegisteredMap = Record<ClientId, UserId>
 
 export enum PieceRotation {
   R0 = 0,
