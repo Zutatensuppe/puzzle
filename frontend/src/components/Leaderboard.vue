@@ -35,9 +35,20 @@
           />
           <span v-else>{{ row.rank }}</span>
         </td>
-        <td>{{ row.user_name }}</td>
-        <td>{{ row.pieces_count }}</td>
-        <td>{{ row.games_count }}</td>
+        <td>
+          <router-link
+            :to="{ name: 'user', params: { id: row.user_id } }"
+            target="_blank"
+          >
+            {{ row.user_name }}
+          </router-link>
+        </td>
+        <td>
+          {{ row.pieces_count }}
+        </td>
+        <td>
+          {{ row.games_count }}
+        </td>
       </tr>
       <tr
         v-if="lb.userEntry && (!lb.userEntry.rank || lb.userEntry.rank > lb.entries.length)"
