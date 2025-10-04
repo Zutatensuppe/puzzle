@@ -20,6 +20,7 @@ type Branded<T, B> = T & Brand<B>
 export type GameId = Branded<string, 'GameId'>
 export type ClientId = Branded<string, 'ClientId'>
 export type UserId = Branded<number, 'UserId'>
+export type UserAvatarId = Branded<number, 'UserAvatarId'>
 export type IdentityId = Branded<number, 'IdentityId'>
 export type UserGroupId = Branded<number, 'UserGroupId'>
 export type AccountId = Branded<number, 'AccountId'>
@@ -934,11 +935,36 @@ export interface FeaturedTeaserRow {
   active: number // 1 for active, 0 for inactive
 }
 
+export interface UserAvatar {
+  id: UserAvatarId
+  userId: UserId
+  created: Timestamp
+  filename: string
+  url: string
+  width: number
+  height: number
+}
+
+export interface UserAvatarRow {
+  id: UserAvatarId
+  created: JSONDateString
+  filename: string
+  filename_original: string
+  width: number
+  height: number
+}
+
+export interface UserSettings {
+  userId: UserId
+  avatarId: UserAvatarId | null
+}
+
 export type CompleteUserProfile = {
   user: {
     id: UserId
     username: string
     joinDate: Date
+    avatar: UserAvatar | null
   }
   stats: {
     totalGamesCount: number

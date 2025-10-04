@@ -203,7 +203,19 @@ export default function createRouter(
 
   router.delete('/images/:id', async (req, res) => {
     const id = parseInt(req.params.id, 10) as ImageId
+    const image = await server.repos.images.get({ id })
+    if (!image) {
+      const responseData: Api.Admin.DeleteImageResponseData = { error: 'image does not exist' }
+      res.status(404).send(responseData)
+      return
+    }
+
+    // delete from db
     await server.repos.images.delete(id)
+
+    // delete from storage
+    await server.images.deleteImagesFromStorage(image.filename)
+
     const responseData: Api.Admin.DeleteImageResponseData = { ok: true }
     res.send(responseData)
   })

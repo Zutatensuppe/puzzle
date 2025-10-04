@@ -1,4 +1,4 @@
-import type { GameId, ImageInfo, Api } from '../../../common/src/Types'
+import type { GameId, ImageInfo, Api, UserAvatar } from '../../../common/src/Types'
 import Util from '../../../common/src/Util'
 import xhr, { JSON_HEADERS } from './xhr'
 import type { Response, XhrRequest } from './xhr'
@@ -201,10 +201,33 @@ const upload = (
   })
 }
 
+const uploadAvatar = (
+  data: Api.UploadAvatarRequestDataWithProgress,
+): Promise<Response<UserAvatar>> => {
+  const formData = new FormData()
+  formData.append('file', data.file)
+  return xhr.post('/api/upload-avatar', {
+    body: formData,
+    onUploadProgress: (evt: ProgressEvent<XMLHttpRequestEventTarget>): void => {
+      data.onProgress(evt.loaded / evt.total)
+    },
+  })
+}
+
+const deleteAvatar = (
+  data: Api.DeleteAvatarRequestData,
+): Promise<Response<UserAvatar>> => {
+  return xhr.post('/api/delete-avatar', {
+    headers: JSON_HEADERS,
+    body: JSON.stringify(data),
+  })
+}
+
 export default {
   auth,
   changePassword,
   config,
+  deleteAvatar,
   deleteGame,
   finishedGames,
   getAnnouncements,
@@ -226,4 +249,5 @@ export default {
   saveImage,
   sendPasswordResetEmail,
   upload,
+  uploadAvatar,
 }

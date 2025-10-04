@@ -17,6 +17,7 @@ const currentDialog = ref<
   'image-info-dialog' |
   'new-image-dialog' |
   'new-game-dialog' |
+  'user-avatar-upload-dialog' |
   ''
 >('')
 const dialogOpen = ref<boolean>(false)
@@ -214,6 +215,24 @@ const openNewGameDialog = (
   dialogOpen.value = true
 }
 
+// user avatar upload dialog specific
+const userAvatarUploadProgress = ref<number>(0)
+const userAvatarUploading = ref<'' | 'uploading'>('')
+const userAvatarOnSaveClick = ref<((data: Blob) => Promise<void>) | undefined>(undefined)
+
+const openUserAvatarUploadDialog = (
+  onSaveClick: (data: Blob) => Promise<void>,
+) => {
+  userAvatarOnSaveClick.value = onSaveClick
+
+  // =================================================================
+  currentDialog.value = 'user-avatar-upload-dialog'
+  dialogClass.value = 'user-avatar-upload'
+  width.value = undefined
+  minWidth.value = undefined
+  dialogOpen.value = true
+}
+
 export function useDialog() {
   return {
     closeDialog,
@@ -243,12 +262,16 @@ export function useDialog() {
     openReportGameDialog,
     openReportImageDialog,
     openReportPlayerDialog,
+    openUserAvatarUploadDialog,
     reportGame,
     reportImage,
     reportPlayerId,
     submitReportGame,
     submitReportImage,
     submitReportPlayer,
+    userAvatarOnSaveClick,
+    userAvatarUploading,
+    userAvatarUploadProgress,
     width,
   }
 }

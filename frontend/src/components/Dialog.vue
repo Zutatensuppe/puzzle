@@ -13,6 +13,7 @@
     <ImageInfoDialog v-if="currentDialog === 'image-info-dialog'" />
     <NewImageDialog v-if="currentDialog === 'new-image-dialog'" />
     <NewGameDialog v-if="currentDialog === 'new-game-dialog'" />
+    <UserAvatarUploadDialog v-if="currentDialog === 'user-avatar-upload-dialog'" />
   </v-dialog>
 </template>
 <script setup lang="ts">
@@ -26,6 +27,7 @@ import NewImageDialog from './dialogs/NewImageDialog.vue'
 import ReportGameDialog from './dialogs/ReportGameDialog.vue'
 import ReportImageDialog from './dialogs/ReportImageDialog.vue'
 import ReportPlayerDialog from './dialogs/ReportPlayerDialog.vue'
+import UserAvatarUploadDialog from './dialogs/UserAvatarUploadDialog.vue'
 
 const { dialogClass, width, minWidth, dialogOpen, currentDialog } = useDialog()
 </script>

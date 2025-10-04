@@ -1,4 +1,4 @@
-import type { GameInfo} from '../../common/src/Types'
+import type { GameInfo, UserAvatarId, UserAvatarRow, UserSettings} from '../../common/src/Types'
 import { ImageSearchSort, type AccountId, type ClientId, type CompleteUserProfile, type TokenRow, type UserGroupRow, type UserId, type UserRow } from '../../common/src/Types'
 import { COOKIE_TOKEN, generateToken } from './Auth'
 import type Db from './Db'
@@ -10,7 +10,6 @@ import type { Repos } from './repo/Repos'
 import type { IdentityRow } from './repo/UserIdentityRepo'
 import type express from 'express'
 import Time from '../../common/src/Time'
-import { toJSONDateString } from '../../common/src/Util'
 
 const HEADER_CLIENT_ID = 'client-id'
 
@@ -211,11 +210,14 @@ export class Users {
 
     const latestImagesLimit = 50
 
+    const avatar = await this.repos.users.getUserAvatarByUserId(limitToUserId)
+
     return {
       user: {
         id: user.id,
         joinDate: new Date(user.created),
         username: user.name,
+        avatar,
       },
       stats: {
         totalGamesCount: totalGamesCount,
@@ -235,5 +237,56 @@ export class Users {
         limitToUserId,
       ),
     }
+  }
+
+  public async getUserSettings(
+    userId: UserId,
+  ): Promise<UserSettings> {
+    const row = await this.db.get('user_settings', { user_id: userId })
+    if (!row) {
+      return {
+        userId,
+        avatarId: null,
+      }
+    }
+    return {
+      avatarId: row.avatar_id,
+      userId: row.user_id,
+    }
+  }
+
+  public async updateUserSettings(
+    userSettings: UserSettings,
+  ): Promise<void> {
+    console.log(userSettings)
+    await this.db.upsert(
+      'user_settings',
+      {
+        user_id: userSettings.userId,
+        avatar_id: userSettings.avatarId,
+      },
+      ['user_id'],
+    )
+  }
+
+  public async saveAvatar(avatar: Omit<UserAvatarRow, 'id'>): Promise<UserAvatarId> {
+    return await this.db.insert(
+      'user_avatars',
+      avatar,
+      'id',
+    ) as UserAvatarId
+  }
+
+  public async deleteAvatar(avatarId: UserAvatarId): Promise<void> {
+    const avatar = await this.repos.users.getUserAvatarRow(avatarId)
+    if (!avatar) {
+      return
+    }
+
+    // delete from db
+    await this.db.delete('user_avatars', { id: avatar.id })
+
+    // delete from disk
+    await this.images.deleteImagesFromStorage(avatar.filename)
   }
 }

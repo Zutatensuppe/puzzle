@@ -19,6 +19,7 @@ import { COOKIE_TOKEN, generateSalt, generateToken, passwordHash } from '../../A
 import type { Server } from '../../Server'
 import fs from '../../FileSystem'
 import FileSystem from '../../FileSystem'
+import type { DeleteAvatarRequestData } from '../../TypesApi'
 
 const log = logger('web_routes/api/index.ts')
 
@@ -694,12 +695,12 @@ export default function createRouter(
   router.post('/upload', (req, res): void => {
     void upload(req, res, async (err: unknown): Promise<void> => {
       if (err) {
-        log.log('/api/upload/', 'error', err)
+        log.log('/api/upload', 'error', err)
         res.status(400).send('Something went wrong!')
         return
       }
       if (!req.file) {
-        log.log('/api/upload/', 'error', 'no file')
+        log.log('/api/upload', 'error', 'no file')
         res.status(400).send('Something went wrong!')
         return
       }
@@ -743,6 +744,82 @@ export default function createRouter(
         res.status(400).send('Something went wrong!')
       } else {
         res.send(imageInfo)
+      }
+    })
+  })
+
+  router.post('/delete-avatar', express.json(), async (req: express.Request, res): Promise<void> => {
+    const user: UserRow | null = req.userInfo?.user || null
+    if (!user || !user.id) {
+      res.status(403).send({ ok: false, error: 'forbidden' })
+      return
+    }
+
+    const data = req.body as DeleteAvatarRequestData
+
+    try {
+      const settings = await server.users.getUserSettings(user.id)
+
+      // make sure the avatar id is the one the
+      // user (making the request) currently has set
+      if (settings.avatarId !== data.avatarId) {
+        res.status(403).send({ ok: false, error: 'forbidden' })
+        return
+      }
+
+      settings.avatarId = null
+      await server.users.updateUserSettings(settings)
+
+      await server.users.deleteAvatar(data.avatarId)
+
+      res.send({ ok: true })
+    } catch {
+      res.status(400).send('Something went wrong!')
+    }
+  })
+
+  router.post('/upload-avatar', (req, res): void => {
+    void upload(req, res, async (err: unknown): Promise<void> => {
+      if (err) {
+        log.log('/api/upload-avatar', 'error', err)
+        res.status(400).send('Something went wrong!')
+        return
+      }
+      if (!req.file) {
+        log.log('/api/upload-avatar', 'error', 'no file')
+        res.status(400).send('Something went wrong!')
+        return
+      }
+
+      log.info('req.file.filename', req.file.filename)
+
+      const im = server.images
+
+      const user = await server.users.getOrCreateUserByRequest(req)
+
+      const imagePath = im.getImagePath(req.file.filename)
+      const dim = await im.getDimensions(imagePath)
+
+      try {
+        const userSettings = await server.users.getUserSettings(user.id)
+
+        const avatarId = await server.users.saveAvatar({
+          created: newJSONDateString(),
+          filename: req.file.filename,
+          filename_original: req.file.originalname,
+          width: dim.w,
+          height: dim.h,
+        })
+
+        userSettings.avatarId = avatarId
+
+        await server.users.updateUserSettings(userSettings)
+
+        const avatar = await server.repos.users.getUserAvatarByUserId(user.id)
+
+        res.send(avatar)
+      } catch {
+        res.status(400).send('Something went wrong!')
       }
     })
   })
