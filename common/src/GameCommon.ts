@@ -1341,8 +1341,8 @@ function Game_getImage(game: Game): ImageInfo {
   return game.puzzle.info.image
 }
 
-function Game_hasReplay(game: Game): boolean {
-  return game.hasReplay ? true : false
+function Game_hasReplay(game: Game | undefined): boolean {
+  return game?.hasReplay ? true : false
 }
 
 function Game_getImageUrl(game: Game): string {
