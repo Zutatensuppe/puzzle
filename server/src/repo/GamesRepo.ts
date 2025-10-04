@@ -183,7 +183,7 @@ export class GamesRepo {
       AND
         uxg.user_id = $2`
     const row = await this.db._get(sql, [currentUserId, limitToUserId])
-    return row.count
+    return row.count ?? 0
   }
 
   async exists(gameId: GameId): Promise<boolean> {

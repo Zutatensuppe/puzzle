@@ -31,6 +31,13 @@ export class ImagesRepo {
     return await this.db.count(TABLE)
   }
 
+  async countPublicByUser(userId: UserId): Promise<number> {
+    return await this.db.count(TABLE, {
+      uploader_user_id: userId,
+      private: 0,
+    })
+  }
+
   async getWithGameCount(args: {
     offset: number
     limit: number

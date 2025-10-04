@@ -18,22 +18,11 @@
         :class="{'user-rank-row': row.user_id === lb.userEntry?.user_id}"
       >
         <td class="text-center">
-          <v-icon
-            v-if="row.rank === 1"
-            icon="mdi-podium-gold"
-            class="text-amber"
+          <RankIcon
+            :rank="row.rank"
+            :number-fallback="true"
+            :unranked-fallback="'<no rank>'"
           />
-          <v-icon
-            v-else-if="row.rank === 2"
-            icon="mdi-podium-silver"
-            class="text-blue-grey"
-          />
-          <v-icon
-            v-else-if="row.rank === 3"
-            icon="mdi-podium-bronze"
-            class="text-brown"
-          />
-          <span v-else>{{ row.rank }}</span>
         </td>
         <td>
           <router-link
@@ -76,6 +65,7 @@
 </template>
 <script setup lang="ts">
 import type { Leaderboard } from '../../../common/src/Types'
+import RankIcon from './RankIcon.vue'
 
 defineProps<{
   lb: Leaderboard
