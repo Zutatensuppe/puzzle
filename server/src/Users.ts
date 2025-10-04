@@ -209,6 +209,8 @@ export class Users {
       gamesFinished.push(await this.games.gameToGameInfo(row, currentTimestamp))
     }
 
+    const latestImagesLimit = 50
+
     return {
       user: {
         id: user.id,
@@ -228,7 +230,7 @@ export class Users {
         ImageSearchSort.DATE_DESC,
         false,
         0,
-        8,
+        latestImagesLimit,
         currentUserId,
         limitToUserId,
       ),
