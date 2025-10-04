@@ -1,4 +1,4 @@
-import type { Announcement, CompleteUserProfile, FeaturedRowWithCollections, GameId, GameInfo, GameSettings, ImageId, ImageInfo, Leaderboard, LivestreamsRow, Pagination, ReplayGameData, Tag, User, UserId } from './Types'
+import type { Announcement, CompleteUserProfile, FeaturedRowWithCollections, GameId, GameInfo, GameSettings, ImageId, ImageInfo, Leaderboard, LivestreamsRow, Pagination, ReplayGameData, Tag, User, UserAvatarId, UserId } from './Types'
 
 export type * as Admin from './TypesAdminApi'
 
@@ -40,6 +40,18 @@ export type UploadRequestData = {
 
 export type UploadRequestDataWithProgress = UploadRequestData & {
   onProgress: (progress: number) => void
+}
+
+export type UploadAvatarData = {
+  file: Blob
+}
+
+export type UploadAvatarRequestDataWithProgress = UploadAvatarData & {
+  onProgress: (progress: number) => void
+}
+
+export type DeleteAvatarRequestData = {
+  avatarId: UserAvatarId,
 }
 
 export type MeResponseData = User | { reason: string }

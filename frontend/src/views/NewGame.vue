@@ -97,6 +97,7 @@ import { debounce } from '../util'
 import FeaturedButton from '../components/FeaturedButton.vue'
 import { useDialog } from '../useDialog'
 import { toast } from '../toast'
+import { uploadImage } from '../upload'
 
 const router = useRouter()
 
@@ -121,7 +122,6 @@ const sentinelActive = ref<boolean>(false)
 const tags = ref<Tag[]>([])
 
 const uploading = ref<'postToGallery' | 'setupGame' | ''>('')
-const uploadProgress = ref<number>(0)
 
 const { openEditImageDialog, openNewImageDialog, openNewGameDialog, closeDialog, currentDialog } = useDialog()
 
@@ -214,55 +214,6 @@ const onUploadImageClicked = () => {
     postToGalleryClick,
     setupGameClick,
   )
-}
-
-const uploadImage = async (data: Api.UploadRequestData): Promise<{ error: string } | { imageInfo: ImageInfo }> => {
-  uploadProgress.value = 0
-  try {
-    const res = await api.pub.upload({
-      file: data.file,
-      title: data.title,
-      copyrightName: data.copyrightName,
-      copyrightURL: data.copyrightURL,
-      tags: data.tags,
-      isPrivate: data.isPrivate,
-      isNsfw: data.isNsfw,
-      onProgress: (progress: number): void => {
-        uploadProgress.value = progress
-      },
-    })
-
-    // ⡀⡀⡀⡀⡀⡀⡀⣠⣴⣶⣶⣶⣶⣤⡀⡀⡀⡀⡀⡀⡀⡀
-    // ⡀⡀⡀⡀⡀⣤⣿⣿⣿⣿⣿⣿⣿⣿⣿⣦⡀⡀⡀⡀⡀⡀
-    // ⡀⡀⡀⡀⣼⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⢧⡀⡀⡀⡀⡀
-    // ⡀⡀⡀⢠⣿⣿⣿⢻⢸⣿⣿⠇⢿⣿⣿⣿⣿⡀⡀⡀⡀⡀
-    // ⡀⡀⡈⣾⣿⣿⡟⣘ ⠹⢿   ⣎⢿⣿⣿⡇⡀⡀⡀⡀
-    // ⡀⡀⡀⡇⣿⣿⠏⣾⡧    ⣿⡆⠇⣿⣿⡇⡀⡀⡀⡀
-    // ⡀⡀⡀⠁⣿⣿⡀          ⢼⣿⣼⡇⡀⡀⡀⡀
-    // ⡀⡀⡀⢠⣿⣿⣧⡀  ⡠⢄   ⣾⣿⣿⡻⡀⡀⡀⡀
-    // ⡀⡀⡀⠁⣿⣿⣿⣿⡦⣀⡀⡠⢶⣿⣿⣿⣿⣇⢂⡀⡀⡀
-    // ⡀⡀⠆⣼⣿⣿⣿⣿⡀⢄⢀⠔⡀⣿⣿⣿⣿⡟⡀⡀⡀⡀
-    // ⡀⡀⣿⣿⣿⣿⣿⣿⣿⣿⢿⣿⣿⣿⣿⣿⣿⣿⣿⡀⡀⡀
-    // ⡀⢰⡏⠉⠉⠉⠉⠉⠉⠉⠁⠉⠉⠉⠉⠉⠉⠉⠉⣿⡀⡀
-    // ⡀ ⣼⡇ 413 Request Entity  ⣿⡀⡀
-    // ⢀ ⠟⠃⡀    Too Large     ⣿⡇⡀⡀
-    // ⡀⡀⠿⠿⠿⠿⠿⠿⠿⠿⠿⠿⠿⠿⠿⠿⠿⠿⠇⡀⡀⡀
-    // Comment requested during nC_para_ stream :)
-    if (res.status === 413) {
-      throw 'The image you tried to upload is too large. Max file size is 20MB.'
-    }
-
-    const imageInfo = await res.json()
-    if (!imageInfo) {
-      throw 'The image upload failed for unknown reasons.'
-    }
-
-    uploadProgress.value = 1
-    return { imageInfo }
-  } catch (e) {
-    uploadProgress.value = 0
-    return { error: String(e) }
-  }
 }
 
 const postToGalleryClick = async (data: Api.UploadRequestData) => {

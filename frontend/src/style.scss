@@ -791,12 +791,14 @@ html.view-replay body { overflow: hidden; }
   position: absolute;
   inset: 0;
   cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 
   .upload-content {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
+    text-align: left;
+    margin: 2em;
+    max-width: 420px;
   }
 
   ul {
@@ -822,7 +824,8 @@ kbd {
 
 .v-dialog.overlay-cutting,
 .v-dialog.overlay-info,
-.v-dialog.overlay-settings {
+.v-dialog.overlay-settings,
+.v-dialog.user-avatar-upload {
   .v-overlay__content {
     max-width: 600px;
   }
@@ -1197,15 +1200,37 @@ fieldset {
     vertical-align: top;
   }
 
-  .no-avatar {
-    background-image: url('assets/gfx/hyottokun.png');
+  .avatar {
     background-size: contain;
-    aspect-ratio: 439/357;
-    margin:  30px 15px;
+    aspect-ratio: 1;
+    margin: 30px 15px;
     width: 200px;
     display: inline-block;
+
+    i {
+      display: none;
+      position: absolute;
+    }
+
+    &:hover i {
+      display: block;
+    }
+  }
+
+  .avatar.no-avatar {
+    background-image: url('assets/gfx/hyottokun.png');
     filter: grayscale(1);
     opacity: .3;
+    position: relative;
+
+    span {
+      position: absolute;
+      top: -1em;
+      width: 100%;
+      display: block;
+      text-align: center;
+      user-select: none;
+    }
   }
 }
 
@@ -1227,5 +1252,6 @@ fieldset {
   &:hover {
     filter: grayscale(0);
     opacity: 1;
+    cursor: pointer;
   }
 }

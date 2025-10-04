@@ -40,7 +40,7 @@ export type PutFeaturedResponseData = AcknowledgeResponseData
 
 export type DeleteGameResponseData = AcknowledgeResponseData
 
-export type DeleteImageResponseData = AcknowledgeResponseData
+export type DeleteImageResponseData = AcknowledgeResponseData | ErrorResponseData
 
 export type GetImageResponseData = {
   image: ImageInfo

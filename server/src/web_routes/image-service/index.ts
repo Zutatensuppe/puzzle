@@ -13,7 +13,7 @@ export default function createRouter(
     const filename = req.url.split('?')[0].substring('/image/'.length)
     const originalFile = path.resolve(config.dir.UPLOAD_DIR, decodeURIComponent(filename))
     if (!await fs.exists(originalFile)) {
-      res.status(404)
+      res.status(404).send('file does not exist')
       return
     }
     const targetFilename = filename.replace(/\//g, '_')

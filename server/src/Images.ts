@@ -3,11 +3,14 @@ import fs from 'fs'
 
 import config from './Config'
 import type { Dim } from '../../common/src/Geometry'
-import Util from '../../common/src/Util'
+import Util, { logger } from '../../common/src/Util'
 import type { Tag, ImageInfo, UserId, ImageId, ImageRowWithCount, TagRow, ImageRow } from '../../common/src/Types'
 import type { ImagesRepo } from './repo/ImagesRepo'
 import type { WhereRaw } from './Db'
 import type { ImageExif } from './ImageExif'
+import FileSystem from './FileSystem'
+
+const log = logger('Images.ts')
 
 export class Images {
   constructor(
@@ -126,5 +129,43 @@ export class Images {
 
   public getImagePath(filename: string): string {
     return `${config.dir.UPLOAD_DIR}/${filename}`
+  }
+
+  private async deleteAllFilesStartingWith(path: string): Promise<void> {
+    // determine directory
+    const parts = path.split('/')
+    const dir = parts.slice(0, -1).join('/')
+    const filenameStart = parts[parts.length - 1]
+
+    try {
+      const files = await FileSystem.readdir(dir)
+      for (const file of files) {
+        if (file.startsWith(filenameStart)) {
+          try {
+            await FileSystem.unlink(dir + '/' + file)
+          } catch {
+            log.error('unable to delete image', dir + '/' + file)
+          }
+        }
+      }
+    } catch {
+      log.error('unable to delete images, unable to read dir', dir)
+    }
+  }
+
+  public async deleteImagesFromStorage(filename: string): Promise<void> {
+    // crops and resizes:
+    const baseDirs = [config.dir.CROP_DIR, config.dir.RESIZE_DIR]
+    for (const baseDir of baseDirs) {
+      await this.deleteAllFilesStartingWith(`${baseDir}/${filename}-`)
+    }
+
+    // full image:
+    const fullImage = this.getImagePath(filename)
+    try {
+      await FileSystem.unlink(fullImage)
+    } catch {
+      log.error('unable to delete image', fullImage)
+    }
   }
 }

@@ -1,7 +1,8 @@
 import Crypto from '../Crypto'
 import type Db from '../Db'
 import type { WhereRaw } from '../Db'
-import type { UserGroupRow, UserId, UserRow } from '../../../common/src/Types'
+import type { UserAvatar, UserAvatarId, UserAvatarRow, UserGroupRow, UserId, UserRow } from '../../../common/src/Types'
+import config from '../Config'
 
 const TABLE = 'users'
 
@@ -57,6 +58,40 @@ export class UsersRepo {
       }
     }
     return user
+  }
+
+  public async getUserAvatarByUserId(userId: UserId): Promise<UserAvatar | null> {
+    const row = await this.db._get(`
+      SELECT
+        a.*, s.user_id
+      FROM
+        user_avatars a
+      INNER JOIN
+        user_settings s on s.avatar_id = a.id
+      INNER JOIN
+        users u on u.id = s.user_id
+      WHERE
+        u.id = $1
+      ;
+    `, [userId])
+    if (!row) {
+      return null
+    }
+
+    const avatar: UserAvatar = {
+      created: (new Date(row.created)).getTime(),
+      filename: row.filename,
+      height: row.height,
+      width: row.width,
+      id: row.id,
+      url: `${config.dir.UPLOAD_URL}/${encodeURIComponent(row.filename)}`,
+      userId: row.user_id,
+    }
+    return avatar
+  }
+
+  public async getUserAvatarRow(userAvatarId: UserAvatarId): Promise<UserAvatarRow | null> {
+    return await this.db.get('user_avatars', { id: userAvatarId })
   }
 
   async getGroupsByUserId(userId: UserId): Promise<UserGroupRow[]> {
