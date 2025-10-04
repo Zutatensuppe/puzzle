@@ -13,7 +13,7 @@
             <tbody>
               <tr>
                 <td
-                  rowspan="6"
+                  rowspan="10"
                   class="avatar-cell"
                 >
                   <div
@@ -61,6 +61,58 @@
                 <td>Total Pieces Connected</td>
                 <td>{{ userProfile.stats.totalPiecesCount }}</td>
               </tr>
+              <tr>
+                <td>Images Uploaded</td>
+                <td>{{ userProfile.stats.imagesUploadedCount }}</td>
+              </tr>
+              <tr>
+                <td>Rank alltime</td>
+                <td>
+                  <RankIcon
+                    :rank="userProfile.stats.leaderboardRanks.alltime.rank"
+                    :number-fallback="false"
+                    :unranked-fallback="'<no rank>'"
+                  />
+                  <span
+                    v-if="userProfile.stats.leaderboardRanks.alltime.piecesCount"
+                    class="text-disabled"
+                  >
+                    ({{ userProfile.stats.leaderboardRanks.alltime.piecesCount }} pieces)
+                  </span>
+                </td>
+              </tr>
+              <tr>
+                <td>Rank (last 30 days)</td>
+                <td>
+                  <RankIcon
+                    :rank="userProfile.stats.leaderboardRanks.month.rank"
+                    :number-fallback="false"
+                    :unranked-fallback="'<no rank>'"
+                  />
+                  <span
+                    v-if="userProfile.stats.leaderboardRanks.month.piecesCount"
+                    class="text-disabled"
+                  >
+                    ({{ userProfile.stats.leaderboardRanks.month.piecesCount }} pieces)
+                  </span>
+                </td>
+              </tr>
+              <tr>
+                <td>Rank (last 7 days)</td>
+                <td>
+                  <RankIcon
+                    :rank="userProfile.stats.leaderboardRanks.week.rank"
+                    :number-fallback="false"
+                    :unranked-fallback="'<no rank>'"
+                  />
+                  <span
+                    v-if="userProfile.stats.leaderboardRanks.week.piecesCount"
+                    class="text-disabled"
+                  >
+                    ({{ userProfile.stats.leaderboardRanks.week.piecesCount }} pieces)
+                  </span>
+                </td>
+              </tr>
             </tbody>
           </table>
           <div class="user-profile-actions">
@@ -96,10 +148,18 @@
         <v-window-item value="latest-images">
           <h2>Latest Images by {{ userProfile.user.username }}</h2>
           <ImageLibrary
+            v-if="userProfile.images.length"
             :images="userProfile.images"
             :edit="false"
             @image-clicked="onImageClicked"
           />
+          <div
+            v-else
+            class="text-disabled"
+          >
+            This user has not uploaded any public images.
+            <div />
+          </div>
         </v-window-item>
       </v-window>
     </div>
@@ -117,6 +177,7 @@ import { useDialog } from '../useDialog'
 import user from '../user'
 import { uploadAvatar } from '../upload'
 import { resizeUrl } from '../../../common/src/ImageService'
+import RankIcon from '../components/RankIcon.vue'
 // import UserProfileGamesTable from '../components/UserProfileGamesTable.vue'
 
 const { closeDialog, openReportPlayerDialog, openNewGameDialog, openUserAvatarUploadDialog, currentDialog } = useDialog()

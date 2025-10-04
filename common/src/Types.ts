@@ -969,6 +969,8 @@ export type CompleteUserProfile = {
   stats: {
     totalGamesCount: number
     totalPiecesCount: number
+    imagesUploadedCount: number
+    leaderboardRanks: Record<string, { rank: number, piecesCount: number }>
   }
   isLiveOnTwitch: boolean
   images: ImageInfo[]

@@ -1232,6 +1232,10 @@ fieldset {
       user-select: none;
     }
   }
+
+  .text-disabled {
+    color: rgba(10 10 10 / var(--v-disabled-opacity)) !important;
+  }
 }
 
 .user-profile-actions {

@@ -212,6 +212,9 @@ export class Users {
 
     const avatar = await this.repos.users.getUserAvatarByUserId(limitToUserId)
 
+    const imagesUploadedCount = await this.repos.images.countPublicByUser(user.id)
+    const leaderboardRanks = await this.repos.leaderboard.getLeaderboardRanks(user.id)
+
     return {
       user: {
         id: user.id,
@@ -220,8 +223,10 @@ export class Users {
         avatar,
       },
       stats: {
-        totalGamesCount: totalGamesCount,
-        totalPiecesCount: totalPiecesCount,
+        totalGamesCount,
+        totalPiecesCount,
+        imagesUploadedCount,
+        leaderboardRanks,
       },
       // not sure if we have a connection yet
       // (username maybe or livestream id == user id??)

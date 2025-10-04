@@ -6,11 +6,23 @@ interface LeaderboardRow {
   name: string
 }
 
+interface LeaderboardEntryRow {
+  leaderboard_id: number
+  rank: number
+  user_id: UserId
+  games_count: number
+  pieces_count: number
+}
+
 export class LeaderboardRepo {
+  private readonly LEADERBOARD_ALLTIME = 'alltime'
+  private readonly LEADERBOARD_7_DAYS = 'week'
+  private readonly LEADERBOARD_30_DAYS = 'month'
+
   private readonly LEADERBOARDS = [
-    { name: 'alltime' },
-    { name: 'week' },
-    { name: 'month' },
+    { name: this.LEADERBOARD_ALLTIME },
+    { name: this.LEADERBOARD_7_DAYS },
+    { name: this.LEADERBOARD_30_DAYS },
   ]
 
   constructor(
@@ -104,5 +116,21 @@ export class LeaderboardRepo {
       })
     }
     return leaderboards
+  }
+
+  public async getLeaderboardRanks(userId: UserId): Promise<Record<string, { rank: number, piecesCount: number }>> {
+    const entries: LeaderboardEntryRow[] = await this.db.getMany(
+      'leaderboard_entries',
+      { user_id: userId },
+    )
+
+    const leaderboards: LeaderboardRow[] = await this.db.getMany('leaderboard')
+
+    const ranks: Record<string, { rank: number, piecesCount: number }> = {}
+    for (const leaderboard of leaderboards) {
+      const val = entries.find(entry => entry.leaderboard_id === leaderboard.id)
+      ranks[leaderboard.name] = { rank: val?.rank ?? 0, piecesCount: val?.pieces_count ?? 0 }
+    }
+    return ranks
   }
 }

@@ -115,6 +115,12 @@
         >
           <v-icon icon="mdi-security" /> Admin
         </v-list-item>
+        <v-list-item
+          v-if="me"
+          :to="{ name: 'user', params: { id: me.id } }"
+        >
+          <v-icon icon="mdi-account" /> Profile
+        </v-list-item>
         <v-list-item @click="doLogout">
           <v-icon icon="mdi-logout" /> Logout
         </v-list-item>
