@@ -18,7 +18,7 @@
       icon="mdi-podium-bronze"
       class="text-brown"
     />
-    <span v-else-if="numberFallback">{{ rank }}</span>
+    <span v-else>{{ rank }}</span>
   </span>
   <span v-else>
     {{ unrankedFallback }}
@@ -28,7 +28,6 @@
 
 defineProps<{
   rank: number | null
-  numberFallback: boolean
   unrankedFallback: string
 }>()
 </script>

@@ -20,7 +20,6 @@
         <td class="text-center">
           <RankIcon
             :rank="row.rank"
-            :number-fallback="true"
             :unranked-fallback="'<no rank>'"
           />
         </td>
