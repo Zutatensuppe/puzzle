@@ -1,6 +1,6 @@
 <template>
   <v-card
-    class="user-avatar-upload-dialog"
+    class="user-avatar-upload-dialog-card"
   >
     <v-card-title>Upload Avatar</v-card-title>
 

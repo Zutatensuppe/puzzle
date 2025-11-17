@@ -4,28 +4,27 @@ import type { Api, GameId, GameInfo, GameSettings, ImageId, ImageInfo, Tag, User
 import _api from './_api'
 import { toast } from './toast'
 
+export enum Dialogs {
+  LOGIN_DIALOG = 'login-dialog',
+  EDIT_IMAGE_DIALOG = 'edit-image-dialog',
+  REPORT_GAME_DIALOG = 'report-game-dialog',
+  REPORT_IMAGE_DIALOG = 'report-image-dialog',
+  REPORT_PLAYER_DIALOG = 'report-player-dialog',
+  IMAGE_INFO_DIALOG = 'image-info-dialog',
+  NEW_IMAGE_DIALOG = 'new-image-dialog',
+  NEW_GAME_DIALOG = 'new-game-dialog',
+  USER_AVATAR_UPLOAD_DIALOG = 'user-avatar-upload-dialog',
+}
+
 // global dialog settings
 const width = ref<'auto' | number | undefined>(undefined)
 const minWidth = ref<number | undefined>(undefined)
-const dialogClass = ref<string|undefined>(undefined)
-const currentDialog = ref<
-  'login-dialog' |
-  'edit-image-dialog' |
-  'report-game-dialog' |
-  'report-image-dialog' |
-  'report-player-dialog' |
-  'image-info-dialog' |
-  'new-image-dialog' |
-  'new-game-dialog' |
-  'user-avatar-upload-dialog' |
-  ''
->('')
+const currentDialog = ref<Dialogs | ''>('')
 const dialogOpen = ref<boolean>(false)
 
 const closeDialog = () => {
   currentDialog.value = ''
   dialogOpen.value = false
-  dialogClass.value = undefined
   width.value = undefined
   minWidth.value = undefined
 }
@@ -59,8 +58,7 @@ const openEditImageDialog = (
   editOnSaveImageClick.value = onSaveImageClick
 
   // =================================================================
-  currentDialog.value = 'edit-image-dialog'
-  dialogClass.value = 'edit-image'
+  currentDialog.value = Dialogs.EDIT_IMAGE_DIALOG
   width.value = undefined
   minWidth.value = undefined
   dialogOpen.value = true
@@ -80,8 +78,7 @@ const openLoginDialog = (
   loginDialogTab.value = tab
 
   // =================================================================
-  currentDialog.value = 'login-dialog'
-  dialogClass.value = undefined
+  currentDialog.value = Dialogs.LOGIN_DIALOG
   width.value = 'auto'
   minWidth.value = 450
   dialogOpen.value = true
@@ -93,8 +90,7 @@ const openReportGameDialog = (game: GameInfo) => {
   reportGame.value = game
 
   // =================================================================
-  currentDialog.value = 'report-game-dialog'
-  dialogClass.value = 'report-game'
+  currentDialog.value = Dialogs.REPORT_GAME_DIALOG
   width.value = undefined
   minWidth.value = undefined
   dialogOpen.value = true
@@ -116,8 +112,7 @@ const openReportImageDialog = (image: ImageInfo) => {
   reportImage.value = image
 
   // =================================================================
-  currentDialog.value = 'report-image-dialog'
-  dialogClass.value = 'report-image'
+  currentDialog.value = Dialogs.REPORT_IMAGE_DIALOG
   width.value = undefined
   minWidth.value = undefined
   dialogOpen.value = true
@@ -139,8 +134,7 @@ const openReportPlayerDialog = (userId: UserId) => {
   reportPlayerId.value = userId
 
   // =================================================================
-  currentDialog.value = 'report-player-dialog'
-  dialogClass.value = 'report-player'
+  currentDialog.value = Dialogs.REPORT_PLAYER_DIALOG
   width.value = undefined
   minWidth.value = undefined
   dialogOpen.value = true
@@ -162,8 +156,7 @@ const openImageInfoDialog = (image: ImageInfo) => {
   imageInfoImage.value = image
 
   // =================================================================
-  currentDialog.value = 'image-info-dialog'
-  dialogClass.value = undefined
+  currentDialog.value = Dialogs.IMAGE_INFO_DIALOG
   width.value = undefined
   minWidth.value = undefined
   dialogOpen.value = true
@@ -186,8 +179,7 @@ const openNewImageDialog = (
   newImageSetupGameClick.value = setupGameClick
 
   // =================================================================
-  currentDialog.value = 'new-image-dialog'
-  dialogClass.value = 'new-image'
+  currentDialog.value = Dialogs.NEW_IMAGE_DIALOG
   width.value = undefined
   minWidth.value = undefined
   dialogOpen.value = true
@@ -208,8 +200,7 @@ const openNewGameDialog = (
   newGameOnTagClick.value = onTagClick
 
   // =================================================================
-  currentDialog.value = 'new-game-dialog'
-  dialogClass.value = 'new-game'
+  currentDialog.value = Dialogs.NEW_GAME_DIALOG
   width.value = undefined
   minWidth.value = undefined
   dialogOpen.value = true
@@ -226,8 +217,7 @@ const openUserAvatarUploadDialog = (
   userAvatarOnSaveClick.value = onSaveClick
 
   // =================================================================
-  currentDialog.value = 'user-avatar-upload-dialog'
-  dialogClass.value = 'user-avatar-upload'
+  currentDialog.value = Dialogs.USER_AVATAR_UPLOAD_DIALOG
   width.value = undefined
   minWidth.value = undefined
   dialogOpen.value = true
@@ -237,7 +227,6 @@ export function useDialog() {
   return {
     closeDialog,
     currentDialog,
-    dialogClass,
     dialogOpen,
     editImageAutocompleteTags,
     editImageImage,

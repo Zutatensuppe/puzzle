@@ -822,15 +822,6 @@ kbd {
   white-space: nowrap;
 }
 
-.v-dialog.overlay-cutting,
-.v-dialog.overlay-info,
-.v-dialog.overlay-settings,
-.v-dialog.user-avatar-upload {
-  .v-overlay__content {
-    max-width: 600px;
-  }
-}
-
 .v-dialog.overlay-settings {
   .headline {
     flex: 1;
@@ -842,18 +833,6 @@ kbd {
     flex: 1;
     display: flex;
     align-items: center;
-  }
-}
-
-.v-dialog.overlay-connection {
-  .v-overlay__content {
-    max-width: 500px;
-  }
-}
-
-.v-dialog.overlay-help {
-  .v-overlay__content {
-    max-width: 500px;
   }
 }
 
@@ -892,9 +871,29 @@ kbd {
   }
 }
 
-.v-dialog.report-game,
-.v-dialog.report-image,
-.v-dialog.report-player {
+
+.v-dialog.overlay-cutting,
+.v-dialog.overlay-info,
+.v-dialog.overlay-settings,
+.v-dialog.user-avatar-upload-dialog {
+  .v-overlay__content {
+    max-width: 600px;
+  }
+}
+.v-dialog.overlay-connection {
+  .v-overlay__content {
+    max-width: 500px;
+  }
+}
+
+.v-dialog.overlay-help {
+  .v-overlay__content {
+    max-width: 500px;
+  }
+}
+.v-dialog.report-game-dialog,
+.v-dialog.report-image-dialog,
+.v-dialog.report-player-dialog {
   .v-overlay__content {
     max-width: 500px;
   }
@@ -1051,10 +1050,10 @@ fieldset {
   }
 }
 
-.new-image-dialog,
-.edit-image-dialog,
-.image-info-dialog,
-.new-game-dialog {
+.new-image-dialog-card,
+.edit-image-dialog-card,
+.image-info-dialog-card,
+.new-game-dialog-card {
   .v-container {
     height: 90vh;
 
@@ -1064,7 +1063,7 @@ fieldset {
   }
 }
 
-.new-game-dialog {
+.new-game-dialog-card {
   overflow: hidden !important;
 
   .new-game-dialog-layout {

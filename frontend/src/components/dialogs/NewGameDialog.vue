@@ -1,7 +1,7 @@
 <template>
   <v-card
     v-if="newGameImageInfo && newGameOnTagClick"
-    class="new-game-dialog"
+    class="new-game-dialog-card"
     height="90vh"
   >
     <v-card-title>New Game</v-card-title>

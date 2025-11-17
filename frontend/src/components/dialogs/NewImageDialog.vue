@@ -1,7 +1,7 @@
 <template>
   <v-card
     v-if="newImageAutocompleteTags"
-    class="new-image-dialog"
+    class="new-image-dialog-card"
   >
     <v-card-title>New Image</v-card-title>
 

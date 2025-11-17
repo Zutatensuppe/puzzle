@@ -1,7 +1,7 @@
 <template>
   <v-card
     v-if="imageInfoImage"
-    class="image-info-dialog"
+    class="image-info-dialog-card"
   >
     <v-card-title>Image Info</v-card-title>
 

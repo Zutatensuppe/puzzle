@@ -1,5 +1,5 @@
 <template>
-  <v-card class="report-player-dialog">
+  <v-card class="report-player-dialog-card">
     <v-card-title>Report Player</v-card-title>
 
     <v-container :fluid="true">
