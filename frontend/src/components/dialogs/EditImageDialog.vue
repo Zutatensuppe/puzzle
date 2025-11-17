@@ -1,7 +1,7 @@
 <template>
   <v-card
     v-if="editImageImage"
-    class="edit-image-dialog"
+    class="edit-image-dialog-card"
   >
     <v-card-title>Edit Image</v-card-title>
 

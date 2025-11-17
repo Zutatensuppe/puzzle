@@ -1,5 +1,5 @@
 <template>
-  <v-card class="report-image-dialog">
+  <v-card class="report-image-dialog-card">
     <v-card-title>Report Image</v-card-title>
 
     <v-container :fluid="true">
