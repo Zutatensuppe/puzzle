@@ -826,11 +826,6 @@ export interface ServerInfo {
   gameLogInfoByGameIds: GameLogInfoByGameIds
 }
 
-export interface DialogChangeData {
-  type: string
-  value: boolean | undefined
-}
-
 export interface GameRow {
   id: GameId
   creator_user_id: UserId | null

@@ -18,6 +18,7 @@ export enum Dialogs {
   CUTTING_OVERLAY_DIALOG = 'cutting-overlay-dialog',
   HELP_OVERLAY_DIALOG = 'help-overlay-dialog',
   INFO_OVERLAY_DIALOG = 'info-overlay-dialog',
+  SETTINGS_OVERLAY_DIALOG = 'settings-overlay-dialog',
 }
 
 type DialogArgs = {
@@ -62,6 +63,9 @@ type DialogArgs = {
     onConfirmDeleteGame: (game: GameInfo) => Promise<void>
   }
   [Dialogs.INFO_OVERLAY_DIALOG]: {
+    game: GameInterface
+  }
+  [Dialogs.SETTINGS_OVERLAY_DIALOG]: {
     game: GameInterface
   }
 }
@@ -241,6 +245,15 @@ const openInfoOverlayDialog = (args: DialogArgs[Dialogs.INFO_OVERLAY_DIALOG]) =>
   openDialog(Dialogs.INFO_OVERLAY_DIALOG)
 }
 
+// ingame: settings overlay
+const settingsGame = ref<GameInterface|null>(null)
+const openSettingsOverlayDialog = (args: DialogArgs[Dialogs.SETTINGS_OVERLAY_DIALOG]) => {
+  settingsGame.value = args.game
+
+  // =================================================================
+  openDialog(Dialogs.SETTINGS_OVERLAY_DIALOG)
+}
+
 
 export function useDialog() {
   return {
@@ -275,8 +288,10 @@ export function useDialog() {
     openCuttingOverlayDialog,
     openHelpOverlayDialog,
     openInfoOverlayDialog,
+    openSettingsOverlayDialog,
     infoGame,
     reportGame,
+    settingsGame,
     reportImage,
     reportPlayerId,
     userAvatarOnSaveClick,

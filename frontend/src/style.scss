@@ -822,7 +822,7 @@ kbd {
   white-space: nowrap;
 }
 
-.v-dialog.overlay-settings {
+.v-dialog.settings-overlay-dialog {
   .headline {
     flex: 1;
     justify-content: center;
@@ -874,7 +874,7 @@ kbd {
 
 .v-dialog.cutting-overlay-dialog,
 .v-dialog.info-overlay-dialog,
-.v-dialog.overlay-settings,
+.v-dialog.settings-overlay-dialog,
 .v-dialog.user-avatar-upload-dialog {
   .v-overlay__content {
     max-width: 600px;
