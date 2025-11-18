@@ -215,24 +215,19 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
 
-import IngameColorPicker from './IngameColorPicker.vue'
-import { RendererType } from '../../../common/src/Types'
-import type { DialogChangeData, PlayerSettingsData } from '../../../common/src/Types'
-import type { GameInterface } from '../Game'
-import LoginBit from './LoginBit.vue'
+import IngameColorPicker from '../IngameColorPicker.vue'
+import { RendererType } from '../../../../common/src/Types'
+import type { PlayerSettingsData } from '../../../../common/src/Types'
+import LoginBit from '../LoginBit.vue'
 
-const props = defineProps<{
-  game: GameInterface
-}>()
+import { useDialog } from '../../useDialog'
 
-const emit = defineEmits<{
-  (e: 'dialogChange', val: DialogChangeData): void
-}>()
+const { settingsGame, currentDialogPersistent } = useDialog()
 
-const playerSettings = ref<PlayerSettingsData>(JSON.parse(JSON.stringify(props.game.getPlayerSettings().getSettings())))
+const playerSettings = ref<PlayerSettingsData>(JSON.parse(JSON.stringify(settingsGame.value!.getPlayerSettings().getSettings())))
 const isUkraineColor = ref<boolean>(playerSettings.value.color === 'ukraine')
 const initialRenderer = ref<RendererType>(playerSettings.value.renderer)
-const webGlSupported = props.game.graphics.hasWebGL2Support()
+const webGlSupported = settingsGame.value!.graphics.hasWebGL2Support()
 const rendererOptions = [
   {
     label: 'WebGL2 (fast)',
@@ -246,10 +241,10 @@ const rendererOptions = [
 ]
 
 const onColorPickerOpen = () => {
-  emit('dialogChange', { type: 'persistent', value: true })
+  currentDialogPersistent.value = true
 }
 const onColorPickerClose = () => {
-  emit('dialogChange', { type: 'persistent', value: undefined })
+  currentDialogPersistent.value = false
 }
 
 const updateVolume = (newVolume: number): void => {
@@ -268,8 +263,8 @@ const emitChanges = (): void => {
   if (isUkraineColor.value) {
     newSettings.color = 'ukraine'
   }
-  props.game.getPlayerSettings().apply(newSettings)
-  void props.game.loadTableTexture(newSettings)
+  settingsGame.value!.getPlayerSettings().apply(newSettings)
+  void settingsGame.value!.loadTableTexture(newSettings)
 }
 
 watch(isUkraineColor, emitChanges)

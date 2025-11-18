@@ -17,6 +17,7 @@
     <CuttingOverlayDialog v-if="currentDialog === Dialogs.CUTTING_OVERLAY_DIALOG" />
     <HelpOverlayDialog v-if="currentDialog === Dialogs.HELP_OVERLAY_DIALOG" />
     <InfoOverlayDialog v-if="currentDialog === Dialogs.INFO_OVERLAY_DIALOG" />
+    <SettingsOverlayDialog v-if="currentDialog === Dialogs.SETTINGS_OVERLAY_DIALOG" />
   </v-dialog>
 </template>
 <script setup lang="ts">
@@ -34,6 +35,7 @@ import NewImageDialog from './dialogs/NewImageDialog.vue'
 import ReportGameDialog from './dialogs/ReportGameDialog.vue'
 import ReportImageDialog from './dialogs/ReportImageDialog.vue'
 import ReportPlayerDialog from './dialogs/ReportPlayerDialog.vue'
+import SettingsOverlayDialog from './dialogs/SettingsOverlayDialog.vue'
 import UserAvatarUploadDialog from './dialogs/UserAvatarUploadDialog.vue'
 
 const { dialogOpen, currentDialog, currentDialogPersistent } = useDialog()

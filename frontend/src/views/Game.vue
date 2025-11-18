@@ -3,13 +3,7 @@
     <v-dialog
       v-model="dialog"
       :class="`overlay-${overlay}`"
-      :persistent="dialogPersistent || false"
     >
-      <SettingsOverlay
-        v-if="g && overlay === 'settings'"
-        :game="g"
-        @dialog-change="onDialogChange"
-      />
       <PreviewOverlay
         v-if="g && overlay === 'preview'"
         :game="g"
@@ -64,7 +58,7 @@
 </template>
 <script setup lang="ts">
 import { CONN_STATE } from '../../../common/src/Types'
-import type { Hud, GameStatus, GamePlayers, RegisteredMap, GameId, DialogChangeData, ClientId, ConnectionState } from '../../../common/src/Types'
+import type { Hud, GameStatus, GamePlayers, RegisteredMap, GameId, ClientId, ConnectionState } from '../../../common/src/Types'
 import { GamePlay } from '../GamePlay'
 import { onMounted, onUnmounted, ref, watch } from 'vue'
 import type { Ref } from 'vue'
@@ -75,7 +69,6 @@ import ConnectionOverlay from './../components/ConnectionOverlay.vue'
 import PreviewOverlay from './../components/PreviewOverlay.vue'
 import PuzzleStatus from '../components/PuzzleStatus.vue'
 import Scores from './../components/Scores.vue'
-import SettingsOverlay from './../components/SettingsOverlay.vue'
 import StatusMessages from '../components/StatusMessages.vue'
 import IngameMenu from '../components/IngameMenu.vue'
 import user from '../user'
@@ -83,13 +76,12 @@ import isEqual from 'lodash/isEqual'
 
 import { Dialogs, useDialog } from '../useDialog'
 
-const { openInfoOverlayDialog, openHelpOverlayDialog, openCuttingOverlayDialog, currentDialog, closeDialog: closeDialogX } = useDialog()
+const { openSettingsOverlayDialog, openInfoOverlayDialog, openHelpOverlayDialog, openCuttingOverlayDialog, currentDialog, closeDialog: closeDialogX } = useDialog()
 
 const statusMessages = ref<InstanceType<typeof StatusMessages>>() as Ref<InstanceType<typeof StatusMessages>>
 const players = ref<GamePlayers>({ active: [], idle: [], banned: [] })
 const status = ref<GameStatus>({ finished: false, duration: 0, piecesDone: 0, piecesTotal: 0 })
 const dialog = ref<boolean>(false)
-const dialogPersistent = ref<boolean | undefined>(undefined)
 const overlay = ref<string>('')
 const connectionState = ref<ConnectionState>({ state: CONN_STATE.NOT_CONNECTED })
 
@@ -101,12 +93,6 @@ const registeredMap = ref<RegisteredMap>({})
 
 const g = ref<GamePlay | null>(null)
 const route = useRoute()
-
-const onDialogChange = (change: DialogChangeData): void => {
-  if (change.type === 'persistent') {
-    dialogPersistent.value = change.value
-  }
-}
 
 const onResize = (): void => {
   canvasEl.value.width = window.innerWidth
@@ -179,11 +165,13 @@ const openDialog = (content: string): void => {
 
   if (content === 'help') {
     openHelpOverlayDialog()
+  } else if (content === 'settings') {
+    if (g.value) {
+      openSettingsOverlayDialog({ game: g.value })
+    }
   } else if (content === 'info') {
     if (g.value) {
-      openInfoOverlayDialog({
-        game: g.value,
-      })
+      openInfoOverlayDialog({ game: g.value })
     }
   } else {
     dialog.value = newValue
