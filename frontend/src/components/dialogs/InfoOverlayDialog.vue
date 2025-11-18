@@ -36,9 +36,9 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useRouter } from 'vue-router'
-import { ImageSearchSort } from '../../../common/src/Types'
-import type { Tag } from '../../../common/src/Types'
-import ImageInfoTable from './ImageInfoTable.vue'
+import { ImageSearchSort } from '../../../../common/src/Types'
+import type { Tag } from '../../../../common/src/Types'
+import ImageInfoTable from '../ImageInfoTable.vue'
 import {
   rotationModeDescriptionToString,
   rotationModeToString,
@@ -48,15 +48,14 @@ import {
   shapeModeToString,
   snapModeDescriptionToString,
   snapModeToString,
-} from '../../../common/src/Util'
-import type { GameInterface } from '../Game'
+} from '../../../../common/src/Util'
 const router = useRouter()
 
-const props = defineProps<{
-  game: GameInterface
-}>()
+import { useDialog } from '../../useDialog'
 
-const image = props.game.getImage()
+const { infoGame } = useDialog()
+
+const image = infoGame.value!.getImage()
 
 const onTagClick = (tag: Tag): void => {
   const location = router.resolve({ name: 'new-game', query: { sort: ImageSearchSort.DATE_DESC, search: tag.title } })
@@ -64,22 +63,22 @@ const onTagClick = (tag: Tag): void => {
 }
 
 const scoreMode = computed(() => {
-  const m = props.game.getScoreMode()
+  const m = infoGame.value!.getScoreMode()
   return [scoreModeToString(m), scoreModeDescriptionToString(m)]
 })
 
 const shapeMode = computed(() => {
-  const m = props.game.getShapeMode()
+  const m = infoGame.value!.getShapeMode()
   return [shapeModeToString(m), shapeModeDescriptionToString(m)]
 })
 
 const snapMode = computed(() => {
-  const m = props.game.getSnapMode()
+  const m = infoGame.value!.getSnapMode()
   return [snapModeToString(m), snapModeDescriptionToString(m)]
 })
 
 const rotationMode = computed(() => {
-  const m = props.game.getRotationMode()
+  const m = infoGame.value!.getRotationMode()
   return [rotationModeToString(m), rotationModeDescriptionToString(m)]
 })
 </script>

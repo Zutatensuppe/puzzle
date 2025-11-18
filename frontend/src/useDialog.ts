@@ -2,6 +2,7 @@ import { ref, watch } from 'vue'
 import user from './user'
 import type { Api, GameInfo, GameSettings, ImageInfo, Tag, UserId } from '../../common/src/Types'
 import _api from './_api'
+import type { GameInterface } from './Game'
 
 export enum Dialogs {
   LOGIN_DIALOG = 'login-dialog',
@@ -16,6 +17,7 @@ export enum Dialogs {
   CONFIRM_DELETE_GAME_DIALOG = 'confirm-delete-game-dialog',
   CUTTING_OVERLAY_DIALOG = 'cutting-overlay-dialog',
   HELP_OVERLAY_DIALOG = 'help-overlay-dialog',
+  INFO_OVERLAY_DIALOG = 'info-overlay-dialog',
 }
 
 type DialogArgs = {
@@ -58,6 +60,9 @@ type DialogArgs = {
   [Dialogs.CONFIRM_DELETE_GAME_DIALOG]: {
     game: GameInfo
     onConfirmDeleteGame: (game: GameInfo) => Promise<void>
+  }
+  [Dialogs.INFO_OVERLAY_DIALOG]: {
+    game: GameInterface
   }
 }
 
@@ -227,6 +232,15 @@ const openHelpOverlayDialog = () => {
   openDialog(Dialogs.HELP_OVERLAY_DIALOG)
 }
 
+// ingame: info overlay
+const infoGame = ref<GameInterface|null>(null)
+const openInfoOverlayDialog = (args: DialogArgs[Dialogs.INFO_OVERLAY_DIALOG]) => {
+  infoGame.value = args.game
+
+  // =================================================================
+  openDialog(Dialogs.INFO_OVERLAY_DIALOG)
+}
+
 
 export function useDialog() {
   return {
@@ -260,6 +274,8 @@ export function useDialog() {
     openConfirmDeleteDialog,
     openCuttingOverlayDialog,
     openHelpOverlayDialog,
+    openInfoOverlayDialog,
+    infoGame,
     reportGame,
     reportImage,
     reportPlayerId,
