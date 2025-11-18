@@ -30,7 +30,7 @@
         <div
           v-tooltip="'Report this image'"
           class="report-button imageteaser-report"
-          @click.stop="openReportImageDialog(image)"
+          @click.stop="openReportImageDialog({ image })"
         />
 
         <div

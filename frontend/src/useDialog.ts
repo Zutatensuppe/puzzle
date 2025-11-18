@@ -1,8 +1,7 @@
 import { ref, watch } from 'vue'
 import user from './user'
-import type { Api, GameId, GameInfo, GameSettings, ImageId, ImageInfo, Tag, UserId } from '../../common/src/Types'
+import type { Api, GameInfo, GameSettings, ImageInfo, Tag, UserId } from '../../common/src/Types'
 import _api from './_api'
-import { toast } from './toast'
 
 export enum Dialogs {
   LOGIN_DIALOG = 'login-dialog',
@@ -16,17 +15,52 @@ export enum Dialogs {
   USER_AVATAR_UPLOAD_DIALOG = 'user-avatar-upload-dialog',
 }
 
+type DialogArgs = {
+  [Dialogs.LOGIN_DIALOG]: {
+    tab: 'login' | 'register' | 'forgot-password' | 'reset-password'
+    data?: {
+      passwordResetToken: string
+    }
+  }
+  [Dialogs.EDIT_IMAGE_DIALOG]: {
+    image: ImageInfo
+    autocompleteTags: (input: string, exclude: string[]) => string[]
+    onSaveImageClick: (data: any) => Promise<void>
+  }
+  [Dialogs.REPORT_GAME_DIALOG]: {
+    game: GameInfo
+  }
+  [Dialogs.REPORT_IMAGE_DIALOG]: {
+    image: ImageInfo
+  }
+  [Dialogs.REPORT_PLAYER_DIALOG]: {
+    userId: UserId
+  }
+  [Dialogs.IMAGE_INFO_DIALOG]: {
+    image: ImageInfo
+  }
+  [Dialogs.NEW_IMAGE_DIALOG]: {
+    autocompleteTags: (input: string, exclude: string[]) => string[]
+    postToGalleryClick: (data: Api.UploadRequestData) => Promise<void>
+    setupGameClick: (data: Api.UploadRequestData) => Promise<void>
+  }
+  [Dialogs.NEW_GAME_DIALOG]: {
+    imageInfo: ImageInfo
+    onNewGameClick: (data: GameSettings) => Promise<void>
+    onTagClick: (tag: Tag) => void
+  }
+  [Dialogs.USER_AVATAR_UPLOAD_DIALOG]: {
+    onSaveClick: (data: Blob) => Promise<void>
+  }
+}
+
 // global dialog settings
-const width = ref<'auto' | number | undefined>(undefined)
-const minWidth = ref<number | undefined>(undefined)
 const currentDialog = ref<Dialogs | ''>('')
 const dialogOpen = ref<boolean>(false)
 
 const closeDialog = () => {
   currentDialog.value = ''
   dialogOpen.value = false
-  width.value = undefined
-  minWidth.value = undefined
 }
 
 watch(dialogOpen, (open, oldOpen) => {
@@ -48,19 +82,13 @@ const editImageImage = ref<ImageInfo | undefined>(undefined)
 const editImageAutocompleteTags = ref<((input: string, exclude: string[]) => string[]) | undefined>(undefined)
 const editOnSaveImageClick = ref<((data: any) => Promise<void>) | undefined>(undefined)
 
-const openEditImageDialog = (
-  image: ImageInfo,
-  autocompleteTags: (input: string, exclude: string[]) => string[],
-  onSaveImageClick: (data: any) => Promise<void>,
-) => {
-  editImageImage.value = image
-  editImageAutocompleteTags.value = autocompleteTags
-  editOnSaveImageClick.value = onSaveImageClick
+const openEditImageDialog = (args: DialogArgs[Dialogs.EDIT_IMAGE_DIALOG]) => {
+  editImageImage.value = args.image
+  editImageAutocompleteTags.value = args.autocompleteTags
+  editOnSaveImageClick.value = args.onSaveImageClick
 
   // =================================================================
   currentDialog.value = Dialogs.EDIT_IMAGE_DIALOG
-  width.value = undefined
-  minWidth.value = undefined
   dialogOpen.value = true
 }
 
@@ -68,97 +96,52 @@ const openEditImageDialog = (
 const loginDialogTab = ref<'login' | 'register' | 'forgot-password' | 'reset-password' | undefined>(undefined)
 const loginDialogData = ref<{ passwordResetToken: string } | undefined>(undefined)
 
-const openLoginDialog = (
-  tab: 'login' | 'register' | 'forgot-password' | 'reset-password' = 'login',
-  data?: {
-    passwordResetToken: string
-  },
-) => {
-  loginDialogData.value = data
-  loginDialogTab.value = tab
+const openLoginDialog = (args: DialogArgs[Dialogs.LOGIN_DIALOG]) => {
+  loginDialogData.value = args.data
+  loginDialogTab.value = args.tab || 'login'
 
   // =================================================================
   currentDialog.value = Dialogs.LOGIN_DIALOG
-  width.value = 'auto'
-  minWidth.value = 450
   dialogOpen.value = true
 }
 
 // report game dialog specific
 const reportGame = ref<GameInfo|null>(null)
-const openReportGameDialog = (game: GameInfo) => {
-  reportGame.value = game
+const openReportGameDialog = (args: DialogArgs[Dialogs.REPORT_GAME_DIALOG]) => {
+  reportGame.value = args.game
 
   // =================================================================
   currentDialog.value = Dialogs.REPORT_GAME_DIALOG
-  width.value = undefined
-  minWidth.value = undefined
   dialogOpen.value = true
-}
-
-const submitReportGame = async (data: { id: GameId, reason: string }) => {
-  const res = await _api.pub.reportGame(data)
-  if (res.status === 200) {
-    closeDialog()
-    toast('Thank you for your report.', 'success')
-  } else {
-    toast('An error occured during reporting.', 'error')
-  }
 }
 
 // report image dialog specific
 const reportImage = ref<ImageInfo|null>(null)
-const openReportImageDialog = (image: ImageInfo) => {
-  reportImage.value = image
+const openReportImageDialog = (args: DialogArgs[Dialogs.REPORT_IMAGE_DIALOG]) => {
+  reportImage.value = args.image
 
   // =================================================================
   currentDialog.value = Dialogs.REPORT_IMAGE_DIALOG
-  width.value = undefined
-  minWidth.value = undefined
   dialogOpen.value = true
-}
-
-const submitReportImage = async (data: { id: ImageId, reason: string }) => {
-  const res = await _api.pub.reportImage(data)
-  if (res.status === 200) {
-    closeDialog()
-    toast('Thank you for your report.', 'success')
-  } else {
-    toast('An error occured during reporting.', 'error')
-  }
 }
 
 // report image dialog specific
 const reportPlayerId = ref<UserId|null>(null)
-const openReportPlayerDialog = (userId: UserId) => {
-  reportPlayerId.value = userId
+const openReportPlayerDialog = (args: DialogArgs[Dialogs.REPORT_PLAYER_DIALOG]) => {
+  reportPlayerId.value = args.userId
 
   // =================================================================
   currentDialog.value = Dialogs.REPORT_PLAYER_DIALOG
-  width.value = undefined
-  minWidth.value = undefined
   dialogOpen.value = true
-}
-
-const submitReportPlayer = async (data: { id: UserId, reason: string }) => {
-  const res = await _api.pub.reportPlayer(data)
-  if (res.status === 200) {
-    closeDialog()
-    toast('Thank you for your report.', 'success')
-  } else {
-    toast('An error occured during reporting.', 'error')
-  }
 }
 
 // image info dialog specific
 const imageInfoImage = ref<ImageInfo|null>(null)
-const openImageInfoDialog = (image: ImageInfo) => {
-  imageInfoImage.value = image
+const openImageInfoDialog = (args: DialogArgs[Dialogs.IMAGE_INFO_DIALOG]) => {
+  imageInfoImage.value = args.image
 
   // =================================================================
   currentDialog.value = Dialogs.IMAGE_INFO_DIALOG
-  width.value = undefined
-  minWidth.value = undefined
   dialogOpen.value = true
 }
 
@@ -169,19 +152,13 @@ const newImageAutocompleteTags = ref<((input: string, exclude: string[]) => stri
 const newImagePostToGalleryClick = ref<((data: Api.UploadRequestData) => Promise<void>) | undefined>(undefined)
 const newImageSetupGameClick = ref<((data: Api.UploadRequestData) => Promise<void>) | undefined>(undefined)
 
-const openNewImageDialog = (
-  autocompleteTags: (input: string, exclude: string[]) => string[],
-  postToGalleryClick: (data: Api.UploadRequestData) => Promise<void>,
-  setupGameClick: (data: Api.UploadRequestData) => Promise<void>,
-) => {
-  newImageAutocompleteTags.value = autocompleteTags
-  newImagePostToGalleryClick.value = postToGalleryClick
-  newImageSetupGameClick.value = setupGameClick
+const openNewImageDialog = (args: DialogArgs[Dialogs.NEW_IMAGE_DIALOG]) => {
+  newImageAutocompleteTags.value = args.autocompleteTags
+  newImagePostToGalleryClick.value = args.postToGalleryClick
+  newImageSetupGameClick.value = args.setupGameClick
 
   // =================================================================
   currentDialog.value = Dialogs.NEW_IMAGE_DIALOG
-  width.value = undefined
-  minWidth.value = undefined
   dialogOpen.value = true
 }
 
@@ -190,19 +167,13 @@ const newGameImageInfo = ref<ImageInfo|null>(null)
 const newGameOnNewGameClick = ref<((data: GameSettings) => Promise<void>) | undefined>(undefined)
 const newGameOnTagClick = ref<((tag: Tag) => void) | undefined>(undefined)
 
-const openNewGameDialog = (
-  imageInfo: ImageInfo,
-  onNewGameClick: (data: GameSettings) => Promise<void>,
-  onTagClick: (tag: Tag) => void,
-) => {
-  newGameImageInfo.value = imageInfo
-  newGameOnNewGameClick.value = onNewGameClick
-  newGameOnTagClick.value = onTagClick
+const openNewGameDialog = (args: DialogArgs[Dialogs.NEW_GAME_DIALOG]) => {
+  newGameImageInfo.value = args.imageInfo
+  newGameOnNewGameClick.value = args.onNewGameClick
+  newGameOnTagClick.value = args.onTagClick
 
   // =================================================================
   currentDialog.value = Dialogs.NEW_GAME_DIALOG
-  width.value = undefined
-  minWidth.value = undefined
   dialogOpen.value = true
 }
 
@@ -211,15 +182,11 @@ const userAvatarUploadProgress = ref<number>(0)
 const userAvatarUploading = ref<'' | 'uploading'>('')
 const userAvatarOnSaveClick = ref<((data: Blob) => Promise<void>) | undefined>(undefined)
 
-const openUserAvatarUploadDialog = (
-  onSaveClick: (data: Blob) => Promise<void>,
-) => {
-  userAvatarOnSaveClick.value = onSaveClick
+const openUserAvatarUploadDialog = (args: DialogArgs[Dialogs.USER_AVATAR_UPLOAD_DIALOG]) => {
+  userAvatarOnSaveClick.value = args.onSaveClick
 
   // =================================================================
   currentDialog.value = Dialogs.USER_AVATAR_UPLOAD_DIALOG
-  width.value = undefined
-  minWidth.value = undefined
   dialogOpen.value = true
 }
 
@@ -242,7 +209,6 @@ export function useDialog() {
     imageInfoImage,
     loginDialogData,
     loginDialogTab,
-    minWidth,
     openEditImageDialog,
     openNewImageDialog,
     openNewGameDialog,
@@ -255,12 +221,8 @@ export function useDialog() {
     reportGame,
     reportImage,
     reportPlayerId,
-    submitReportGame,
-    submitReportImage,
-    submitReportPlayer,
     userAvatarOnSaveClick,
     userAvatarUploading,
     userAvatarUploadProgress,
-    width,
   }
 }

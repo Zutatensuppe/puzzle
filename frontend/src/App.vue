@@ -28,7 +28,7 @@ onMounted(() => {
     const urlParams = new URLSearchParams(window.location.hash.replace('#', '?'))
     const passwordResetToken = urlParams.get('password-reset')
     if (passwordResetToken) {
-      openLoginDialog('reset-password', { passwordResetToken })
+      openLoginDialog({ tab: 'reset-password', data: { passwordResetToken } })
     }
     const emailVerified = urlParams.get('email-verified')
     if (emailVerified) {

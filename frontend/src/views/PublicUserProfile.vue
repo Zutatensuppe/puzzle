@@ -116,7 +116,7 @@
             <div
               v-tooltip="'Report this player'"
               class="report-button player-report"
-              @click.stop="openReportPlayerDialog(userProfile.user.id)"
+              @click.stop="openReportPlayerDialog({ userId: userProfile.user.id })"
             />
           </div>
         </div>
@@ -201,11 +201,11 @@ const joinDate = computed(() => {
 })
 
 const onImageClicked = (newImage: ImageInfo) => {
-  openNewGameDialog(
-    newImage,
-    onNewGame,
-    onTagClick,
-  )
+  openNewGameDialog({
+    imageInfo: newImage,
+    onNewGameClick: onNewGame,
+    onTagClick: onTagClick,
+  })
 }
 
 const onNewGame = async (gameSettings: GameSettings) => {
@@ -235,7 +235,7 @@ const canEdit = computed(() => {
 })
 
 const onAvatarClick = () => {
-  const fn = async (data: Blob): Promise<void> => {
+  const onSaveClick = async (data: Blob): Promise<void> => {
     const result = await uploadAvatar(data)
     closeDialog()
 
@@ -246,7 +246,10 @@ const onAvatarClick = () => {
 
     await load()
   }
-  openUserAvatarUploadDialog(fn)
+
+  openUserAvatarUploadDialog({
+    onSaveClick,
+  })
 }
 
 const onAvatarDeleteClick = async () => {

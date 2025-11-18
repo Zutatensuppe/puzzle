@@ -78,11 +78,11 @@ const onNewGame = async (gameSettings: GameSettings) => {
 }
 
 const onImageClicked = (newImage: ImageInfo) => {
-  openNewGameDialog(
-    newImage,
-    onNewGame,
-    onTagClick,
-  )
+  openNewGameDialog({
+    imageInfo: newImage,
+    onNewGameClick: onNewGame,
+    onTagClick: onTagClick,
+  })
 }
 
 const onTagClick = (tag: Tag): void => {
