@@ -319,11 +319,11 @@ const openDialog = (content: string): void => {
   if (content === 'help') {
     openHelpOverlayDialog()
   } else if (content === 'info') {
-    openInfoOverlayDialog({
-      // TODO: find out why type doesnt match
-      // @ts-ignore
-      game: g.value!,
-    })
+    if (g.value) {
+      openInfoOverlayDialog({
+        game: g.value,
+      })
+    }
   } else {
     dialog.value = newValue
   }
