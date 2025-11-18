@@ -15,10 +15,6 @@
         :game="g"
         @close="closeDialog"
       />
-      <InfoOverlay
-        v-if="g && overlay === 'info'"
-        :game="g"
-      />
     </v-dialog>
 
     <div
@@ -177,7 +173,6 @@ import { GameReplay } from './../GameReplay'
 import { useRoute } from 'vue-router'
 import api from '../_api'
 import config from '../config'
-import InfoOverlay from './../components/InfoOverlay.vue'
 import PreviewOverlay from './../components/PreviewOverlay.vue'
 import PuzzleStatus from '../components/PuzzleStatus.vue'
 import Scores from './../components/Scores.vue'
@@ -187,7 +182,7 @@ import IngameMenu from '../components/IngameMenu.vue'
 import isEqual from 'lodash/isEqual'
 import { Dialogs, useDialog } from '../useDialog'
 
-const { openHelpOverlayDialog, openCuttingOverlayDialog, closeDialog: closeDialogX } = useDialog()
+const { openInfoOverlayDialog, openHelpOverlayDialog, openCuttingOverlayDialog, closeDialog: closeDialogX } = useDialog()
 
 const statusMessages = ref<InstanceType<typeof StatusMessages>>() as Ref<InstanceType<typeof StatusMessages>>
 const players = ref<GamePlayers>({ active: [], idle: [], banned: [] })
@@ -323,6 +318,12 @@ const openDialog = (content: string): void => {
 
   if (content === 'help') {
     openHelpOverlayDialog()
+  } else if (content === 'info') {
+    openInfoOverlayDialog({
+      // TODO: find out why type doesnt match
+      // @ts-ignore
+      game: g.value!,
+    })
   } else {
     dialog.value = newValue
   }

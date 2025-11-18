@@ -16,6 +16,7 @@
     <ConfirmDeleteGameDialog v-if="currentDialog === Dialogs.CONFIRM_DELETE_GAME_DIALOG" />
     <CuttingOverlayDialog v-if="currentDialog === Dialogs.CUTTING_OVERLAY_DIALOG" />
     <HelpOverlayDialog v-if="currentDialog === Dialogs.HELP_OVERLAY_DIALOG" />
+    <InfoOverlayDialog v-if="currentDialog === Dialogs.INFO_OVERLAY_DIALOG" />
   </v-dialog>
 </template>
 <script setup lang="ts">
@@ -26,6 +27,7 @@ import CuttingOverlayDialog from './dialogs/CuttingOverlayDialog.vue'
 import EditImageDialog from './dialogs/EditImageDialog.vue'
 import HelpOverlayDialog from './dialogs/HelpOverlayDialog.vue'
 import ImageInfoDialog from './dialogs/ImageInfoDialog.vue'
+import InfoOverlayDialog from './dialogs/InfoOverlayDialog.vue'
 import LoginDialog from './dialogs/LoginDialog.vue'
 import NewGameDialog from './dialogs/NewGameDialog.vue'
 import NewImageDialog from './dialogs/NewImageDialog.vue'
