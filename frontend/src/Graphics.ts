@@ -1,13 +1,22 @@
 'use strict'
 
+import type { GraphicsOperationsInterface } from './GraphicsOperations'
 import { GraphicsOperations } from './GraphicsOperations'
+import type { GraphicsLoaderInterface } from './GraphicsLoader'
 import { GraphicsLoader } from './GraphicsLoader'
 
-export class Graphics {
+export interface GraphicsInterface {
+  readonly loader: GraphicsLoaderInterface
+  readonly op: GraphicsOperationsInterface
+  hasWebGL2Support: () => boolean
+  createCanvas: (width: number, height: number) => HTMLCanvasElement
+}
+
+export class Graphics implements GraphicsInterface {
   private static instance: Graphics
 
-  public readonly loader: GraphicsLoader
-  public readonly op: GraphicsOperations
+  public readonly loader: GraphicsLoaderInterface
+  public readonly op: GraphicsOperationsInterface
 
   private supportsWebgl2Cache: boolean | null = null
 

@@ -5,7 +5,19 @@ import type { Color } from '../../common/src/Color'
 import type { Rect } from './Geometry'
 import type { Graphics } from './Graphics'
 
-export class GraphicsOperations {
+export interface GraphicsOperationsInterface {
+  supportsWebgl2Cache: boolean | null
+  toGrayscale(canvas: Exclude<CanvasImageSource, VideoFrame | SVGImageElement>, background: string, opacity: number): HTMLCanvasElement
+  resize(canvas: Exclude<CanvasImageSource, VideoFrame | SVGImageElement>, width: number, height: number): HTMLCanvasElement
+  removeColor(canvas: Exclude<CanvasImageSource, VideoFrame | SVGImageElement>, colorToRemove: Color): HTMLCanvasElement
+  extractColor(canvas: Exclude<CanvasImageSource, VideoFrame | SVGImageElement>, colorToExtract: Color): HTMLCanvasElement
+  colorize(canvas: Exclude<CanvasImageSource, VideoFrame | SVGImageElement>, maskCanvas: Exclude<CanvasImageSource, VideoFrame | SVGImageElement>, color: string): HTMLCanvasElement
+  repeat(canvas: Exclude<CanvasImageSource, VideoFrame | SVGImageElement>, rect: Rect, scale: number): HTMLCanvasElement
+  getBrightness(canvas: HTMLCanvasElement): number
+  isDark(canvas: HTMLCanvasElement): boolean
+}
+
+export class GraphicsOperations implements GraphicsOperationsInterface {
   private static IS_DARK_THRESHOLD = 175
 
   public supportsWebgl2Cache: boolean | null = null

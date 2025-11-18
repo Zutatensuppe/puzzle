@@ -35,6 +35,7 @@ import type {
 import _api from './_api'
 import { Assets } from './Assets'
 import { EventAdapter } from './EventAdapter'
+import type { GraphicsInterface } from './Graphics'
 import { Graphics } from './Graphics'
 import { MODE_PLAY } from './GameMode'
 import { PlayerCursors } from './PlayerCursors'
@@ -57,7 +58,7 @@ const log = logger('Game.ts')
 
 export interface GameInterface {
   readonly assets: Assets
-  readonly graphics: Graphics
+  readonly graphics: GraphicsInterface
   reinit(clientId: ClientId): Promise<void>
   shouldDrawEncodedPiece(piece: EncodedPiece): boolean
   getWsAddres(): string

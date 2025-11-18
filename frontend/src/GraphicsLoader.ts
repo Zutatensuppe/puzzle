@@ -3,7 +3,19 @@
 import type { Graphics } from './Graphics'
 import type { ImageDataURL } from './Types'
 
-export class GraphicsLoader {
+export interface GraphicsLoaderInterface {
+  blobFromFile(file: File): Promise<Blob>
+  blobFromDataUrl(dataUrl: ImageDataURL): Blob
+  blobFromSrc(src: string): Promise<Blob>
+  imageBitmapFromSrc(src: string): Promise<ImageBitmap>
+  canvasFromSrc(src: string): Promise<HTMLCanvasElement>
+  dataUrlFromSrc(src: string): Promise<ImageDataURL>
+  dataUrlFromBlob(blob: Blob): Promise<ImageDataURL>
+  imageBitmapFromCanvas(canvas: HTMLCanvasElement): Promise<ImageBitmap>
+  imageBitmapFromBlob(blob: Blob): Promise<ImageBitmap>
+}
+
+export class GraphicsLoader implements GraphicsLoaderInterface {
   public constructor(
     private readonly gfx: Graphics,
   ) { }
