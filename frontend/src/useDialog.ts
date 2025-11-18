@@ -15,6 +15,7 @@ export enum Dialogs {
   USER_AVATAR_UPLOAD_DIALOG = 'user-avatar-upload-dialog',
   CONFIRM_DELETE_GAME_DIALOG = 'confirm-delete-game-dialog',
   CUTTING_OVERLAY_DIALOG = 'cutting-overlay-dialog',
+  HELP_OVERLAY_DIALOG = 'help-overlay-dialog',
 }
 
 type DialogArgs = {
@@ -220,6 +221,12 @@ const openCuttingOverlayDialog = () => {
   openDialog(Dialogs.CUTTING_OVERLAY_DIALOG, true)
 }
 
+// ingame: help overlay
+const openHelpOverlayDialog = () => {
+  // =================================================================
+  openDialog(Dialogs.HELP_OVERLAY_DIALOG)
+}
+
 
 export function useDialog() {
   return {
@@ -252,6 +259,7 @@ export function useDialog() {
     openUserAvatarUploadDialog,
     openConfirmDeleteDialog,
     openCuttingOverlayDialog,
+    openHelpOverlayDialog,
     reportGame,
     reportImage,
     reportPlayerId,

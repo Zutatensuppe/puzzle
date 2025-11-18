@@ -15,6 +15,7 @@
     <UserAvatarUploadDialog v-if="currentDialog === Dialogs.USER_AVATAR_UPLOAD_DIALOG" />
     <ConfirmDeleteGameDialog v-if="currentDialog === Dialogs.CONFIRM_DELETE_GAME_DIALOG" />
     <CuttingOverlayDialog v-if="currentDialog === Dialogs.CUTTING_OVERLAY_DIALOG" />
+    <HelpOverlayDialog v-if="currentDialog === Dialogs.HELP_OVERLAY_DIALOG" />
   </v-dialog>
 </template>
 <script setup lang="ts">
@@ -23,6 +24,7 @@ import { Dialogs, useDialog } from '../useDialog'
 import ConfirmDeleteGameDialog from './dialogs/ConfirmDeleteGameDialog.vue'
 import CuttingOverlayDialog from './dialogs/CuttingOverlayDialog.vue'
 import EditImageDialog from './dialogs/EditImageDialog.vue'
+import HelpOverlayDialog from './dialogs/HelpOverlayDialog.vue'
 import ImageInfoDialog from './dialogs/ImageInfoDialog.vue'
 import LoginDialog from './dialogs/LoginDialog.vue'
 import NewGameDialog from './dialogs/NewGameDialog.vue'

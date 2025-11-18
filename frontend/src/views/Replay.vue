@@ -19,7 +19,6 @@
         v-if="g && overlay === 'info'"
         :game="g"
       />
-      <HelpOverlay v-if="overlay === 'help'" />
     </v-dialog>
 
     <div
@@ -178,7 +177,6 @@ import { GameReplay } from './../GameReplay'
 import { useRoute } from 'vue-router'
 import api from '../_api'
 import config from '../config'
-import HelpOverlay from './../components/HelpOverlay.vue'
 import InfoOverlay from './../components/InfoOverlay.vue'
 import PreviewOverlay from './../components/PreviewOverlay.vue'
 import PuzzleStatus from '../components/PuzzleStatus.vue'
@@ -189,7 +187,7 @@ import IngameMenu from '../components/IngameMenu.vue'
 import isEqual from 'lodash/isEqual'
 import { Dialogs, useDialog } from '../useDialog'
 
-const { openCuttingOverlayDialog, closeDialog: closeDialogX } = useDialog()
+const { openHelpOverlayDialog, openCuttingOverlayDialog, closeDialog: closeDialogX } = useDialog()
 
 const statusMessages = ref<InstanceType<typeof StatusMessages>>() as Ref<InstanceType<typeof StatusMessages>>
 const players = ref<GamePlayers>({ active: [], idle: [], banned: [] })
@@ -323,7 +321,11 @@ const openDialog = (content: string): void => {
   const oldOverlay = overlay.value
   const newOverlay = content
 
-  dialog.value = newValue
+  if (content === 'help') {
+    openHelpOverlayDialog()
+  } else {
+    dialog.value = newValue
+  }
   overlay.value = newOverlay
 
   sendEvents(newValue, newOverlay, oldOverlay)
