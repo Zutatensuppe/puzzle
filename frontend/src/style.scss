@@ -872,7 +872,7 @@ kbd {
 }
 
 
-.v-dialog.overlay-cutting,
+.v-dialog.cutting-overlay-dialog,
 .v-dialog.overlay-info,
 .v-dialog.overlay-settings,
 .v-dialog.user-avatar-upload-dialog {
@@ -895,6 +895,12 @@ kbd {
 .v-dialog.report-player-dialog {
   .v-overlay__content {
     max-width: 500px;
+  }
+}
+
+.v-dialog.confirm-delete-game-dialog {
+  .v-overlay__content {
+    max-width: 670px;
   }
 }
 

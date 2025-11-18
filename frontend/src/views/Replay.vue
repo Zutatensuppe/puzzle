@@ -22,8 +22,6 @@
       <HelpOverlay v-if="overlay === 'help'" />
     </v-dialog>
 
-    <CuttingOverlay v-model="cuttingPuzzle" />
-
     <div
       v-if="showInterface"
       class="menu-left"
@@ -186,10 +184,12 @@ import PreviewOverlay from './../components/PreviewOverlay.vue'
 import PuzzleStatus from '../components/PuzzleStatus.vue'
 import Scores from './../components/Scores.vue'
 import SettingsOverlay from './../components/SettingsOverlay.vue'
-import CuttingOverlay from './../components/CuttingOverlay.vue'
 import StatusMessages from '../components/StatusMessages.vue'
 import IngameMenu from '../components/IngameMenu.vue'
 import isEqual from 'lodash/isEqual'
+import { Dialogs, useDialog } from '../useDialog'
+
+const { openCuttingOverlayDialog, closeDialog: closeDialogX } = useDialog()
 
 const statusMessages = ref<InstanceType<typeof StatusMessages>>() as Ref<InstanceType<typeof StatusMessages>>
 const players = ref<GamePlayers>({ active: [], idle: [], banned: [] })
@@ -197,7 +197,9 @@ const status = ref<GameStatus>({ finished: false, duration: 0, piecesDone: 0, pi
 const dialog = ref<boolean>(false)
 const dialogPersistent = ref<boolean | undefined>(undefined)
 const overlay = ref<string>('')
-const cuttingPuzzle = ref<boolean>(true)
+
+openCuttingOverlayDialog()
+
 const showInterface = ref<boolean>(true)
 const canvasEl = ref<HTMLCanvasElement>() as Ref<HTMLCanvasElement>
 const registeredMap = ref<RegisteredMap>({})
@@ -356,7 +358,7 @@ watch(dialog, (newValue) => {
 
 const hud: ReplayHud = {
   setPuzzleCut: () => {
-    cuttingPuzzle.value = false
+    closeDialogX(Dialogs.CUTTING_OVERLAY_DIALOG)
   },
   setPlayers: (v: GamePlayers, r: RegisteredMap) => {
     if (!isEqual(v, players.value)) {
