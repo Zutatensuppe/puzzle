@@ -78,7 +78,7 @@
             :key="idx"
             :game="g"
             @go-to-game="goToGame"
-            @delete="onDeleteGame"
+            @delete="onDeleteGameClick(g)"
           />
         </v-container>
       </div>
@@ -149,46 +149,6 @@
       />
     </template>
   </v-container>
-  <v-dialog
-    v-if="confirmDeleteGame"
-    v-model="confirmDeleteDialog"
-    width="auto"
-  >
-    <v-card max-width="670">
-      <v-card-title>Delete Game</v-card-title>
-
-      <v-container :fluid="true">
-        <img
-          :src="resizeUrl(confirmDeleteGame.image.url, 640, 360, 'cover')"
-          class="mb-3"
-        >
-        <p>
-          Really delete this game?
-
-          <span class="text-disabled">
-            &ndash; Connected players will get disconnected and the game will be gone. Points from this game won't be counted.
-          </span>
-        </p>
-      </v-container>
-
-      <v-card-actions>
-        <v-btn
-          variant="elevated"
-          color="error"
-          prepend-icon="mdi-trash-can"
-          @click="onConfirmDeleteGame(confirmDeleteGame)"
-        >
-          Delete Game
-        </v-btn>
-        <v-btn
-          variant="elevated"
-          @click="onCancelDeleteGame"
-        >
-          Cancel
-        </v-btn>
-      </v-card-actions>
-    </v-card>
-  </v-dialog>
 </template>
 <script setup lang="ts">
 import { onMounted, onBeforeUnmount, ref, computed } from 'vue'
@@ -200,11 +160,10 @@ import Pagination from '../components/Pagination.vue'
 import api from '../_api'
 import Leaderboard from '../components/Leaderboard.vue'
 import user from '../user'
-import { resizeUrl } from '../../../common/src/ImageService'
 import { toast } from '../toast'
 import { useDialog } from '../useDialog'
 
-const { openLoginDialog } = useDialog()
+const { closeDialog, openLoginDialog, openConfirmDeleteDialog } = useDialog()
 
 const router = useRouter()
 const data = ref<Api.ApiDataIndexData | null>(null)
@@ -224,34 +183,26 @@ const goToReplay = ((game: GameInfo) => {
   void router.push({ name: 'replay', params: { id: game.id } })
 })
 
-const confirmDeleteDialog = ref<boolean>(false)
-const confirmDeleteGame = ref<GameInfo|null>(null)
-const onDeleteGame = (game: GameInfo) => {
-  confirmDeleteGame.value = game
-  confirmDeleteDialog.value = true
-}
-
-const onCancelDeleteGame = () => {
-  confirmDeleteDialog.value = false
-  confirmDeleteGame.value = null
-}
-
-const onConfirmDeleteGame = async (game: GameInfo) => {
-  try {
-    const res = await api.pub.deleteGame(game.id)
-    const responseData = await res.json()
-    if (responseData.ok) {
-      confirmDeleteDialog.value = false
-      confirmDeleteGame.value = null
-      // remove the game from the list of running games without reloading everything
-      data.value!.gamesRunning.items = data.value!.gamesRunning.items.filter(g => g.id !== game.id)
-      toast('Game deleted successfully.', 'success', 7000)
-    } else {
-      toast(`Failed to delete game: ${responseData.error}`, 'error')
-    }
-  } catch {
-    toast('Failed to delete game.', 'error')
-  }
+const onDeleteGameClick = (game: GameInfo) => {
+  openConfirmDeleteDialog({
+    game,
+    onConfirmDeleteGame: async (game: GameInfo): Promise<void> => {
+      try {
+        const res = await api.pub.deleteGame(game.id)
+        const responseData = await res.json()
+        if (responseData.ok) {
+          closeDialog()
+          // remove the game from the list of running games without reloading everything
+          data.value!.gamesRunning.items = data.value!.gamesRunning.items.filter(g => g.id !== game.id)
+          toast('Game deleted successfully.', 'success', 7000)
+        } else {
+          toast(`Failed to delete game: ${responseData.error}`, 'error')
+        }
+      } catch {
+        toast('Failed to delete game.', 'error')
+      }
+    },
+  })
 }
 
 const leaderboardConfigs: Record<string, { title: string, description: string }> = {

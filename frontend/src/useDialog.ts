@@ -13,6 +13,8 @@ export enum Dialogs {
   NEW_IMAGE_DIALOG = 'new-image-dialog',
   NEW_GAME_DIALOG = 'new-game-dialog',
   USER_AVATAR_UPLOAD_DIALOG = 'user-avatar-upload-dialog',
+  CONFIRM_DELETE_GAME_DIALOG = 'confirm-delete-game-dialog',
+  CUTTING_OVERLAY_DIALOG = 'cutting-overlay-dialog',
 }
 
 type DialogArgs = {
@@ -52,15 +54,35 @@ type DialogArgs = {
   [Dialogs.USER_AVATAR_UPLOAD_DIALOG]: {
     onSaveClick: (data: Blob) => Promise<void>
   }
+  [Dialogs.CONFIRM_DELETE_GAME_DIALOG]: {
+    game: GameInfo
+    onConfirmDeleteGame: (game: GameInfo) => Promise<void>
+  }
 }
 
 // global dialog settings
 const currentDialog = ref<Dialogs | ''>('')
+const currentDialogPersistent = ref<boolean>(false)
 const dialogOpen = ref<boolean>(false)
 
-const closeDialog = () => {
+const openDialog = (
+  dialog: Dialogs,
+  persistent: boolean = false,
+) => {
+  currentDialog.value = dialog
+  dialogOpen.value = true
+  currentDialogPersistent.value = persistent
+}
+
+const closeDialog = (dialog?: Dialogs) => {
+  // if specific dialog is to be closed, only close if current dialog is of that kind
+  // otherwise just close the current dialog
+  const shouldClose = dialog ? dialog === currentDialog.value : true
+  if (!shouldClose) return
+
   currentDialog.value = ''
   dialogOpen.value = false
+  currentDialogPersistent.value = false
 }
 
 watch(dialogOpen, (open, oldOpen) => {
@@ -68,7 +90,6 @@ watch(dialogOpen, (open, oldOpen) => {
     closeDialog()
   }
 })
-
 
 const onInit = () => {
   console.log('onInit')
@@ -88,8 +109,7 @@ const openEditImageDialog = (args: DialogArgs[Dialogs.EDIT_IMAGE_DIALOG]) => {
   editOnSaveImageClick.value = args.onSaveImageClick
 
   // =================================================================
-  currentDialog.value = Dialogs.EDIT_IMAGE_DIALOG
-  dialogOpen.value = true
+  openDialog(Dialogs.EDIT_IMAGE_DIALOG)
 }
 
 // login dialog specific
@@ -101,8 +121,7 @@ const openLoginDialog = (args: DialogArgs[Dialogs.LOGIN_DIALOG]) => {
   loginDialogTab.value = args.tab || 'login'
 
   // =================================================================
-  currentDialog.value = Dialogs.LOGIN_DIALOG
-  dialogOpen.value = true
+  openDialog(Dialogs.LOGIN_DIALOG)
 }
 
 // report game dialog specific
@@ -111,8 +130,7 @@ const openReportGameDialog = (args: DialogArgs[Dialogs.REPORT_GAME_DIALOG]) => {
   reportGame.value = args.game
 
   // =================================================================
-  currentDialog.value = Dialogs.REPORT_GAME_DIALOG
-  dialogOpen.value = true
+  openDialog(Dialogs.REPORT_GAME_DIALOG)
 }
 
 // report image dialog specific
@@ -121,8 +139,7 @@ const openReportImageDialog = (args: DialogArgs[Dialogs.REPORT_IMAGE_DIALOG]) =>
   reportImage.value = args.image
 
   // =================================================================
-  currentDialog.value = Dialogs.REPORT_IMAGE_DIALOG
-  dialogOpen.value = true
+  openDialog(Dialogs.REPORT_IMAGE_DIALOG)
 }
 
 // report image dialog specific
@@ -131,8 +148,7 @@ const openReportPlayerDialog = (args: DialogArgs[Dialogs.REPORT_PLAYER_DIALOG]) 
   reportPlayerId.value = args.userId
 
   // =================================================================
-  currentDialog.value = Dialogs.REPORT_PLAYER_DIALOG
-  dialogOpen.value = true
+  openDialog(Dialogs.REPORT_PLAYER_DIALOG)
 }
 
 // image info dialog specific
@@ -141,8 +157,7 @@ const openImageInfoDialog = (args: DialogArgs[Dialogs.IMAGE_INFO_DIALOG]) => {
   imageInfoImage.value = args.image
 
   // =================================================================
-  currentDialog.value = Dialogs.IMAGE_INFO_DIALOG
-  dialogOpen.value = true
+  openDialog(Dialogs.IMAGE_INFO_DIALOG)
 }
 
 // new image dialog specific
@@ -158,8 +173,7 @@ const openNewImageDialog = (args: DialogArgs[Dialogs.NEW_IMAGE_DIALOG]) => {
   newImageSetupGameClick.value = args.setupGameClick
 
   // =================================================================
-  currentDialog.value = Dialogs.NEW_IMAGE_DIALOG
-  dialogOpen.value = true
+  openDialog(Dialogs.NEW_IMAGE_DIALOG)
 }
 
 // new game dialog specific
@@ -173,8 +187,7 @@ const openNewGameDialog = (args: DialogArgs[Dialogs.NEW_GAME_DIALOG]) => {
   newGameOnTagClick.value = args.onTagClick
 
   // =================================================================
-  currentDialog.value = Dialogs.NEW_GAME_DIALOG
-  dialogOpen.value = true
+  openDialog(Dialogs.NEW_GAME_DIALOG)
 }
 
 // user avatar upload dialog specific
@@ -186,14 +199,33 @@ const openUserAvatarUploadDialog = (args: DialogArgs[Dialogs.USER_AVATAR_UPLOAD_
   userAvatarOnSaveClick.value = args.onSaveClick
 
   // =================================================================
-  currentDialog.value = Dialogs.USER_AVATAR_UPLOAD_DIALOG
+  openDialog(Dialogs.USER_AVATAR_UPLOAD_DIALOG)
+}
+
+// confirm delete game dialog specific
+const confirmDeleteGame = ref<GameInfo|null>(null)
+const onConfirmDeleteGame = ref<((game: GameInfo) => Promise<void>)|undefined>(undefined)
+const openConfirmDeleteDialog = (args: DialogArgs[Dialogs.CONFIRM_DELETE_GAME_DIALOG]) => {
+  confirmDeleteGame.value = args.game
+  onConfirmDeleteGame.value = args.onConfirmDeleteGame
+
+  // =================================================================
+  openDialog(Dialogs.CONFIRM_DELETE_GAME_DIALOG)
   dialogOpen.value = true
 }
+
+// ingame: cutting overlay
+const openCuttingOverlayDialog = () => {
+  // =================================================================
+  openDialog(Dialogs.CUTTING_OVERLAY_DIALOG, true)
+}
+
 
 export function useDialog() {
   return {
     closeDialog,
     currentDialog,
+    currentDialogPersistent,
     dialogOpen,
     editImageAutocompleteTags,
     editImageImage,
@@ -218,11 +250,15 @@ export function useDialog() {
     openReportImageDialog,
     openReportPlayerDialog,
     openUserAvatarUploadDialog,
+    openConfirmDeleteDialog,
+    openCuttingOverlayDialog,
     reportGame,
     reportImage,
     reportPlayerId,
     userAvatarOnSaveClick,
     userAvatarUploading,
     userAvatarUploadProgress,
+    confirmDeleteGame,
+    onConfirmDeleteGame,
   }
 }

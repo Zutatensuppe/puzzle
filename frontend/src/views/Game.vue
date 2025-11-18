@@ -22,10 +22,8 @@
       <HelpOverlay v-if="overlay === 'help'" />
     </v-dialog>
 
-    <CuttingOverlay v-model="cuttingPuzzle" />
-
     <ConnectionOverlay
-      v-if="!cuttingPuzzle || connectionState.errorDetails"
+      v-if="currentDialog !== Dialogs.CUTTING_OVERLAY_DIALOG || connectionState.errorDetails"
       :connection-state="connectionState"
       @reconnect="reconnect"
       @connect_with_password="connectWithPassword"
@@ -79,7 +77,6 @@ import { useRoute } from 'vue-router'
 import api from '../_api'
 import config from '../config'
 import ConnectionOverlay from './../components/ConnectionOverlay.vue'
-import CuttingOverlay from './../components/CuttingOverlay.vue'
 import HelpOverlay from './../components/HelpOverlay.vue'
 import InfoOverlay from './../components/InfoOverlay.vue'
 import PreviewOverlay from './../components/PreviewOverlay.vue'
@@ -91,6 +88,10 @@ import IngameMenu from '../components/IngameMenu.vue'
 import user from '../user'
 import isEqual from 'lodash/isEqual'
 
+import { Dialogs, useDialog } from '../useDialog'
+
+const { openCuttingOverlayDialog, currentDialog, closeDialog: closeDialogX } = useDialog()
+
 const statusMessages = ref<InstanceType<typeof StatusMessages>>() as Ref<InstanceType<typeof StatusMessages>>
 const players = ref<GamePlayers>({ active: [], idle: [], banned: [] })
 const status = ref<GameStatus>({ finished: false, duration: 0, piecesDone: 0, piecesTotal: 0 })
@@ -98,7 +99,9 @@ const dialog = ref<boolean>(false)
 const dialogPersistent = ref<boolean | undefined>(undefined)
 const overlay = ref<string>('')
 const connectionState = ref<ConnectionState>({ state: CONN_STATE.NOT_CONNECTED })
-const cuttingPuzzle = ref<boolean>(true)
+
+openCuttingOverlayDialog()
+
 const showInterface = ref<boolean>(true)
 const canvasEl = ref<HTMLCanvasElement>() as Ref<HTMLCanvasElement>
 const registeredMap = ref<RegisteredMap>({})
@@ -122,14 +125,14 @@ const onResize = (): void => {
 
 const reconnect = (): void => {
   if (g.value) {
-    cuttingPuzzle.value = true
+    openCuttingOverlayDialog()
     void g.value.init()
   }
 }
 
 const connectWithPassword = (password: string): void => {
   if (g.value) {
-    cuttingPuzzle.value = true
+    openCuttingOverlayDialog()
     void g.value.setJoinPassword(password)
     void g.value.init()
   }
@@ -197,7 +200,7 @@ watch(dialog, (newValue) => {
 
 const hud: Hud = {
   setPuzzleCut: () => {
-    cuttingPuzzle.value = false
+    closeDialogX(Dialogs.CUTTING_OVERLAY_DIALOG)
   },
   setPlayers: (v: GamePlayers, r: RegisteredMap) => {
     if (!isEqual(v, players.value)) {
@@ -215,7 +218,7 @@ const hud: Hud = {
       newConnectionState.state === CONN_STATE.SERVER_ERROR ||
       newConnectionState.state === CONN_STATE.DISCONNECTED
     ) {
-      cuttingPuzzle.value = false
+      closeDialogX(Dialogs.CUTTING_OVERLAY_DIALOG)
     }
     connectionState.value = newConnectionState
   },
