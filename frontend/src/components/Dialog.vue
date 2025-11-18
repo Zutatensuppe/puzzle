@@ -1,8 +1,6 @@
 <template>
   <v-dialog
     v-model="dialogOpen"
-    :width="width"
-    :min-width="minWidth"
     :class="currentDialog"
   >
     <LoginDialog v-if="currentDialog === Dialogs.LOGIN_DIALOG" />
@@ -29,5 +27,5 @@ import ReportImageDialog from './dialogs/ReportImageDialog.vue'
 import ReportPlayerDialog from './dialogs/ReportPlayerDialog.vue'
 import UserAvatarUploadDialog from './dialogs/UserAvatarUploadDialog.vue'
 
-const { width, minWidth, dialogOpen, currentDialog } = useDialog()
+const { dialogOpen, currentDialog } = useDialog()
 </script>

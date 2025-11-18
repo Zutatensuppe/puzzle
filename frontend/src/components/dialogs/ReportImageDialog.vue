@@ -32,17 +32,20 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useDialog } from '../../useDialog'
+import { submitReportImage } from '../../Report'
 
-const { reportImage, submitReportImage, closeDialog } = useDialog()
+const { reportImage, closeDialog } = useDialog()
 
 const reason = ref<string>('')
 
 const onSubmitReport = async () => {
   if (!reportImage.value) return
 
-  await submitReportImage({
+  if (await submitReportImage({
     id: reportImage.value.id,
     reason: reason.value,
-  })
+  })) {
+    closeDialog()
+  }
 }
 </script>

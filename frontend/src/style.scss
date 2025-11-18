@@ -880,17 +880,16 @@ kbd {
     max-width: 600px;
   }
 }
-.v-dialog.overlay-connection {
+
+.v-dialog.login-dialog {
   .v-overlay__content {
-    max-width: 500px;
+    width: auto;
+    min-width: 450px;
   }
 }
 
-.v-dialog.overlay-help {
-  .v-overlay__content {
-    max-width: 500px;
-  }
-}
+.v-dialog.overlay-connection,
+.v-dialog.overlay-help,
 .v-dialog.report-game-dialog,
 .v-dialog.report-image-dialog,
 .v-dialog.report-player-dialog {

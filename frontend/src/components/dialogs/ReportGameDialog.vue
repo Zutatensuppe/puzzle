@@ -32,17 +32,20 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useDialog } from '../../useDialog'
+import { submitReportGame } from '../../Report'
 
-const { reportGame, submitReportGame, closeDialog } = useDialog()
+const { reportGame, closeDialog } = useDialog()
 
 const reason = ref<string>('')
 
 const onSubmitReport = async () => {
   if (!reportGame.value) return
 
-  await submitReportGame({
+  if (await submitReportGame({
     id: reportGame.value.id,
     reason: reason.value,
-  })
+  })) {
+    closeDialog()
+  }
 }
 </script>

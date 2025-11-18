@@ -20,7 +20,7 @@
       <div
         v-tooltip="'Report this game'"
         class="report-button game-teaser-report"
-        @click.stop="openReportGameDialog(game)"
+        @click.stop="openReportGameDialog({ game })"
       />
       <div
         v-if="game.isPrivate"
@@ -70,7 +70,7 @@
           size="x-small"
           class="show-image-info"
           prepend-icon="mdi-image"
-          @click.stop="openImageInfoDialog(game.image)"
+          @click.stop="openImageInfoDialog({ image: game.image })"
         >
           Image info
         </v-btn>

@@ -32,17 +32,20 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useDialog } from '../../useDialog'
+import { submitReportPlayer } from '../../Report'
 
-const { reportPlayerId, submitReportPlayer, closeDialog } = useDialog()
+const { reportPlayerId, closeDialog } = useDialog()
 
 const reason = ref<string>('')
 
 const onSubmitReport = async () => {
   if (!reportPlayerId.value) return
 
-  await submitReportPlayer({
+  if (await submitReportPlayer({
     id: reportPlayerId.value,
     reason: reason.value,
-  })
+  })) {
+    closeDialog()
+  }
 }
 </script>

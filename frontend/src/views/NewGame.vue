@@ -185,35 +185,39 @@ const onTagClick = (tag: Tag): void => {
 }
 
 const onImageClicked = (newImage: ImageInfo) => {
-  openNewGameDialog(
-    newImage,
-    onNewGame,
-    onTagClick,
-  )
+  openNewGameDialog({
+    imageInfo: newImage,
+    onNewGameClick: onNewGame,
+    onTagClick: onTagClick,
+  })
 }
 
 const onImageEditClicked = (newImage: ImageInfo) => {
-  openEditImageDialog(newImage, autocompleteTags, async (data: any) => {
-    const res = await api.pub.saveImage(data)
-    const json = await res.json()
-    if (json.ok) {
-      closeDialog()
-      // TODO: the image could now not match the filters anymore.
-      //       but it is probably fine to not reload the whole list at this point
-      const idx = images.value.findIndex(img => img.id === data.id)
-      images.value[idx] = json.imageInfo
-    } else {
-      toast(json.error, 'error')
-    }
+  openEditImageDialog({
+    image: newImage,
+    autocompleteTags,
+    onSaveImageClick: async (data: any) => {
+      const res = await api.pub.saveImage(data)
+      const json = await res.json()
+      if (json.ok) {
+        closeDialog()
+        // TODO: the image could now not match the filters anymore.
+        //       but it is probably fine to not reload the whole list at this point
+        const idx = images.value.findIndex(img => img.id === data.id)
+        images.value[idx] = json.imageInfo
+      } else {
+        toast(json.error, 'error')
+      }
+    },
   })
 }
 
 const onUploadImageClicked = () => {
-  openNewImageDialog(
+  openNewImageDialog({
     autocompleteTags,
     postToGalleryClick,
     setupGameClick,
-  )
+  })
 }
 
 const postToGalleryClick = async (data: Api.UploadRequestData) => {
@@ -242,11 +246,11 @@ const setupGameClick = async (data: Api.UploadRequestData) => {
 
   void loadImages() // load images in background
 
-  openNewGameDialog(
-    result.imageInfo,
-    onNewGame,
-    onTagClick,
-  )
+  openNewGameDialog({
+    imageInfo: result.imageInfo,
+    onNewGameClick: onNewGame,
+    onTagClick: onTagClick,
+  })
 }
 
 const onNewGame = async (gameSettings: GameSettings) => {

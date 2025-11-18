@@ -36,7 +36,7 @@
       <div
         v-tooltip="'Report this game'"
         class="report-button game-teaser-report"
-        @click.stop="openReportGameDialog(game)"
+        @click.stop="openReportGameDialog({ game })"
       />
       <div class="game-teaser-info">
         <v-icon icon="mdi-puzzle" /> {{ game.piecesFinished }}/{{ game.piecesTotal }} Pieces
@@ -76,7 +76,7 @@
         <v-btn
           block
           prepend-icon="mdi-image"
-          @click.stop="openImageInfoDialog(game.image)"
+          @click.stop="openImageInfoDialog({ image: game.image })"
         >
           Image info
         </v-btn>
