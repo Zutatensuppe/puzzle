@@ -7,6 +7,7 @@ import Communication from './Communication'
 import Util from '../../common/src/Util'
 import Time from '../../common/src/Time'
 import { createImageSnapshot } from './ImageSnapshotCreator'
+import { SoundsEnum } from '../../common/src/Constants'
 
 export class GamePlay extends Game<Hud> {
 
@@ -50,10 +51,10 @@ export class GamePlay extends Game<Hud> {
     }
     if (this.playerSettings.soundsEnabled()) {
       if (ret.anySnapped) {
-        this.sounds.playPieceConnected()
+        this.sounds.playSound(SoundsEnum.PIECE_CONNECTED)
       }
       if (ret.anyRotated && this.playerSettings.rotateSoundEnabled()) {
-        this.sounds.playPieceRotated()
+        this.sounds.playSound(SoundsEnum.PIECE_ROTATED)
       }
     }
     if (ret.anyDropped) {

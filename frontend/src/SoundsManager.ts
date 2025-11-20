@@ -1,7 +1,8 @@
 import type { Assets } from './Assets'
+import type { SoundsEnum } from '../../common/src/Constants'
 import type { PlayerSettings } from './PlayerSettings'
 
-export class Sounds {
+export class SoundsManager {
   constructor (
     private assets: Assets,
     private playerSettings: PlayerSettings,
@@ -21,15 +22,7 @@ export class Sounds {
     })
   }
 
-  playPieceConnected() {
-    this.play(this.assets.Audio.CLICK)
-  }
-
-  playOtherPieceConnected() {
-    this.play(this.assets.Audio.CLICK_2)
-  }
-
-  playPieceRotated() {
-    this.play(this.assets.Audio.ROTATE)
+  public playSound(sound: SoundsEnum) {
+    this.play(this.assets.Audio[sound])
   }
 }
