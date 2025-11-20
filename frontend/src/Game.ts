@@ -44,9 +44,10 @@ import { PuzzleStatus } from './PuzzleStatus'
 import { PuzzleTable } from './PuzzleTable'
 import { Renderer } from './Renderer'
 import { RendererWebgl } from './RendererWebgl'
-import { Sounds } from './Sounds'
+import { SoundsManager } from './SoundsManager'
 import { ViewportSnapshots } from './ViewportSnapshots'
 import debug from './debug'
+import { SoundsEnum } from '../../common/src/Constants'
 
 declare global {
   interface Window {
@@ -125,7 +126,7 @@ export abstract class Game<HudType extends Hud> implements GameInterface {
 
   public readonly assets: Assets
   public readonly graphics: Graphics
-  protected sounds!: Sounds
+  protected sounds!: SoundsManager
   private viewport: Camera
   private evts!: EventAdapter
   private playerCursors!: PlayerCursors
@@ -246,7 +247,7 @@ export abstract class Game<HudType extends Hud> implements GameInterface {
     }
 
     if (!this.sounds) {
-      this.sounds = new Sounds(this.assets, this.playerSettings)
+      this.sounds = new SoundsManager(this.assets, this.playerSettings)
     }
 
     await this.initRenderer()
@@ -483,7 +484,7 @@ export abstract class Game<HudType extends Hud> implements GameInterface {
       && this.playerSettings.soundsEnabled()
       && this.playerSettings.otherPlayerClickSoundEnabled()
     ) {
-      this.sounds.playOtherPieceConnected()
+      this.sounds.playSound(SoundsEnum.OPPONENT_PIECE_CONNECTED)
     }
     if (rerender) {
       this.requireRerender()
@@ -681,6 +682,6 @@ export abstract class Game<HudType extends Hud> implements GameInterface {
   }
 
   changeSoundsVolume(_value: number): void {
-    this.sounds.playPieceConnected()
+    this.sounds.playSound(SoundsEnum.PIECE_CONNECTED)
   }
 }
