@@ -30,6 +30,8 @@ import type { UrlUtil } from './UrlUtil'
 import fs from './FileSystem'
 import type { Repos } from './repo/Repos'
 import type { Moderation } from './Moderation'
+import type { Workers } from './workers/Workers'
+import v8 from 'v8'
 
 const sendHtml = (res: Response, tmpl: string, data: Record<string, string> = {}): void => {
   let str = tmpl
@@ -63,6 +65,7 @@ export class Server {
     public readonly urlUtil: UrlUtil,
     public readonly twitch: Twitch,
     public readonly moderation: Moderation,
+    public readonly workers: Workers,
   ) {
     // pass
   }
@@ -107,6 +110,7 @@ export class Server {
     this.repos.init(this)
     this.gameService.init(this)
     this.moderation.init(this)
+    this.workers.init(this)
   }
 
   public listen() {
@@ -328,6 +332,9 @@ export class Server {
   }
 
   public close(): void {
+    log.log('stopping workers...')
+    this.workers.stopAll()
+
     log.log('shutting down webserver...')
     if (this.webserver) {
       this.webserver.close()
@@ -381,5 +388,14 @@ export class Server {
         viewers: stream.viewers,
       }, { livestream_id: stream.id })
     }
+  }
+
+  public logMemoryUsageHuman(): void {
+    const totalHeapSize = v8.getHeapStatistics().total_available_size
+    const totalHeapSizeInGB = (totalHeapSize / 1024 / 1024 / 1024).toFixed(2)
+
+    log.log(`Total heap size (bytes) ${totalHeapSize}, (GB ~${totalHeapSizeInGB})`)
+    const used = process.memoryUsage().heapUsed / 1024 / 1024
+    log.log(`Mem: ${Math.round(used * 100) / 100}M`)
   }
 }
