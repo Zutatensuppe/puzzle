@@ -67,22 +67,17 @@ export class Server {
     // pass
   }
 
-  syncGameToClients(gameId: GameId, encodedGame: EncodedGame | EncodedGameLegacy) {
+  public syncGameToClients(gameId: GameId, encodedGame: EncodedGame | EncodedGameLegacy) {
     for (const socket of this.gameSockets.getSockets(gameId)) {
       this.websocketserver?.notifyOne([SERVER_EVENT_TYPE.SYNC, encodedGame], socket)
     }
   }
 
-  async persistGame(gameId: GameId): Promise<void> {
-    const game: GameType | null = GameCommon.get(gameId)
-    if (!game) {
-      log.error(`[ERROR] unable to persist non existing game ${gameId}`)
-      return
-    }
-    await this.gameService.persistGame(game)
+  public persistGame(gameId: GameId): Promise<void> {
+    return this.gameService.persistGameById(gameId)
   }
 
-  async getEncodedGameForSync(gameId: GameId): Promise<EncodedGame | EncodedGameLegacy> {
+  public async getEncodedGameForSync(gameId: GameId): Promise<EncodedGame | EncodedGameLegacy> {
     const game: GameType | null = GameCommon.get(gameId)
     if (!game) {
       throw `[game ${gameId} does not exist (anymore)... ]`
@@ -91,7 +86,7 @@ export class Server {
     return Util.encodeGame(game)
   }
 
-  async persistGames(): Promise<void> {
+  public async persistGames(): Promise<void> {
     for (const gameId of this.gameService.dirtyGameIds()) {
       await this.persistGame(gameId)
     }
@@ -108,13 +103,13 @@ export class Server {
     return this._indexFileContents
   }
 
-  init(): void {
+  public init(): void {
     this.repos.init(this)
     this.gameService.init(this)
     this.moderation.init(this)
   }
 
-  listen() {
+  public listen() {
     const port = config.http.port
     const hostname = config.http.hostname
     const app = express()
@@ -332,7 +327,7 @@ export class Server {
     this.websocketserver = wss
   }
 
-  close(): void {
+  public close(): void {
     log.log('shutting down webserver...')
     if (this.webserver) {
       this.webserver.close()
@@ -346,7 +341,7 @@ export class Server {
     }
   }
 
-  async updateLivestreamsInfo(): Promise<void> {
+  public async updateLivestreamsInfo(): Promise<void> {
     const livestreams = await this.twitch.getLivestreams()
     const liveIds = livestreams.map(l => l.id)
 

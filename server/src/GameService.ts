@@ -282,8 +282,17 @@ export class GameService {
     return Object.keys(this.dirtyGames) as GameId[]
   }
 
-  public async persistGame(game: Game): Promise<void> {
-    this.setClean(game.id)
+  public async persistGameById(gameId: GameId): Promise<void> {
+    this.setClean(gameId)
+    const game: Game | null = GameCommon.get(gameId)
+    if (!game) {
+      log.error(`[ERROR] unable to persist non existing game ${gameId}`)
+      return
+    }
+    await this.persistGame(game)
+  }
+
+  private async persistGame(game: Game): Promise<void> {
     await this.server.repos.games.upsert({
       id: game.id,
       creator_user_id: game.creatorUserId,
@@ -489,15 +498,8 @@ export class GameService {
     const isFinished = GameCommon.getFinishTs(gameId)
     this.setDirty(gameId)
     if (!wasFinished && isFinished) {
-      const game = GameCommon.get(gameId)
-      if (game) {
-        // persist game immediately when it was just finished
-        // and also update the leaderboard afterwards
-        await this.persistGame(game)
-
-        // no need to wait for leaderboard update
-        void this.server.repos.leaderboard.updateLeaderboards()
-      }
+      await this.persistGameById(gameId)
+      void this.server.repos.leaderboard.updateLeaderboards()
     }
     return ret
   }
