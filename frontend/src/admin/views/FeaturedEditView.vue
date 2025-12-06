@@ -83,8 +83,8 @@
   </v-container>
 </template>
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
-import user from '../../user'
+import { onMounted, onUnmounted, ref } from 'vue'
+import { me, onLoginStateChange } from '../../user'
 import api from '../../_api'
 import Nav from '../components/Nav.vue'
 import type { CollectionRowWithImages, FeaturedId, FeaturedRowWithCollections } from '../../../../common/src/Types'
@@ -170,15 +170,17 @@ const onDeleteCollection = (collection: CollectionRowWithImages) => {
   featured.value.collections = featured.value?.collections.filter(c => c.id !== collection.id)
 }
 
+const onInit = async () => {
+  featured.value = me.value ? await load() : null
+}
+
+let offLoginStateChange: () => void = () => {}
 onMounted(async () => {
-  if (user.getMe()) {
-    featured.value = await load()
-  }
-  user.eventBus.on('login', async () => {
-    featured.value = await load()
-  })
-  user.eventBus.on('logout', () => {
-    featured.value = null
-  })
+  await onInit()
+  offLoginStateChange = onLoginStateChange(onInit)
+})
+
+onUnmounted(() => {
+  offLoginStateChange()
 })
 </script>

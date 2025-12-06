@@ -12,7 +12,7 @@ import CannyFeatureRequestsView from './views/CannyFeatureRequests.vue'
 import PublicUserProfile from './views/PublicUserProfile.vue'
 
 import Icon from './components/Icon.vue'
-import user from './user'
+import { init as initUser, isAdmin } from './user'
 import announcements from './announcements'
 
 import Admin from './admin/views/IndexView.vue'
@@ -40,13 +40,13 @@ const run = async () => {
   debug.init()
   api.init()
 
-  await user.init()
+  await initUser()
   await config.init()
   await announcements.init()
 
   // @ts-ignore
   window.handleAuthCallback = async () => {
-    await user.init()
+    await initUser()
     toast('Login successful!', 'success')
   }
 
@@ -85,7 +85,7 @@ const run = async () => {
   router.beforeEach((to, from) => {
     closeDialog()
 
-    if (to.meta && to.meta.admin && !user.getMe()?.groups.includes('admin')) {
+    if (to.meta && to.meta.admin && !isAdmin.value) {
       return { name: 'index' }
     }
     if (from.name) {

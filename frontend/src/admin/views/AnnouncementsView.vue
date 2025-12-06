@@ -39,8 +39,8 @@
   </div>
 </template>
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
-import user from '../../user'
+import { onMounted, onUnmounted, ref } from 'vue'
+import { me, onLoginStateChange } from '../../user'
 import api from '../../_api'
 import Nav from '../components/Nav.vue'
 import type { Announcement } from '../../../../common/src/Types'
@@ -54,15 +54,17 @@ const publish = async () => {
   announcements.value = await api.admin.getAnnouncements()
 }
 
+const onInit = async () => {
+  announcements.value = me.value ? await api.admin.getAnnouncements() : []
+}
+
+let offLoginStateChange: () => void = () => {}
 onMounted(async () => {
-  if (user.getMe()) {
-    announcements.value = await api.admin.getAnnouncements()
-  }
-  user.eventBus.on('login', async () => {
-    announcements.value = await api.admin.getAnnouncements()
-  })
-  user.eventBus.on('logout', () => {
-    announcements.value = []
-  })
+  await onInit()
+  offLoginStateChange = onLoginStateChange(onInit)
+})
+
+onUnmounted(() => {
+  offLoginStateChange()
 })
 </script>

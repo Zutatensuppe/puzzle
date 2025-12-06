@@ -76,9 +76,9 @@
   </v-container>
 </template>
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { onUnmounted, onMounted, ref } from 'vue'
 import { resizeUrl } from '../../../../common/src/ImageService'
-import user from '../../user'
+import { me, onLoginStateChange } from '../../user'
 import api from '../../_api'
 import Nav from '../components/Nav.vue'
 import Pagination from '../../components/Pagination.vue'
@@ -93,13 +93,13 @@ const onDelete = async (image: ImageRowWithCount) => {
   }
 
   const resp = await api.admin.deleteImage(image.id)
-  if (resp.ok) {
+  if ('error' in resp || !resp.ok) {
+    alert('Deleting image failed!')
+  } else {
     if (images.value) {
       images.value.items = images.value.items.filter(i => i.id !== image.id)
     }
     alert('Successfully deleted image!')
-  } else {
-    alert('Deleting image failed!')
   }
 }
 
@@ -119,15 +119,17 @@ const onPagination = async (q: { limit: number, offset: number }) => {
   images.value = await loadImages(q)
 }
 
+const onInit = async () => {
+  images.value = me.value ? await loadImages({ limit: perPage, offset: 0 }) : null
+}
+
+let offLoginStateChange: () => void = () => {}
 onMounted(async () => {
-  if (user.getMe()) {
-    images.value = await loadImages({ limit: perPage, offset: 0 })
-  }
-  user.eventBus.on('login', async () => {
-    images.value = await loadImages({ limit: perPage, offset: 0 })
-  })
-  user.eventBus.on('logout', () => {
-    images.value = null
-  })
+  await onInit()
+  offLoginStateChange = onLoginStateChange(onInit)
+})
+
+onUnmounted(() => {
+  offLoginStateChange()
 })
 </script>

@@ -22,23 +22,25 @@
   </v-container>
 </template>
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
-import user from '../../user'
+import { onUnmounted, onMounted, ref } from 'vue'
+import { me, onLoginStateChange } from '../../user'
 import api from '../../_api'
 import Nav from '../components/Nav.vue'
 import type { UserGroupRow } from '../../../../common/src/Types'
 
 const groups = ref<UserGroupRow[]>([])
 
+const onInit = async () => {
+  groups.value = me.value ? await api.admin.getGroups() : []
+}
+
+let offLoginStateChange: () => void = () => {}
 onMounted(async () => {
-  if (user.getMe()) {
-    groups.value = await api.admin.getGroups()
-  }
-  user.eventBus.on('login', async () => {
-    groups.value = await api.admin.getGroups()
-  })
-  user.eventBus.on('logout', () => {
-    groups.value = []
-  })
+  await onInit()
+  offLoginStateChange = onLoginStateChange(onInit)
+})
+
+onUnmounted(() => {
+  offLoginStateChange()
 })
 </script>

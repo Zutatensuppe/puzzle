@@ -102,12 +102,12 @@
   </v-card>
 </template>
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { computed, ref } from 'vue'
 import Time from '../../../../common/src/Time'
 import { resizeUrl } from '../../../../common/src/ImageService'
-import type { GameInfo, User } from '../../../../common/src/Types'
+import type { GameInfo } from '../../../../common/src/Types'
 import { rotationModeToString, scoreModeToString, shapeModeToString, snapModeToString } from '../../../../common/src/Util'
-import user, { useNsfw } from '../../user'
+import { me, useNsfw } from '../../user'
 import { useDialog } from '../../useDialog'
 
 const { openReportGameDialog, openImageInfoDialog } = useDialog()
@@ -156,22 +156,5 @@ const time = ((start: number, end: number) => {
   return `${timeDiffStr}`
 })(props.game.started, props.game.finished)
 
-const me = ref<User|null>(null)
-
-const canDelete = computed(() => {
-  return me.value && me.value.id === props.game.creatorUserId
-})
-
-const onInit = () => {
-  me.value = user.getMe()
-}
-onMounted(() => {
-  void onInit()
-  user.eventBus.on('login', onInit)
-  user.eventBus.on('logout', onInit)
-})
-onBeforeUnmount(() => {
-  user.eventBus.off('login', onInit)
-  user.eventBus.off('logout', onInit)
-})
+const canDelete = computed<boolean>(() => !!(me.value && me.value.id === props.game.creatorUserId))
 </script>

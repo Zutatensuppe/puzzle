@@ -62,7 +62,7 @@
 import { ref } from 'vue'
 import Util from '../../../common/src/Util'
 import { toast } from '../toast'
-import user from '../user'
+import { login } from '../user'
 import { testEmailValid } from '../util'
 import TextDivider from './TextDivider.vue'
 import xhr from '../_api/xhr'
@@ -106,7 +106,7 @@ async function doLogin() {
   }
 
   busy.value = true
-  const res = await user.login(email.value, password.value)
+  const res = await login(email.value, password.value)
   if (res.error) {
     if (res.error === 'bad email' || res.error === 'bad password') {
       toast('Invalid login credentials. Please check your email and password. If you\'ve forgotten your password, click \'Forgot Password?\'.', 'error', 7000)

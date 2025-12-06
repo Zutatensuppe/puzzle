@@ -1,10 +1,11 @@
+import type { Handler } from 'mitt'
 import mitt from 'mitt'
-import api from './_api'
+import _api from './_api'
 import storage from './storage'
 import xhr from './_api/xhr'
 import { PLAYER_SETTINGS } from '../../common/src/Types'
 import type { ClientId, User } from '../../common/src/Types'
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 
 const showNsfw = ref(storage.getBool('showNsfw', false))
 const toggleNsfw = (): void => {
@@ -19,22 +20,44 @@ export const useNsfw = () => {
   }
 }
 
-let me: null | User = null
+export const me = ref<null | User>(null)
+export const loggedIn = computed<boolean>(() => !!(me.value && me.value.type === 'user'))
+export const isAdmin = computed<boolean>(() => !!(me.value?.groups.includes('admin')))
+
 export const eventBus = mitt()
 
-async function init(): Promise<void> {
+export const onLoginStateChange = (callback: Handler<unknown>) => {
+  const offs: (() => void)[] = []
+  offs.push(onEvent('login', callback))
+  offs.push(onEvent('logout', callback))
+
+  return () => {
+    for (const off of offs) {
+      off()
+    }
+  }
+}
+
+const onEvent = (evt: string, callback: Handler<unknown>) => {
+  eventBus.on(evt, callback)
+  return () => {
+    eventBus.off(evt, callback)
+  }
+}
+
+export async function init(): Promise<void> {
   xhr.setClientId(storage.uniq('ID') as ClientId)
-  const res = await api.pub.me()
+  const res = await _api.pub.me()
   try {
     const data = await res.json()
     if ('reason' in data) {
-      me = null
       console.log('not logged in')
+      me.value = null
       eventBus.emit('logout')
     } else {
-      me = data
       console.log('logged in (reg or guest)')
-      xhr.setClientId(me.clientId)
+      xhr.setClientId(data.clientId)
+      me.value = data
       eventBus.emit('login')
     }
   } catch {
@@ -43,7 +66,7 @@ async function init(): Promise<void> {
   }
 }
 
-async function logout(): Promise<{ error: string | false }> {
+export async function logout(): Promise<{ error: string | false }> {
   // remove all relevant data on logout
   storage.remove('ID')
   storage.remove('lastSeenAnnouncement')
@@ -59,7 +82,7 @@ async function logout(): Promise<{ error: string | false }> {
   storage.remove(PLAYER_SETTINGS.PLAYER_COLOR)
   storage.remove(PLAYER_SETTINGS.PLAYER_NAME)
   storage.remove(PLAYER_SETTINGS.SHOW_PLAYER_NAMES)
-  const res = await api.pub.logout()
+  const res = await _api.pub.logout()
   try {
     const data = await res.json()
     if ('success' in data) {
@@ -73,11 +96,11 @@ async function logout(): Promise<{ error: string | false }> {
   }
 }
 
-async function login(
+export async function login(
   email: string,
   password: string,
 ): Promise<{ error: string | false }> {
-  const res = await api.pub.auth(email, password)
+  const res = await _api.pub.auth(email, password)
   try {
     const data = await res.json()
     if ('success' in data) {
@@ -95,7 +118,7 @@ async function register(
   email: string,
   password: string,
 ): Promise<{ error: string | false }> {
-  const res = await api.pub.register(username, email, password)
+  const res = await _api.pub.register(username, email, password)
   try {
     const data = await res.json()
     if ('success' in data) {
@@ -110,7 +133,7 @@ async function register(
 async function sendPasswordResetEmail(
   email: string,
 ): Promise<{ error: string | false }> {
-  const res = await api.pub.sendPasswordResetEmail(email)
+  const res = await _api.pub.sendPasswordResetEmail(email)
   try {
     const data = await res.json()
     if ('success' in data) {
@@ -126,7 +149,7 @@ async function changePassword(
   password: string,
   token: string,
 ): Promise<{ error: string | false }> {
-  const res = await api.pub.changePassword(password, token)
+  const res = await _api.pub.changePassword(password, token)
   try {
     const data = await res.json()
     if ('success' in data) {
@@ -138,13 +161,11 @@ async function changePassword(
   }
 }
 
-export default {
-  getMe: () => me,
-  eventBus,
+
+export const api = {
   logout,
   login,
   register,
   sendPasswordResetEmail,
   changePassword,
-  init,
 }

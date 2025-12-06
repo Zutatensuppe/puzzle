@@ -177,11 +177,10 @@ import type { CompleteUserProfile, GameSettings, ImageInfo, Tag, UserId } from '
 import { ImageSearchSort } from '../../../common/src/Types'
 import ImageLibrary from '../components/ImageLibrary.vue'
 import { useDialog } from '../useDialog'
-import user from '../user'
+import { me, onLoginStateChange } from '../user'
 import { uploadAvatar } from '../upload'
 import { resizeUrl } from '../../../common/src/ImageService'
 import RankIcon from '../components/RankIcon.vue'
-// import UserProfileGamesTable from '../components/UserProfileGamesTable.vue'
 
 const { closeDialog, openReportPlayerDialog, openNewGameDialog, openUserAvatarUploadDialog, currentDialog } = useDialog()
 
@@ -230,9 +229,7 @@ const avatarStyle = computed(() => {
   }
 })
 
-const canEdit = computed(() => {
-  return id.value && id.value === user.getMe()?.id
-})
+const canEdit = computed(() => id.value && id.value === me.value?.id)
 
 const onAvatarClick = () => {
   const onSaveClick = async (data: Blob): Promise<void> => {
@@ -296,7 +293,7 @@ const load = async () => {
   }
 }
 
-const onLoginStateChange = async () => {
+const onInit = async () => {
   userProfile.value = null
   loading.value = true
   const tmpId = parseInt(`${route.params.id}`, 10) as UserId
@@ -310,18 +307,18 @@ const onLoginStateChange = async () => {
   loading.value = false
 }
 
-onMounted(async () => {
-  await onLoginStateChange()
 
-  user.eventBus.on('login', onLoginStateChange)
-  user.eventBus.on('logout', onLoginStateChange)
+let offLoginStateChange: () => void = () => {}
+onMounted(async () => {
+  await onInit()
+  offLoginStateChange = onLoginStateChange(onInit)
 })
+
 onUnmounted(() => {
-  user.eventBus.off('login', onLoginStateChange)
-  user.eventBus.off('logout', onLoginStateChange)
+  offLoginStateChange()
 })
 
 watch(() => route.params.id, async () => {
-  await onLoginStateChange()
+  await onInit()
 })
 </script>

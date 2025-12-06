@@ -35,7 +35,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { toast } from '../toast'
-import user from '../user'
+import { api } from '../user'
 import { testEmailValid } from '../util'
 import TextDivider from './TextDivider.vue'
 
@@ -59,7 +59,7 @@ async function doSendPasswordResetEmail() {
   }
 
   busy.value = true
-  const res = await user.sendPasswordResetEmail(email.value)
+  const res = await api.sendPasswordResetEmail(email.value)
   if (res.error) {
     toast(res.error, 'error')
   } else {
