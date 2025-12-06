@@ -89,8 +89,8 @@
   </v-container>
 </template>
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
-import user from '../../user'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { me, onLoginStateChange } from '../../user'
 import api from '../../_api'
 import Nav from '../components/Nav.vue'
 import type { FeaturedRowWithCollections, FeaturedTeaserRow } from '../../../../common/src/Types'
@@ -108,9 +108,9 @@ const hasChanges = computed(() => {
   return JSON.stringify(featuredTeasers.value) !== featuredTeasersJson.value
 })
 
-const reinit = async () => {
-  featureds.value = await loadFeatureds()
-  featuredTeasers.value = await loadFeaturedTeasers()
+const onInit = async () => {
+  featureds.value = me.value ? await loadFeatureds() : null
+  featuredTeasers.value = me.value ? await loadFeaturedTeasers() : null
   featuredTeasersJson.value = JSON.stringify(featuredTeasers.value)
 }
 
@@ -175,18 +175,16 @@ const onSaveClick = async () => {
     sort_index: idx,
   }))
   await api.admin.saveFeaturedTeasers(teasers)
-  await reinit()
+  await onInit()
 }
 
+let offLoginStateChange: () => void = () => {}
 onMounted(async () => {
-  if (user.getMe()) {
-    await reinit()
-  }
-  user.eventBus.on('login', async () => {
-    await reinit()
-  })
-  user.eventBus.on('logout', async () => {
-    await reinit()
-  })
+  await onInit()
+  offLoginStateChange = onLoginStateChange(onInit)
+})
+
+onUnmounted(() => {
+  offLoginStateChange()
 })
 </script>

@@ -71,7 +71,7 @@ import PuzzleStatus from '../components/PuzzleStatus.vue'
 import Scores from './../components/Scores.vue'
 import StatusMessages from '../components/StatusMessages.vue'
 import IngameMenu from '../components/IngameMenu.vue'
-import user from '../user'
+import { onLoginStateChange } from '../user'
 import isEqual from 'lodash/isEqual'
 
 import { Dialogs, useDialog } from '../useDialog'
@@ -226,18 +226,20 @@ const hud: Hud = {
   addStatusMessage: (what: string, value: number | string | boolean | undefined) => statusMessages.value.addMessage(what, value),
 }
 
-const onLoginStateChange = async () => {
+const onInit = async () => {
   if (g.value) {
     await g.value.reinit(api.clientId())
   }
 }
 
+
+let offLoginStateChange: () => void = () => {}
+
 onMounted(async () => {
   if (!route.params.id) {
     return
   }
-  user.eventBus.on('login', onLoginStateChange)
-  user.eventBus.on('logout', onLoginStateChange)
+  offLoginStateChange = onLoginStateChange(onInit)
 
   canvasEl.value.width = window.innerWidth
   canvasEl.value.height = window.innerHeight
@@ -262,7 +264,6 @@ onUnmounted(() => {
   }
   window.removeEventListener('resize', onResize)
 
-  user.eventBus.off('login', onLoginStateChange)
-  user.eventBus.off('logout', onLoginStateChange)
+  offLoginStateChange()
 })
 </script>

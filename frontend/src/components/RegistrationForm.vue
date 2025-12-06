@@ -52,7 +52,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { toast } from '../toast'
-import user from '../user'
+import { api } from '../user'
 import { testEmailValid } from '../util'
 import TextDivider from './TextDivider.vue'
 
@@ -88,7 +88,7 @@ async function doRegister() {
   }
 
   busy.value = true
-  const res = await user.register(username.value, email.value, password.value)
+  const res = await api.register(username.value, email.value, password.value)
   if (res.error) {
     toast(res.error, 'error')
   } else {

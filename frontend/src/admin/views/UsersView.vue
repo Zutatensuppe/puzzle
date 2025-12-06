@@ -95,8 +95,8 @@
   </v-container>
 </template>
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
-import user from '../../user'
+import { onUnmounted, onMounted, ref } from 'vue'
+import { me, onLoginStateChange } from '../../user'
 import api from '../../_api'
 import Nav from '../components/Nav.vue'
 import Pagination from '../../components/Pagination.vue'
@@ -155,15 +155,17 @@ const onPagination = async (q: { limit: number, offset: number }) => {
   users.value = await loadUsers(q)
 }
 
+const onInit = async () => {
+  users.value = me.value ? await loadUsers({ limit: perPage, offset: 0 }) : null
+}
+
+let offLoginStateChange: () => void = () => {}
 onMounted(async () => {
-  if (user.getMe()) {
-    users.value = await loadUsers({ limit: perPage, offset: 0 })
-  }
-  user.eventBus.on('login', async () => {
-    users.value = await loadUsers({ limit: perPage, offset: 0 })
-  })
-  user.eventBus.on('logout', () => {
-    users.value = null
-  })
+  await onInit()
+  offLoginStateChange = onLoginStateChange(onInit)
+})
+
+onUnmounted(() => {
+  offLoginStateChange()
 })
 </script>

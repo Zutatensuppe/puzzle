@@ -29,7 +29,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { toast } from '../toast'
-import user from '../user'
+import { api } from '../user'
 
 const props = defineProps<{
   token: string,
@@ -53,7 +53,7 @@ const doChangePassword = async () => {
   }
 
   busy.value = true
-  const res = await user.changePassword(password.value, props.token)
+  const res = await api.changePassword(password.value, props.token)
   if (res.error !== false) {
     toast(res.error, 'error')
   } else {

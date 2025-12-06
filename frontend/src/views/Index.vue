@@ -110,7 +110,7 @@
           </v-window-item>
         </v-window>
         <div
-          v-if="!me || me.type !== 'user'"
+          v-if="me?.type !== 'user'"
           class="mt-5 text-disabled"
         >
           <v-btn
@@ -151,15 +151,15 @@
   </v-container>
 </template>
 <script setup lang="ts">
-import { onMounted, onBeforeUnmount, ref, computed } from 'vue'
+import { onMounted, onUnmounted, ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
-import type { Api, GameInfo, User } from '../../../common/src/Types'
+import type { Api, GameInfo } from '../../../common/src/Types'
 import RunningGameTeaser from '../components/teasers/RunningGameTeaser.vue'
 import FinishedGameTeaser from '../components/teasers/FinishedGameTeaser.vue'
 import Pagination from '../components/Pagination.vue'
 import api from '../_api'
 import Leaderboard from '../components/Leaderboard.vue'
-import user from '../user'
+import { me, onLoginStateChange } from '../user'
 import { toast } from '../toast'
 import { useDialog } from '../useDialog'
 
@@ -167,10 +167,8 @@ const { closeDialog, openLoginDialog, openConfirmDeleteDialog } = useDialog()
 
 const router = useRouter()
 const data = ref<Api.ApiDataIndexData | null>(null)
-const me = ref<User|null>(null)
 
 const onInit = async () => {
-  me.value = user.getMe()
   const res = await api.pub.indexData()
   data.value = await res.json()
 }
@@ -244,13 +242,14 @@ const onPagination = async (q: { limit: number, offset: number }) => {
   data.value.gamesFinished = json
 }
 
-onMounted(() => {
-  void onInit()
-  user.eventBus.on('login', onInit)
-  user.eventBus.on('logout', onInit)
+
+let offLoginStateChange: () => void = () => {}
+onMounted(async () => {
+  await onInit()
+  offLoginStateChange = onLoginStateChange(onInit)
 })
-onBeforeUnmount(() => {
-  user.eventBus.off('login', onInit)
-  user.eventBus.off('logout', onInit)
+
+onUnmounted(() => {
+  offLoginStateChange()
 })
 </script>

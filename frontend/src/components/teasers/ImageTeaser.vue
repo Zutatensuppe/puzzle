@@ -82,11 +82,11 @@
   </div>
 </template>
 <script setup lang="ts">
-import { computed, onMounted, onBeforeUnmount, ref } from 'vue'
+import { computed, ref } from 'vue'
 import { resizeUrl } from '../../../../common/src/ImageService'
-import type { ImageInfo, Tag, User } from '../../../../common/src/Types'
+import type { ImageInfo, Tag } from '../../../../common/src/Types'
 import { useDialog } from '../../useDialog'
-import user, { useNsfw } from '../../user'
+import { me, useNsfw } from '../../user'
 
 const { openReportImageDialog } = useDialog()
 
@@ -107,8 +107,6 @@ const emit = defineEmits<{
   (event: 'click'): void
   (event: 'editClick'): void
 }>()
-
-const me = ref<User|null>(null)
 
 const url = computed(() => resizeUrl(props.image.url, 375, 0, 'cover'))
 
@@ -156,19 +154,4 @@ const onClick = (ev: Event) => {
 const onEditClick = () => {
   emit('editClick')
 }
-
-const onInit = () => {
-  me.value = user.getMe()
-}
-
-onMounted(() => {
-  onInit()
-  user.eventBus.on('login', onInit)
-  user.eventBus.on('logout', onInit)
-})
-
-onBeforeUnmount(() => {
-  user.eventBus.off('login', onInit)
-  user.eventBus.off('logout', onInit)
-})
 </script>

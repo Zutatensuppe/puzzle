@@ -16,13 +16,13 @@
   </div>
 </template>
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
-import type { BasicPlayerInfo, RegisteredMap, GamePlayers, BasicPlayerInfoWithBannedAndActive, ClientId, User } from '../../../common/src/Types'
+import { computed } from 'vue'
+import type { BasicPlayerInfo, RegisteredMap, GamePlayers, BasicPlayerInfoWithBannedAndActive, ClientId } from '../../../common/src/Types'
 import ScoreRow from './ScoreRow.vue'
 import sortBy from 'lodash/sortBy'
 import type { GameInterface } from '../Game'
 
-import user from '../user'
+import { me } from '../user'
 import GameCommon from '../../../common/src/GameCommon'
 
 const props = defineProps<{
@@ -67,24 +67,5 @@ const unbanPlayer = (p: ClientId) => {
   emit('unban', p)
 }
 
-const me = ref<User|null>(null)
-
-const isGameOwner = computed((): boolean => {
-  return !!(me.value && me.value.id === GameCommon.getCreatorUserId(props.game.getGameId()))
-})
-
-const onInit = () => {
-  me.value = user.getMe()
-}
-
-onMounted(() => {
-  onInit()
-  user.eventBus.on('login', onInit)
-  user.eventBus.on('logout', onInit)
-})
-
-onBeforeUnmount(() => {
-  user.eventBus.off('login', onInit)
-  user.eventBus.off('logout', onInit)
-})
+const isGameOwner = computed<boolean>(() => !!(me.value && me.value.id === GameCommon.getCreatorUserId(props.game.getGameId())))
 </script>

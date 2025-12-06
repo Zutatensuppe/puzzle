@@ -110,7 +110,7 @@
     >
       <v-list>
         <v-list-item
-          v-if="me?.groups.includes('admin')"
+          v-if="isAdmin"
           :to="{ name: 'admin' }"
         >
           <v-icon icon="mdi-security" /> Admin
@@ -133,13 +133,12 @@
   </div>
 </template>
 <script setup lang="ts">
-import { computed, onMounted, onBeforeUnmount, ref } from 'vue'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
-import user, { useNsfw } from '../user'
+import { onLoginStateChange, useNsfw, logout, loggedIn, me, isAdmin } from '../user'
 import AnnouncementsDrawer from './AnnouncementsDrawer.vue'
 import AnnouncementsIcon from './AnnouncementsIcon.vue'
 import { useDialog } from '../useDialog'
-import type { User } from '../Types'
 
 const { openLoginDialog, currentDialog } = useDialog()
 
@@ -155,31 +154,23 @@ const drawerMenu = ref<boolean>(false)
 const drawerAnnouncements = ref<boolean>(false)
 const drawerUser = ref<boolean>(false)
 
-const me = ref<User|null>(null)
-
-const loggedIn = computed(() => {
-  return !!(me.value && me.value.type === 'user')
-})
-
 async function doLogout() {
-  await user.logout()
+  await logout()
 }
 
 const onInit = () => {
-  me.value = user.getMe()
   if (!loggedIn.value) {
     drawerUser.value = false
   }
 }
 
+let offLoginStateChange: () => void = () => {}
 onMounted(() => {
   onInit()
-  user.eventBus.on('login', onInit)
-  user.eventBus.on('logout', onInit)
+  offLoginStateChange = onLoginStateChange(onInit)
 })
 
-onBeforeUnmount(() => {
-  user.eventBus.off('login', onInit)
-  user.eventBus.off('logout', onInit)
+onUnmounted(() => {
+  offLoginStateChange()
 })
 </script>

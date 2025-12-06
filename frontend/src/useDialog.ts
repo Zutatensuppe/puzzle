@@ -1,5 +1,5 @@
 import { ref, watch } from 'vue'
-import user from './user'
+import { me, onLoginStateChange } from './user'
 import type { Api, GameInfo, GameSettings, ImageInfo, Tag, UserId } from '../../common/src/Types'
 import _api from './_api'
 import type { GameInterface } from './Game'
@@ -102,11 +102,13 @@ watch(dialogOpen, (open, oldOpen) => {
 })
 
 const onInit = () => {
-  console.log('onInit')
+  if (!me.value) {
+    return
+  }
   // this should probably only close the dialog if it is the login dialog?
   closeDialog()
 }
-user.eventBus.on('login', onInit)
+onLoginStateChange(onInit)
 
 // edit-image dialog specific
 const editImageImage = ref<ImageInfo | undefined>(undefined)

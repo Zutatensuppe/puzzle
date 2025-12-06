@@ -26,11 +26,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onBeforeUnmount } from 'vue'
-import user from '../user'
-import type { User } from '../../../common/src/Types'
-
-const me = ref<User|null>(null)
+import { onMounted, onUnmounted } from 'vue'
+import { me, onLoginStateChange } from '../user'
 
 const props = defineProps<{
   board: string,
@@ -45,7 +42,6 @@ const removeIframe = () => {
   }
 }
 const onInit = () => {
-  me.value = user.getMe()
   removeIframe()
   // @ts-ignore
   // eslint-disable-next-line no-undef
@@ -56,18 +52,17 @@ const onInit = () => {
   })
 }
 
+let offLoginStateChange: () => void = () => {}
 onMounted(() => {
   // @ts-ignore
   // eslint-disable-next-line
   (function(w,d,i,s){function l(){if(!d.getElementById(i)){var f=d.getElementsByTagName(s)[0],e=d.createElement(s);e.type='text/javascript',e.async=!0,e.src='https://canny.io/sdk.js',f.parentNode.insertBefore(e,f)}}if('function'!=typeof w.Canny){var c=function(){c.q.push(arguments)};c.q=[],w.Canny=c,'complete'===d.readyState?l():w.attachEvent?w.attachEvent('onload',l):w.addEventListener('load',l,!1)}})(window,document,'canny-jssdk','script')
   onInit()
-  user.eventBus.on('login', onInit)
-  user.eventBus.on('logout', onInit)
+  offLoginStateChange = onLoginStateChange(onInit)
 })
 
-onBeforeUnmount(() => {
-  user.eventBus.off('login', onInit)
-  user.eventBus.off('logout', onInit)
+onUnmounted(() => {
+  offLoginStateChange()
   removeIframe()
 })
 </script>
