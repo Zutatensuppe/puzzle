@@ -24,7 +24,7 @@ export const me = ref<null | User>(null)
 export const loggedIn = computed<boolean>(() => !!(me.value && me.value.type === 'user'))
 export const isAdmin = computed<boolean>(() => !!(me.value?.groups.includes('admin')))
 
-export const eventBus = mitt()
+const eventBus = mitt()
 
 export const onLoginStateChange = (callback: Handler<unknown>) => {
   const offs: (() => void)[] = []
