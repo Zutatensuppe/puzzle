@@ -216,8 +216,8 @@
 import { ref, watch } from 'vue'
 
 import IngameColorPicker from '../IngameColorPicker.vue'
-import { RendererType } from '../../../../common/src/Types'
-import type { PlayerSettingsData } from '../../../../common/src/Types'
+import { RendererType } from '@common/Types'
+import type { PlayerSettingsData } from '@common/Types'
 import LoginBit from '../LoginBit.vue'
 
 import { useDialog } from '../../useDialog'

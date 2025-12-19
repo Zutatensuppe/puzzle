@@ -1,6 +1,6 @@
 import { ref, watch } from 'vue'
 import { me, onLoginStateChange } from './user'
-import type { Api, GameInfo, GameSettings, ImageInfo, Tag, UserId } from '../../common/src/Types'
+import type { Api, GameInfo, GameSettings, ImageInfo, Tag, UserId } from '@common/Types'
 import _api from './_api'
 import type { GameInterface } from './Game'
 

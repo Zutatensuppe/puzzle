@@ -6,7 +6,7 @@ import type {
   FeaturedRowWithCollections,
   FeaturedTeaserRow,
   ImageInfo,
-} from '../../../common/src/Types'
+} from '@common/Types'
 import type Db from '../Db'
 import type { WhereRaw } from '../Db'
 import type { Server } from '../Server'

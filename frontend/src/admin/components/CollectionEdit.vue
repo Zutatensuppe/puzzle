@@ -84,10 +84,10 @@
 </template>
 <script setup lang="ts">
 import { ref, watch } from 'vue'
-import { resizeUrl } from '../../../../common/src/ImageService'
-import type { CollectionRowWithImages, ImageId, ImageRowWithCount } from '../../../../common/src/Types'
+import { resizeUrl } from '@common/ImageService'
+import type { CollectionRowWithImages, ImageId, ImageRowWithCount } from '@common/Types'
 import api from '../../_api'
-import { arrayMove } from '../../../../common/src/Util'
+import { arrayMove } from '@common/Util'
 
 const props = defineProps<{
   modelValue: CollectionRowWithImages

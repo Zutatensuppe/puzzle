@@ -1,8 +1,8 @@
 import sharp from 'sharp'
-import { logger } from '../../common/src/Util'
+import { logger } from '@common/Util'
 import config from './Config'
 import fs from './FileSystem'
-import type { Rect } from '../../common/src/Geometry'
+import type { Rect } from '@common/Geometry'
 import type { ImageExif } from './ImageExif'
 
 const log = logger('ImageResize.ts')

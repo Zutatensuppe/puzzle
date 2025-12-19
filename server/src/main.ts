@@ -1,4 +1,3 @@
-import { logger } from '../../common/src/Util'
 import config from './Config'
 import Db from './Db'
 import Mail from './Mail'
@@ -18,6 +17,7 @@ import { Repos } from './repo/Repos'
 import { Moderation } from './Moderation'
 import { ImageChecksumMigration } from './migrations/ImageChecksumMigration'
 import { Workers } from './workers/Workers'
+import { logger } from '@common/Util'
 
 const run = async () => {
   const db = new Db(config.db.connectStr, config.dir.DB_PATCHES_DIR)

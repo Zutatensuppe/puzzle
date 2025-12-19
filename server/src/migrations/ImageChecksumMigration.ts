@@ -1,6 +1,6 @@
 import FileSystem from '../FileSystem'
 import type { Server } from '../Server'
-import { logger } from '../../../common/src/Util'
+import { logger } from '@common/Util'
 
 const log = logger('ImageChecksumMigration.ts')
 

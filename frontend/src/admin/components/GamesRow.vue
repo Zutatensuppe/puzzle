@@ -118,10 +118,10 @@
 </template>
 <script setup lang="ts">
 import { computed } from 'vue'
-import { resizeUrl } from '../../../../common/src/ImageService'
-import { rotationModeToString, scoreModeToString, shapeModeToString, snapModeToString } from '../../../../common/src/Util'
-import { EncodedPlayerIdx } from '../../../../common/src/Types'
-import type { EncodedPlayer, GameRowWithImageAndUser, ServerInfo } from '../../../../common/src/Types'
+import { resizeUrl } from '@common/ImageService'
+import { rotationModeToString, scoreModeToString, shapeModeToString, snapModeToString } from '@common/Util'
+import { EncodedPlayerIdx } from '@common/Types'
+import type { EncodedPlayer, GameRowWithImageAndUser, ServerInfo } from '@common/Types'
 import Icon from '../../components/Icon.vue'
 
 const props = defineProps<{

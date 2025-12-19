@@ -10,9 +10,11 @@
     "skipLibCheck": true,
     "rootDirs": [
       "src",
-      "../common/src"
     ],
-    "typeRoots": ["./types"]
+    "typeRoots": ["./types"],
+    "paths": {
+      "@common/*": ["../common/src/*"]
+    }
   },
   "include": [
     "./**/*.ts", "./**/*.d.ts"

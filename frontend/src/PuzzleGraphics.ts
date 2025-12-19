@@ -1,13 +1,13 @@
 'use strict'
 
-import Geometry from '../../common/src/Geometry'
-import type { Dim, Point, Rect } from '../../common/src/Geometry'
-import Util, { logger } from '../../common/src/Util'
-import { EncodedPieceIdx } from '../../common/src/Types'
-import type { Puzzle, PuzzleInfo, PieceShape, ShapeMode, EncodedPieceShape } from '../../common/src/Types'
-import { determinePuzzlePieceShapes } from '../../common/src/Puzzle'
-import type { PuzzleCreationInfo } from '../../common/src/Puzzle'
-import { Rng } from '../../common/src/Rng'
+import Geometry from '@common/Geometry'
+import type { Dim, Point, Rect } from '@common/Geometry'
+import Util, { logger } from '@common/Util'
+import { EncodedPieceIdx } from '@common/Types'
+import type { Puzzle, PuzzleInfo, PieceShape, ShapeMode, EncodedPieceShape } from '@common/Types'
+import { determinePuzzlePieceShapes } from '@common/Puzzle'
+import type { PuzzleCreationInfo } from '@common/Puzzle'
+import { Rng } from '@common/Rng'
 import type { Graphics } from './Graphics'
 
 const log = logger('PuzzleGraphics.js')

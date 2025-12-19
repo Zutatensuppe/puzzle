@@ -200,13 +200,13 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 
-import { RotationMode, ScoreMode, ShapeMode, SnapMode } from '../../../../common/src/Types'
-import type { GameSettings } from '../../../../common/src/Types'
-import { NEWGAME_MIN_PIECES, NEWGAME_MAX_PIECES } from '../../../../common/src/GameCommon'
+import { RotationMode, ScoreMode, ShapeMode, SnapMode } from '@common/Types'
+import type { GameSettings } from '@common/Types'
+import { NEWGAME_MIN_PIECES, NEWGAME_MAX_PIECES } from '@common/GameCommon'
 import PuzzleCropper from '../PuzzleCropper.vue'
-import { determinePuzzleInfo } from '../../../../common/src/Puzzle'
-import type { PuzzleCreationInfo } from '../../../../common/src/Puzzle'
-import type { Rect } from '../../../../common/src/Geometry'
+import { determinePuzzleInfo } from '@common/Puzzle'
+import type { PuzzleCreationInfo } from '@common/Puzzle'
+import type { Rect } from '@common/Geometry'
 import ImageInfoTable from '../ImageInfoTable.vue'
 import {
   rotationModeDescriptionToString,
@@ -217,7 +217,7 @@ import {
   shapeModeToString,
   snapModeDescriptionToString,
   snapModeToString,
-} from '../../../../common/src/Util'
+} from '@common/Util'
 import { useDialog } from '../../useDialog'
 
 const { newGameImageInfo, newGameOnNewGameClick, newGameOnTagClick, closeDialog } = useDialog()

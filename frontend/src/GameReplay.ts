@@ -1,12 +1,12 @@
 'use strict'
 
-import GameCommon from '../../common/src/GameCommon'
-import { GAME_EVENT_TYPE, LOG_TYPE } from '../../common/src/Protocol'
-import Time from '../../common/src/Time'
-import type { Game as GameType, GameEvent, ReplayHud, Timestamp, HeaderLogEntry, LogEntry, EncodedPlayer } from '../../common/src/Types'
-import Util from '../../common/src/Util'
+import GameCommon from '@common/GameCommon'
+import { GAME_EVENT_TYPE, LOG_TYPE } from '@common/Protocol'
+import Time from '@common/Time'
+import type { Game as GameType, GameEvent, ReplayHud, Timestamp, HeaderLogEntry, LogEntry, EncodedPlayer } from '@common/Types'
+import Util from '@common/Util'
 import { Game } from './Game'
-import { parseLogFileContents } from '../../common/src/GameLog'
+import { parseLogFileContents } from '@common/GameLog'
 import { MODE_REPLAY } from './GameMode'
 import _api from './_api'
 

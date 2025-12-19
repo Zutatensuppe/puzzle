@@ -40,8 +40,8 @@
   </v-card>
 </template>
 <script setup lang="ts">
-import { ImageSearchSort } from './../../../../common/src/Types'
-import type { Tag } from './../../../../common/src/Types'
+import { ImageSearchSort } from '@common/Types'
+import type { Tag } from '@common/Types'
 import ImageInfoTable from '../ImageInfoTable.vue'
 import ResponsiveImage from '../ResponsiveImage.vue'
 import { useDialog } from '../../useDialog'

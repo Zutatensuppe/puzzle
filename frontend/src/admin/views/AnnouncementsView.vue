@@ -43,7 +43,7 @@ import { onMounted, onUnmounted, ref } from 'vue'
 import { me, onLoginStateChange } from '../../user'
 import api from '../../_api'
 import Nav from '../components/Nav.vue'
-import type { Announcement } from '../../../../common/src/Types'
+import type { Announcement } from '@common/Types'
 
 const announcements = ref<Announcement[]>([])
 

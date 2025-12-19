@@ -100,7 +100,7 @@ import { me, onLoginStateChange } from '../../user'
 import api from '../../_api'
 import Nav from '../components/Nav.vue'
 import Pagination from '../../components/Pagination.vue'
-import type { ClientId, MergeClientIdsIntoUserResult, Pagination as PaginationType, UserId, UserRow } from '../../../../common/src/Types'
+import type { ClientId, MergeClientIdsIntoUserResult, Pagination as PaginationType, UserId, UserRow } from '@common/Types'
 
 const perPage = 50
 const users = ref<{ items: UserRow[], pagination: PaginationType } | null>(null)

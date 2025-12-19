@@ -1,10 +1,10 @@
-import Util from '../../common/src/Util'
-import type { Rng } from '../../common/src/Rng'
-import { EncodedPieceIdx, PieceRotation, RotationMode } from '../../common/src/Types'
-import type { EncodedPiece, Puzzle, ShapeMode, ImageInfo, Timestamp } from '../../common/src/Types'
-import type { Dim, Point } from '../../common/src/Geometry'
-import { determinePuzzleInfo, determinePuzzlePieceShapes } from '../../common/src/Puzzle'
-import type { PuzzleCreationInfo } from '../../common/src/Puzzle'
+import Util from '@common/Util'
+import type { Rng } from '@common/Rng'
+import { EncodedPieceIdx, PieceRotation, RotationMode } from '@common/Types'
+import type { EncodedPiece, Puzzle, ShapeMode, ImageInfo, Timestamp } from '@common/Types'
+import type { Dim, Point } from '@common/Geometry'
+import { determinePuzzleInfo, determinePuzzlePieceShapes } from '@common/Puzzle'
+import type { PuzzleCreationInfo } from '@common/Puzzle'
 
 export class PuzzleService {
   createPuzzle(

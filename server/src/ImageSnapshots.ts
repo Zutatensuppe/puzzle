@@ -2,9 +2,9 @@ import config from './Config'
 import sharp from 'sharp'
 import fs from './FileSystem'
 import path from 'path'
-import { logger } from '../../common/src/Util'
+import { logger } from '@common/Util'
 import type Db from './Db'
-import type { GameId } from '../../common/src/Types'
+import type { GameId } from '@common/Types'
 
 const log = logger('ImageSnapshots.ts')
 

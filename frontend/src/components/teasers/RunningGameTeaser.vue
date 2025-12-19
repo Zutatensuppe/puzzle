@@ -103,10 +103,10 @@
 </template>
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import Time from '../../../../common/src/Time'
-import { resizeUrl } from '../../../../common/src/ImageService'
-import type { GameInfo } from '../../../../common/src/Types'
-import { rotationModeToString, scoreModeToString, shapeModeToString, snapModeToString } from '../../../../common/src/Util'
+import Time from '@common/Time'
+import { resizeUrl } from '@common/ImageService'
+import type { GameInfo } from '@common/Types'
+import { rotationModeToString, scoreModeToString, shapeModeToString, snapModeToString } from '@common/Util'
 import { me, useNsfw } from '../../user'
 import { useDialog } from '../../useDialog'
 

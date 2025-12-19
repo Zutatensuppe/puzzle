@@ -77,12 +77,12 @@
 </template>
 <script setup lang="ts">
 import { onUnmounted, onMounted, ref } from 'vue'
-import { resizeUrl } from '../../../../common/src/ImageService'
+import { resizeUrl } from '@common/ImageService'
 import { me, onLoginStateChange } from '../../user'
 import api from '../../_api'
 import Nav from '../components/Nav.vue'
 import Pagination from '../../components/Pagination.vue'
-import type { ImageRowWithCount, Pagination as PaginationType } from '../../../../common/src/Types'
+import type { ImageRowWithCount, Pagination as PaginationType } from '@common/Types'
 
 const perPage = 50
 const images = ref<{ items: ImageRowWithCount[], pagination: PaginationType } | null>(null)

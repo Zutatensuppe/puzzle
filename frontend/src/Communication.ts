@@ -1,10 +1,10 @@
 'use strict'
 
-import { CONN_STATE } from '../../common/src/Types'
-import type { ClientEvent, ConnectionState, EncodedGame, EncodedGameLegacy, GameEvent, ServerEvent, ServerSyncEvent, ServerUpdateEvent } from '../../common/src/Types'
-import { logger } from '../../common/src/Util'
-import { CLIENT_EVENT_TYPE, SERVER_EVENT_TYPE } from '../../common/src/Protocol'
+import type { ClientEvent, ConnectionState, EncodedGame, EncodedGameLegacy, GameEvent, ServerEvent, ServerSyncEvent, ServerUpdateEvent } from '@common/Types'
+import { logger } from '@common/Util'
+import { CLIENT_EVENT_TYPE, SERVER_EVENT_TYPE } from '@common/Protocol'
 import type { GamePlay } from './GamePlay'
+import { CONN_STATE } from '@common/Enums'
 
 const log = logger('Communication.js')
 

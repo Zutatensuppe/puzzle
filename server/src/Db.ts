@@ -1,8 +1,8 @@
+import { logger } from '@common/Util'
 import fs from './FileSystem'
 import * as pg from 'pg'
 // @ts-ignore
 const { Client } = pg.default
-import { logger } from '../../common/src/Util'
 
 const log = logger('Db.ts')
 

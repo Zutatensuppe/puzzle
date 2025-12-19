@@ -7,9 +7,9 @@ import type {
   ImageId,
   ServerInfo,
   UserId,
-} from '../../../common/src/Types'
+} from '@common/Types'
 import xhr, { JSON_HEADERS } from './xhr'
-import Util from '../../../common/src/Util'
+import Util from '@common/Util'
 
 const getGames = async (data: {
   limit: number

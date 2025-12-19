@@ -1,7 +1,7 @@
 import Crypto from '../Crypto'
 import type Db from '../Db'
 import type { WhereRaw } from '../Db'
-import type { UserAvatar, UserAvatarId, UserAvatarRow, UserGroupRow, UserId, UserRow } from '../../../common/src/Types'
+import type { UserAvatar, UserAvatarId, UserAvatarRow, UserGroupRow, UserId, UserRow } from '@common/Types'
 import config from '../Config'
 
 const TABLE = 'users'

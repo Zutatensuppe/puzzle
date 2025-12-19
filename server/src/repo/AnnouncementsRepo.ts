@@ -1,6 +1,6 @@
 import type Db from '../Db'
 import type { WhereRaw } from '../Db'
-import type { Announcement, AnnouncementId } from '../../../common/src/Types'
+import type { Announcement, AnnouncementId } from '@common/Types'
 
 const TABLE = 'announcements'
 

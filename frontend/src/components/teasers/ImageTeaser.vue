@@ -83,8 +83,8 @@
 </template>
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { resizeUrl } from '../../../../common/src/ImageService'
-import type { ImageInfo, Tag } from '../../../../common/src/Types'
+import { resizeUrl } from '@common/ImageService'
+import type { ImageInfo, Tag } from '@common/Types'
 import { useDialog } from '../../useDialog'
 import { me, useNsfw } from '../../user'
 

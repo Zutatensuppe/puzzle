@@ -38,7 +38,7 @@
   </v-card>
 </template>
 <script setup lang="ts">
-import { resizeUrl } from '../../../../common/src/ImageService'
+import { resizeUrl } from '@common/ImageService'
 
 import { useDialog } from '../../useDialog'
 

@@ -58,7 +58,7 @@
 </template>
 <script setup lang="ts">
 import { computed } from 'vue'
-import type { ImageInfo, Tag } from '../../../common/src/Types'
+import type { ImageInfo, Tag } from '@common/Types'
 
 const props = defineProps<{
   image: ImageInfo,

@@ -1,9 +1,9 @@
 'use strict'
 
-import { colorEquals } from '../../common/src/Color'
-import type { Color } from '../../common/src/Color'
-import type { Rect } from './Geometry'
+import type { Color} from '@common/Color'
+import { colorEquals } from '@common/Color'
 import type { Graphics } from './Graphics'
+import type { Rect } from '@common/Geometry'
 
 export interface GraphicsOperationsInterface {
   supportsWebgl2Cache: boolean | null

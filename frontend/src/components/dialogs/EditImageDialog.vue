@@ -78,7 +78,7 @@
 </template>
 <script setup lang="ts">
 import { ref, watch } from 'vue'
-import type { ImageInfo, Tag } from '../../../../common/src/Types'
+import type { ImageInfo, Tag } from '@common/Types'
 import TagsInput from '../TagsInput.vue'
 import ResponsiveImage from '../ResponsiveImage.vue'
 import { useDialog } from '../../useDialog'

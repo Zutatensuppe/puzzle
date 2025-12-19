@@ -57,8 +57,8 @@
   </div>
 </template>
 <script setup lang="ts">
-import { CONN_STATE } from '../../../common/src/Types'
-import type { Hud, GameStatus, GamePlayers, RegisteredMap, GameId, ClientId, ConnectionState } from '../../../common/src/Types'
+import { CONN_STATE } from '@common/Enums'
+import type { Hud, GameStatus, GamePlayers, RegisteredMap, GameId, ClientId, ConnectionState } from '@common/Types'
 import { GamePlay } from '../GamePlay'
 import { onMounted, onUnmounted, ref, watch } from 'vue'
 import type { Ref } from 'vue'

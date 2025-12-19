@@ -1,7 +1,7 @@
 import Crypto from '../Crypto'
 import type Db from '../Db'
 import type { WhereRaw } from '../Db'
-import type { AccountId, JSONDateString } from '../../../common/src/Types'
+import type { AccountId, JSONDateString } from '@common/Types'
 
 const TABLE = 'accounts'
 

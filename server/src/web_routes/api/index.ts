@@ -7,19 +7,19 @@ import type {
   ClientId,
   UserRow,
   GameId,
-} from '../../../../common/src/Types'
+} from '@common/Types'
 import config from '../../Config'
 import express from 'express'
 import GameLog from '../../GameLog'
 import multer from 'multer'
 import request from 'request'
-import Time from '../../../../common/src/Time'
-import Util, { isEncodedGameLegacy, logger, newJSONDateString, uniqId } from '../../../../common/src/Util'
+import Time from '@common/Time'
+import Util, { isEncodedGameLegacy, logger, newJSONDateString, uniqId } from '@common/Util'
 import { COOKIE_TOKEN, generateSalt, generateToken, passwordHash } from '../../Auth'
 import type { Server } from '../../Server'
 import fs from '../../FileSystem'
 import FileSystem from '../../FileSystem'
-import type { DeleteAvatarRequestData } from '../../TypesApi'
+import type { DeleteAvatarRequestData } from '@common/TypesApi'
 
 const log = logger('web_routes/api/index.ts')
 

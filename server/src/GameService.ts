@@ -1,43 +1,14 @@
-import {
-  DefaultScoreMode,
-  DefaultShapeMode,
-  DefaultSnapMode,
-  DefaultRotationMode,
-} from '../../common/src/Types'
-import type {
-  Game,
-  Puzzle,
-  EncodedPlayer,
-  ScoreMode,
-  ShapeMode,
-  SnapMode,
-  ImageInfo,
-  Timestamp,
-  GameSettings,
-  GameEvent,
-  RegisteredMap,
-  ImageSnapshots,
-  HandleGameEventResult,
-  RotationMode,
-  GameId,
-  UserId,
-  ClientId,
-  GameInfo,
-  ServerErrorDetails,
-  ClientInitEvent,
-  GameRow,
-  UserRow,
-} from '../../common/src/Types'
-import Util, { logger, toJSONDateString } from '../../common/src/Util'
-import { Rng } from '../../common/src/Rng'
-import type { RngSerialized } from '../../common/src/Rng'
 import GameLog from './GameLog'
-import type { Rect } from '../../common/src/Geometry'
 import type { PuzzleService } from './PuzzleService'
-import GameCommon, { NEWGAME_MAX_PIECES, NEWGAME_MIN_PIECES } from '../../common/src/GameCommon'
-import { GAME_VERSION, LOG_TYPE } from '../../common/src/Protocol'
 import Crypto from './Crypto'
 import type { Server } from './Server'
+import Util, { logger, toJSONDateString } from '@common/Util'
+import type { ClientInitEvent, GameEvent, GameInfo, GameSettings, HandleGameEventResult, ImageInfo, RegisteredMap, ServerErrorDetails, Timestamp, UserId, UserRow} from '@common/Types'
+import { DefaultRotationMode, DefaultScoreMode, DefaultShapeMode, DefaultSnapMode, type ClientId, type EncodedPlayer, type Game, type GameId, type GameRow, type ImageSnapshots, type Puzzle, type RotationMode, type ScoreMode, type ShapeMode, type SnapMode } from '@common/Types'
+import { Rng, type RngSerialized } from '@common/Rng'
+import type { Rect } from '@common/Geometry'
+import GameCommon, { NEWGAME_MAX_PIECES, NEWGAME_MIN_PIECES } from '@common/GameCommon'
+import { GAME_VERSION, LOG_TYPE } from '@common/Protocol'
 
 const log = logger('GameService.js')
 

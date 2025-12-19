@@ -1,5 +1,5 @@
-import type { GameInfo, UserAvatarId, UserAvatarRow, UserSettings} from '../../common/src/Types'
-import { ImageSearchSort, type AccountId, type ClientId, type CompleteUserProfile, type TokenRow, type UserGroupRow, type UserId, type UserRow } from '../../common/src/Types'
+import type { GameInfo, UserAvatarId, UserAvatarRow, UserSettings} from '@common/Types'
+import { ImageSearchSort, type AccountId, type ClientId, type CompleteUserProfile, type TokenRow, type UserGroupRow, type UserId, type UserRow } from '@common/Types'
 import { COOKIE_TOKEN, generateToken } from './Auth'
 import type Db from './Db'
 import type { WhereRaw } from './Db'
@@ -9,7 +9,7 @@ import type { AccountRow } from './repo/AccountsRepo'
 import type { Repos } from './repo/Repos'
 import type { IdentityRow } from './repo/UserIdentityRepo'
 import type express from 'express'
-import Time from '../../common/src/Time'
+import Time from '@common/Time'
 
 const HEADER_CLIENT_ID = 'client-id'
 

@@ -24,8 +24,8 @@ import click2 from './assets/sounds/click2.mp3'
 // @ts-ignore
 import rotate from './assets/sounds/rotate2.mp3'
 import type { Graphics } from './Graphics'
-import { COLOR_MAGENTA } from '../../common/src/Color'
-import type { ImageDataURL } from './Types'
+import type { ImageDataURL } from '@common/Types'
+import { COLOR_MAGENTA } from '@common/Color'
 
 export class Assets {
   public inited = false

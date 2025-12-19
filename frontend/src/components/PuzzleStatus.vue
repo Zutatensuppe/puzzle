@@ -18,8 +18,8 @@
 </template>
 <script setup lang="ts">
 import { computed } from 'vue'
-import Time from './../../../common/src/Time'
-import type { GameStatus } from '../../../common/src/Types'
+import Time from '@common/Time'
+import type { GameStatus } from '@common/Types'
 
 const props = defineProps<{
   status: GameStatus,

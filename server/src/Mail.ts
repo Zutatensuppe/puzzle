@@ -1,7 +1,7 @@
 // @ts-ignore
 import SibApiV3Sdk from 'sib-api-v3-sdk'
-import { logger } from '../../common/src/Util'
-import type { MailConfig, MailServicePasswordResetData, MailServiceRegistrationData } from '../../common/src/Types'
+import { logger } from '@common/Util'
+import type { MailConfig, MailServicePasswordResetData, MailServiceRegistrationData } from '@common/Types'
 
 const log = logger('Mail.ts')
 

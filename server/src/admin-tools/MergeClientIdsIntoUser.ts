@@ -1,7 +1,7 @@
 import type Db from '../Db'
-import { EncodedPlayerIdx } from '../../../common/src/Types'
-import type { ClientId, EncodedPlayer, MergeClientIdsIntoUserResult, UserId } from '../../../common/src/Types'
-import { logger } from '../../../common/src/Util'
+import { EncodedPlayerIdx } from '@common/Types'
+import type { ClientId, EncodedPlayer, MergeClientIdsIntoUserResult, UserId } from '@common/Types'
+import { logger } from '@common/Util'
 
 const log = logger()
 

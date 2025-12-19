@@ -1,18 +1,18 @@
 'use strict'
 
-import { Camera } from '../../common/src/Camera'
-import { CHANGE_TYPE, GAME_EVENT_TYPE } from '../../common/src/Protocol'
+import { Camera } from '@common/Camera'
+import { CHANGE_TYPE, GAME_EVENT_TYPE } from '@common/Protocol'
 import { run } from './gameloop'
 import type { GameLoopInstance } from './gameloop'
-import fireworksController from '../../common/src/Fireworks'
-import GameCommon from '../../common/src/GameCommon'
-import Time from '../../common/src/Time'
-import { logger } from '../../common/src/Util'
+import fireworksController from '@common/Fireworks'
+import GameCommon from '@common/GameCommon'
+import Time from '@common/Time'
+import { logger } from '@common/Util'
 import {
   RendererType,
   EncodedPieceIdx,
   EncodedPlayerIdx,
-} from '../../common/src/Types'
+} from '@common/Types'
 import type {
   Hud,
   ScoreMode,
@@ -31,7 +31,7 @@ import type {
   ClientId,
   EncodedPiece,
   EncodedPlayer,
-} from '../../common/src/Types'
+} from '@common/Types'
 import _api from './_api'
 import { Assets } from './Assets'
 import { EventAdapter } from './EventAdapter'
