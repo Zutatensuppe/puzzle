@@ -3,7 +3,7 @@ import type { Request, Response, Router } from 'express'
 import path from 'path'
 import config from '../../Config'
 import type { Server } from '../../Server'
-import fs from '../../FileSystem'
+import fs from '../../lib/FileSystem'
 
 export default function createRouter(
   server: Server,

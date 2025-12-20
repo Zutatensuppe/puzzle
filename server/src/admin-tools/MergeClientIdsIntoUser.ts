@@ -1,7 +1,9 @@
-import type Db from '../Db'
+import type Db from '../lib/Db'
 import { EncodedPlayerIdx } from '@common/Types'
-import type { ClientId, EncodedPlayer, MergeClientIdsIntoUserResult, UserId } from '@common/Types'
+import type { ClientId, EncodedPlayer, MergeClientIdsIntoUserResult, UserId , UserRow , GameRow , ImageRow, UserXGameRow } from '@common/Types'
 import { logger } from '@common/Util'
+import DbData from '../app/DbData'
+import type { IdentityRow } from '../repo/UserIdentityRepo'
 
 const log = logger()
 
@@ -23,19 +25,22 @@ export class MergeClientIdsIntoUser {
       userIdsWithIdentities: [],
       userIdsWithoutIdentities: [],
     }
-    const gameRows = await this.db.getMany('games')
-    const user = await this.db.get('users', { id: userId })
+    const gameRows = await this.db.getMany<GameRow>(DbData.Tables.Games)
+    const user = await this.db.get<UserRow>(DbData.Tables.Users, { id: userId })
+    if (!user) {
+      throw new Error('user not found')
+    }
     log.info('fixing ' + user.name + ' (id: ' + user.id + ')')
 
-    const tmpUsers = await this.db.getMany('users', { client_id: { '$in': clientIds } })
-    const identities = await this.db.getMany('user_identity', { user_id: { '$in': tmpUsers.map(u => u.id) } })
+    const tmpUsers = await this.db.getMany<UserRow>(DbData.Tables.Users, { client_id: { '$in': clientIds } })
+    const identities = await this.db.getMany<IdentityRow>(DbData.Tables.UserIdentity, { user_id: { '$in': tmpUsers.map(u => u.id) } })
     const userIdsWithIdentities = identities.map(i => i.user_id)
     const userIdsWithoutIdentities = tmpUsers.map(u => u.id).filter(id => !userIdsWithIdentities.includes(id))
     result.userIdsWithIdentities = userIdsWithIdentities
     result.userIdsWithoutIdentities = userIdsWithoutIdentities
 
     const clientIdsToBeExcluded = userIdsWithIdentities.length > 0
-      ? (await this.db._getMany('select client_id from users where id in (' + userIdsWithIdentities.join(',') + ') and id != ' + user.id)).map(row => row.client_id)
+      ? (await this.db._getMany<{ client_id: ClientId }>(`select client_id from ${DbData.Tables.Users} where id in (${userIdsWithIdentities.join(',')}) and id != ${user.id}`)).map(row => row.client_id)
       : []
 
     const clientIdsOfUser = clientIds.filter(clientId => !clientIdsToBeExcluded.includes(clientId))
@@ -78,7 +83,7 @@ export class MergeClientIdsIntoUser {
 
           log.info(`updating user ${user.name} in game ${gameRow.id}.`)
           if (!dry) {
-            await this.db.update('games', { data: JSON.stringify(data) }, { id: gameRow.id })
+            await this.db.update(DbData.Tables.Games, { data: JSON.stringify(data) }, { id: gameRow.id })
           }
           result.updatedGameIds.push(gameRow.id)
         }
@@ -86,16 +91,16 @@ export class MergeClientIdsIntoUser {
     }
 
     // update images
-    const imageRows = await this.db.getMany('images', { uploader_user_id: { '$in': otherUserIdsOfUser } })
+    const imageRows = await this.db.getMany<ImageRow>(DbData.Tables.Images, { uploader_user_id: { '$in': otherUserIdsOfUser } })
     if (imageRows.length > 0) {
       log.info(`updating images uploader from ${otherUserIdsOfUser.join('|')} to ${user.id}.`)
       if (!dry) {
-        await this.db.update('images', { uploader_user_id: user.id }, { uploader_user_id: { '$in': otherUserIdsOfUser } })
+        await this.db.update(DbData.Tables.Images, { uploader_user_id: user.id }, { uploader_user_id: { '$in': otherUserIdsOfUser } })
       }
       result.updatedImageIds.push(...imageRows.map(row => row.id))
     }
 
-    const userXgames = await this.db.getMany('user_x_game', { user_id: { '$in': userIdsOfUser } })
+    const userXgames = await this.db.getMany<UserXGameRow>(DbData.Tables.UserXGame, { user_id: { '$in': userIdsOfUser } })
     if (userXgames.length > 0) {
       let needUpdate = false
       const piecesCountByGame: Record<string, number> = {}
@@ -110,19 +115,19 @@ export class MergeClientIdsIntoUser {
         for (const gameId of Object.keys(piecesCountByGame)) {
           log.info(`updating uxer_x_game ${gameId} entries from ${otherUserIdsOfUser.join('|')} to ${user.id}. new pieces count: ${piecesCountByGame[gameId]}.`)
           if (!dry) {
-            await this.db.delete('user_x_game', { game_id: gameId, user_id: { '$in': userIdsOfUser } })
-            await this.db.insert('user_x_game', { game_id: gameId, user_id: user.id, pieces_count: piecesCountByGame[gameId] })
+            await this.db.delete(DbData.Tables.UserXGame, { game_id: gameId, user_id: { '$in': userIdsOfUser } })
+            await this.db.insert(DbData.Tables.UserXGame, { game_id: gameId, user_id: user.id, pieces_count: piecesCountByGame[gameId] })
           }
         }
       }
     }
 
     // update users
-    const userRows = await this.db.getMany('users', { id: { '$in': otherUserIdsOfUser } })
+    const userRows = await this.db.getMany(DbData.Tables.Users, { id: { '$in': otherUserIdsOfUser } })
     if (userRows.length > 0) {
       log.info(`removing other user entries ${otherUserIdsOfUser.join('|')} of ${user.id}.`)
       if (!dry) {
-        await this.db.delete('users', { id: { '$in': otherUserIdsOfUser } })
+        await this.db.delete(DbData.Tables.Users, { id: { '$in': otherUserIdsOfUser } })
       }
       result.removedUserIds.push(...otherUserIdsOfUser)
     }

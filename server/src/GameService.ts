@@ -3,8 +3,8 @@ import type { PuzzleService } from './PuzzleService'
 import Crypto from './Crypto'
 import type { Server } from './Server'
 import Util, { logger, toJSONDateString } from '@common/Util'
-import type { ClientInitEvent, GameEvent, GameInfo, GameSettings, HandleGameEventResult, ImageInfo, RegisteredMap, ServerErrorDetails, Timestamp, UserId, UserRow} from '@common/Types'
-import { DefaultRotationMode, DefaultScoreMode, DefaultShapeMode, DefaultSnapMode, type ClientId, type EncodedPlayer, type Game, type GameId, type GameRow, type ImageSnapshots, type Puzzle, type RotationMode, type ScoreMode, type ShapeMode, type SnapMode } from '@common/Types'
+import type { ClientId, ClientInitEvent, EncodedPlayer, Game, GameEvent, GameId, GameInfo, GameRow, GameSettings, HandleGameEventResult, ImageInfo, ImageSnapshots, Puzzle, RegisteredMap, RotationMode, ScoreMode, ServerErrorDetails, ShapeMode, SnapMode, Timestamp, UserId, UserRow} from '@common/Types'
+import { DefaultRotationMode, DefaultScoreMode, DefaultShapeMode, DefaultSnapMode } from '@common/Types'
 import { Rng, type RngSerialized } from '@common/Rng'
 import type { Rect } from '@common/Geometry'
 import GameCommon, { NEWGAME_MAX_PIECES, NEWGAME_MIN_PIECES } from '@common/GameCommon'
@@ -382,6 +382,14 @@ export class GameService {
     }
   }
 
+  private async getNewGameId() {
+    let gameId: GameId
+    do {
+      gameId = Util.uniqId() as GameId
+    } while (await this.exists(gameId))
+    return gameId
+  }
+
   public async createNewGame(
     gameSettings: GameSettings,
     ts: Timestamp,
@@ -390,11 +398,8 @@ export class GameService {
     if (gameSettings.tiles < NEWGAME_MIN_PIECES || gameSettings.tiles > NEWGAME_MAX_PIECES) {
       throw new Error(`Target pieces count must be between ${NEWGAME_MIN_PIECES} and ${NEWGAME_MAX_PIECES}`)
     }
-    let gameId: GameId
-    do {
-      gameId = Util.uniqId() as GameId
-    } while (await this.exists(gameId))
 
+    const gameId: GameId = await this.getNewGameId()
     const gameObject = this.createGameObject(
       gameId,
       GAME_VERSION,

@@ -1,8 +1,7 @@
-import type Db from '../Db'
-import type { WhereRaw } from '../Db'
+import DbData from '../app/DbData'
+import type Db from '../lib/Db'
+import type { WhereRaw } from '../lib/Db'
 import type { TokenRow } from '@common/Types'
-
-const TABLE = 'tokens'
 
 export class TokensRepo {
   constructor(
@@ -12,14 +11,14 @@ export class TokensRepo {
   }
 
   async insert(row: TokenRow): Promise<void> {
-    await this.db.insert(TABLE, row)
+    await this.db.insert(DbData.Tables.Tokens, row)
   }
 
-  async get(where: WhereRaw): Promise<TokenRow> {
-    return await this.db.get(TABLE, where)
+  async get(where: WhereRaw): Promise<TokenRow | null> {
+    return await this.db.get(DbData.Tables.Tokens, where)
   }
 
   async delete(where: WhereRaw): Promise<void> {
-    await this.db.delete('tokens', where)
+    await this.db.delete(DbData.Tables.Tokens, where)
   }
 }

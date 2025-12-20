@@ -1,4 +1,4 @@
-import FileSystem from '../FileSystem'
+import FileSystem from '../lib/FileSystem'
 import type { Server } from '../Server'
 import { logger } from '@common/Util'
 

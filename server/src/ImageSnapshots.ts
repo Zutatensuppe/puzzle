@@ -1,10 +1,11 @@
 import config from './Config'
 import sharp from 'sharp'
-import fs from './FileSystem'
+import fs from './lib/FileSystem'
 import path from 'path'
 import { logger } from '@common/Util'
-import type Db from './Db'
+import type Db from './lib/Db'
 import type { GameId } from '@common/Types'
+import DbData from './app/DbData'
 
 const log = logger('ImageSnapshots.ts')
 
@@ -82,7 +83,7 @@ export const storeImageSnapshot = async (imageBase64Str: string, gameId: GameId,
   }
 
   const url = `/uploads/image_snapshots/${filename}`
-  await db.update('games', { image_snapshot_url: url }, { id: gameId })
+  await db.update(DbData.Tables.Games, { image_snapshot_url: url }, { id: gameId })
   log.info('stored image')
 
   // cleanup previous versions of the image...

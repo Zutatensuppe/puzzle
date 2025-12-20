@@ -29,6 +29,7 @@ export type ImageId = Branded<number, 'ImageId'>
 export type AnnouncementId = Branded<number, 'AnnouncementId'>
 export type TagId = Branded<number, 'TagId'>
 export type FeaturedId = Branded<number, 'FeaturedId'>
+export type CollectionId = Branded<number, 'CollectionId'>
 export type LeaderboardId = Branded<number, 'LeaderboardId'>
 export type LivestreamId = Branded<string, 'LivestreamId'>
 
@@ -901,8 +902,31 @@ export interface FeaturedRow {
   // TODO: teaser image id
 }
 
+export interface FeaturedXCollectionRow {
+  featured_id: FeaturedId
+  collection_id: CollectionId
+  sort_index: number
+}
+
+export interface CollectionXImageRow {
+  collection_id: CollectionId
+  image_id: ImageId
+  sort_index: number
+}
+
+export interface UserXUserGroupRow {
+  user_id: UserId
+  user_group_id: UserGroupId
+}
+
+export interface UserXGameRow {
+  user_id: UserId
+  game_id: GameId
+  pieces_count: number
+}
+
 export interface CollectionRow {
-  id: number
+  id: CollectionId
   created: JSONDateString
   name: string
 }
@@ -939,6 +963,11 @@ export interface UserAvatarRow {
   filename_original: string
   width: number
   height: number
+}
+
+export interface UserSettingsRow {
+  user_id: UserId
+  avatar_id: UserAvatarId | null
 }
 
 export interface UserSettings {

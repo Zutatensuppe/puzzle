@@ -1,5 +1,5 @@
 import config from './Config'
-import Db from './Db'
+import Db from './lib/Db'
 import Mail from './Mail'
 import { Canny } from './Canny'
 import { Discord } from './Discord'

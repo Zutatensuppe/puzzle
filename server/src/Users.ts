@@ -1,8 +1,8 @@
-import type { GameInfo, UserAvatarId, UserAvatarRow, UserSettings} from '@common/Types'
+import type { GameInfo, UserAvatarId, UserAvatarRow, UserSettings, UserSettingsRow} from '@common/Types'
 import { ImageSearchSort, type AccountId, type ClientId, type CompleteUserProfile, type TokenRow, type UserGroupRow, type UserId, type UserRow } from '@common/Types'
 import { COOKIE_TOKEN, generateToken } from './Auth'
-import type Db from './Db'
-import type { WhereRaw } from './Db'
+import type Db from './lib/Db'
+import type { WhereRaw } from './lib/Db'
 import type { GameService } from './GameService'
 import type { Images } from './Images'
 import type { AccountRow } from './repo/AccountsRepo'
@@ -10,6 +10,7 @@ import type { Repos } from './repo/Repos'
 import type { IdentityRow } from './repo/UserIdentityRepo'
 import type express from 'express'
 import Time from '@common/Time'
+import DbData from './app/DbData'
 
 const HEADER_CLIENT_ID = 'client-id'
 
@@ -39,12 +40,12 @@ export class Users {
   async usernameTaken(username: string): Promise<boolean> {
     const row = await this.db._get(`
       with relevant_users as (
-        select u.name from users u
-          inner join user_identity ui on ui.user_id = u.id and ui.provider_name = 'local'
-          inner join accounts a on a.id::text = ui.provider_id and a.status = 'verified'
+        select u.name from ${DbData.Tables.Users} u
+          inner join ${DbData.Tables.UserIdentity} ui on ui.user_id = u.id and ui.provider_name = 'local'
+          inner join ${DbData.Tables.Accounts} a on a.id::text = ui.provider_id and a.status = 'verified'
         union
-        select u.name from users u
-          inner join user_identity ui on ui.user_id = u.id and ui.provider_name = 'twitch'
+        select u.name from ${DbData.Tables.Users} u
+          inner join ${DbData.Tables.UserIdentity} ui on ui.user_id = u.id and ui.provider_name = 'twitch'
       )
       select * from relevant_users where name = $1 limit 1
     `, [username])
@@ -54,12 +55,12 @@ export class Users {
   async clientIdTaken(clientId: ClientId): Promise<boolean> {
     const row = await this.db._get(`
       with relevant_users as (
-        select u.client_id from users u
-          inner join user_identity ui on ui.user_id = u.id and ui.provider_name = 'local'
-          inner join accounts a on a.id::text = ui.provider_id and a.status = 'verified'
+        select u.client_id from ${DbData.Tables.Users} u
+          inner join ${DbData.Tables.UserIdentity} ui on ui.user_id = u.id and ui.provider_name = 'local'
+          inner join ${DbData.Tables.Accounts} a on a.id::text = ui.provider_id and a.status = 'verified'
         union
-        select u.client_id from users u
-          inner join user_identity ui on ui.user_id = u.id and ui.provider_name = 'twitch'
+        select u.client_id from ${DbData.Tables.Users} u
+          inner join ${DbData.Tables.UserIdentity} ui on ui.user_id = u.id and ui.provider_name = 'twitch'
       )
       select * from relevant_users where client_id = $1 limit 1
     `, [clientId])
@@ -81,15 +82,6 @@ export class Users {
   async createAccount(account: Omit<AccountRow, 'id'>): Promise<AccountRow> {
     const accountId = await this.repos.accounts.insert(account)
     return await this.repos.accounts.get({ id: accountId }) as AccountRow
-  }
-
-  async createIdentity(identity: Omit<IdentityRow, 'id'>): Promise<IdentityRow> {
-    const identityId = await this.repos.userIdentity.insert(identity)
-    return await this.repos.userIdentity.get({ id: identityId }) as IdentityRow
-  }
-
-  async updateIdentity(identity: IdentityRow): Promise<void> {
-    await this.repos.userIdentity.update(identity)
   }
 
   async getIdentity(where: WhereRaw): Promise<IdentityRow | null> {
@@ -247,7 +239,7 @@ export class Users {
   public async getUserSettings(
     userId: UserId,
   ): Promise<UserSettings> {
-    const row = await this.db.get('user_settings', { user_id: userId })
+    const row = await this.db.get<UserSettingsRow>(DbData.Tables.UserSettings, { user_id: userId })
     if (!row) {
       return {
         userId,
@@ -263,9 +255,8 @@ export class Users {
   public async updateUserSettings(
     userSettings: UserSettings,
   ): Promise<void> {
-    console.log(userSettings)
     await this.db.upsert(
-      'user_settings',
+      DbData.Tables.UserSettings,
       {
         user_id: userSettings.userId,
         avatar_id: userSettings.avatarId,
@@ -276,7 +267,7 @@ export class Users {
 
   public async saveAvatar(avatar: Omit<UserAvatarRow, 'id'>): Promise<UserAvatarId> {
     return await this.db.insert(
-      'user_avatars',
+      DbData.Tables.UserAvatars,
       avatar,
       'id',
     ) as UserAvatarId
@@ -289,7 +280,7 @@ export class Users {
     }
 
     // delete from db
-    await this.db.delete('user_avatars', { id: avatar.id })
+    await this.db.delete(DbData.Tables.UserAvatars, { id: avatar.id })
 
     // delete from disk
     await this.images.deleteImagesFromStorage(avatar.filename)

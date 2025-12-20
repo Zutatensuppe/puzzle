@@ -1,17 +1,20 @@
 import type {
-  CollectionRow,
-  CollectionRowWithImages,
-  FeaturedId,
-  FeaturedRow,
-  FeaturedRowWithCollections,
-  FeaturedTeaserRow,
-  ImageInfo,
+  CollectionId,
+  CollectionXImageRow,
+  FeaturedXCollectionRow} from '@common/Types'
+import {
+  type CollectionRow,
+  type CollectionRowWithImages,
+  type FeaturedId,
+  type FeaturedRow,
+  type FeaturedRowWithCollections,
+  type FeaturedTeaserRow,
+  type ImageInfo,
 } from '@common/Types'
-import type Db from '../Db'
-import type { WhereRaw } from '../Db'
+import type Db from '../lib/Db'
+import type { WhereRaw } from '../lib/Db'
 import type { Server } from '../Server'
-
-const TABLE = 'featured'
+import DbData from '../app/DbData'
 
 export class FeaturedRepo {
   private server!: Server
@@ -26,26 +29,26 @@ export class FeaturedRepo {
   }
 
   async count(): Promise<number> {
-    return await this.db.count(TABLE)
+    return await this.db.count(DbData.Tables.Featured)
   }
 
-  async get(where: WhereRaw): Promise<FeaturedRow> {
-    return await this.db.get(TABLE, where)
+  async get(where: WhereRaw): Promise<FeaturedRow | null> {
+    return await this.db.get<FeaturedRow>(DbData.Tables.Featured, where)
   }
 
   async getMany(where: WhereRaw): Promise<FeaturedRow[]> {
-    return await this.db.getMany(TABLE, where)
+    return await this.db.getMany(DbData.Tables.Featured, where)
   }
 
   async update(featured: Partial<FeaturedRow>, where: WhereRaw): Promise<void> {
     if (featured.links) {
-      return await this.db.update(TABLE, {
+      return await this.db.update(DbData.Tables.Featured, {
         ...featured,
         // json stringify, because postgres lib cannot handle array json input
         links: JSON.stringify(featured.links),
       }, where)
     }
-    return await this.db.update(TABLE, featured, where)
+    return await this.db.update(DbData.Tables.Featured, featured, where)
   }
 
   public async getManyWithCollections(where: WhereRaw): Promise<FeaturedRowWithCollections[]> {
@@ -54,18 +57,18 @@ export class FeaturedRepo {
       return []
     }
     const ids = featureds.map(f => f.id)
-    const featuredXCollection = await this.db.getMany(
-      'featured_x_collection',
+    const featuredXCollection = await this.db.getMany<FeaturedXCollectionRow>(
+      DbData.Tables.FeaturedXCollection,
       { featured_id: { $in: ids } },
     )
 
-    const collections: CollectionRow[] = featuredXCollection.length === 0 ? [] : await this.db.getMany(
-      'collection',
+    const collections = featuredXCollection.length === 0 ? [] : await this.db.getMany<CollectionRow>(
+      DbData.Tables.Collection,
       { id: { '$in': featuredXCollection.map(x => x.collection_id) } },
     )
 
-    const collectionXImage = collections.length === 0 ? [] : await this.db.getMany(
-      'collection_x_image',
+    const collectionXImage = collections.length === 0 ? [] : await this.db.getMany<CollectionXImageRow>(
+      DbData.Tables.CollectionXImage,
       { collection_id: { '$in': collections.map(x => x.id) } },
     )
     const images = await this.server.images.imagesByIdsFromDb(collectionXImage.map(x => x.image_id))
@@ -103,7 +106,7 @@ export class FeaturedRepo {
   }
 
   async insert(featured: Omit<FeaturedRow, 'id'>): Promise<FeaturedId> {
-    return await this.db.insert(TABLE, {
+    return await this.db.insert(DbData.Tables.Featured, {
       ...featured,
       // always overwrite the creation date to the current time
       created: new Date(),
@@ -113,29 +116,29 @@ export class FeaturedRepo {
   }
 
   async updateWithCollections(featured: FeaturedRowWithCollections): Promise<void> {
-    await this.db.delete('featured_x_collection', { featured_id: featured.id })
+    await this.db.delete(DbData.Tables.FeaturedXCollection, { featured_id: featured.id })
     let collectionIndex = 0
     for (const collection of featured.collections) {
       if (!collection.id) {
-        collection.id = await this.db.insert('collection', {
+        collection.id = await this.db.insert(DbData.Tables.Collection, {
           created: collection.created,
           name: collection.name,
-        }, 'id') as number
+        }, 'id') as CollectionId
       } else {
-        await this.db.update('collection', { name: collection.name }, { id: collection.id })
-        await this.db.delete('collection_x_image', { collection_id: collection.id })
+        await this.db.update(DbData.Tables.Collection, { name: collection.name }, { id: collection.id })
+        await this.db.delete(DbData.Tables.CollectionXImage, { collection_id: collection.id })
       }
 
       let imageIndex = 0
       for (const image of collection.images) {
-        await this.db.insert('collection_x_image', {
+        await this.db.insert(DbData.Tables.CollectionXImage, {
           collection_id: collection.id,
           image_id: image.id,
           sort_index: imageIndex++,
         })
       }
 
-      await this.db.insert('featured_x_collection', {
+      await this.db.insert(DbData.Tables.FeaturedXCollection, {
         featured_id: featured.id,
         collection_id: collection.id,
         sort_index: collectionIndex++,
@@ -151,7 +154,7 @@ export class FeaturedRepo {
   }
 
   public async getActiveTeasers(): Promise<FeaturedRowWithCollections[]> {
-    const featuredTeaserRows = await this.db.getMany('featured_teaser', { active: 1 })
+    const featuredTeaserRows = await this.db.getMany<FeaturedTeaserRow>(DbData.Tables.FeaturedTeaser, { active: 1 })
     const ids = featuredTeaserRows.map(r => r.featured_id)
     const featuredRows = await this.getManyWithCollections({ id: { $in: ids } })
     // sort by property sort_index, ascending:
@@ -163,12 +166,12 @@ export class FeaturedRepo {
   }
 
   public async getAllTeasers(): Promise<FeaturedTeaserRow[]> {
-    return await this.db.getMany('featured_teaser')
+    return await this.db.getMany(DbData.Tables.FeaturedTeaser)
   }
 
   public async saveTeasers(featuredTeasers: FeaturedTeaserRow[]): Promise<void> {
-    await this.db.delete('featured_teaser', {})
-    await this.db.insertMany('featured_teaser', featuredTeasers.map(teaser => {
+    await this.db.delete(DbData.Tables.FeaturedTeaser, {})
+    await this.db.insertMany(DbData.Tables.FeaturedTeaser, featuredTeasers.map(teaser => {
       const withoutId: Omit<FeaturedTeaserRow, 'id'> = {
         featured_id: teaser.featured_id,
         sort_index: teaser.sort_index,

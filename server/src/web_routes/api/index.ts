@@ -17,8 +17,8 @@ import Time from '@common/Time'
 import Util, { isEncodedGameLegacy, logger, newJSONDateString, uniqId } from '@common/Util'
 import { COOKIE_TOKEN, generateSalt, generateToken, passwordHash } from '../../Auth'
 import type { Server } from '../../Server'
-import fs from '../../FileSystem'
-import FileSystem from '../../FileSystem'
+import fs from '../../lib/FileSystem'
+import FileSystem from '../../lib/FileSystem'
 import type { DeleteAvatarRequestData } from '@common/TypesApi'
 
 const log = logger('web_routes/api/index.ts')
@@ -210,7 +210,7 @@ export default function createRouter(
       }
 
       if (!identity) {
-        await server.users.createIdentity({
+        await server.repos.userIdentity.insert({
           user_id: user.id,
           provider_name,
           provider_id,
@@ -228,7 +228,7 @@ export default function createRouter(
           updateNeeded = true
         }
         if (updateNeeded) {
-          await server.users.updateIdentity(identity)
+          await server.repos.userIdentity.update(identity)
         }
       }
 
@@ -392,7 +392,7 @@ export default function createRouter(
       })
     }
 
-    await server.users.createIdentity({
+    await server.repos.userIdentity.insert({
       user_id: user.id,
       provider_name: 'local',
       provider_id: `${account.id}`,
@@ -599,7 +599,7 @@ export default function createRouter(
       gamesFinished.push(await server.gameService.gameToGameInfo(row, currentTimestamp))
     }
 
-    const leaderboards = await server.repos.leaderboard.getTop10(currentUserId)
+    const leaderboards = await server.repos.leaderboard.getTop10Leaderboards(currentUserId)
 
     const livestreams = await server.repos.livestreams.getLive()
 

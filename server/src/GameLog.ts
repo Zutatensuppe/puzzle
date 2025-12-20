@@ -1,6 +1,6 @@
 import { logger } from '@common/Util'
 import config from './Config'
-import fs from './FileSystem'
+import fs from './lib/FileSystem'
 import Time from '@common/Time'
 import type { GameId, GameLogInfoByGameIds, LogEntry, LogIndex, Timestamp } from '@common/Types'
 import { LOG_TYPE } from '@common/Protocol'
