@@ -11,5 +11,8 @@ export default defineConfig(Object.assign({}, viteConfigBuild, {
         secure: false,
       },
     },
+    fs: {
+      allow: ['..'] // allow parent directory
+    },
   },
 }))
