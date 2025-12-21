@@ -15,7 +15,6 @@ import { UrlUtil } from './UrlUtil'
 import { ImageExif } from './ImageExif'
 import { Repos } from './repo/Repos'
 import { Moderation } from './Moderation'
-import { ImageChecksumMigration } from './migrations/ImageChecksumMigration'
 import { Workers } from './workers/Workers'
 import { logger } from '@common/Util'
 
@@ -55,10 +54,6 @@ const run = async () => {
     new Workers(),
   )
   server.init()
-
-  // TODO: remove after the migration has run
-  const migration = new ImageChecksumMigration(server)
-  void migration.run()
 
   server.listen()
 
