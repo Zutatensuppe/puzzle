@@ -52,13 +52,13 @@ export class ImagesRepo {
     if (filter.tags.length > 0) {
       rawWhere['t.slug'] = { '$in': filter.tags }
       joins = `
-        INNER JOIN ${DbData.Tables.ImageXCategory} ixt ON ixt.image_id = images.id
+        INNER JOIN ${DbData.Tables.ImageXCategory} ixt ON ixt.image_id = i.id
         INNER JOIN ${DbData.Tables.Tags} t ON t.id = ixt.category_id
       `
     }
 
     if (filter.ids.length > 0) {
-      rawWhere['images.id'] = { '$in': filter.ids }
+      rawWhere['i.id'] = { '$in': filter.ids }
     }
 
     const where = this.db._buildWhere(rawWhere)
@@ -72,15 +72,15 @@ export class ImagesRepo {
         GROUP BY image_id
       )
       SELECT
-        images.*,
+        i.*,
         COALESCE(counts.count, 0) AS games_count,
         COALESCE(u.name, '') AS uploader_user_name
-      FROM ${DbData.Tables.Images} images
-        LEFT JOIN counts ON counts.image_id = images.id
-        LEFT JOIN ${DbData.Tables.Users} u ON u.id = images.uploader_user_id
+      FROM ${DbData.Tables.Images} i
+        LEFT JOIN counts ON counts.image_id = i.id
+        LEFT JOIN ${DbData.Tables.Users} u ON u.id = i.uploader_user_id
         ${joins}
       ${where.sql}
-      ORDER BY images.id DESC
+      ORDER BY i.id DESC
       ${this.db._buildLimit({ offset, limit })};
     `, where.values)
   }
@@ -257,7 +257,7 @@ export class ImagesRepo {
 
   async getImagesWithCountByIds(imageIds: ImageId[]): Promise<ImageRowWithCount[]> {
     const params: unknown[] = []
-    const dbWhere = this.db._buildWhere({'images.id': { '$in': imageIds }})
+    const dbWhere = this.db._buildWhere({'i.id': { '$in': imageIds }})
     params.push(...dbWhere.values)
     return await this.db._getMany(`
       WITH counts AS (
