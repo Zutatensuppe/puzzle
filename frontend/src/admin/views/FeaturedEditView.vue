@@ -87,10 +87,10 @@ import { onMounted, onUnmounted, ref } from 'vue'
 import { me, onLoginStateChange } from '../../user'
 import api from '../../_api'
 import Nav from '../components/Nav.vue'
-import type { CollectionRowWithImages, FeaturedId, FeaturedRowWithCollections } from '../../../../common/src/Types'
+import type { CollectionRowWithImages, FeaturedId, FeaturedRowWithCollections } from '@common/Types'
 import { useRoute, useRouter } from 'vue-router'
 import CollectionEdit from '../components/CollectionEdit.vue'
-import { arrayMove, newJSONDateString } from '../../../../common/src/Util'
+import { arrayMove, newJSONDateString } from '@common/Util'
 
 const featured = ref<FeaturedRowWithCollections | null>(null)
 const route = useRoute()

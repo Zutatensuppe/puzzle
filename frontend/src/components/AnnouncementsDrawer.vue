@@ -36,7 +36,7 @@
 </template>
 <script setup lang="ts">
 import { ref, watch } from 'vue'
-import { dateformat } from '../../../common/src/Util'
+import { dateformat } from '@common/Util'
 import announcements from '../announcements'
 
 const props = defineProps<{

@@ -1,5 +1,5 @@
 import type { Server } from './Server'
-import type { GameId, ImageId, UserRow } from './Types'
+import type { GameId, ImageId, UserRow } from '@common/Types'
 
 export class Moderation {
   private server!: Server

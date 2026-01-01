@@ -30,7 +30,7 @@
 </template>
 <script setup lang="ts">
 import { computed } from 'vue'
-import type { Pagination } from '../../../common/src/Types'
+import type { Pagination } from '@common/Types'
 
 // TODO: limit the number of page links that are generated
 

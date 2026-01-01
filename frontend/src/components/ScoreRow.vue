@@ -50,7 +50,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import type { StyleValue } from 'vue'
-import type { BasicPlayerInfoWithBannedAndActive, ClientId, RegisteredMap } from '../../../common/src/Types'
+import type { BasicPlayerInfoWithBannedAndActive, ClientId, RegisteredMap } from '@common/Types'
 import type { GameInterface } from '../Game'
 import { getAnonBadge, getColoredBadge } from '../BadgeCreator'
 import Icon from './Icon.vue'

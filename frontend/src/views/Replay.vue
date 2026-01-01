@@ -162,7 +162,7 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import type { Ref } from 'vue'
-import type { ReplayHud, GameStatus, GamePlayers, RegisteredMap, GameId, ConnectionState } from '../../../common/src/Types'
+import type { ReplayHud, GameStatus, GamePlayers, RegisteredMap, GameId, ConnectionState } from '@common/Types'
 import { GameReplay } from './../GameReplay'
 import { useRoute } from 'vue-router'
 import api from '../_api'

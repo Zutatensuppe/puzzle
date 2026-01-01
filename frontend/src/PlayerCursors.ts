@@ -1,8 +1,8 @@
 import type { Assets } from './Assets'
-import { EncodedPlayerIdx } from '../../common/src/Types'
-import type { EncodedPlayer, ImageDataURL } from '../../common/src/Types'
+import { EncodedPlayerIdx } from '@common/Types'
+import type { EncodedPlayer, ImageDataURL } from '@common/Types'
 import type { Graphics } from './Graphics'
-import { GraphicsEnum } from '../../common/src/Constants'
+import { GraphicsEnum } from '@common/Enums'
 
 export class PlayerCursors
 {

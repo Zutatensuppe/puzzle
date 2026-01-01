@@ -1,5 +1,5 @@
-import GameCommon from '../../common/src/GameCommon'
-import Time from '../../common/src/Time'
+import GameCommon from '@common/GameCommon'
+import Time from '@common/Time'
 import storage from './storage'
 
 let _debug = false

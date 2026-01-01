@@ -1,10 +1,10 @@
 'use strict'
 
-import { CONN_STATE } from '../../common/src/Types'
-import type { ClientEvent, ConnectionState, EncodedGame, EncodedGameLegacy, GameEvent, ServerEvent, ServerSyncEvent, ServerUpdateEvent } from '../../common/src/Types'
-import { logger } from '../../common/src/Util'
-import { CLIENT_EVENT_TYPE, SERVER_EVENT_TYPE } from '../../common/src/Protocol'
+import type { ClientEvent, ConnectionState, EncodedGame, EncodedGameLegacy, GameEvent, ServerEvent, ServerSyncEvent, ServerUpdateEvent } from '@common/Types'
+import { logger } from '@common/Util'
+import { CLIENT_EVENT_TYPE, SERVER_EVENT_TYPE } from '@common/Protocol'
 import type { GamePlay } from './GamePlay'
+import { ConnectionStatesEnum } from '@common/Enums'
 
 const log = logger('Communication.js')
 
@@ -47,7 +47,7 @@ function onConnectionStateChange(callback: (connectionState: ConnectionState) =>
   missedStateChanges = []
 }
 
-let connectionState: ConnectionState = { state: CONN_STATE.NOT_CONNECTED }
+let connectionState: ConnectionState = { state: ConnectionStatesEnum.NOT_CONNECTED }
 const setConnectionState = (state: ConnectionState): void => {
   if (
     // first simply compare state, to avoid JSON.stringify overhead
@@ -59,7 +59,7 @@ const setConnectionState = (state: ConnectionState): void => {
   }
 }
 function send(message: ClientEvent): void {
-  if (connectionState.state === CONN_STATE.CONNECTED) {
+  if (connectionState.state === ConnectionStatesEnum.CONNECTED) {
     try {
       ws.send(JSON.stringify(message))
     } catch {
@@ -103,11 +103,11 @@ function connect(
 ): Promise<EncodedGame | EncodedGameLegacy> {
   clientSeq = 0
   events = {}
-  setConnectionState({ state: CONN_STATE.CONNECTING })
+  setConnectionState({ state: ConnectionStatesEnum.CONNECTING })
   return new Promise((resolve, reject) => {
     ws = new WebSocket(game.getWsAddres(), game.getClientId() + '|' + game.getGameId())
     ws.onopen = () => {
-      setConnectionState({ state: CONN_STATE.CONNECTED })
+      setConnectionState({ state: ConnectionStatesEnum.CONNECTED })
       if (game.joinPassword) {
         send([CLIENT_EVENT_TYPE.INIT, { password: game.joinPassword }])
       } else {
@@ -154,7 +154,7 @@ function connect(
 
     ws.onerror = () => {
       cancelKeepAlive()
-      setConnectionState({ state: CONN_STATE.DISCONNECTED })
+      setConnectionState({ state: ConnectionStatesEnum.DISCONNECTED })
       throw `[ 2021-05-15 onerror ]`
     }
 
@@ -163,9 +163,9 @@ function connect(
       if (e.code === CODE_SERVER_ERROR) {
         // do nothing!
       } else if (e.code === CODE_CUSTOM_DISCONNECT || e.code === CODE_GOING_AWAY) {
-        setConnectionState({ state: CONN_STATE.CLOSED })
+        setConnectionState({ state: ConnectionStatesEnum.CLOSED })
       } else {
-        setConnectionState({ state: CONN_STATE.DISCONNECTED })
+        setConnectionState({ state: ConnectionStatesEnum.DISCONNECTED })
       }
     }
   })

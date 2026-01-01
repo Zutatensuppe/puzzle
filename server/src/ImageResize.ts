@@ -1,8 +1,8 @@
 import sharp from 'sharp'
-import { logger } from '../../common/src/Util'
+import { logger } from '@common/Util'
 import config from './Config'
-import fs from './FileSystem'
-import type { Rect } from '../../common/src/Geometry'
+import fs from './lib/FileSystem'
+import type { Rect } from '@common/Geometry'
 import type { ImageExif } from './ImageExif'
 
 const log = logger('ImageResize.ts')
@@ -12,7 +12,7 @@ export class ImageResize {
     private readonly imageExif: ImageExif,
   ) {}
 
-  public async cropRestrictImage(
+  public cropRestrictImage(
     sourceImagePath: string,
     filename: string,
     crop: Rect,
@@ -20,78 +20,54 @@ export class ImageResize {
     maxh: number,
     format: string,
   ): Promise<string | null> {
-    try {
-      const baseDir = config.dir.CROP_DIR
-      const targetFilename = `${baseDir}/${filename}-${crop.x}_${crop.y}_${crop.w}_${crop.h}_max_${maxw}x${maxh}-q75.${format}`
-      if (!await fs.exists(targetFilename)) {
-        await this.createDirIfNotExists(baseDir)
-        const sharpImg = await this.loadSharpImage(sourceImagePath)
-        const resized = sharpImg.extract({
-          top: crop.y,
-          left: crop.x,
-          width: crop.w,
-          height: crop.h,
-        }).resize(maxw, maxh, { fit: 'inside', withoutEnlargement: true })
-        await this.storeWithFormat(resized, targetFilename, format)
-      }
-      return targetFilename
-    } catch (e) {
-      log.error('error when crop resizing image', filename, e)
-      return null
-    }
+    return this.executeAndStore({
+      fn: (img: sharp.Sharp) => img
+        .extract(this.sharpRegionFromRect(crop))
+        .resize(maxw, maxh, { fit: 'inside', withoutEnlargement: true }),
+      sourceImagePath: sourceImagePath,
+      baseDir: config.dir.CROP_DIR,
+      filename: `${filename}-${crop.x}_${crop.y}_${crop.w}_${crop.h}_max_${maxw}x${maxh}-q75.${format}`,
+      format,
+      label: 'crop resizing image',
+    })
   }
 
-  public async restrictImage(
+  public restrictImage(
     sourceImagePath: string,
     filename: string,
     maxw: number,
     maxh: number,
     format: string,
   ): Promise<string | null> {
-    const baseDir = config.dir.RESIZE_DIR
-    const targetFilename = `${baseDir}/${filename}-max_${maxw}x${maxh}-q75.${format}`
-    if (!await fs.exists(targetFilename)) {
-      await this.createDirIfNotExists(baseDir)
-      try {
-        const sharpImg = await this.loadSharpImage(sourceImagePath)
-        const resized = sharpImg.resize(maxw, maxh, { fit: 'inside', withoutEnlargement: true })
-        await this.storeWithFormat(resized, targetFilename, format)
-      } catch (e) {
-        log.error('error when resizing image', filename, e)
-        return null
-      }
-    }
-    return targetFilename
+    return this.executeAndStore({
+      fn: (img: sharp.Sharp) => img
+        .resize(maxw, maxh, { fit: 'inside', withoutEnlargement: true }),
+      sourceImagePath,
+      baseDir: config.dir.RESIZE_DIR,
+      filename: `${filename}-max_${maxw}x${maxh}-q75.${format}`,
+      format,
+      label: 'resizing image',
+    })
   }
 
-  public async cropImage(
+  public cropImage(
     sourceImagePath: string,
     filename: string,
     crop: Rect,
     format: string,
   ): Promise<string | null> {
-    const baseDir = config.dir.CROP_DIR
-    const targetFilename = `${baseDir}/${filename}-${crop.x}_${crop.y}_${crop.w}_${crop.h}-q75.${format}`
-    if (!await fs.exists(targetFilename)) {
-      await this.createDirIfNotExists(baseDir)
-      try {
-        const sharpImg = await this.loadSharpImage(sourceImagePath)
-        const resized = sharpImg.extract({
-          top: crop.y,
-          left: crop.x,
-          width: crop.w,
-          height: crop.h,
-        })
-        await this.storeWithFormat(resized, targetFilename, format)
-      } catch (e) {
-        log.error('error when cropping image', filename, e)
-        return null
-      }
-    }
-    return targetFilename
+    return this.executeAndStore({
+      fn: (img: sharp.Sharp) => img
+        .extract(this.sharpRegionFromRect(crop)),
+      sourceImagePath,
+      baseDir: config.dir.CROP_DIR,
+      filename: `${filename}-${crop.x}_${crop.y}_${crop.w}_${crop.h}-q75.${format}`,
+      format,
+      label: 'cropping image',
+    })
   }
 
-  public async resizeImage(
+  public resizeImage(
     sourceImagePath: string,
     filename: string,
     w: number | null,
@@ -99,21 +75,42 @@ export class ImageResize {
     fit: 'contain' | 'cover',
     format: string,
   ): Promise<string | null> {
-    const baseDir = config.dir.RESIZE_DIR
-    const targetFilename = `${baseDir}/${filename}-${w}x${h || 0}-${fit}-q75.${format}`
+    return this.executeAndStore({
+      fn: (img: sharp.Sharp) => img
+        .resize(w, h || null, { fit }),
+      sourceImagePath,
+      baseDir: config.dir.RESIZE_DIR,
+      filename: `${filename}-${w}x${h || 0}-${fit}-q75.${format}`,
+      format,
+      label: 'resizing image',
+    })
+  }
+
+  private async executeAndStore(args: {
+    fn: (sharpImg: sharp.Sharp) => sharp.Sharp | Promise<sharp.Sharp>,
+    sourceImagePath: string,
+    baseDir: string,
+    filename: string,
+    format: string,
+    label: string,
+  }) {
+    const targetFilename = `${args.baseDir}/${args.filename}`
     if (!await fs.exists(targetFilename)) {
-      await this.createDirIfNotExists(baseDir)
       try {
-        const sharpImg = await this.loadSharpImage(sourceImagePath)
-        log.info(w, h, targetFilename)
-        const resized = sharpImg.resize(w, h || null, { fit })
-        await this.storeWithFormat(resized, targetFilename, format)
+        await this.createDirIfNotExists(args.baseDir)
+        const sharpImg = await this.loadSharpImage(args.sourceImagePath)
+        const resized = await args.fn(sharpImg)
+        await this.storeWithFormat(resized, targetFilename, args.format)
       } catch (e) {
-        log.error('error when resizing image', filename, e)
+        log.error('error when ' + args.label, args.filename, e)
         return null
       }
     }
     return targetFilename
+  }
+
+  private sharpRegionFromRect (rect: Rect): sharp.Region {
+    return { top: rect.y, left: rect.x, width: rect.w, height: rect.h }
   }
 
   private orientationToRotationDegree(orientation: number): number {

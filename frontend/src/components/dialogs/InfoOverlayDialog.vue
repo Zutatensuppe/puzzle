@@ -36,8 +36,8 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useRouter } from 'vue-router'
-import { ImageSearchSort } from '../../../../common/src/Types'
-import type { Tag } from '../../../../common/src/Types'
+import { ImageSearchSort } from '@common/Types'
+import type { Tag } from '@common/Types'
 import ImageInfoTable from '../ImageInfoTable.vue'
 import {
   rotationModeDescriptionToString,
@@ -48,7 +48,7 @@ import {
   shapeModeToString,
   snapModeDescriptionToString,
   snapModeToString,
-} from '../../../../common/src/Util'
+} from '@common/Util'
 const router = useRouter()
 
 import { useDialog } from '../../useDialog'

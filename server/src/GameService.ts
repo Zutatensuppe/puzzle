@@ -1,43 +1,14 @@
-import {
-  DefaultScoreMode,
-  DefaultShapeMode,
-  DefaultSnapMode,
-  DefaultRotationMode,
-} from '../../common/src/Types'
-import type {
-  Game,
-  Puzzle,
-  EncodedPlayer,
-  ScoreMode,
-  ShapeMode,
-  SnapMode,
-  ImageInfo,
-  Timestamp,
-  GameSettings,
-  GameEvent,
-  RegisteredMap,
-  ImageSnapshots,
-  HandleGameEventResult,
-  RotationMode,
-  GameId,
-  UserId,
-  ClientId,
-  GameInfo,
-  ServerErrorDetails,
-  ClientInitEvent,
-  GameRow,
-  UserRow,
-} from '../../common/src/Types'
-import Util, { logger, toJSONDateString } from '../../common/src/Util'
-import { Rng } from '../../common/src/Rng'
-import type { RngSerialized } from '../../common/src/Rng'
 import GameLog from './GameLog'
-import type { Rect } from '../../common/src/Geometry'
 import type { PuzzleService } from './PuzzleService'
-import GameCommon, { NEWGAME_MAX_PIECES, NEWGAME_MIN_PIECES } from '../../common/src/GameCommon'
-import { GAME_VERSION, LOG_TYPE } from '../../common/src/Protocol'
 import Crypto from './Crypto'
 import type { Server } from './Server'
+import Util, { logger, toJSONDateString } from '@common/Util'
+import type { ClientId, ClientInitEvent, EncodedPlayer, Game, GameEvent, GameId, GameInfo, GameRow, GameSettings, HandleGameEventResult, ImageInfo, ImageSnapshots, Puzzle, RegisteredMap, RotationMode, ScoreMode, ServerErrorDetails, ShapeMode, SnapMode, Timestamp, UserId, UserRow} from '@common/Types'
+import { DefaultRotationMode, DefaultScoreMode, DefaultShapeMode, DefaultSnapMode } from '@common/Types'
+import { Rng, type RngSerialized } from '@common/Rng'
+import type { Rect } from '@common/Geometry'
+import GameCommon, { NEWGAME_MAX_PIECES, NEWGAME_MIN_PIECES } from '@common/GameCommon'
+import { GAME_VERSION, LOG_TYPE } from '@common/Protocol'
 
 const log = logger('GameService.js')
 
@@ -411,6 +382,14 @@ export class GameService {
     }
   }
 
+  private async getNewGameId() {
+    let gameId: GameId
+    do {
+      gameId = Util.uniqId() as GameId
+    } while (await this.exists(gameId))
+    return gameId
+  }
+
   public async createNewGame(
     gameSettings: GameSettings,
     ts: Timestamp,
@@ -419,11 +398,8 @@ export class GameService {
     if (gameSettings.tiles < NEWGAME_MIN_PIECES || gameSettings.tiles > NEWGAME_MAX_PIECES) {
       throw new Error(`Target pieces count must be between ${NEWGAME_MIN_PIECES} and ${NEWGAME_MAX_PIECES}`)
     }
-    let gameId: GameId
-    do {
-      gameId = Util.uniqId() as GameId
-    } while (await this.exists(gameId))
 
+    const gameId: GameId = await this.getNewGameId()
     const gameObject = this.createGameObject(
       gameId,
       GAME_VERSION,

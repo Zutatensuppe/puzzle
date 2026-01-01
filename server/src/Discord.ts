@@ -1,5 +1,5 @@
-import type { DiscordChannel, DiscordConfig } from '../../common/src/Types'
-import { logger } from '../../common/src/Util'
+import type { DiscordChannel, DiscordConfig } from '@common/Types'
+import { logger } from '@common/Util'
 
 const log = logger('Discord.ts')
 

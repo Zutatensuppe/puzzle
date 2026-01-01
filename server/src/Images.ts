@@ -2,13 +2,13 @@ import probe from 'probe-image-size'
 import fs from 'fs'
 
 import config from './Config'
-import type { Dim } from '../../common/src/Geometry'
-import Util, { logger } from '../../common/src/Util'
-import type { Tag, ImageInfo, UserId, ImageId, ImageRowWithCount, TagRow, ImageRow } from '../../common/src/Types'
+import type { Dim } from '@common/Geometry'
+import Util, { logger } from '@common/Util'
+import type { Tag, ImageInfo, UserId, ImageId, ImageRowWithCount, TagRow, ImageRow } from '@common/Types'
 import type { ImagesRepo } from './repo/ImagesRepo'
-import type { WhereRaw } from './Db'
+import type { WhereRaw } from './lib/Db'
 import type { ImageExif } from './ImageExif'
-import FileSystem from './FileSystem'
+import FileSystem from './lib/FileSystem'
 
 const log = logger('Images.ts')
 
@@ -86,19 +86,16 @@ export class Images {
 
   public async getDimensions(imagePath: string): Promise<Dim> {
     const dimensions = await probe(fs.createReadStream(imagePath))
+    const w = dimensions.width || 0
+    const h = dimensions.height || 0
+
     const orientation = await this.imageExif.getOrientation(imagePath)
     // when image is rotated to the left or right, switch width/height
     // https://jdhao.github.io/2019/07/31/image_rotation_exif_info/
     if (orientation === 6 || orientation === 8) {
-      return {
-        w: dimensions.height || 0,
-        h: dimensions.width || 0,
-      }
+      return { w: h, h: w }
     }
-    return {
-      w: dimensions.width || 0,
-      h: dimensions.height || 0,
-    }
+    return { w, h }
   }
 
   public async setTags(imageId: ImageId, tags: string[]): Promise<void> {

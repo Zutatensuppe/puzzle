@@ -60,7 +60,7 @@
 </template>
 <script setup lang="ts">
 import { ref } from 'vue'
-import Util from '../../../common/src/Util'
+import Util from '@common/Util'
 import { toast } from '../toast'
 import { login } from '../user'
 import { testEmailValid } from '../util'

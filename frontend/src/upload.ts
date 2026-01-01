@@ -1,6 +1,6 @@
 import { ref } from 'vue'
 import _api from './_api'
-import type { Api, ImageInfo, UserAvatar } from './Types'
+import type { Api, ImageInfo, UserAvatar } from '@common/Types'
 
 const uploadImageProgress = ref<number>(0)
 export const uploadImage = async (data: Api.UploadRequestData): Promise<{ error: string } | { imageInfo: ImageInfo }> => {

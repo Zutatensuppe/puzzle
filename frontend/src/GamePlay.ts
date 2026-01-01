@@ -1,13 +1,13 @@
 'use strict'
 
-import GameCommon from '../../common/src/GameCommon'
-import { type Game as GameType, type EncodedGame, type Hud, type GameEvent, type EncodedGameLegacy, type ServerUpdateEvent, type ServerSyncEvent, type ServerErrorDetails, CONN_STATE } from '../../common/src/Types'
+import GameCommon from '@common/GameCommon'
 import { Game } from './Game'
 import Communication from './Communication'
-import Util from '../../common/src/Util'
-import Time from '../../common/src/Time'
+import Util from '@common/Util'
+import Time from '@common/Time'
 import { createImageSnapshot } from './ImageSnapshotCreator'
-import { SoundsEnum } from '../../common/src/Constants'
+import type { Game as GameType, EncodedGame, EncodedGameLegacy, Hud, GameEvent, ServerUpdateEvent, ServerSyncEvent, ServerErrorDetails } from '@common/Types'
+import { ConnectionStatesEnum, SoundsEnum } from '@common/Enums'
 
 export class GamePlay extends Game<Hud> {
 
@@ -108,7 +108,7 @@ export class GamePlay extends Game<Hud> {
       this.initServerEventCallbacks()
       this.initGameLoop()
     } catch (e) {
-      this.hud.setConnectionState({ state: CONN_STATE.SERVER_ERROR, errorDetails: e as ServerErrorDetails })
+      this.hud.setConnectionState({ state: ConnectionStatesEnum.SERVER_ERROR, errorDetails: e as ServerErrorDetails })
       this.rerender = false
     }
   }

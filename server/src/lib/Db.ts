@@ -1,8 +1,8 @@
+import { logger } from '@common/Util'
 import fs from './FileSystem'
 import * as pg from 'pg'
 // @ts-ignore
 const { Client } = pg.default
-import { logger } from '../../common/src/Util'
 
 const log = logger('Db.ts')
 
@@ -51,7 +51,7 @@ class Db {
     await this.run('CREATE TABLE IF NOT EXISTS public.db_patches ( id TEXT PRIMARY KEY);', [])
 
     const files = await fs.readdir(this.patchesDir)
-    const patches = (await this.getMany('public.db_patches')).map(row => row.id)
+    const patches = (await this.getMany<{ id: string }>('public.db_patches')).map(row => row.id)
 
     for (const f of files) {
       if (patches.includes(f)) {
@@ -197,7 +197,7 @@ class Db {
     return parts.join('')
   }
 
-  async _get(query: string, params: Params = []): Promise<any> {
+  async _get<T>(query: string, params: Params = []): Promise<T | null> {
     try {
       return (await this.dbh.query(query, params)).rows[0] || null
     } catch (e) {
@@ -230,7 +230,7 @@ class Db {
     }
   }
 
-  async _getMany(query: string, params: Params = []): Promise<any[]> {
+  async _getMany<T>(query: string, params: Params = []): Promise<T[]> {
     try {
       return (await this.dbh.query(query, params)).rows || []
     } catch (e) {
@@ -240,26 +240,26 @@ class Db {
     }
   }
 
-  async get(
+  async get<T>(
     table: string,
     whereRaw: WhereRaw = {},
     orderBy: OrderBy = [],
-  ): Promise<any> {
-    const rows = await this.getMany(table, whereRaw, orderBy, { offset: 0, limit: 1 })
+  ): Promise<T | null> {
+    const rows = await this.getMany<T>(table, whereRaw, orderBy, { offset: 0, limit: 1 })
     return rows.length > 0 ? rows[0] : null
   }
 
-  async getMany(
+  async getMany<T>(
     table: string,
     whereRaw: WhereRaw = {},
     orderBy: OrderBy = [],
     limit: Limit = { offset: -1, limit: -1 },
-  ): Promise<any[]> {
+  ): Promise<T[]> {
     const where = this._buildWhere(whereRaw)
     const orderBySql = this._buildOrderBy(orderBy)
     const limitSql = this._buildLimit(limit)
     const sql = 'SELECT * FROM ' + table + where.sql + orderBySql + limitSql
-    return await this._getMany(sql, where.values)
+    return await this._getMany<T>(sql, where.values)
   }
 
   async count(
@@ -268,8 +268,8 @@ class Db {
   ): Promise<number> {
     const where = this._buildWhere(whereRaw)
     const sql = 'SELECT COUNT(*)::int FROM ' + table + where.sql
-    const row = await this._get(sql, where.values)
-    return row.count
+    const row = await this._get<{ count: number }>(sql, where.values)
+    return row!.count
   }
 
   async delete(table: string, whereRaw: WhereRaw = {}): Promise<pg.QueryResult> {

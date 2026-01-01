@@ -1,9 +1,9 @@
-import { createDefaultPlayerSettingsData } from '../../common/src/Types'
-import type { EncodedPiece, EncodedPlayer, GameId, PlayerSettingsData } from '../../common/src/Types'
-import GameCommon from '../../common/src/GameCommon'
-import type { Renderer } from '../../common/src/Renderer'
-import { logger } from '../../common/src/Util'
+import { createDefaultPlayerSettingsData } from '@common/Types'
+import type { EncodedPiece, EncodedPlayer, GameId, PlayerSettingsData } from '@common/Types'
+import GameCommon from '@common/GameCommon'
+import { logger } from '@common/Util'
 import type { RendererWebgl } from './RendererWebgl'
+import type { Renderer } from './Renderer'
 
 const log = logger('ImageSnapshotCreator.ts')
 

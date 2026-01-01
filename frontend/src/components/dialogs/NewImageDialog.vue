@@ -191,7 +191,7 @@
 </template>
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref } from 'vue'
-import { logger } from '../../../../common/src/Util'
+import { logger } from '@common/Util'
 import TagsInput from '../../components/TagsInput.vue'
 import ResponsiveImage from '../ResponsiveImage.vue'
 import { toast } from '../../toast'

@@ -3,8 +3,8 @@ import mitt from 'mitt'
 import _api from './_api'
 import storage from './storage'
 import xhr from './_api/xhr'
-import { PLAYER_SETTINGS } from '../../common/src/Types'
-import type { ClientId, User } from '../../common/src/Types'
+import { PLAYER_SETTINGS } from '@common/Types'
+import type { ClientId, User } from '@common/Types'
 import { computed, ref } from 'vue'
 
 const showNsfw = ref(storage.getBool('showNsfw', false))

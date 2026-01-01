@@ -63,7 +63,7 @@
   </v-table>
 </template>
 <script setup lang="ts">
-import type { Leaderboard } from '../../../common/src/Types'
+import type { Leaderboard } from '@common/Types'
 import RankIcon from './RankIcon.vue'
 
 defineProps<{

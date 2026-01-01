@@ -1,16 +1,16 @@
 import type { Assets } from '../Assets'
-import type { Camera } from '../Camera'
-import GameCommon from '../../../common/src/GameCommon'
-import { EncodedPlayerIdx } from '../../../common/src/Types'
-import type { EncodedPlayer, GameId, Timestamp } from '../../../common/src/Types'
+import type { Camera } from '@common/Camera'
+import GameCommon from '@common/GameCommon'
+import { EncodedPlayerIdx } from '@common/Types'
+import type { EncodedPlayer, GameId, Timestamp } from '@common/Types'
 import m4 from './m4'
 import { Shader } from './Shader'
 import playersFragment from './shaders/playersFragment'
 import playersVertex from './shaders/playersVertex'
-import { COLOR_BLUE, hexToColor } from '../../../common/src/Color'
+import { COLOR_BLUE, hexToColor } from '@common/Color'
 import type { Graphics } from '../Graphics'
 import { getPlayerNameCanvas } from '../PlayerNames'
-import { GraphicsEnum } from '../../../common/src/Constants'
+import { GraphicsEnum } from '@common/Enums'
 
 export class PlayersShaderWrapper {
   private shader!: Shader

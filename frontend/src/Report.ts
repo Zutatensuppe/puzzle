@@ -1,8 +1,8 @@
-import type { GameId, ImageId, UserId } from '../../common/src/Types'
+import type { GameId, ImageId, UserId } from '@common/Types'
 import _api from './_api'
 import type { Response } from './_api/xhr'
 import { toast } from './toast'
-import type { ReportResponseData } from './TypesApi'
+import type { ReportResponseData } from '@common/TypesApi'
 
 export const submitReport = async (
   request: Promise<Response<ReportResponseData>>,

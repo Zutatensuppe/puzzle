@@ -38,7 +38,7 @@ import {
   watch,
 } from 'vue'
 import type { CSSProperties, Ref } from 'vue'
-import type { ImageInfo } from '../../../common/src/Types'
+import type { ImageInfo } from '@common/Types'
 
 type Column = number[]
 

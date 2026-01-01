@@ -1,6 +1,13 @@
-import FileSystem from '../FileSystem'
+# Migrations/One time scripts
+
+Until there is a better system, the migrations are run on start of the server until removed.
+An example migration in the past looked like this:
+
+```
+// ImageChecksumMigration.ts
+import FileSystem from '../lib/FileSystem'
 import type { Server } from '../Server'
-import { logger } from '../../../common/src/Util'
+import { logger } from '@common/Util'
 
 const log = logger('ImageChecksumMigration.ts')
 
@@ -29,3 +36,13 @@ export class ImageChecksumMigration {
     log.info(`Migration completed: ${success} images updated, ${missing} files not found.`)
   }
 }
+```
+
+in `main.ts`, this needs to be added between `server.init()` and `server.listen()`:
+
+```
+// ...
+const migration = new ImageChecksumMigration(server)
+void migration.run()
+// ...
+```

@@ -1,4 +1,4 @@
-import type Db from '../Db'
+import type Db from '../lib/Db'
 import type { Server } from '../Server'
 import { AccountsRepo } from './AccountsRepo'
 import { AnnouncementsRepo } from './AnnouncementsRepo'

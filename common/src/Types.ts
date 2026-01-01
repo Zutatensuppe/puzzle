@@ -1,3 +1,4 @@
+import type { ConnectionStatesEnum } from './Enums'
 import type { Rect } from './Geometry'
 import type { SERVER_EVENT_TYPE, LOG_TYPE, CLIENT_EVENT_TYPE, CHANGE_TYPE, GAME_EVENT_TYPE } from './Protocol'
 import type { Rng, RngSerialized } from './Rng'
@@ -28,6 +29,7 @@ export type ImageId = Branded<number, 'ImageId'>
 export type AnnouncementId = Branded<number, 'AnnouncementId'>
 export type TagId = Branded<number, 'TagId'>
 export type FeaturedId = Branded<number, 'FeaturedId'>
+export type CollectionId = Branded<number, 'CollectionId'>
 export type LeaderboardId = Branded<number, 'LeaderboardId'>
 export type LivestreamId = Branded<string, 'LivestreamId'>
 
@@ -730,16 +732,7 @@ export interface GamePlayers {
   banned: BasicPlayerInfo[]
 }
 
-export enum CONN_STATE {
-  NOT_CONNECTED = 0, // not connected yet
-  DISCONNECTED = 1, // not connected, but was connected before
-  CONNECTED = 2, // connected
-  CONNECTING = 3, // connecting
-  CLOSED = 4, // not connected (closed on purpose)
-  SERVER_ERROR = 5, // not connected (determined by server)
-}
-
-export type ConnectionState = { state: CONN_STATE, errorDetails?: ServerErrorDetails }
+export type ConnectionState = { state: ConnectionStatesEnum, errorDetails?: ServerErrorDetails }
 
 export interface Hud {
   setPuzzleCut: () => void
@@ -909,8 +902,31 @@ export interface FeaturedRow {
   // TODO: teaser image id
 }
 
+export interface FeaturedXCollectionRow {
+  featured_id: FeaturedId
+  collection_id: CollectionId
+  sort_index: number
+}
+
+export interface CollectionXImageRow {
+  collection_id: CollectionId
+  image_id: ImageId
+  sort_index: number
+}
+
+export interface UserXUserGroupRow {
+  user_id: UserId
+  user_group_id: UserGroupId
+}
+
+export interface UserXGameRow {
+  user_id: UserId
+  game_id: GameId
+  pieces_count: number
+}
+
 export interface CollectionRow {
-  id: number
+  id: CollectionId
   created: JSONDateString
   name: string
 }
@@ -947,6 +963,11 @@ export interface UserAvatarRow {
   filename_original: string
   width: number
   height: number
+}
+
+export interface UserSettingsRow {
+  user_id: UserId
+  avatar_id: UserAvatarId | null
 }
 
 export interface UserSettings {

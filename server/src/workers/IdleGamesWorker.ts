@@ -1,7 +1,7 @@
 import config from '../Config'
-import GameCommon from '../../../common/src/GameCommon'
+import GameCommon from '@common/GameCommon'
 import GameLog from '../GameLog'
-import { logger } from '../../../common/src/Util'
+import { logger } from '@common/Util'
 import { Worker } from './Worker'
 
 const log = logger('IdleGamesWorker.ts')

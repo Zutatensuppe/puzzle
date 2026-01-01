@@ -1,9 +1,8 @@
+import DbData from '../app/DbData'
 import Crypto from '../Crypto'
-import type Db from '../Db'
-import type { WhereRaw } from '../Db'
-import type { IdentityId, UserId } from '../../../common/src/Types'
-
-const TABLE = 'user_identity'
+import type Db from '../lib/Db'
+import type { WhereRaw } from '../lib/Db'
+import type { IdentityId, UserId } from '@common/Types'
 
 export interface IdentityRow {
   id: IdentityId
@@ -24,14 +23,14 @@ export class UserIdentityRepo {
     if (userIdentity.provider_email) {
       userIdentity.provider_email = Crypto.encrypt(userIdentity.provider_email)
     }
-    return await this.db.insert(TABLE, userIdentity, 'id') as IdentityId
+    return await this.db.insert(DbData.Tables.UserIdentity, userIdentity, 'id') as IdentityId
   }
 
   async get(where: WhereRaw): Promise<IdentityRow | null> {
     if (where.provider_email) {
       where.provider_email = Crypto.encrypt(where.provider_email)
     }
-    const identity = await this.db.get(TABLE, where)
+    const identity = await this.db.get<IdentityRow>(DbData.Tables.UserIdentity, where)
     if (identity) {
       if (identity.provider_email) {
         identity.provider_email = Crypto.decrypt(identity.provider_email)
@@ -44,6 +43,6 @@ export class UserIdentityRepo {
     if (userIdentity.provider_email) {
       userIdentity.provider_email = Crypto.encrypt(userIdentity.provider_email)
     }
-    await this.db.update(TABLE, userIdentity, { id: userIdentity.id })
+    await this.db.update(DbData.Tables.UserIdentity, userIdentity, { id: userIdentity.id })
   }
 }

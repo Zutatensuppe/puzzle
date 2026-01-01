@@ -1,8 +1,7 @@
-import type Db from '../Db'
-import type { WhereRaw } from '../Db'
-import type { Announcement, AnnouncementId } from '../../../common/src/Types'
-
-const TABLE = 'announcements'
+import DbData from '../app/DbData'
+import type Db from '../lib/Db'
+import type { WhereRaw } from '../lib/Db'
+import type { Announcement, AnnouncementId } from '@common/Types'
 
 export class AnnouncementsRepo {
   constructor(
@@ -12,14 +11,14 @@ export class AnnouncementsRepo {
   }
 
   async getAll(): Promise<Announcement[]> {
-    return await this.db.getMany(TABLE, undefined, [{ created: -1 }])
+    return await this.db.getMany(DbData.Tables.Announcements, undefined, [{ created: -1 }])
   }
 
   async insert(announcement: Omit<Announcement, 'id'>): Promise<AnnouncementId> {
-    return await this.db.insert(TABLE, announcement, 'id') as AnnouncementId
+    return await this.db.insert(DbData.Tables.Announcements, announcement, 'id') as AnnouncementId
   }
 
   async get(where: WhereRaw): Promise<Announcement | null> {
-    return await this.db.get('announcements', where)
+    return await this.db.get(DbData.Tables.Announcements, where)
   }
 }

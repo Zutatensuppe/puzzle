@@ -1,20 +1,7 @@
-import type Db from '../Db'
-import type { WhereRaw } from '../Db'
-import type { LivestreamId } from '../../../common/src/Types'
-
-const TABLE = 'twitch_livestreams'
-
-export interface LivestreamsRow {
-  id: number
-  is_live: number
-  livestream_id: LivestreamId
-  title: string
-  url: string
-  user_display_name: string
-  user_thumbnail: string
-  language: string
-  viewers: number
-}
+import type { LivestreamsRow } from '@common/Types'
+import DbData from '../app/DbData'
+import type Db from '../lib/Db'
+import type { WhereRaw } from '../lib/Db'
 
 export class LivestreamsRepo {
   constructor(
@@ -24,14 +11,14 @@ export class LivestreamsRepo {
   }
 
   async getLive(): Promise<LivestreamsRow[]> {
-    return await this.db.getMany(TABLE, { is_live: 1 })
+    return await this.db.getMany(DbData.Tables.TwitchLivestreams, { is_live: 1 })
   }
 
   async insertMany(livestreams: (Omit<LivestreamsRow, 'id'>)[]): Promise<void> {
-    await this.db.insertMany(TABLE, livestreams)
+    await this.db.insertMany(DbData.Tables.TwitchLivestreams, livestreams)
   }
 
   async update(livestream: Partial<LivestreamsRow>, where: WhereRaw): Promise<void> {
-    await this.db.update(TABLE, livestream, where)
+    await this.db.update(DbData.Tables.TwitchLivestreams, livestream, where)
   }
 }

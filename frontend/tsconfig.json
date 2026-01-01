@@ -10,8 +10,10 @@
     "skipLibCheck": true,
     "rootDirs": [
       "src",
-      "../common/src"
-    ]
+    ],
+    "paths": {
+      "@common/*": ["../common/src/*"]
+    }
   },
   "include": [
     "src/**/*.ts",

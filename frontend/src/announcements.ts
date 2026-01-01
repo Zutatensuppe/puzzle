@@ -1,5 +1,5 @@
+import type { Announcement } from '@common/Types'
 import api from './_api'
-import type { Announcement } from '../../common/src/Types'
 import storage from './storage'
 import { reactive } from 'vue'
 

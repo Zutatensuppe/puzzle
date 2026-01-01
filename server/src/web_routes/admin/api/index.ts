@@ -1,19 +1,11 @@
-import type {
-  Api,
-  FeaturedId,
-  FeaturedTeaserRow,
-  GameId,
-  ImageId,
-  ServerInfo,
-} from '../../../../../common/src/Types'
-
 import express from 'express'
 import type { NextFunction } from 'express'
 import type { Server } from '../../../Server'
 import { MergeClientIdsIntoUser } from '../../../admin-tools/MergeClientIdsIntoUser'
 import GameLog from '../../../GameLog'
 import { FixPieces } from '../../../admin-tools/FixPieces'
-import { newJSONDateString } from '../../../../../common/src/Util'
+import type { Api, FeaturedId, FeaturedTeaserRow, GameId, ImageId, ServerInfo } from '@common/Types'
+import { newJSONDateString } from '@common/Util'
 
 export default function createRouter(
   server: Server,

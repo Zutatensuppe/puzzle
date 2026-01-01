@@ -1,4 +1,4 @@
-import type { PlayerSettingsData } from './Types'
+import type { PlayerSettingsData } from '@common/Types'
 
 export type PuzzleTableTextureInfo = { url: string, scale: number }
 

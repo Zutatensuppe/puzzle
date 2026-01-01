@@ -26,7 +26,7 @@ import { onUnmounted, onMounted, ref } from 'vue'
 import { me, onLoginStateChange } from '../../user'
 import api from '../../_api'
 import Nav from '../components/Nav.vue'
-import type { UserGroupRow } from '../../../../common/src/Types'
+import type { UserGroupRow } from '@common/Types'
 
 const groups = ref<UserGroupRow[]>([])
 

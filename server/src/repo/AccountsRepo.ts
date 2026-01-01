@@ -1,9 +1,8 @@
+import DbData from '../app/DbData'
 import Crypto from '../Crypto'
-import type Db from '../Db'
-import type { WhereRaw } from '../Db'
-import type { AccountId, JSONDateString } from '../../../common/src/Types'
-
-const TABLE = 'accounts'
+import type Db from '../lib/Db'
+import type { WhereRaw } from '../lib/Db'
+import type { AccountId, JSONDateString } from '@common/Types'
 
 export interface AccountRow {
   id: AccountId
@@ -25,14 +24,14 @@ export class AccountsRepo {
     if (account.email) {
       account.email = Crypto.encrypt(account.email)
     }
-    return await this.db.insert(TABLE, account, 'id') as AccountId
+    return await this.db.insert(DbData.Tables.Accounts, account, 'id') as AccountId
   }
 
   async get(where: WhereRaw): Promise<AccountRow | null> {
     if (where.email) {
       where.email = Crypto.encrypt(where.email)
     }
-    const account = await this.db.get(TABLE, where)
+    const account = await this.db.get<AccountRow>(DbData.Tables.Accounts, where)
     if (account) {
       if (account.email) {
         account.email = Crypto.decrypt(account.email)
@@ -48,6 +47,6 @@ export class AccountsRepo {
     if (where.email) {
       where.email = Crypto.encrypt(where.email)
     }
-    await this.db.update('accounts', account, where)
+    await this.db.update(DbData.Tables.Accounts, account, where)
   }
 }

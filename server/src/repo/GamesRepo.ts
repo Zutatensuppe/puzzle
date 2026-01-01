@@ -1,9 +1,8 @@
-import { EncodedPlayerIdx } from '../../../common/src/Types'
-import type { EncodedPlayer, GameId, GameRow, GameRowWithImageAndUser, UserId } from '../../../common/src/Types'
-import type Db from '../Db'
+import { EncodedPlayerIdx } from '@common/Types'
+import type { EncodedPlayer, GameId, GameRow, GameRowWithImageAndUser, UserId , UserRow } from '@common/Types'
+import type Db from '../lib/Db'
 import type { Repos } from './Repos'
-
-const TABLE = 'games'
+import DbData from '../app/DbData'
 
 export class GamesRepo {
   constructor(
@@ -14,11 +13,11 @@ export class GamesRepo {
   }
 
   async count(): Promise<number> {
-    return await this.db.count(TABLE)
+    return await this.db.count(DbData.Tables.Games)
   }
 
   async getAll(offset: number, limit: number): Promise<GameRow[]> {
-    return await this.db.getMany(TABLE, undefined, [{ created: -1 }], { offset, limit })
+    return await this.db.getMany(DbData.Tables.Games, undefined, [{ created: -1 }], { offset, limit })
   }
 
   async getAllWithImagesAndUsers(offset: number, limit: number): Promise<GameRowWithImageAndUser[]> {
@@ -40,7 +39,7 @@ export class GamesRepo {
   }
 
   async getGameRowById(gameId: GameId): Promise<GameRow | null> {
-    const gameRow = await this.db.get(TABLE, {id: gameId})
+    const gameRow = await this.db.get(DbData.Tables.Games, {id: gameId})
     return (gameRow as GameRow) || null
   }
 
@@ -50,13 +49,14 @@ export class GamesRepo {
     currentUserId: UserId,
     limitByUserId: UserId | null,
   ): Promise<GameRow[]> {
+    const limitSql = this.db._buildLimit({ limit, offset })
+
     if (limitByUserId) {
       // pieces count only is misleading because the user can help
       // in the puzzle without connecting a piece
-      const limitSql = this.db._buildLimit({ limit, offset })
       return await this.db._getMany(`
-        SELECT g.* FROM ${TABLE} g
-        INNER JOIN user_x_game uxg on uxg.game_id = g.id
+        SELECT g.* FROM ${DbData.Tables.Games} g
+        INNER JOIN ${DbData.Tables.UserXGame} uxg on uxg.game_id = g.id
         WHERE
           (g."private" = 0 OR g.creator_user_id = $1)
           AND
@@ -70,15 +70,15 @@ export class GamesRepo {
         ${limitSql}
       `, [currentUserId, limitByUserId]) as GameRow[]
     }
-    const limitSql = this.db._buildLimit({ limit, offset })
+
     return await this.db._getMany(`
-      SELECT * FROM ${TABLE}
+      SELECT g.* FROM ${DbData.Tables.Games} g
       WHERE
-        ("private" = 0 OR creator_user_id = $1)
+        (g."private" = 0 OR g.creator_user_id = $1)
         AND
-        (finished is null)
+        (g.finished is null)
       ORDER BY
-        created DESC
+        g.created DESC
       ${limitSql}
     `, [currentUserId]) as GameRow[]
   }
@@ -89,13 +89,14 @@ export class GamesRepo {
     currentUserId: UserId,
     limitByUserId: UserId | null,
   ): Promise<GameRow[]> {
+    const limitSql = this.db._buildLimit({ limit, offset })
+
     if (limitByUserId) {
       // pieces count only is misleading because the user can help
       // in the puzzle without connecting a piece
-      const limitSql = this.db._buildLimit({ limit, offset })
       return await this.db._getMany(`
-        SELECT g.* FROM ${TABLE} g
-        INNER JOIN user_x_game uxg on uxg.game_id = g.id
+        SELECT g.* FROM ${DbData.Tables.Games} g
+        INNER JOIN ${DbData.Tables.UserXGame} uxg on uxg.game_id = g.id
         WHERE
           (g."private" = 0 OR g.creator_user_id = $1)
           AND
@@ -109,9 +110,9 @@ export class GamesRepo {
         ${limitSql}
       `, [currentUserId, limitByUserId]) as GameRow[]
     }
-    const limitSql = this.db._buildLimit({ limit, offset })
+
     return await this.db._getMany(`
-      SELECT * FROM ${TABLE}
+      SELECT * FROM ${DbData.Tables.Games}
       WHERE
         ("private" = 0 OR creator_user_id = $1)
         AND
@@ -123,23 +124,23 @@ export class GamesRepo {
   }
 
   async countPublicRunningGames(userId: UserId): Promise<number> {
-    const sql = `SELECT COUNT(*)::int AS count FROM ${TABLE} WHERE
+    const sql = `SELECT COUNT(*)::int AS count FROM ${DbData.Tables.Games} WHERE
       ("private" = 0 OR creator_user_id = $1)
       AND
       (finished is null)
     `
-    const row = await this.db._get(sql, [userId])
-    return row.count
+    const row = await this.db._get<{ count: number }>(sql, [userId])
+    return row?.count ?? 0
   }
 
   async countPublicFinishedGames(userId: UserId): Promise<number> {
-    const sql = `SELECT COUNT(*)::int AS count FROM ${TABLE} WHERE
+    const sql = `SELECT COUNT(*)::int AS count FROM ${DbData.Tables.Games} WHERE
       ("private" = 0 OR creator_user_id = $1)
       AND
       (finished is not null)
     `
-    const row = await this.db._get(sql, [userId])
-    return row.count
+    const row = await this.db._get<{ count: number }>(sql, [userId])
+    return row?.count ?? 0
   }
 
   async countGamesByUser(
@@ -152,17 +153,17 @@ export class GamesRepo {
       SELECT
         COUNT(*)::int AS count
       FROM
-        user_x_game uxg
+        ${DbData.Tables.UserXGame} uxg
       INNER JOIN
-        ${TABLE} g ON g.id = uxg.game_id
+        ${DbData.Tables.Games} g ON g.id = uxg.game_id
       WHERE
         (g.private = 0 OR uxg.user_id = $1)
       AND
         uxg.user_id = $2
       AND
         uxg.pieces_count > 0`
-    const row = await this.db._get(sql, [currentUserId, limitToUserId])
-    return row.count
+    const row = await this.db._get<{ count: number }>(sql, [currentUserId, limitToUserId])
+    return row?.count ?? 0
   }
 
   async countGamePiecesByUser(
@@ -175,15 +176,15 @@ export class GamesRepo {
       SELECT
         SUM(uxg.pieces_count)::int AS count
       FROM
-        user_x_game uxg
+        ${DbData.Tables.UserXGame} uxg
       INNER JOIN
-        ${TABLE} g ON g.id = uxg.game_id
+        ${DbData.Tables.Games} g ON g.id = uxg.game_id
       WHERE
         (g.private = 0 OR uxg.user_id = $1)
       AND
         uxg.user_id = $2`
-    const row = await this.db._get(sql, [currentUserId, limitToUserId])
-    return row.count ?? 0
+    const row = await this.db._get<{ count: number }>(sql, [currentUserId, limitToUserId])
+    return row?.count ?? 0
   }
 
   async exists(gameId: GameId): Promise<boolean> {
@@ -192,21 +193,21 @@ export class GamesRepo {
   }
 
   async upsert(row: Omit<GameRow, 'image_snapshot_url' | 'reported'>): Promise<void> {
-    await this.db.upsert(TABLE, row, ['id'])
+    await this.db.upsert(DbData.Tables.Games, row, ['id'])
   }
 
   async updatePlayerRelations(gameId: GameId, players: EncodedPlayer[]): Promise<void> {
     if (!players.length) {
       return
     }
-    const userRows = await this.db.getMany('users', { client_id: { '$in': players.map(p => p[EncodedPlayerIdx.ID] )}})
+    const userRows = await this.db.getMany<UserRow>(DbData.Tables.Users, { client_id: { '$in': players.map(p => p[EncodedPlayerIdx.ID] )}})
     for (const p of players) {
       const userRow = userRows.find(row => row.client_id === p[EncodedPlayerIdx.ID])
       const userId = userRow
         ? userRow.id
-        : await this.db.insert('users', { client_id: p[EncodedPlayerIdx.ID], created: new Date() }, 'id')
+        : await this.db.insert(DbData.Tables.Users, { client_id: p[EncodedPlayerIdx.ID], created: new Date() }, 'id')
 
-      await this.db.upsert('user_x_game', {
+      await this.db.upsert(DbData.Tables.UserXGame, {
         user_id: userId,
         game_id: gameId,
         pieces_count: p[EncodedPlayerIdx.POINTS],
@@ -215,13 +216,13 @@ export class GamesRepo {
   }
 
   async delete(gameId: GameId): Promise<void> {
-    await this.db.delete(TABLE, { id: gameId })
-    await this.db.delete('user_x_game', { game_id: gameId })
+    await this.db.delete(DbData.Tables.Games, { id: gameId })
+    await this.db.delete(DbData.Tables.UserXGame, { game_id: gameId })
 
     await this.repos.leaderboard.updateLeaderboards()
   }
 
   async reportGame(gameId: GameId): Promise<void> {
-    await this.db.run(`UPDATE ${TABLE} SET reported = reported + 1 WHERE id = $1`, [gameId])
+    await this.db.run(`UPDATE ${DbData.Tables.Games} SET reported = reported + 1 WHERE id = $1`, [gameId])
   }
 }

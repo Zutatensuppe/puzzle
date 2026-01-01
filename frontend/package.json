@@ -25,6 +25,7 @@
     "@babel/types": "^7.25.6",
     "@eslint/js": "^9.11.1",
     "@types/lodash": "^4.17.9",
+    "@types/node": "^25.0.3",
     "@vitejs/plugin-vue": "^5.1.4",
     "cpx2": "^7.0.1",
     "eslint": "^9.11.1",

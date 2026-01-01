@@ -93,9 +93,9 @@ import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { me, onLoginStateChange } from '../../user'
 import api from '../../_api'
 import Nav from '../components/Nav.vue'
-import type { FeaturedRowWithCollections, FeaturedTeaserRow } from '../../../../common/src/Types'
+import type { FeaturedRowWithCollections, FeaturedTeaserRow } from '@common/Types'
 import FeaturedButton from '../../components/FeaturedButton.vue'
-import { arrayMove } from '../../../../common/src/Util'
+import { arrayMove } from '@common/Util'
 
 type FeaturedTeaserRowFeaturedRow = FeaturedTeaserRow & { featured: FeaturedRowWithCollections }
 

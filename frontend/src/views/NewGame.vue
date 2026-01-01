@@ -85,8 +85,8 @@
 
 <script setup lang="ts">
 import { onMounted, onBeforeUnmount, ref, watch } from 'vue'
-import { ImageSearchSort, isImageSearchSort } from '../../../common/src/Types'
-import type { Api, GameSettings, ImageInfo, Tag, FeaturedRowWithCollections } from '../../../common/src/Types'
+import { ImageSearchSort, isImageSearchSort } from '@common/Types'
+import type { Api, GameSettings, ImageInfo, Tag, FeaturedRowWithCollections } from '@common/Types'
 import api from '../_api'
 import type { XhrRequest } from '../_api/xhr'
 import { onBeforeRouteUpdate, useRouter } from 'vue-router'

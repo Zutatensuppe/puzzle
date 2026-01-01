@@ -1,5 +1,5 @@
-import Time from '../../../common/src/Time'
-import { logger } from '../../../common/src/Util'
+import Time from '@common/Time'
+import { logger } from '@common/Util'
 import { Worker } from './Worker'
 
 const log = logger('CheckLivestreamsWorker.ts')

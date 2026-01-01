@@ -1,5 +1,5 @@
-import type { GameId, ImageInfo, Api, UserAvatar } from '../../../common/src/Types'
-import Util from '../../../common/src/Util'
+import type { GameId, ImageInfo, Api, UserAvatar } from '@common/Types'
+import Util from '@common/Util'
 import xhr, { JSON_HEADERS } from './xhr'
 import type { Response, XhrRequest } from './xhr'
 

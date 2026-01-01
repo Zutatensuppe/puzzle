@@ -17,13 +17,13 @@
 </template>
 <script setup lang="ts">
 import { computed } from 'vue'
-import type { BasicPlayerInfo, RegisteredMap, GamePlayers, BasicPlayerInfoWithBannedAndActive, ClientId } from '../../../common/src/Types'
+import type { BasicPlayerInfo, RegisteredMap, GamePlayers, BasicPlayerInfoWithBannedAndActive, ClientId } from '@common/Types'
 import ScoreRow from './ScoreRow.vue'
 import sortBy from 'lodash/sortBy'
 import type { GameInterface } from '../Game'
 
 import { me } from '../user'
-import GameCommon from '../../../common/src/GameCommon'
+import GameCommon from '@common/GameCommon'
 
 const props = defineProps<{
   players: GamePlayers,

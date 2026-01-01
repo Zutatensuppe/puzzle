@@ -153,7 +153,7 @@
 <script setup lang="ts">
 import { onMounted, onUnmounted, ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
-import type { Api, GameInfo } from '../../../common/src/Types'
+import type { Api, GameInfo } from '@common/Types'
 import RunningGameTeaser from '../components/teasers/RunningGameTeaser.vue'
 import FinishedGameTeaser from '../components/teasers/FinishedGameTeaser.vue'
 import Pagination from '../components/Pagination.vue'

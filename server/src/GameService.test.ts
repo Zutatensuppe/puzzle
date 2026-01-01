@@ -1,9 +1,9 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { GameService } from './GameService'
 import { PuzzleService } from './PuzzleService'
-import { ShapeMode, RotationMode } from '../../common/src/Types'
-import type { GameRow, ImageInfo } from '../../common/src/Types'
-import Util from '../../common/src/Util'
+import { ShapeMode, RotationMode } from '@common/Types'
+import type { GameRow, ImageInfo } from '@common/Types'
+import Util from '@common/Util'
 
 // Mock dependencies
 const mockServer = {
@@ -145,7 +145,7 @@ describe('GameService', () => {
       // Create a reference puzzle using the correct seed (gameId + gameStartedTime)
       const correctSeed = Util.hash(gameId + ' ' + gameStartedTime)
       const referencePuzzle = mockPuzzleService.createPuzzle(
-        new (await import('../../common/src/Rng')).Rng(correctSeed),
+        new (await import('@common/Rng')).Rng(correctSeed),
         25,
         mockImage,
         gameStartedTime,

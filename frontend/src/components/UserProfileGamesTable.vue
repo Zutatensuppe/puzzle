@@ -31,8 +31,8 @@
   </div>
 </template>
 <script setup lang="ts">
-import { resizeUrl } from '../../../common/src/ImageService'
-import type { GameInfo } from '../Types'
+import { resizeUrl } from '@common/ImageService'
+import type { GameInfo } from '@common/Types'
 
 defineProps<{
   games: GameInfo[],

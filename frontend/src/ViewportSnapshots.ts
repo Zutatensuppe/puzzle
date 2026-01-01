@@ -1,4 +1,4 @@
-import type { Camera, Snapshot } from '../../common/src/Camera'
+import type { Camera, Snapshot } from '@common/Camera'
 import type { EventAdapter } from './EventAdapter'
 
 export class ViewportSnapshots {

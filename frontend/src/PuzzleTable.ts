@@ -1,7 +1,7 @@
-import GameCommon from '../../common/src/GameCommon'
-import type { Dim, Point, Rect } from './Geometry'
-import type { GameId, PlayerSettingsData } from '../../common/src/Types'
-import { logger } from '../../common/src/Util'
+import GameCommon from '@common/GameCommon'
+import type { Dim, Point, Rect } from '@common/Geometry'
+import type { GameId, PlayerSettingsData } from '@common/Types'
+import { logger } from '@common/Util'
 import type { Graphics } from './Graphics'
 import { getTextureInfoByPlayerSettings } from './PuzzleTableTextureInfo'
 

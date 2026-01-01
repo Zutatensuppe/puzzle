@@ -1,5 +1,5 @@
 import config from '../Config'
-import { logger } from '../../../common/src/Util'
+import { logger } from '@common/Util'
 import { Worker } from './Worker'
 
 const log = logger('PersistGamesWorker.ts')
