@@ -76,7 +76,14 @@ import isEqual from 'lodash/isEqual'
 import { Dialogs, useDialog } from '../useDialog'
 import { ConnectionStatesEnum } from '@common/Enums'
 
-const { openSettingsOverlayDialog, openInfoOverlayDialog, openHelpOverlayDialog, openCuttingOverlayDialog, currentDialog, closeDialog: closeDialogX } = useDialog()
+const {
+  openSettingsOverlayDialog,
+  openInfoOverlayDialog,
+  openHelpOverlayDialog,
+  openCuttingOverlayDialog,
+  currentDialog,
+  closeDialog: closeDialogX,
+} = useDialog()
 
 const statusMessages = ref<InstanceType<typeof StatusMessages>>() as Ref<InstanceType<typeof StatusMessages>>
 const players = ref<GamePlayers>({ active: [], idle: [], banned: [] })
@@ -164,14 +171,22 @@ const openDialog = (content: string): void => {
   const newOverlay = content
 
   if (content === 'help') {
-    openHelpOverlayDialog()
+    openHelpOverlayDialog({
+      onClose: closeDialog,
+    })
   } else if (content === 'settings') {
     if (g.value) {
-      openSettingsOverlayDialog({ game: g.value })
+      openSettingsOverlayDialog({
+        game: g.value,
+        onClose: closeDialog,
+      })
     }
   } else if (content === 'info') {
     if (g.value) {
-      openInfoOverlayDialog({ game: g.value })
+      openInfoOverlayDialog({
+        game: g.value,
+        onClose: closeDialog,
+      })
     }
   } else {
     dialog.value = newValue
