@@ -33,7 +33,7 @@ export class FeaturedRepo {
   }
 
   async get(where: WhereRaw): Promise<FeaturedRow | null> {
-    return await this.db.get<FeaturedRow>(DbData.Tables.Featured, where)
+    return await this.db.get(DbData.Tables.Featured, where)
   }
 
   async getMany(where: WhereRaw): Promise<FeaturedRow[]> {
