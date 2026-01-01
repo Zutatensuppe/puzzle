@@ -7,8 +7,7 @@ import Util from '@common/Util'
 import Time from '@common/Time'
 import { createImageSnapshot } from './ImageSnapshotCreator'
 import type { Game as GameType, EncodedGame, EncodedGameLegacy, Hud, GameEvent, ServerUpdateEvent, ServerSyncEvent, ServerErrorDetails } from '@common/Types'
-import { SoundsEnum } from '@common/Constants'
-import { CONN_STATE } from '@common/Enums'
+import { ConnectionStatesEnum, SoundsEnum } from '@common/Constants'
 
 export class GamePlay extends Game<Hud> {
 
@@ -109,7 +108,7 @@ export class GamePlay extends Game<Hud> {
       this.initServerEventCallbacks()
       this.initGameLoop()
     } catch (e) {
-      this.hud.setConnectionState({ state: CONN_STATE.SERVER_ERROR, errorDetails: e as ServerErrorDetails })
+      this.hud.setConnectionState({ state: ConnectionStatesEnum.SERVER_ERROR, errorDetails: e as ServerErrorDetails })
       this.rerender = false
     }
   }

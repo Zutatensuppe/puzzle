@@ -1,4 +1,4 @@
-import type { CONN_STATE } from './Enums'
+import type { ConnectionStatesEnum } from './Constants'
 import type { Rect } from './Geometry'
 import type { SERVER_EVENT_TYPE, LOG_TYPE, CLIENT_EVENT_TYPE, CHANGE_TYPE, GAME_EVENT_TYPE } from './Protocol'
 import type { Rng, RngSerialized } from './Rng'
@@ -732,7 +732,7 @@ export interface GamePlayers {
   banned: BasicPlayerInfo[]
 }
 
-export type ConnectionState = { state: CONN_STATE, errorDetails?: ServerErrorDetails }
+export type ConnectionState = { state: ConnectionStatesEnum, errorDetails?: ServerErrorDetails }
 
 export interface Hud {
   setPuzzleCut: () => void

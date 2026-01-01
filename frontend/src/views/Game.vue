@@ -57,7 +57,6 @@
   </div>
 </template>
 <script setup lang="ts">
-import { CONN_STATE } from '@common/Enums'
 import type { Hud, GameStatus, GamePlayers, RegisteredMap, GameId, ClientId, ConnectionState } from '@common/Types'
 import { GamePlay } from '../GamePlay'
 import { onMounted, onUnmounted, ref, watch } from 'vue'
@@ -75,6 +74,7 @@ import { onLoginStateChange } from '../user'
 import isEqual from 'lodash/isEqual'
 
 import { Dialogs, useDialog } from '../useDialog'
+import { ConnectionStatesEnum } from '@common/Constants'
 
 const { openSettingsOverlayDialog, openInfoOverlayDialog, openHelpOverlayDialog, openCuttingOverlayDialog, currentDialog, closeDialog: closeDialogX } = useDialog()
 
@@ -83,7 +83,7 @@ const players = ref<GamePlayers>({ active: [], idle: [], banned: [] })
 const status = ref<GameStatus>({ finished: false, duration: 0, piecesDone: 0, piecesTotal: 0 })
 const dialog = ref<boolean>(false)
 const overlay = ref<string>('')
-const connectionState = ref<ConnectionState>({ state: CONN_STATE.NOT_CONNECTED })
+const connectionState = ref<ConnectionState>({ state: ConnectionStatesEnum.NOT_CONNECTED })
 
 openCuttingOverlayDialog()
 
@@ -206,8 +206,8 @@ const hud: Hud = {
   },
   setConnectionState: (newConnectionState: ConnectionState) => {
     if (
-      newConnectionState.state === CONN_STATE.SERVER_ERROR ||
-      newConnectionState.state === CONN_STATE.DISCONNECTED
+      newConnectionState.state === ConnectionStatesEnum.SERVER_ERROR ||
+      newConnectionState.state === ConnectionStatesEnum.DISCONNECTED
     ) {
       closeDialogX(Dialogs.CUTTING_OVERLAY_DIALOG)
     }

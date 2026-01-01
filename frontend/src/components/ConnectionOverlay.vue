@@ -99,9 +99,9 @@
 </template>
 <script setup lang="ts">
 import { computed, nextTick, ref, watch } from 'vue'
-import { CONN_STATE } from '@common/Enums'
 import type { ConnectionState } from '@common/Types'
 import LoginBit from './LoginBit.vue'
+import { ConnectionStatesEnum } from '@common/Constants'
 
 const emit = defineEmits<{
   (e: 'reconnect'): void
@@ -116,15 +116,15 @@ const props = defineProps<{
 const passwordField = ref<HTMLInputElement | null>(null)
 
 const hasServerError = computed((): boolean => {
-  return props.connectionState.state === CONN_STATE.SERVER_ERROR
+  return props.connectionState.state === ConnectionStatesEnum.SERVER_ERROR
 })
 
 const lostConnection = computed((): boolean => {
-  return props.connectionState.state === CONN_STATE.DISCONNECTED
+  return props.connectionState.state === ConnectionStatesEnum.DISCONNECTED
 })
 
 const connecting = computed((): boolean => {
-  return props.connectionState.state === CONN_STATE.CONNECTING
+  return props.connectionState.state === ConnectionStatesEnum.CONNECTING
 })
 
 const show = computed((): boolean => {
