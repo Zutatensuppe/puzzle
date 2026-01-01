@@ -23,32 +23,34 @@ import click from './assets/sounds/click.mp3'
 import click2 from './assets/sounds/click2.mp3'
 // @ts-ignore
 import rotate from './assets/sounds/rotate2.mp3'
+
 import type { Graphics } from './Graphics'
-import type { ImageDataURL } from '@common/Types'
+import { GraphicsEnum, SoundsEnum } from '@common/Constants'
 import { COLOR_MAGENTA } from '@common/Color'
+import type { ImageDataURL } from '@common/Types'
 
 export class Assets {
   public inited = false
 
-  public Audio!: {
-    CLICK: HTMLAudioElement
-    CLICK_2: HTMLAudioElement
-    ROTATE: HTMLAudioElement
-  }
+  public Audio!: Record<SoundsEnum, HTMLAudioElement>
 
   public Gfx!: {
-    GRAB_RAW: ImageBitmap
-    HAND_RAW: ImageBitmap
-    GRAB: HTMLCanvasElement
-    HAND: HTMLCanvasElement
-    GRAB_MASK: HTMLCanvasElement
-    HAND_MASK: HTMLCanvasElement
-    badgeMask: ImageBitmap
-    badgeOver: ImageBitmap
-    badgeOverIdle: ImageBitmap
-    badgeAnon: ImageDataURL
-    badgeAnonIdle: ImageDataURL
-    stencilsDefault: ImageBitmap
+    [GraphicsEnum.CURSOR_HAND_RAW]: ImageBitmap
+    [GraphicsEnum.CURSOR_HAND]: HTMLCanvasElement
+    [GraphicsEnum.CURSOR_HAND_MASK]: HTMLCanvasElement
+
+    [GraphicsEnum.CURSOR_GRAB_RAW]: ImageBitmap
+    [GraphicsEnum.CURSOR_GRAB]: HTMLCanvasElement
+    [GraphicsEnum.CURSOR_GRAB_MASK]: HTMLCanvasElement
+
+    [GraphicsEnum.BADGE_MASK]: ImageBitmap
+    [GraphicsEnum.BADGE_OVERLAY_ACTIVE]: ImageBitmap
+    [GraphicsEnum.BADGE_OVERLAY_IDLE]: ImageBitmap
+
+    [GraphicsEnum.BADGE_ANON_ACTIVE]: ImageDataURL
+    [GraphicsEnum.BADGE_ANON_IDLE]: ImageDataURL
+
+    [GraphicsEnum.PIECE_STENCILS_SPRITESHEET]: ImageBitmap
   }
 
   async init (graphics: Graphics) {
@@ -58,26 +60,30 @@ export class Assets {
     this.inited = true
 
     this.Audio = {
-      CLICK: new Audio(click),
-      CLICK_2: new Audio(click2),
-      ROTATE: new Audio(rotate),
+      [SoundsEnum.PIECE_CONNECTED]: new Audio(click),
+      [SoundsEnum.OPPONENT_PIECE_CONNECTED]: new Audio(click2),
+      [SoundsEnum.PIECE_ROTATED]: new Audio(rotate),
     }
 
-    const grabGfx = await graphics.loader.imageBitmapFromSrc(grab)
     const handGfx = await graphics.loader.imageBitmapFromSrc(hand)
+    const grabGfx = await graphics.loader.imageBitmapFromSrc(grab)
     this.Gfx = {
-      GRAB_RAW: grabGfx,
-      HAND_RAW: handGfx,
-      GRAB: graphics.op.removeColor(grabGfx, COLOR_MAGENTA),
-      HAND: graphics.op.removeColor(handGfx, COLOR_MAGENTA),
-      GRAB_MASK: graphics.op.extractColor(grabGfx, COLOR_MAGENTA),
-      HAND_MASK: graphics.op.extractColor(handGfx, COLOR_MAGENTA),
-      badgeMask: await graphics.loader.imageBitmapFromSrc(badgeMask),
-      badgeOver: await graphics.loader.imageBitmapFromSrc(badgeOver),
-      badgeOverIdle: await graphics.loader.imageBitmapFromSrc(badgeOverIdle),
-      badgeAnon: await graphics.loader.dataUrlFromSrc(badgeAnon),
-      badgeAnonIdle: await graphics.loader.dataUrlFromSrc(badgeAnonIdle),
-      stencilsDefault: await graphics.loader.imageBitmapFromSrc(stencilsDefault),
+      [GraphicsEnum.CURSOR_HAND_RAW]: handGfx,
+      [GraphicsEnum.CURSOR_HAND]: graphics.op.removeColor(handGfx, COLOR_MAGENTA),
+      [GraphicsEnum.CURSOR_HAND_MASK]: graphics.op.extractColor(handGfx, COLOR_MAGENTA),
+
+      [GraphicsEnum.CURSOR_GRAB_RAW]: grabGfx,
+      [GraphicsEnum.CURSOR_GRAB]: graphics.op.removeColor(grabGfx, COLOR_MAGENTA),
+      [GraphicsEnum.CURSOR_GRAB_MASK]: graphics.op.extractColor(grabGfx, COLOR_MAGENTA),
+
+      [GraphicsEnum.BADGE_MASK]: await graphics.loader.imageBitmapFromSrc(badgeMask),
+      [GraphicsEnum.BADGE_OVERLAY_ACTIVE]: await graphics.loader.imageBitmapFromSrc(badgeOver),
+      [GraphicsEnum.BADGE_OVERLAY_IDLE]: await graphics.loader.imageBitmapFromSrc(badgeOverIdle),
+
+      [GraphicsEnum.BADGE_ANON_ACTIVE]: await graphics.loader.dataUrlFromSrc(badgeAnon),
+      [GraphicsEnum.BADGE_ANON_IDLE]: await graphics.loader.dataUrlFromSrc(badgeAnonIdle),
+
+      [GraphicsEnum.PIECE_STENCILS_SPRITESHEET]: await graphics.loader.imageBitmapFromSrc(stencilsDefault),
     }
   }
 }

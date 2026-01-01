@@ -14,6 +14,7 @@ import { PlayersShaderWrapper } from './webgl/PlayersShaderWrapper'
 import type { Assets } from './Assets'
 import { FireworksShaderWrapper } from './webgl/FireworksShaderWrapper'
 import PuzzleGraphics from './PuzzleGraphics'
+import { GraphicsEnum } from '../../common/src/Constants'
 
 const log = logger('Renderer.ts')
 
@@ -67,7 +68,7 @@ export class RendererWebgl {
     if (!stencils) {
       // all stencils, in flat puzzle we dont need all of them but still
       // create them here
-      stencils = await PuzzleGraphics.createWebglStencilsFromPng(this.graphics, this.assets.Gfx.stencilsDefault)
+      stencils = await PuzzleGraphics.createWebglStencilsFromPng(this.graphics, this.assets.Gfx[GraphicsEnum.PIECE_STENCILS_SPRITESHEET])
     }
     console.timeEnd('stencils')
 

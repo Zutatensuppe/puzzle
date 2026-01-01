@@ -10,6 +10,7 @@ import playersVertex from './shaders/playersVertex'
 import { COLOR_BLUE, hexToColor } from '@common/Color'
 import type { Graphics } from '../Graphics'
 import { getPlayerNameCanvas } from '../PlayerNames'
+import { GraphicsEnum } from '../../../common/src/Constants'
 
 export class PlayersShaderWrapper {
   private shader!: Shader
@@ -61,16 +62,16 @@ export class PlayersShaderWrapper {
     this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_WRAP_S, this.gl.CLAMP_TO_EDGE)
     this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_WRAP_T, this.gl.CLAMP_TO_EDGE)
     this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_MIN_FILTER, this.gl.LINEAR)
-    this.gl.texImage2D(this.gl.TEXTURE_2D, 0, this.gl.RGBA, this.gl.RGBA, this.gl.UNSIGNED_BYTE, this.assets.Gfx.HAND_RAW)
-    this.textureInfoHand = { width: this.assets.Gfx.HAND_RAW.width, height: this.assets.Gfx.HAND_RAW.height, texture: texHand }
+    this.gl.texImage2D(this.gl.TEXTURE_2D, 0, this.gl.RGBA, this.gl.RGBA, this.gl.UNSIGNED_BYTE, this.assets.Gfx[GraphicsEnum.CURSOR_HAND_RAW])
+    this.textureInfoHand = { width: this.assets.Gfx[GraphicsEnum.CURSOR_HAND_RAW].width, height: this.assets.Gfx[GraphicsEnum.CURSOR_HAND_RAW].height, texture: texHand }
 
     const texGrab = this.gl.createTexture()!
     this.gl.bindTexture(this.gl.TEXTURE_2D, texGrab)
     this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_WRAP_S, this.gl.CLAMP_TO_EDGE)
     this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_WRAP_T, this.gl.CLAMP_TO_EDGE)
     this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_MIN_FILTER, this.gl.LINEAR)
-    this.gl.texImage2D(this.gl.TEXTURE_2D, 0, this.gl.RGBA, this.gl.RGBA, this.gl.UNSIGNED_BYTE, this.assets.Gfx.GRAB_RAW)
-    this.textureInfoGrab = { width: this.assets.Gfx.GRAB_RAW.width, height: this.assets.Gfx.GRAB_RAW.height, texture: texGrab }
+    this.gl.texImage2D(this.gl.TEXTURE_2D, 0, this.gl.RGBA, this.gl.RGBA, this.gl.UNSIGNED_BYTE, this.assets.Gfx[GraphicsEnum.CURSOR_GRAB_RAW])
+    this.textureInfoGrab = { width: this.assets.Gfx[GraphicsEnum.CURSOR_GRAB_RAW].width, height: this.assets.Gfx[GraphicsEnum.CURSOR_GRAB_RAW].height, texture: texGrab }
 
     this.texName = this.gl.createTexture()!
     this.gl.bindTexture(this.gl.TEXTURE_2D, this.texName)

@@ -6,8 +6,9 @@ import Communication from './Communication'
 import Util from '@common/Util'
 import Time from '@common/Time'
 import { createImageSnapshot } from './ImageSnapshotCreator'
+import type { Game as GameType, EncodedGame, EncodedGameLegacy, Hud, GameEvent, ServerUpdateEvent, ServerSyncEvent, ServerErrorDetails } from '@common/Types'
+import { SoundsEnum } from '@common/Constants'
 import { CONN_STATE } from '@common/Enums'
-import type { EncodedGame, Hud, Game as GameType, EncodedGameLegacy, ServerErrorDetails, ServerUpdateEvent, ServerSyncEvent, GameEvent } from '@common/Types'
 
 export class GamePlay extends Game<Hud> {
 
@@ -51,10 +52,10 @@ export class GamePlay extends Game<Hud> {
     }
     if (this.playerSettings.soundsEnabled()) {
       if (ret.anySnapped) {
-        this.sounds.playPieceConnected()
+        this.sounds.playSound(SoundsEnum.PIECE_CONNECTED)
       }
       if (ret.anyRotated && this.playerSettings.rotateSoundEnabled()) {
-        this.sounds.playPieceRotated()
+        this.sounds.playSound(SoundsEnum.PIECE_ROTATED)
       }
     }
     if (ret.anyDropped) {
