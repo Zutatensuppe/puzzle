@@ -6,6 +6,7 @@ import GameLog from '../../../GameLog'
 import { FixPieces } from '../../../admin-tools/FixPieces'
 import type { Api, FeaturedId, FeaturedTeaserRow, GameId, ImageId, ServerInfo } from '@common/Types'
 import { newJSONDateString } from '@common/Util'
+import GameCommon from '@common/GameCommon'
 
 export default function createRouter(
   server: Server,
@@ -210,6 +211,46 @@ export default function createRouter(
 
     const responseData: Api.Admin.DeleteImageResponseData = { ok: true }
     res.send(responseData)
+  })
+
+  router.post('/images/:id/_set_private', async (req, res) => {
+    try {
+      const id = parseInt(req.params.id, 10) as ImageId
+      const image = await server.repos.images.get({ id })
+      if (!image) {
+        const responseData: Api.Admin.SetImagePrivateResponseData = { error: 'image does not exist' }
+        res.status(404).send(responseData)
+        return
+      }
+
+      await server.repos.images.update(
+        { private: 1 },
+        { id },
+      )
+
+      // set games currently in play to private, so they dont overwrite the db value when persisting
+      const gameIds = await server.repos.games.getIds({ image_id: id })
+      for (const gameId of gameIds) {
+        const game = GameCommon.get(gameId)
+        if (game) {
+          GameCommon.Game_setPrivate(game, true)
+        }
+      }
+
+      // update games in database too, so for queries its immediately active
+      await server.repos.games.update(
+        { private: 1 },
+        { image_id: id },
+      )
+
+      // update leaderboards, as private games are excluded there they may have changed
+      await server.repos.leaderboard.updateLeaderboards()
+
+      const responseData: Api.Admin.SetImagePrivateResponseData = { ok: true }
+      res.send(responseData)
+    } catch (error) {
+      res.status(400).send(createErrorResponseData(error))
+    }
   })
 
   router.get('/images/:id', async (req, res) => {

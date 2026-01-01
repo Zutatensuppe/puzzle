@@ -3,6 +3,7 @@ import type { EncodedPlayer, GameId, GameRow, GameRowWithImageAndUser, UserId , 
 import type Db from '../lib/Db'
 import type { Repos } from './Repos'
 import DbData from '../app/DbData'
+import type { WhereRaw } from '../lib/Db'
 
 export class GamesRepo {
   constructor(
@@ -18,6 +19,15 @@ export class GamesRepo {
 
   async getAll(offset: number, limit: number): Promise<GameRow[]> {
     return await this.db.getMany(DbData.Tables.Games, undefined, [{ created: -1 }], { offset, limit })
+  }
+
+  async getIds(where: WhereRaw): Promise<GameId[]> {
+    const rows = await this.db.getMany<GameRow>(DbData.Tables.Games, where)
+    return rows.map(row => row.id)
+  }
+
+  async update(image: Partial<GameRow>, where: WhereRaw): Promise<void> {
+    await this.db.update(DbData.Tables.Games, image, where)
   }
 
   async getAllWithImagesAndUsers(offset: number, limit: number): Promise<GameRowWithImageAndUser[]> {

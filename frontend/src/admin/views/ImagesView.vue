@@ -60,10 +60,19 @@
           </td>
           <td>{{ item.games_count }}</td>
           <td>
-            <span
-              class="is-clickable"
+            <v-btn
+              block
               @click="onDelete(item)"
-            >DELETE</span>
+            >
+              DELETE
+            </v-btn>
+            <br>
+            <v-btn
+              block
+              @click="onSetPrivate(item)"
+            >
+              SET PRIVATE
+            </v-btn>
           </td>
         </tr>
       </tbody>
@@ -100,6 +109,24 @@ const onDelete = async (image: ImageRowWithCount) => {
       images.value.items = images.value.items.filter(i => i.id !== image.id)
     }
     alert('Successfully deleted image!')
+  }
+}
+
+const onSetPrivate = async (image: ImageRowWithCount) => {
+  if (!confirm(`Really set image ${image.id} as private? This cannot be undone!`)) {
+    return
+  }
+
+  const resp = await api.admin.setImagePrivate(image.id)
+  if ('error' in resp || !resp.ok) {
+    alert('Setting image to private failed!')
+  } else {
+    if (images.value) {
+      if (image) {
+        image.private = 1
+      }
+    }
+    alert('Successfully set image to private!')
   }
 }
 

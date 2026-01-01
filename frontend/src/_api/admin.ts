@@ -155,6 +155,15 @@ const deleteImage = async (
   return await res.json()
 }
 
+const setImagePrivate = async (
+  id: ImageId,
+): Promise<Api.Admin.SetImagePrivateResponseData> => {
+  const res = await xhr.post<Api.Admin.SetImagePrivateResponseData>(`/admin/api/images/${id}/_set_private`, {
+    headers: JSON_HEADERS,
+  })
+  return await res.json()
+}
+
 const getImage = async (
   id: ImageId,
 ): Promise<Api.Admin.GetImageResponseData> => {
@@ -184,6 +193,7 @@ export default {
   getImages,
   getImage,
   deleteImage,
+  setImagePrivate,
   getGroups,
   getServerInfo,
   mergeClientIdsIntoUser,
