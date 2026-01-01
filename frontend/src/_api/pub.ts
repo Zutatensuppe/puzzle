@@ -117,13 +117,7 @@ const saveImage = (
 ): Promise<Response<Api.SaveImageResponseData>> => {
   return xhr.post('/api/save-image', {
     headers: JSON_HEADERS,
-    body: JSON.stringify({
-      id: data.id,
-      title: data.title,
-      copyrightName: data.copyrightName,
-      copyrightURL: data.copyrightURL,
-      tags: data.tags,
-    }),
+    body: JSON.stringify(data),
   })
 }
 
@@ -191,8 +185,8 @@ const upload = (
   formData.append('copyrightURL', data.copyrightURL)
   // @ts-ignore
   formData.append('tags', data.tags)
-  formData.append('private', String(data.isPrivate))
-  formData.append('nsfw', String(data.isNsfw))
+  formData.append('isPrivate', String(data.isPrivate))
+  formData.append('isNsfw', String(data.isNsfw))
   return xhr.post('/api/upload', {
     body: formData,
     onUploadProgress: (evt: ProgressEvent<XMLHttpRequestEventTarget>): void => {

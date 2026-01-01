@@ -29,7 +29,7 @@
           <v-card-actions>
             <v-btn
               variant="elevated"
-              @click="closeDialog"
+              @click="closeDialog()"
             >
               Close
             </v-btn>

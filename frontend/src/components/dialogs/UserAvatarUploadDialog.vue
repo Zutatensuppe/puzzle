@@ -78,7 +78,7 @@
             <v-btn
               variant="elevated"
               color="error"
-              @click="closeDialog"
+              @click="closeDialog()"
             >
               Cancel
             </v-btn>
@@ -95,7 +95,7 @@ import ResponsiveImage from '../ResponsiveImage.vue'
 import { toast } from '../../toast'
 import { Graphics } from '../../Graphics'
 import { useDialog } from '../../useDialog'
-import type { ImageDataURL } from '../../Types'
+import type { ImageDataURL } from '@common/Types'
 
 const log = logger('NewImageDialog.vue')
 

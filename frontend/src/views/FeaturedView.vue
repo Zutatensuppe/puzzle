@@ -66,7 +66,7 @@ const router = useRouter()
 
 const featured = ref<FeaturedRowWithCollections | null>(null)
 
-const onNewGame = async (gameSettings: GameSettings) => {
+const onNewGameClick = async (gameSettings: GameSettings) => {
   const res = await api.pub.newGame({ gameSettings })
   const game = await res.json()
   if ('id' in game) {
@@ -77,11 +77,11 @@ const onNewGame = async (gameSettings: GameSettings) => {
   }
 }
 
-const onImageClicked = (newImage: ImageInfo) => {
+const onImageClicked = (image: ImageInfo) => {
   openNewGameDialog({
-    imageInfo: newImage,
-    onNewGameClick: onNewGame,
-    onTagClick: onTagClick,
+    image,
+    onNewGameClick,
+    onTagClick,
   })
 }
 

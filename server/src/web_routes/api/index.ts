@@ -23,13 +23,6 @@ import type { DeleteAvatarRequestData } from '@common/TypesApi'
 
 const log = logger('web_routes/api/index.ts')
 
-interface SaveImageRequestData {
-  id: ImageId
-  title: string
-  copyrightName: string
-  copyrightURL: string
-  tags: string[]
-}
 const GAMES_PER_PAGE_LIMIT = 10
 const IMAGES_PER_PAGE_LIMIT = 20
 
@@ -648,7 +641,7 @@ export default function createRouter(
       return
     }
 
-    const data = req.body as SaveImageRequestData
+    const data = req.body as Api.SaveImageRequestData
     const imageRow = await server.images.getImageById(data.id)
     if (!imageRow) {
       res.status(404).send({ ok: false, error: 'not_found' })
@@ -664,6 +657,8 @@ export default function createRouter(
       title: data.title,
       copyright_name: data.copyrightName,
       copyright_url: server.urlUtil.fixUrl(data.copyrightURL || ''),
+      private: data.isPrivate || data.isNsfw ? 1 : 0,
+      nsfw: data.isNsfw ? 1 : 0,
     }, { id: data.id })
 
     await server.images.setTags(data.id, data.tags || [])
@@ -716,8 +711,8 @@ export default function createRouter(
       const checksum = await FileSystem.checksum(imagePath)
 
       // post form, so booleans are submitted as 'true' | 'false'
-      const isPrivate = req.body.private === 'false' ? 0 : 1
-      const nsfw = req.body.nsfw === 'true' ? 1 : 0
+      const isPrivate = req.body.isPrivate === 'false' ? false : true
+      const isNsfw = req.body.isNsfw === 'true' ? true : false
       const imageId = await im.insertImage({
         uploader_user_id: user.id,
         filename: req.file.filename,
@@ -728,9 +723,9 @@ export default function createRouter(
         created: newJSONDateString(),
         width: dim.w,
         height: dim.h,
-        private: isPrivate,
+        private: isPrivate || isNsfw ? 1 : 0,
         reported: 0,
-        nsfw,
+        nsfw: isNsfw ? 1 : 0,
         checksum,
       })
 

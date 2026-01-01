@@ -36,7 +36,7 @@
           icon="mdi-close"
           variant="text"
           size="x-small"
-          @click="closeDialog"
+          @click="closeDialog()"
         />
       </div>
     </v-card-title>
@@ -53,14 +53,14 @@
         <v-window-item value="register">
           <RegistrationForm
             @login="loginDialogTab='login'"
-            @register-success="closeDialog"
+            @register-success="closeDialog()"
           />
         </v-window-item>
 
         <v-window-item value="forgot-password">
           <PasswordResetRequestForm
             @login="loginDialogTab='login'"
-            @reset-success="closeDialog"
+            @reset-success="closeDialog()"
           />
         </v-window-item>
 

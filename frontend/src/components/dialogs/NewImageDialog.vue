@@ -197,7 +197,7 @@ import ResponsiveImage from '../ResponsiveImage.vue'
 import { toast } from '../../toast'
 import { Graphics } from '../../Graphics'
 import { useDialog } from '../../useDialog'
-import type { ImageDataURL } from '../../Types'
+import type { ImageDataURL } from '@common/Types'
 
 const log = logger('NewImageDialog.vue')
 
@@ -222,6 +222,10 @@ const isPublic = ref<boolean>(false)
 const isNsfw = ref<boolean>(false)
 const droppable = ref<boolean>(false)
 const inputFocused = ref<boolean>(false)
+
+const isPrivate = computed((): boolean => {
+  return !isPublic.value || isNsfw.value
+})
 
 const uploadProgressPercent = computed((): number => {
   return newImageUploadProgress.value ? Math.round(newImageUploadProgress.value * 100) : 0
@@ -337,7 +341,7 @@ const postToGallery = async () => {
     copyrightName: copyrightName.value,
     copyrightURL: copyrightURL.value,
     tags: tags.value,
-    isPrivate: !isPublic.value || isNsfw.value,
+    isPrivate: isPrivate.value,
     isNsfw: isNsfw.value,
   })
   reset()
@@ -354,7 +358,7 @@ const setupGameClick = async () => {
     copyrightName: copyrightName.value,
     copyrightURL: copyrightURL.value,
     tags: tags.value,
-    isPrivate: !isPublic.value || isNsfw.value,
+    isPrivate: isPrivate.value,
     isNsfw: isNsfw.value,
   })
   reset()

@@ -199,15 +199,15 @@ const joinDate = computed(() => {
   return new Date(`${userProfile.value.user.joinDate}`).toLocaleDateString()
 })
 
-const onImageClicked = (newImage: ImageInfo) => {
+const onImageClicked = (image: ImageInfo) => {
   openNewGameDialog({
-    imageInfo: newImage,
-    onNewGameClick: onNewGame,
-    onTagClick: onTagClick,
+    image,
+    onNewGameClick,
+    onTagClick,
   })
 }
 
-const onNewGame = async (gameSettings: GameSettings) => {
+const onNewGameClick = async (gameSettings: GameSettings) => {
   const res = await api.pub.newGame({ gameSettings })
   const game = await res.json()
   if ('id' in game) {

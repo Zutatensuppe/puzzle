@@ -7,7 +7,7 @@
       <PreviewOverlay
         v-if="g && overlay === 'preview'"
         :game="g"
-        @close="closeDialog"
+        @close="closeDialog()"
       />
     </v-dialog>
 
