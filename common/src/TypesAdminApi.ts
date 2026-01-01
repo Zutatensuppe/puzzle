@@ -42,6 +42,8 @@ export type DeleteGameResponseData = AcknowledgeResponseData
 
 export type DeleteImageResponseData = AcknowledgeResponseData | ErrorResponseData
 
+export type SetImagePrivateResponseData = AcknowledgeResponseData | ErrorResponseData
+
 export type GetImageResponseData = {
   image: ImageInfo
 } | ErrorResponseData

@@ -101,6 +101,10 @@ function setRegisteredMap(gameId: GameId, registeredMap: RegisteredMap): void {
   GAMES[gameId].registeredMap = registeredMap
 }
 
+function setPrivate(gameId: GameId, isPrivate: boolean): void {
+  Game_setPrivate(GAMES[gameId], isPrivate)
+}
+
 function setBanned(gameId: GameId, banned: Record<string, boolean>): void {
   GAMES[gameId].banned = banned
 }
@@ -1190,6 +1194,10 @@ function Game_isPrivate(game: Game): boolean {
   return game.private
 }
 
+function Game_setPrivate(game: Game, isPrivate: boolean): void {
+  game.private = isPrivate
+}
+
 function Game_getRequireAccount(game: Game): boolean {
   return game.requireAccount
 }
@@ -1423,6 +1431,7 @@ export default {
   setPlayerUnbanned,
   setPuzzleData,
   setRegisteredMap,
+  setPrivate,
   unsetGame,
 
   /// operate directly on the game object given
@@ -1450,4 +1459,5 @@ export default {
   Game_getTableDim,
   Game_isFinished,
   Game_isPrivate,
+  Game_setPrivate,
 }
