@@ -64,9 +64,14 @@ type DialogArgs = {
   }
   [Dialogs.INFO_OVERLAY_DIALOG]: {
     game: GameInterface
+    onClose: () => void
   }
   [Dialogs.SETTINGS_OVERLAY_DIALOG]: {
     game: GameInterface
+    onClose: () => void
+  }
+  [Dialogs.HELP_OVERLAY_DIALOG]: {
+    onClose: () => void
   }
 }
 
@@ -74,6 +79,8 @@ type DialogArgs = {
 const currentDialog = ref<Dialogs | ''>('')
 const currentDialogPersistent = ref<boolean>(false)
 const dialogOpen = ref<boolean>(false)
+
+const onClose = ref<(() => void) | null>(null)
 
 const openDialog = (
   dialog: Dialogs,
@@ -93,6 +100,9 @@ const closeDialog = (dialog?: Dialogs) => {
   currentDialog.value = ''
   dialogOpen.value = false
   currentDialogPersistent.value = false
+
+  onClose.value?.()
+  onClose.value = null
 }
 
 watch(dialogOpen, (open, oldOpen) => {
@@ -233,7 +243,9 @@ const openCuttingOverlayDialog = () => {
 }
 
 // ingame: help overlay
-const openHelpOverlayDialog = () => {
+const openHelpOverlayDialog = (args: DialogArgs[Dialogs.HELP_OVERLAY_DIALOG]) => {
+  onClose.value = args.onClose
+
   // =================================================================
   openDialog(Dialogs.HELP_OVERLAY_DIALOG)
 }
@@ -242,6 +254,7 @@ const openHelpOverlayDialog = () => {
 const infoGame = ref<GameInterface|null>(null)
 const openInfoOverlayDialog = (args: DialogArgs[Dialogs.INFO_OVERLAY_DIALOG]) => {
   infoGame.value = args.game
+  onClose.value = args.onClose
 
   // =================================================================
   openDialog(Dialogs.INFO_OVERLAY_DIALOG)
@@ -251,6 +264,7 @@ const openInfoOverlayDialog = (args: DialogArgs[Dialogs.INFO_OVERLAY_DIALOG]) =>
 const settingsGame = ref<GameInterface|null>(null)
 const openSettingsOverlayDialog = (args: DialogArgs[Dialogs.SETTINGS_OVERLAY_DIALOG]) => {
   settingsGame.value = args.game
+  onClose.value = args.onClose
 
   // =================================================================
   openDialog(Dialogs.SETTINGS_OVERLAY_DIALOG)
