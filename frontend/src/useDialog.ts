@@ -31,7 +31,7 @@ type DialogArgs = {
   [Dialogs.EDIT_IMAGE_DIALOG]: {
     image: ImageInfo
     autocompleteTags: (input: string, exclude: string[]) => string[]
-    onSaveImageClick: (data: any) => Promise<void>
+    onSaveImageClick: (data: Api.SaveImageRequestData) => Promise<void>
   }
   [Dialogs.REPORT_GAME_DIALOG]: {
     game: GameInfo
@@ -51,7 +51,7 @@ type DialogArgs = {
     setupGameClick: (data: Api.UploadRequestData) => Promise<void>
   }
   [Dialogs.NEW_GAME_DIALOG]: {
-    imageInfo: ImageInfo
+    image: ImageInfo
     onNewGameClick: (data: GameSettings) => Promise<void>
     onTagClick: (tag: Tag) => void
   }
@@ -123,7 +123,7 @@ onLoginStateChange(onInit)
 // edit-image dialog specific
 const editImageImage = ref<ImageInfo | undefined>(undefined)
 const editImageAutocompleteTags = ref<((input: string, exclude: string[]) => string[]) | undefined>(undefined)
-const editOnSaveImageClick = ref<((data: any) => Promise<void>) | undefined>(undefined)
+const editOnSaveImageClick = ref<((data: Api.SaveImageRequestData) => Promise<void>) | undefined>(undefined)
 
 const openEditImageDialog = (args: DialogArgs[Dialogs.EDIT_IMAGE_DIALOG]) => {
   editImageImage.value = args.image
@@ -147,7 +147,7 @@ const openLoginDialog = (args: DialogArgs[Dialogs.LOGIN_DIALOG]) => {
 }
 
 // report game dialog specific
-const reportGame = ref<GameInfo|null>(null)
+const reportGame = ref<GameInfo | null>(null)
 const openReportGameDialog = (args: DialogArgs[Dialogs.REPORT_GAME_DIALOG]) => {
   reportGame.value = args.game
 
@@ -156,7 +156,7 @@ const openReportGameDialog = (args: DialogArgs[Dialogs.REPORT_GAME_DIALOG]) => {
 }
 
 // report image dialog specific
-const reportImage = ref<ImageInfo|null>(null)
+const reportImage = ref<ImageInfo | null>(null)
 const openReportImageDialog = (args: DialogArgs[Dialogs.REPORT_IMAGE_DIALOG]) => {
   reportImage.value = args.image
 
@@ -165,7 +165,7 @@ const openReportImageDialog = (args: DialogArgs[Dialogs.REPORT_IMAGE_DIALOG]) =>
 }
 
 // report image dialog specific
-const reportPlayerId = ref<UserId|null>(null)
+const reportPlayerId = ref<UserId | null>(null)
 const openReportPlayerDialog = (args: DialogArgs[Dialogs.REPORT_PLAYER_DIALOG]) => {
   reportPlayerId.value = args.userId
 
@@ -174,7 +174,7 @@ const openReportPlayerDialog = (args: DialogArgs[Dialogs.REPORT_PLAYER_DIALOG]) 
 }
 
 // image info dialog specific
-const imageInfoImage = ref<ImageInfo|null>(null)
+const imageInfoImage = ref<ImageInfo | null>(null)
 const openImageInfoDialog = (args: DialogArgs[Dialogs.IMAGE_INFO_DIALOG]) => {
   imageInfoImage.value = args.image
 
@@ -199,12 +199,12 @@ const openNewImageDialog = (args: DialogArgs[Dialogs.NEW_IMAGE_DIALOG]) => {
 }
 
 // new game dialog specific
-const newGameImageInfo = ref<ImageInfo|null>(null)
+const newGameImageInfo = ref<ImageInfo | null>(null)
 const newGameOnNewGameClick = ref<((data: GameSettings) => Promise<void>) | undefined>(undefined)
 const newGameOnTagClick = ref<((tag: Tag) => void) | undefined>(undefined)
 
 const openNewGameDialog = (args: DialogArgs[Dialogs.NEW_GAME_DIALOG]) => {
-  newGameImageInfo.value = args.imageInfo
+  newGameImageInfo.value = args.image
   newGameOnNewGameClick.value = args.onNewGameClick
   newGameOnTagClick.value = args.onTagClick
 
@@ -225,8 +225,8 @@ const openUserAvatarUploadDialog = (args: DialogArgs[Dialogs.USER_AVATAR_UPLOAD_
 }
 
 // confirm delete game dialog specific
-const confirmDeleteGame = ref<GameInfo|null>(null)
-const onConfirmDeleteGame = ref<((game: GameInfo) => Promise<void>)|undefined>(undefined)
+const confirmDeleteGame = ref<GameInfo | null>(null)
+const onConfirmDeleteGame = ref<((game: GameInfo) => Promise<void>) | undefined>(undefined)
 const openConfirmDeleteDialog = (args: DialogArgs[Dialogs.CONFIRM_DELETE_GAME_DIALOG]) => {
   confirmDeleteGame.value = args.game
   onConfirmDeleteGame.value = args.onConfirmDeleteGame
@@ -251,7 +251,7 @@ const openHelpOverlayDialog = (args: DialogArgs[Dialogs.HELP_OVERLAY_DIALOG]) =>
 }
 
 // ingame: info overlay
-const infoGame = ref<GameInterface|null>(null)
+const infoGame = ref<GameInterface | null>(null)
 const openInfoOverlayDialog = (args: DialogArgs[Dialogs.INFO_OVERLAY_DIALOG]) => {
   infoGame.value = args.game
   onClose.value = args.onClose
@@ -261,7 +261,7 @@ const openInfoOverlayDialog = (args: DialogArgs[Dialogs.INFO_OVERLAY_DIALOG]) =>
 }
 
 // ingame: settings overlay
-const settingsGame = ref<GameInterface|null>(null)
+const settingsGame = ref<GameInterface | null>(null)
 const openSettingsOverlayDialog = (args: DialogArgs[Dialogs.SETTINGS_OVERLAY_DIALOG]) => {
   settingsGame.value = args.game
   onClose.value = args.onClose

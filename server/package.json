@@ -6,7 +6,7 @@
     "build:copyassets": "node ../scripts/mkdir.js ../build/server/node_modules && ncp \"node_modules/@img\" ../build/server/node_modules/@img",
     "build:app": "esbuild --sourcemap src/main.ts --external:pg-native --platform=node --bundle --minify --outfile=../build/server/main.js",
     "build": "npm run build:app && npm run build:copyassets",
-    "start": "tsx watch src/main.ts",
+    "start": "tsx --watch src/main.ts",
     "lint": "tsc --noEmit && eslint src",
     "test": "vitest --run"
   },

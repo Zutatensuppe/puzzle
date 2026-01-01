@@ -30,7 +30,7 @@
       </v-btn>
       <v-btn
         variant="elevated"
-        @click="closeDialog"
+        @click="closeDialog()"
       >
         Cancel
       </v-btn>

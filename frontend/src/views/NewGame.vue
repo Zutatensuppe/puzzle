@@ -184,19 +184,19 @@ const onTagClick = (tag: Tag): void => {
   void router.push({ name: 'new-game', query: { sort: ImageSearchSort.DATE_DESC, search: tag.title } })
 }
 
-const onImageClicked = (newImage: ImageInfo) => {
+const onImageClicked = (image: ImageInfo) => {
   openNewGameDialog({
-    imageInfo: newImage,
-    onNewGameClick: onNewGame,
-    onTagClick: onTagClick,
+    image,
+    onNewGameClick,
+    onTagClick,
   })
 }
 
-const onImageEditClicked = (newImage: ImageInfo) => {
+const onImageEditClicked = (image: ImageInfo) => {
   openEditImageDialog({
-    image: newImage,
+    image,
     autocompleteTags,
-    onSaveImageClick: async (data: any) => {
+    onSaveImageClick: async (data: Api.SaveImageRequestData) => {
       const res = await api.pub.saveImage(data)
       const json = await res.json()
       if (json.ok) {
@@ -247,13 +247,13 @@ const setupGameClick = async (data: Api.UploadRequestData) => {
   void loadImages() // load images in background
 
   openNewGameDialog({
-    imageInfo: result.imageInfo,
-    onNewGameClick: onNewGame,
-    onTagClick: onTagClick,
+    image: result.imageInfo,
+    onNewGameClick,
+    onTagClick,
   })
 }
 
-const onNewGame = async (gameSettings: GameSettings) => {
+const onNewGameClick = async (gameSettings: GameSettings) => {
   const res = await api.pub.newGame({ gameSettings })
   const game = await res.json()
   if ('id' in game) {

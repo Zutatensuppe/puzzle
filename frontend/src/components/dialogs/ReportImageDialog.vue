@@ -21,7 +21,7 @@
         <v-btn
           color="error"
           variant="elevated"
-          @click="closeDialog"
+          @click="closeDialog()"
         >
           Cancel
         </v-btn>

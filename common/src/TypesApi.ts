@@ -106,6 +106,8 @@ export type SaveImageRequestData = {
   copyrightName: string
   copyrightURL: string
   tags: string[]
+  isPrivate: boolean
+  isNsfw: boolean
 }
 
 export type SaveImageResponseData = {

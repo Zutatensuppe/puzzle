@@ -53,6 +53,21 @@
               :autocomplete-tags="editImageAutocompleteTags"
             />
           </fieldset>
+          <div>
+            <v-checkbox
+              v-model="isPublic"
+              :disabled="isNsfw"
+              density="comfortable"
+              label="Public Image (The image will be visible in the gallery for other users to use.)"
+            />
+          </div>
+          <div>
+            <v-checkbox
+              v-model="isNsfw"
+              density="comfortable"
+              label="NSFW Image (Check this if the image is not safe for work. NSFW images will be private automatically.)"
+            />
+          </div>
 
           <v-card-actions>
             <v-btn
@@ -66,7 +81,7 @@
             <v-btn
               color="error"
               variant="elevated"
-              @click="closeDialog"
+              @click="closeDialog()"
             >
               Cancel
             </v-btn>
@@ -77,7 +92,7 @@
   </v-card>
 </template>
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 import type { ImageInfo, Tag } from '@common/Types'
 import TagsInput from '../TagsInput.vue'
 import ResponsiveImage from '../ResponsiveImage.vue'
@@ -89,6 +104,12 @@ const title = ref<string>('')
 const copyrightName = ref<string>('')
 const copyrightURL = ref<string>('')
 const tags = ref<string[]>([])
+const isPublic = ref<boolean>(false)
+const isNsfw = ref<boolean>(false)
+
+const isPrivate = computed((): boolean => {
+  return !isPublic.value || isNsfw.value
+})
 
 const init = (image: ImageInfo | undefined) => {
   if (!image) return
@@ -97,6 +118,8 @@ const init = (image: ImageInfo | undefined) => {
   copyrightName.value = image.copyrightName
   copyrightURL.value = image.copyrightURL
   tags.value = image.tags.map((t: Tag) => t.title)
+  isPublic.value = !image.private && !image.nsfw
+  isNsfw.value = image.nsfw
 }
 
 const saveImage = async () => {
@@ -108,6 +131,8 @@ const saveImage = async () => {
     copyrightName: copyrightName.value,
     copyrightURL: copyrightURL.value,
     tags: tags.value,
+    isPrivate: isPrivate.value,
+    isNsfw: isNsfw.value,
   })
 }
 
