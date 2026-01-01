@@ -1,5 +1,5 @@
+import type { Api } from '@common/Types'
 import _api from './_api'
-import type { Api } from './Types'
 
 let conf: Api.ConfigResponseData
 

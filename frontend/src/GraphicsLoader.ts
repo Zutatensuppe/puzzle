@@ -1,7 +1,7 @@
 'use strict'
 
+import type { ImageDataURL } from '@common/Types'
 import type { Graphics } from './Graphics'
-import type { ImageDataURL } from './Types'
 
 export interface GraphicsLoaderInterface {
   blobFromFile(file: File): Promise<Blob>
