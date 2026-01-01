@@ -52,7 +52,7 @@ export class ImagesRepo {
     if (filter.tags.length > 0) {
       rawWhere['t.slug'] = { '$in': filter.tags }
       joins = `
-        INNER JOIN ${DbData.Tables.ImageXCategory} ixt ON ixt.image_id = i.id
+        INNER JOIN ${DbData.Tables.ImageXTag} ixt ON ixt.image_id = i.id
         INNER JOIN ${DbData.Tables.Tags} t ON t.id = ixt.category_id
       `
     }
@@ -98,11 +98,11 @@ export class ImagesRepo {
   }
 
   async deleteTagRelations(imageId: ImageId): Promise<void> {
-    await this.db.delete(DbData.Tables.ImageXCategory, { image_id: imageId })
+    await this.db.delete(DbData.Tables.ImageXTag, { image_id: imageId })
   }
 
   async insertTagRelation(imageXtag: ImageXTagRow): Promise<void> {
-    await this.db.insert(DbData.Tables.ImageXCategory, imageXtag)
+    await this.db.insert(DbData.Tables.ImageXTag, imageXtag)
   }
 
   async upsertTag(tag: Omit<TagRow, 'id'>): Promise<TagId> {
@@ -127,7 +127,7 @@ export class ImagesRepo {
     })
     const rows = await this.db._getMany<{ id: ImageId }>(`
       select i.id
-      from ${DbData.Tables.ImageXCategory} ixc
+      from ${DbData.Tables.ImageXTag} ixc
       inner join ${DbData.Tables.Images} i on i.id = ixc.image_id
       ${where.sql};
     `, where.values)
@@ -140,7 +140,7 @@ export class ImagesRepo {
     const query = `
       select i.id as image_id, json_agg(t.*) as tags
       from ${DbData.Tables.Tags} t
-      inner join ${DbData.Tables.ImageXCategory} ixc on t.id = ixc.category_id
+      inner join ${DbData.Tables.ImageXTag} ixc on t.id = ixc.category_id
       inner join ${DbData.Tables.Images} i on i.id = ixc.image_id
       ${where.sql}
       group by i.id
@@ -286,7 +286,7 @@ export class ImagesRepo {
     const query = `
       select t.id, t.slug, t.title, count(*)::int as images_count
       from ${DbData.Tables.Tags} t
-      inner join ${DbData.Tables.ImageXCategory} ixc on t.id = ixc.category_id
+      inner join ${DbData.Tables.ImageXTag} ixc on t.id = ixc.category_id
       inner join ${DbData.Tables.Images} i on i.id = ixc.image_id
       group by t.id order by images_count desc;`
     return await this.db._getMany(query)

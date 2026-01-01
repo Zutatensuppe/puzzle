@@ -9,10 +9,10 @@ export default {
     FeaturedXCollection: 'featured_x_collection',
     Games: 'games',
     Images: 'images',
-    ImageXCategory: 'image_x_category',
+    ImageXTag: 'image_x_category', // legacy value for "tags" is "categories" in DB
     Leaderboard: 'leaderboard',
     LeaderboardEntries: 'leaderboard_entries',
-    Tags: 'categories',
+    Tags: 'categories', // legacy value for "tags" is "categories" in DB
     Tokens: 'tokens',
     TwitchLivestreams: 'twitch_livestreams',
     UserAvatars: 'user_avatars',
