@@ -1,5 +1,5 @@
+import type { SoundsEnum } from '@common/Enums'
 import type { Assets } from './Assets'
-import type { SoundsEnum } from '../../common/src/Constants'
 import type { PlayerSettings } from './PlayerSettings'
 
 export class SoundsManager {

@@ -25,7 +25,7 @@ import click2 from './assets/sounds/click2.mp3'
 import rotate from './assets/sounds/rotate2.mp3'
 
 import type { Graphics } from './Graphics'
-import { GraphicsEnum, SoundsEnum } from '@common/Constants'
+import { GraphicsEnum, SoundsEnum } from '@common/Enums'
 import { COLOR_MAGENTA } from '@common/Color'
 import type { ImageDataURL } from '@common/Types'
 

@@ -14,7 +14,7 @@ import { PlayersShaderWrapper } from './webgl/PlayersShaderWrapper'
 import type { Assets } from './Assets'
 import { FireworksShaderWrapper } from './webgl/FireworksShaderWrapper'
 import PuzzleGraphics from './PuzzleGraphics'
-import { GraphicsEnum } from '../../common/src/Constants'
+import { GraphicsEnum } from '@common/Enums'
 
 const log = logger('Renderer.ts')
 

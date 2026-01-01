@@ -1,4 +1,4 @@
-import type { ConnectionStatesEnum } from './Constants'
+import type { ConnectionStatesEnum } from './Enums'
 import type { Rect } from './Geometry'
 import type { SERVER_EVENT_TYPE, LOG_TYPE, CLIENT_EVENT_TYPE, CHANGE_TYPE, GAME_EVENT_TYPE } from './Protocol'
 import type { Rng, RngSerialized } from './Rng'

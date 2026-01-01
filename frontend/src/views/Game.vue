@@ -74,7 +74,7 @@ import { onLoginStateChange } from '../user'
 import isEqual from 'lodash/isEqual'
 
 import { Dialogs, useDialog } from '../useDialog'
-import { ConnectionStatesEnum } from '@common/Constants'
+import { ConnectionStatesEnum } from '@common/Enums'
 
 const { openSettingsOverlayDialog, openInfoOverlayDialog, openHelpOverlayDialog, openCuttingOverlayDialog, currentDialog, closeDialog: closeDialogX } = useDialog()
 

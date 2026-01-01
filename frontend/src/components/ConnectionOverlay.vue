@@ -101,7 +101,7 @@
 import { computed, nextTick, ref, watch } from 'vue'
 import type { ConnectionState } from '@common/Types'
 import LoginBit from './LoginBit.vue'
-import { ConnectionStatesEnum } from '@common/Constants'
+import { ConnectionStatesEnum } from '@common/Enums'
 
 const emit = defineEmits<{
   (e: 'reconnect'): void

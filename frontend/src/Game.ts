@@ -47,7 +47,7 @@ import { RendererWebgl } from './RendererWebgl'
 import { SoundsManager } from './SoundsManager'
 import { ViewportSnapshots } from './ViewportSnapshots'
 import debug from './debug'
-import { SoundsEnum } from '../../common/src/Constants'
+import { SoundsEnum } from '@common/Enums'
 
 declare global {
   interface Window {

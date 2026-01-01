@@ -1,7 +1,7 @@
 import type { ImageDataURL } from '@common/Types'
 import type { Assets } from './Assets'
 import type { GraphicsInterface } from './Graphics'
-import { GraphicsEnum } from '@common/Constants'
+import { GraphicsEnum } from '@common/Enums'
 
 const badgeMap: Record<string, ImageDataURL> = {}
 export const getColoredBadge = (graphics: GraphicsInterface, assets: Assets, color: string, active: boolean): string => {

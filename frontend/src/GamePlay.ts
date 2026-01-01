@@ -7,7 +7,7 @@ import Util from '@common/Util'
 import Time from '@common/Time'
 import { createImageSnapshot } from './ImageSnapshotCreator'
 import type { Game as GameType, EncodedGame, EncodedGameLegacy, Hud, GameEvent, ServerUpdateEvent, ServerSyncEvent, ServerErrorDetails } from '@common/Types'
-import { ConnectionStatesEnum, SoundsEnum } from '@common/Constants'
+import { ConnectionStatesEnum, SoundsEnum } from '@common/Enums'
 
 export class GamePlay extends Game<Hud> {
 

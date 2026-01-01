@@ -4,7 +4,7 @@ import type { ClientEvent, ConnectionState, EncodedGame, EncodedGameLegacy, Game
 import { logger } from '@common/Util'
 import { CLIENT_EVENT_TYPE, SERVER_EVENT_TYPE } from '@common/Protocol'
 import type { GamePlay } from './GamePlay'
-import { ConnectionStatesEnum } from '@common/Constants'
+import { ConnectionStatesEnum } from '@common/Enums'
 
 const log = logger('Communication.js')
 

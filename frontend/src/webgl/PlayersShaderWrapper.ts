@@ -10,7 +10,7 @@ import playersVertex from './shaders/playersVertex'
 import { COLOR_BLUE, hexToColor } from '@common/Color'
 import type { Graphics } from '../Graphics'
 import { getPlayerNameCanvas } from '../PlayerNames'
-import { GraphicsEnum } from '../../../common/src/Constants'
+import { GraphicsEnum } from '@common/Enums'
 
 export class PlayersShaderWrapper {
   private shader!: Shader
