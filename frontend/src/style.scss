@@ -1089,6 +1089,10 @@ fieldset {
       display: grid;
       grid-template-rows: auto 1fr auto;
 
+      &.has-unapproved-image {
+        grid-template-rows: auto auto 1fr auto;
+      }
+
       .v-window {
         height: 100%;
         overflow: hidden scroll;

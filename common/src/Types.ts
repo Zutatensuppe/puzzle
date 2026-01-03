@@ -381,6 +381,7 @@ export interface ImageInfo {
   copyrightURL: string
   reported: number
   nsfw: boolean
+  state: 'pending_approval' | 'approved'
 }
 
 export const defaultImageInfo = (): ImageInfo => ({
@@ -400,6 +401,7 @@ export const defaultImageInfo = (): ImageInfo => ({
   private: false,
   reported: 0,
   nsfw: false,
+  state: 'pending_approval',
 })
 
 export interface PuzzleInfo {
@@ -855,6 +857,7 @@ export interface ImageRow {
   reported: number
   nsfw: number
   checksum: string | null
+  state: 'pending_approval' | 'approved'
 }
 
 export interface ImageXTagRow {

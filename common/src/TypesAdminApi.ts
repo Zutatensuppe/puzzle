@@ -44,6 +44,8 @@ export type DeleteImageResponseData = AcknowledgeResponseData | ErrorResponseDat
 
 export type SetImagePrivateResponseData = AcknowledgeResponseData | ErrorResponseData
 
+export type ApproveImageResponseData = AcknowledgeResponseData | ErrorResponseData
+
 export type GetImageResponseData = {
   image: ImageInfo
 } | ErrorResponseData

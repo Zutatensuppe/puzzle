@@ -21,7 +21,18 @@
           />
         </div>
 
-        <div class="area-settings">
+        <div
+          class="area-settings"
+          :class="isImageApproved ? '' : 'has-unapproved-image'"
+        >
+          <v-alert
+            v-if="!isImageApproved"
+            type="info"
+          >
+            This image you chose is pending approval. Public games created with this image will not show up
+            on the public games list until the image is approved. You can still share the game link
+            with others and puzzle it together.
+          </v-alert>
           <v-tabs v-model="tab">
             <v-tab value="settings">
               Settings
@@ -138,7 +149,7 @@
                   <v-checkbox
                     v-model="isPrivate"
                     density="comfortable"
-                    label="Private Game (Private games won't show up in the public game overview)"
+                    label="Private Game"
                     :disabled="forcePrivate"
                     hide-details
                   />
@@ -263,6 +274,11 @@ const canStartNewGame = computed((): boolean => {
   }
   return true
 })
+
+const isImageApproved = computed((): boolean => {
+  return newGameImageInfo.value?.state === 'approved' || false
+})
+
 const scoreModeInt = computed((): number => {
   return parseInt(`${scoreMode.value}`, 10)
 })

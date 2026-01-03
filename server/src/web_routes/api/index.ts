@@ -518,7 +518,7 @@ export default function createRouter(
     const requestData: Api.NewGameDataRequestData = req.query as any
     const responseData: Api.NewGameDataResponseData = {
       featured: await server.repos.featured.getManyWithCollections({}),
-      images: await server.images.imagesFromDb(requestData.search, requestData.sort, false, 0, IMAGES_PER_PAGE_LIMIT, currentUserId, null),
+      images: await server.images.imagesFromDb(requestData.search, requestData.sort, 0, IMAGES_PER_PAGE_LIMIT, currentUserId, null),
       tags: await server.images.getAllTags(),
     }
     res.send(responseData)
@@ -567,7 +567,7 @@ export default function createRouter(
     const currentUserId = req.userInfo?.user_type === 'user' ? req.userInfo.user.id : 0 as UserId
 
     const responseData: Api.ImagesResponseData = {
-      images: await server.images.imagesFromDb(requestData.search, requestData.sort, false, offset, IMAGES_PER_PAGE_LIMIT, currentUserId, null),
+      images: await server.images.imagesFromDb(requestData.search, requestData.sort, offset, IMAGES_PER_PAGE_LIMIT, currentUserId, null),
     }
     res.send(responseData)
   })
@@ -702,16 +702,16 @@ export default function createRouter(
       log.info('req.file.filename', req.file.filename)
 
       const im = server.images
+      const user = await server.users.getOrCreateUserByRequest(req)
       const imagePath = im.getImagePath(req.file.filename)
       const checksum = await FileSystem.checksum(imagePath)
       const existingImageInfo = await im.imageByChecksumFromDb(checksum)
-      if (existingImageInfo) {
+      if (existingImageInfo && existingImageInfo.uploaderUserId === user.id) {
         await FileSystem.unlink(imagePath)
         res.status(409).send(existingImageInfo)
         return
       }
 
-      const user = await server.users.getOrCreateUserByRequest(req)
       const dim = await im.getDimensions(imagePath)
 
       // post form, so booleans are submitted as 'true' | 'false'
@@ -731,6 +731,7 @@ export default function createRouter(
         reported: 0,
         nsfw: isNsfw ? 1 : 0,
         checksum,
+        state: 'pending_approval',
       })
 
       if (req.body.tags) {
