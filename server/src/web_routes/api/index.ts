@@ -619,12 +619,12 @@ export default function createRouter(
       res.status(400).send(responseData)
       return
     }
-    const ts = Time.timestamp()
+    const currentTimestamp = Time.timestamp()
     const finishedRows = await server.gameService.getPublicFinishedGames(offset, GAMES_PER_PAGE_LIMIT, currentUserId, null)
     const finishedCount = await server.gameService.countPublicFinishedGames(currentUserId)
     const gamesFinished: GameInfo[] = []
     for (const row of finishedRows) {
-      gamesFinished.push(await server.gameService.gameToGameInfo(row, ts))
+      gamesFinished.push(await server.gameService.gameToGameInfo(row, currentTimestamp))
     }
     const responseData: Api.FinishedGamesResponseData = {
       items: gamesFinished,
