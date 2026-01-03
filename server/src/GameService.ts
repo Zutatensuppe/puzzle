@@ -79,6 +79,7 @@ export class GameService {
     game.puzzle.info.image.gameCount = await this.server.repos.images.getGameCount(imageId)
     game.puzzle.info.image.reported = image?.reported || 0
     game.puzzle.info.image.nsfw = !!(image?.nsfw)
+    game.puzzle.info.image.state = image?.state || game.puzzle.info.image.state
 
     const gameVersion = game.gameVersion || 1 // old games didnt have this stored
     return {
