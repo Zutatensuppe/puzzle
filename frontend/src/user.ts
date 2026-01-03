@@ -6,6 +6,7 @@ import xhr from './_api/xhr'
 import { PLAYER_SETTINGS } from '@common/Types'
 import type { ClientId, User } from '@common/Types'
 import { computed, ref } from 'vue'
+import Time from '@common/Time'
 
 const showNsfw = ref(storage.getBool('showNsfw', false))
 const toggleNsfw = (): void => {
@@ -47,21 +48,34 @@ const onEvent = (evt: string, callback: Handler<unknown>) => {
 
 export async function init(): Promise<void> {
   xhr.setClientId(storage.uniq('ID') as ClientId)
-  const res = await _api.pub.me()
+
   try {
+    const localTimestamp = Time.rawTimestamp()
+
+    const res = await _api.pub.me()
     const data = await res.json()
+
+    const serverTimestamp = data.serverTimestamp
+
+    // TODO: for more accurate offset, the server should provide the offset directly
+    // this requires the client to send the current client timestamp with the request
+    // further improvements could be made by trying to keep this in sync, but it is
+    // not likely that the clock drifts that much during a session
+    // The Time syncing functionality should maybe also be moved to a separate module
+    Time.setServerOffset(serverTimestamp ? serverTimestamp - localTimestamp : 0)
+
     if ('reason' in data) {
-      console.log('not logged in')
+      // console.log('not logged in')
       me.value = null
       eventBus.emit('logout')
     } else {
-      console.log('logged in (reg or guest)')
-      xhr.setClientId(data.clientId)
-      me.value = data
+      // console.log('logged in (reg or guest)')
+      xhr.setClientId(data.user.clientId)
+      me.value = data.user
       eventBus.emit('login')
     }
   } catch {
-    console.log('not logged in')
+    // console.log('not logged in')
     eventBus.emit('logout')
   }
 }

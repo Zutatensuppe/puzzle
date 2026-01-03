@@ -4,7 +4,9 @@ const MIN = SEC * 60
 const HOUR = MIN * 60
 const DAY = HOUR * 24
 
-export const timestamp = (): number => {
+let serverTimeOffset = 0
+
+export const rawTimestamp = (): number => {
   const d = new Date()
   return Date.UTC(
     d.getUTCFullYear(),
@@ -15,6 +17,10 @@ export const timestamp = (): number => {
     d.getUTCSeconds(),
     d.getUTCMilliseconds(),
   )
+}
+
+export const timestamp = (): number => {
+  return rawTimestamp() + serverTimeOffset
 }
 
 export const durationStr = (duration: number): string => {
@@ -37,6 +43,10 @@ export const timeDiffStr = (
   to: number,
 ): string => durationStr(to - from)
 
+export const setServerOffset = (offset: number): void => {
+  serverTimeOffset = offset
+}
+
 export default {
   MS,
   SEC,
@@ -44,6 +54,8 @@ export default {
   HOUR,
   DAY,
 
+  setServerOffset,
+  rawTimestamp,
   timestamp,
   timeDiffStr,
   durationStr,
