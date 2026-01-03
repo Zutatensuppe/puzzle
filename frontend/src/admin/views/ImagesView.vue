@@ -41,6 +41,7 @@
               <span class="text-disabled">Dimensions:</span> {{ item.width }}×{{ item.height }}
               <span class="text-disabled">Private:</span> <span :class="{ 'color-private': item.private }">{{ item.private ? '✓' : '✖' }}</span>
               <span class="text-disabled">NSFW:</span> {{ item.nsfw ? '😳 NSFW' : '-' }}
+              <span class="text-disabled">State:</span> <code :class="`state-${item.state}`">{{ item.state }}</code>
             </div>
             <div class="d-flex ga-3">
               <span class="text-disabled">Id:</span> {{ item.id }}
@@ -60,27 +61,30 @@
           </td>
           <td>{{ item.games_count }}</td>
           <td>
-            <div class="d-flex flex-column ga-1">
+            <div class="d-flex ga-1">
               <v-btn
-                block
-                size="small"
+                size="x-small"
                 @click="onDelete(item)"
               >
                 DELETE
               </v-btn>
               <v-btn
-                block
-                size="small"
+                size="x-small"
                 @click="onSetPrivate(item)"
               >
                 SET PRIVATE
               </v-btn>
               <v-btn
-                block
-                size="small"
+                size="x-small"
                 @click="onApprove(item)"
               >
                 APPROVE
+              </v-btn>
+              <v-btn
+                size="x-small"
+                @click="onReject(item)"
+              >
+                REJECT
               </v-btn>
             </div>
           </td>
@@ -154,6 +158,20 @@ const onApprove = async (image: ImageRowWithCount) => {
   }
 }
 
+const onReject = async (image: ImageRowWithCount) => {
+  const resp = await api.admin.rejectImage(image.id)
+  if ('error' in resp || !resp.ok) {
+    alert('Rejecting image failed!')
+  } else {
+    if (images.value) {
+      if (image) {
+        image.state = 'rejected'
+      }
+    }
+    alert('Successfully rejected image!')
+  }
+}
+
 const loadImages = async (data: { limit: number, offset: number }) => {
   const responseData = await api.admin.getImages(data)
   if ('error' in responseData) {
@@ -184,3 +202,13 @@ onUnmounted(() => {
   offLoginStateChange()
 })
 </script>
+<style scss scoped>
+.state-approved {
+  color: green;
+  font-weight: bold;
+}
+.state-rejected {
+  color: red;
+  font-weight: bold;
+}
+</style>

@@ -24,10 +24,10 @@
       </div>
       <div class="game-teaser-banderole-holder">
         <div
-          v-if="game.isPrivate"
-          class="game-teaser-banderole game-is-private-info"
+          v-if="stateInfo"
+          :class="['game-teaser-banderole', stateInfo.class]"
         >
-          <v-icon icon="mdi-incognito" /> Private Game
+          <v-icon :icon="stateInfo.icon" /> {{ stateInfo.text }}
         </div>
       </div>
     </div>
@@ -157,4 +157,39 @@ const time = ((start: number, end: number) => {
 })(props.game.started, props.game.finished)
 
 const canDelete = computed<boolean>(() => !!(me.value && me.value.id === props.game.creatorUserId))
+
+const stateInfo = computed<null | { class: string; text: string; icon: string }>(() => {
+  if (props.game.isPrivate) {
+    return {
+      class: 'game-is-private-info',
+      text: 'Private Game',
+      icon: 'mdi-incognito',
+    }
+  }
+  if (props.game.image.private) {
+    return {
+      class: 'image-is-private-info',
+      text: 'Private Image',
+      icon: 'mdi-incognito',
+    }
+  }
+
+  if (props.game.image.state === 'pending_approval') {
+    return {
+      class: 'image-is-pending-info',
+      text: 'Image pending',
+      icon: 'mdi-clock-outline',
+    }
+  }
+
+  if (props.game.image.state === 'rejected') {
+    return {
+      class: 'image-is-rejected-info',
+      text: 'Image rejected',
+      icon: 'mdi-cancel',
+    }
+  }
+
+  return null
+})
 </script>

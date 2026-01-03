@@ -98,7 +98,7 @@
               v-model="isPublic"
               :disabled="isNsfw"
               density="comfortable"
-              label="Public Image (The image will be visible in the gallery for other users to use.)"
+              label="Public Image (As soon as the image gets approved, it will be visible in the gallery for other users to use.)"
             />
           </div>
           <div>

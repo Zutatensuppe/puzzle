@@ -23,10 +23,10 @@
         @click.stop="openReportGameDialog({ game })"
       />
       <div
-        v-if="game.isPrivate"
-        class="game-teaser-info game-is-private-info"
+        v-if="stateInfo"
+        :class="['game-teaser-info', stateInfo.class]"
       >
-        <v-icon icon="mdi-incognito" /> Private Game
+        <v-icon :icon="stateInfo.icon" /> {{ stateInfo.text }}
       </div>
       <div class="game-teaser-info">
         <v-icon icon="mdi-puzzle" /> {{ game.piecesTotal }} Pieces
@@ -134,4 +134,39 @@ const time = (start: number, end: number) => {
   const timeDiffStr = Time.timeDiffStr(from, to)
   return `${timeDiffStr}`
 }
+
+const stateInfo = computed<null | { class: string; text: string; icon: string }>(() => {
+  if (props.game.isPrivate) {
+    return {
+      class: 'game-is-private-info',
+      text: 'Private Game',
+      icon: 'mdi-incognito',
+    }
+  }
+  if (props.game.image.private) {
+    return {
+      class: 'image-is-private-info',
+      text: 'Private Image',
+      icon: 'mdi-incognito',
+    }
+  }
+
+  if (props.game.image.state === 'pending_approval') {
+    return {
+      class: 'image-is-pending-info',
+      text: 'Image pending',
+      icon: 'mdi-clock-outline',
+    }
+  }
+
+  if (props.game.image.state === 'rejected') {
+    return {
+      class: 'image-is-rejected-info',
+      text: 'Image rejected',
+      icon: 'mdi-cancel',
+    }
+  }
+
+  return null
+})
 </script>

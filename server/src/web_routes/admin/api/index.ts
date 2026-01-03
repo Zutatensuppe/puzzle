@@ -275,6 +275,28 @@ export default function createRouter(
     }
   })
 
+  router.post('/images/:id/_reject', async (req, res) => {
+    try {
+      const id = parseInt(req.params.id, 10) as ImageId
+      const image = await server.repos.images.get({ id })
+      if (!image) {
+        const responseData: Api.Admin.RejectImageResponseData = { error: 'image does not exist' }
+        res.status(404).send(responseData)
+        return
+      }
+
+      await server.repos.images.update(
+        { state: 'rejected' },
+        { id },
+      )
+
+      const responseData: Api.Admin.RejectImageResponseData = { ok: true }
+      res.send(responseData)
+    } catch (error) {
+      res.status(400).send(createErrorResponseData(error))
+    }
+  })
+
   router.get('/images/:id', async (req, res) => {
     const id = parseInt(req.params.id, 10) as ImageId
     const images = await server.images.imagesByIdsFromDb([id])
