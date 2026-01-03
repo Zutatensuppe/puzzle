@@ -4,7 +4,7 @@ import Crypto from './Crypto'
 import type { Server } from './Server'
 import Util, { logger, toJSONDateString } from '@common/Util'
 import type { ClientId, ClientInitEvent, EncodedPlayer, Game, GameEvent, GameId, GameInfo, GameRow, GameSettings, HandleGameEventResult, ImageInfo, ImageSnapshots, Puzzle, RegisteredMap, RotationMode, ScoreMode, ServerErrorDetails, ShapeMode, SnapMode, Timestamp, UserId, UserRow} from '@common/Types'
-import { DefaultRotationMode, DefaultScoreMode, DefaultShapeMode, DefaultSnapMode } from '@common/Types'
+import { DefaultRotationMode, DefaultScoreMode, DefaultShapeMode, DefaultSnapMode, EncodedPlayerIdx } from '@common/Types'
 import { Rng, type RngSerialized } from '@common/Rng'
 import type { Rect } from '@common/Geometry'
 import GameCommon, { NEWGAME_MAX_PIECES, NEWGAME_MIN_PIECES } from '@common/GameCommon'
@@ -307,9 +307,7 @@ export class GameService {
       finished,
       piecesFinished: GameCommon.Game_getFinishedPiecesCount(game),
       piecesTotal: GameCommon.Game_getPieceCount(game),
-      players: finished
-        ? GameCommon.Game_getPlayersWithScore(game).length
-        : GameCommon.Game_getActivePlayers(game, currentTimestamp).length,
+      players: this.determinePlayersCount(game, currentTimestamp),
       image: GameCommon.Game_getImage(game),
       imageSnapshots: gameRow.image_snapshot_url
         ? { current: { url: gameRow.image_snapshot_url } }
@@ -319,6 +317,19 @@ export class GameService {
       shapeMode: GameCommon.Game_getShapeMode(game),
       rotationMode: GameCommon.Game_getRotationMode(game),
     }
+  }
+
+  private determinePlayersCount(game: Game, currentTimestamp: number): number {
+    const finished = GameCommon.Game_getFinishTs(game)
+    if (finished) {
+      return GameCommon.Game_getPlayersWithScore(game).length
+    }
+    if (GameCommon.get(game.id)) {
+      // get live data
+      return GameCommon.getActivePlayers(game.id, currentTimestamp).length
+    }
+    // get data from stored game object
+    return GameCommon.Game_getActivePlayers(game, currentTimestamp).length
   }
 
   private async gameToStoreData(game: Game): Promise<GameStoreData> {
