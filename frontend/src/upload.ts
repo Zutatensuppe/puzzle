@@ -39,6 +39,9 @@ export const uploadImage = async (data: Api.UploadRequestData): Promise<{ error:
       throw 'The image you tried to upload is too large. Max file size is 20MB.'
     }
 
+    if (res.status === 409) {
+      console.log('Duplicate image upload detected.')
+    }
     const imageInfo = await res.json()
     if (!imageInfo) {
       throw 'The image upload failed for unknown reasons.'

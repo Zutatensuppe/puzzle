@@ -290,8 +290,8 @@ export default function createRouter(
       return
     }
 
-    const password = passwordHash(passwordRaw, account.salt)
-    account.password = password
+    const passwordHashed = passwordHash(passwordRaw, account.salt)
+    account.password = passwordHashed
     await server.users.updateAccount(account)
 
     // remove token, already used
@@ -541,7 +541,6 @@ export default function createRouter(
     const limitToUserId = parseInt(`${req.params.id}`, 10) as UserId
     const currentUserId = req.userInfo?.user?.id ?? 0 as UserId
     try {
-      console.log(currentUserId, limitToUserId)
       const responseData: Api.UserProfileResponseData = {
         userProfile: await server.users.getCompleteUserProfile(currentUserId, limitToUserId),
       }
@@ -703,12 +702,17 @@ export default function createRouter(
       log.info('req.file.filename', req.file.filename)
 
       const im = server.images
+      const imagePath = im.getImagePath(req.file.filename)
+      const checksum = await FileSystem.checksum(imagePath)
+      const existingImageInfo = await im.imageByChecksumFromDb(checksum)
+      if (existingImageInfo) {
+        await FileSystem.unlink(imagePath)
+        res.status(409).send(existingImageInfo)
+        return
+      }
 
       const user = await server.users.getOrCreateUserByRequest(req)
-
-      const imagePath = im.getImagePath(req.file.filename)
       const dim = await im.getDimensions(imagePath)
-      const checksum = await FileSystem.checksum(imagePath)
 
       // post form, so booleans are submitted as 'true' | 'false'
       const isPrivate = req.body.isPrivate === 'false' ? false : true
