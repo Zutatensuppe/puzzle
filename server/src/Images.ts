@@ -33,6 +33,11 @@ export class Images {
     return imageInfos.length === 0 ? null : imageInfos[0]
   }
 
+  public async imageByChecksumFromDb(checksum: string): Promise<ImageInfo | null> {
+    const row = await this.imagesRepo.get({ checksum })
+    return row ? this.imageFromDb(row.id) : null
+  }
+
   private imageWithCountToImageInfo(
     row: ImageRowWithCount,
     tags: Record<number, TagRow[]>,
