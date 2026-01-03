@@ -67,8 +67,11 @@ export class GamesRepo {
       return await this.db._getMany(`
         SELECT g.* FROM ${DbData.Tables.Games} g
         INNER JOIN ${DbData.Tables.UserXGame} uxg on uxg.game_id = g.id
+        INNER JOIN ${DbData.Tables.Images} i on i.id = g.image_id
         WHERE
           (g."private" = 0 OR g.creator_user_id = $1)
+          AND
+          (i.state = 'approved' OR i.uploader_user_id = $1)
           AND
           uxg.user_id = $2
           AND
@@ -83,8 +86,11 @@ export class GamesRepo {
 
     return await this.db._getMany(`
       SELECT g.* FROM ${DbData.Tables.Games} g
+      INNER JOIN ${DbData.Tables.Images} i on i.id = g.image_id
       WHERE
         (g."private" = 0 OR g.creator_user_id = $1)
+        AND
+        (i.state = 'approved' OR i.uploader_user_id = $1)
         AND
         (g.finished is null)
       ORDER BY
@@ -107,8 +113,11 @@ export class GamesRepo {
       return await this.db._getMany(`
         SELECT g.* FROM ${DbData.Tables.Games} g
         INNER JOIN ${DbData.Tables.UserXGame} uxg on uxg.game_id = g.id
+        INNER JOIN ${DbData.Tables.Images} i on i.id = g.image_id
         WHERE
           (g."private" = 0 OR g.creator_user_id = $1)
+          AND
+          (i.state = 'approved' OR i.uploader_user_id = $1)
           AND
           uxg.user_id = $2
           AND
@@ -122,13 +131,16 @@ export class GamesRepo {
     }
 
     return await this.db._getMany(`
-      SELECT * FROM ${DbData.Tables.Games}
+      SELECT g.* FROM ${DbData.Tables.Games} g
+      INNER JOIN ${DbData.Tables.Images} i on i.id = g.image_id
       WHERE
-        ("private" = 0 OR creator_user_id = $1)
+        (g."private" = 0 OR g.creator_user_id = $1)
         AND
-        (finished is not null)
+        (i.state = 'approved' OR i.uploader_user_id = $1)
+        AND
+        (g.finished is not null)
       ORDER BY
-        finished DESC
+        g.finished DESC
       ${limitSql}
     `, [currentUserId]) as GameRow[]
   }

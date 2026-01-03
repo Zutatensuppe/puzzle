@@ -18,10 +18,10 @@
     >
       <div class="imageteaser-inner">
         <div
-          v-if="image.private"
-          class="imageteaser-info image-is-private-info"
+          v-if="imageStateInfo"
+          :class="`imageteaser-info ${imageStateInfo.class}`"
         >
-          <v-icon icon="mdi-incognito" /> Private Image
+          <v-icon :icon="imageStateInfo.icon" /> {{ imageStateInfo.text }}
         </div>
         <h4 class="imageteaser-title">
           {{ image.title || '<No Title>' }}
@@ -138,6 +138,34 @@ const canEdit = computed((): boolean => {
     return false
   }
   return me.value.id === props.image.uploaderUserId
+})
+
+const imageStateInfo = computed((): { class: string, text: string, icon: string } | null => {
+  if (props.image.private) {
+    return {
+      class: 'image-is-private-info',
+      text: 'Private Image',
+      icon: 'mdi-incognito',
+    }
+  }
+
+  if (props.image.state === 'pending_approval') {
+    return {
+      class: 'image-is-pending-info',
+      text: 'Image pending approval',
+      icon: 'mdi-clock-outline',
+    }
+  }
+
+  if (props.image.state === 'rejected') {
+    return {
+      class: 'image-is-rejected-info',
+      text: 'Image rejected',
+      icon: 'mdi-close-circle-outline',
+    }
+  }
+
+  return null
 })
 
 const onClick = (ev: Event) => {

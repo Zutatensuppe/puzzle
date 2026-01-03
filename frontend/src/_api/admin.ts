@@ -173,6 +173,15 @@ const approveImage = async (
   return await res.json()
 }
 
+const rejectImage = async (
+  id: ImageId,
+): Promise<Api.Admin.RejectImageResponseData> => {
+  const res = await xhr.post<Api.Admin.RejectImageResponseData>(`/admin/api/images/${id}/_reject`, {
+    headers: JSON_HEADERS,
+  })
+  return await res.json()
+}
+
 const getImage = async (
   id: ImageId,
 ): Promise<Api.Admin.GetImageResponseData> => {
@@ -204,6 +213,7 @@ export default {
   deleteImage,
   setImagePrivate,
   approveImage,
+  rejectImage,
   getGroups,
   getServerInfo,
   mergeClientIdsIntoUser,

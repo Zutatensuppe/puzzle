@@ -357,9 +357,11 @@ $bg-color-transparent: rgba(0 0 0 / 70%);
     }
   }
 
-  .game-is-private-info {
+  .game-is-private-info,
+  .image-is-private-info,
+  .image-is-pending-info,
+  .image-is-rejected-info {
     margin-bottom: 10px;
-    background: rgba(122 85 165 / 80%);
     padding: 5px 10px;
     text-align: center;
   }
@@ -468,11 +470,13 @@ $bg-color-transparent: rgba(0 0 0 / 70%);
     }
   }
 
-  .game-is-private-info {
+  .game-is-private-info,
+  .image-is-private-info,
+  .image-is-pending-info,
+  .image-is-rejected-info {
     position: absolute;
     right: 1em;
     top: 1em;
-    background: rgba(122 85 165 / 100%);
     padding: 3px 5px;
     text-align: center;
   }
@@ -734,12 +738,13 @@ html.view-replay body { overflow: hidden; }
     padding: 1em;
   }
 
-  .image-is-private-info {
+  .image-is-private-info,
+  .image-is-pending-info,
+  .image-is-rejected-info {
     position: absolute;
     left: 0;
     right: 0;
     top: 0;
-    background: rgba(122 85 165 / 80%);
     padding: 5px 10px;
     text-align: center;
   }
@@ -1266,4 +1271,20 @@ fieldset {
     opacity: 1;
     cursor: pointer;
   }
+}
+
+.game-is-private-info {
+  background: rgba(122 85 165 / 80%);
+}
+
+.image-is-private-info {
+  background: rgba(122 85 165 / 80%);
+}
+
+.image-is-pending-info {
+  background: rgba(239 180 120 / 80%);
+}
+
+.image-is-rejected-info {
+  background: rgba(185 84 84 / 80%);
 }

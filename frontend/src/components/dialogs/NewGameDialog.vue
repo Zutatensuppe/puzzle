@@ -26,7 +26,7 @@
           :class="isImageApproved ? '' : 'has-unapproved-image'"
         >
           <v-alert
-            v-if="!isImageApproved"
+            v-if="!isImageApproved && !forcePrivate"
             type="info"
           >
             This image you chose is pending approval. Public games created with this image will not show up
