@@ -227,7 +227,6 @@ export class Users {
       images: await this.images.imagesFromDb(
         '',
         ImageSearchSort.DATE_DESC,
-        false,
         0,
         latestImagesLimit,
         currentUserId,

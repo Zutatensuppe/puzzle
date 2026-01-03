@@ -60,19 +60,29 @@
           </td>
           <td>{{ item.games_count }}</td>
           <td>
-            <v-btn
-              block
-              @click="onDelete(item)"
-            >
-              DELETE
-            </v-btn>
-            <br>
-            <v-btn
-              block
-              @click="onSetPrivate(item)"
-            >
-              SET PRIVATE
-            </v-btn>
+            <div class="d-flex flex-column ga-1">
+              <v-btn
+                block
+                size="small"
+                @click="onDelete(item)"
+              >
+                DELETE
+              </v-btn>
+              <v-btn
+                block
+                size="small"
+                @click="onSetPrivate(item)"
+              >
+                SET PRIVATE
+              </v-btn>
+              <v-btn
+                block
+                size="small"
+                @click="onApprove(item)"
+              >
+                APPROVE
+              </v-btn>
+            </div>
           </td>
         </tr>
       </tbody>
@@ -127,6 +137,20 @@ const onSetPrivate = async (image: ImageRowWithCount) => {
       }
     }
     alert('Successfully set image to private!')
+  }
+}
+
+const onApprove = async (image: ImageRowWithCount) => {
+  const resp = await api.admin.approveImage(image.id)
+  if ('error' in resp || !resp.ok) {
+    alert('Approving image failed!')
+  } else {
+    if (images.value) {
+      if (image) {
+        image.state = 'approved'
+      }
+    }
+    alert('Successfully approved image!')
   }
 }
 

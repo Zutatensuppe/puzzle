@@ -159,7 +159,6 @@ export class ImagesRepo {
   async searchImagesWithCount(
     search: string,
     orderBy: string,
-    isPrivate: boolean,
     offset: number,
     limit: number,
     currentUserId: UserId | null,
@@ -227,7 +226,7 @@ export class ImagesRepo {
         FROM
           ${DbData.Tables.Games} g
         WHERE
-          g.private = ${isPrivate ? 1 : 0}
+          g.private = 0
         GROUP BY g.image_id
       )
       SELECT
@@ -240,7 +239,7 @@ export class ImagesRepo {
         LEFT JOIN ${DbData.Tables.Users} u ON u.id = i.uploader_user_id
       WHERE
         (
-          i.private = ${isPrivate ? 1 : 0}
+          (i.private = 0 AND i.state = 'approved')
           ${currentUserId ? `OR i.uploader_user_id = $${idxCurrentUserId}` : ''}
         )
         ${limitToUserId ? ` AND i.uploader_user_id = $${idxLimitToUserId}` : ''}
@@ -290,6 +289,15 @@ export class ImagesRepo {
       inner join ${DbData.Tables.Images} i on i.id = ixc.image_id
       group by t.id order by images_count desc;`
     return await this.db._getMany(query)
+  }
+
+  async approveImage(imageId: ImageId): Promise<void> {
+    await this.db.update(DbData.Tables.Images, {
+      state: 'approved',
+    }, {
+      id: imageId,
+      state: 'pending_approval',
+    })
   }
 
   async reportImage(imageId: ImageId): Promise<void> {

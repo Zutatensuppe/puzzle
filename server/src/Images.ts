@@ -64,19 +64,19 @@ export class Images {
       copyrightURL: row.copyright_url,
       reported: row.reported,
       nsfw: !!row.nsfw,
+      state: row.state,
     }
   }
 
   public async imagesFromDb(
     search: string,
     orderBy: string,
-    isPrivate: boolean,
     offset: number,
     limit: number,
     currentUserId: UserId | null,
     limitToUserId: UserId | null,
   ): Promise<ImageInfo[]> {
-    const rows = await this.imagesRepo.searchImagesWithCount(search, orderBy, isPrivate, offset, limit, currentUserId, limitToUserId)
+    const rows = await this.imagesRepo.searchImagesWithCount(search, orderBy, offset, limit, currentUserId, limitToUserId)
     const tags = await this.imagesRepo.getTagsByImageIds(rows.map(row => row.id))
     return rows.map(row => this.imageWithCountToImageInfo(row, tags))
   }
