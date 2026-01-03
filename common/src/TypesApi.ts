@@ -54,7 +54,13 @@ export type DeleteAvatarRequestData = {
   avatarId: UserAvatarId,
 }
 
-export type MeResponseData = User | { reason: string }
+export type MeResponseData = {
+  user: User
+  serverTimestamp: number
+} | {
+  reason: string
+  serverTimestamp: number
+}
 
 export type LogoutResponseData = {
   success: true

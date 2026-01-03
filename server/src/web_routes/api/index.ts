@@ -79,19 +79,25 @@ export default function createRouter(
       const user: UserRow = req.userInfo.user
       const groups = await server.users.getGroups(user.id)
       const responseData: Api.MeResponseData = {
-        id: user.id,
-        name: user.name,
-        clientId: user.client_id,
-        created: user.created,
-        type: req.userInfo.user_type,
-        cannyToken: server.canny.createToken(user),
-        groups: groups.map(g => g.name),
+        user: {
+          id: user.id,
+          name: user.name,
+          clientId: user.client_id,
+          created: user.created,
+          type: req.userInfo.user_type,
+          cannyToken: server.canny.createToken(user),
+          groups: groups.map(g => g.name),
+        },
+        serverTimestamp: Time.timestamp(),
       }
       res.send(responseData)
       return
     }
 
-    const responseData: Api.MeResponseData = { reason: 'no user' }
+    const responseData: Api.MeResponseData = {
+      reason: 'no user',
+      serverTimestamp: Time.timestamp(),
+    }
     res.status(401).send(responseData)
     return
   })
