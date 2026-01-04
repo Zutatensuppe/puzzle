@@ -55,7 +55,7 @@ const run = async () => {
   )
   server.init()
 
-  server.listen()
+  server.start()
 
   const log = logger('main.js')
 

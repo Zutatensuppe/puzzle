@@ -125,7 +125,7 @@ export class Server {
     }))
   }
 
-  public listen() {
+  public start() {
     const port = config.http.port
     const hostname = config.http.hostname
     const app = express()
@@ -197,6 +197,8 @@ export class Server {
     )
     wss.listen()
     this.websocketserver = wss
+
+    this.workers.startAll()
   }
 
   public close(): void {

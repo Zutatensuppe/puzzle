@@ -13,7 +13,7 @@ export class Workers {
     this.workers.push(new CheckLivestreamsWorker(server))
   }
 
-  public runAll(): void {
+  public startAll(): void {
     for (const worker of this.workers) {
       void worker.run()
     }
