@@ -305,7 +305,7 @@ export class GameService {
       isPrivate: GameCommon.Game_isPrivate(game),
       started: GameCommon.Game_getStartTs(game),
       finished,
-      piecesFinished: GameCommon.Game_getFinishedPiecesCount(game),
+      piecesFinished: this.determinePiecesFinishedCount(game),
       piecesTotal: GameCommon.Game_getPieceCount(game),
       players: this.determinePlayersCount(game, currentTimestamp),
       image: GameCommon.Game_getImage(game),
@@ -319,17 +319,21 @@ export class GameService {
     }
   }
 
+  private determinePiecesFinishedCount(game: Game): number {
+    return GameCommon.get(game.id)
+      ? GameCommon.getFinishedPiecesCount(game.id)
+      : GameCommon.Game_getFinishedPiecesCount(game)
+  }
+
   private determinePlayersCount(game: Game, currentTimestamp: number): number {
     const finished = GameCommon.Game_getFinishTs(game)
     if (finished) {
       return GameCommon.Game_getPlayersWithScore(game).length
     }
-    if (GameCommon.get(game.id)) {
-      // get live data
-      return GameCommon.getActivePlayers(game.id, currentTimestamp).length
-    }
-    // get data from stored game object
-    return GameCommon.Game_getActivePlayers(game, currentTimestamp).length
+
+    return GameCommon.get(game.id)
+      ? GameCommon.getActivePlayers(game.id, currentTimestamp).length
+      : GameCommon.Game_getActivePlayers(game, currentTimestamp).length
   }
 
   private async gameToStoreData(game: Game): Promise<GameStoreData> {
