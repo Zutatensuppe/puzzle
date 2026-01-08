@@ -58,7 +58,7 @@
                     type="number"
                     step="100"
                     min="0"
-                    max="5000"
+                    :max="NEWGAME_MAX_PIECES"
                     density="compact"
                     :rules="[numberRule]"
                     class="pieces-input"
@@ -304,7 +304,7 @@ const numberRule = (v: string) => {
   if (!isNaN(num) && num >= NEWGAME_MIN_PIECES && num <= NEWGAME_MAX_PIECES) {
     return true
   }
-  return 'Pieces have to be between 10 and 5000'
+  return `Pieces have to be between ${NEWGAME_MIN_PIECES} and ${NEWGAME_MAX_PIECES}`
 }
 
 const onCropUpdate = (newCrop: Rect) => {
