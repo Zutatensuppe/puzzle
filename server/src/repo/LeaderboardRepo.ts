@@ -1,6 +1,7 @@
 import DbData from '../app/DbData'
+import config from '../Config'
 import type Db from '../lib/Db'
-import type { Leaderboard, LeaderboardEntry, LeaderboardId, UserId } from '@common/Types'
+import type { Leaderboard, LeaderboardEntry, LeaderboardEntryTmp, LeaderboardId, UserId } from '@common/Types'
 
 interface LeaderboardRow {
   id: LeaderboardId
@@ -123,19 +124,33 @@ export class LeaderboardRepo {
       return null
     }
 
-    const leaderboardUserEntry = userId ? await this.db._get<LeaderboardEntry>(`
+    const convertEntry = (entry: LeaderboardEntryTmp): LeaderboardEntry => ({
+      leaderboard_id: entry.leaderboard_id,
+      rank: entry.rank,
+      user_id: entry.user_id,
+      user_name: entry.user_name,
+      games_count: entry.games_count,
+      pieces_count: entry.pieces_count,
+      avatar_url: entry.avatar_filename ? `${config.dir.UPLOAD_URL}/${encodeURIComponent(entry.avatar_filename)}` : null,
+    })
+
+    const leaderboardUserEntry = userId ? await this.db._get<LeaderboardEntryTmp>(`
       select
-        lbe.*, u.name as user_name
+        lbe.*, u.name as user_name, a.filename as avatar_filename
       from ${DbData.Tables.LeaderboardEntries} lbe
         inner join ${DbData.Tables.Users} u on u.id = lbe.user_id
+        left join ${DbData.Tables.UserSettings} s on s.user_id = u.id
+        left join ${DbData.Tables.UserAvatars} a on a.id = s.avatar_id
       where lbe.user_id = $1 and lbe.leaderboard_id = $2
     `, [userId, leaderboard.id]) : null
 
-    const leaderboardEntries = await this.db._getMany<LeaderboardEntry>(`
+    const leaderboardEntries = await this.db._getMany<LeaderboardEntryTmp>(`
       select
-        lbe.*, u.name as user_name
+        lbe.*, u.name as user_name, a.filename as avatar_filename
       from ${DbData.Tables.LeaderboardEntries} lbe
         inner join ${DbData.Tables.Users} u on u.id = lbe.user_id
+        left join ${DbData.Tables.UserSettings} s on s.user_id = u.id
+        left join ${DbData.Tables.UserAvatars} a on a.id = s.avatar_id
       where
         lbe.leaderboard_id = $1
         and lbe.pieces_count > 0
@@ -148,8 +163,8 @@ export class LeaderboardRepo {
     return {
       id: leaderboard.id,
       name: leaderboard.name,
-      entries: leaderboardEntries,
-      userEntry: leaderboardUserEntry,
+      entries: leaderboardEntries.map(convertEntry),
+      userEntry: leaderboardUserEntry ? convertEntry(leaderboardUserEntry) : null,
     }
   }
 

@@ -58,6 +58,7 @@ export class GamesRepo {
     limit: number,
     currentUserId: UserId,
     limitByUserId: UserId | null,
+    showNsfw: boolean,
   ): Promise<GameRow[]> {
     const limitSql = this.db._buildLimit({ limit, offset })
 
@@ -69,14 +70,11 @@ export class GamesRepo {
         INNER JOIN ${DbData.Tables.UserXGame} uxg on uxg.game_id = g.id
         INNER JOIN ${DbData.Tables.Images} i on i.id = g.image_id
         WHERE
-          (g."private" = 0 OR g.creator_user_id = $1)
-          AND
-          (i.state = 'approved' OR i.uploader_user_id = $1)
-          AND
-          uxg.user_id = $2
-          AND
-          uxg.pieces_count > 0
-          AND
+          (g."private" = 0 OR g.creator_user_id = $1) AND
+          ${!showNsfw ? '(i.nsfw = 0 OR i.uploader_user_id = $1) AND' : '' }
+          (i.state = 'approved' OR i.uploader_user_id = $1) AND
+          uxg.user_id = $2 AND
+          uxg.pieces_count > 0 AND
           (g.finished is null)
         ORDER BY
           g.created DESC
@@ -88,10 +86,9 @@ export class GamesRepo {
       SELECT g.* FROM ${DbData.Tables.Games} g
       INNER JOIN ${DbData.Tables.Images} i on i.id = g.image_id
       WHERE
-        (g."private" = 0 OR g.creator_user_id = $1)
-        AND
-        (i.state = 'approved' OR i.uploader_user_id = $1)
-        AND
+        (g."private" = 0 OR g.creator_user_id = $1) AND
+        ${!showNsfw ? '(i.nsfw = 0 OR i.uploader_user_id = $1) AND' : '' }
+        (i.state = 'approved' OR i.uploader_user_id = $1) AND
         (g.finished is null)
       ORDER BY
         g.created DESC
@@ -104,6 +101,7 @@ export class GamesRepo {
     limit: number,
     currentUserId: UserId,
     limitByUserId: UserId | null,
+    showNsfw: boolean,
   ): Promise<GameRow[]> {
     const limitSql = this.db._buildLimit({ limit, offset })
 
@@ -115,14 +113,11 @@ export class GamesRepo {
         INNER JOIN ${DbData.Tables.UserXGame} uxg on uxg.game_id = g.id
         INNER JOIN ${DbData.Tables.Images} i on i.id = g.image_id
         WHERE
-          (g."private" = 0 OR g.creator_user_id = $1)
-          AND
-          (i.state = 'approved' OR i.uploader_user_id = $1)
-          AND
-          uxg.user_id = $2
-          AND
-          uxg.pieces_count > 0
-          AND
+          (g."private" = 0 OR g.creator_user_id = $1) AND
+          ${!showNsfw ? '(i.nsfw = 0 OR i.uploader_user_id = $1) AND' : '' }
+          (i.state = 'approved' OR i.uploader_user_id = $1) AND
+          uxg.user_id = $2 AND
+          uxg.pieces_count > 0 AND
           (g.finished is not null)
         ORDER BY
           g.finished DESC
@@ -131,13 +126,16 @@ export class GamesRepo {
     }
 
     return await this.db._getMany(`
-      SELECT g.* FROM ${DbData.Tables.Games} g
-      INNER JOIN ${DbData.Tables.Images} i on i.id = g.image_id
+      SELECT
+        g.*
+      FROM
+        ${DbData.Tables.Games} g
+      INNER JOIN
+        ${DbData.Tables.Images} i on i.id = g.image_id
       WHERE
-        (g."private" = 0 OR g.creator_user_id = $1)
-        AND
-        (i.state = 'approved' OR i.uploader_user_id = $1)
-        AND
+        (g."private" = 0 OR g.creator_user_id = $1) AND
+        ${!showNsfw ? '(i.nsfw = 0 OR i.uploader_user_id = $1) AND' : '' }
+        (i.state = 'approved' OR i.uploader_user_id = $1) AND
         (g.finished is not null)
       ORDER BY
         g.finished DESC
@@ -145,21 +143,38 @@ export class GamesRepo {
     `, [currentUserId]) as GameRow[]
   }
 
-  async countPublicRunningGames(userId: UserId): Promise<number> {
-    const sql = `SELECT COUNT(*)::int AS count FROM ${DbData.Tables.Games} WHERE
-      ("private" = 0 OR creator_user_id = $1)
-      AND
-      (finished is null)
+  async countPublicRunningGames(userId: UserId, showNsfw: boolean): Promise<number> {
+    const sql = `
+      SELECT
+        COUNT(*)::int AS count
+      FROM
+        ${DbData.Tables.Games} g
+      INNER JOIN
+        ${DbData.Tables.Images} i on i.id = g.image_id
+      WHERE
+        (g."private" = 0 OR g.creator_user_id = $1) AND
+        ${!showNsfw ? '(i.nsfw = 0 OR i.uploader_user_id = $1) AND' : '' }
+        (g.finished is null)
     `
     const row = await this.db._get<{ count: number }>(sql, [userId])
     return row?.count ?? 0
   }
 
-  async countPublicFinishedGames(userId: UserId): Promise<number> {
-    const sql = `SELECT COUNT(*)::int AS count FROM ${DbData.Tables.Games} WHERE
-      ("private" = 0 OR creator_user_id = $1)
-      AND
-      (finished is not null)
+  async countPublicFinishedGames(
+    userId: UserId,
+    showNsfw: boolean,
+  ): Promise<number> {
+    const sql = `
+      SELECT
+        COUNT(*)::int AS count
+      FROM
+        ${DbData.Tables.Games} g
+      INNER JOIN
+        ${DbData.Tables.Images} i on i.id = g.image_id
+      WHERE
+        (g."private" = 0 OR g.creator_user_id = $1) AND
+        ${!showNsfw ? '(i.nsfw = 0 OR i.uploader_user_id = $1) AND' : '' }
+        (g.finished is not null)
     `
     const row = await this.db._get<{ count: number }>(sql, [userId])
     return row?.count ?? 0
@@ -168,6 +183,7 @@ export class GamesRepo {
   async countGamesByUser(
     currentUserId: UserId,
     limitToUserId: UserId,
+    showNsfw: boolean,
   ): Promise<number> {
     // pieces count only is misleading because the user can help
     // in the puzzle without connecting a piece
@@ -178,12 +194,14 @@ export class GamesRepo {
         ${DbData.Tables.UserXGame} uxg
       INNER JOIN
         ${DbData.Tables.Games} g ON g.id = uxg.game_id
+      INNER JOIN
+        ${DbData.Tables.Images} i on i.id = g.image_id
       WHERE
-        (g.private = 0 OR uxg.user_id = $1)
-      AND
-        uxg.user_id = $2
-      AND
-        uxg.pieces_count > 0`
+        (g.private = 0 OR uxg.user_id = $1) AND
+        ${!showNsfw ? '(i.nsfw = 0 OR i.uploader_user_id = $1) AND' : '' }
+        uxg.user_id = $2 AND
+        uxg.pieces_count > 0
+    `
     const row = await this.db._get<{ count: number }>(sql, [currentUserId, limitToUserId])
     return row?.count ?? 0
   }
@@ -191,6 +209,7 @@ export class GamesRepo {
   async countGamePiecesByUser(
     currentUserId: UserId,
     limitToUserId: UserId,
+    showNsfw: boolean,
   ): Promise<number> {
     // pieces count only is misleading because the user can help
     // in the puzzle without connecting a piece
@@ -201,10 +220,14 @@ export class GamesRepo {
         ${DbData.Tables.UserXGame} uxg
       INNER JOIN
         ${DbData.Tables.Games} g ON g.id = uxg.game_id
+      INNER JOIN
+        ${DbData.Tables.Images} i on i.id = g.image_id
       WHERE
+        ${!showNsfw ? '(i.nsfw = 0 OR i.uploader_user_id = $1) AND' : '' }
         (g.private = 0 OR uxg.user_id = $1)
       AND
-        uxg.user_id = $2`
+        uxg.user_id = $2
+    `
     const row = await this.db._get<{ count: number }>(sql, [currentUserId, limitToUserId])
     return row?.count ?? 0
   }

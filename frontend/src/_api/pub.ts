@@ -46,7 +46,7 @@ const changePassword = (
 const logout = (
   // no args
 ): Promise<Response<Api.LogoutResponseData>> => {
-  return xhr.post('/api/logout', {
+  return xhr.post('/api/user/logout', {
     headers: JSON_HEADERS,
   })
 }
@@ -142,6 +142,21 @@ const getUserProfileData = (
   return xhr.get(`/api/user-profile/${data.id}`)
 }
 
+const getUserSettingsData = (
+  data: Api.GetUserSettingsRequestData,
+): Promise<Response<Api.UserSettingsResponseData>> => {
+  return xhr.get(`/api/user/settings/${data.id}`)
+}
+
+const updateUserSettings = (
+  data: Api.UpdateUserSettingsRequestData,
+): Promise<Response<Api.UserSettingsResponseData>> => {
+  return xhr.post('/api/user/settings', {
+    headers: JSON_HEADERS,
+    body: JSON.stringify(data),
+  })
+}
+
 const getFeaturedTeaserData = (
   // no args
 ): Promise<Response<Api.FeaturedTeasersResponseData>> => {
@@ -200,7 +215,7 @@ const uploadAvatar = (
 ): Promise<Response<UserAvatar>> => {
   const formData = new FormData()
   formData.append('file', data.file)
-  return xhr.post('/api/upload-avatar', {
+  return xhr.post('/api/user/upload-avatar', {
     body: formData,
     onUploadProgress: (evt: ProgressEvent<XMLHttpRequestEventTarget>): void => {
       data.onProgress(evt.loaded / evt.total)
@@ -211,7 +226,7 @@ const uploadAvatar = (
 const deleteAvatar = (
   data: Api.DeleteAvatarRequestData,
 ): Promise<Response<UserAvatar>> => {
-  return xhr.post('/api/delete-avatar', {
+  return xhr.post('/api/user/delete-avatar', {
     headers: JSON_HEADERS,
     body: JSON.stringify(data),
   })
@@ -227,6 +242,8 @@ export default {
   getAnnouncements,
   getFeaturedData,
   getUserProfileData,
+  getUserSettingsData,
+  updateUserSettings,
   getFeaturedTeaserData,
   images,
   indexData,

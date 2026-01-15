@@ -309,7 +309,7 @@ $bg-color-transparent: rgba(0 0 0 / 70%);
     }
 
     .game-teaser-image {
-      filter: blur(120px);
+      filter: blur(20px);
     }
 
     .game-teaser-buttons {
@@ -462,7 +462,7 @@ $bg-color-transparent: rgba(0 0 0 / 70%);
     }
 
     .game-teaser-image {
-      filter: blur(120px);
+      filter: blur(20px);
     }
 
     .game-teaser-buttons {
@@ -696,7 +696,7 @@ html.view-replay body { overflow: hidden; }
     overflow: hidden;
 
     .imageteaser {
-      filter: blur(120px);
+      filter: blur(20px);
     }
   }
 }
@@ -1208,44 +1208,6 @@ fieldset {
     white-space: nowrap;
   }
 
-  .avatar-cell {
-    padding: 0;
-    vertical-align: top;
-  }
-
-  .avatar {
-    background-size: contain;
-    aspect-ratio: 1;
-    margin: 30px 15px;
-    width: 200px;
-    display: inline-block;
-
-    i {
-      display: none;
-      position: absolute;
-    }
-
-    &:hover i {
-      display: block;
-    }
-  }
-
-  .avatar.no-avatar {
-    background-image: url('assets/gfx/hyottokun.png');
-    filter: grayscale(1);
-    opacity: .3;
-    position: relative;
-
-    span {
-      position: absolute;
-      top: -1em;
-      width: 100%;
-      display: block;
-      text-align: center;
-      user-select: none;
-    }
-  }
-
   .text-disabled {
     color: rgba(10 10 10 / var(--v-disabled-opacity)) !important;
   }
@@ -1287,4 +1249,52 @@ fieldset {
 
 .image-is-rejected-info {
   background: rgba(185 84 84 / 80%);
+}
+
+
+
+.avatar-cell {
+  padding: 0;
+  vertical-align: top;
+
+}
+
+.avatar-icon {
+  background-size: contain;
+  aspect-ratio: 1;
+  margin: 0;
+  display: inline-block;
+}
+
+.avatar {
+  background-size: contain;
+  aspect-ratio: 1;
+  margin: 30px 15px;
+  width: 200px;
+  display: inline-block;
+
+  i {
+    display: none;
+    position: absolute;
+  }
+
+  &:hover i {
+    display: block;
+  }
+}
+
+.avatar.no-avatar {
+  background-image: url('assets/gfx/hyottokun.png');
+  filter: grayscale(1);
+  opacity: .3;
+  position: relative;
+
+  span {
+    position: absolute;
+    top: -1em;
+    width: 100%;
+    display: block;
+    text-align: center;
+    user-select: none;
+  }
 }

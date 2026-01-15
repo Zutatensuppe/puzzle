@@ -11,7 +11,6 @@ import type {
 import config from '../../Config'
 import express from 'express'
 import GameLog from '../../GameLog'
-import multer from 'multer'
 import request from 'request'
 import Time from '@common/Time'
 import Util, { isEncodedGameLegacy, logger, newJSONDateString, uniqId } from '@common/Util'
@@ -19,7 +18,8 @@ import { COOKIE_TOKEN, generateSalt, generateToken, passwordHash } from '../../A
 import type { Server } from '../../Server'
 import fs from '../../lib/FileSystem'
 import FileSystem from '../../lib/FileSystem'
-import type { DeleteAvatarRequestData } from '@common/TypesApi'
+import { UploadRequestsManager } from '../../UploadRequestsManager'
+import loggedInUsersRouter from './logged-in-users'
 
 const log = logger('web_routes/api/index.ts')
 
@@ -29,6 +29,14 @@ const IMAGES_PER_PAGE_LIMIT = 20
 export default function createRouter(
   server: Server,
 ): express.Router {
+  const shouldShowNsfw = async (currentUserId: UserId): Promise<boolean> => {
+    if (!currentUserId) {
+      return false
+    }
+
+    const settings = await server.repos.users.getUserSettings(currentUserId)
+    return settings.nsfwActive
+  }
 
   const determineNewUserClientId = async (originalClientId: ClientId | ''): Promise<ClientId> => {
     // if a client id is given, we will use it, if it doesnt
@@ -46,38 +54,14 @@ export default function createRouter(
     res.cookie(COOKIE_TOKEN, token, { maxAge: 356 * Time.DAY, httpOnly: true })
   }
 
-  const basename = (file: Express.Multer.File) => {
-    return `${Util.uniqId()}-${Util.hash(file.originalname)}`
-  }
-
-  const extension = (file: Express.Multer.File) => {
-    switch (file.mimetype) {
-      case 'image/png': return '.png'
-      case 'image/jpeg': return '.jpeg'
-      case 'image/webp': return '.webp'
-      case 'image/gif': return '.gif'
-      case 'image/svg+xml': return '.svg'
-      default: {
-        // try to keep original filename
-        const m = file.filename.match(/\.[a-z]+$/)
-        return m ? m[0] : '.unknown'
-      }
-    }
-  }
-
-  const storage = multer.diskStorage({
-    destination: config.dir.UPLOAD_DIR,
-    filename: function (req, file, cb) {
-      cb(null, `${basename(file)}${extension(file)}`)
-    },
-  })
-  const upload = multer({ storage }).single('file')
+  const upload = UploadRequestsManager.createUploadRequestHandler()
 
   const router = express.Router()
   router.get('/me', async (req, res): Promise<void> => {
     if (req.userInfo?.user) {
       const user: UserRow = req.userInfo.user
       const groups = await server.users.getGroups(user.id)
+      const settings = await server.users.getCompleteUserSettings(user.id)
       const responseData: Api.MeResponseData = {
         user: {
           id: user.id,
@@ -87,6 +71,8 @@ export default function createRouter(
           type: req.userInfo.user_type,
           cannyToken: server.canny.createToken(user),
           groups: groups.map(g => g.name),
+          avatar: settings.avatar,
+          nsfwUnblurred: settings.nsfwUnblurred,
         },
         serverTimestamp: Time.timestamp(),
       }
@@ -447,18 +433,6 @@ export default function createRouter(
     res.redirect(302, '/#email-verified=true')
   })
 
-  router.post('/logout', async (req, res): Promise<void> => {
-    if (!req.userInfo?.token) {
-      const responseData: Api.LogoutResponseData = { reason: 'no token' }
-      res.status(401).send(responseData)
-      return
-    }
-    await server.repos.tokens.delete({ token: req.userInfo.token })
-    res.clearCookie(COOKIE_TOKEN)
-    const responseData: Api.LogoutResponseData = { success: true }
-    res.send(responseData)
-  })
-
   router.get('/conf', (_req, res): void => {
     const responseData: Api.ConfigResponseData = {
       WS_ADDRESS: config.ws.connectstring,
@@ -521,10 +495,12 @@ export default function createRouter(
   router.get('/newgame-data', async (req, res): Promise<void> => {
     const currentUserId = req.userInfo?.user?.id ?? 0 as UserId
 
+    const showNsfw = await shouldShowNsfw(currentUserId)
+
     const requestData: Api.NewGameDataRequestData = req.query as any
     const responseData: Api.NewGameDataResponseData = {
       featured: await server.repos.featured.getManyWithCollections({}),
-      images: await server.images.imagesFromDb(requestData.search, requestData.sort, 0, IMAGES_PER_PAGE_LIMIT, currentUserId, null),
+      images: await server.images.imagesFromDb(requestData.search, requestData.sort, 0, IMAGES_PER_PAGE_LIMIT, currentUserId, null, showNsfw),
       tags: await server.images.getAllTags(),
     }
     res.send(responseData)
@@ -546,9 +522,12 @@ export default function createRouter(
   router.get('/user-profile/:id', async (req, res): Promise<void> => {
     const limitToUserId = parseInt(`${req.params.id}`, 10) as UserId
     const currentUserId = req.userInfo?.user?.id ?? 0 as UserId
+
+    const showNsfw = await shouldShowNsfw(currentUserId)
+
     try {
       const responseData: Api.UserProfileResponseData = {
-        userProfile: await server.users.getCompleteUserProfile(currentUserId, limitToUserId),
+        userProfile: await server.users.getCompleteUserProfile(currentUserId, limitToUserId, showNsfw),
       }
       res.send(responseData)
     } catch (e: unknown) {
@@ -572,8 +551,10 @@ export default function createRouter(
     }
     const currentUserId = req.userInfo?.user_type === 'user' ? req.userInfo.user.id : 0 as UserId
 
+    const showNsfw = await shouldShowNsfw(currentUserId)
+
     const responseData: Api.ImagesResponseData = {
-      images: await server.images.imagesFromDb(requestData.search, requestData.sort, offset, IMAGES_PER_PAGE_LIMIT, currentUserId, null),
+      images: await server.images.imagesFromDb(requestData.search, requestData.sort, offset, IMAGES_PER_PAGE_LIMIT, currentUserId, null, showNsfw),
     }
     res.send(responseData)
   })
@@ -581,12 +562,14 @@ export default function createRouter(
   router.get('/index-data', async (req, res): Promise<void> => {
     const currentUserId = req.userInfo?.user?.id ?? 0 as UserId
 
+    const showNsfw = await shouldShowNsfw(currentUserId)
+
     const currentTimestamp = Time.timestamp()
     // all running rows
-    const runningRows = await server.gameService.getPublicRunningGames(-1, -1, currentUserId, null)
-    const runningCount = await server.gameService.countPublicRunningGames(currentUserId)
-    const finishedRows = await server.gameService.getPublicFinishedGames(0, GAMES_PER_PAGE_LIMIT, currentUserId, null)
-    const finishedCount = await server.gameService.countPublicFinishedGames(currentUserId)
+    const runningRows = await server.gameService.getPublicRunningGames(-1, -1, currentUserId, null, showNsfw)
+    const runningCount = await server.gameService.countPublicRunningGames(currentUserId, showNsfw)
+    const finishedRows = await server.gameService.getPublicFinishedGames(0, GAMES_PER_PAGE_LIMIT, currentUserId, null, showNsfw)
+    const finishedCount = await server.gameService.countPublicFinishedGames(currentUserId, showNsfw)
 
     const gamesRunning: GameInfo[] = []
     const gamesFinished: GameInfo[] = []
@@ -619,6 +602,8 @@ export default function createRouter(
   router.get('/finished-games', async (req, res): Promise<void> => {
     const currentUserId = req.userInfo?.user?.id ?? 0 as UserId
 
+    const showNsfw = await shouldShowNsfw(currentUserId)
+
     const offset = parseInt(`${req.query.offset}`, 10)
     if (isNaN(offset) || offset < 0) {
       const responseData: Api.FinishedGamesResponseData = { error: 'bad offset' }
@@ -626,8 +611,8 @@ export default function createRouter(
       return
     }
     const currentTimestamp = Time.timestamp()
-    const finishedRows = await server.gameService.getPublicFinishedGames(offset, GAMES_PER_PAGE_LIMIT, currentUserId, null)
-    const finishedCount = await server.gameService.countPublicFinishedGames(currentUserId)
+    const finishedRows = await server.gameService.getPublicFinishedGames(offset, GAMES_PER_PAGE_LIMIT, currentUserId, null, showNsfw)
+    const finishedCount = await server.gameService.countPublicFinishedGames(currentUserId, showNsfw)
     const gamesFinished: GameInfo[] = []
     for (const row of finishedRows) {
       gamesFinished.push(await server.gameService.gameToGameInfo(row, currentTimestamp))
@@ -733,7 +718,7 @@ export default function createRouter(
         created: newJSONDateString(),
         width: dim.w,
         height: dim.h,
-        private: isPrivate || isNsfw ? 1 : 0,
+        private: isPrivate ? 1 : 0,
         reported: 0,
         nsfw: isNsfw ? 1 : 0,
         checksum,
@@ -750,82 +735,6 @@ export default function createRouter(
         res.status(400).send('Something went wrong!')
       } else {
         res.send(imageInfo)
-      }
-    })
-  })
-
-  router.post('/delete-avatar', express.json(), async (req: express.Request, res): Promise<void> => {
-    const user: UserRow | null = req.userInfo?.user || null
-    if (!user || !user.id) {
-      res.status(403).send({ ok: false, error: 'forbidden' })
-      return
-    }
-
-    const data = req.body as DeleteAvatarRequestData
-
-    try {
-      const settings = await server.users.getUserSettings(user.id)
-
-      // make sure the avatar id is the one the
-      // user (making the request) currently has set
-      if (settings.avatarId !== data.avatarId) {
-        res.status(403).send({ ok: false, error: 'forbidden' })
-        return
-      }
-
-      settings.avatarId = null
-      await server.users.updateUserSettings(settings)
-
-      await server.users.deleteAvatar(data.avatarId)
-
-      res.send({ ok: true })
-    } catch {
-      res.status(400).send('Something went wrong!')
-    }
-  })
-
-  router.post('/upload-avatar', (req, res): void => {
-    void upload(req, res, async (err: unknown): Promise<void> => {
-      if (err) {
-        log.log('/api/upload-avatar', 'error', err)
-        res.status(400).send('Something went wrong!')
-        return
-      }
-      if (!req.file) {
-        log.log('/api/upload-avatar', 'error', 'no file')
-        res.status(400).send('Something went wrong!')
-        return
-      }
-
-      log.info('req.file.filename', req.file.filename)
-
-      const im = server.images
-
-      const user = await server.users.getOrCreateUserByRequest(req)
-
-      const imagePath = im.getImagePath(req.file.filename)
-      const dim = await im.getDimensions(imagePath)
-
-      try {
-        const userSettings = await server.users.getUserSettings(user.id)
-
-        const avatarId = await server.users.saveAvatar({
-          created: newJSONDateString(),
-          filename: req.file.filename,
-          filename_original: req.file.originalname,
-          width: dim.w,
-          height: dim.h,
-        })
-
-        userSettings.avatarId = avatarId
-
-        await server.users.updateUserSettings(userSettings)
-
-        const avatar = await server.repos.users.getUserAvatarByUserId(user.id)
-
-        res.send(avatar)
-      } catch {
-        res.status(400).send('Something went wrong!')
       }
     })
   })
@@ -915,6 +824,8 @@ export default function createRouter(
       res.status(500).send(responseData)
     }
   })
+
+  router.use('/user', loggedInUsersRouter(server))
 
   return router
 }

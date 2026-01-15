@@ -16,28 +16,9 @@
                   rowspan="10"
                   class="avatar-cell"
                 >
-                  <div
-                    v-if="canEdit"
-                    class="avatar is-clickable"
-                    :class="{ 'no-avatar': !userProfile.user.avatar }"
-                    :style="avatarStyle"
-                    @click="onAvatarClick"
-                  >
-                    <v-icon
-                      v-if="userProfile.user.avatar"
-                      v-tooltip="'Delete this avatar'"
-                      icon="mdi-trash-can"
-                      @click.stop="onAvatarDeleteClick"
-                    />
-                    <span v-else>
-                      Click to upload your avatar.
-                    </span>
-                  </div>
-                  <div
-                    v-else
-                    class="avatar"
-                    :class="{ 'no-avatar': !userProfile.user.avatar }"
-                    :style="avatarStyle"
+                  <UserAvatar
+                    :can-edit="false"
+                    :user-avatar="userProfile.user.avatar"
                   />
                 </td>
               </tr>
@@ -173,23 +154,22 @@ import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import api from '../_api'
 import { toast } from '../toast'
-import type { CompleteUserProfile, GameSettings, ImageInfo, Tag, UserId } from '@common/Types'
+import type { CompletePublicUserProfile, GameSettings, ImageInfo, Tag, UserId } from '@common/Types'
 import { ImageSearchSort } from '@common/Types'
 import ImageLibrary from '../components/ImageLibrary.vue'
 import { useDialog } from '../useDialog'
-import { me, onLoginStateChange } from '../user'
-import { uploadAvatar } from '../upload'
-import { resizeUrl } from '@common/ImageService'
 import RankIcon from '../components/RankIcon.vue'
+import UserAvatar from '../components/UserAvatar.vue'
+import { onLoginStateChange } from '../user'
 
-const { closeDialog, openReportPlayerDialog, openNewGameDialog, openUserAvatarUploadDialog, currentDialog } = useDialog()
+const { closeDialog, openReportPlayerDialog, openNewGameDialog, currentDialog } = useDialog()
 
 const tab = ref<'latest-images'|'latest-finished-games'>('latest-images')
 const route = useRoute()
 const router = useRouter()
 
 const loading = ref<boolean>(true)
-const userProfile = ref<CompleteUserProfile|null>(null)
+const userProfile = ref<CompletePublicUserProfile|null>(null)
 
 const joinDate = computed(() => {
   if (!userProfile.value) {
@@ -215,52 +195,6 @@ const onNewGameClick = async (gameSettings: GameSettings) => {
     void router.push({ name: 'game', params: { id: game.id } })
   } else {
     toast('An error occured while creating the game.', 'error')
-  }
-}
-
-const avatarStyle = computed(() => {
-  const imgUrl = userProfile.value?.user.avatar?.url
-  if (!imgUrl) {
-    return null
-  }
-
-  return {
-    backgroundImage: `url(${resizeUrl(imgUrl, 400, 400, 'cover')})`,
-  }
-})
-
-const canEdit = computed(() => id.value && id.value === me.value?.id)
-
-const onAvatarClick = () => {
-  const onSaveClick = async (data: Blob): Promise<void> => {
-    const result = await uploadAvatar(data)
-    closeDialog()
-
-    if ('error' in result) {
-      toast(result.error, 'error')
-      return
-    }
-
-    await load()
-  }
-
-  openUserAvatarUploadDialog({
-    onSaveClick,
-  })
-}
-
-const onAvatarDeleteClick = async () => {
-  const avatarId = userProfile.value?.user.avatar?.id
-  if (avatarId && confirm('Really delete the Avatar?')) {
-    const res = await api.pub.deleteAvatar({
-      avatarId,
-    })
-    if (res.status === 200) {
-      toast('Avatar deleted.', 'success')
-      await load()
-    } else {
-      toast('An error occured during avatar deletion.', 'error')
-    }
   }
 }
 

@@ -1,5 +1,5 @@
-import type { GameInfo, UserAvatarId, UserAvatarRow, UserSettings, UserSettingsRow} from '@common/Types'
-import { ImageSearchSort, type AccountId, type ClientId, type CompleteUserProfile, type TokenRow, type UserGroupRow, type UserId, type UserRow } from '@common/Types'
+import type { CompleteUserSettings, GameInfo, UserAvatar, UserAvatarId } from '@common/Types'
+import { ImageSearchSort, type AccountId, type ClientId, type CompletePublicUserProfile, type TokenRow, type UserGroupRow, type UserId, type UserRow } from '@common/Types'
 import { COOKIE_TOKEN, generateToken } from './Auth'
 import type Db from './lib/Db'
 import type { WhereRaw } from './lib/Db'
@@ -134,17 +134,17 @@ export class Users {
     return await this.repos.users.get(where)
   }
 
-  async getToken(where: WhereRaw): Promise<TokenRow | null> {
+  private async getToken(where: WhereRaw): Promise<TokenRow | null> {
     return await this.repos.tokens.get(where)
   }
 
-  async addAuthToken(userId: UserId): Promise<string> {
+  public async addAuthToken(userId: UserId): Promise<string> {
     const token = generateToken()
     await this.repos.tokens.insert({ user_id: userId, token, type: 'auth' })
     return token
   }
 
-  async getUserInfoByRequest(req: express.Request): Promise<UserInfo> {
+  public async getUserInfoByRequest(req: express.Request): Promise<UserInfo> {
     const token = req.cookies[COOKIE_TOKEN] || null
     const tokenRow: TokenRow | null = token
       ? await this.getToken({ token, type: 'auth' })
@@ -177,24 +177,25 @@ export class Users {
     }
   }
 
-  getUserByIdentity(identity: IdentityRow): Promise<UserRow | null> {
+  public getUserByIdentity(identity: IdentityRow): Promise<UserRow | null> {
     return this.getUser({ id: identity.user_id })
   }
 
   public async getCompleteUserProfile(
     currentUserId: UserId,
     limitToUserId: UserId,
-  ): Promise<CompleteUserProfile> {
+    showNsfw: boolean,
+  ): Promise<CompletePublicUserProfile> {
     const user = await this.repos.users.get({ id: limitToUserId })
     if (!user) {
       throw new Error('not found')
     }
 
     const currentTimestamp = Time.timestamp()
-    const totalGamesCount = await this.repos.games.countGamesByUser(currentUserId, limitToUserId)
-    const totalPiecesCount = await this.repos.games.countGamePiecesByUser(currentUserId, limitToUserId)
+    const totalGamesCount = await this.repos.games.countGamesByUser(currentUserId, limitToUserId, showNsfw)
+    const totalPiecesCount = await this.repos.games.countGamePiecesByUser(currentUserId, limitToUserId, showNsfw)
 
-    const finishedRows = await this.games.getPublicFinishedGames(0, 8, currentUserId, limitToUserId)
+    const finishedRows = await this.games.getPublicFinishedGames(0, 8, currentUserId, limitToUserId, showNsfw)
     const gamesFinished: GameInfo[] = []
     for (const row of finishedRows) {
       gamesFinished.push(await this.games.gameToGameInfo(row, currentTimestamp))
@@ -231,45 +232,26 @@ export class Users {
         latestImagesLimit,
         currentUserId,
         limitToUserId,
+        showNsfw,
       ),
     }
   }
 
-  public async getUserSettings(
+  public async getCompleteUserSettings(
     userId: UserId,
-  ): Promise<UserSettings> {
-    const row = await this.db.get<UserSettingsRow>(DbData.Tables.UserSettings, { user_id: userId })
-    if (!row) {
-      return {
-        userId,
-        avatarId: null,
-      }
+  ): Promise<CompleteUserSettings> {
+    const userSettings = await this.repos.users.getUserSettings(userId)
+    let avatar: UserAvatar | null = null
+    if (userSettings.avatarId) {
+      avatar = await this.repos.users.getUserAvatarByUserId(userId)
     }
     return {
-      avatarId: row.avatar_id,
-      userId: row.user_id,
-    }
-  }
-
-  public async updateUserSettings(
-    userSettings: UserSettings,
-  ): Promise<void> {
-    await this.db.upsert(
-      DbData.Tables.UserSettings,
-      {
-        user_id: userSettings.userId,
-        avatar_id: userSettings.avatarId,
-      },
-      ['user_id'],
-    )
-  }
-
-  public async saveAvatar(avatar: Omit<UserAvatarRow, 'id'>): Promise<UserAvatarId> {
-    return await this.db.insert(
-      DbData.Tables.UserAvatars,
+      userId: userSettings.userId,
+      avatarId: userSettings.avatarId,
       avatar,
-      'id',
-    ) as UserAvatarId
+      nsfwActive: userSettings.nsfwActive,
+      nsfwUnblurred: userSettings.nsfwUnblurred,
+    }
   }
 
   public async deleteAvatar(avatarId: UserAvatarId): Promise<void> {
@@ -279,7 +261,7 @@ export class Users {
     }
 
     // delete from db
-    await this.db.delete(DbData.Tables.UserAvatars, { id: avatar.id })
+    await this.repos.users.deleteAvatar(avatar.id)
 
     // delete from disk
     await this.images.deleteImagesFromStorage(avatar.filename)

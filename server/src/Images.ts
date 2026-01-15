@@ -75,8 +75,9 @@ export class Images {
     limit: number,
     currentUserId: UserId | null,
     limitToUserId: UserId | null,
+    showNsfw: boolean,
   ): Promise<ImageInfo[]> {
-    const rows = await this.imagesRepo.searchImagesWithCount(search, orderBy, offset, limit, currentUserId, limitToUserId)
+    const rows = await this.imagesRepo.searchImagesWithCount(search, orderBy, offset, limit, currentUserId, limitToUserId, showNsfw)
     const tags = await this.imagesRepo.getTagsByImageIds(rows.map(row => row.id))
     return rows.map(row => this.imageWithCountToImageInfo(row, tags))
   }

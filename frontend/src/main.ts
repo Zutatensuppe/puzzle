@@ -5,6 +5,7 @@ import App from './App.vue'
 import Index from './views/Index.vue'
 import NewGame from './views/NewGame.vue'
 import FeaturedView from './views/FeaturedView.vue'
+import SettingsView from './views/SettingsView.vue'
 import Game from './views/Game.vue'
 import Replay from './views/Replay.vue'
 import CannyBugReportsView from './views/CannyBugReports.vue'
@@ -58,6 +59,7 @@ const run = async () => {
       { name: 'featured-artist', path: '/featured-artist/:artist', component: FeaturedView, meta: { title: 'Featured Artist' } },
       { name: 'featured-category', path: '/featured-category/:category', component: FeaturedView, meta: { title: 'Featured Category' } },
       { name: 'user', path: '/user/:id', component: PublicUserProfile, meta: { title: 'User Profile' } },
+      { name: 'settings', path: '/settings', component: SettingsView, meta: { title: 'Settings' } },
 
       // Canny.io feedback
       { path: '/feedback', redirect: { name: 'bug-reports' } },

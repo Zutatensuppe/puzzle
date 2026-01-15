@@ -5,7 +5,7 @@
   "scripts": {
     "build:copyassets": "cpx \"src/assets/textures/*.{png,jpg,jpeg,svg,webp,mp3}\" ../build/public/assets/textures && cpx \"src/assets/featured-artist/*.{png,jpg,jpeg,svg,webp,mp3}\" ../build/public/assets/featured-artist && cpx \"src/assets/favicon/*.{png,jpg,jpeg,svg,webp,mp3}\" ../build/public/assets/favicon",
     "build": "vite build --config vite.config.build.mts && npm run build:copyassets",
-    "start": "vite",
+    "start": "vite --open",
     "lint": "tsc --noEmit && eslint src && stylelint \"src/**/*.scss\"",
     "test": ""
   },

@@ -1,9 +1,10 @@
 import Crypto from '../Crypto'
 import type Db from '../lib/Db'
 import type { WhereRaw } from '../lib/Db'
-import type { UserAvatar, UserAvatarId, UserAvatarRow, UserGroupRow, UserId, UserRow } from '@common/Types'
+import type { UserAvatar, UserAvatarId, UserAvatarRow, UserGroupRow, UserId, UserRow, UserSettings, UserSettingsRow } from '@common/Types'
 import config from '../Config'
 import DbData from '../app/DbData'
+import UserSettingsCache from '../in-memory/UserSettingsCache'
 
 export class UsersRepo {
   constructor(
@@ -58,6 +59,52 @@ export class UsersRepo {
     return user
   }
 
+  public async getUserSettings(
+    userId: UserId,
+  ): Promise<UserSettings> {
+    const cachedSettings = UserSettingsCache.get(userId)
+    if (cachedSettings) {
+      return cachedSettings
+    }
+    const settings = await this.fetchUserSettingsFromDb(userId)
+    UserSettingsCache.set(userId, settings)
+    return settings
+  }
+
+  private async fetchUserSettingsFromDb(userId: UserId): Promise<UserSettings> {
+    const row = await this.db.get<UserSettingsRow>(DbData.Tables.UserSettings, { user_id: userId })
+    if (!row) {
+      return {
+        userId,
+        avatarId: null,
+        nsfwActive: false,
+        nsfwUnblurred: false,
+      }
+    }
+    return {
+      avatarId: row.avatar_id,
+      userId: row.user_id,
+      nsfwActive: row.nsfw_active,
+      nsfwUnblurred: row.nsfw_unblurred,
+    }
+  }
+
+  public async updateUserSettings(
+    userSettings: UserSettings,
+  ): Promise<void> {
+    await this.db.upsert(
+      DbData.Tables.UserSettings,
+      {
+        user_id: userSettings.userId,
+        avatar_id: userSettings.avatarId,
+        nsfw_active: userSettings.nsfwActive,
+        nsfw_unblurred: userSettings.nsfwUnblurred,
+      },
+      ['user_id'],
+    )
+    UserSettingsCache.invalidate(userSettings.userId)
+  }
+
   public async getUserAvatarByUserId(userId: UserId): Promise<UserAvatar | null> {
     const row = await this.db._get<UserAvatarRow & { user_id: UserId }>(`
       SELECT
@@ -66,12 +113,11 @@ export class UsersRepo {
       FROM
         ${DbData.Tables.UserAvatars} a
       INNER JOIN
-        ${DbData.Tables.UserSettings} s on s.avatar_id = a.id
+        ${DbData.Tables.UserSettings} s ON s.avatar_id = a.id
       INNER JOIN
-        ${DbData.Tables.Users} u on u.id = s.user_id
+        ${DbData.Tables.Users} u ON u.id = s.user_id
       WHERE
         u.id = $1
-      ;
     `, [userId])
     if (!row) {
       return null
@@ -89,16 +135,28 @@ export class UsersRepo {
     return avatar
   }
 
+  public async saveAvatar(avatar: Omit<UserAvatarRow, 'id'>): Promise<UserAvatarId> {
+    return await this.db.insert(DbData.Tables.UserAvatars, avatar, 'id') as UserAvatarId
+  }
+
   public async getUserAvatarRow(userAvatarId: UserAvatarId): Promise<UserAvatarRow | null> {
     return await this.db.get(DbData.Tables.UserAvatars, { id: userAvatarId })
   }
 
+  public async deleteAvatar(userAvatarId: UserAvatarId): Promise<void> {
+    await this.db.delete(DbData.Tables.UserAvatars, { id: userAvatarId })
+  }
+
   async getGroupsByUserId(userId: UserId): Promise<UserGroupRow[]> {
     return await this.db._getMany<UserGroupRow>(`
-      SELECT ug.*
-      FROM ${DbData.Tables.UserXUserGroup} x
-      INNER JOIN ${DbData.Tables.UserGroups} ug ON ug.id = x.user_group_id
-      WHERE x.user_id = $1
+      SELECT
+        ug.*
+      FROM
+        ${DbData.Tables.UserXUserGroup} x
+      INNER JOIN
+        ${DbData.Tables.UserGroups} ug ON ug.id = x.user_group_id
+      WHERE
+        x.user_id = $1
     `, [userId])
   }
 

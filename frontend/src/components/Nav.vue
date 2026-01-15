@@ -49,7 +49,12 @@
             class="user-welcome-message"
             @click="drawerUser = !drawerUser"
           >
-            Hello, {{ me.name }}
+            <UserAvatarIcon
+              v-if="me.avatar"
+              :avatar-url="me.avatar.url"
+              :size="32"
+              class="mr-2"
+            /> {{ me.name }}
           </v-btn>
           <v-btn
             v-else
@@ -90,16 +95,6 @@
           <v-icon icon="mdi-chat-outline" /> Discord
         </v-list-item>
         <v-divider />
-        <v-list-item>
-          <v-checkbox
-            :model-value="showNsfw"
-            color="primary"
-            hide-details
-            density="compact"
-            label="Show NSFW Content"
-            @update:model-value="toggleNsfw"
-          />
-        </v-list-item>
       </v-list>
     </v-navigation-drawer>
 
@@ -114,6 +109,12 @@
           :to="{ name: 'admin' }"
         >
           <v-icon icon="mdi-security" /> Admin
+        </v-list-item>
+        <v-list-item
+          v-if="me"
+          :to="{ name: 'settings' }"
+        >
+          <v-icon icon="mdi-cog" /> Settings
         </v-list-item>
         <v-list-item
           v-if="me"
@@ -135,14 +136,13 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
-import { onLoginStateChange, useNsfw, logout, loggedIn, me, isAdmin } from '../user'
+import { onLoginStateChange, logout, loggedIn, me, isAdmin } from '../user'
 import AnnouncementsDrawer from './AnnouncementsDrawer.vue'
 import AnnouncementsIcon from './AnnouncementsIcon.vue'
 import { useDialog } from '../useDialog'
+import UserAvatarIcon from './UserAvatarIcon.vue'
 
 const { openLoginDialog, currentDialog } = useDialog()
-
-const { showNsfw, toggleNsfw } = useNsfw()
 
 const route = useRoute()
 const showNav = computed(() => {

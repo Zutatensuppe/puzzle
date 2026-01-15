@@ -4,24 +4,24 @@ import _api from './_api'
 import storage from './storage'
 import xhr from './_api/xhr'
 import { PLAYER_SETTINGS } from '@common/Types'
-import type { ClientId, User } from '@common/Types'
+import type { ClientId, Me } from '@common/Types'
 import { computed, ref } from 'vue'
 import Time from '@common/Time'
 
-const showNsfw = ref(storage.getBool('showNsfw', false))
-const toggleNsfw = (): void => {
-  showNsfw.value = !showNsfw.value
-  storage.setBool('showNsfw', showNsfw.value)
+const nsfwUnblurred = ref(storage.getBool('showNsfw', false))
+const setNsfwUnblurred = (newValue: boolean): void => {
+  nsfwUnblurred.value = newValue
+  storage.setBool('showNsfw', nsfwUnblurred.value)
 }
 
 export const useNsfw = () => {
   return {
-    showNsfw,
-    toggleNsfw,
+    nsfwUnblurred,
+    setNsfwUnblurred,
   }
 }
 
-export const me = ref<null | User>(null)
+export const me = ref<null | Me>(null)
 export const loggedIn = computed<boolean>(() => !!(me.value && me.value.type === 'user'))
 export const isAdmin = computed<boolean>(() => !!(me.value?.groups.includes('admin')))
 
@@ -67,11 +67,13 @@ export async function init(): Promise<void> {
     if ('reason' in data) {
       // console.log('not logged in')
       me.value = null
+      setNsfwUnblurred(false)
       eventBus.emit('logout')
     } else {
       // console.log('logged in (reg or guest)')
       xhr.setClientId(data.user.clientId)
       me.value = data.user
+      setNsfwUnblurred(data.user.nsfwUnblurred)
       eventBus.emit('login')
     }
   } catch {
@@ -174,7 +176,6 @@ async function changePassword(
     return { error: 'Unknown error' }
   }
 }
-
 
 export const api = {
   logout,
