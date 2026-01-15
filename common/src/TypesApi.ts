@@ -1,4 +1,4 @@
-import type { Announcement, CompleteUserProfile, FeaturedRowWithCollections, GameId, GameInfo, GameSettings, ImageId, ImageInfo, Leaderboard, LivestreamsRow, Pagination, ReplayGameData, Tag, User, UserAvatarId, UserId } from './Types'
+import type { Announcement, CompletePublicUserProfile, CompleteUserSettings, FeaturedRowWithCollections, GameId, GameInfo, GameSettings, ImageId, ImageInfo, Leaderboard, LivestreamsRow, Pagination, ReplayGameData, Tag, Me, UserAvatarId, UserId } from './Types'
 
 export type * as Admin from './TypesAdminApi'
 
@@ -55,7 +55,7 @@ export type DeleteAvatarRequestData = {
 }
 
 export type MeResponseData = {
-  user: User
+  user: Me
   serverTimestamp: number
 } | {
   reason: string
@@ -150,7 +150,22 @@ export type UserProfileRequestData = {
 }
 
 export type UserProfileResponseData = {
-  userProfile: CompleteUserProfile
+  userProfile: CompletePublicUserProfile
+} | {
+  reason: string
+}
+
+export type GetUserSettingsRequestData = {
+  id: UserId
+}
+
+export type UpdateUserSettingsRequestData = {
+  nsfwActive: boolean
+  nsfwUnblurred: boolean
+}
+
+export type UserSettingsResponseData = {
+  userSettings: CompleteUserSettings
 } | {
   reason: string
 }

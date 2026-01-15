@@ -644,6 +644,15 @@ export interface Leaderboard {
   userEntry: LeaderboardEntry | null
 }
 
+export interface LeaderboardEntryTmp {
+  leaderboard_id: LeaderboardId
+  rank: number
+  user_id: UserId
+  user_name: string
+  games_count: number
+  pieces_count: number
+  avatar_filename: string | null
+}
 export interface LeaderboardEntry {
   leaderboard_id: LeaderboardId
   rank: number
@@ -651,6 +660,7 @@ export interface LeaderboardEntry {
   user_name: string
   games_count: number
   pieces_count: number
+  avatar_url: string | null
 }
 
 export interface TwitchLivestream {
@@ -752,7 +762,7 @@ export interface ReplayHud extends Hud {
   setReplayFinished: () => void
 }
 
-export interface User {
+export interface Me {
   id: UserId
   name: string
   created: JSONDateString
@@ -760,6 +770,8 @@ export interface User {
   type: 'guest' | 'user'
   cannyToken: string | null
   groups: string[]
+  avatar: UserAvatar | null
+  nsfwUnblurred: boolean
 }
 
 export enum ImageSearchSort {
@@ -971,14 +983,18 @@ export interface UserAvatarRow {
 export interface UserSettingsRow {
   user_id: UserId
   avatar_id: UserAvatarId | null
+  nsfw_active: boolean
+  nsfw_unblurred: boolean
 }
 
 export interface UserSettings {
   userId: UserId
   avatarId: UserAvatarId | null
+  nsfwActive: boolean
+  nsfwUnblurred: boolean
 }
 
-export type CompleteUserProfile = {
+export type CompletePublicUserProfile = {
   user: {
     id: UserId
     username: string
@@ -994,4 +1010,12 @@ export type CompleteUserProfile = {
   isLiveOnTwitch: boolean
   images: ImageInfo[]
   games: GameInfo[]
+}
+
+export interface CompleteUserSettings {
+  userId: UserId
+  avatarId: UserAvatarId | null
+  avatar: UserAvatar | null
+  nsfwActive: boolean
+  nsfwUnblurred: boolean
 }

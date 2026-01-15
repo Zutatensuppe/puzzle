@@ -230,20 +230,20 @@ export class GameService {
     return games
   }
 
-  public async getPublicRunningGames(offset: number, limit: number, currentUserId: UserId, limitToUserId: UserId | null): Promise<GameRow[]> {
-    return await this.server.repos.games.getPublicRunningGames(offset, limit, currentUserId, limitToUserId)
+  public async getPublicRunningGames(offset: number, limit: number, currentUserId: UserId, limitToUserId: UserId | null, showNsfw: boolean): Promise<GameRow[]> {
+    return await this.server.repos.games.getPublicRunningGames(offset, limit, currentUserId, limitToUserId, showNsfw)
   }
 
-  public async getPublicFinishedGames(offset: number, limit: number, currentUserId: UserId, limitToUserId: UserId | null): Promise<GameRow[]> {
-    return await this.server.repos.games.getPublicFinishedGames(offset, limit, currentUserId, limitToUserId)
+  public async getPublicFinishedGames(offset: number, limit: number, currentUserId: UserId, limitToUserId: UserId | null, showNsfw: boolean): Promise<GameRow[]> {
+    return await this.server.repos.games.getPublicFinishedGames(offset, limit, currentUserId, limitToUserId, showNsfw)
   }
 
-  public async countPublicRunningGames(currentUserId: UserId): Promise<number> {
-    return await this.server.repos.games.countPublicRunningGames(currentUserId)
+  public async countPublicRunningGames(currentUserId: UserId, showNsfw: boolean): Promise<number> {
+    return await this.server.repos.games.countPublicRunningGames(currentUserId, showNsfw)
   }
 
-  public async countPublicFinishedGames(currentUserId: UserId): Promise<number> {
-    return await this.server.repos.games.countPublicFinishedGames(currentUserId)
+  public async countPublicFinishedGames(currentUserId: UserId, showNsfw: boolean): Promise<number> {
+    return await this.server.repos.games.countPublicFinishedGames(currentUserId, showNsfw)
   }
 
   private async exists(gameId: GameId): Promise<boolean> {

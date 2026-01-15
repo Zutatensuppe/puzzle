@@ -144,10 +144,10 @@ const shapeMode = computed(() => shapeModeToString(props.game.shapeMode))
 
 const rotationMode = computed(() => rotationModeToString(props.game.rotationMode))
 
-const { showNsfw } = useNsfw()
+const { nsfwUnblurred } = useNsfw()
 const nsfwToggled = ref<boolean>(false)
-const hoverable = computed(() => (!props.game.image.nsfw || showNsfw.value || nsfwToggled.value))
-const showNsfwInfo = computed(() => props.game.image.nsfw && !showNsfw.value && !nsfwToggled.value)
+const hoverable = computed(() => (!props.game.image.nsfw || nsfwUnblurred.value || nsfwToggled.value))
+const showNsfwInfo = computed(() => props.game.image.nsfw && !nsfwUnblurred.value && !nsfwToggled.value)
 
 const time = ((start: number, end: number) => {
   const from = start

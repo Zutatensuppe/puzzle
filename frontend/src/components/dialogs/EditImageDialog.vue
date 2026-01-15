@@ -56,7 +56,6 @@
           <div>
             <v-checkbox
               v-model="isPublic"
-              :disabled="isNsfw"
               density="comfortable"
               label="Public Image (The image will be visible in the gallery for other users to use.)"
             />
@@ -65,7 +64,7 @@
             <v-checkbox
               v-model="isNsfw"
               density="comfortable"
-              label="NSFW Image (Check this if the image is not safe for work. NSFW images will be private automatically.)"
+              label="NSFW Image (Check this if the image is not safe for work.)"
             />
           </div>
 
@@ -92,7 +91,7 @@
   </v-card>
 </template>
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { ref, watch } from 'vue'
 import type { ImageInfo, Tag } from '@common/Types'
 import TagsInput from '../TagsInput.vue'
 import ResponsiveImage from '../ResponsiveImage.vue'
@@ -107,10 +106,6 @@ const tags = ref<string[]>([])
 const isPublic = ref<boolean>(false)
 const isNsfw = ref<boolean>(false)
 
-const isPrivate = computed((): boolean => {
-  return !isPublic.value || isNsfw.value
-})
-
 const init = (image: ImageInfo | undefined) => {
   if (!image) return
 
@@ -118,7 +113,7 @@ const init = (image: ImageInfo | undefined) => {
   copyrightName.value = image.copyrightName
   copyrightURL.value = image.copyrightURL
   tags.value = image.tags.map((t: Tag) => t.title)
-  isPublic.value = !image.private && !image.nsfw
+  isPublic.value = !image.private
   isNsfw.value = image.nsfw
 }
 
@@ -131,7 +126,7 @@ const saveImage = async () => {
     copyrightName: copyrightName.value,
     copyrightURL: copyrightURL.value,
     tags: tags.value,
-    isPrivate: isPrivate.value,
+    isPrivate: !isPublic.value,
     isNsfw: isNsfw.value,
   })
 }

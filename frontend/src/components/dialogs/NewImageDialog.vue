@@ -96,7 +96,6 @@
           <div>
             <v-checkbox
               v-model="isPublic"
-              :disabled="isNsfw"
               density="comfortable"
               label="Public Image (As soon as the image gets approved, it will be visible in the gallery for other users to use.)"
             />
@@ -105,13 +104,13 @@
             <v-checkbox
               v-model="isNsfw"
               density="comfortable"
-              label="NSFW Image (Check this if the image is not safe for work. NSFW images will be private automatically.)"
+              label="NSFW Image (Check this if the image is not safe for work.)"
             />
           </div>
 
           <v-card-actions>
             <!-- isPrivate -->
-            <template v-if="!isPublic || isNsfw">
+            <template v-if="!isPublic">
               <v-btn
                 v-if="newImageUploading"
                 variant="elevated"
@@ -222,10 +221,6 @@ const isPublic = ref<boolean>(false)
 const isNsfw = ref<boolean>(false)
 const droppable = ref<boolean>(false)
 const inputFocused = ref<boolean>(false)
-
-const isPrivate = computed((): boolean => {
-  return !isPublic.value || isNsfw.value
-})
 
 const uploadProgressPercent = computed((): number => {
   return newImageUploadProgress.value ? Math.round(newImageUploadProgress.value * 100) : 0
@@ -341,7 +336,7 @@ const postToGallery = async () => {
     copyrightName: copyrightName.value,
     copyrightURL: copyrightURL.value,
     tags: tags.value,
-    isPrivate: isPrivate.value,
+    isPrivate: !isPublic.value,
     isNsfw: isNsfw.value,
   })
   reset()
@@ -358,7 +353,7 @@ const setupGameClick = async () => {
     copyrightName: copyrightName.value,
     copyrightURL: copyrightURL.value,
     tags: tags.value,
-    isPrivate: isPrivate.value,
+    isPrivate: !isPublic.value,
     isNsfw: isNsfw.value,
   })
   reset()

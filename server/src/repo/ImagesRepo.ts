@@ -163,6 +163,7 @@ export class ImagesRepo {
     limit: number,
     currentUserId: UserId | null,
     limitToUserId: UserId | null,
+    showNsfw: boolean,
   ): Promise<ImageRowWithCount[]> {
     const orderByMap = {
       [ImageSearchSort.ALPHA_ASC]: [{ title: 1 }, { created: -1 }],
@@ -242,6 +243,7 @@ export class ImagesRepo {
           (i.private = 0 AND i.state = 'approved')
           ${currentUserId ? `OR i.uploader_user_id = $${idxCurrentUserId}` : ''}
         )
+        ${!showNsfw ? (idxCurrentUserId ? ` AND (i.nsfw = 0 OR i.uploader_user_id = $${idxCurrentUserId || 0})` : ' AND i.nsfw = 0') : '' }
         ${limitToUserId ? ` AND i.uploader_user_id = $${idxLimitToUserId}` : ''}
         ${ors.length > 0 ? ` AND (${ors.join(' OR ')})` : ''}
       ${this.db._buildOrderBy(orderByMap[orderBy])}

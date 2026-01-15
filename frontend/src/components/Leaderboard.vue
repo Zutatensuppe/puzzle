@@ -27,7 +27,13 @@
           <router-link
             :to="{ name: 'user', params: { id: row.user_id } }"
             target="_blank"
+            class="d-flex align-center"
           >
+            <UserAvatarIcon
+              :size="24"
+              :avatar-url="row.avatar_url"
+              class="mr-1"
+            />
             {{ row.user_name }}
           </router-link>
         </td>
@@ -65,6 +71,7 @@
 <script setup lang="ts">
 import type { Leaderboard } from '@common/Types'
 import RankIcon from './RankIcon.vue'
+import UserAvatarIcon from './UserAvatarIcon.vue'
 
 defineProps<{
   lb: Leaderboard

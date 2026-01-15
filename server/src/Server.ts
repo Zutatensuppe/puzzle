@@ -32,6 +32,7 @@ import type { Repos } from './repo/Repos'
 import type { Moderation } from './Moderation'
 import type { Workers } from './workers/Workers'
 import v8 from 'v8'
+import { UploadRequestsManager } from './UploadRequestsManager'
 
 const DEFAULT_OG_IMAGE_URL = '/assets/textures/poster.webp'
 
@@ -41,6 +42,15 @@ const replaceTemplateData = (tmpl: string, data: Record<string, string> = {}): s
     str = str.replace(key, data[key])
   }
   return str
+}
+
+const addUserInfoMiddleware = (server: Server) => {
+  // add user info to all requests
+  return async (req: Request, _res: Response, next: NextFunction) => {
+    const data = await server.users.getUserInfoByRequest(req)
+    req.userInfo = data
+    next()
+  }
 }
 
 const log = logger('Server.ts')
@@ -132,18 +142,12 @@ export class Server {
 
     app.use(cookieParser())
     app.use(compression())
-
-    // add user info to all requests
-    app.use(async (req, _res, next: NextFunction) => {
-      const data = await this.users.getUserInfoByRequest(req)
-      req.userInfo = data
-      next()
-    })
+    app.use(addUserInfoMiddleware(this))
 
     app.use('/admin/api', createAdminApiRouter(this))
     app.use('/api', createApiRouter(this))
     app.use('/image-service', createImageServiceRouter(this))
-    app.use('/uploads/', express.static(config.dir.UPLOAD_DIR))
+    app.use('/uploads/', UploadRequestsManager.serveUploadsRequestHandler())
 
     app.get('/', async (_req, res) => {
       await this.sendIndex(res, DEFAULT_OG_IMAGE_URL)

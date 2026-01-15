@@ -90,8 +90,6 @@ import { me, useNsfw } from '../../user'
 
 const { openReportImageDialog } = useDialog()
 
-const { showNsfw } = useNsfw()
-
 const props = withDefaults(defineProps<{
   image: ImageInfo
   edit?: boolean
@@ -99,9 +97,10 @@ const props = withDefaults(defineProps<{
   edit: true,
 })
 
+const { nsfwUnblurred } = useNsfw()
 const nsfwToggled = ref<boolean>(false)
-const hoverable = computed(() => (!props.image.nsfw || showNsfw.value || nsfwToggled.value))
-const showNsfwInfo = computed(() => props.image.nsfw && !showNsfw.value && !nsfwToggled.value)
+const hoverable = computed(() => (!props.image.nsfw || nsfwUnblurred.value || nsfwToggled.value))
+const showNsfwInfo = computed(() => props.image.nsfw && !nsfwUnblurred.value && !nsfwToggled.value)
 
 const emit = defineEmits<{
   (event: 'click'): void

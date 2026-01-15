@@ -43,11 +43,6 @@
                   <li>Paste an image URL</li>
                   <li>Paste an image</li>
                 </ul>
-                <div class="text-disabled">
-                  The avatar will be resized to a square of 400x400 pixels,
-                  even if you upload a different resolution. To prevent
-                  cutting off your avatar, please upload a square image.
-                </div>
               </div>
             </label>
           </div>
