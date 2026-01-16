@@ -1,23 +1,135 @@
-#!/bin/sh
+#!/usr/bin/env node
 
-RUN_BIN="$(realpath "$0")"
-RUN_DIR=$(dirname "$RUN_BIN")
-RUN_SCRIPTS_DIR="$RUN_DIR/scripts"
+import { readdir, readFile } from 'fs/promises'
+import { spawn } from 'child_process'
+import { join, extname } from 'path'
 
-if [ $# -eq 0 ]; then
-  ls $RUN_SCRIPTS_DIR
-  exit 0
-fi
+function isCommentLine(line) {
+  return line.startsWith('#') || line.startsWith('//')
+}
 
-RUN_TASK="$1"
-[ $# -gt 0 ] && shift
+function uncommentLine(line) {
+  if (line.startsWith('#')) {
+    return line.slice(1)
+  }
+  if (line.startsWith('//')) {
+    return line.slice(2)
+  }
+  return line
+}
 
-if [ -f "$RUN_SCRIPTS_DIR/$RUN_TASK" ]; then
-  export RUN_BIN
-  export RUN_DIR
-  export RUN_TASK
-  exec "$RUN_SCRIPTS_DIR/$RUN_TASK" "$@"
-else
-  echo "Task not found: $RUN_TASK" >&2
-  exit 2
-fi
+async function readScriptInfo(scriptPath) {
+  const fileContent = await readFile(scriptPath, 'utf-8')
+  const lines = fileContent.split('\n')
+
+  // if first line is shebang, start searching from second line
+  let index = 0
+  if (lines[index].startsWith('#!') && lines.length > 1) {
+    index++
+  }
+
+  // skip empty lines
+  while (index < lines.length && lines[index].trim() === '') {
+    index++
+  }
+
+  // first non-empty line that is a comment is the description
+  let description = ''
+  if (
+    index < lines.length
+    && isCommentLine(lines[index])
+  ) {
+    description = uncommentLine(lines[index]).trim()
+  }
+
+  return { description }
+}
+
+async function loadSingleScriptInfo(dirent, scriptsDir) {
+  if (!dirent.isFile()) {
+    return null
+  }
+
+  const file = dirent.name
+  const filePath = join(scriptsDir, file)
+  const info = await readScriptInfo(filePath)
+
+  return { file, info }
+}
+
+async function loadAllScriptInfos(scriptsDir) {
+  const dirents = await readdir(scriptsDir, { withFileTypes: true })
+  const scriptInfos = []
+  for (const dirent of dirents) {
+    const scriptInfo = await loadSingleScriptInfo(dirent, scriptsDir)
+    if (scriptInfo) {
+      scriptInfos.push(scriptInfo)
+    }
+  }
+  return scriptInfos
+}
+
+async function printScriptInfos(scriptInfos) {
+  const targetPadding = Math.max(...scriptInfos.map(({ file }) => file.length))
+  console.log('Available scripts:\n')
+  for (const { file, info } of scriptInfos) {
+    const fileName = file.padEnd(targetPadding, ' ')
+    console.log(`${fileName} ${info.description || 'No description'}`)
+  }
+}
+
+async function listScripts(scriptsDir) {
+  const scriptInfos = await loadAllScriptInfos(scriptsDir)
+  printScriptInfos(scriptInfos)
+}
+
+function determineRunner(scriptPath) {
+  switch (extname(scriptPath)) {
+    case '.ts':
+      return { executable: 'npx', args: ['tsx'] }
+    case '.js':
+      return { executable: 'node', args: [] }
+    default:
+      return { executable: scriptPath, args: [] }
+  }
+}
+
+function executeScript(scriptPath, scriptArgs, scriptEnv) {
+  const runner = determineRunner(scriptPath)
+
+  const command = runner.executable
+  const args = [...runner.args, scriptPath, ...scriptArgs]
+
+  const child = spawn(command, args, { stdio: 'inherit', env: scriptEnv })
+
+  child.on('error', (error) => {
+    console.error(`Error executing script: ${error.message}`)
+    process.exit(1)
+  })
+
+  child.on('close', (code) => {
+    process.exit(code)
+  })
+}
+
+function run() {
+  const cwd = process.cwd()
+  const scriptsDir = join(cwd, 'scripts')
+
+  const args = process.argv.slice(2)
+  if (args.length === 0) {
+    listScripts(scriptsDir)
+  } else {
+    const [scriptName, ...scriptArgs] = args
+    const scriptPath = join(scriptsDir, scriptName)
+    const scriptEnv = {
+      ...process.env,
+      RUN_BIN: process.argv[1],
+      RUN_DIR: cwd,
+      RUN_TASK: scriptName,
+    }
+    executeScript(scriptPath, scriptArgs, scriptEnv)
+  }
+}
+
+run()
