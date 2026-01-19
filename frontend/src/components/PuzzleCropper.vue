@@ -20,6 +20,7 @@ import type { PuzzleCreationInfo } from '@common/Puzzle'
 import type { ImageInfo, ShapeMode } from '@common/Types'
 import { drawPuzzlePreview } from '../PuzzleGraphics'
 import { NEWGAME_MAX_PIECES, NEWGAME_MIN_PIECES } from '@common/GameCommon'
+import { AnimatedGifLoader } from '../AnimatedGifLoader'
 
 const props = defineProps<{
   image: ImageInfo,
@@ -38,6 +39,13 @@ const puzzleCropper = ref<HTMLCanvasElement>() as Ref<HTMLCanvasElement>
 const offset = ref<Point>({ x: 0, y: 0 })
 
 let imgDrawRect: Rect = { x: 0, y: 0, w: 0, h: 0 }
+let gifFrames: HTMLImageElement[] = []
+let gifDelays: number[] = []
+let currentFrameIndex = 0
+let animationFrameId: number | null = null
+let lastFrameTime = 0
+const isGif = ref<boolean>(false)
+let isMounted = true
 
 const determinePreviewPieceSize = (): number => {
   if (props.puzzleCreationInfo === null) {
@@ -163,12 +171,26 @@ const redraw = () => {
   imgDrawRect = calculateImageDrawRect()
 
   ctx.clearRect(0, 0, canvas.value.width, canvas.value.height)
-  ctx.drawImage(
-    image,
-    0, 0, image.width, image.height,
-    imgDrawRect.x, imgDrawRect.y,
-    imgDrawRect.w, imgDrawRect.h,
-  )
+
+  // Draw current frame if it's a GIF, otherwise draw static image
+  if (isGif.value && gifFrames.length > 0) {
+    const currentFrame = gifFrames[currentFrameIndex]
+    if (currentFrame) {
+      ctx.drawImage(
+        currentFrame,
+        0, 0, currentFrame.width, currentFrame.height,
+        imgDrawRect.x, imgDrawRect.y,
+        imgDrawRect.w, imgDrawRect.h,
+      )
+    }
+  } else {
+    ctx.drawImage(
+      image,
+      0, 0, image.width, image.height,
+      imgDrawRect.x, imgDrawRect.y,
+      imgDrawRect.w, imgDrawRect.h,
+    )
+  }
 
   if (props.piecesPreview) {
     const previewPieceSize = determinePreviewPieceSize()
@@ -194,18 +216,106 @@ watch(() => props.piecesPreview, () => {
   redraw()
 })
 
-onMounted(() => {
+const animateGif = (timestamp: number) => {
+  if (!isGif.value || gifFrames.length === 0) return
+
+  const timeSinceLastFrame = timestamp - lastFrameTime
+
+  if (timeSinceLastFrame >= gifDelays[currentFrameIndex]) {
+    currentFrameIndex = (currentFrameIndex + 1) % gifFrames.length
+    lastFrameTime = timestamp
+    redraw()
+  }
+
+  animationFrameId = requestAnimationFrame(animateGif)
+}
+
+const loadGifFrames = async (): Promise<boolean> => {
+  try {
+    const gifLoader = AnimatedGifLoader.getInstance()
+    const frames = await gifLoader.loadGifFrames(props.image.id)
+
+    if (!frames || frames.length === 0) {
+      return false
+    }
+
+    // Convert dataUrls to HTMLImageElement objects
+    const imagePromises = frames.map((frame, index) => {
+      return new Promise<HTMLImageElement>((resolve, reject) => {
+        const img = new Image()
+        img.onload = () => {
+          console.log(`Frame ${index} loaded successfully, dimensions: ${img.width}x${img.height}`)
+          resolve(img)
+        }
+        img.onerror = (e) => {
+          console.error(`Failed to load frame ${index}`, e)
+          reject(new Error('Failed to load frame'))
+        }
+        img.src = frame.dataUrl
+      })
+    })
+
+    gifFrames = await Promise.all(imagePromises)
+    gifDelays = frames.map(f => f.delay)
+
+    return true
+  } catch (e) {
+    console.error('Error loading GIF frames:', e)
+    return false
+  }
+}
+
+const startGifAnimation = () => {
+  if (animationFrameId) {
+    cancelAnimationFrame(animationFrameId)
+  }
+  if (isGif.value && gifFrames.length > 0) {
+    lastFrameTime = performance.now()
+    animationFrameId = requestAnimationFrame(animateGif)
+  }
+}
+
+const stopGifAnimation = () => {
+  if (animationFrameId) {
+    cancelAnimationFrame(animationFrameId)
+    animationFrameId = null
+  }
+}
+
+onMounted(async () => {
   resizeObserver.observe(puzzleCropper.value)
 
+  // Check if the image is a GIF
+  isGif.value = props.image.url.toLowerCase().endsWith('.gif')
+
   image.src = props.image.url
-  image.onload = (_ev: Event) => {
+  image.onload = async (_ev: Event) => {
+    if (isGif.value) {
+      // Try to load GIF frames from the server
+      const loaded = await loadGifFrames()
+      if (!isMounted) return
+      if (!loaded) {
+        // Fallback to static image if frames couldn't be loaded
+        isGif.value = false
+      }
+    }
+
+    if (!isMounted) return
+
     centerCrop()
     emitCropChange()
-    redraw()
+
+    if (isGif.value) {
+      startGifAnimation()
+    } else {
+      redraw()
+    }
   }
 })
 onBeforeUnmount(() => {
+  isMounted = false
   resizeObserver.disconnect()
+  stopGifAnimation()
 })
 </script>
 <style>

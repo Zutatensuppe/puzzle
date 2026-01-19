@@ -5,7 +5,15 @@
     elevation="10"
     @click="emit('goToGame', game)"
   >
+    <div class="game-teaser-image" v-if="isGif">
+      <img
+        class="image-teaser-gif"
+        :src="gifUrl"
+        :alt="game.image.title || 'Game image'"
+      />
+    </div>
     <div
+      v-else
       class="game-teaser-image"
       :style="style"
     />
@@ -111,6 +119,12 @@ const emit = defineEmits<{
 
 const url = computed(() => resizeUrl(props.game.image.url, 375, 210, 'contain'))
 const style = computed(() => ({ 'background-image': `url("${url.value}")` }))
+
+const isGif = computed(() => props.game.image.url.toLowerCase().endsWith('.gif'))
+const gifUrl = computed(() => {
+  // Use original URL for GIFs to preserve animation
+  return isGif.value ? props.game.image.url : resizeUrl(props.game.image.url, 375, 210, 'contain')
+})
 
 const joinPuzzleText = computed(() => props.game.finished ? 'View puzzle' : 'Join puzzle')
 

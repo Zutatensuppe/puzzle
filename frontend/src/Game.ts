@@ -576,7 +576,10 @@ export abstract class Game<HudType extends Hud> implements GameInterface {
   }
 
   onRender(): void {
-    if (!this.rerender) {
+    // Always rerender if there's a GIF animation playing
+    const hasGifAnimation = this.rendererWebgl?.hasGifAnimation() || this.rendererCanvas2d?.hasGifAnimation() || false
+    
+    if (!this.rerender && !hasGifAnimation) {
       return
     }
 

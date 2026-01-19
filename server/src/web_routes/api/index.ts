@@ -542,6 +542,27 @@ export default function createRouter(
     res.send(responseData)
   })
 
+  router.get('/gif-frames/:imageId', async (req, res): Promise<void> => {
+    const imageId = parseInt(req.params.imageId, 10) as ImageId
+    if (isNaN(imageId) || imageId < 0) {
+      res.status(400).send({ error: 'Invalid image ID' })
+      return
+    }
+
+    try {
+      const frames = await server.images.getGifFrames(imageId)
+      if (!frames) {
+        res.status(404).send({ error: 'No GIF frames found' })
+        return
+      }
+
+      res.send(frames)
+    } catch (e) {
+      log.error('Error fetching GIF frames:', e)
+      res.status(500).send({ error: 'Internal server error' })
+    }
+  })
+
   router.get('/images', async (req, res): Promise<void> => {
     const requestData: Api.ImagesRequestData = req.query as any
     const offset = parseInt(`${requestData.offset}`, 10)
@@ -697,11 +718,11 @@ export default function createRouter(
       const imagePath = im.getImagePath(req.file.filename)
       const checksum = await FileSystem.checksum(imagePath)
       const existingImageInfo = await im.imageByChecksumFromDb(checksum)
-      if (existingImageInfo && existingImageInfo.uploaderUserId === user.id) {
-        await FileSystem.unlink(imagePath)
-        res.status(409).send(existingImageInfo)
-        return
-      }
+      // if (existingImageInfo && existingImageInfo.uploaderUserId === user.id) {
+      //   await FileSystem.unlink(imagePath)
+      //   res.status(409).send(existingImageInfo)
+      //   return
+      // }
 
       const dim = await im.getDimensions(imagePath)
 

@@ -421,7 +421,16 @@ $bg-color-transparent: rgba(0 0 0 / 70%);
     position: relative;
     padding-top: 56.25%;
     width: 100%;
-    background-color: #222;
+    background-color: #000000;
+
+    .image-teaser-gif {
+      position: absolute;
+      top: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      height: 100%;
+      object-fit: contain;
+    }
   }
 
   .game-teaser-inner {
@@ -705,6 +714,14 @@ html.view-replay body { overflow: hidden; }
   position: relative;
   font-size: 13px;
   text-shadow: 1px 1px 3px #000;
+
+  .imageteaser-gif {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
 
   .imageteaser-inner {
     position: absolute;
