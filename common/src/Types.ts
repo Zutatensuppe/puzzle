@@ -383,6 +383,7 @@ export interface ImageInfo {
   nsfw: boolean
   state: 'pending_approval' | 'rejected' | 'approved'
   rejectReason: string
+  animationFrames: ImageFrameMeta[] | null
 }
 
 export const defaultImageInfo = (): ImageInfo => ({
@@ -403,6 +404,7 @@ export const defaultImageInfo = (): ImageInfo => ({
   reported: 0,
   nsfw: false,
   state: 'pending_approval',
+  animationFrames: null,
   rejectReason: '',
 })
 
@@ -874,6 +876,12 @@ export interface ImageRow {
   checksum: string | null
   state: 'pending_approval' | 'rejected' | 'approved'
   reject_reason: string
+  animated_frames: ImageFrameMeta[] | null
+}
+
+export interface ImageFrameMeta {
+  filename: string
+  delay_ms: number
 }
 
 export interface ImageXTagRow {

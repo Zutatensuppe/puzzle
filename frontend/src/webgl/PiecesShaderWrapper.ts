@@ -128,4 +128,13 @@ export class PiecesShaderWrapper {
     // draw the sprites
     this.sprites.draw()
   }
+
+  /**
+   * Update the puzzle image texture with a new frame (for image animation)
+   */
+  public updatePuzzleTexture(puzzleBitmap: TexImageSource): void {
+    this.gl.activeTexture(this.gl.TEXTURE1)
+    this.gl.bindTexture(this.gl.TEXTURE_2D, this.bgTex)
+    this.gl.texImage2D(this.gl.TEXTURE_2D, 0, this.gl.RGBA, this.gl.RGBA, this.gl.UNSIGNED_BYTE, puzzleBitmap)
+  }
 }

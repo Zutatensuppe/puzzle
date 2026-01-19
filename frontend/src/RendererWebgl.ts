@@ -1,7 +1,7 @@
 import Debug from '@common/Debug'
 import GameCommon from '@common/GameCommon'
 import type { Dim, Point, Rect } from '@common/Geometry'
-import type { EncodedPiece, EncodedPieceShape, EncodedPlayer, FireworksInterface, GameId, PlayerSettingsData, PuzzleStatusInterface, Timestamp } from '@common/Types'
+import type { EncodedPiece, EncodedPieceShape, EncodedPlayer, FireworksInterface, GameId, ImageFrameMeta, PlayerSettingsData, PuzzleStatusInterface, Timestamp } from '@common/Types'
 import { Camera } from '@common/Camera'
 import { logger } from '@common/Util'
 import type { PlayerCursors } from './PlayerCursors'
@@ -15,11 +15,19 @@ import type { Assets } from './Assets'
 import { FireworksShaderWrapper } from './webgl/FireworksShaderWrapper'
 import PuzzleGraphics from './PuzzleGraphics'
 import { GraphicsEnum } from '@common/Enums'
+import { AnimatedImageLoader } from './AnimatedImageLoader'
 
-const log = logger('Renderer.ts')
+const log = logger('RendererWebgl.ts')
 
 const puzzleBitmapCache: Record<string, HTMLCanvasElement> = {}
 let stencils: Record<EncodedPieceShape, ImageBitmap> | null = null
+
+interface ImageAnimationState {
+  frames: HTMLCanvasElement[]
+  delays: number[]
+  currentFrame: number
+  lastFrameTime: number
+}
 
 export class RendererWebgl {
   public debug: boolean = false
@@ -34,6 +42,8 @@ export class RendererWebgl {
   private bgShaderWrapper!: BgShaderWrapper
   private playersShaderWrapper!: PlayersShaderWrapper
   private fireworksShaderWrapper!: FireworksShaderWrapper
+
+  private imageAnimation: ImageAnimationState | null = null
 
   constructor(
     protected readonly gameId: GameId,
@@ -64,6 +74,13 @@ export class RendererWebgl {
       )
     }
     console.timeEnd('load')
+
+    // Set up Image animation if this image carries pre-extracted frames.
+    const animatedImageMeta = GameCommon.getImage(this.gameId).animationFrames
+    if (animatedImageMeta && animatedImageMeta.length > 1) {
+      await this.initImageAnimation(animatedImageMeta)
+    }
+
     console.time('stencils')
     if (!stencils) {
       // all stencils, in flat puzzle we dont need all of them but still
@@ -83,6 +100,54 @@ export class RendererWebgl {
 
     this.fireworksShaderWrapper = new FireworksShaderWrapper(this.gl, GameCommon.getRng(this.gameId))
     this.fireworksShaderWrapper.init()
+  }
+
+  private async initImageAnimation(metas: ImageFrameMeta[]): Promise<void> {
+    try {
+      const animatedImageLoader = AnimatedImageLoader.getInstance()
+      const animatedFrames = await animatedImageLoader.loadFrames(metas)
+
+      const frames: HTMLCanvasElement[] = []
+      const delays: number[] = []
+
+      for (const frame of animatedFrames) {
+        frames.push(frame.canvas)
+        delays.push(frame.delay)
+      }
+
+      this.imageAnimation = {
+        frames,
+        delays,
+        currentFrame: 0,
+        lastFrameTime: performance.now(),
+      }
+
+      log.log(`Image Animation initialized with ${frames.length} frames`)
+    } catch (e) {
+      log.error('Failed to load animated frames for WebGL:', e)
+    }
+  }
+
+  private updateImageAnimation(): void {
+    if (!this.imageAnimation) return
+
+    const now = performance.now()
+    const timeSinceLastFrame = now - this.imageAnimation.lastFrameTime
+    const currentDelay = this.imageAnimation.delays[this.imageAnimation.currentFrame]
+
+    if (timeSinceLastFrame >= currentDelay) {
+      this.imageAnimation.currentFrame = (this.imageAnimation.currentFrame + 1) % this.imageAnimation.frames.length
+      this.imageAnimation.lastFrameTime = now
+
+      // Update the texture with the new frame
+      const currentFrameCanvas = this.imageAnimation.frames[this.imageAnimation.currentFrame]
+      this.piecesShaderWrapper.updatePuzzleTexture(currentFrameCanvas)
+      this.bgShaderWrapper.updatePreviewTexture(currentFrameCanvas)
+    }
+  }
+
+  public hasImageAnimation(): boolean {
+    return this.imageAnimation !== null && this.imageAnimation.frames.length > 1
   }
 
   async loadTableTexture(settings: PlayerSettingsData): Promise<void> {
@@ -147,6 +212,9 @@ export class RendererWebgl {
     renderPreview: boolean,
   ) {
     if (this.debug) Debug.checkpoint_start(0)
+
+    // Update animation if present
+    this.updateImageAnimation()
 
     // ---------------------------------------------------------------
     // ---------------------------------------------------------------

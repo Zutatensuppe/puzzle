@@ -2,9 +2,10 @@ import Debug from '@common/Debug'
 import GameCommon from '@common/GameCommon'
 import type { Dim, Point, Rect } from '@common/Geometry'
 import { PieceRotation, EncodedPieceIdx, EncodedPlayerIdx } from '@common/Types'
-import type { EncodedPiece, EncodedPlayer, FireworksInterface, GameId, PlayerSettingsData, PuzzleStatusInterface, Timestamp } from '@common/Types'
+import type { EncodedPiece, EncodedPlayer, FireworksInterface, GameId, ImageFrameMeta, PlayerSettingsData, PuzzleStatusInterface, Timestamp } from '@common/Types'
 import { Camera } from '@common/Camera'
 import PuzzleGraphics from './PuzzleGraphics'
+import { AnimatedImageLoader } from './AnimatedImageLoader'
 import { logger } from '@common/Util'
 import type { PlayerCursors } from './PlayerCursors'
 import type { PuzzleTable } from './PuzzleTable'
@@ -13,9 +14,21 @@ import { getPlayerNameCanvas } from './PlayerNames'
 
 const log = logger('Renderer.ts')
 
-const pieceBitmapsCache: Record<string, HTMLCanvasElement[]> = {}
+const pieceBitmapsCache: Record<string, HTMLCanvasElement[][]> = {}
 const puzzleBitmapCache: Record<string, HTMLCanvasElement> = {}
 const puzzleBitmapGrayscaled: Record<string, HTMLCanvasElement> = {}
+
+interface ImageAnimationState {
+  frames: HTMLCanvasElement[]
+  delays: number[]
+  currentFrame: number
+  lastFrameTime: number
+  pieceBitmapsCache: Record<number, HTMLCanvasElement[]>
+  grayscaleFramesCache: Record<number, HTMLCanvasElement>
+}
+
+const imageAnimationStates: Record<string, ImageAnimationState> = {}
+const imageFramesChecked: Record<string, boolean> = {}
 
 export class Renderer {
   public debug: boolean = false
@@ -55,36 +68,112 @@ export class Renderer {
     if (pos.x > canvas.width || pos.y > canvas.height) {
       return false
     }
-    if (pos.x + dim.w < 0 || pos.y + dim.h < 0) {
-      return false
-    }
-    return true
+    return !(pos.x + dim.w < 0 || pos.y + dim.h < 0)
   }
 
   async init() {
     if (!puzzleBitmapCache[this.gameId]) {
-      // log.log('loading puzzle bitmap', this.gameId)
       puzzleBitmapCache[this.gameId] = await PuzzleGraphics.loadPuzzleBitmap(
         GameCommon.getPuzzle(this.gameId),
         GameCommon.getImageUrl(this.gameId),
         this.graphics,
       )
     }
-    if (!pieceBitmapsCache[this.gameId]) {
-      // log.log('loading piece bitmaps', this.gameId)
-      pieceBitmapsCache[this.gameId] = PuzzleGraphics.loadPuzzleBitmaps(
+
+    // Set up image animation if this image carries pre-extracted frames.
+    // We try this before building the static piece/grayscale caches so we can
+    // skip that work entirely for animated images (the animation provides its
+    // own per-frame piece bitmaps and grayscale previews).
+    const animatedImageMeta = GameCommon.getImage(this.gameId).animationFrames
+    if (animatedImageMeta && animatedImageMeta.length > 1 && !imageAnimationStates[this.gameId] && !imageFramesChecked[this.gameId]) {
+      imageFramesChecked[this.gameId] = true
+      await this.initImageAnimation(animatedImageMeta)
+    }
+
+    const hasAnim = !!imageAnimationStates[this.gameId]
+
+    if (!hasAnim && !pieceBitmapsCache[this.gameId]) {
+      pieceBitmapsCache[this.gameId] = [PuzzleGraphics.loadPuzzleBitmaps(
         puzzleBitmapCache[this.gameId],
         GameCommon.getPuzzle(this.gameId),
         this.graphics,
-      )
+      )]
     }
-    if (!puzzleBitmapGrayscaled[this.gameId]) {
-      // log.log('loading grayscaled puzzle bitmap', this.gameId)
+
+    if (!hasAnim && !puzzleBitmapGrayscaled[this.gameId]) {
       puzzleBitmapGrayscaled[this.gameId] = this.graphics.op.toGrayscale(
         puzzleBitmapCache[this.gameId],
         'black',
         0.3,
       )
+    }
+  }
+
+  private async initImageAnimation(metas: ImageFrameMeta[]): Promise<void> {
+    try {
+      const animatedImageLoader = AnimatedImageLoader.getInstance()
+      const imageFrames = await animatedImageLoader.loadFrames(metas)
+
+      const puzzle = GameCommon.getPuzzle(this.gameId)
+      const frames: HTMLCanvasElement[] = []
+      const delays: number[] = []
+
+      for (const frame of imageFrames) {
+         const resized = this.graphics.op.resize(frame.canvas, puzzle.info.width, puzzle.info.height)
+        frames.push(resized)
+        delays.push(frame.delay)
+      }
+
+      // Compute piece bitmaps for the first frame eagerly
+      const firstFrameBitmaps = PuzzleGraphics.loadPuzzleBitmaps(frames[0], puzzle, this.graphics)
+      // Compute grayscale preview for the first frame eagerly
+      const firstFrameGrayscale = this.graphics.op.toGrayscale(frames[0], 'black', 0.3)
+
+      imageAnimationStates[this.gameId] = {
+        frames,
+        delays,
+        currentFrame: 0,
+        lastFrameTime: performance.now(),
+        pieceBitmapsCache: { 0: firstFrameBitmaps },
+        grayscaleFramesCache: { 0: firstFrameGrayscale },
+      }
+
+      // Use first frame as the initial piece bitmaps
+      pieceBitmapsCache[this.gameId] = [firstFrameBitmaps]
+
+      log.log(`Image animation initialized with ${frames.length} frames`)
+    } catch (e) {
+      log.error('Failed to load animated frames:', e)
+    }
+  }
+
+  private updateImageAnimation(): void {
+    const anim = imageAnimationStates[this.gameId]
+    if (!anim) return
+
+    const now = performance.now()
+    const timeSinceLastFrame = now - anim.lastFrameTime
+    const currentDelay = anim.delays[anim.currentFrame]
+
+    if (timeSinceLastFrame >= currentDelay) {
+      anim.currentFrame = (anim.currentFrame + 1) % anim.frames.length
+      anim.lastFrameTime = now
+
+      // Lazily compute piece bitmaps for this frame
+      if (!anim.pieceBitmapsCache[anim.currentFrame]) {
+        const puzzle = GameCommon.getPuzzle(this.gameId)
+        anim.pieceBitmapsCache[anim.currentFrame] = PuzzleGraphics.loadPuzzleBitmaps(
+          anim.frames[anim.currentFrame], puzzle, this.graphics,
+        )
+      }
+      pieceBitmapsCache[this.gameId] = [anim.pieceBitmapsCache[anim.currentFrame]]
+
+      // Lazily compute grayscale preview for this frame
+      if (!anim.grayscaleFramesCache[anim.currentFrame]) {
+        anim.grayscaleFramesCache[anim.currentFrame] = this.graphics.op.toGrayscale(
+          anim.frames[anim.currentFrame], 'black', 0.3,
+        )
+      }
     }
   }
 
@@ -114,7 +203,10 @@ export class Renderer {
 
     if (this.debug) Debug.checkpoint_start(0)
 
-    if (this.backgroundCache) {
+    const anim = imageAnimationStates[this.gameId]
+    const animatedPreview = !!anim && renderPreview && settings.showPuzzleBackground
+
+    if (this.backgroundCache && !animatedPreview) {
       ctx.putImageData(this.backgroundCache, 0, 0)
       if (this.debug) Debug.checkpoint('clear/table/board done - cached')
     } else {
@@ -147,7 +239,8 @@ export class Renderer {
       if (renderPreview && settings.showPuzzleBackground) {
         pos = viewport.worldToViewportRaw(this.boardPos)
         dim = viewport.worldDimToViewportRaw(this.boardDim)
-        ctx.drawImage(puzzleBitmapGrayscaled[this.gameId], pos.x, pos.y, dim.w, dim.h)
+        const grayscale = anim?.grayscaleFramesCache[anim.currentFrame] ?? puzzleBitmapGrayscaled[this.gameId]
+        ctx.drawImage(grayscale, pos.x, pos.y, dim.w, dim.h)
       } else if (!settings.showTable || !this.puzzleTable) {
         pos = viewport.worldToViewportRaw(this.boardPos)
         dim = viewport.worldDimToViewportRaw(this.boardDim)
@@ -171,13 +264,15 @@ export class Renderer {
       if (this.debug) Debug.checkpoint('preview/board done')
       // ---------------------------------------------------------------
 
-      if (this.lockMovement) {
+      if (this.lockMovement && !animatedPreview) {
         this.backgroundCache = ctx.getImageData(0, 0, canvas.width, canvas.height)
       }
     }
 
     // DRAW PIECES
     // ---------------------------------------------------------------
+    this.updateImageAnimation()
+
     const pieces = GameCommon.getEncodedPiecesSortedByZIndex(this.gameId)
     if (this.debug) Debug.checkpoint('get pieces done')
 
@@ -195,7 +290,7 @@ export class Renderer {
         continue
       }
 
-      tmpCanvas = pieceBitmapsCache[this.gameId][piece[EncodedPieceIdx.IDX]]
+      tmpCanvas = pieceBitmapsCache[this.gameId][0][piece[EncodedPieceIdx.IDX]]
 
       const rot = Renderer.RotationMap[piece[EncodedPieceIdx.ROTATION] || PieceRotation.R0]
       if (rot) {
@@ -288,5 +383,10 @@ export class Renderer {
       renderPreview,
     )
     return canvas.toDataURL('image/jpeg', 75)
+  }
+
+  public hasAnimation(): boolean {
+    const anim = imageAnimationStates[this.gameId]
+    return !!anim && anim.frames.length > 1
   }
 }

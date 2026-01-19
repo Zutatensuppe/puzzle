@@ -87,7 +87,7 @@ import { onMounted, onUnmounted, ref } from 'vue'
 import { me, onLoginStateChange } from '../../user'
 import api from '../../_api'
 import Nav from '../components/Nav.vue'
-import type { CollectionRowWithImages, FeaturedId, FeaturedRowWithCollections } from '@common/Types'
+import type { CollectionId, CollectionRowWithImages, FeaturedId, FeaturedRowWithCollections } from '@common/Types'
 import { useRoute, useRouter } from 'vue-router'
 import CollectionEdit from '../components/CollectionEdit.vue'
 import { arrayMove, newJSONDateString } from '@common/Util'
@@ -156,7 +156,7 @@ const onAddCollectionClick = () => {
   }
 
   featured.value.collections.push({
-    id: 0,
+    id: 0 as CollectionId,
     created: newJSONDateString(),
     name: 'New Collection',
     images: [],

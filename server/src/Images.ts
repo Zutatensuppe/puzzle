@@ -1,14 +1,16 @@
 import probe from 'probe-image-size'
-import fs from 'fs'
+import fs from 'fs/promises'
+import fsSync from 'fs'
 
 import config from './Config'
 import type { Dim } from '@common/Geometry'
 import Util, { logger } from '@common/Util'
-import type { Tag, ImageInfo, UserId, ImageId, ImageRowWithCount, TagRow, ImageRow } from '@common/Types'
+import type { ImageRow, ImageInfo, ImageId, UserId, Tag, ImageRowWithCount, TagRow, ImageFrameMeta } from '@common/Types'
 import type { ImagesRepo } from './repo/ImagesRepo'
 import type { WhereRaw } from './lib/Db'
 import type { ImageExif } from './ImageExif'
 import FileSystem from './lib/FileSystem'
+import type { AnimationProcessor } from './AnimationProcessor'
 
 const log = logger('Images.ts')
 
@@ -16,6 +18,7 @@ export class Images {
   constructor(
     private readonly imagesRepo: ImagesRepo,
     private readonly imageExif: ImageExif,
+    private readonly animationProcessor?: AnimationProcessor,
   ) {}
 
   public async getAllTags(): Promise<Tag[]> {
@@ -66,6 +69,7 @@ export class Images {
       nsfw: !!row.nsfw,
       state: row.state,
       rejectReason: row.reject_reason,
+      animationFrames: row.animated_frames,
     }
   }
 
@@ -92,7 +96,11 @@ export class Images {
   }
 
   public async getDimensions(imagePath: string): Promise<Dim> {
-    const dimensions = await probe(fs.createReadStream(imagePath))
+    if (this.animationProcessor && await this.animationProcessor.hasMultipleFrames(imagePath)) {
+      return await this.animationProcessor.getDimensions(imagePath)
+    }
+
+    const dimensions = await probe(fsSync.createReadStream(imagePath))
     const w = dimensions.width || 0
     const h = dimensions.height || 0
 
@@ -164,12 +172,71 @@ export class Images {
       await this.deleteAllFilesStartingWith(`${baseDir}/${filename}-`)
     }
 
+    // animated frames directory:
+    const framesDirPath = `${config.dir.CROP_DIR}/${filename}-frames`
+    try {
+      await fs.rm(framesDirPath, { recursive: true, force: true })
+    } catch {
+      // ignore errors if the directory doesn't exist
+    }
+
     // full image:
     const fullImage = this.getImagePath(filename)
     try {
       await FileSystem.unlink(fullImage)
     } catch {
       log.error('unable to delete image', fullImage)
+    }
+  }
+
+  /**
+   * Extract frames from the image on disk, persist the per-frame PNGs to
+   * CROP_DIR, and store frame metadata as JSON on the images row. After
+   * this call returns, `images.animated_frames` is always non-null:
+   *   - `[]`   -> not animated, or extraction failed (don't retry)
+   *   - `[...]` -> extracted frame metadata, in order
+   * Called eagerly from the upload handler so the renderer never has to
+   * worry about a "not yet extracted" state.
+   */
+  public async extractAndCacheImageFrames(imageRow: ImageRow): Promise<ImageFrameMeta[]> {
+    if (!this.animationProcessor) {
+      log.error(`extractAndCacheGifFrames: gifProcessor not available`)
+      await this.imagesRepo.setAnimatedFrames(imageRow.id, [])
+      return []
+    }
+
+    const imagePath = this.getImagePath(imageRow.filename)
+    if (!await this.animationProcessor.hasMultipleFrames(imagePath)) {
+      await this.imagesRepo.setAnimatedFrames(imageRow.id, [])
+      return []
+    }
+
+    try {
+      const frames = await this.animationProcessor.extractFrames(imagePath)
+      if (!frames.length) {
+        log.error(`extractAndCacheGifFrames: no frames extracted from ${imagePath}`)
+        await this.imagesRepo.setAnimatedFrames(imageRow.id, [])
+        return []
+      }
+
+      const meta: ImageFrameMeta[] = []
+      await FileSystem.mkdir(config.dir.CROP_DIR)
+      const framesDirName = `${imageRow.filename}-frames`
+      const framesDirPath = `${config.dir.CROP_DIR}/${framesDirName}`
+      await FileSystem.mkdir(framesDirPath)
+      for (let i = 0; i < frames.length; i++) {
+        const frameFilename = `frame-${i}.png`
+        const framePath = `${framesDirPath}/${frameFilename}`
+        await fs.writeFile(framePath, frames[i].buffer)
+        meta.push({ filename: `${framesDirName}/${frameFilename}`, delay_ms: frames[i].delay })
+      }
+
+      await this.imagesRepo.setAnimatedFrames(imageRow.id, meta)
+      return meta
+    } catch (e) {
+      log.error('Error extracting animation frames:', e)
+      await this.imagesRepo.setAnimatedFrames(imageRow.id, [])
+      return []
     }
   }
 }

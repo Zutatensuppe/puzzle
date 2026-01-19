@@ -1,25 +1,16 @@
-import type {
-  Api,
-  GameSettings,
-  GameInfo,
-  UserId,
-  ImageId,
-  ClientId,
-  UserRow,
-  GameId,
-} from '@common/Types'
+import type {Api, ClientId, GameId, GameInfo, GameSettings, ImageId, UserId, UserRow} from '@common/Types'
 import config from '../../Config'
 import express from 'express'
 import GameLog from '../../GameLog'
 import request from 'request'
 import { resizeUrl } from '@common/ImageService'
 import Time from '@common/Time'
-import Util, { isEncodedGameLegacy, logger, newJSONDateString, uniqId } from '@common/Util'
-import { COOKIE_TOKEN, generateSalt, generateToken, passwordHash } from '../../Auth'
-import type { Server } from '../../Server'
+import Util, {isEncodedGameLegacy, logger, newJSONDateString, uniqId} from '@common/Util'
+import {COOKIE_TOKEN, generateSalt, generateToken, passwordHash} from '../../Auth'
+import type {Server} from '../../Server'
 import fs from '../../lib/FileSystem'
 import FileSystem from '../../lib/FileSystem'
-import { UploadRequestsManager } from '../../UploadRequestsManager'
+import {UploadRequestsManager} from '../../UploadRequestsManager'
 import loggedInUsersRouter from './logged-in-users'
 
 const log = logger('web_routes/api/index.ts')
@@ -291,8 +282,7 @@ export default function createRouter(
       return
     }
 
-    const passwordHashed = passwordHash(passwordRaw, account.salt)
-    account.password = passwordHashed
+    account.password = passwordHash(passwordRaw, account.salt)
     await server.users.updateAccount(account)
 
     // remove token, already used
@@ -718,8 +708,8 @@ export default function createRouter(
       const dim = await im.getDimensions(imagePath)
 
       // post form, so booleans are submitted as 'true' | 'false'
-      const isPrivate = req.body.isPrivate === 'false' ? false : true
-      const isNsfw = req.body.isNsfw === 'true' ? true : false
+      const isPrivate = req.body.isPrivate !== 'false'
+      const isNsfw = req.body.isNsfw === 'true'
       const isTrusted = await server.repos.users.isUserTrusted(user.id)
       const imageId = await im.insertImage({
         uploader_user_id: user.id,
@@ -737,11 +727,21 @@ export default function createRouter(
         checksum,
         state: isTrusted ? 'approved' : 'pending_approval',
         reject_reason: '',
+        animated_frames: null,
       })
 
       if (req.body.tags) {
         const tags = req.body.tags.split(',').filter((tag: string) => !!tag)
         await im.setTags(imageId, tags)
+      }
+
+      // Eagerly extract animation frames (no-op for static images). After this returns,
+      // images.animated_frames is always non-null, so any later ImageInfo for this
+      // image carries the (possibly empty) frame list and the renderer never
+      // has to do an out-of-band fetch to find out.
+      const imageRow = await im.getImageById(imageId)
+      if (imageRow) {
+        await im.extractAndCacheImageFrames(imageRow)
       }
 
       const imageInfo = await im.imageFromDb(imageId)
@@ -754,8 +754,7 @@ export default function createRouter(
   })
 
   router.get('/announcements', async (req, res) => {
-    const items = await server.repos.announcements.getAll()
-    const responseData: Api.AnnouncementsResponseData = items
+    const responseData: Api.AnnouncementsResponseData = await server.repos.announcements.getAll()
     res.send(responseData)
   })
 
@@ -792,6 +791,7 @@ export default function createRouter(
       res.status(400).send(responseData)
       return
     }
+    log.log(`User ${user.id} deleted game ${id}`)
     const responseData: Api.DeleteGameResponseData = { ok: true }
     res.send(responseData)
   })

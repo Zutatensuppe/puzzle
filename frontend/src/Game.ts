@@ -1,53 +1,48 @@
 'use strict'
 
-import { Camera } from '@common/Camera'
-import { CHANGE_TYPE, GAME_EVENT_TYPE } from '@common/Protocol'
-import { run } from './gameloop'
-import type { GameLoopInstance } from './gameloop'
+import {Camera} from '@common/Camera'
+import {CHANGE_TYPE, GAME_EVENT_TYPE} from '@common/Protocol'
+import {run} from './gameloop'
+import type {GameLoopInstance} from './gameloop'
 import fireworksController from '@common/Fireworks'
 import GameCommon from '@common/GameCommon'
 import Time from '@common/Time'
-import { logger } from '@common/Util'
-import {
-  RendererType,
-  EncodedPieceIdx,
-  EncodedPlayerIdx,
-} from '@common/Types'
+import {logger} from '@common/Util'
 import type {
-  Hud,
-  ScoreMode,
-  SnapMode,
-  ShapeMode,
-  GameEvent,
-  ImageInfo,
-  FireworksInterface,
-  PlayerSettingsData,
-  ServerUpdateEvent,
-  GamePlayers,
-  GameStatus,
-  RegisteredMap,
-  RotationMode,
-  GameId,
   ClientId,
   EncodedPiece,
   EncodedPlayer,
+  FireworksInterface,
+  GameEvent,
+  GameId,
+  GamePlayers,
+  GameStatus,
+  Hud,
+  ImageInfo,
+  PlayerSettingsData,
+  RegisteredMap,
+  RotationMode,
+  ScoreMode,
+  ServerUpdateEvent,
+  ShapeMode,
+  SnapMode,
 } from '@common/Types'
-import _api from './_api'
-import { Assets } from './Assets'
-import { EventAdapter } from './EventAdapter'
-import type { GraphicsInterface } from './Graphics'
-import { Graphics } from './Graphics'
-import { MODE_PLAY } from './GameMode'
-import { PlayerCursors } from './PlayerCursors'
-import { PlayerSettings } from './PlayerSettings'
-import { PuzzleStatus } from './PuzzleStatus'
-import { PuzzleTable } from './PuzzleTable'
-import { Renderer } from './Renderer'
-import { RendererWebgl } from './RendererWebgl'
-import { SoundsManager } from './SoundsManager'
-import { ViewportSnapshots } from './ViewportSnapshots'
+import {EncodedPieceIdx, EncodedPlayerIdx, RendererType} from '@common/Types'
+import {Assets} from './Assets'
+import {EventAdapter} from './EventAdapter'
+import type {GraphicsInterface} from './Graphics'
+import {Graphics} from './Graphics'
+import {MODE_PLAY} from './GameMode'
+import {PlayerCursors} from './PlayerCursors'
+import {PlayerSettings} from './PlayerSettings'
+import {PuzzleStatus} from './PuzzleStatus'
+import {PuzzleTable} from './PuzzleTable'
+import {Renderer} from './Renderer'
+import {RendererWebgl} from './RendererWebgl'
+import {SoundsManager} from './SoundsManager'
+import {ViewportSnapshots} from './ViewportSnapshots'
 import debug from './debug'
-import { SoundsEnum } from '@common/Enums'
+import {SoundsEnum} from '@common/Enums'
 
 declare global {
   interface Window {
@@ -472,8 +467,7 @@ export abstract class Game<HudType extends Hud> implements GameInterface {
           rerender = true
         } break
         case CHANGE_TYPE.PLAYER_SNAP: {
-          const snapPlayerId = changeData
-          if (snapPlayerId !== this.clientId) {
+          if (changeData !== this.clientId) {
             otherPlayerPiecesConnected = true
           }
         } break
@@ -576,7 +570,10 @@ export abstract class Game<HudType extends Hud> implements GameInterface {
   }
 
   onRender(): void {
-    if (!this.rerender) {
+    // Always rerender if there's an image animation playing
+    const hasImageAnimation = this.rendererWebgl?.hasImageAnimation() || this.rendererCanvas2d?.hasAnimation() || false
+
+    if (!this.rerender && !hasImageAnimation) {
       return
     }
 

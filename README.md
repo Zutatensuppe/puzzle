@@ -83,11 +83,11 @@ node build/server/main.js
 
 There are other `run` scripts:
 
-command                | explanation
------------------------|----------------------------------------
-`npm run build`        | builds the sources
-`npm run lint`         | runs lint checks
-`npm run test`         | runs tests
-`./run ts [...ARGS]`   | run `node`, but with ts files. eg `./run ts scripts/create_user.ts`
+| command              | explanation                                                         |
+|----------------------|---------------------------------------------------------------------|
+| `npm run build`      | builds the sources                                                  |
+| `npm run lint`       | runs lint checks                                                    |
+| `npm run test`       | runs tests                                                          |
+| `./run ts [...ARGS]` | run `node`, but with ts files. eg `./run ts scripts/create_user.ts` |
 
 [jigsaw.hyottoko.club]: https://jigsaw.hyottoko.club

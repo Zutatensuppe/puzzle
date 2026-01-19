@@ -1,5 +1,5 @@
 import { ImageSearchSort } from '@common/Types'
-import type { ImageId, ImageRow, ImageRowWithCount, ImageXTagRow, Pagination, TagId, TagRow, TagRowWithCount, UploaderInfo, UserId } from '@common/Types'
+import type { ImageFrameMeta, ImageId, ImageRow, ImageRowWithCount, ImageXTagRow, Pagination, TagId, TagRow, TagRowWithCount, UploaderInfo, UserId } from '@common/Types'
 import type Db from '../lib/Db'
 import type { OrderBy, WhereRaw } from '../lib/Db'
 import DbData from '../app/DbData'
@@ -129,6 +129,12 @@ export class ImagesRepo {
 
   async update(image: Partial<ImageRow>, where: WhereRaw): Promise<void> {
     await this.db.update(DbData.Tables.Images, image, where)
+  }
+
+  // animated_frames is a jsonb column; serialize explicitly so the pg driver
+  // doesn't try to interpret arrays as native postgres array literals.
+  async setAnimatedFrames(imageId: ImageId, frames: ImageFrameMeta[]): Promise<void> {
+    await this.db.update(DbData.Tables.Images, { animated_frames: JSON.stringify(frames) }, { id: imageId })
   }
 
   async deleteTagRelations(imageId: ImageId): Promise<void> {

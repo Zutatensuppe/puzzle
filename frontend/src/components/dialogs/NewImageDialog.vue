@@ -19,15 +19,20 @@
           <div
             v-if="previewUrl"
             class="has-image"
-            style="min-height: 50vh;"
           >
             <v-btn
               variant="elevated"
               icon="mdi-close"
               size="x-small"
+              class="new-image-close-button"
               @click="previewUrl=''"
             />
-            <ResponsiveImage :src="previewUrl" />
+            <img
+              :src="previewUrl"
+              :title="title"
+              :alt="title"
+              class="new-image-dialog-image"
+            >
           </div>
           <div v-else>
             <label class="upload">
@@ -192,7 +197,6 @@
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { logger } from '@common/Util'
 import TagsInput from '../../components/TagsInput.vue'
-import ResponsiveImage from '../ResponsiveImage.vue'
 import { toast } from '../../toast'
 import { Graphics } from '../../Graphics'
 import { useDialog } from '../../useDialog'

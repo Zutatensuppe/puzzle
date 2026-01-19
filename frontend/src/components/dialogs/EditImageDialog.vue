@@ -10,12 +10,13 @@
         <v-col :lg="8">
           <div
             class="has-image"
-            style="min-height: 50vh;"
           >
-            <ResponsiveImage
+            <img
               :src="editImageImage.url"
               :title="editImageImage.title"
-            />
+              :alt="editImageImage.title"
+              class="edit-image-dialog-image"
+            >
           </div>
         </v-col>
         <v-col
@@ -94,7 +95,6 @@
 import { ref, watch } from 'vue'
 import type { ImageInfo, Tag } from '@common/Types'
 import TagsInput from '../TagsInput.vue'
-import ResponsiveImage from '../ResponsiveImage.vue'
 import { useDialog } from '../../useDialog'
 
 const { closeDialog, editImageImage, editImageAutocompleteTags, editOnSaveImageClick } = useDialog()

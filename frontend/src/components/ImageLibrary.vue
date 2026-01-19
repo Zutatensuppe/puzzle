@@ -8,7 +8,7 @@
       <ImageTeaser
         :key="index"
         :image="item"
-        :edit="edit"
+        :edit="edit ?? true"
         @click="emit('imageClicked', item)"
         @edit-click="emit('imageEditClicked', item)"
       />

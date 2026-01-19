@@ -158,7 +158,7 @@ import { me, onLoginStateChange } from '../../user'
 import api from '../../_api'
 import Nav from '../components/Nav.vue'
 import Pagination from '../../components/Pagination.vue'
-import type { ImageRowWithCount, Pagination as PaginationType, UploaderInfo, UserId } from '@common/Types'
+import type { ImageRowWithCount, Pagination as PaginationType, UploaderInfo } from '@common/Types'
 
 const perPage = 50
 const uploaders = ref<{ items: UploaderInfo[], pagination: PaginationType } | null>(null)

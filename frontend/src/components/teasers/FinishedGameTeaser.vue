@@ -5,10 +5,13 @@
     elevation="10"
     @click="emit('goToGame', game)"
   >
-    <div
-      class="game-teaser-image"
-      :style="style"
-    />
+    <div class="game-teaser-image">
+      <img
+        class="game-teaser-img"
+        :src="imageUrl"
+        :alt="game.image.title || 'Game image'"
+      >
+    </div>
     <div
       v-if="showNsfwInfo"
       class="teaser-nsfw-information"
@@ -110,8 +113,7 @@ const emit = defineEmits<{
   (e: 'goToReplay', val: GameInfo): void
 }>()
 
-const url = computed(() => resizeUrl(props.game.image.url, 375, 210, 'contain'))
-const style = computed(() => ({ 'background-image': `url("${url.value}")` }))
+const imageUrl = computed(() => resizeUrl(props.game.image.url, 375, 210, 'contain'))
 
 const joinPuzzleText = computed(() => props.game.finished ? 'View puzzle' : 'Join puzzle')
 

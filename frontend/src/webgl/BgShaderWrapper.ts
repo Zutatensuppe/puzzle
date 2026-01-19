@@ -156,6 +156,15 @@ export class BgShaderWrapper {
     this.gl.drawArrays(this.gl.TRIANGLES, 0, 6)
   }
 
+  /**
+   * Update the preview image texture with a new frame (for image animation)
+   */
+  public updatePreviewTexture(puzzleBitmap: TexImageSource): void {
+    this.gl.activeTexture(this.gl.TEXTURE1)
+    this.gl.bindTexture(this.gl.TEXTURE_2D, this.previewTex)
+    this.gl.texImage2D(this.gl.TEXTURE_2D, 0, this.gl.RGBA, this.gl.RGBA, this.gl.UNSIGNED_BYTE, puzzleBitmap)
+  }
+
   private createMatrix(translateX: number, translateY: number, scaleW: number, scaleH: number) {
     let matrix = m4.orthographic(0, this.gl.canvas.width, this.gl.canvas.height, 0, -1, 1, undefined)
     matrix = m4.translate(matrix, translateX, translateY, 0, undefined)
