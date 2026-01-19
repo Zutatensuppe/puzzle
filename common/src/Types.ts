@@ -405,6 +405,7 @@ export interface ImageInfo {
   aiGenerated: boolean
   state: ImageState
   rejectReason: string
+  animationFrames: ImageFrameMeta[] | null
 }
 
 export const defaultImageInfo = (): ImageInfo => ({
@@ -426,6 +427,7 @@ export const defaultImageInfo = (): ImageInfo => ({
   nsfw: false,
   aiGenerated: false,
   state: ImageState.PendingApproval,
+  animationFrames: null,
   rejectReason: '',
 })
 
@@ -903,6 +905,12 @@ export interface ImageRow {
   checksum: string | null
   state: ImageState
   reject_reason: string
+  animated_frames: ImageFrameMeta[] | null
+}
+
+export interface ImageFrameMeta {
+  filename: string
+  delay_ms: number
 }
 
 export interface ImageXTagRow {

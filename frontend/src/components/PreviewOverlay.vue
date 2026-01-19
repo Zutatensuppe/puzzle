@@ -4,10 +4,11 @@
     @click="emit('close')"
   >
     <div class="preview">
-      <div
+      <img
         class="img"
-        :style="previewStyle"
-      />
+        :src="previewUrl"
+        alt=""
+      >
     </div>
   </v-card>
 </template>
@@ -23,9 +24,11 @@ const emit = defineEmits<{
   (e: 'close'): void
 }>()
 
-const previewStyle = computed(() => {
-  return {
-    backgroundImage: `url('${props.game.getPreviewImageUrl()}')`,
-  }
+const isAnimated = computed(() => props.game.getImage().animationFrames !== null)
+
+const previewUrl = computed(() => {
+  return isAnimated.value
+    ? props.game.getImage().url
+    : props.game.getPreviewImageUrl()
 })
 </script>

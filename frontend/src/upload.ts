@@ -40,6 +40,10 @@ export const uploadImage = async (data: Api.UploadRequestData): Promise<{ error:
       throw 'The image you tried to upload is too large. Max file size is 20MB.'
     }
 
+    if (res.status === 422) {
+      throw 'Too many gif frames'
+    }
+
     if (res.status === 409) {
       console.log('Duplicate image upload detected.')
     }

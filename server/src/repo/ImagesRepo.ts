@@ -1,5 +1,5 @@
+import type {ImageFrameMeta, CurationEventRow, ImageId, ImageRow, ImageRowWithCount, Pagination, TagId, TagRow, TagRowWithCount, UploaderInfo, UserId} from '@common/Types'
 import { ImageSearchSort, ImageState, IMAGE_STATES_VISIBLE, IMAGE_STATES_PENDING, IMAGE_STATES_TRUSTED } from '@common/Types'
-import type { CurationEventRow, ImageId, ImageRow, ImageRowWithCount, Pagination, TagId, TagRow, TagRowWithCount, UploaderInfo, UserId } from '@common/Types'
 import type Db from '../lib/Db'
 import type { OrderBy, WhereRaw } from '../lib/Db'
 import DbData from '../app/DbData'
@@ -216,7 +216,7 @@ export class ImagesRepo {
         INNER JOIN ${DbData.Tables.Tags} t ON t.id = ixc.category_id
         WHERE ixc.image_id = $1 AND t.slug = $2
       `, [image.id, slug])
-      return row ? true : false
+      return !!row
     }
     return null
   }
@@ -291,6 +291,12 @@ export class ImagesRepo {
 
   async update(image: Partial<ImageRow>, where: WhereRaw): Promise<void> {
     await this.db.update(DbData.Tables.Images, image, where)
+  }
+
+  // animated_frames is a jsonb column; serialize explicitly so the pg driver
+  // doesn't try to interpret arrays as native postgres array literals.
+  async setAnimatedFrames(imageId: ImageId, frames: ImageFrameMeta[]): Promise<void> {
+    await this.db.update(DbData.Tables.Images, { animated_frames: JSON.stringify(frames) }, { id: imageId })
   }
 
   async insertCurationEvent(event: Omit<CurationEventRow, 'id' | 'created_at'>): Promise<void> {

@@ -232,6 +232,10 @@ function getImage(gameId: GameId): ImageInfo {
   return Game_getImage(GAMES[gameId])
 }
 
+function getImageId(gameId: GameId): number | undefined {
+  return Game_getImage(GAMES[gameId])?.id
+}
+
 function hasReplay(gameId: GameId): boolean {
   return Game_hasReplay(GAMES[gameId])
 }
@@ -1387,6 +1391,7 @@ export default {
   getFirstOwnedPiece,
   getIdlePlayers,
   getImage,
+  getImageId,
   getImageUrl,
   getMaxZIndex,
   getPieceCount,
