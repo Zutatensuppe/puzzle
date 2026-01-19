@@ -20,6 +20,7 @@ import type { PuzzleCreationInfo } from '@common/Puzzle'
 import type { ImageInfo, ShapeMode } from '@common/Types'
 import { drawPuzzlePreview } from '../PuzzleGraphics'
 import { NEWGAME_MAX_PIECES, NEWGAME_MIN_PIECES } from '@common/GameCommon'
+import { AnimatedImageLoader } from '../AnimatedImageLoader'
 
 const props = defineProps<{
   image: ImageInfo,
@@ -38,6 +39,13 @@ const puzzleCropper = ref<HTMLCanvasElement>() as Ref<HTMLCanvasElement>
 const offset = ref<Point>({ x: 0, y: 0 })
 
 let imgDrawRect: Rect = { x: 0, y: 0, w: 0, h: 0 }
+let animationFrames: HTMLImageElement[] = []
+let animationDelays: number[] = []
+let currentFrameIndex = 0
+let animationFrameId: number | null = null
+let lastFrameTime = 0
+const isAnimated = ref<boolean>(false)
+let isMounted = true
 
 const determinePreviewPieceSize = (): number => {
   if (props.puzzleCreationInfo === null) {
@@ -163,12 +171,25 @@ const redraw = () => {
   imgDrawRect = calculateImageDrawRect()
 
   ctx.clearRect(0, 0, canvas.value.width, canvas.value.height)
-  ctx.drawImage(
-    image,
-    0, 0, image.width, image.height,
-    imgDrawRect.x, imgDrawRect.y,
-    imgDrawRect.w, imgDrawRect.h,
-  )
+
+  if (isAnimated.value && animationFrames.length > 0) {
+    const currentFrame = animationFrames[currentFrameIndex]
+    if (currentFrame) {
+      ctx.drawImage(
+        currentFrame,
+        0, 0, currentFrame.width, currentFrame.height,
+        imgDrawRect.x, imgDrawRect.y,
+        imgDrawRect.w, imgDrawRect.h,
+      )
+    }
+  } else {
+    ctx.drawImage(
+      image,
+      0, 0, image.width, image.height,
+      imgDrawRect.x, imgDrawRect.y,
+      imgDrawRect.w, imgDrawRect.h,
+    )
+  }
 
   if (props.piecesPreview) {
     const previewPieceSize = determinePreviewPieceSize()
@@ -194,18 +215,100 @@ watch(() => props.piecesPreview, () => {
   redraw()
 })
 
+const animatedImage = (timestamp: number) => {
+  if (!isAnimated.value || animationFrames.length === 0) return
+
+  const timeSinceLastFrame = timestamp - lastFrameTime
+
+  if (timeSinceLastFrame >= animationDelays[currentFrameIndex]) {
+    currentFrameIndex = (currentFrameIndex + 1) % animationFrames.length
+    lastFrameTime = timestamp
+    redraw()
+  }
+
+  animationFrameId = requestAnimationFrame(animatedImage)
+}
+
+const loadAnimationFrames = async (): Promise<boolean> => {
+  try {
+    if (!props.image.animationFrames || props.image.animationFrames.length === 0) {
+      return false
+    }
+    const animatedImageLoader = AnimatedImageLoader.getInstance()
+    const frames = await animatedImageLoader.loadFrames(props.image.animationFrames)
+
+    // Convert dataUrls to HTMLImageElement objects
+    const imagePromises = frames.map((frame) => {
+      return new Promise<HTMLImageElement>((resolve, reject) => {
+        const img = new Image()
+        img.onload = () => {
+          resolve(img)
+        }
+        img.onerror = () => {
+          reject(new Error('Failed to load frame'))
+        }
+        img.src = frame.canvas.toDataURL()
+      })
+    })
+
+    animationFrames = await Promise.all(imagePromises)
+    animationDelays = frames.map(f => f.delay)
+
+    return true
+  } catch (e) {
+    console.error('Error loading Animation frames:', e)
+    return false
+  }
+}
+
+const startAnimation = () => {
+  if (animationFrameId) {
+    cancelAnimationFrame(animationFrameId)
+  }
+  if (isAnimated.value && animationFrames.length > 0) {
+    lastFrameTime = performance.now()
+    animationFrameId = requestAnimationFrame(animatedImage)
+  }
+}
+
+const stopAnimation = () => {
+  if (animationFrameId) {
+    cancelAnimationFrame(animationFrameId)
+    animationFrameId = null
+  }
+}
+
 onMounted(() => {
   resizeObserver.observe(puzzleCropper.value)
 
+  isAnimated.value = !!props.image.animationFrames && props.image.animationFrames.length > 0
+
   image.src = props.image.url
-  image.onload = (_ev: Event) => {
+  image.onload = async (_ev: Event) => {
+    if (isAnimated.value) {
+      const loaded = await loadAnimationFrames()
+      if (!isMounted) return
+      if (!loaded) {
+        isAnimated.value = false
+      }
+    }
+
+    if (!isMounted) return
+
     centerCrop()
     emitCropChange()
-    redraw()
+
+    if (isAnimated.value) {
+      startAnimation()
+    } else {
+      redraw()
+    }
   }
 })
 onBeforeUnmount(() => {
+  isMounted = false
   resizeObserver.disconnect()
+  stopAnimation()
 })
 </script>
 <style>

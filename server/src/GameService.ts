@@ -121,6 +121,7 @@ export class GameService {
   }
 
   public async delete(gameId: GameId): Promise<void> {
+    this.setClean(gameId)
     await this.server.repos.games.delete(gameId)
     GameCommon.unsetGame(gameId)
     GameLog.unsetGame(gameId)

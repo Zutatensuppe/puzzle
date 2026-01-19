@@ -15,12 +15,12 @@ import GameLog from '../../GameLog'
 import request from 'request'
 import { resizeUrl } from '@common/ImageService'
 import Time from '@common/Time'
-import Util, { isEncodedGameLegacy, logger, newJSONDateString, uniqId } from '@common/Util'
-import { COOKIE_TOKEN, generateSalt, generateToken, passwordHash } from '../../Auth'
-import type { Server } from '../../Server'
+import Util, {isEncodedGameLegacy, logger, newJSONDateString, uniqId} from '@common/Util'
+import {COOKIE_TOKEN, generateSalt, generateToken, passwordHash} from '../../Auth'
+import type {Server} from '../../Server'
 import fs from '../../lib/FileSystem'
 import FileSystem from '../../lib/FileSystem'
-import { UploadRequestsManager } from '../../UploadRequestsManager'
+import {UploadRequestsManager} from '../../UploadRequestsManager'
 import loggedInUsersRouter from './logged-in-users'
 import { detectAiMarkersFromFile } from '../../AiImageDetection'
 
@@ -239,7 +239,7 @@ export default function createRouter(
       }
 
       await addAuthToken(user.id, res)
-      res.send('<html><script>window.opener.handleAuthCallback();window.close();</script></html>')
+      res.send('<html lang="en"><script>window.opener.handleAuthCallback();window.close();</script></html>')
       return
     }
 
@@ -303,8 +303,7 @@ export default function createRouter(
       return
     }
 
-    const passwordHashed = passwordHash(passwordRaw, account.salt)
-    account.password = passwordHashed
+    account.password = passwordHash(passwordRaw, account.salt)
     await server.users.updateAccount(account)
 
     // remove token, already used
@@ -737,8 +736,8 @@ export default function createRouter(
       const dim = await im.getDimensions(imagePath)
 
       // post form, so booleans are submitted as 'true' | 'false'
-      const isPrivate = req.body.isPrivate === 'false' ? false : true
-      const isNsfw = req.body.isNsfw === 'true' ? true : false
+      const isPrivate = req.body.isPrivate !== 'false'
+      const isNsfw = req.body.isNsfw === 'true'
       const isAiGenerated = req.body.isAiGenerated === 'true'
         ? true
         : await detectAiMarkersFromFile(imagePath)
@@ -760,11 +759,31 @@ export default function createRouter(
         checksum,
         state: isTrusted ? ImageState.Uncurated : ImageState.Unreviewed,
         reject_reason: '',
+        animated_frames: null,
       })
 
       if (req.body.tags) {
         const tags = req.body.tags.split(',').filter((tag: string) => !!tag)
         await im.setTags(imageId, tags)
+      }
+
+      // Eagerly extract animation frames (no-op for static images). After this returns,
+      // images.animated_frames is always non-null, so any later ImageInfo for this
+      // image carries the (possibly empty) frame list and the renderer never
+      // has to do an out-of-band fetch to find out.
+      const imageRow = await im.getImageById(imageId)
+      if (imageRow) {
+        try {
+          await im.extractAndCacheImageFrames(imageRow)
+        } catch (e: unknown) {
+          if (e instanceof Error && e.message === 'TOO_MANY_GIF_FRAMES') {
+            await FileSystem.unlink(imagePath)
+            await server.repos.images.delete(imageId)
+            res.status(422).send('Too many gif frames')
+            return
+          }
+          throw e
+        }
       }
 
       const imageInfo = await im.imageFromDb(imageId)
@@ -777,8 +796,7 @@ export default function createRouter(
   })
 
   router.get('/announcements', async (req, res) => {
-    const items = await server.repos.announcements.getAll()
-    const responseData: Api.AnnouncementsResponseData = items
+    const responseData: Api.AnnouncementsResponseData = await server.repos.announcements.getAll()
     res.send(responseData)
   })
 

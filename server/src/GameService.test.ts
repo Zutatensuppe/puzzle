@@ -59,6 +59,7 @@ describe('GameService', () => {
         aiGenerated: false,
         state: ImageState.Approved,
         rejectReason: '',
+        animationFrames: null,
       }
 
       const mockGameRow: GameRow = {
@@ -146,6 +147,7 @@ describe('GameService', () => {
         aiGenerated: false,
         state: ImageState.Approved,
         rejectReason: '',
+        animationFrames: null,
       }
 
       // Create a reference puzzle using the correct seed (gameId + gameStartedTime)
