@@ -89,7 +89,11 @@ const run = async () => {
   })
 
   router.beforeEach((to, from) => {
-    closeDialog()
+    // Skip closing dialog on initial navigation (from.name is undefined)
+    // to avoid closing dialogs opened during app mount (e.g. password reset)
+    if (from.name) {
+      closeDialog()
+    }
 
     if (to.meta && to.meta.admin && !isAdmin.value) {
       return { name: 'index' }
