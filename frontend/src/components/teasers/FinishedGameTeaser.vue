@@ -25,6 +25,7 @@
       <div
         v-if="stateInfo"
         :class="['game-teaser-info', stateInfo.class]"
+        :title="stateInfo.title"
       >
         <v-icon :icon="stateInfo.icon" /> {{ stateInfo.text }}
       </div>
@@ -133,7 +134,7 @@ const time = (start: number, end: number) => {
   return `${timeDiffStr}`
 }
 
-const stateInfo = computed<null | { class: string; text: string; icon: string }>(() => {
+const stateInfo = computed<null | { class: string; text: string; title?: string; icon: string }>(() => {
   if (props.game.isPrivate) {
     return {
       class: 'game-is-private-info',
@@ -161,6 +162,7 @@ const stateInfo = computed<null | { class: string; text: string; icon: string }>
     return {
       class: 'image-is-rejected-info',
       text: 'Image rejected',
+      title: props.game.image.rejectReason || '',
       icon: 'mdi-cancel',
     }
   }

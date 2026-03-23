@@ -178,6 +178,8 @@ export default function createRouter(
           created: new Date(),
           email: provider_email,
           name: userData.data[0].display_name,
+          trusted: 0,
+          trust_manually_set: 0,
         })
       } else {
         let updateNeeded = false
@@ -374,6 +376,8 @@ export default function createRouter(
         created: newJSONDateString(),
         email: emailRaw,
         name: usernameRaw,
+        trusted: 0,
+        trust_manually_set: 0,
       })
     }
 
@@ -708,6 +712,7 @@ export default function createRouter(
       // post form, so booleans are submitted as 'true' | 'false'
       const isPrivate = req.body.isPrivate === 'false' ? false : true
       const isNsfw = req.body.isNsfw === 'true' ? true : false
+      const isTrusted = await server.repos.users.isUserTrusted(user.id)
       const imageId = await im.insertImage({
         uploader_user_id: user.id,
         filename: req.file.filename,
@@ -722,7 +727,8 @@ export default function createRouter(
         reported: 0,
         nsfw: isNsfw ? 1 : 0,
         checksum,
-        state: 'pending_approval',
+        state: isTrusted ? 'approved' : 'pending_approval',
+        reject_reason: '',
       })
 
       if (req.body.tags) {

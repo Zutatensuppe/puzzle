@@ -179,4 +179,43 @@ export class UsersRepo {
   async getUserGroups(): Promise<UserGroupRow[]> {
     return await this.db.getMany(DbData.Tables.UserGroups, undefined, [{ id: -1 }])
   }
+
+  async isUserTrusted(userId: UserId): Promise<boolean> {
+    const user = await this.get({ id: userId })
+    return user?.trusted === 1
+  }
+
+  async recomputeTrust(userId: UserId, threshold: number): Promise<void> {
+    const user = await this.get({ id: userId })
+    if (user?.trust_manually_set) {
+      return
+    }
+
+    const row = await this.db._get<{ approved_count: number, rejected_count: number, pending_public_count: number }>(`
+      SELECT
+        COUNT(*) FILTER (WHERE state = 'approved')::int AS approved_count,
+        COUNT(*) FILTER (WHERE state = 'rejected')::int AS rejected_count,
+        COUNT(*) FILTER (WHERE state = 'pending_approval' AND private = 0)::int AS pending_public_count
+      FROM ${DbData.Tables.Images}
+      WHERE uploader_user_id = $1
+    `, [userId])
+
+    const approvedCount = row?.approved_count ?? 0
+    const rejectedCount = row?.rejected_count ?? 0
+    const pendingPublicCount = row?.pending_public_count ?? 0
+    const requiredApprovals = threshold * (1 + rejectedCount)
+    const trusted = (pendingPublicCount === 0 && approvedCount >= requiredApprovals) ? 1 : 0
+    await this.db.update(DbData.Tables.Users, { trusted }, { id: userId })
+  }
+
+  async setTrusted(userId: UserId, trusted: boolean): Promise<void> {
+    await this.db.update(DbData.Tables.Users, {
+      trusted: trusted ? 1 : 0,
+      trust_manually_set: 1,
+    }, { id: userId })
+  }
+
+  async resetTrustToAuto(userId: UserId): Promise<void> {
+    await this.db.update(DbData.Tables.Users, { trust_manually_set: 0 }, { id: userId })
+  }
 }

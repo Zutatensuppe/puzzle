@@ -1,5 +1,5 @@
 import { ImageSearchSort } from '@common/Types'
-import type { ImageId, ImageRow, ImageRowWithCount, ImageXTagRow, TagId, TagRow, TagRowWithCount, UserId } from '@common/Types'
+import type { ImageId, ImageRow, ImageRowWithCount, ImageXTagRow, Pagination, TagId, TagRow, TagRowWithCount, UploaderInfo, UserId } from '@common/Types'
 import type Db from '../lib/Db'
 import type { OrderBy, WhereRaw } from '../lib/Db'
 import DbData from '../app/DbData'
@@ -43,6 +43,7 @@ export class ImagesRepo {
     filter: {
       ids: ImageId[]
       tags: string[]
+      uploaderUserId?: UserId
     }
   }): Promise<ImageRowWithCount[]> {
     const { offset, limit, filter } = args
@@ -59,6 +60,10 @@ export class ImagesRepo {
 
     if (filter.ids.length > 0) {
       rawWhere['i.id'] = { '$in': filter.ids }
+    }
+
+    if (filter.uploaderUserId) {
+      rawWhere['i.uploader_user_id'] = filter.uploaderUserId
     }
 
     const where = this.db._buildWhere(rawWhere)
@@ -87,6 +92,35 @@ export class ImagesRepo {
 
   async delete(imageId: ImageId): Promise<void> {
     await this.db.delete(DbData.Tables.Images, { id: imageId })
+  }
+
+  async getPendingApprovals(offset: number, limit: number): Promise<{ items: ImageRowWithCount[], total: number }> {
+    const countRow = await this.db._get<{ count: number }>(`
+      SELECT COUNT(*)::int AS count
+      FROM ${DbData.Tables.Images}
+      WHERE state = 'pending_approval' AND private = 0
+    `)
+    const total = countRow?.count ?? 0
+
+    const items = await this.db._getMany<ImageRowWithCount>(`
+      WITH counts AS (
+        SELECT COUNT(*)::int AS count, image_id
+        FROM ${DbData.Tables.Games}
+        GROUP BY image_id
+      )
+      SELECT
+        i.*,
+        COALESCE(counts.count, 0) AS games_count,
+        COALESCE(u.name, '') AS uploader_user_name
+      FROM ${DbData.Tables.Images} i
+        LEFT JOIN counts ON counts.image_id = i.id
+        LEFT JOIN ${DbData.Tables.Users} u ON u.id = i.uploader_user_id
+      WHERE i.state = 'pending_approval' AND i.private = 0
+      ORDER BY i.created ASC
+      ${this.db._buildLimit({ offset, limit })}
+    `, [])
+
+    return { items, total }
   }
 
   async insert(image: Omit<ImageRow, 'id'>): Promise<ImageId> {
@@ -304,5 +338,45 @@ export class ImagesRepo {
 
   async reportImage(imageId: ImageId): Promise<void> {
     await this.db.run(`UPDATE ${DbData.Tables.Images} SET reported = reported + 1 WHERE id = $1`, [imageId])
+  }
+
+  async getUploadersWithStats(
+    offset: number,
+    limit: number,
+  ): Promise<{ items: UploaderInfo[], pagination: Pagination }> {
+    const countRow = await this.db._get<{ count: number }>(`
+      SELECT COUNT(DISTINCT uploader_user_id)::int AS count
+      FROM ${DbData.Tables.Images}
+      WHERE uploader_user_id IS NOT NULL
+    `)
+    const total = countRow?.count ?? 0
+
+    const items = await this.db._getMany<UploaderInfo>(`
+      SELECT
+        u.id,
+        u.name,
+        u.trusted,
+        u.trust_manually_set AS "trustManuallySet",
+        COUNT(*) FILTER (WHERE i.state = 'approved')::int AS "approvedCount",
+        COUNT(*) FILTER (WHERE i.state = 'rejected')::int AS "rejectedCount",
+        COUNT(*) FILTER (WHERE i.state = 'pending_approval')::int AS "pendingCount",
+        COUNT(*)::int AS "totalCount"
+      FROM ${DbData.Tables.Users} u
+      INNER JOIN ${DbData.Tables.Images} i ON i.uploader_user_id = u.id
+      GROUP BY u.id
+      ORDER BY u.id DESC
+      OFFSET $1 LIMIT $2
+    `, [offset, limit])
+
+    return { items, pagination: { total, offset, limit } }
+  }
+
+  async getAllUploaderIds(): Promise<UserId[]> {
+    const rows = await this.db._getMany<{ uploader_user_id: UserId }>(`
+      SELECT DISTINCT uploader_user_id
+      FROM ${DbData.Tables.Images}
+      WHERE uploader_user_id IS NOT NULL
+    `)
+    return rows.map(r => r.uploader_user_id)
   }
 }
