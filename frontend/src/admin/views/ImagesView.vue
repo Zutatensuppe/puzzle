@@ -42,6 +42,9 @@
               <span class="text-disabled">Private:</span> <span :class="{ 'color-private': item.private }">{{ item.private ? '✓' : '✖' }}</span>
               <span class="text-disabled">NSFW:</span> {{ item.nsfw ? '😳 NSFW' : '-' }}
               <span class="text-disabled">State:</span> <code :class="`state-${item.state}`">{{ item.state }}</code>
+              <template v-if="item.state === 'rejected' && item.reject_reason">
+                <span class="text-disabled">Reason:</span> <span :title="item.reject_reason">{{ item.reject_reason.length > 50 ? item.reject_reason.substring(0, 50) + '…' : item.reject_reason }}</span>
+              </template>
             </div>
             <div class="d-flex ga-3">
               <span class="text-disabled">Id:</span> {{ item.id }}
@@ -159,7 +162,8 @@ const onApprove = async (image: ImageRowWithCount) => {
 }
 
 const onReject = async (image: ImageRowWithCount) => {
-  const resp = await api.admin.rejectImage(image.id)
+  const reason = prompt('Rejection reason (optional):') ?? ''
+  const resp = await api.admin.rejectImage(image.id, reason)
   if ('error' in resp || !resp.ok) {
     alert('Rejecting image failed!')
   } else {

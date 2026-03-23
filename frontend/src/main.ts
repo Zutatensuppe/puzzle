@@ -24,6 +24,8 @@ import AdminGroups from './admin/views/GroupsView.vue'
 import AdminAnnouncements from './admin/views/AnnouncementsView.vue'
 import AdminFeatured from './admin/views/FeaturedView.vue'
 import AdminFeaturedEdit from './admin/views/FeaturedEditView.vue'
+import AdminUploaders from './admin/views/UploadersView.vue'
+import AdminApprovals from './admin/views/ApprovalsView.vue'
 import debug from './debug'
 import api from './_api'
 import config from './config'
@@ -77,7 +79,9 @@ const run = async () => {
       { name: 'admin_games', path: '/admin/games', component: AdminGames, meta: { admin: true, title: 'Admin - Games' } },
       { name: 'admin_users', path: '/admin/users', component: AdminUsers, meta: { admin: true, title: 'Admin - Users' } },
       { name: 'admin_images', path: '/admin/images', component: AdminImages, meta: { admin: true, title: 'Admin - Images' } },
+      { name: 'admin_approvals', path: '/admin/approvals', component: AdminApprovals, meta: { admin: true, title: 'Admin - Approvals' } },
       { name: 'admin_groups', path: '/admin/groups', component: AdminGroups, meta: { admin: true, title: 'Admin - Groups' } },
+      { name: 'admin_uploaders', path: '/admin/uploaders', component: AdminUploaders, meta: { admin: true, title: 'Admin - Uploaders' } },
       { name: 'admin_announcements', path: '/admin/announcements', component: AdminAnnouncements, meta: { admin: true, title: 'Admin - Announcements' } },
       { name: 'admin_featured', path: '/admin/featured', component: AdminFeatured, meta: { admin: true, title: 'Admin - Featured' } },
       { name: 'admin_featured_edit', path: '/admin/featured/:id', component: AdminFeaturedEdit, meta: { admin: true, title: 'Admin - Featured - Edit' } },

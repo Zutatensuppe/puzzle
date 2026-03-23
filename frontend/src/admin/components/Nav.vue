@@ -13,6 +13,12 @@
       Images
     </v-btn>
     <v-btn
+      :to="{name: 'admin_approvals'}"
+      prepend-icon="mdi-check-decagram"
+    >
+      Approvals
+    </v-btn>
+    <v-btn
       :to="{name: 'admin_users'}"
       prepend-icon="mdi-account"
     >
@@ -23,6 +29,12 @@
       prepend-icon="mdi-account-group"
     >
       Groups
+    </v-btn>
+    <v-btn
+      :to="{name: 'admin_uploaders'}"
+      prepend-icon="mdi-upload"
+    >
+      Uploaders
     </v-btn>
     <v-btn
       :to="{name: 'admin_announcements'}"

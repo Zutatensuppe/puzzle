@@ -57,6 +57,7 @@ describe('GameService', () => {
         reported: 0,
         nsfw: false,
         state: 'approved',
+        rejectReason: '',
       }
 
       const mockGameRow: GameRow = {
@@ -142,6 +143,7 @@ describe('GameService', () => {
         reported: 0,
         nsfw: false,
         state: 'approved',
+        rejectReason: '',
       }
 
       // Create a reference puzzle using the correct seed (gameId + gameStartedTime)

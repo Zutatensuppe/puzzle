@@ -54,6 +54,9 @@ export interface Config {
   canny: CannyConfig
   mail: MailConfig
   discord: DiscordConfig
+  trust?: {
+    threshold: number
+  }
 }
 
 const init = (): Config => {

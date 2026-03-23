@@ -65,6 +65,7 @@ export class Images {
       reported: row.reported,
       nsfw: !!row.nsfw,
       state: row.state,
+      rejectReason: row.reject_reason,
     }
   }
 

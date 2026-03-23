@@ -123,6 +123,8 @@ export class Users {
         created: new Date(),
         name: '',
         email: '',
+        trusted: 0,
+        trust_manually_set: 0,
       })
       data = { token: null, user, user_type: 'guest' }
     }

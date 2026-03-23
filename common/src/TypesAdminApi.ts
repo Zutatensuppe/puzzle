@@ -1,4 +1,4 @@
-import type { Announcement, FeaturedRow, FeaturedRowWithCollections, FeaturedTeaserRow, FixPiecesResult, GameRowWithImageAndUser, ImageInfo, ImageRowWithCount, MergeClientIdsIntoUserResult, Pagination, UserGroupRow, UserRow } from './Types'
+import type { Announcement, FeaturedRow, FeaturedRowWithCollections, FeaturedTeaserRow, FixPiecesResult, GameRowWithImageAndUser, ImageInfo, ImageRowWithCount, MergeClientIdsIntoUserResult, Pagination, UploaderInfo, UserGroupRow, UserRow } from './Types'
 
 export type ErrorResponseData = {
   error: string
@@ -62,6 +62,18 @@ export type PostUsersMergeClientIdsIntoUsersResponseData = MergeClientIdsIntoUse
 export type PostGamesFixPiecesResponseData = FixPiecesResult
 
 export type GetGroupsResponseData = UserGroupRow[]
+
+export type GetUploadersResponseData = {
+  items: UploaderInfo[]
+  pagination: Pagination
+} | ErrorResponseData
+
+export type SetUserTrustResponseData = AcknowledgeResponseData | ErrorResponseData
+
+export type RecomputeTrustResponseData = {
+  ok: true
+  count: number
+} | ErrorResponseData
 
 export type GetAnnouncementsResponseData = Announcement[]
 

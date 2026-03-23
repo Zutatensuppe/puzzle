@@ -44,5 +44,8 @@
       "guildId": "GUILD/SERVER ID",
       "channelId": "CHANNEL ID"
     }
+  },
+  "trust": {
+    "threshold": 5
   }
 }

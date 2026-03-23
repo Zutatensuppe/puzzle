@@ -4,9 +4,10 @@ import type { Server } from '../../../Server'
 import { MergeClientIdsIntoUser } from '../../../admin-tools/MergeClientIdsIntoUser'
 import GameLog from '../../../GameLog'
 import { FixPieces } from '../../../admin-tools/FixPieces'
-import type { Api, FeaturedId, FeaturedTeaserRow, GameId, ImageId, ServerInfo } from '@common/Types'
+import type { Api, FeaturedId, FeaturedTeaserRow, GameId, ImageId, ServerInfo, UserId } from '@common/Types'
 import { newJSONDateString } from '@common/Util'
 import GameCommon from '@common/GameCommon'
+import config from '../../../Config'
 
 export default function createRouter(
   server: Server,
@@ -86,6 +87,20 @@ export default function createRouter(
     res.send(responseData)
   })
 
+  router.get('/images/pending', async (req, res) => {
+    try {
+      const { offset, limit } = getPaginationParams(req)
+      const { items, total } = await server.repos.images.getPendingApprovals(offset, limit)
+      const responseData: Api.Admin.GetImagesResponseData = {
+        items,
+        pagination: { total, offset, limit },
+      }
+      res.send(responseData)
+    } catch (error) {
+      res.status(400).send(createErrorResponseData(error))
+    }
+  })
+
   router.get('/images', async (req, res) => {
     try {
       const { offset, limit } = getPaginationParams(req)
@@ -103,14 +118,18 @@ export default function createRouter(
         tags = tagsCsv.split(',').map(tag => tag.trim())
       }
 
+      const uploaderUserIdRaw = req.query.uploaderUserId ? parseInt(String(req.query.uploaderUserId), 10) : undefined
+      const uploaderUserId = uploaderUserIdRaw && !isNaN(uploaderUserIdRaw) ? uploaderUserIdRaw as UserId : undefined
+
       const total = await server.repos.images.count()
+      const filter: { ids: ImageId[], tags: string[], uploaderUserId?: UserId } = { ids, tags }
+      if (uploaderUserId) {
+        filter.uploaderUserId = uploaderUserId
+      }
       const items = await server.repos.images.getWithGameCount({
         offset,
         limit,
-        filter: {
-          ids,
-          tags,
-        },
+        filter,
       })
       const responseData: Api.Admin.GetImagesResponseData = {
         items,
@@ -209,6 +228,9 @@ export default function createRouter(
     // delete from storage
     await server.images.deleteImagesFromStorage(image.filename)
 
+    const threshold = config.trust?.threshold ?? 5
+    await server.repos.users.recomputeTrust(image.uploader_user_id, threshold)
+
     const responseData: Api.Admin.DeleteImageResponseData = { ok: true }
     res.send(responseData)
   })
@@ -246,6 +268,9 @@ export default function createRouter(
       // update leaderboards, as private games are excluded there they may have changed
       await server.repos.leaderboard.updateLeaderboards()
 
+      const threshold = config.trust?.threshold ?? 5
+      await server.repos.users.recomputeTrust(image.uploader_user_id, threshold)
+
       const responseData: Api.Admin.SetImagePrivateResponseData = { ok: true }
       res.send(responseData)
     } catch (error) {
@@ -268,6 +293,9 @@ export default function createRouter(
         { id },
       )
 
+      const threshold = config.trust?.threshold ?? 5
+      await server.repos.users.recomputeTrust(image.uploader_user_id, threshold)
+
       const responseData: Api.Admin.ApproveImageResponseData = { ok: true }
       res.send(responseData)
     } catch (error) {
@@ -275,7 +303,7 @@ export default function createRouter(
     }
   })
 
-  router.post('/images/:id/_reject', async (req, res) => {
+  router.post('/images/:id/_reject', express.json(), async (req, res) => {
     try {
       const id = parseInt(req.params.id, 10) as ImageId
       const image = await server.repos.images.get({ id })
@@ -285,10 +313,14 @@ export default function createRouter(
         return
       }
 
+      const rejectReason = req.body?.reason || ''
       await server.repos.images.update(
-        { state: 'rejected' },
+        { state: 'rejected', reject_reason: rejectReason },
         { id },
       )
+
+      const threshold = config.trust?.threshold ?? 5
+      await server.repos.users.recomputeTrust(image.uploader_user_id, threshold)
 
       const responseData: Api.Admin.RejectImageResponseData = { ok: true }
       res.send(responseData)
@@ -374,6 +406,66 @@ export default function createRouter(
     void server.discord.announce(`**${title}**\n${announcement.message}`)
     const responseData: Api.Admin.PostAnnouncementsResponseData = { announcement }
     res.send(responseData)
+  })
+
+  router.get('/uploaders', async (req, res) => {
+    try {
+      const { offset, limit } = getPaginationParams(req)
+      const result = await server.repos.images.getUploadersWithStats(offset, limit)
+      const responseData: Api.Admin.GetUploadersResponseData = result
+      res.send(responseData)
+    } catch (error) {
+      res.status(400).send(createErrorResponseData(error))
+    }
+  })
+
+  router.post('/users/:id/_trust', async (req, res) => {
+    try {
+      const id = parseInt(req.params.id, 10) as UserId
+      await server.repos.users.setTrusted(id, true)
+      const responseData: Api.Admin.SetUserTrustResponseData = { ok: true }
+      res.send(responseData)
+    } catch (error) {
+      res.status(400).send(createErrorResponseData(error))
+    }
+  })
+
+  router.post('/users/:id/_untrust', async (req, res) => {
+    try {
+      const id = parseInt(req.params.id, 10) as UserId
+      await server.repos.users.setTrusted(id, false)
+      const responseData: Api.Admin.SetUserTrustResponseData = { ok: true }
+      res.send(responseData)
+    } catch (error) {
+      res.status(400).send(createErrorResponseData(error))
+    }
+  })
+
+  router.post('/users/:id/_reset_trust', async (req, res) => {
+    try {
+      const id = parseInt(req.params.id, 10) as UserId
+      await server.repos.users.resetTrustToAuto(id)
+      const threshold = config.trust?.threshold ?? 5
+      await server.repos.users.recomputeTrust(id, threshold)
+      const responseData: Api.Admin.SetUserTrustResponseData = { ok: true }
+      res.send(responseData)
+    } catch (error) {
+      res.status(400).send(createErrorResponseData(error))
+    }
+  })
+
+  router.post('/uploaders/_recompute_trust', async (_req, res) => {
+    try {
+      const threshold = config.trust?.threshold ?? 5
+      const uploaderIds = await server.repos.images.getAllUploaderIds()
+      for (const uploaderId of uploaderIds) {
+        await server.repos.users.recomputeTrust(uploaderId, threshold)
+      }
+      const responseData: Api.Admin.RecomputeTrustResponseData = { ok: true, count: uploaderIds.length }
+      res.send(responseData)
+    } catch (error) {
+      res.status(400).send(createErrorResponseData(error))
+    }
   })
 
   return router

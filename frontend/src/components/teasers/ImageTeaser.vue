@@ -20,6 +20,7 @@
         <div
           v-if="imageStateInfo"
           :class="`imageteaser-info ${imageStateInfo.class}`"
+          :title="imageStateInfo.title"
         >
           <v-icon :icon="imageStateInfo.icon" /> {{ imageStateInfo.text }}
         </div>
@@ -139,7 +140,7 @@ const canEdit = computed((): boolean => {
   return me.value.id === props.image.uploaderUserId
 })
 
-const imageStateInfo = computed((): { class: string, text: string, icon: string } | null => {
+const imageStateInfo = computed((): { class: string, text: string, title?: string, icon: string } | null => {
   if (props.image.private) {
     return {
       class: 'image-is-private-info',
@@ -160,6 +161,7 @@ const imageStateInfo = computed((): { class: string, text: string, icon: string 
     return {
       class: 'image-is-rejected-info',
       text: 'Image rejected',
+      title: props.image.rejectReason || '',
       icon: 'mdi-close-circle-outline',
     }
   }

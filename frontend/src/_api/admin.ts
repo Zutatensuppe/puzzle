@@ -86,8 +86,17 @@ const getImages = async (data: {
   offset: number
   ids?: ImageId[]
   tags?: string[]
+  uploaderUserId?: UserId
 }): Promise<Api.Admin.GetImagesResponseData> => {
   const res = await xhr.get<Api.Admin.GetImagesResponseData>(`/admin/api/images${Util.asQueryArgs(data)}`)
+  return await res.json()
+}
+
+const getPendingImages = async (data: {
+  limit: number
+  offset: number
+}): Promise<Api.Admin.GetImagesResponseData> => {
+  const res = await xhr.get<Api.Admin.GetImagesResponseData>(`/admin/api/images/pending${Util.asQueryArgs(data)}`)
   return await res.json()
 }
 
@@ -175,9 +184,11 @@ const approveImage = async (
 
 const rejectImage = async (
   id: ImageId,
+  reason?: string,
 ): Promise<Api.Admin.RejectImageResponseData> => {
   const res = await xhr.post<Api.Admin.RejectImageResponseData>(`/admin/api/images/${id}/_reject`, {
     headers: JSON_HEADERS,
+    body: JSON.stringify({ reason: reason || '' }),
   })
   return await res.json()
 }
@@ -196,6 +207,48 @@ const getGroups = async (
   return await res.json()
 }
 
+const getUploaders = async (data: {
+  limit: number
+  offset: number
+}): Promise<Api.Admin.GetUploadersResponseData> => {
+  const res = await xhr.get<Api.Admin.GetUploadersResponseData>(`/admin/api/uploaders${Util.asQueryArgs(data)}`)
+  return await res.json()
+}
+
+const trustUser = async (
+  id: UserId,
+): Promise<Api.Admin.SetUserTrustResponseData> => {
+  const res = await xhr.post<Api.Admin.SetUserTrustResponseData>(`/admin/api/users/${id}/_trust`, {
+    headers: JSON_HEADERS,
+  })
+  return await res.json()
+}
+
+const untrustUser = async (
+  id: UserId,
+): Promise<Api.Admin.SetUserTrustResponseData> => {
+  const res = await xhr.post<Api.Admin.SetUserTrustResponseData>(`/admin/api/users/${id}/_untrust`, {
+    headers: JSON_HEADERS,
+  })
+  return await res.json()
+}
+
+const resetUserTrust = async (
+  id: UserId,
+): Promise<Api.Admin.SetUserTrustResponseData> => {
+  const res = await xhr.post<Api.Admin.SetUserTrustResponseData>(`/admin/api/users/${id}/_reset_trust`, {
+    headers: JSON_HEADERS,
+  })
+  return await res.json()
+}
+
+const recomputeTrust = async (): Promise<Api.Admin.RecomputeTrustResponseData> => {
+  const res = await xhr.post<Api.Admin.RecomputeTrustResponseData>('/admin/api/uploaders/_recompute_trust', {
+    headers: JSON_HEADERS,
+  })
+  return await res.json()
+}
+
 export default {
   getAnnouncements,
   postAnnouncement,
@@ -209,6 +262,7 @@ export default {
   saveFeatured,
   saveFeaturedTeasers,
   getImages,
+  getPendingImages,
   getImage,
   deleteImage,
   setImagePrivate,
@@ -218,4 +272,9 @@ export default {
   getServerInfo,
   mergeClientIdsIntoUser,
   fixPieces,
+  getUploaders,
+  trustUser,
+  untrustUser,
+  resetUserTrust,
+  recomputeTrust,
 }

@@ -382,6 +382,7 @@ export interface ImageInfo {
   reported: number
   nsfw: boolean
   state: 'pending_approval' | 'rejected' | 'approved'
+  rejectReason: string
 }
 
 export const defaultImageInfo = (): ImageInfo => ({
@@ -402,6 +403,7 @@ export const defaultImageInfo = (): ImageInfo => ({
   reported: 0,
   nsfw: false,
   state: 'pending_approval',
+  rejectReason: '',
 })
 
 export interface PuzzleInfo {
@@ -870,6 +872,7 @@ export interface ImageRow {
   nsfw: number
   checksum: string | null
   state: 'pending_approval' | 'rejected' | 'approved'
+  reject_reason: string
 }
 
 export interface ImageXTagRow {
@@ -892,12 +895,25 @@ export interface ImageRowWithCount extends ImageRow {
   uploader_user_name: string
 }
 
+export interface UploaderInfo {
+  id: UserId
+  name: string
+  trusted: number
+  trustManuallySet: number
+  approvedCount: number
+  rejectedCount: number
+  pendingCount: number
+  totalCount: number
+}
+
 export interface UserRow {
   id: UserId
   created: JSONDateString
   client_id: ClientId
   name: string
   email: string
+  trusted: number
+  trust_manually_set: number
 }
 
 export interface UserGroupRow {
