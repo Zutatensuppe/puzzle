@@ -67,6 +67,8 @@
           v-model="filters.search"
           density="compact"
           label="Type in keywords..."
+          :hint="searchHint"
+          persistent-hint
         />
       </div>
     </v-container>
@@ -84,7 +86,7 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, onBeforeUnmount, ref, watch } from 'vue'
+import { computed, onMounted, onBeforeUnmount, ref, watch } from 'vue'
 import { ImageSearchSort, isImageSearchSort } from '@common/Types'
 import type { Api, GameSettings, ImageInfo, Tag, FeaturedRowWithCollections } from '@common/Types'
 import api from '../_api'
@@ -171,7 +173,21 @@ const loadImages = async () => {
   sentinelActive.value = true
 }
 
+const MIN_SEARCH_LENGTH = 3
+
+const searchHint = computed(() => {
+  const search = filters.value.search.trim()
+  if (search.length > 0 && search.length < MIN_SEARCH_LENGTH) {
+    return `Type at least ${MIN_SEARCH_LENGTH} characters to search`
+  }
+  return ''
+})
+
 const filtersChanged = async () => {
+  const search = filters.value.search.trim()
+  if (search.length > 0 && search.length < MIN_SEARCH_LENGTH) {
+    return
+  }
   await loadImages()
   void router.push({ name: 'new-game', query: { sort: filters.value.sort, search: filters.value.search }})
   sentinelActive.value = true
@@ -267,6 +283,11 @@ const onNewGameClick = async (gameSettings: GameSettings) => {
 const tryLoadMore = async () => {
   if (currentNewGameDataRequest.value || currentImagesRequest.value) {
     // still loading
+    return
+  }
+
+  const search = filters.value.search.trim()
+  if (search.length > 0 && search.length < MIN_SEARCH_LENGTH) {
     return
   }
 
