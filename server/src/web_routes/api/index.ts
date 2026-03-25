@@ -63,7 +63,9 @@ export default function createRouter(
       const user: UserRow = req.userInfo.user
       const groups = await server.users.getGroups(user.id)
       const settings = await server.users.getCompleteUserSettings(user.id)
-      const baseUrl = `${req.protocol}://${req.get('host')}`
+      const proto = req.get('x-forwarded-proto') || req.protocol
+      const host = req.get('x-forwarded-host') || req.get('host')
+      const baseUrl = `${proto}://${host}`
       const avatarUrl = settings.avatar
         ? `${baseUrl}${resizeUrl(settings.avatar.url, 64, 64, 'cover')}`
         : null
