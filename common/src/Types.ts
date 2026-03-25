@@ -687,8 +687,9 @@ export interface LivestreamsRow {
   viewers: number
 }
 
-export interface CannyConfig {
+export interface KaeruConfig {
   sso_private_key: string
+  base_url: string
 }
 
 export interface TwitchConfig {
@@ -770,7 +771,7 @@ export interface Me {
   created: JSONDateString
   clientId: ClientId
   type: 'guest' | 'user'
-  cannyToken: string | null
+  kaeruToken: string | null
   groups: string[]
   avatar: UserAvatar | null
   nsfwUnblurred: boolean

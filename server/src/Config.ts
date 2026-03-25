@@ -1,7 +1,7 @@
 import { realpathSync, existsSync, readFileSync } from 'fs'
 import dotenv from 'dotenv'
 import { logger } from '@common/Util'
-import type { CannyConfig, DiscordConfig, MailConfig, TwitchConfig } from '@common/Types'
+import type { DiscordConfig, KaeruConfig, MailConfig, TwitchConfig } from '@common/Types'
 
 dotenv.config()
 
@@ -51,7 +51,7 @@ export interface Config {
   auth: {
     twitch: TwitchConfig
   }
-  canny: CannyConfig
+  kaeru: KaeruConfig
   mail: MailConfig
   discord: DiscordConfig
   trust?: {

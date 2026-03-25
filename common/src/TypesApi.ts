@@ -93,6 +93,7 @@ export type AuthLocalResponseData = {
 
 export type ConfigResponseData = {
   WS_ADDRESS: string
+  kaeruBaseUrl: string
 }
 
 export interface NewGameDataResponseData {

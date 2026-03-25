@@ -8,8 +8,8 @@ import FeaturedView from './views/FeaturedView.vue'
 import SettingsView from './views/SettingsView.vue'
 import Game from './views/Game.vue'
 import Replay from './views/Replay.vue'
-import CannyBugReportsView from './views/CannyBugReports.vue'
-import CannyFeatureRequestsView from './views/CannyFeatureRequests.vue'
+import KaeruBugReportsView from './views/KaeruBugReports.vue'
+import KaeruFeatureRequestsView from './views/KaeruFeatureRequests.vue'
 import PublicUserProfile from './views/PublicUserProfile.vue'
 
 import Icon from './components/Icon.vue'
@@ -63,12 +63,12 @@ const run = async () => {
       { name: 'user', path: '/user/:id', component: PublicUserProfile, meta: { title: 'User Profile' } },
       { name: 'settings', path: '/settings', component: SettingsView, meta: { title: 'Settings' } },
 
-      // Canny.io feedback
+      // Feedback (Kaeru)
       { path: '/feedback', redirect: { name: 'bug-reports' } },
-      { name: 'bug-reports', path: '/feedback/bug-reports', component: CannyBugReportsView, meta: { title: 'Bug Reports' } },
-      { path: '/feedback/bug-reports/:catchAll(.*)', component: CannyBugReportsView, meta: { title: 'Bug Reports' } },
-      { name: 'feature-requests', path: '/feedback/feature-requests', component: CannyFeatureRequestsView, meta: { title: 'Feature Requests' } },
-      { path: '/feedback/feature-requests/:catchAll(.*)', component: CannyFeatureRequestsView, meta: { title: 'Feature Requests' } },
+      { name: 'bug-reports', path: '/feedback/bug-reports', component: KaeruBugReportsView, meta: { title: 'Bug Reports' } },
+      { path: '/feedback/bug-reports/:catchAll(.*)', component: KaeruBugReportsView, meta: { title: 'Bug Reports' } },
+      { name: 'feature-requests', path: '/feedback/feature-requests', component: KaeruFeatureRequestsView, meta: { title: 'Feature Requests' } },
+      { path: '/feedback/feature-requests/:catchAll(.*)', component: KaeruFeatureRequestsView, meta: { title: 'Feature Requests' } },
 
       // Ingame
       { name: 'game', path: '/g/:id', component: Game, meta: { ingame: true } },
