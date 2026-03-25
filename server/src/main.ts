@@ -1,7 +1,7 @@
 import config from './Config'
 import Db from './lib/Db'
 import Mail from './Mail'
-import { Canny } from './Canny'
+import { Kaeru } from './Kaeru'
 import { Discord } from './Discord'
 import { Server } from './Server'
 import { GameSockets } from './GameSockets'
@@ -25,7 +25,7 @@ const run = async () => {
 
   const repos = new Repos(db)
   const mail = new Mail(config.mail, config.http.publicBaseUrl)
-  const canny = new Canny(config.canny)
+  const kaeru = new Kaeru(config.kaeru)
   const discord = new Discord(config.discord)
   const gameSockets = new GameSockets()
   const imageExif = new ImageExif()
@@ -41,7 +41,7 @@ const run = async () => {
     db,
     repos,
     mail,
-    canny,
+    kaeru,
     discord,
     gameSockets,
     gameService,

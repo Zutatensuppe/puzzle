@@ -17,7 +17,7 @@ import createImageServiceRouter from './web_routes/image-service'
 import cookieParser from 'cookie-parser'
 import type { Users } from './Users'
 import type Mail from './Mail'
-import type { Canny } from './Canny'
+import type { Kaeru } from './Kaeru'
 import type { Discord } from './Discord'
 import type Db from './lib/Db'
 import type { Server as HttpServer } from 'http'
@@ -65,7 +65,7 @@ export class Server {
     public readonly db: Db,
     public readonly repos: Repos,
     public readonly mail: Mail,
-    public readonly canny: Canny,
+    public readonly kaeru: Kaeru,
     public readonly discord: Discord,
     public readonly gameSockets: GameSockets,
     public readonly gameService: GameService,

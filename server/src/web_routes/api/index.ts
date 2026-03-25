@@ -12,6 +12,7 @@ import config from '../../Config'
 import express from 'express'
 import GameLog from '../../GameLog'
 import request from 'request'
+import { resizeUrl } from '@common/ImageService'
 import Time from '@common/Time'
 import Util, { isEncodedGameLegacy, logger, newJSONDateString, uniqId } from '@common/Util'
 import { COOKIE_TOKEN, generateSalt, generateToken, passwordHash } from '../../Auth'
@@ -62,6 +63,10 @@ export default function createRouter(
       const user: UserRow = req.userInfo.user
       const groups = await server.users.getGroups(user.id)
       const settings = await server.users.getCompleteUserSettings(user.id)
+      const baseUrl = `${req.protocol}://${req.get('host')}`
+      const avatarUrl = settings.avatar
+        ? `${baseUrl}${resizeUrl(settings.avatar.url, 64, 64, 'cover')}`
+        : null
       const responseData: Api.MeResponseData = {
         user: {
           id: user.id,
@@ -69,7 +74,7 @@ export default function createRouter(
           clientId: user.client_id,
           created: user.created,
           type: req.userInfo.user_type,
-          cannyToken: server.canny.createToken(user),
+          kaeruToken: server.kaeru.createToken(user, avatarUrl),
           groups: groups.map(g => g.name),
           avatar: settings.avatar,
           nsfwUnblurred: settings.nsfwUnblurred,
@@ -440,6 +445,7 @@ export default function createRouter(
   router.get('/conf', (_req, res): void => {
     const responseData: Api.ConfigResponseData = {
       WS_ADDRESS: config.ws.connectstring,
+      kaeruBaseUrl: config.kaeru.base_url,
     }
     res.send(responseData)
   })
