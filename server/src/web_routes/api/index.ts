@@ -21,6 +21,7 @@ import fs from '../../lib/FileSystem'
 import FileSystem from '../../lib/FileSystem'
 import { UploadRequestsManager } from '../../UploadRequestsManager'
 import loggedInUsersRouter from './logged-in-users'
+import { TwitchAuth } from './TwitchAuth'
 
 const log = logger('web_routes/api/index.ts')
 
@@ -95,143 +96,42 @@ export default function createRouter(
     return
   })
 
+  const twitchAuth = new TwitchAuth(server, config.auth.twitch)
+
   // login via twitch (callback url called from twitch after authentication)
   router.get('/auth/twitch/redirect_uri', async (req, res): Promise<void> => {
-    if (!req.query.code) {
-      // in error case:
-      // http://localhost:3000/
-      // ?error=access_denied
-      // &error_description=The+user+denied+you+access
-      // &state=c3ab8aa609ea11e793ae92361f002671
-      res.status(403).send({ reason: req.query })
-      return
-    }
-
-    // in success case:
-    // http://localhost:3000/
-    // ?code=gulfwdmys5lsm6qyz4xiz9q32l10
-    // &scope=channel%3Amanage%3Apolls+channel%3Aread%3Apolls
-    // &state=c3ab8aa609ea11e793ae92361f002671
-    const body = {
-      client_id: config.auth.twitch.client_id,
-      client_secret: config.auth.twitch.client_secret,
-      code: req.query.code,
-      grant_type: 'authorization_code',
-      redirect_uri: '',
-    }
-    const redirectUris = [
-      `${config.http.publicBaseUrl}/api/auth/twitch/redirect_uri`,
-      `${req.protocol}://${req.headers.host}/api/auth/twitch/redirect_uri`,
-    ]
-    for (const redirectUri of redirectUris) {
-      body.redirect_uri = redirectUri
-      const tokenRes = await fetch(`https://id.twitch.tv/oauth2/token${Util.asQueryArgs(body)}`, {
-        method: 'POST',
-      })
-      if (!tokenRes.ok) {
-        continue
-      }
-
-      interface TwitchOauthTokenResponseData {
-        access_token: string
-        refresh_token: string
-        expires_in: number
-        scope: string[]
-        token_type: string
-      }
-      const tokenData = await tokenRes.json() as TwitchOauthTokenResponseData
-
-      // get user
-
-      const userRes = await fetch(`https://api.twitch.tv/helix/users`, {
-        headers: {
-          'Client-ID': config.auth.twitch.client_id,
-          'Authorization': `Bearer ${tokenData.access_token}`,
-        },
-      })
-      if (!userRes.ok) {
-        continue
-      }
-
-      const userData = await userRes.json()
-      const provider_name = 'twitch'
-      const provider_id = userData.data[0].id
-      const provider_email = userData.data[0].email
-
-      const identity = await server.users.getIdentity({
-        provider_name,
-        provider_id,
-      })
-
-      // in the auth/twitch request, no client_id header is sent, so we also
-      // cannot use req.user
-      // instead, the client_id is passed via req.query.state (but it can be empty)
-      const client_id = String(req.query.state || '') as ClientId
-      // first try to find user by the identity
-      // the client_id should only be used if no identity is found
-      let user: UserRow | null = null
-      if (identity) {
-        user = await server.users.getUserByIdentity(identity)
-      }
-      if (!user) {
-        user = await server.users.getUser({ client_id })
-      }
-
-      if (!user) {
-        user = await server.users.createUser({
-          client_id: await determineNewUserClientId(client_id),
-          // TODO: date gets converted to string automatically. fix this type hint
-          // @ts-ignore
-          created: new Date(),
-          email: provider_email,
-          name: userData.data[0].display_name,
-          trusted: 0,
-          trust_manually_set: 0,
-        })
-      } else {
-        let updateNeeded = false
-        if (!user.name || user.name !== userData.data[0].display_name) {
-          user.name = userData.data[0].display_name
-          updateNeeded = true
-        }
-        if (!user.email) {
-          user.email = provider_email
-          updateNeeded = true
-        }
-        if (updateNeeded) {
-          await server.users.updateUser(user)
-        }
-      }
-
-      if (!identity) {
-        await server.repos.userIdentity.insert({
-          user_id: user.id,
-          provider_name,
-          provider_id,
-          provider_email,
-        })
-      } else {
-        let updateNeeded = false
-        if (identity.user_id !== user.id) {
-          // maybe we do not have to do this
-          identity.user_id = user.id
-          updateNeeded = true
-        }
-        if (!identity.provider_email) {
-          identity.provider_email = provider_email
-          updateNeeded = true
-        }
-        if (updateNeeded) {
-          await server.repos.userIdentity.update(identity)
-        }
-      }
-
-      await addAuthToken(user.id, res)
+    const sendSuccess = () => {
       res.send('<html><script>window.opener.handleAuthCallback();window.close();</script></html>')
-      return
+    }
+    const sendError = () => {
+      res.send('<html><script>window.opener.handleAuthCallbackError();window.close();</script></html>')
     }
 
-    res.status(403).send({ reason: req.query })
+    try {
+      if (!req.query.code) {
+        sendError()
+        return
+      }
+
+      const result = await twitchAuth.handle(
+        String(req.query.code),
+        String(req.query.state || ''),
+        [
+          `${config.http.publicBaseUrl}/api/auth/twitch/redirect_uri`,
+          `${req.protocol}://${req.headers.host}/api/auth/twitch/redirect_uri`,
+        ],
+      )
+
+      if (result.ok && result.userId) {
+        await addAuthToken(result.userId, res)
+        sendSuccess()
+      } else {
+        sendError()
+      }
+    } catch (e: unknown) {
+      log.error(e)
+      sendError()
+    }
   })
 
   // login via email + password

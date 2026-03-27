@@ -52,6 +52,10 @@ const run = async () => {
     await initUser()
     toast('Login successful!', 'success')
   }
+  // @ts-ignore
+  window.handleAuthCallbackError = () => {
+    toast('Login via Twitch failed. Please try again.', 'error')
+  }
 
   const router = VueRouter.createRouter({
     history: VueRouter.createWebHistory(),
