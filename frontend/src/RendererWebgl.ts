@@ -15,11 +15,19 @@ import type { Assets } from './Assets'
 import { FireworksShaderWrapper } from './webgl/FireworksShaderWrapper'
 import PuzzleGraphics from './PuzzleGraphics'
 import { GraphicsEnum } from '@common/Enums'
+import { AnimatedGifLoader } from './AnimatedGifLoader'
 
-const log = logger('Renderer.ts')
+const log = logger('RendererWebgl.ts')
 
 const puzzleBitmapCache: Record<string, HTMLCanvasElement> = {}
 let stencils: Record<EncodedPieceShape, ImageBitmap> | null = null
+
+interface GifAnimationState {
+  frames: HTMLCanvasElement[]
+  delays: number[]
+  currentFrame: number
+  lastFrameTime: number
+}
 
 export class RendererWebgl {
   public debug: boolean = false
@@ -34,6 +42,8 @@ export class RendererWebgl {
   private bgShaderWrapper!: BgShaderWrapper
   private playersShaderWrapper!: PlayersShaderWrapper
   private fireworksShaderWrapper!: FireworksShaderWrapper
+  
+  private gifAnimation: GifAnimationState | null = null
 
   constructor(
     protected readonly gameId: GameId,
@@ -55,15 +65,26 @@ export class RendererWebgl {
     this.gl.enable(this.gl.DEPTH_TEST)
     this.gl.depthFunc(this.gl.LESS)
 
+    const imageUrl = GameCommon.getImageUrl(this.gameId)
+    const imageId = GameCommon.getImageId(this.gameId)
+
+    console.log('RendererWebgl.init() - imageId:', imageId)
+
     console.time('load')
     if (!puzzleBitmapCache[this.gameId]) {
       puzzleBitmapCache[this.gameId] = await PuzzleGraphics.loadPuzzleBitmap(
         GameCommon.getPuzzle(this.gameId),
-        GameCommon.getImageUrl(this.gameId),
+        imageUrl,
         this.graphics,
       )
     }
     console.timeEnd('load')
+
+    // Try to load GIF frames - this will tell us if the image is animated
+    if (imageId) {
+      await this.loadGifFrames(imageId)
+    }
+
     console.time('stencils')
     if (!stencils) {
       // all stencils, in flat puzzle we dont need all of them but still
@@ -83,6 +104,74 @@ export class RendererWebgl {
 
     this.fireworksShaderWrapper = new FireworksShaderWrapper(this.gl, GameCommon.getRng(this.gameId))
     this.fireworksShaderWrapper.init()
+  }
+
+  private async loadGifFrames(imageId: number): Promise<void> {
+    try {
+      const gifLoader = AnimatedGifLoader.getInstance()
+      const gifFrames = await gifLoader.loadGifFrames(imageId)
+      
+      if (!gifFrames || gifFrames.length <= 1) {
+        log.log('No animation frames found or single frame GIF')
+        return
+      }
+
+      log.log(`Loading ${gifFrames.length} GIF frames for WebGL`)
+      
+      const frames: HTMLCanvasElement[] = []
+      const delays: number[] = []
+      
+      for (const frame of gifFrames) {
+        // Convert dataUrl to canvas
+        const img = await this.dataUrlToImage(frame.dataUrl)
+        const canvas = this.graphics.createCanvas(img.width, img.height)
+        const ctx = canvas.getContext('2d')!
+        ctx.drawImage(img, 0, 0)
+        frames.push(canvas)
+        delays.push(frame.delay)
+      }
+      
+      this.gifAnimation = {
+        frames,
+        delays,
+        currentFrame: 0,
+        lastFrameTime: performance.now(),
+      }
+      
+      log.log(`GIF animation initialized with ${frames.length} frames`)
+    } catch (e) {
+      log.error('Failed to load GIF frames for WebGL:', e)
+    }
+  }
+
+  private async dataUrlToImage(dataUrl: string): Promise<HTMLImageElement> {
+    return new Promise((resolve, reject) => {
+      const img = new Image()
+      img.onload = () => resolve(img)
+      img.onerror = reject
+      img.src = dataUrl
+    })
+  }
+
+  private updateGifAnimation(): void {
+    if (!this.gifAnimation) return
+    
+    const now = performance.now()
+    const timeSinceLastFrame = now - this.gifAnimation.lastFrameTime
+    const currentDelay = this.gifAnimation.delays[this.gifAnimation.currentFrame]
+    
+    if (timeSinceLastFrame >= currentDelay) {
+      this.gifAnimation.currentFrame = (this.gifAnimation.currentFrame + 1) % this.gifAnimation.frames.length
+      this.gifAnimation.lastFrameTime = now
+      
+      // Update the texture with the new frame
+      const currentFrameCanvas = this.gifAnimation.frames[this.gifAnimation.currentFrame]
+      this.piecesShaderWrapper.updatePuzzleTexture(currentFrameCanvas)
+    }
+  }
+
+  public hasGifAnimation(): boolean {
+    return this.gifAnimation !== null && this.gifAnimation.frames.length > 1
   }
 
   async loadTableTexture(settings: PlayerSettingsData): Promise<void> {
@@ -147,6 +236,9 @@ export class RendererWebgl {
     renderPreview: boolean,
   ) {
     if (this.debug) Debug.checkpoint_start(0)
+
+    // Update GIF animation if present
+    this.updateGifAnimation()
 
     // ---------------------------------------------------------------
     // ---------------------------------------------------------------

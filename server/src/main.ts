@@ -16,6 +16,7 @@ import { ImageExif } from './ImageExif'
 import { Repos } from './repo/Repos'
 import { Moderation } from './Moderation'
 import { Workers } from './workers/Workers'
+import { GifProcessor } from './GifProcessor'
 import { logger } from '@common/Util'
 
 const run = async () => {
@@ -29,8 +30,9 @@ const run = async () => {
   const discord = new Discord(config.discord)
   const gameSockets = new GameSockets()
   const imageExif = new ImageExif()
-  const images = new Images(repos.images, imageExif)
   const imageResize = new ImageResize(imageExif)
+  const gifProcessor = new GifProcessor()
+  const images = new Images(repos.images, imageExif, gifProcessor, repos.imageGifFrames)
   const puzzleService = new PuzzleService()
   const gameService = new GameService(puzzleService)
   const twitch = new Twitch(config.auth.twitch)

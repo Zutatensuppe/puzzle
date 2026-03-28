@@ -110,7 +110,7 @@ export function drawPuzzlePreview(
   ctx.restore()
 }
 
-function loadPuzzleBitmaps(
+export function loadPuzzleBitmaps(
   image: HTMLCanvasElement,
   puzzle: Puzzle,
   graphics: Graphics,

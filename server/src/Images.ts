@@ -1,14 +1,17 @@
 import probe from 'probe-image-size'
-import fs from 'fs'
+import fs from 'fs/promises'
+import fsSync from 'fs'
 
 import config from './Config'
 import type { Dim } from '@common/Geometry'
 import Util, { logger } from '@common/Util'
-import type { Tag, ImageInfo, UserId, ImageId, ImageRowWithCount, TagRow, ImageRow } from '@common/Types'
+import type { ImageRow, ImageInfo, ImageId, UserId, Tag, ImageRowWithCount, TagRow } from '@common/Types'
 import type { ImagesRepo } from './repo/ImagesRepo'
 import type { WhereRaw } from './lib/Db'
 import type { ImageExif } from './ImageExif'
 import FileSystem from './lib/FileSystem'
+import type { GifProcessor } from './GifProcessor'
+import type {ImageGifFramesRepo, CreateImageGifFrameRow, ImageGifFrameRow} from './repo/ImageGifFramesRepo'
 
 const log = logger('Images.ts')
 
@@ -16,6 +19,8 @@ export class Images {
   constructor(
     private readonly imagesRepo: ImagesRepo,
     private readonly imageExif: ImageExif,
+    private readonly gifProcessor?: GifProcessor,
+    private readonly imageGifFramesRepo?: ImageGifFramesRepo,
   ) {}
 
   public async getAllTags(): Promise<Tag[]> {
@@ -92,7 +97,12 @@ export class Images {
   }
 
   public async getDimensions(imagePath: string): Promise<Dim> {
-    const dimensions = await probe(fs.createReadStream(imagePath))
+    // Check if it's a GIF and use GifProcessor if available
+    if (this.gifProcessor && await this.gifProcessor.isGif(imagePath)) {
+      return await this.gifProcessor.getGifDimensions(imagePath)
+    }
+
+    const dimensions = await probe(fsSync.createReadStream(imagePath))
     const w = dimensions.width || 0
     const h = dimensions.height || 0
 
@@ -171,5 +181,72 @@ export class Images {
     } catch {
       log.error('unable to delete image', fullImage)
     }
+  }
+
+  private async extractAndCacheGifFrames(imageRow: ImageRow): Promise<ImageGifFrameRow[] | null> {
+    if (!this.gifProcessor || !this.imageGifFramesRepo) {
+      log.error(`extractAndCacheGifFrames: gifProcessor or imageGifFramesRepo not available`)
+      return null
+    }
+
+    const imagePath = this.getImagePath(imageRow.filename)
+    if (!await this.gifProcessor.isGif(imagePath)) {
+      log.error(`extractAndCacheGifFrames: ${imagePath} is not a GIF`)
+      return null
+    }
+
+    try {
+      const frames = await this.gifProcessor.extractFrames(imagePath)
+      if (!frames.length) {
+        log.error(`extractAndCacheGifFrames: no frames extracted from ${imagePath}`)
+        return null
+      }
+
+      const frameRows: CreateImageGifFrameRow[] = []
+
+      for (let i = 0; i < frames.length; i++) {
+        const frameFilename = `${imageRow.filename}_frame_${i}.png`
+        const framePath = `${config.dir.CROP_DIR}/${frameFilename}`
+
+        await fs.writeFile(framePath, frames[i].buffer)
+
+        frameRows.push({
+          image_id: imageRow.id as ImageId,
+          frame_index: i,
+          filename: frameFilename,
+          delay_ms: frames[i].delay
+        })
+      }
+
+      await this.imageGifFramesRepo.insertMany(frameRows)
+
+      return await this.imageGifFramesRepo.getByImageId(imageRow.id as ImageId)
+    } catch (e) {
+      log.error('Error extracting GIF frames:', e)
+      return null
+    }
+  }
+
+  public async getGifFrames(imageId: ImageId): Promise<ImageGifFrameRow[] | null> {
+    if (!this.imageGifFramesRepo || !this.gifProcessor) {
+      log.error(`getGifFrames: imageGifFramesRepo or gifProcessor not available`)
+      return null
+    }
+
+    // Check cache first
+    const cached = await this.imageGifFramesRepo.getByImageId(imageId)
+    if (cached.length > 0) {
+      return cached
+    }
+
+    // Not cached yet — extract and cache on demand
+    const imageRow = await this.imagesRepo.get({ id: imageId })
+    if (!imageRow) {
+      log.error(`getGifFrames: no image found for id ${imageId}`)
+      return null
+    }
+
+    log.info(`getGifFrames: lazily extracting frames for image ${imageId} (${imageRow.filename})`)
+    return await this.extractAndCacheGifFrames(imageRow)
   }
 }
