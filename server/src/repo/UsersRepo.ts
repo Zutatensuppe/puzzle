@@ -79,6 +79,7 @@ export class UsersRepo {
         avatarId: null,
         nsfwActive: false,
         nsfwUnblurred: false,
+        hideAiImages: false,
       }
     }
     return {
@@ -86,6 +87,7 @@ export class UsersRepo {
       userId: row.user_id,
       nsfwActive: row.nsfw_active,
       nsfwUnblurred: row.nsfw_unblurred,
+      hideAiImages: row.hide_ai_images,
     }
   }
 
@@ -99,6 +101,7 @@ export class UsersRepo {
         avatar_id: userSettings.avatarId,
         nsfw_active: userSettings.nsfwActive,
         nsfw_unblurred: userSettings.nsfwUnblurred,
+        hide_ai_images: userSettings.hideAiImages,
       },
       ['user_id'],
     )

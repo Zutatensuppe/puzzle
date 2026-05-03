@@ -48,6 +48,15 @@ export type ApproveImageResponseData = AcknowledgeResponseData | ErrorResponseDa
 
 export type RejectImageResponseData = AcknowledgeResponseData | ErrorResponseData
 
+export type SetImageAiGeneratedResponseData = AcknowledgeResponseData | ErrorResponseData
+
+export type SetImageNsfwResponseData = AcknowledgeResponseData | ErrorResponseData
+
+export type DetectAiImagesResponseData = {
+  scanned: number
+  flagged: number
+} | ErrorResponseData
+
 export type GetImageResponseData = {
   image: ImageInfo
 } | ErrorResponseData

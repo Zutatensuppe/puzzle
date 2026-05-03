@@ -202,6 +202,7 @@ const upload = (
   formData.append('tags', data.tags)
   formData.append('isPrivate', String(data.isPrivate))
   formData.append('isNsfw', String(data.isNsfw))
+  formData.append('isAiGenerated', String(data.isAiGenerated))
   return xhr.post('/api/upload', {
     body: formData,
     onUploadProgress: (evt: ProgressEvent<XMLHttpRequestEventTarget>): void => {

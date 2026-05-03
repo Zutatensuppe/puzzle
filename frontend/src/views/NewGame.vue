@@ -18,9 +18,6 @@
           >
             Upload your image
           </v-btn>
-          <div class="text-disabled">
-            (The image you upload will be added to the public gallery.)
-          </div>
         </div>
       </v-col>
     </v-row>
@@ -44,33 +41,37 @@
       :class="{ blurred: currentDialog }"
       class="filters mb-2"
     >
-      <div>
-        <v-select
-          v-model="filters.sort"
-          class="sorting"
-          density="compact"
-          label="Sorting:"
-          item-title="title"
-          item-value="val"
-          :items="[
-            { val: ImageSearchSort.DATE_DESC, title: 'Newest first'},
-            { val: ImageSearchSort.DATE_ASC, title: 'Oldest first'},
-            { val: ImageSearchSort.ALPHA_ASC, title: 'A-Z'},
-            { val: ImageSearchSort.ALPHA_DESC, title: 'Z-A'},
-            { val: ImageSearchSort.GAME_COUNT_DESC, title: 'Most plays first'},
-            { val: ImageSearchSort.GAME_COUNT_ASC, title: 'Least plays first'},
-          ]"
-        />
-      </div>
-      <div>
-        <v-text-field
-          v-model="filters.search"
-          density="compact"
-          label="Type in keywords..."
-          :hint="searchHint"
-          persistent-hint
-        />
-      </div>
+      <v-text-field
+        v-model="filters.search"
+        class="filters-search"
+        density="compact"
+        label="Type in keywords..."
+        :hint="searchHint"
+        persistent-hint
+      />
+      <v-select
+        v-model="filters.sort"
+        class="sorting"
+        density="compact"
+        label="Sorting:"
+        item-title="title"
+        item-value="val"
+        :items="[
+          { val: ImageSearchSort.DATE_DESC, title: 'Newest first'},
+          { val: ImageSearchSort.DATE_ASC, title: 'Oldest first'},
+          { val: ImageSearchSort.ALPHA_ASC, title: 'A-Z'},
+          { val: ImageSearchSort.ALPHA_DESC, title: 'Z-A'},
+          { val: ImageSearchSort.GAME_COUNT_DESC, title: 'Most plays first'},
+          { val: ImageSearchSort.GAME_COUNT_ASC, title: 'Least plays first'},
+        ]"
+      />
+      <v-checkbox
+        v-model="filters.hideAiImages"
+        class="filter-checkbox"
+        density="compact"
+        :label="LABELS.HIDE_AI_IMAGES"
+        hide-details
+      />
     </v-container>
     <ImageLibrary
       :class="{ blurred: currentDialog }"
@@ -87,7 +88,7 @@
 
 <script setup lang="ts">
 import { computed, onMounted, onBeforeUnmount, ref, watch } from 'vue'
-import { ImageSearchSort, isImageSearchSort } from '@common/Types'
+import { ImageSearchSort, isImageSearchSort, LABELS } from '@common/Types'
 import type { Api, GameSettings, ImageInfo, Tag, FeaturedRowWithCollections } from '@common/Types'
 import api from '../_api'
 import type { XhrRequest } from '../_api/xhr'
@@ -100,8 +101,10 @@ import FeaturedButton from '../components/FeaturedButton.vue'
 import { useDialog } from '../useDialog'
 import { toast } from '../toast'
 import { uploadImage } from '../upload'
+import { useHideAiImages } from '../user'
 
 const router = useRouter()
+const { hideAiImages: hideAiImagesSetting } = useHideAiImages()
 
 const goToFeatured = async (featured: FeaturedRowWithCollections) => {
   if (featured.type === 'artist') {
@@ -111,9 +114,10 @@ const goToFeatured = async (featured: FeaturedRowWithCollections) => {
   }
 }
 
-const filters = ref<{ sort: ImageSearchSort, search: string }>({
+const filters = ref<{ sort: ImageSearchSort, search: string, hideAiImages: boolean }>({
   sort: ImageSearchSort.DATE_DESC,
   search: '',
+  hideAiImages: hideAiImagesSetting.value,
 })
 const offset = ref<number>(0)
 
@@ -157,6 +161,7 @@ const loadImages = async () => {
   const requestData: Api.NewGameDataRequestData = {
     sort: filters.value.sort,
     search: filters.value.search,
+    hideAiImages: filters.value.hideAiImages,
   }
   if (currentNewGameDataRequest.value) {
     currentNewGameDataRequest.value.abort()
@@ -296,6 +301,7 @@ const tryLoadMore = async () => {
     sort: filters.value.sort,
     search: filters.value.search,
     offset: offset.value,
+    hideAiImages: filters.value.hideAiImages,
   }
   currentImagesRequest.value = api.pub.images(requestData)
   let json: { images: ImageInfo[] }

@@ -166,9 +166,11 @@ const deleteImage = async (
 
 const setImagePrivate = async (
   id: ImageId,
+  value: boolean,
 ): Promise<Api.Admin.SetImagePrivateResponseData> => {
   const res = await xhr.post<Api.Admin.SetImagePrivateResponseData>(`/admin/api/images/${id}/_set_private`, {
     headers: JSON_HEADERS,
+    body: JSON.stringify({ value }),
   })
   return await res.json()
 }
@@ -189,6 +191,35 @@ const rejectImage = async (
   const res = await xhr.post<Api.Admin.RejectImageResponseData>(`/admin/api/images/${id}/_reject`, {
     headers: JSON_HEADERS,
     body: JSON.stringify({ reason: reason || '' }),
+  })
+  return await res.json()
+}
+
+const setImageAiGenerated = async (
+  id: ImageId,
+  value: number,
+): Promise<Api.Admin.SetImageAiGeneratedResponseData> => {
+  const res = await xhr.post<Api.Admin.SetImageAiGeneratedResponseData>(`/admin/api/images/${id}/_set_ai_generated`, {
+    headers: JSON_HEADERS,
+    body: JSON.stringify({ value }),
+  })
+  return await res.json()
+}
+
+const setImageNsfw = async (
+  id: ImageId,
+  value: boolean,
+): Promise<Api.Admin.SetImageNsfwResponseData> => {
+  const res = await xhr.post<Api.Admin.SetImageNsfwResponseData>(`/admin/api/images/${id}/_set_nsfw`, {
+    headers: JSON_HEADERS,
+    body: JSON.stringify({ value }),
+  })
+  return await res.json()
+}
+
+const detectAiImages = async (): Promise<Api.Admin.DetectAiImagesResponseData> => {
+  const res = await xhr.post<Api.Admin.DetectAiImagesResponseData>('/admin/api/tools/detect-ai', {
+    headers: JSON_HEADERS,
   })
   return await res.json()
 }
@@ -268,6 +299,9 @@ export default {
   setImagePrivate,
   approveImage,
   rejectImage,
+  setImageAiGenerated,
+  setImageNsfw,
+  detectAiImages,
   getGroups,
   getServerInfo,
   mergeClientIdsIntoUser,

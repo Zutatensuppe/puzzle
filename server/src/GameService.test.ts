@@ -56,6 +56,7 @@ describe('GameService', () => {
         copyrightURL: '',
         reported: 0,
         nsfw: false,
+        aiGenerated: false,
         state: 'approved',
         rejectReason: '',
       }
@@ -142,6 +143,7 @@ describe('GameService', () => {
         copyrightURL: '',
         reported: 0,
         nsfw: false,
+        aiGenerated: false,
         state: 'approved',
         rejectReason: '',
       }

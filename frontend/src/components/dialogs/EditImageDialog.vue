@@ -56,15 +56,31 @@
           <div>
             <v-checkbox
               v-model="isPublic"
+              :disabled="imageIsPrivate"
               density="comfortable"
-              label="Public Image (The image will be visible in the gallery for other users to use.)"
+              :label="imageIsPrivate
+                ? 'Public (Cannot be changed back to public.)'
+                : 'Public (Will be visible in the gallery after approval.)'"
             />
           </div>
           <div>
             <v-checkbox
               v-model="isNsfw"
+              :disabled="imageIsNsfw"
               density="comfortable"
-              label="NSFW Image (Check this if the image is not safe for work.)"
+              :label="imageIsNsfw
+                ? 'NSFW (Cannot be unchecked.)'
+                : 'NSFW (Check if the image is not safe for work.)'"
+            />
+          </div>
+          <div>
+            <v-checkbox
+              v-model="isAiGenerated"
+              :disabled="aiDetected"
+              density="comfortable"
+              :label="aiDetected
+                ? 'AI-generated (Cannot be unchecked.)'
+                : 'AI-generated (Check if the image was created by AI.)'"
             />
           </div>
 
@@ -104,7 +120,11 @@ const copyrightName = ref<string>('')
 const copyrightURL = ref<string>('')
 const tags = ref<string[]>([])
 const isPublic = ref<boolean>(false)
+const imageIsPrivate = ref<boolean>(false)
 const isNsfw = ref<boolean>(false)
+const imageIsNsfw = ref<boolean>(false)
+const isAiGenerated = ref<boolean>(false)
+const aiDetected = ref<boolean>(false)
 
 const init = (image: ImageInfo | undefined) => {
   if (!image) return
@@ -114,7 +134,11 @@ const init = (image: ImageInfo | undefined) => {
   copyrightURL.value = image.copyrightURL
   tags.value = image.tags.map((t: Tag) => t.title)
   isPublic.value = !image.private
+  imageIsPrivate.value = image.private
   isNsfw.value = image.nsfw
+  imageIsNsfw.value = image.nsfw
+  isAiGenerated.value = image.aiGenerated
+  aiDetected.value = image.aiGenerated
 }
 
 const saveImage = async () => {
@@ -128,6 +152,7 @@ const saveImage = async () => {
     tags: tags.value,
     isPrivate: !isPublic.value,
     isNsfw: isNsfw.value,
+    isAiGenerated: isAiGenerated.value,
   })
 }
 

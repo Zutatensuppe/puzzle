@@ -16,6 +16,16 @@
       :style="styles"
       @click="onClick"
     >
+      <div
+        v-if="image.aiGenerated"
+        class="imageteaser-ai-badge"
+        title="AI generated"
+      >
+        <v-icon
+          icon="mdi-robot"
+          size="small"
+        /> AI
+      </div>
       <div class="imageteaser-inner">
         <div
           v-if="imageStateInfo"

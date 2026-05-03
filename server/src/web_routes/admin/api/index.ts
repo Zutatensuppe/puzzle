@@ -4,6 +4,7 @@ import type { Server } from '../../../Server'
 import { MergeClientIdsIntoUser } from '../../../admin-tools/MergeClientIdsIntoUser'
 import GameLog from '../../../GameLog'
 import { FixPieces } from '../../../admin-tools/FixPieces'
+import { DetectAiImages } from '../../../admin-tools/DetectAiImages'
 import type { Api, FeaturedId, FeaturedTeaserRow, GameId, ImageId, ServerInfo, UserId } from '@common/Types'
 import { newJSONDateString } from '@common/Util'
 import GameCommon from '@common/GameCommon'
@@ -235,7 +236,7 @@ export default function createRouter(
     res.send(responseData)
   })
 
-  router.post('/images/:id/_set_private', async (req, res) => {
+  router.post('/images/:id/_set_private', express.json(), async (req, res) => {
     try {
       const id = parseInt(req.params.id, 10) as ImageId
       const image = await server.repos.images.get({ id })
@@ -245,8 +246,9 @@ export default function createRouter(
         return
       }
 
+      const value = req.body?.value ? 1 : 0
       await server.repos.images.update(
-        { private: 1 },
+        { private: value },
         { id },
       )
 
@@ -255,13 +257,13 @@ export default function createRouter(
       for (const gameId of gameIds) {
         const game = GameCommon.get(gameId)
         if (game) {
-          GameCommon.Game_setPrivate(game, true)
+          GameCommon.Game_setPrivate(game, !!value)
         }
       }
 
       // update games in database too, so for queries its immediately active
       await server.repos.games.update(
-        { private: 1 },
+        { private: value },
         { image_id: id },
       )
 
@@ -323,6 +325,63 @@ export default function createRouter(
       await server.repos.users.recomputeTrust(image.uploader_user_id, threshold)
 
       const responseData: Api.Admin.RejectImageResponseData = { ok: true }
+      res.send(responseData)
+    } catch (error) {
+      res.status(400).send(createErrorResponseData(error))
+    }
+  })
+
+  router.post('/images/:id/_set_ai_generated', express.json(), async (req, res) => {
+    try {
+      const id = parseInt(req.params.id, 10) as ImageId
+      const image = await server.repos.images.get({ id })
+      if (!image) {
+        const responseData: Api.Admin.SetImageAiGeneratedResponseData = { error: 'image does not exist' }
+        res.status(404).send(responseData)
+        return
+      }
+
+      const value = req.body?.value ? 1 : 0
+      await server.repos.images.update(
+        { ai_generated: value },
+        { id },
+      )
+
+      const responseData: Api.Admin.SetImageAiGeneratedResponseData = { ok: true }
+      res.send(responseData)
+    } catch (error) {
+      res.status(400).send(createErrorResponseData(error))
+    }
+  })
+
+  router.post('/images/:id/_set_nsfw', express.json(), async (req, res) => {
+    try {
+      const id = parseInt(req.params.id, 10) as ImageId
+      const image = await server.repos.images.get({ id })
+      if (!image) {
+        const responseData: Api.Admin.SetImageNsfwResponseData = { error: 'image does not exist' }
+        res.status(404).send(responseData)
+        return
+      }
+
+      const value = req.body?.value ? 1 : 0
+      await server.repos.images.update(
+        { nsfw: value },
+        { id },
+      )
+
+      const responseData: Api.Admin.SetImageNsfwResponseData = { ok: true }
+      res.send(responseData)
+    } catch (error) {
+      res.status(400).send(createErrorResponseData(error))
+    }
+  })
+
+  router.post('/tools/detect-ai', express.json(), async (_req, res) => {
+    try {
+      const job = new DetectAiImages(server.images, server.repos.images)
+      const result = await job.run()
+      const responseData: Api.Admin.DetectAiImagesResponseData = result
       res.send(responseData)
     } catch (error) {
       res.status(400).send(createErrorResponseData(error))
