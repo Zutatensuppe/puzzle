@@ -21,6 +21,7 @@ import fs from '../../lib/FileSystem'
 import FileSystem from '../../lib/FileSystem'
 import { UploadRequestsManager } from '../../UploadRequestsManager'
 import loggedInUsersRouter from './logged-in-users'
+import { detectAiMarkersFromFile } from '../../AiImageDetection'
 
 const log = logger('web_routes/api/index.ts')
 
@@ -37,6 +38,15 @@ export default function createRouter(
 
     const settings = await server.repos.users.getUserSettings(currentUserId)
     return settings.nsfwActive
+  }
+
+  const shouldHideAiImages = async (currentUserId: UserId): Promise<boolean> => {
+    if (!currentUserId) {
+      return false
+    }
+
+    const settings = await server.repos.users.getUserSettings(currentUserId)
+    return settings.hideAiImages
   }
 
   const determineNewUserClientId = async (originalClientId: ClientId | ''): Promise<ClientId> => {
@@ -80,6 +90,7 @@ export default function createRouter(
           groups: groups.map(g => g.name),
           avatar: settings.avatar,
           nsfwUnblurred: settings.nsfwUnblurred,
+          hideAiImages: settings.hideAiImages,
         },
         serverTimestamp: Time.timestamp(),
       }
@@ -508,11 +519,12 @@ export default function createRouter(
     const currentUserId = req.userInfo?.user?.id ?? 0 as UserId
 
     const showNsfw = await shouldShowNsfw(currentUserId)
-
     const requestData: Api.NewGameDataRequestData = req.query as any
+    const hideAiImages = req.query.hideAiImages === 'true'
+
     const responseData: Api.NewGameDataResponseData = {
       featured: await server.repos.featured.getManyWithCollections({}),
-      images: await server.images.imagesFromDb(requestData.search, requestData.sort, 0, IMAGES_PER_PAGE_LIMIT, currentUserId, null, showNsfw),
+      images: await server.images.imagesFromDb(requestData.search, requestData.sort, 0, IMAGES_PER_PAGE_LIMIT, currentUserId, null, showNsfw, hideAiImages),
       tags: await server.images.getAllTags(),
     }
     res.send(responseData)
@@ -536,10 +548,11 @@ export default function createRouter(
     const currentUserId = req.userInfo?.user?.id ?? 0 as UserId
 
     const showNsfw = await shouldShowNsfw(currentUserId)
+    const hideAiImages = await shouldHideAiImages(currentUserId)
 
     try {
       const responseData: Api.UserProfileResponseData = {
-        userProfile: await server.users.getCompleteUserProfile(currentUserId, limitToUserId, showNsfw),
+        userProfile: await server.users.getCompleteUserProfile(currentUserId, limitToUserId, showNsfw, hideAiImages),
       }
       res.send(responseData)
     } catch (e: unknown) {
@@ -564,9 +577,10 @@ export default function createRouter(
     const currentUserId = req.userInfo?.user_type === 'user' ? req.userInfo.user.id : 0 as UserId
 
     const showNsfw = await shouldShowNsfw(currentUserId)
+    const hideAiImages = req.query.hideAiImages === 'true'
 
     const responseData: Api.ImagesResponseData = {
-      images: await server.images.imagesFromDb(requestData.search, requestData.sort, offset, IMAGES_PER_PAGE_LIMIT, currentUserId, null, showNsfw),
+      images: await server.images.imagesFromDb(requestData.search, requestData.sort, offset, IMAGES_PER_PAGE_LIMIT, currentUserId, null, showNsfw, hideAiImages),
     }
     res.send(responseData)
   })
@@ -659,8 +673,12 @@ export default function createRouter(
       title: data.title,
       copyright_name: data.copyrightName,
       copyright_url: server.urlUtil.fixUrl(data.copyrightURL || ''),
-      private: data.isPrivate || data.isNsfw ? 1 : 0,
-      nsfw: data.isNsfw ? 1 : 0,
+      // users can make public→private, but not private→public
+      private: imageRow.private ? 1 : (data.isPrivate || data.isNsfw ? 1 : 0),
+      // users can set nsfw, but not remove it
+      nsfw: imageRow.nsfw ? 1 : (data.isNsfw ? 1 : 0),
+      // users can set ai_generated, but not remove it
+      ai_generated: imageRow.ai_generated ? 1 : (data.isAiGenerated ? 1 : 0),
     }, { id: data.id })
 
     await server.images.setTags(data.id, data.tags || [])
@@ -720,6 +738,9 @@ export default function createRouter(
       // post form, so booleans are submitted as 'true' | 'false'
       const isPrivate = req.body.isPrivate === 'false' ? false : true
       const isNsfw = req.body.isNsfw === 'true' ? true : false
+      const isAiGenerated = req.body.isAiGenerated === 'true'
+        ? true
+        : await detectAiMarkersFromFile(imagePath)
       const isTrusted = await server.repos.users.isUserTrusted(user.id)
       const imageId = await im.insertImage({
         uploader_user_id: user.id,
@@ -734,6 +755,7 @@ export default function createRouter(
         private: isPrivate ? 1 : 0,
         reported: 0,
         nsfw: isNsfw ? 1 : 0,
+        ai_generated: isAiGenerated ? 1 : 0,
         checksum,
         state: isTrusted ? 'approved' : 'pending_approval',
         reject_reason: '',

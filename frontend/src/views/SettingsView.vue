@@ -61,6 +61,21 @@
             </ul>
           </td>
         </tr>
+        <tr>
+          <th>{{ LABELS.HIDE_AI_IMAGES }}</th>
+          <td>
+            <v-checkbox
+              v-model="hideAiImages"
+              density="comfortable"
+            />
+          </td>
+          <td class="text-disabled">
+            <ul>
+              <li>This controls the default for the gallery "{{ LABELS.HIDE_AI_IMAGES }}" checkbox.</li>
+              <li>AI-generated images you upload yourself will always be available to you, regardless of this setting.</li>
+            </ul>
+          </td>
+        </tr>
       </tbody>
     </v-table>
   </div>
@@ -69,8 +84,9 @@
 import type { WatchHandle } from 'vue'
 import { onMounted, onUnmounted, ref, watch } from 'vue'
 import UserAvatar from '../components/UserAvatar.vue'
-import { init, loggedIn, me, onLoginStateChange, useNsfw } from '../user'
+import { init, loggedIn, me, onLoginStateChange, useHideAiImages, useNsfw } from '../user'
 import api from '../_api'
+import { LABELS } from '@common/Types'
 import type { Api, UserAvatar as UserAvatarType } from '@common/Types'
 import { useDialog } from '../useDialog'
 import { uploadAvatar } from '../upload'
@@ -78,12 +94,14 @@ import { toast } from '../toast'
 
 const { closeDialog, openUserAvatarUploadDialog } = useDialog()
 const { setNsfwUnblurred } = useNsfw()
+const { setHideAiImages } = useHideAiImages()
 
 const data = ref<null | Api.UserSettingsResponseData>(null)
 
 const avatar = ref<UserAvatarType | null>(null)
 const nsfwActive = ref<boolean>(false)
 const nsfwUnblurred = ref<boolean>(false)
+const hideAiImages = ref<boolean>(false)
 
 let stopWatch: WatchHandle | null = null
 const onInit = async () => {
@@ -91,6 +109,7 @@ const onInit = async () => {
     avatar.value = null
     nsfwActive.value = false
     nsfwUnblurred.value = false
+    hideAiImages.value = false
     data.value = null
     return
   }
@@ -108,17 +127,21 @@ const onInit = async () => {
     avatar.value = null
     nsfwActive.value = false
     nsfwUnblurred.value = false
+    hideAiImages.value = false
   } else {
     avatar.value = data.value.userSettings.avatar
     nsfwActive.value = data.value.userSettings.nsfwActive
     nsfwUnblurred.value = data.value.userSettings.nsfwUnblurred
+    hideAiImages.value = data.value.userSettings.hideAiImages
   }
 
-  stopWatch = watch([nsfwActive, nsfwUnblurred], async ([newNsfwActive, newNsfwUnblurred]) => {
+  stopWatch = watch([nsfwActive, nsfwUnblurred, hideAiImages], async ([newNsfwActive, newNsfwUnblurred, newHideAiImages]) => {
     setNsfwUnblurred(newNsfwUnblurred)
+    setHideAiImages(newHideAiImages)
     const res = await api.pub.updateUserSettings({
       nsfwActive: newNsfwActive,
       nsfwUnblurred: newNsfwUnblurred,
+      hideAiImages: newHideAiImages,
     })
     const resData = await res.json()
     if ('reason' in resData) {

@@ -187,6 +187,7 @@ export class Users {
     currentUserId: UserId,
     limitToUserId: UserId,
     showNsfw: boolean,
+    hideAiImages: boolean,
   ): Promise<CompletePublicUserProfile> {
     const user = await this.repos.users.get({ id: limitToUserId })
     if (!user) {
@@ -235,6 +236,7 @@ export class Users {
         currentUserId,
         limitToUserId,
         showNsfw,
+        hideAiImages,
       ),
     }
   }
@@ -253,6 +255,7 @@ export class Users {
       avatar,
       nsfwActive: userSettings.nsfwActive,
       nsfwUnblurred: userSettings.nsfwUnblurred,
+      hideAiImages: userSettings.hideAiImages,
     }
   }
 

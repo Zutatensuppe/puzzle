@@ -47,7 +47,9 @@
             <div class="d-flex ga-3">
               <span class="text-disabled">Title:</span> {{ item.title || '-' }}
               <span class="text-disabled">Dimensions:</span> {{ item.width }}×{{ item.height }}
+              <span class="text-disabled">Private:</span> <span :class="{ 'color-private': item.private }">{{ item.private ? '✓' : '✖' }}</span>
               <span class="text-disabled">NSFW:</span> {{ item.nsfw ? '😳 NSFW' : '-' }}
+              <span class="text-disabled">AI:</span> {{ item.ai_generated ? '🤖 AI' : '-' }}
             </div>
             <div class="d-flex ga-3">
               <span class="text-disabled">Id:</span> {{ item.id }}
@@ -65,36 +67,11 @@
             </div>
           </td>
           <td>
-            <div class="d-flex ga-1">
-              <v-btn
-                size="small"
-                color="green"
-                @click="onApprove(item)"
-              >
-                APPROVE
-              </v-btn>
-              <v-btn
-                size="small"
-                color="red"
-                @click="onReject(item)"
-              >
-                REJECT
-              </v-btn>
-              <v-btn
-                size="small"
-                @click="onSetPrivate(item)"
-              >
-                SET PRIVATE
-              </v-btn>
-              <v-btn
-                size="small"
-                color="error"
-                variant="outlined"
-                @click="onDelete(item)"
-              >
-                DELETE
-              </v-btn>
-            </div>
+            <ImageActions
+              :image="item"
+              @updated="(patch) => Object.assign(item, patch)"
+              @deleted="removeItem(item)"
+            />
           </td>
         </tr>
       </tbody>
@@ -112,6 +89,7 @@ import { resizeUrl } from '@common/ImageService'
 import { me, onLoginStateChange } from '../../user'
 import api from '../../_api'
 import Nav from '../components/Nav.vue'
+import ImageActions from '../components/ImageActions.vue'
 import Pagination from '../../components/Pagination.vue'
 import type { ImageRowWithCount, Pagination as PaginationType } from '@common/Types'
 
@@ -124,49 +102,6 @@ const removeItem = (item: ImageRowWithCount) => {
   if (images.value) {
     images.value.items = images.value.items.filter(i => i.id !== item.id)
     images.value.pagination.total--
-  }
-}
-
-const onApprove = async (image: ImageRowWithCount) => {
-  const resp = await api.admin.approveImage(image.id)
-  if ('error' in resp || !resp.ok) {
-    alert('Approving image failed!')
-  } else {
-    removeItem(image)
-  }
-}
-
-const onReject = async (image: ImageRowWithCount) => {
-  const reason = prompt('Rejection reason (optional):') ?? ''
-  const resp = await api.admin.rejectImage(image.id, reason)
-  if ('error' in resp || !resp.ok) {
-    alert('Rejecting image failed!')
-  } else {
-    removeItem(image)
-  }
-}
-
-const onSetPrivate = async (image: ImageRowWithCount) => {
-  if (!confirm(`Set image ${image.id} as private? This cannot be undone!`)) {
-    return
-  }
-  const resp = await api.admin.setImagePrivate(image.id)
-  if ('error' in resp || !resp.ok) {
-    alert('Setting image to private failed!')
-  } else {
-    removeItem(image)
-  }
-}
-
-const onDelete = async (image: ImageRowWithCount) => {
-  if (!confirm(`Really delete image ${image.id}?`)) {
-    return
-  }
-  const resp = await api.admin.deleteImage(image.id)
-  if ('error' in resp || !resp.ok) {
-    alert('Deleting image failed!')
-  } else {
-    removeItem(image)
   }
 }
 

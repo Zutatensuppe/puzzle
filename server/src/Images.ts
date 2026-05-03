@@ -64,6 +64,7 @@ export class Images {
       copyrightURL: row.copyright_url,
       reported: row.reported,
       nsfw: !!row.nsfw,
+      aiGenerated: !!row.ai_generated,
       state: row.state,
       rejectReason: row.reject_reason,
     }
@@ -77,8 +78,9 @@ export class Images {
     currentUserId: UserId | null,
     limitToUserId: UserId | null,
     showNsfw: boolean,
+    hideAiImages: boolean,
   ): Promise<ImageInfo[]> {
-    const rows = await this.imagesRepo.searchImagesWithCount(search, orderBy, offset, limit, currentUserId, limitToUserId, showNsfw)
+    const rows = await this.imagesRepo.searchImagesWithCount(search, orderBy, offset, limit, currentUserId, limitToUserId, showNsfw, hideAiImages)
     const tags = await this.imagesRepo.getTagsByImageIds(rows.map(row => row.id))
     return rows.map(row => this.imageWithCountToImageInfo(row, tags))
   }

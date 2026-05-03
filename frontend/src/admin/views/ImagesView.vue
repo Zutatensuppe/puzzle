@@ -3,6 +3,20 @@
     <Nav />
     <h1>Images</h1>
 
+    <div class="mb-4">
+      <v-btn
+        :disabled="detectingAi"
+        :loading="detectingAi"
+        variant="elevated"
+        color="warning"
+        size="small"
+        prepend-icon="mdi-robot"
+        @click="onDetectAi"
+      >
+        Detect AI images (scan all)
+      </v-btn>
+    </div>
+
     <Pagination
       v-if="images"
       :pagination="images.pagination"
@@ -41,6 +55,7 @@
               <span class="text-disabled">Dimensions:</span> {{ item.width }}×{{ item.height }}
               <span class="text-disabled">Private:</span> <span :class="{ 'color-private': item.private }">{{ item.private ? '✓' : '✖' }}</span>
               <span class="text-disabled">NSFW:</span> {{ item.nsfw ? '😳 NSFW' : '-' }}
+              <span class="text-disabled">AI:</span> {{ item.ai_generated ? '🤖 AI' : '-' }}
               <span class="text-disabled">State:</span> <code :class="`state-${item.state}`">{{ item.state }}</code>
               <template v-if="item.state === 'rejected' && item.reject_reason">
                 <span class="text-disabled">Reason:</span> <span :title="item.reject_reason">{{ item.reject_reason.length > 50 ? item.reject_reason.substring(0, 50) + '…' : item.reject_reason }}</span>
@@ -64,32 +79,11 @@
           </td>
           <td>{{ item.games_count }}</td>
           <td>
-            <div class="d-flex ga-1">
-              <v-btn
-                size="x-small"
-                @click="onDelete(item)"
-              >
-                DELETE
-              </v-btn>
-              <v-btn
-                size="x-small"
-                @click="onSetPrivate(item)"
-              >
-                SET PRIVATE
-              </v-btn>
-              <v-btn
-                size="x-small"
-                @click="onApprove(item)"
-              >
-                APPROVE
-              </v-btn>
-              <v-btn
-                size="x-small"
-                @click="onReject(item)"
-              >
-                REJECT
-              </v-btn>
-            </div>
+            <ImageActions
+              :image="item"
+              @updated="(patch) => Object.assign(item, patch)"
+              @deleted="onImageDeleted(item)"
+            />
           </td>
         </tr>
       </tbody>
@@ -107,72 +101,38 @@ import { resizeUrl } from '@common/ImageService'
 import { me, onLoginStateChange } from '../../user'
 import api from '../../_api'
 import Nav from '../components/Nav.vue'
+import ImageActions from '../components/ImageActions.vue'
 import Pagination from '../../components/Pagination.vue'
 import type { ImageRowWithCount, Pagination as PaginationType } from '@common/Types'
 
 const perPage = 50
 const images = ref<{ items: ImageRowWithCount[], pagination: PaginationType } | null>(null)
+const detectingAi = ref(false)
 
-const onDelete = async (image: ImageRowWithCount) => {
-  if (!confirm(`Really delete image ${image.id}?`)) {
-    return
-  }
-
-  const resp = await api.admin.deleteImage(image.id)
-  if ('error' in resp || !resp.ok) {
-    alert('Deleting image failed!')
-  } else {
-    if (images.value) {
-      images.value.items = images.value.items.filter(i => i.id !== image.id)
+const onDetectAi = async () => {
+  detectingAi.value = true
+  try {
+    const resp = await api.admin.detectAiImages()
+    if ('error' in resp) {
+      alert(`Detection failed: ${resp.error}`)
+    } else {
+      alert(`Scanned ${resp.scanned} images, flagged ${resp.flagged} as AI.`)
+      // reload current page to reflect changes
+      if (images.value) {
+        images.value = await loadImages({
+          limit: perPage,
+          offset: images.value.pagination.offset,
+        })
+      }
     }
-    alert('Successfully deleted image!')
+  } finally {
+    detectingAi.value = false
   }
 }
 
-const onSetPrivate = async (image: ImageRowWithCount) => {
-  if (!confirm(`Really set image ${image.id} as private? This cannot be undone!`)) {
-    return
-  }
-
-  const resp = await api.admin.setImagePrivate(image.id)
-  if ('error' in resp || !resp.ok) {
-    alert('Setting image to private failed!')
-  } else {
-    if (images.value) {
-      if (image) {
-        image.private = 1
-      }
-    }
-    alert('Successfully set image to private!')
-  }
-}
-
-const onApprove = async (image: ImageRowWithCount) => {
-  const resp = await api.admin.approveImage(image.id)
-  if ('error' in resp || !resp.ok) {
-    alert('Approving image failed!')
-  } else {
-    if (images.value) {
-      if (image) {
-        image.state = 'approved'
-      }
-    }
-    alert('Successfully approved image!')
-  }
-}
-
-const onReject = async (image: ImageRowWithCount) => {
-  const reason = prompt('Rejection reason (optional):') ?? ''
-  const resp = await api.admin.rejectImage(image.id, reason)
-  if ('error' in resp || !resp.ok) {
-    alert('Rejecting image failed!')
-  } else {
-    if (images.value) {
-      if (image) {
-        image.state = 'rejected'
-      }
-    }
-    alert('Successfully rejected image!')
+const onImageDeleted = (image: ImageRowWithCount) => {
+  if (images.value) {
+    images.value.items = images.value.items.filter(i => i.id !== image.id)
   }
 }
 

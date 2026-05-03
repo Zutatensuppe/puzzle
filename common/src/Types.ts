@@ -381,6 +381,7 @@ export interface ImageInfo {
   copyrightURL: string
   reported: number
   nsfw: boolean
+  aiGenerated: boolean
   state: 'pending_approval' | 'rejected' | 'approved'
   rejectReason: string
 }
@@ -402,6 +403,7 @@ export const defaultImageInfo = (): ImageInfo => ({
   private: false,
   reported: 0,
   nsfw: false,
+  aiGenerated: false,
   state: 'pending_approval',
   rejectReason: '',
 })
@@ -469,6 +471,10 @@ export interface PlayerSettingsData {
   soundsVolume: number
   tableTexture: string
   useCustomTableTexture: boolean
+}
+
+export const LABELS = {
+  HIDE_AI_IMAGES: 'Hide AI images',
 }
 
 export const PLAYER_SETTINGS = {
@@ -775,6 +781,7 @@ export interface Me {
   groups: string[]
   avatar: UserAvatar | null
   nsfwUnblurred: boolean
+  hideAiImages: boolean
 }
 
 export enum ImageSearchSort {
@@ -871,6 +878,7 @@ export interface ImageRow {
   copyright_url: string
   reported: number
   nsfw: number
+  ai_generated: number
   checksum: string | null
   state: 'pending_approval' | 'rejected' | 'approved'
   reject_reason: string
@@ -1002,6 +1010,7 @@ export interface UserSettingsRow {
   avatar_id: UserAvatarId | null
   nsfw_active: boolean
   nsfw_unblurred: boolean
+  hide_ai_images: boolean
 }
 
 export interface UserSettings {
@@ -1009,6 +1018,7 @@ export interface UserSettings {
   avatarId: UserAvatarId | null
   nsfwActive: boolean
   nsfwUnblurred: boolean
+  hideAiImages: boolean
 }
 
 export type CompletePublicUserProfile = {
@@ -1035,4 +1045,5 @@ export interface CompleteUserSettings {
   avatar: UserAvatar | null
   nsfwActive: boolean
   nsfwUnblurred: boolean
+  hideAiImages: boolean
 }

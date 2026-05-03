@@ -14,6 +14,7 @@ export const uploadImage = async (data: Api.UploadRequestData): Promise<{ error:
       tags: data.tags,
       isPrivate: data.isPrivate,
       isNsfw: data.isNsfw,
+      isAiGenerated: data.isAiGenerated,
       onProgress: (progress: number): void => {
         uploadImageProgress.value = progress
       },

@@ -26,6 +26,7 @@ export type FinishedGamesResponseData = ApiGamesData | {
 export interface NewGameDataRequestData {
   sort: string
   search: string
+  hideAiImages: boolean
 }
 
 export type UploadRequestData = {
@@ -36,6 +37,7 @@ export type UploadRequestData = {
   tags: string[]
   isPrivate: boolean
   isNsfw: boolean
+  isAiGenerated: boolean
 }
 
 export type UploadRequestDataWithProgress = UploadRequestData & {
@@ -115,6 +117,7 @@ export type SaveImageRequestData = {
   tags: string[]
   isPrivate: boolean
   isNsfw: boolean
+  isAiGenerated: boolean
 }
 
 export type SaveImageResponseData = {
@@ -163,6 +166,7 @@ export type GetUserSettingsRequestData = {
 export type UpdateUserSettingsRequestData = {
   nsfwActive: boolean
   nsfwUnblurred: boolean
+  hideAiImages: boolean
 }
 
 export type UserSettingsResponseData = {
@@ -201,6 +205,7 @@ export interface ImagesRequestData {
   sort: string
   search: string
   offset: number
+  hideAiImages: boolean
 }
 
 export interface ImagesResponseData {

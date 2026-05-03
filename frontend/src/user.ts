@@ -8,16 +8,27 @@ import type { ClientId, Me } from '@common/Types'
 import { computed, ref } from 'vue'
 import Time from '@common/Time'
 
-const nsfwUnblurred = ref(storage.getBool('showNsfw', false))
+const nsfwUnblurred = ref(false)
 const setNsfwUnblurred = (newValue: boolean): void => {
   nsfwUnblurred.value = newValue
-  storage.setBool('showNsfw', nsfwUnblurred.value)
+}
+
+const hideAiImages = ref(false)
+const setHideAiImages = (newValue: boolean): void => {
+  hideAiImages.value = newValue
 }
 
 export const useNsfw = () => {
   return {
     nsfwUnblurred,
     setNsfwUnblurred,
+  }
+}
+
+export const useHideAiImages = () => {
+  return {
+    hideAiImages,
+    setHideAiImages,
   }
 }
 
@@ -68,12 +79,14 @@ export async function init(): Promise<void> {
       // console.log('not logged in')
       me.value = null
       setNsfwUnblurred(false)
+      setHideAiImages(false)
       eventBus.emit('logout')
     } else {
       // console.log('logged in (reg or guest)')
       xhr.setClientId(data.user.clientId)
       me.value = data.user
       setNsfwUnblurred(data.user.nsfwUnblurred)
+      setHideAiImages(data.user.hideAiImages)
       eventBus.emit('login')
     }
   } catch {

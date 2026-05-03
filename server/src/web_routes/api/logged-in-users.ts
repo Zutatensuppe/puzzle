@@ -88,6 +88,7 @@ export default function createRouter(
         avatarId: userSettings.avatarId,
         nsfwActive: data.nsfwActive,
         nsfwUnblurred: data.nsfwUnblurred,
+        hideAiImages: data.hideAiImages,
       })
       const responseData: Api.UserSettingsResponseData = {
         userSettings: await server.users.getCompleteUserSettings(user.id),
