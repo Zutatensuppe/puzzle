@@ -2,6 +2,7 @@ import { logger } from '@common/Util'
 import config from './Config'
 import fs from './lib/FileSystem'
 import Time from '@common/Time'
+import { gzipSync } from 'zlib'
 import type { GameId, GameLogInfoByGameIds, LogEntry, LogIndex, Timestamp } from '@common/Types'
 import { LOG_TYPE } from '@common/Protocol'
 
@@ -43,16 +44,16 @@ const fullIndexFilename = (gameId: GameId) => `${basedir(gameId)}/log_${gameId}.
 export const gzFilenameOrFilename = async (gameId: GameId, offset: number) => {
   const gz = fullFilenameGz(gameId, offset)
   if (await fs.exists(gz)) {
-    console.log('gz file exists', gz)
+    log.log('gz file exists', gz)
     return gz
   }
 
   const raw = fullFilename(gameId, offset)
   if (await fs.exists(raw)) {
-    console.log('raw file exists', raw)
+    log.log('raw file exists', raw)
     return raw
   }
-  console.log('no file exists for', gz, raw)
+  log.log('no file exists for', gz, raw)
   return ''
 }
 
@@ -81,9 +82,20 @@ const flushToDisk = async (gameId: GameId): Promise<void> => {
   // write each log file
   for (const file in GAME_LOG[gameId]) {
     const filePath = basedir(gameId) + file
-    await fs.writeFile(filePath, GAME_LOG[gameId][file].join('\n'))
-    if (GAME_LOG[gameId][file].length === GAME_LOG_IDX[gameId].perFile) {
+    const content = GAME_LOG[gameId][file].join('\n')
+    const isFull = GAME_LOG[gameId][file].length === GAME_LOG_IDX[gameId].perFile
+    if (isFull) {
+      // completed files get gzip-compressed
+      const compressed = gzipSync(Buffer.from(content))
+      await fs.writeFileRaw(filePath + '.gz', compressed)
+      // remove the uncompressed file from previous flushes
+      if (await fs.exists(filePath)) {
+        await fs.unlink(filePath)
+      }
       delete GAME_LOG[gameId][file]
+    } else {
+      // current (incomplete) file stays uncompressed
+      await fs.writeFile(filePath, content)
     }
   }
 
