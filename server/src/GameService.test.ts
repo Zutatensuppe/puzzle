@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { GameService } from './GameService'
 import { PuzzleService } from './PuzzleService'
-import { ShapeMode, RotationMode } from '@common/Types'
+import { ShapeMode, RotationMode, ImageState } from '@common/Types'
 import type { GameRow, ImageInfo } from '@common/Types'
 import Util from '@common/Util'
 
@@ -57,7 +57,7 @@ describe('GameService', () => {
         reported: 0,
         nsfw: false,
         aiGenerated: false,
-        state: 'approved',
+        state: ImageState.Approved,
         rejectReason: '',
       }
 
@@ -144,7 +144,7 @@ describe('GameService', () => {
         reported: 0,
         nsfw: false,
         aiGenerated: false,
-        state: 'approved',
+        state: ImageState.Approved,
         rejectReason: '',
       }
 

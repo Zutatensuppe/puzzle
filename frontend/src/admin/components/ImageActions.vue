@@ -19,7 +19,7 @@
       {{ image.ai_generated ? 'UNSET AI' : 'SET AI' }}
     </v-btn>
     <v-btn
-      v-if="image.state !== 'approved'"
+      v-if="!IMAGE_STATES_TRUSTED.includes(image.state)"
       size="x-small"
       color="success"
       @click="onApprove"
@@ -27,7 +27,7 @@
       APPROVE
     </v-btn>
     <v-btn
-      v-if="image.state !== 'rejected'"
+      v-if="!IMAGE_STATES_REJECTED.includes(image.state)"
       size="x-small"
       color="error"
       @click="onReject"
@@ -44,6 +44,7 @@
 </template>
 
 <script setup lang="ts">
+import { IMAGE_STATES_TRUSTED, IMAGE_STATES_REJECTED, ImageState } from '@common/Types'
 import type { ImageRowWithCount } from '@common/Types'
 import api from '../../_api'
 
@@ -91,7 +92,7 @@ const onApprove = async () => {
   if ('error' in resp || !resp.ok) {
     alert('Approving image failed!')
   } else {
-    emit('updated', { state: 'approved' })
+    emit('updated', { state: ImageState.Approved })
   }
 }
 
@@ -104,7 +105,7 @@ const onReject = async () => {
   if ('error' in resp || !resp.ok) {
     alert('Rejecting image failed!')
   } else {
-    emit('updated', { state: 'rejected' })
+    emit('updated', { state: ImageState.Rejected })
   }
 }
 

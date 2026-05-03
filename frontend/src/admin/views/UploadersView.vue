@@ -130,7 +130,7 @@
                   >
                     <img
                       :src="resizeUrl(`/image-service/image/${img.filename}`, 100, 70, 'contain')"
-                      :title="`${img.title || img.filename} [${img.state}]${img.state === 'rejected' && img.reject_reason ? ' - ' + img.reject_reason : ''}`"
+                      :title="`${img.title || img.filename} [${img.state}]${img.state === ImageState.Rejected && img.reject_reason ? ' - ' + img.reject_reason : ''}`"
                       :class="`thumb-${img.state}`"
                     >
                   </a>
@@ -158,6 +158,7 @@ import { me, onLoginStateChange } from '../../user'
 import api from '../../_api'
 import Nav from '../components/Nav.vue'
 import Pagination from '../../components/Pagination.vue'
+import { ImageState } from '@common/Types'
 import type { ImageRowWithCount, Pagination as PaginationType, UploaderInfo } from '@common/Types'
 
 const perPage = 50
@@ -288,20 +289,31 @@ img.thumb-approved {
   border-color: green;
 }
 .thumb-rejected img,
-img.thumb-rejected {
+img.thumb-rejected,
+.thumb-uncurated img,
+img.thumb-uncurated {
   border-color: red;
 }
 .thumb-pending_approval img,
-img.thumb-pending_approval {
+img.thumb-pending_approval,
+.thumb-unreviewed img,
+img.thumb-unreviewed {
   border-color: orange;
 }
-.state-approved {
+.thumb-curated img,
+img.thumb-curated {
+  border-color: green;
+}
+.state-approved,
+.state-curated {
   color: green;
 }
-.state-rejected {
+.state-rejected,
+.state-uncurated {
   color: red;
 }
-.state-pending_approval {
+.state-pending_approval,
+.state-unreviewed {
   color: orange;
 }
 </style>

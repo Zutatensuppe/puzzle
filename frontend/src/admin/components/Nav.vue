@@ -19,6 +19,12 @@
       Approvals
     </v-btn>
     <v-btn
+      :to="{name: 'admin_curation'}"
+      prepend-icon="mdi-star-check"
+    >
+      Curation
+    </v-btn>
+    <v-btn
       :to="{name: 'admin_users'}"
       prepend-icon="mdi-account"
     >

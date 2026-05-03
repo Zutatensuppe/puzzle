@@ -107,6 +107,7 @@ import { computed, ref } from 'vue'
 import Time from '@common/Time'
 import { resizeUrl } from '@common/ImageService'
 import type { GameInfo } from '@common/Types'
+import { IMAGE_STATES_PENDING, IMAGE_STATES_REJECTED } from '@common/Types'
 import { rotationModeToString, scoreModeToString, shapeModeToString, snapModeToString } from '@common/Util'
 import { me, useNsfw } from '../../user'
 import { useDialog } from '../../useDialog'
@@ -175,18 +176,18 @@ const stateInfo = computed<null | { class: string; text: string; title?: string;
     }
   }
 
-  if (props.game.image.state === 'pending_approval') {
+  if (IMAGE_STATES_PENDING.includes(props.game.image.state)) {
     return {
       class: 'image-is-pending-info',
-      text: 'Image pending',
+      text: 'Image pending review',
       icon: 'mdi-clock-outline',
     }
   }
 
-  if (props.game.image.state === 'rejected') {
+  if (IMAGE_STATES_REJECTED.includes(props.game.image.state)) {
     return {
       class: 'image-is-rejected-info',
-      text: 'Image rejected',
+      text: 'Image not prominently shown',
       title: props.game.image.rejectReason || '',
       icon: 'mdi-cancel',
     }

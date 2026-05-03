@@ -1,4 +1,5 @@
 import type { ImageId, ImageRowWithCount, JSONDateString, TagId, TagRowWithCount, UserId } from '@common/Types'
+import { ImageState } from '@common/Types'
 import { describe, expect, it, vi, beforeEach } from 'vitest'
 import { Images } from './Images'
 import type { ImagesRepo } from './repo/ImagesRepo'
@@ -22,7 +23,7 @@ const createMockRow = (overrides: Partial<ImageRowWithCount> = {}): ImageRowWith
   nsfw: 0,
   ai_generated: 0,
   checksum: 'abc123',
-  state: 'approved',
+  state: ImageState.Approved,
   reject_reason: '',
   games_count: 5,
   ...overrides,
@@ -46,7 +47,7 @@ describe('Images.imagesByIdsFromDb', () => {
       private: 1,
       nsfw: 1,
       ai_generated: 1,
-      state: 'pending_approval',
+      state: ImageState.PendingApproval,
       reject_reason: 'blurry',
     })
     mockImagesRepo.getImagesWithCountByIds.mockResolvedValue([row])
@@ -71,7 +72,7 @@ describe('Images.imagesByIdsFromDb', () => {
       reported: 2,
       nsfw: true,
       aiGenerated: true,
-      state: 'pending_approval',
+      state: ImageState.PendingApproval,
       rejectReason: 'blurry',
     })
   })
