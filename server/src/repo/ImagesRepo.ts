@@ -1,4 +1,4 @@
-import { ImageSearchSort } from '@common/Types'
+import { ImageSearchSort, ImageState, IMAGE_STATES_VISIBLE, IMAGE_STATES_PENDING, IMAGE_STATES_TRUSTED } from '@common/Types'
 import type { ImageId, ImageRow, ImageRowWithCount, ImageXTagRow, Pagination, TagId, TagRow, TagRowWithCount, UploaderInfo, UserId } from '@common/Types'
 import type Db from '../lib/Db'
 import type { OrderBy, WhereRaw } from '../lib/Db'
@@ -95,13 +95,15 @@ export class ImagesRepo {
   }
 
   async getPendingApprovals(offset: number, limit: number): Promise<{ items: ImageRowWithCount[], total: number }> {
+    const where = this.db._buildWhere({ state: { '$in': IMAGE_STATES_PENDING }, private: 0 })
     const countRow = await this.db._get<{ count: number }>(`
       SELECT COUNT(*)::int AS count
       FROM ${DbData.Tables.Images}
-      WHERE state = 'pending_approval' AND private = 0
-    `)
+      ${where.sql}
+    `, where.values)
     const total = countRow?.count ?? 0
 
+    const whereI = this.db._buildWhere({ 'i.state': { '$in': IMAGE_STATES_PENDING }, 'i.private': 0 })
     const items = await this.db._getMany<ImageRowWithCount>(`
       WITH counts AS (
         SELECT COUNT(*)::int AS count, image_id
@@ -115,12 +117,52 @@ export class ImagesRepo {
       FROM ${DbData.Tables.Images} i
         LEFT JOIN counts ON counts.image_id = i.id
         LEFT JOIN ${DbData.Tables.Users} u ON u.id = i.uploader_user_id
-      WHERE i.state = 'pending_approval' AND i.private = 0
+      ${whereI.sql}
       ORDER BY i.created ASC
       ${this.db._buildLimit({ offset, limit })}
-    `, [])
+    `, whereI.values)
 
     return { items, total }
+  }
+
+  async getNextForCuration(): Promise<{ image: ImageRowWithCount | null, progress: { reviewed: number, total: number } }> {
+    const reviewedStates = this.db._buildWhere({ state: { '$in': [ImageState.Curated, ImageState.Uncurated] } })
+    const statsRow = await this.db._get<{ reviewed: number, total: number }>(`
+      SELECT
+        COUNT(*) FILTER (${reviewedStates.sql})::int AS reviewed,
+        COUNT(*)::int AS total
+      FROM ${DbData.Tables.Images}
+      WHERE private = 0
+    `, reviewedStates.values)
+    const progress = { reviewed: statsRow?.reviewed ?? 0, total: statsRow?.total ?? 0 }
+
+    const notReviewedWhere = this.db._buildWhere({ 'i.state': { '$nin': [ImageState.Curated, ImageState.Uncurated] } })
+    const image = await this.db._get<ImageRowWithCount>(`
+      WITH counts AS (
+        SELECT COUNT(*)::int AS count, image_id
+        FROM ${DbData.Tables.Games}
+        GROUP BY image_id
+      )
+      SELECT
+        i.*,
+        COALESCE(counts.count, 0) AS games_count,
+        COALESCE(u.name, '') AS uploader_user_name
+      FROM ${DbData.Tables.Images} i
+        LEFT JOIN counts ON counts.image_id = i.id
+        LEFT JOIN ${DbData.Tables.Users} u ON u.id = i.uploader_user_id
+      WHERE i.private = 0 AND ${notReviewedWhere.sql.replace('WHERE ', '')}
+      ORDER BY
+        CASE i.state
+          WHEN '${ImageState.Unreviewed}' THEN 0
+          WHEN '${ImageState.PendingApproval}' THEN 1
+          WHEN '${ImageState.Approved}' THEN 2
+          WHEN '${ImageState.Rejected}' THEN 3
+        END,
+        i.created ASC
+      LIMIT 1
+    `, notReviewedWhere.values)
+
+    return { image: image ?? null, progress }
   }
 
   async insert(image: Omit<ImageRow, 'id'>): Promise<ImageId> {
@@ -253,6 +295,7 @@ export class ImagesRepo {
         params.push(`%${search}%`)
       }
     }
+    params.push(...IMAGE_STATES_VISIBLE)
 
     return await this.db._getMany<ImageRowWithCount>(`
       WITH counts AS (
@@ -275,7 +318,7 @@ export class ImagesRepo {
         LEFT JOIN ${DbData.Tables.Users} u ON u.id = i.uploader_user_id
       WHERE
         (
-          (i.private = 0 AND i.state = 'approved')
+          (i.private = 0 AND i.state IN (${IMAGE_STATES_VISIBLE.map(() => `$${i++}`).join(', ')}))
           ${currentUserId ? `OR i.uploader_user_id = $${idxCurrentUserId}` : ''}
         )
         ${!showNsfw ? (idxCurrentUserId ? ` AND (i.nsfw = 0 OR i.uploader_user_id = $${idxCurrentUserId || 0})` : ' AND i.nsfw = 0') : '' }
@@ -331,10 +374,10 @@ export class ImagesRepo {
 
   async approveImage(imageId: ImageId): Promise<void> {
     await this.db.update(DbData.Tables.Images, {
-      state: 'approved',
+      state: ImageState.Approved,
     }, {
       id: imageId,
-      state: 'pending_approval',
+      state: ImageState.PendingApproval,
     })
   }
 
@@ -359,16 +402,16 @@ export class ImagesRepo {
         u.name,
         u.trusted,
         u.trust_manually_set AS "trustManuallySet",
-        COUNT(*) FILTER (WHERE i.state = 'approved')::int AS "approvedCount",
-        COUNT(*) FILTER (WHERE i.state = 'rejected')::int AS "rejectedCount",
-        COUNT(*) FILTER (WHERE i.state = 'pending_approval')::int AS "pendingCount",
+        COUNT(*) FILTER (WHERE i.state IN (${IMAGE_STATES_TRUSTED.map((_, idx) => `$${idx + 1}`).join(', ')}))::int AS "approvedCount",
+        COUNT(*) FILTER (WHERE i.state = '${ImageState.Rejected}')::int AS "rejectedCount",
+        COUNT(*) FILTER (WHERE i.state IN (${IMAGE_STATES_PENDING.map((_, idx) => `$${idx + IMAGE_STATES_TRUSTED.length + 1}`).join(', ')}))::int AS "pendingCount",
         COUNT(*)::int AS "totalCount"
       FROM ${DbData.Tables.Users} u
       INNER JOIN ${DbData.Tables.Images} i ON i.uploader_user_id = u.id
       GROUP BY u.id
       ORDER BY u.id DESC
-      OFFSET $1 LIMIT $2
-    `, [offset, limit])
+      OFFSET $${IMAGE_STATES_TRUSTED.length + IMAGE_STATES_PENDING.length + 1} LIMIT $${IMAGE_STATES_TRUSTED.length + IMAGE_STATES_PENDING.length + 2}
+    `, [...IMAGE_STATES_TRUSTED, ...IMAGE_STATES_PENDING, offset, limit])
 
     return { items, pagination: { total, offset, limit } }
   }

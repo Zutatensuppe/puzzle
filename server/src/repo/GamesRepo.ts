@@ -1,4 +1,4 @@
-import { EncodedPlayerIdx } from '@common/Types'
+import { EncodedPlayerIdx, IMAGE_STATES_VISIBLE } from '@common/Types'
 import type { EncodedPlayer, GameId, GameRow, GameRowWithImageAndUser, UserId , UserRow } from '@common/Types'
 import type Db from '../lib/Db'
 import type { Repos } from './Repos'
@@ -63,8 +63,7 @@ export class GamesRepo {
     const limitSql = this.db._buildLimit({ limit, offset })
 
     if (limitByUserId) {
-      // pieces count only is misleading because the user can help
-      // in the puzzle without connecting a piece
+      const stateWhere = this.db._buildWhere({ 'i.state': { '$in': IMAGE_STATES_VISIBLE } }, 3)
       return await this.db._getMany(`
         SELECT g.* FROM ${DbData.Tables.Games} g
         INNER JOIN ${DbData.Tables.UserXGame} uxg on uxg.game_id = g.id
@@ -72,28 +71,29 @@ export class GamesRepo {
         WHERE
           (g."private" = 0 OR g.creator_user_id = $1) AND
           ${!showNsfw ? '(i.nsfw = 0 OR i.uploader_user_id = $1) AND' : '' }
-          (i.state = 'approved' OR i.uploader_user_id = $1) AND
+          (${stateWhere.sql.replace('WHERE ', '')} OR i.uploader_user_id = $1) AND
           uxg.user_id = $2 AND
           uxg.pieces_count > 0 AND
           (g.finished is null)
         ORDER BY
           g.created DESC
         ${limitSql}
-      `, [currentUserId, limitByUserId]) as GameRow[]
+      `, [currentUserId, limitByUserId, ...stateWhere.values]) as GameRow[]
     }
 
+    const stateWhere = this.db._buildWhere({ 'i.state': { '$in': IMAGE_STATES_VISIBLE } }, 2)
     return await this.db._getMany(`
       SELECT g.* FROM ${DbData.Tables.Games} g
       INNER JOIN ${DbData.Tables.Images} i on i.id = g.image_id
       WHERE
         (g."private" = 0 OR g.creator_user_id = $1) AND
         ${!showNsfw ? '(i.nsfw = 0 OR i.uploader_user_id = $1) AND' : '' }
-        (i.state = 'approved' OR i.uploader_user_id = $1) AND
+        (${stateWhere.sql.replace('WHERE ', '')} OR i.uploader_user_id = $1) AND
         (g.finished is null)
       ORDER BY
         g.created DESC
       ${limitSql}
-    `, [currentUserId]) as GameRow[]
+    `, [currentUserId, ...stateWhere.values]) as GameRow[]
   }
 
   async getPublicFinishedGames(
@@ -106,8 +106,7 @@ export class GamesRepo {
     const limitSql = this.db._buildLimit({ limit, offset })
 
     if (limitByUserId) {
-      // pieces count only is misleading because the user can help
-      // in the puzzle without connecting a piece
+      const stateWhere = this.db._buildWhere({ 'i.state': { '$in': IMAGE_STATES_VISIBLE } }, 3)
       return await this.db._getMany(`
         SELECT g.* FROM ${DbData.Tables.Games} g
         INNER JOIN ${DbData.Tables.UserXGame} uxg on uxg.game_id = g.id
@@ -115,16 +114,17 @@ export class GamesRepo {
         WHERE
           (g."private" = 0 OR g.creator_user_id = $1) AND
           ${!showNsfw ? '(i.nsfw = 0 OR i.uploader_user_id = $1) AND' : '' }
-          (i.state = 'approved' OR i.uploader_user_id = $1) AND
+          (${stateWhere.sql.replace('WHERE ', '')} OR i.uploader_user_id = $1) AND
           uxg.user_id = $2 AND
           uxg.pieces_count > 0 AND
           (g.finished is not null)
         ORDER BY
           g.finished DESC
         ${limitSql}
-      `, [currentUserId, limitByUserId]) as GameRow[]
+      `, [currentUserId, limitByUserId, ...stateWhere.values]) as GameRow[]
     }
 
+    const stateWhere = this.db._buildWhere({ 'i.state': { '$in': IMAGE_STATES_VISIBLE } }, 2)
     return await this.db._getMany(`
       SELECT
         g.*
@@ -135,12 +135,12 @@ export class GamesRepo {
       WHERE
         (g."private" = 0 OR g.creator_user_id = $1) AND
         ${!showNsfw ? '(i.nsfw = 0 OR i.uploader_user_id = $1) AND' : '' }
-        (i.state = 'approved' OR i.uploader_user_id = $1) AND
+        (${stateWhere.sql.replace('WHERE ', '')} OR i.uploader_user_id = $1) AND
         (g.finished is not null)
       ORDER BY
         g.finished DESC
       ${limitSql}
-    `, [currentUserId]) as GameRow[]
+    `, [currentUserId, ...stateWhere.values]) as GameRow[]
   }
 
   async countPublicRunningGames(userId: UserId, showNsfw: boolean): Promise<number> {

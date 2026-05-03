@@ -52,6 +52,13 @@ export type SetImageAiGeneratedResponseData = AcknowledgeResponseData | ErrorRes
 
 export type SetImageNsfwResponseData = AcknowledgeResponseData | ErrorResponseData
 
+export type CurateImageResponseData = AcknowledgeResponseData | ErrorResponseData
+
+export type GetCurationQueueResponseData = {
+  image: ImageRowWithCount | null
+  progress: { reviewed: number, total: number }
+} | ErrorResponseData
+
 export type DetectAiImagesResponseData = {
   scanned: number
   flagged: number

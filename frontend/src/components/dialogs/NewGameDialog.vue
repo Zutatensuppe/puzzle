@@ -211,7 +211,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 
-import { RotationMode, ScoreMode, ShapeMode, SnapMode } from '@common/Types'
+import { RotationMode, ScoreMode, ShapeMode, SnapMode, IMAGE_STATES_VISIBLE } from '@common/Types'
 import type { GameSettings } from '@common/Types'
 import { NEWGAME_MIN_PIECES, NEWGAME_MAX_PIECES } from '@common/GameCommon'
 import PuzzleCropper from '../PuzzleCropper.vue'
@@ -276,7 +276,8 @@ const canStartNewGame = computed((): boolean => {
 })
 
 const isImageApproved = computed((): boolean => {
-  return newGameImageInfo.value?.state === 'approved' || false
+  const state = newGameImageInfo.value?.state
+  return state ? IMAGE_STATES_VISIBLE.includes(state) : false
 })
 
 const scoreModeInt = computed((): number => {

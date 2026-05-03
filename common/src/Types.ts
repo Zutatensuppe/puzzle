@@ -37,6 +37,27 @@ export type JSONDateString = Branded<string, 'JSONDateString'> // e.g. "2023-10-
 
 export type ImageDataURL = Branded<string, 'ImageDataURL'> // e.g. "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAA..."
 
+export enum ImageState {
+  PendingApproval = 'pending_approval',
+  Rejected = 'rejected',
+  Approved = 'approved',
+  Curated = 'curated',
+  Uncurated = 'uncurated',
+  Unreviewed = 'unreviewed'
+}
+
+/** Images visible to the public (gallery, games, new game dialog) */
+export const IMAGE_STATES_VISIBLE: ImageState[] = [ImageState.Approved, ImageState.Curated, ImageState.Uncurated]
+
+/** Images awaiting review (pending queue) */
+export const IMAGE_STATES_PENDING: ImageState[] = [ImageState.PendingApproval, ImageState.Unreviewed]
+
+/** Images counting as positive for trust computation */
+export const IMAGE_STATES_TRUSTED: ImageState[] = [ImageState.Approved, ImageState.Curated]
+
+/** Images with negative/demoted state */
+export const IMAGE_STATES_REJECTED: ImageState[] = [ImageState.Rejected, ImageState.Uncurated]
+
 export type ChangePiece = [CHANGE_TYPE.PIECE, EncodedPiece]
 export type ChangePlayer = [CHANGE_TYPE.PLAYER, EncodedPlayer]
 export type ChangeData = [CHANGE_TYPE.DATA, PuzzleData]
@@ -382,7 +403,7 @@ export interface ImageInfo {
   reported: number
   nsfw: boolean
   aiGenerated: boolean
-  state: 'pending_approval' | 'rejected' | 'approved'
+  state: ImageState
   rejectReason: string
 }
 
@@ -404,7 +425,7 @@ export const defaultImageInfo = (): ImageInfo => ({
   reported: 0,
   nsfw: false,
   aiGenerated: false,
-  state: 'pending_approval',
+  state: ImageState.PendingApproval,
   rejectReason: '',
 })
 
@@ -880,7 +901,7 @@ export interface ImageRow {
   nsfw: number
   ai_generated: number
   checksum: string | null
-  state: 'pending_approval' | 'rejected' | 'approved'
+  state: ImageState
   reject_reason: string
 }
 

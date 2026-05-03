@@ -1,6 +1,7 @@
 import Crypto from '../Crypto'
 import type Db from '../lib/Db'
 import type { WhereRaw } from '../lib/Db'
+import { ImageState, IMAGE_STATES_TRUSTED, IMAGE_STATES_PENDING } from '@common/Types'
 import type { UserAvatar, UserAvatarId, UserAvatarRow, UserGroupRow, UserId, UserRow, UserSettings, UserSettingsRow } from '@common/Types'
 import config from '../Config'
 import DbData from '../app/DbData'
@@ -196,12 +197,12 @@ export class UsersRepo {
 
     const row = await this.db._get<{ approved_count: number, rejected_count: number, pending_public_count: number }>(`
       SELECT
-        COUNT(*) FILTER (WHERE state = 'approved')::int AS approved_count,
-        COUNT(*) FILTER (WHERE state = 'rejected')::int AS rejected_count,
-        COUNT(*) FILTER (WHERE state = 'pending_approval' AND private = 0)::int AS pending_public_count
+        COUNT(*) FILTER (WHERE state IN (${IMAGE_STATES_TRUSTED.map((_, idx) => `$${idx + 2}`).join(', ')}))::int AS approved_count,
+        COUNT(*) FILTER (WHERE state = '${ImageState.Rejected}')::int AS rejected_count,
+        COUNT(*) FILTER (WHERE state IN (${IMAGE_STATES_PENDING.map((_, idx) => `$${idx + IMAGE_STATES_TRUSTED.length + 2}`).join(', ')}) AND private = 0)::int AS pending_public_count
       FROM ${DbData.Tables.Images}
       WHERE uploader_user_id = $1
-    `, [userId])
+    `, [userId, ...IMAGE_STATES_TRUSTED, ...IMAGE_STATES_PENDING])
 
     const approvedCount = row?.approved_count ?? 0
     const rejectedCount = row?.rejected_count ?? 0

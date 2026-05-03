@@ -57,7 +57,7 @@
               <span class="text-disabled">NSFW:</span> {{ item.nsfw ? '😳 NSFW' : '-' }}
               <span class="text-disabled">AI:</span> {{ item.ai_generated ? '🤖 AI' : '-' }}
               <span class="text-disabled">State:</span> <code :class="`state-${item.state}`">{{ item.state }}</code>
-              <template v-if="item.state === 'rejected' && item.reject_reason">
+              <template v-if="item.state === ImageState.Rejected && item.reject_reason">
                 <span class="text-disabled">Reason:</span> <span :title="item.reject_reason">{{ item.reject_reason.length > 50 ? item.reject_reason.substring(0, 50) + '…' : item.reject_reason }}</span>
               </template>
             </div>
@@ -103,6 +103,7 @@ import api from '../../_api'
 import Nav from '../components/Nav.vue'
 import ImageActions from '../components/ImageActions.vue'
 import Pagination from '../../components/Pagination.vue'
+import { ImageState } from '@common/Types'
 import type { ImageRowWithCount, Pagination as PaginationType } from '@common/Types'
 
 const perPage = 50
@@ -167,12 +168,18 @@ onUnmounted(() => {
 })
 </script>
 <style scss scoped>
-.state-approved {
+.state-approved,
+.state-curated {
   color: green;
   font-weight: bold;
 }
-.state-rejected {
+.state-rejected,
+.state-uncurated {
   color: red;
+  font-weight: bold;
+}
+.state-unreviewed {
+  color: orange;
   font-weight: bold;
 }
 </style>

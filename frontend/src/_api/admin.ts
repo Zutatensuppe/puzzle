@@ -8,6 +8,7 @@ import type {
   ServerInfo,
   UserId,
 } from '@common/Types'
+import type { ImageState } from '@common/Types'
 import xhr, { JSON_HEADERS } from './xhr'
 import Util from '@common/Util'
 
@@ -195,6 +196,22 @@ const rejectImage = async (
   return await res.json()
 }
 
+const getCurationQueue = async (): Promise<Api.Admin.GetCurationQueueResponseData> => {
+  const res = await xhr.get<Api.Admin.GetCurationQueueResponseData>('/admin/api/images/curation-queue')
+  return await res.json()
+}
+
+const curateImage = async (
+  id: ImageId,
+  value: ImageState.Curated | ImageState.Uncurated,
+): Promise<Api.Admin.CurateImageResponseData> => {
+  const res = await xhr.post<Api.Admin.CurateImageResponseData>(`/admin/api/images/${id}/_curate`, {
+    headers: JSON_HEADERS,
+    body: JSON.stringify({ value }),
+  })
+  return await res.json()
+}
+
 const setImageAiGenerated = async (
   id: ImageId,
   value: number,
@@ -299,6 +316,8 @@ export default {
   setImagePrivate,
   approveImage,
   rejectImage,
+  getCurationQueue,
+  curateImage,
   setImageAiGenerated,
   setImageNsfw,
   detectAiImages,

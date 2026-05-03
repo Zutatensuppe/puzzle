@@ -5,6 +5,7 @@ import { MergeClientIdsIntoUser } from '../../../admin-tools/MergeClientIdsIntoU
 import GameLog from '../../../GameLog'
 import { FixPieces } from '../../../admin-tools/FixPieces'
 import { DetectAiImages } from '../../../admin-tools/DetectAiImages'
+import { ImageState } from '@common/Types'
 import type { Api, FeaturedId, FeaturedTeaserRow, GameId, ImageId, ServerInfo, UserId } from '@common/Types'
 import { newJSONDateString } from '@common/Util'
 import GameCommon from '@common/GameCommon'
@@ -291,7 +292,7 @@ export default function createRouter(
       }
 
       await server.repos.images.update(
-        { state: 'approved' },
+        { state: ImageState.Approved },
         { id },
       )
 
@@ -317,7 +318,7 @@ export default function createRouter(
 
       const rejectReason = req.body?.reason || ''
       await server.repos.images.update(
-        { state: 'rejected', reject_reason: rejectReason },
+        { state: ImageState.Rejected, reject_reason: rejectReason },
         { id },
       )
 
@@ -325,6 +326,48 @@ export default function createRouter(
       await server.repos.users.recomputeTrust(image.uploader_user_id, threshold)
 
       const responseData: Api.Admin.RejectImageResponseData = { ok: true }
+      res.send(responseData)
+    } catch (error) {
+      res.status(400).send(createErrorResponseData(error))
+    }
+  })
+
+  router.get('/images/curation-queue', async (_req, res) => {
+    try {
+      const result = await server.repos.images.getNextForCuration()
+      const responseData: Api.Admin.GetCurationQueueResponseData = result
+      res.send(responseData)
+    } catch (error) {
+      res.status(400).send(createErrorResponseData(error))
+    }
+  })
+
+  router.post('/images/:id/_curate', express.json(), async (req, res) => {
+    try {
+      const id = parseInt(req.params.id, 10) as ImageId
+      const image = await server.repos.images.get({ id })
+      if (!image) {
+        const responseData: Api.Admin.CurateImageResponseData = { error: 'image does not exist' }
+        res.status(404).send(responseData)
+        return
+      }
+
+      const value = req.body?.value
+      if (value !== ImageState.Curated && value !== ImageState.Uncurated) {
+        const responseData: Api.Admin.CurateImageResponseData = { error: 'value must be "curated" or "uncurated"' }
+        res.status(400).send(responseData)
+        return
+      }
+
+      await server.repos.images.update(
+        { state: value },
+        { id },
+      )
+
+      const threshold = config.trust?.threshold ?? 5
+      await server.repos.users.recomputeTrust(image.uploader_user_id, threshold)
+
+      const responseData: Api.Admin.CurateImageResponseData = { ok: true }
       res.send(responseData)
     } catch (error) {
       res.status(400).send(createErrorResponseData(error))

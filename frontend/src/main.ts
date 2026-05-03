@@ -26,6 +26,7 @@ import AdminFeatured from './admin/views/FeaturedView.vue'
 import AdminFeaturedEdit from './admin/views/FeaturedEditView.vue'
 import AdminUploaders from './admin/views/UploadersView.vue'
 import AdminApprovals from './admin/views/ApprovalsView.vue'
+import AdminCuration from './admin/views/CurationView.vue'
 import debug from './debug'
 import api from './_api'
 import config from './config'
@@ -80,6 +81,7 @@ const run = async () => {
       { name: 'admin_users', path: '/admin/users', component: AdminUsers, meta: { admin: true, title: 'Admin - Users' } },
       { name: 'admin_images', path: '/admin/images', component: AdminImages, meta: { admin: true, title: 'Admin - Images' } },
       { name: 'admin_approvals', path: '/admin/approvals', component: AdminApprovals, meta: { admin: true, title: 'Admin - Approvals' } },
+      { name: 'admin_curation', path: '/admin/curation', component: AdminCuration, meta: { admin: true, title: 'Admin - Curation' } },
       { name: 'admin_groups', path: '/admin/groups', component: AdminGroups, meta: { admin: true, title: 'Admin - Groups' } },
       { name: 'admin_uploaders', path: '/admin/uploaders', component: AdminUploaders, meta: { admin: true, title: 'Admin - Uploaders' } },
       { name: 'admin_announcements', path: '/admin/announcements', component: AdminAnnouncements, meta: { admin: true, title: 'Admin - Announcements' } },

@@ -96,6 +96,7 @@
 import { computed, ref } from 'vue'
 import { resizeUrl } from '@common/ImageService'
 import type { ImageInfo, Tag } from '@common/Types'
+import { IMAGE_STATES_PENDING, IMAGE_STATES_REJECTED } from '@common/Types'
 import { useDialog } from '../../useDialog'
 import { me, useNsfw } from '../../user'
 
@@ -159,18 +160,18 @@ const imageStateInfo = computed((): { class: string, text: string, title?: strin
     }
   }
 
-  if (props.image.state === 'pending_approval') {
+  if (IMAGE_STATES_PENDING.includes(props.image.state)) {
     return {
       class: 'image-is-pending-info',
-      text: 'Image pending approval',
+      text: 'Image pending review',
       icon: 'mdi-clock-outline',
     }
   }
 
-  if (props.image.state === 'rejected') {
+  if (IMAGE_STATES_REJECTED.includes(props.image.state)) {
     return {
       class: 'image-is-rejected-info',
-      text: 'Image rejected',
+      text: 'Image not prominently shown',
       title: props.image.rejectReason || '',
       icon: 'mdi-close-circle-outline',
     }

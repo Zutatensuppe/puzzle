@@ -8,6 +8,7 @@ import type {
   UserRow,
   GameId,
 } from '@common/Types'
+import { ImageState } from '@common/Types'
 import config from '../../Config'
 import express from 'express'
 import GameLog from '../../GameLog'
@@ -757,7 +758,7 @@ export default function createRouter(
         nsfw: isNsfw ? 1 : 0,
         ai_generated: isAiGenerated ? 1 : 0,
         checksum,
-        state: isTrusted ? 'approved' : 'pending_approval',
+        state: isTrusted ? ImageState.Uncurated : ImageState.Unreviewed,
         reject_reason: '',
       })
 
