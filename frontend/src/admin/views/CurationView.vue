@@ -155,6 +155,10 @@ onMounted(loadNext)
   overflow: hidden;
   min-height: 0;
 }
+.curation-preview a {
+  display: block;
+  height: 100%;
+}
 .curation-image {
   max-width: 100%;
   max-height: 100%;
