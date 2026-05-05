@@ -56,7 +56,7 @@ export const IMAGE_STATES_PENDING: ImageState[] = [ImageState.PendingApproval, I
 export const IMAGE_STATES_TRUSTED: ImageState[] = [ImageState.Approved, ImageState.Curated]
 
 /** Images with negative/demoted state */
-export const IMAGE_STATES_REJECTED: ImageState[] = [ImageState.Rejected, ImageState.Uncurated]
+export const IMAGE_STATES_REJECTED: ImageState[] = [ImageState.Rejected]
 
 export type ChangePiece = [CHANGE_TYPE.PIECE, EncodedPiece]
 export type ChangePlayer = [CHANGE_TYPE.PLAYER, EncodedPlayer]
