@@ -30,7 +30,7 @@
           :href="`/uploads/${image.filename}`"
           target="_blank"
         ><img
-          :src="resizeUrl(`/image-service/image/${image.filename}`, 1200, 900, 'contain')"
+          :src="`/uploads/${image.filename}`"
           class="curation-image"
         ></a>
       </div>
