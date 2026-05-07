@@ -20,6 +20,7 @@ export default {
     UserIdentity: 'user_identity',
     Users: 'users',
     UserSettings: 'user_settings',
+    CurationEvents: 'curation_events',
     UserXGame: 'user_x_game',
     UserXUserGroup: 'user_x_user_group',
   },

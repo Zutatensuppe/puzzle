@@ -1,4 +1,4 @@
-import type { Announcement, FeaturedRow, FeaturedRowWithCollections, FeaturedTeaserRow, FixPiecesResult, GameRowWithImageAndUser, ImageInfo, ImageRowWithCount, MergeClientIdsIntoUserResult, Pagination, UploaderInfo, UserGroupRow, UserRow } from './Types'
+import type { Announcement, FeaturedRow, FeaturedRowWithCollections, FeaturedTeaserRow, FixPiecesResult, GameRowWithImageAndUser, ImageInfo, ImageRowWithCount, MergeClientIdsIntoUserResult, Pagination, TagRow, UploaderInfo, UserGroupRow, UserRow } from './Types'
 
 export type ErrorResponseData = {
   error: string
@@ -55,7 +55,7 @@ export type SetImageNsfwResponseData = AcknowledgeResponseData | ErrorResponseDa
 export type CurateImageResponseData = AcknowledgeResponseData | ErrorResponseData
 
 export type GetCurationQueueResponseData = {
-  image: ImageRowWithCount | null
+  image: (ImageRowWithCount & { tags: TagRow[], topic_value: string | number | boolean | null }) | null
   progress: { reviewed: number, total: number }
 } | ErrorResponseData
 

@@ -8,7 +8,6 @@ import type {
   ServerInfo,
   UserId,
 } from '@common/Types'
-import type { ImageState } from '@common/Types'
 import xhr, { JSON_HEADERS } from './xhr'
 import Util from '@common/Util'
 
@@ -196,18 +195,20 @@ const rejectImage = async (
   return await res.json()
 }
 
-const getCurationQueue = async (): Promise<Api.Admin.GetCurationQueueResponseData> => {
-  const res = await xhr.get<Api.Admin.GetCurationQueueResponseData>('/admin/api/images/curation-queue')
+const getCurationQueue = async (topic: string, maxPasses: number): Promise<Api.Admin.GetCurationQueueResponseData> => {
+  const params = new URLSearchParams({ topic, maxPasses: String(maxPasses) })
+  const res = await xhr.get<Api.Admin.GetCurationQueueResponseData>(`/admin/api/images/curation-queue?${params}`)
   return await res.json()
 }
 
 const curateImage = async (
   id: ImageId,
-  value: ImageState.Curated | ImageState.Uncurated,
+  topic: string,
+  decision: 'yes' | 'no',
 ): Promise<Api.Admin.CurateImageResponseData> => {
   const res = await xhr.post<Api.Admin.CurateImageResponseData>(`/admin/api/images/${id}/_curate`, {
     headers: JSON_HEADERS,
-    body: JSON.stringify({ value }),
+    body: JSON.stringify({ topic, decision }),
   })
   return await res.json()
 }

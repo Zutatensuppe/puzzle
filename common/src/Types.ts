@@ -908,6 +908,7 @@ export interface ImageRow {
 export interface ImageXTagRow {
   image_id: ImageId
   category_id: TagId
+  confirmed: boolean
 }
 
 export interface TagRow {
@@ -923,6 +924,15 @@ export interface TagRowWithCount extends TagRow {
 export interface ImageRowWithCount extends ImageRow {
   games_count: number
   uploader_user_name: string
+}
+
+export interface CurationEventRow {
+  id: number
+  image_id: ImageId
+  user_id: UserId
+  topic: string
+  decision: 'yes' | 'no'
+  created_at: string
 }
 
 export interface UploaderInfo {
