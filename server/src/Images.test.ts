@@ -192,3 +192,140 @@ describe('ImagesRepo.searchImagesWithCount - SQL filtering', () => {
     expect(result).toEqual([])
   })
 })
+
+describe('Images.setTags', () => {
+  let images: Images
+  let mockImagesRepo: any
+
+  beforeEach(() => {
+    mockImagesRepo = {
+      deleteTagRelations: vi.fn(),
+      upsertTag: vi.fn().mockImplementation(({ slug }: { slug: string }) => {
+        const map: Record<string, number> = { nature: 1, photo: 2, art: 3 }
+        return Promise.resolve((map[slug] ?? 99) as TagId)
+      }),
+      insertTagRelationIfNotExists: vi.fn(),
+    }
+    images = new Images(mockImagesRepo as unknown as ImagesRepo, {} as ImageExif)
+  })
+
+  it('calls deleteTagRelations with adminMode=false by default', async () => {
+    await images.setTags(10 as ImageId, ['nature'])
+    expect(mockImagesRepo.deleteTagRelations).toHaveBeenCalledWith(10, false)
+  })
+
+  it('calls deleteTagRelations with adminMode=true when specified', async () => {
+    await images.setTags(10 as ImageId, ['nature'], true)
+    expect(mockImagesRepo.deleteTagRelations).toHaveBeenCalledWith(10, true)
+  })
+
+  it('inserts tags via insertTagRelationIfNotExists', async () => {
+    await images.setTags(10 as ImageId, ['nature', 'photo'])
+    expect(mockImagesRepo.insertTagRelationIfNotExists).toHaveBeenCalledTimes(2)
+    expect(mockImagesRepo.insertTagRelationIfNotExists).toHaveBeenCalledWith(10, 1)
+    expect(mockImagesRepo.insertTagRelationIfNotExists).toHaveBeenCalledWith(10, 2)
+  })
+
+  it('skips tag if upsertTag returns falsy', async () => {
+    mockImagesRepo.upsertTag.mockResolvedValue(0)
+    await images.setTags(10 as ImageId, ['anything'])
+    expect(mockImagesRepo.insertTagRelationIfNotExists).not.toHaveBeenCalled()
+  })
+})
+
+describe('ImagesRepo.deleteTagRelations', () => {
+  it('deletes all tags in admin mode', async () => {
+    const mockDb = {
+      delete: vi.fn(),
+      run: vi.fn(),
+    }
+    const { ImagesRepo } = await import('./repo/ImagesRepo')
+    const repo = new ImagesRepo(mockDb as any)
+
+    await repo.deleteTagRelations(5 as ImageId, true)
+    expect(mockDb.delete).toHaveBeenCalledWith('image_x_category', { image_id: 5 })
+    expect(mockDb.run).not.toHaveBeenCalled()
+  })
+
+  it('only deletes unconfirmed tags in user mode', async () => {
+    const mockDb = {
+      delete: vi.fn(),
+      run: vi.fn(),
+    }
+    const { ImagesRepo } = await import('./repo/ImagesRepo')
+    const repo = new ImagesRepo(mockDb as any)
+
+    await repo.deleteTagRelations(5 as ImageId, false)
+    expect(mockDb.delete).not.toHaveBeenCalled()
+    expect(mockDb.run).toHaveBeenCalledWith(
+      expect.stringContaining('confirmed = false'),
+      [5],
+    )
+  })
+})
+
+describe('ImagesRepo.insertCurationEvent', () => {
+  it('inserts a curation event row', async () => {
+    const mockDb = {
+      insert: vi.fn(),
+    }
+    const { ImagesRepo } = await import('./repo/ImagesRepo')
+    const repo = new ImagesRepo(mockDb as any)
+
+    await repo.insertCurationEvent({
+      image_id: 42 as ImageId,
+      user_id: 1 as UserId,
+      topic: 'nsfw',
+      decision: 'yes',
+    })
+
+    expect(mockDb.insert).toHaveBeenCalledWith('curation_events', {
+      image_id: 42,
+      user_id: 1,
+      topic: 'nsfw',
+      decision: 'yes',
+    })
+  })
+})
+
+describe('ImagesRepo.getNextForCuration', () => {
+  it('passes topic and maxPasses to the query', async () => {
+    const mockDb = {
+      _get: vi.fn().mockResolvedValue(null),
+      _getMany: vi.fn().mockResolvedValue([]),
+      _buildWhere: vi.fn().mockReturnValue({ sql: 'WHERE 1=1', values: [] }),
+    }
+    const { ImagesRepo } = await import('./repo/ImagesRepo')
+    const repo = new ImagesRepo(mockDb as any)
+
+    const result = await repo.getNextForCuration('ai_generated', 2)
+
+    // First _get call is for stats
+    expect(mockDb._get.mock.calls[0][1]).toContain(2) // maxPasses
+    expect(mockDb._get.mock.calls[0][1]).toContain('ai_generated') // topic
+    expect(result.image).toBeNull()
+    expect(result.progress).toEqual({ reviewed: 0, total: 0 })
+  })
+
+  it('returns image with tags and topic_value when found', async () => {
+    const imageRow = createMockRow({ id: 7 as ImageId, ai_generated: 1 })
+    const mockDb = {
+      _get: vi.fn()
+        .mockResolvedValueOnce({ reviewed: 3, total: 10 }) // stats
+        .mockResolvedValueOnce(imageRow) // image
+        .mockResolvedValueOnce(null), // getTopicValue tag lookup (won't be called for ai_generated)
+      _getMany: vi.fn().mockResolvedValue([]), // getTagsByImageIds
+      _buildWhere: vi.fn().mockReturnValue({ sql: 'WHERE 1=1', values: [] }),
+    }
+    const { ImagesRepo } = await import('./repo/ImagesRepo')
+    const repo = new ImagesRepo(mockDb as any)
+
+    const result = await repo.getNextForCuration('ai_generated', 0)
+
+    expect(result.progress).toEqual({ reviewed: 3, total: 10 })
+    expect(result.image).not.toBeNull()
+    expect(result.image!.id).toBe(7)
+    expect(result.image!.topic_value).toBe(1) // ai_generated value
+    expect(result.image!.tags).toEqual([])
+  })
+})

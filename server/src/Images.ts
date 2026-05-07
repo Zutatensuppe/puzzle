@@ -107,16 +107,14 @@ export class Images {
     return { w, h }
   }
 
-  public async setTags(imageId: ImageId, tags: string[]): Promise<void> {
-    await this.imagesRepo.deleteTagRelations(imageId)
+  public async setTags(imageId: ImageId, tags: string[], adminMode = false): Promise<void> {
+    await this.imagesRepo.deleteTagRelations(imageId, adminMode)
     for (const tag of tags) {
       const slug = Util.slug(tag)
       const id = await this.imagesRepo.upsertTag({ slug, title: tag })
       if (id) {
-        await this.imagesRepo.insertTagRelation({
-          image_id: imageId,
-          category_id: id,
-        })
+        // Use ON CONFLICT to avoid errors when a confirmed tag already exists
+        await this.imagesRepo.insertTagRelationIfNotExists(imageId, id)
       }
     }
   }

@@ -217,12 +217,17 @@ export default function createRouter(
 
   router.delete('/images/:id', async (req, res) => {
     const id = parseInt(req.params.id, 10) as ImageId
+    const userId = req.userInfo!.user!.id
     const image = await server.repos.images.get({ id })
     if (!image) {
       const responseData: Api.Admin.DeleteImageResponseData = { error: 'image does not exist' }
       res.status(404).send(responseData)
       return
     }
+
+    await server.repos.images.insertCurationEvent({
+      image_id: id, user_id: userId, topic: 'delete', decision: 'yes',
+    })
 
     // delete from db
     await server.repos.images.delete(id)
@@ -240,6 +245,7 @@ export default function createRouter(
   router.post('/images/:id/_set_private', express.json(), async (req, res) => {
     try {
       const id = parseInt(req.params.id, 10) as ImageId
+      const userId = req.userInfo!.user!.id
       const image = await server.repos.images.get({ id })
       if (!image) {
         const responseData: Api.Admin.SetImagePrivateResponseData = { error: 'image does not exist' }
@@ -252,6 +258,10 @@ export default function createRouter(
         { private: value },
         { id },
       )
+
+      await server.repos.images.insertCurationEvent({
+        image_id: id, user_id: userId, topic: 'private', decision: value ? 'yes' : 'no',
+      })
 
       // set games currently in play to private, so they dont overwrite the db value when persisting
       const gameIds = await server.repos.games.getIds({ image_id: id })
@@ -284,6 +294,7 @@ export default function createRouter(
   router.post('/images/:id/_approve', async (req, res) => {
     try {
       const id = parseInt(req.params.id, 10) as ImageId
+      const userId = req.userInfo!.user!.id
       const image = await server.repos.images.get({ id })
       if (!image) {
         const responseData: Api.Admin.ApproveImageResponseData = { error: 'image does not exist' }
@@ -295,6 +306,10 @@ export default function createRouter(
         { state: ImageState.Approved },
         { id },
       )
+
+      await server.repos.images.insertCurationEvent({
+        image_id: id, user_id: userId, topic: 'state', decision: 'yes',
+      })
 
       const threshold = config.trust?.threshold ?? 5
       await server.repos.users.recomputeTrust(image.uploader_user_id, threshold)
@@ -309,6 +324,7 @@ export default function createRouter(
   router.post('/images/:id/_reject', express.json(), async (req, res) => {
     try {
       const id = parseInt(req.params.id, 10) as ImageId
+      const userId = req.userInfo!.user!.id
       const image = await server.repos.images.get({ id })
       if (!image) {
         const responseData: Api.Admin.RejectImageResponseData = { error: 'image does not exist' }
@@ -322,6 +338,10 @@ export default function createRouter(
         { id },
       )
 
+      await server.repos.images.insertCurationEvent({
+        image_id: id, user_id: userId, topic: 'state', decision: 'no',
+      })
+
       const threshold = config.trust?.threshold ?? 5
       await server.repos.users.recomputeTrust(image.uploader_user_id, threshold)
 
@@ -332,9 +352,11 @@ export default function createRouter(
     }
   })
 
-  router.get('/images/curation-queue', async (_req, res) => {
+  router.get('/images/curation-queue', async (req, res) => {
     try {
-      const result = await server.repos.images.getNextForCuration()
+      const topic = (req.query.topic as string) || 'state'
+      const maxPasses = parseInt(req.query.maxPasses as string, 10) || 0
+      const result = await server.repos.images.getNextForCuration(topic, maxPasses)
       const responseData: Api.Admin.GetCurationQueueResponseData = result
       res.send(responseData)
     } catch (error) {
@@ -345,6 +367,7 @@ export default function createRouter(
   router.post('/images/:id/_curate', express.json(), async (req, res) => {
     try {
       const id = parseInt(req.params.id, 10) as ImageId
+      const userId = req.userInfo!.user!.id
       const image = await server.repos.images.get({ id })
       if (!image) {
         const responseData: Api.Admin.CurateImageResponseData = { error: 'image does not exist' }
@@ -352,20 +375,43 @@ export default function createRouter(
         return
       }
 
-      const value = req.body?.value
-      if (value !== ImageState.Curated && value !== ImageState.Uncurated) {
-        const responseData: Api.Admin.CurateImageResponseData = { error: 'value must be "curated" or "uncurated"' }
+      const { topic, decision } = req.body
+      if (decision !== 'yes' && decision !== 'no') {
+        const responseData: Api.Admin.CurateImageResponseData = { error: 'decision must be "yes" or "no"' }
         res.status(400).send(responseData)
         return
       }
 
-      await server.repos.images.update(
-        { state: value },
-        { id },
-      )
+      // Apply the decision
+      if (topic === 'state') {
+        const value = decision === 'yes' ? ImageState.Curated : ImageState.Uncurated
+        await server.repos.images.update({ state: value }, { id })
+        const threshold = config.trust?.threshold ?? 5
+        await server.repos.users.recomputeTrust(image.uploader_user_id, threshold)
+      } else if (topic === 'ai_generated') {
+        await server.repos.images.update({ ai_generated: decision === 'yes' ? 1 : 0 }, { id })
+      } else if (topic === 'nsfw') {
+        await server.repos.images.update({ nsfw: decision === 'yes' ? 1 : 0 }, { id })
+      } else if (topic.startsWith('tag:')) {
+        const slug = topic.slice(4)
+        if (decision === 'yes') {
+          await server.repos.images.upsertConfirmedTag(id, slug)
+        } else {
+          await server.repos.images.removeTag(id, slug)
+        }
+      } else {
+        const responseData: Api.Admin.CurateImageResponseData = { error: 'unknown topic' }
+        res.status(400).send(responseData)
+        return
+      }
 
-      const threshold = config.trust?.threshold ?? 5
-      await server.repos.users.recomputeTrust(image.uploader_user_id, threshold)
+      // Log curation event
+      await server.repos.images.insertCurationEvent({
+        image_id: id,
+        user_id: userId,
+        topic,
+        decision,
+      })
 
       const responseData: Api.Admin.CurateImageResponseData = { ok: true }
       res.send(responseData)
@@ -377,6 +423,7 @@ export default function createRouter(
   router.post('/images/:id/_set_ai_generated', express.json(), async (req, res) => {
     try {
       const id = parseInt(req.params.id, 10) as ImageId
+      const userId = req.userInfo!.user!.id
       const image = await server.repos.images.get({ id })
       if (!image) {
         const responseData: Api.Admin.SetImageAiGeneratedResponseData = { error: 'image does not exist' }
@@ -390,6 +437,10 @@ export default function createRouter(
         { id },
       )
 
+      await server.repos.images.insertCurationEvent({
+        image_id: id, user_id: userId, topic: 'ai_generated', decision: value ? 'yes' : 'no',
+      })
+
       const responseData: Api.Admin.SetImageAiGeneratedResponseData = { ok: true }
       res.send(responseData)
     } catch (error) {
@@ -400,6 +451,7 @@ export default function createRouter(
   router.post('/images/:id/_set_nsfw', express.json(), async (req, res) => {
     try {
       const id = parseInt(req.params.id, 10) as ImageId
+      const userId = req.userInfo!.user!.id
       const image = await server.repos.images.get({ id })
       if (!image) {
         const responseData: Api.Admin.SetImageNsfwResponseData = { error: 'image does not exist' }
@@ -412,6 +464,10 @@ export default function createRouter(
         { nsfw: value },
         { id },
       )
+
+      await server.repos.images.insertCurationEvent({
+        image_id: id, user_id: userId, topic: 'nsfw', decision: value ? 'yes' : 'no',
+      })
 
       const responseData: Api.Admin.SetImageNsfwResponseData = { ok: true }
       res.send(responseData)

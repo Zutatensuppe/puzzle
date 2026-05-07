@@ -1,5 +1,5 @@
 import { ImageSearchSort, ImageState, IMAGE_STATES_VISIBLE, IMAGE_STATES_PENDING, IMAGE_STATES_TRUSTED } from '@common/Types'
-import type { ImageId, ImageRow, ImageRowWithCount, ImageXTagRow, Pagination, TagId, TagRow, TagRowWithCount, UploaderInfo, UserId } from '@common/Types'
+import type { CurationEventRow, ImageId, ImageRow, ImageRowWithCount, Pagination, TagId, TagRow, TagRowWithCount, UploaderInfo, UserId } from '@common/Types'
 import type Db from '../lib/Db'
 import type { OrderBy, WhereRaw } from '../lib/Db'
 import DbData from '../app/DbData'
@@ -125,18 +125,27 @@ export class ImagesRepo {
     return { items, total }
   }
 
-  async getNextForCuration(): Promise<{ image: ImageRowWithCount | null, progress: { reviewed: number, total: number } }> {
-    const reviewedStates = this.db._buildWhere({ state: { '$in': [ImageState.Curated, ImageState.Uncurated] } })
+  async getNextForCuration(topic: string, maxPasses: number): Promise<{
+    image: (ImageRowWithCount & { tags: TagRow[], topic_value: string | number | boolean | null }) | null,
+    progress: { reviewed: number, total: number },
+  }> {
+    // Count total non-private images and how many have been reviewed (> maxPasses events for this topic)
     const statsRow = await this.db._get<{ reviewed: number, total: number }>(`
       SELECT
-        COUNT(*) FILTER (${reviewedStates.sql})::int AS reviewed,
+        COUNT(*) FILTER (WHERE ce_counts.cnt > $1)::int AS reviewed,
         COUNT(*)::int AS total
-      FROM ${DbData.Tables.Images}
-      WHERE private = 0
-    `, reviewedStates.values)
+      FROM ${DbData.Tables.Images} i
+      LEFT JOIN (
+        SELECT image_id, COUNT(*)::int AS cnt
+        FROM ${DbData.Tables.CurationEvents}
+        WHERE topic = $2
+        GROUP BY image_id
+      ) ce_counts ON ce_counts.image_id = i.id
+      WHERE i.private = 0
+    `, [maxPasses, topic])
     const progress = { reviewed: statsRow?.reviewed ?? 0, total: statsRow?.total ?? 0 }
 
-    const notReviewedWhere = this.db._buildWhere({ 'i.state': { '$nin': [ImageState.Curated, ImageState.Uncurated] } })
+    // Get next image with <= maxPasses events for this topic
     const image = await this.db._get<ImageRowWithCount>(`
       WITH counts AS (
         SELECT COUNT(*)::int AS count, image_id
@@ -150,19 +159,52 @@ export class ImagesRepo {
       FROM ${DbData.Tables.Images} i
         LEFT JOIN counts ON counts.image_id = i.id
         LEFT JOIN ${DbData.Tables.Users} u ON u.id = i.uploader_user_id
-      WHERE i.private = 0 AND ${notReviewedWhere.sql.replace('WHERE ', '')}
-      ORDER BY
-        CASE i.state
-          WHEN '${ImageState.Unreviewed}' THEN 0
-          WHEN '${ImageState.PendingApproval}' THEN 1
-          WHEN '${ImageState.Approved}' THEN 2
-          WHEN '${ImageState.Rejected}' THEN 3
-        END,
-        i.created ASC
+        LEFT JOIN (
+          SELECT image_id, COUNT(*)::int AS cnt
+          FROM ${DbData.Tables.CurationEvents}
+          WHERE topic = $1
+          GROUP BY image_id
+        ) ce_counts ON ce_counts.image_id = i.id
+      WHERE i.private = 0 AND COALESCE(ce_counts.cnt, 0) <= $2
+      ORDER BY i.created ASC
       LIMIT 1
-    `, notReviewedWhere.values)
+    `, [topic, maxPasses])
 
-    return { image: image ?? null, progress }
+    if (!image) {
+      return { image: null, progress }
+    }
+
+    // Get tags for this image
+    const tags = await this.getTagsByImageIds([image.id])
+    const imageTags = tags[image.id] ?? []
+
+    // Compute the current topic value
+    const topicValue = await this.getTopicValue(image, topic)
+
+    return {
+      image: { ...image, tags: imageTags, topic_value: topicValue },
+      progress,
+    }
+  }
+
+  private async getTopicValue(
+    image: ImageRow,
+    topic: string,
+  ): Promise<string | number | boolean | null> {
+    if (topic === 'state') return image.state
+    if (topic === 'ai_generated') return image.ai_generated
+    if (topic === 'nsfw') return image.nsfw
+    if (topic.startsWith('tag:')) {
+      const slug = topic.slice(4)
+      const row = await this.db._get<{ confirmed: boolean }>(`
+        SELECT ixc.confirmed
+        FROM ${DbData.Tables.ImageXTag} ixc
+        INNER JOIN ${DbData.Tables.Tags} t ON t.id = ixc.category_id
+        WHERE ixc.image_id = $1 AND t.slug = $2
+      `, [image.id, slug])
+      return row ? true : false
+    }
+    return null
   }
 
   async insert(image: Omit<ImageRow, 'id'>): Promise<ImageId> {
@@ -173,12 +215,47 @@ export class ImagesRepo {
     await this.db.update(DbData.Tables.Images, image, where)
   }
 
-  async deleteTagRelations(imageId: ImageId): Promise<void> {
-    await this.db.delete(DbData.Tables.ImageXTag, { image_id: imageId })
+  async insertCurationEvent(event: Omit<CurationEventRow, 'id' | 'created_at'>): Promise<void> {
+    await this.db.insert(DbData.Tables.CurationEvents, event)
   }
 
-  async insertTagRelation(imageXtag: ImageXTagRow): Promise<void> {
-    await this.db.insert(DbData.Tables.ImageXTag, imageXtag)
+  async deleteTagRelations(imageId: ImageId, adminMode = false): Promise<void> {
+    if (adminMode) {
+      await this.db.delete(DbData.Tables.ImageXTag, { image_id: imageId })
+    } else {
+      await this.db.run(
+        `DELETE FROM ${DbData.Tables.ImageXTag} WHERE image_id = $1 AND confirmed = false`,
+        [imageId],
+      )
+    }
+  }
+
+  async upsertConfirmedTag(imageId: ImageId, tagSlug: string): Promise<void> {
+    const tag = await this.upsertTag({ slug: tagSlug, title: tagSlug })
+    if (!tag) return
+    // upsert: insert or update confirmed = true
+    await this.db.run(`
+      INSERT INTO ${DbData.Tables.ImageXTag} (image_id, category_id, confirmed)
+      VALUES ($1, $2, true)
+      ON CONFLICT (image_id, category_id) DO UPDATE SET confirmed = true
+    `, [imageId, tag])
+  }
+
+  async removeTag(imageId: ImageId, tagSlug: string): Promise<void> {
+    const tags = await this.getTagsBySlugs([tagSlug])
+    if (!tags.length) return
+    await this.db.run(
+      `DELETE FROM ${DbData.Tables.ImageXTag} WHERE image_id = $1 AND category_id = $2`,
+      [imageId, tags[0].id],
+    )
+  }
+
+  async insertTagRelationIfNotExists(imageId: ImageId, tagId: TagId): Promise<void> {
+    await this.db.run(`
+      INSERT INTO ${DbData.Tables.ImageXTag} (image_id, category_id, confirmed)
+      VALUES ($1, $2, false)
+      ON CONFLICT (image_id, category_id) DO NOTHING
+    `, [imageId, tagId])
   }
 
   async upsertTag(tag: Omit<TagRow, 'id'>): Promise<TagId> {
