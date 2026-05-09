@@ -4,6 +4,14 @@ import type Db from '../lib/Db'
 import type { OrderBy, WhereRaw } from '../lib/Db'
 import DbData from '../app/DbData'
 
+export interface CurationFilters {
+  state?: string     // 'curated' | 'uncurated' | '' (any)
+  nsfw?: string      // 'yes' | 'no' | '' (any)
+  aiGenerated?: string // 'yes' | 'no' | '' (any)
+  requireTags?: string[] // tag slugs the image must have
+  excludeTags?: string[] // tag slugs the image must not have
+}
+
 export class ImagesRepo {
   constructor(
     private readonly db: Db,
@@ -125,14 +133,16 @@ export class ImagesRepo {
     return { items, total }
   }
 
-  async getNextForCuration(topic: string, maxPasses: number): Promise<{
+  async getNextForCuration(topic: string, maxPasses: number, filters?: CurationFilters): Promise<{
     image: (ImageRowWithCount & { tags: TagRow[], topic_value: string | number | boolean | null }) | null,
     progress: { reviewed: number, total: number },
   }> {
+    const { filterClauses, filterParams } = this.buildCurationFilterSql(filters, 3)
+
     // Count total non-private images and how many have been reviewed (> maxPasses events for this topic)
     const statsRow = await this.db._get<{ reviewed: number, total: number }>(`
       SELECT
-        COUNT(*) FILTER (WHERE ce_counts.cnt > $1)::int AS reviewed,
+        COUNT(*) FILTER (WHERE ce_counts.cnt > $1 AND $1 >= 0)::int AS reviewed,
         COUNT(*)::int AS total
       FROM ${DbData.Tables.Images} i
       LEFT JOIN (
@@ -141,8 +151,10 @@ export class ImagesRepo {
         WHERE topic = $2
         GROUP BY image_id
       ) ce_counts ON ce_counts.image_id = i.id
+      ${filterClauses.joins.join(' ')}
       WHERE i.private = 0
-    `, [maxPasses, topic])
+      ${filterClauses.wheres.length ? 'AND ' + filterClauses.wheres.join(' AND ') : ''}
+    `, [maxPasses, topic, ...filterParams])
     const progress = { reviewed: statsRow?.reviewed ?? 0, total: statsRow?.total ?? 0 }
 
     // Get next image with <= maxPasses events for this topic
@@ -165,10 +177,12 @@ export class ImagesRepo {
           WHERE topic = $1
           GROUP BY image_id
         ) ce_counts ON ce_counts.image_id = i.id
-      WHERE i.private = 0 AND COALESCE(ce_counts.cnt, 0) <= $2
-      ORDER BY i.created ASC
+        ${filterClauses.joins.join(' ')}
+      WHERE i.private = 0 AND ($2 < 0 OR COALESCE(ce_counts.cnt, 0) <= $2)
+      ${filterClauses.wheres.length ? 'AND ' + filterClauses.wheres.join(' AND ') : ''}
+      ORDER BY i.created DESC
       LIMIT 1
-    `, [topic, maxPasses])
+    `, [topic, maxPasses, ...filterParams])
 
     if (!image) {
       return { image: null, progress }
@@ -205,6 +219,70 @@ export class ImagesRepo {
       return row ? true : false
     }
     return null
+  }
+
+  private buildCurationFilterSql(
+    filters: CurationFilters | undefined,
+    nextParamIndex: number,
+  ): { filterClauses: { wheres: string[], joins: string[] }, filterParams: unknown[] } {
+    const wheres: string[] = []
+    const joins: string[] = []
+    const params: unknown[] = []
+    let idx = nextParamIndex
+
+    if (!filters) {
+      return { filterClauses: { wheres, joins }, filterParams: params }
+    }
+
+    if (filters.state === 'curated') {
+      wheres.push(`i.state = $${idx}`)
+      params.push('curated')
+      idx++
+    } else if (filters.state === 'uncurated') {
+      wheres.push(`i.state = $${idx}`)
+      params.push('uncurated')
+      idx++
+    }
+
+    if (filters.nsfw === 'yes') {
+      wheres.push('i.nsfw = 1')
+    } else if (filters.nsfw === 'no') {
+      wheres.push('i.nsfw = 0')
+    }
+
+    if (filters.aiGenerated === 'yes') {
+      wheres.push('i.ai_generated = 1')
+    } else if (filters.aiGenerated === 'no') {
+      wheres.push('i.ai_generated = 0')
+    }
+
+    if (filters.requireTags && filters.requireTags.length > 0) {
+      for (const slug of filters.requireTags) {
+        const alias = `req_tag_${idx}`
+        joins.push(
+          `INNER JOIN ${DbData.Tables.ImageXTag} ${alias} ON ${alias}.image_id = i.id`
+          + ` INNER JOIN ${DbData.Tables.Tags} ${alias}_t ON ${alias}_t.id = ${alias}.category_id AND ${alias}_t.slug = $${idx}`,
+        )
+        params.push(slug)
+        idx++
+      }
+    }
+
+    if (filters.excludeTags && filters.excludeTags.length > 0) {
+      for (const slug of filters.excludeTags) {
+        const alias = `exc_tag_${idx}`
+        joins.push(
+          `LEFT JOIN (${DbData.Tables.ImageXTag} ${alias}`
+          + ` INNER JOIN ${DbData.Tables.Tags} ${alias}_t ON ${alias}_t.id = ${alias}.category_id AND ${alias}_t.slug = $${idx})`
+          + ` ON ${alias}.image_id = i.id`,
+        )
+        wheres.push(`${alias}.image_id IS NULL`)
+        params.push(slug)
+        idx++
+      }
+    }
+
+    return { filterClauses: { wheres, joins }, filterParams: params }
   }
 
   async insert(image: Omit<ImageRow, 'id'>): Promise<ImageId> {
@@ -447,6 +525,25 @@ export class ImagesRepo {
       inner join ${DbData.Tables.Images} i on i.id = ixc.image_id
       group by t.id order by images_count desc;`
     return await this.db._getMany(query)
+  }
+
+  async getConfirmedTags(): Promise<(TagRow & { has_confirmed: boolean, uncurated_count: number })[]> {
+    return await this.db._getMany<TagRow & { has_confirmed: boolean, uncurated_count: number }>(`
+      SELECT t.id, t.slug, t.title,
+        BOOL_OR(ixc.confirmed) AS has_confirmed,
+        (
+          SELECT COUNT(*)::int FROM ${DbData.Tables.Images} i
+          WHERE i.private = 0
+          AND NOT EXISTS (
+            SELECT 1 FROM ${DbData.Tables.CurationEvents} ce
+            WHERE ce.image_id = i.id AND ce.topic = 'tag:' || t.slug
+          )
+        ) AS uncurated_count
+      FROM ${DbData.Tables.Tags} t
+      INNER JOIN ${DbData.Tables.ImageXTag} ixc ON t.id = ixc.category_id
+      GROUP BY t.id
+      ORDER BY BOOL_OR(ixc.confirmed) DESC, t.title ASC
+    `)
   }
 
   async approveImage(imageId: ImageId): Promise<void> {

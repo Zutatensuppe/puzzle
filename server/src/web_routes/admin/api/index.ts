@@ -10,6 +10,7 @@ import type { Api, FeaturedId, FeaturedTeaserRow, GameId, ImageId, ServerInfo, U
 import { newJSONDateString } from '@common/Util'
 import GameCommon from '@common/GameCommon'
 import config from '../../../Config'
+import type { CurationFilters } from '../../../repo/ImagesRepo'
 
 export default function createRouter(
   server: Server,
@@ -356,8 +357,24 @@ export default function createRouter(
     try {
       const topic = (req.query.topic as string) || 'state'
       const maxPasses = parseInt(req.query.maxPasses as string, 10) || 0
-      const result = await server.repos.images.getNextForCuration(topic, maxPasses)
+      const filters: CurationFilters = {}
+      if (req.query.filterState) filters.state = req.query.filterState as string
+      if (req.query.filterNsfw) filters.nsfw = req.query.filterNsfw as string
+      if (req.query.filterAiGenerated) filters.aiGenerated = req.query.filterAiGenerated as string
+      if (req.query.requireTags) filters.requireTags = (req.query.requireTags as string).split(',').filter(Boolean)
+      if (req.query.excludeTags) filters.excludeTags = (req.query.excludeTags as string).split(',').filter(Boolean)
+      const result = await server.repos.images.getNextForCuration(topic, maxPasses, filters)
       const responseData: Api.Admin.GetCurationQueueResponseData = result
+      res.send(responseData)
+    } catch (error) {
+      res.status(400).send(createErrorResponseData(error))
+    }
+  })
+
+  router.get('/images/confirmed-tags', async (_req, res) => {
+    try {
+      const tags = await server.repos.images.getConfirmedTags()
+      const responseData: Api.Admin.GetConfirmedTagsResponseData = tags
       res.send(responseData)
     } catch (error) {
       res.status(400).send(createErrorResponseData(error))
@@ -470,6 +487,59 @@ export default function createRouter(
       })
 
       const responseData: Api.Admin.SetImageNsfwResponseData = { ok: true }
+      res.send(responseData)
+    } catch (error) {
+      res.status(400).send(createErrorResponseData(error))
+    }
+  })
+
+  router.post('/images/:id/_add_tag', express.json(), async (req, res) => {
+    try {
+      const id = parseInt(req.params.id, 10) as ImageId
+      const slug = String(req.body?.slug || '').trim()
+      if (!slug) {
+        const responseData: Api.Admin.AddImageTagResponseData = { error: 'slug is required' }
+        res.status(400).send(responseData)
+        return
+      }
+      const image = await server.repos.images.get({ id })
+      if (!image) {
+        const responseData: Api.Admin.AddImageTagResponseData = { error: 'image does not exist' }
+        res.status(404).send(responseData)
+        return
+      }
+      await server.repos.images.upsertConfirmedTag(id, slug)
+      await server.repos.images.insertCurationEvent({
+        image_id: id, user_id: req.userInfo!.user!.id, topic: `tag:${slug}`, decision: 'yes',
+      })
+      const tags = await server.repos.images.getTagsBySlugs([slug])
+      const responseData: Api.Admin.AddImageTagResponseData = { ok: true, tag: tags[0] }
+      res.send(responseData)
+    } catch (error) {
+      res.status(400).send(createErrorResponseData(error))
+    }
+  })
+
+  router.post('/images/:id/_remove_tag', express.json(), async (req, res) => {
+    try {
+      const id = parseInt(req.params.id, 10) as ImageId
+      const slug = String(req.body?.slug || '').trim()
+      if (!slug) {
+        const responseData: Api.Admin.RemoveImageTagResponseData = { error: 'slug is required' }
+        res.status(400).send(responseData)
+        return
+      }
+      const image = await server.repos.images.get({ id })
+      if (!image) {
+        const responseData: Api.Admin.RemoveImageTagResponseData = { error: 'image does not exist' }
+        res.status(404).send(responseData)
+        return
+      }
+      await server.repos.images.removeTag(id, slug)
+      await server.repos.images.insertCurationEvent({
+        image_id: id, user_id: req.userInfo!.user!.id, topic: `tag:${slug}`, decision: 'no',
+      })
+      const responseData: Api.Admin.RemoveImageTagResponseData = { ok: true }
       res.send(responseData)
     } catch (error) {
       res.status(400).send(createErrorResponseData(error))
