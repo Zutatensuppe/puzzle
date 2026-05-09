@@ -195,9 +195,27 @@ const rejectImage = async (
   return await res.json()
 }
 
-const getCurationQueue = async (topic: string, maxPasses: number): Promise<Api.Admin.GetCurationQueueResponseData> => {
+export interface CurationFilters {
+  state?: string | undefined
+  nsfw?: string | undefined
+  aiGenerated?: string | undefined
+  requireTags?: string[]
+  excludeTags?: string[]
+}
+
+const getCurationQueue = async (topic: string, maxPasses: number, filters?: CurationFilters): Promise<Api.Admin.GetCurationQueueResponseData> => {
   const params = new URLSearchParams({ topic, maxPasses: String(maxPasses) })
+  if (filters?.state) params.set('filterState', filters.state)
+  if (filters?.nsfw) params.set('filterNsfw', filters.nsfw)
+  if (filters?.aiGenerated) params.set('filterAiGenerated', filters.aiGenerated)
+  if (filters?.requireTags?.length) params.set('requireTags', filters.requireTags.join(','))
+  if (filters?.excludeTags?.length) params.set('excludeTags', filters.excludeTags.join(','))
   const res = await xhr.get<Api.Admin.GetCurationQueueResponseData>(`/admin/api/images/curation-queue?${params}`)
+  return await res.json()
+}
+
+const getConfirmedTags = async (): Promise<Api.Admin.GetConfirmedTagsResponseData> => {
+  const res = await xhr.get<Api.Admin.GetConfirmedTagsResponseData>('/admin/api/images/confirmed-tags')
   return await res.json()
 }
 
@@ -231,6 +249,28 @@ const setImageNsfw = async (
   const res = await xhr.post<Api.Admin.SetImageNsfwResponseData>(`/admin/api/images/${id}/_set_nsfw`, {
     headers: JSON_HEADERS,
     body: JSON.stringify({ value }),
+  })
+  return await res.json()
+}
+
+const addImageTag = async (
+  id: ImageId,
+  slug: string,
+): Promise<Api.Admin.AddImageTagResponseData> => {
+  const res = await xhr.post<Api.Admin.AddImageTagResponseData>(`/admin/api/images/${id}/_add_tag`, {
+    headers: JSON_HEADERS,
+    body: JSON.stringify({ slug }),
+  })
+  return await res.json()
+}
+
+const removeImageTag = async (
+  id: ImageId,
+  slug: string,
+): Promise<Api.Admin.RemoveImageTagResponseData> => {
+  const res = await xhr.post<Api.Admin.RemoveImageTagResponseData>(`/admin/api/images/${id}/_remove_tag`, {
+    headers: JSON_HEADERS,
+    body: JSON.stringify({ slug }),
   })
   return await res.json()
 }
@@ -318,9 +358,12 @@ export default {
   approveImage,
   rejectImage,
   getCurationQueue,
+  getConfirmedTags,
   curateImage,
   setImageAiGenerated,
   setImageNsfw,
+  addImageTag,
+  removeImageTag,
   detectAiImages,
   getGroups,
   getServerInfo,

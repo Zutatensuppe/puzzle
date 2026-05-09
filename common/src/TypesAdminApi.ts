@@ -93,6 +93,12 @@ export type RecomputeTrustResponseData = {
 
 export type GetAnnouncementsResponseData = Announcement[]
 
+export type GetConfirmedTagsResponseData = (TagRow & { has_confirmed: boolean, uncurated_count: number })[] | ErrorResponseData
+
+export type AddImageTagResponseData = { ok: true, tag: TagRow } | ErrorResponseData
+
+export type RemoveImageTagResponseData = AcknowledgeResponseData | ErrorResponseData
+
 export type PostAnnouncementsResponseData = {
   announcement: Announcement
 } | { ok: false, reason: string }
