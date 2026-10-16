@@ -3,7 +3,7 @@
 import Geometry from '@common/Geometry'
 import type { Dim, Point, Rect } from '@common/Geometry'
 import Util, { logger } from '@common/Util'
-import { EncodedPieceIdx } from '@common/Types'
+import { EncodedPieceIdx, PieceRotation } from '@common/Types'
 import type { Puzzle, PuzzleInfo, PieceShape, ShapeMode, EncodedPieceShape } from '@common/Types'
 import { determinePuzzlePieceShapes } from '@common/Puzzle'
 import type { PuzzleCreationInfo } from '@common/Puzzle'
@@ -197,45 +197,80 @@ function cutPiece(
   return c
 }
 
+/**
+ * The per-piece bitmaps of a static image, with baked-in bevel shading. Each
+ * bitmap is baked for one rotation: the piece's draw area rotated, cut with
+ * the rotated shape. Drawn unrotated, its shading stays screen-aligned (light
+ * from the top left) whatever the rotation. `bakedFor` cuts a piece again
+ * only when its rotation differs from the one its bitmap was baked for.
+ */
+export class StaticPieceBitmaps {
+  private readonly bitmaps: HTMLCanvasElement[] = []
+  private readonly rotations: PieceRotation[] = []
+  private readonly paths: Record<EncodedPieceShape, Path2D> = {}
+  // the rotated draw area, reused for every cut
+  private rotatedDrawArea: HTMLCanvasElement | null = null
+
+  constructor(
+    private readonly image: HTMLCanvasElement,
+    private readonly info: PuzzleInfo,
+    private readonly graphics: Graphics,
+  ) {}
+
+  public bakedFor(pieceIdx: number, rotation: PieceRotation): HTMLCanvasElement {
+    if (this.rotations[pieceIdx] !== rotation) {
+      this.bitmaps[pieceIdx] = this.cut(pieceIdx, rotation)
+      this.rotations[pieceIdx] = rotation
+    }
+    return this.bitmaps[pieceIdx]
+  }
+
+  private cut(pieceIdx: number, rotation: PieceRotation): HTMLCanvasElement {
+    const info = this.info
+    const drawSize = info.tileDrawSize
+    const srcRect = srcRectByIdx(info, pieceIdx)
+    const sx = srcRect.x - info.tileMarginWidth
+    const sy = srcRect.y - info.tileMarginWidth
+    const path = this.pathForShape(Util.rotateEncodedShape(info.shapes[pieceIdx], rotation))
+    if (rotation === PieceRotation.R0) {
+      return cutPiece(this.image, sx, sy, path, drawSize, this.graphics)
+    }
+
+    this.rotatedDrawArea ??= this.graphics.createCanvas(drawSize)
+    const ctx = this.rotatedDrawArea.getContext('2d')!
+    ctx.setTransform(1, 0, 0, 1, 0, 0)
+    ctx.clearRect(0, 0, drawSize, drawSize)
+    ctx.translate(drawSize / 2, drawSize / 2)
+    ctx.rotate(rotation * Math.PI / 2)
+    ctx.drawImage(this.image, sx, sy, drawSize, drawSize, -drawSize / 2, -drawSize / 2, drawSize, drawSize)
+    return cutPiece(this.rotatedDrawArea, 0, 0, path, drawSize, this.graphics)
+  }
+
+  private pathForShape(shape: EncodedPieceShape): Path2D {
+    return this.paths[shape] ??= createPathForShape(
+      Util.decodeShape(shape),
+      this.info.tileMarginWidth,
+      this.info.tileMarginWidth,
+      this.info.tileSize,
+    )
+  }
+}
+
+/**
+ * Bakes each piece for its current rotation, one cut per piece.
+ */
 function loadPuzzleBitmaps(
   image: HTMLCanvasElement,
   puzzle: Puzzle,
   graphics: Graphics,
-): HTMLCanvasElement[] {
+): StaticPieceBitmaps {
   log.log('start loadPuzzleBitmaps')
-  const pieces = puzzle.tiles
-  const info = puzzle.info
-  const pieceSize = info.tileSize
-  const pieceMarginWidth = info.tileMarginWidth
-  const pieceDrawSize = info.tileDrawSize
-
-  const images: HTMLCanvasElement[] = new Array(pieces.length)
-
-  const paths: Record<number, Path2D> = {}
-  function pathForShape(shape: PieceShape) {
-    const key = Util.encodeShape(shape)
-    if (!(key in paths)) {
-      paths[key] = createPathForShape(shape, pieceMarginWidth, pieceMarginWidth, pieceSize)
-    }
-    return paths[key]
+  const bitmaps = new StaticPieceBitmaps(image, puzzle.info, graphics)
+  for (const piece of puzzle.tiles) {
+    bitmaps.bakedFor(piece[EncodedPieceIdx.IDX], piece[EncodedPieceIdx.ROTATION] || PieceRotation.R0)
   }
-
-  for (const piece of pieces) {
-    const pieceIdx = piece[EncodedPieceIdx.IDX]
-    const srcRect = srcRectByIdx(info, pieceIdx)
-    const path = pathForShape(Util.decodeShape(info.shapes[pieceIdx]))
-    images[pieceIdx] = cutPiece(
-      image,
-      srcRect.x - pieceMarginWidth,
-      srcRect.y - pieceMarginWidth,
-      path,
-      pieceDrawSize,
-      graphics,
-    )
-  }
-
   log.log('end loadPuzzleBitmaps')
-  return images
+  return bitmaps
 }
 
 export type PieceShapeSheetsPuzzleInfo = Pick<PuzzleInfo, 'tileSize' | 'tileMarginWidth' | 'tileDrawSize'>
