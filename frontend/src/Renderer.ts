@@ -6,6 +6,7 @@ import type { EncodedPiece, EncodedPlayer, FireworksInterface, GameId, ImageFram
 import { Camera } from '@common/Camera'
 import PuzzleGraphics from './PuzzleGraphics'
 import { AnimatedImageLoader } from './AnimatedImageLoader'
+import { FrameClock } from './FrameClock'
 import { logger } from '@common/Util'
 import type { PlayerCursors } from './PlayerCursors'
 import type { PuzzleTable } from './PuzzleTable'
@@ -20,9 +21,7 @@ const puzzleBitmapGrayscaled: Record<string, HTMLCanvasElement> = {}
 
 interface ImageAnimationState {
   frames: HTMLCanvasElement[]
-  delays: number[]
-  currentFrame: number
-  lastFrameTime: number
+  clock: FrameClock
   pieceBitmapsCache: Record<number, HTMLCanvasElement[]>
   grayscaleFramesCache: Record<number, HTMLCanvasElement>
 }
@@ -116,12 +115,12 @@ export class Renderer {
 
       const puzzle = GameCommon.getPuzzle(this.gameId)
       const frames: HTMLCanvasElement[] = []
-      const delays: number[] = []
+      const durations: number[] = []
 
       for (const frame of imageFrames) {
          const resized = this.graphics.op.resize(frame.canvas, puzzle.info.width, puzzle.info.height)
         frames.push(resized)
-        delays.push(frame.delay)
+        durations.push(frame.delay)
       }
 
       // Compute piece bitmaps for the first frame eagerly
@@ -131,9 +130,7 @@ export class Renderer {
 
       imageAnimationStates[this.gameId] = {
         frames,
-        delays,
-        currentFrame: 0,
-        lastFrameTime: performance.now(),
+        clock: new FrameClock(durations, performance.now()),
         pieceBitmapsCache: { 0: firstFrameBitmaps },
         grayscaleFramesCache: { 0: firstFrameGrayscale },
       }
@@ -151,27 +148,22 @@ export class Renderer {
     const anim = imageAnimationStates[this.gameId]
     if (!anim) return
 
-    const now = performance.now()
-    const timeSinceLastFrame = now - anim.lastFrameTime
-    const currentDelay = anim.delays[anim.currentFrame]
-
-    if (timeSinceLastFrame >= currentDelay) {
-      anim.currentFrame = (anim.currentFrame + 1) % anim.frames.length
-      anim.lastFrameTime = now
+    if (anim.clock.update(performance.now())) {
+      const frame = anim.clock.frame
 
       // Lazily compute piece bitmaps for this frame
-      if (!anim.pieceBitmapsCache[anim.currentFrame]) {
+      if (!anim.pieceBitmapsCache[frame]) {
         const puzzle = GameCommon.getPuzzle(this.gameId)
-        anim.pieceBitmapsCache[anim.currentFrame] = PuzzleGraphics.loadPuzzleBitmaps(
-          anim.frames[anim.currentFrame], puzzle, this.graphics,
+        anim.pieceBitmapsCache[frame] = PuzzleGraphics.loadPuzzleBitmaps(
+          anim.frames[frame], puzzle, this.graphics,
         )
       }
-      pieceBitmapsCache[this.gameId] = [anim.pieceBitmapsCache[anim.currentFrame]]
+      pieceBitmapsCache[this.gameId] = [anim.pieceBitmapsCache[frame]]
 
       // Lazily compute grayscale preview for this frame
-      if (!anim.grayscaleFramesCache[anim.currentFrame]) {
-        anim.grayscaleFramesCache[anim.currentFrame] = this.graphics.op.toGrayscale(
-          anim.frames[anim.currentFrame], 'black', 0.3,
+      if (!anim.grayscaleFramesCache[frame]) {
+        anim.grayscaleFramesCache[frame] = this.graphics.op.toGrayscale(
+          anim.frames[frame], 'black', 0.3,
         )
       }
     }
@@ -239,7 +231,7 @@ export class Renderer {
       if (renderPreview && settings.showPuzzleBackground) {
         pos = viewport.worldToViewportRaw(this.boardPos)
         dim = viewport.worldDimToViewportRaw(this.boardDim)
-        const grayscale = anim?.grayscaleFramesCache[anim.currentFrame] ?? puzzleBitmapGrayscaled[this.gameId]
+        const grayscale = anim?.grayscaleFramesCache[anim.clock.frame] ?? puzzleBitmapGrayscaled[this.gameId]
         ctx.drawImage(grayscale, pos.x, pos.y, dim.w, dim.h)
       } else if (!settings.showTable || !this.puzzleTable) {
         pos = viewport.worldToViewportRaw(this.boardPos)
@@ -391,10 +383,6 @@ export class Renderer {
   }
 
   public isImageAnimationFrameDue(now: number = performance.now()): boolean {
-    const anim = imageAnimationStates[this.gameId]
-    if (!anim || anim.frames.length <= 1) return false
-
-    const currentDelay = anim.delays[anim.currentFrame] ?? 0
-    return now - anim.lastFrameTime >= currentDelay
+    return imageAnimationStates[this.gameId]?.clock.isFrameChangeDue(now) ?? false
   }
 }

@@ -16,6 +16,7 @@ import { FireworksShaderWrapper } from './webgl/FireworksShaderWrapper'
 import PuzzleGraphics from './PuzzleGraphics'
 import { GraphicsEnum } from '@common/Enums'
 import { AnimatedImageLoader } from './AnimatedImageLoader'
+import { FrameClock } from './FrameClock'
 
 const log = logger('RendererWebgl.ts')
 
@@ -24,9 +25,7 @@ let stencils: Record<EncodedPieceShape, ImageBitmap> | null = null
 
 interface ImageAnimationState {
   frames: HTMLCanvasElement[]
-  delays: number[]
-  currentFrame: number
-  lastFrameTime: number
+  clock: FrameClock
 }
 
 export class RendererWebgl {
@@ -108,18 +107,16 @@ export class RendererWebgl {
       const animatedFrames = await animatedImageLoader.loadFrames(metas)
 
       const frames: HTMLCanvasElement[] = []
-      const delays: number[] = []
+      const durations: number[] = []
 
       for (const frame of animatedFrames) {
         frames.push(frame.canvas)
-        delays.push(frame.delay)
+        durations.push(frame.delay)
       }
 
       this.imageAnimation = {
         frames,
-        delays,
-        currentFrame: 0,
-        lastFrameTime: performance.now(),
+        clock: new FrameClock(durations, performance.now()),
       }
 
       log.log(`Image Animation initialized with ${frames.length} frames`)
@@ -131,16 +128,9 @@ export class RendererWebgl {
   private updateImageAnimation(): void {
     if (!this.imageAnimation) return
 
-    const now = performance.now()
-    const timeSinceLastFrame = now - this.imageAnimation.lastFrameTime
-    const currentDelay = this.imageAnimation.delays[this.imageAnimation.currentFrame]
-
-    if (timeSinceLastFrame >= currentDelay) {
-      this.imageAnimation.currentFrame = (this.imageAnimation.currentFrame + 1) % this.imageAnimation.frames.length
-      this.imageAnimation.lastFrameTime = now
-
+    if (this.imageAnimation.clock.update(performance.now())) {
       // Update the texture with the new frame
-      const currentFrameCanvas = this.imageAnimation.frames[this.imageAnimation.currentFrame]
+      const currentFrameCanvas = this.imageAnimation.frames[this.imageAnimation.clock.frame]
       this.piecesShaderWrapper.updatePuzzleTexture(currentFrameCanvas)
       this.bgShaderWrapper.updatePreviewTexture(currentFrameCanvas)
     }
@@ -151,10 +141,7 @@ export class RendererWebgl {
   }
 
   public isImageAnimationFrameDue(now: number = performance.now()): boolean {
-    if (!this.imageAnimation || this.imageAnimation.frames.length <= 1) return false
-
-    const currentDelay = this.imageAnimation.delays[this.imageAnimation.currentFrame] ?? 0
-    return now - this.imageAnimation.lastFrameTime >= currentDelay
+    return this.imageAnimation?.clock.isFrameChangeDue(now) ?? false
   }
 
   async loadTableTexture(settings: PlayerSettingsData): Promise<void> {
