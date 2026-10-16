@@ -7,7 +7,7 @@
     "build": "vite build --config vite.config.build.mts && npm run build:copyassets",
     "start": "vite --open",
     "lint": "tsc --noEmit && eslint src && stylelint \"src/**/*.scss\"",
-    "test": ""
+    "test": "vitest --run"
   },
   "author": "Zutatensuppe",
   "license": "ISC",
