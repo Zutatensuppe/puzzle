@@ -2,12 +2,14 @@ import Debug from '@common/Debug'
 import GameCommon from '@common/GameCommon'
 import type { Dim, Point, Rect } from '@common/Geometry'
 import { PieceRotation, EncodedPieceIdx, EncodedPlayerIdx } from '@common/Types'
-import type { EncodedPiece, EncodedPlayer, FireworksInterface, GameId, ImageFrameMeta, PlayerSettingsData, PuzzleStatusInterface, Timestamp } from '@common/Types'
+import type { EncodedPiece, EncodedPlayer, FireworksInterface, GameId, ImageFrameMeta, PlayerSettingsData, PuzzleInfo, PuzzleStatusInterface, Timestamp } from '@common/Types'
 import { Camera } from '@common/Camera'
 import PuzzleGraphics from './PuzzleGraphics'
+import type { PieceShapeSheets } from './PuzzleGraphics'
 import { AnimatedImageLoader } from './AnimatedImageLoader'
 import { FrameClock } from './FrameClock'
-import { logger } from '@common/Util'
+import { ParityAtlas } from './ParityAtlas'
+import Util, { logger } from '@common/Util'
 import type { PlayerCursors } from './PlayerCursors'
 import type { PuzzleTable } from './PuzzleTable'
 import type { Graphics } from './Graphics'
@@ -15,19 +17,30 @@ import { getPlayerNameCanvas } from './PlayerNames'
 
 const log = logger('Renderer.ts')
 
-const pieceBitmapsCache: Record<string, HTMLCanvasElement[][]> = {}
+const pieceBitmapsCache: Record<string, HTMLCanvasElement[]> = {}
 const puzzleBitmapCache: Record<string, HTMLCanvasElement> = {}
 const puzzleBitmapGrayscaled: Record<string, HTMLCanvasElement> = {}
 
 interface ImageAnimationState {
+  // in native resolution, scaled only when drawn into the atlas
   frames: HTMLCanvasElement[]
   clock: FrameClock
-  pieceBitmapsCache: Record<number, HTMLCanvasElement[]>
-  grayscaleFramesCache: Record<number, HTMLCanvasElement>
+  atlas: ParityAtlas
+  // grayscale preview of the shown Frame, in native resolution
+  grayscale: HTMLCanvasElement
 }
 
 const imageAnimationStates: Record<string, ImageAnimationState> = {}
 const imageFramesChecked: Record<string, boolean> = {}
+
+// image independent, so built once per session (per piece size)
+const pieceShapeSheetsCache: Record<number, PieceShapeSheets> = {}
+
+// the bevel shading is invisible on pieces smaller than this on screen
+const SHADING_MIN_PIECE_SIZE_PX = 12
+
+const GRAYSCALE_BACKGROUND = 'black'
+const GRAYSCALE_OPACITY = 0.3
 
 export class Renderer {
   public debug: boolean = false
@@ -92,20 +105,24 @@ export class Renderer {
     const hasAnim = !!imageAnimationStates[this.gameId]
 
     if (!hasAnim && !pieceBitmapsCache[this.gameId]) {
-      pieceBitmapsCache[this.gameId] = [PuzzleGraphics.loadPuzzleBitmaps(
+      pieceBitmapsCache[this.gameId] = PuzzleGraphics.loadPuzzleBitmaps(
         puzzleBitmapCache[this.gameId],
         GameCommon.getPuzzle(this.gameId),
         this.graphics,
-      )]
+      )
     }
 
     if (!hasAnim && !puzzleBitmapGrayscaled[this.gameId]) {
       puzzleBitmapGrayscaled[this.gameId] = this.graphics.op.toGrayscale(
         puzzleBitmapCache[this.gameId],
-        'black',
-        0.3,
+        GRAYSCALE_BACKGROUND,
+        GRAYSCALE_OPACITY,
       )
     }
+  }
+
+  private pieceShapeSheets(info: PuzzleInfo): PieceShapeSheets {
+    return pieceShapeSheetsCache[info.tileSize] ??= PuzzleGraphics.createPieceShapeSheets(info, this.graphics)
   }
 
   private async initImageAnimation(metas: ImageFrameMeta[]): Promise<void> {
@@ -113,30 +130,15 @@ export class Renderer {
       const animatedImageLoader = AnimatedImageLoader.getInstance()
       const imageFrames = await animatedImageLoader.loadFrames(metas)
 
-      const puzzle = GameCommon.getPuzzle(this.gameId)
-      const frames: HTMLCanvasElement[] = []
-      const durations: number[] = []
+      const info = GameCommon.getPuzzle(this.gameId).info
+      const frames = imageFrames.map(frame => frame.canvas)
+      const durations = imageFrames.map(frame => frame.delay)
 
-      for (const frame of imageFrames) {
-         const resized = this.graphics.op.resize(frame.canvas, puzzle.info.width, puzzle.info.height)
-        frames.push(resized)
-        durations.push(frame.delay)
-      }
-
-      // Compute piece bitmaps for the first frame eagerly
-      const firstFrameBitmaps = PuzzleGraphics.loadPuzzleBitmaps(frames[0], puzzle, this.graphics)
-      // Compute grayscale preview for the first frame eagerly
-      const firstFrameGrayscale = this.graphics.op.toGrayscale(frames[0], 'black', 0.3)
-
-      imageAnimationStates[this.gameId] = {
-        frames,
-        clock: new FrameClock(durations, performance.now()),
-        pieceBitmapsCache: { 0: firstFrameBitmaps },
-        grayscaleFramesCache: { 0: firstFrameGrayscale },
-      }
-
-      // Use first frame as the initial piece bitmaps
-      pieceBitmapsCache[this.gameId] = [firstFrameBitmaps]
+      const atlas = ParityAtlas.create(info, this.pieceShapeSheets(info), this.graphics)
+      const grayscale = this.graphics.createCanvas(frames[0].width, frames[0].height)
+      const clock = new FrameClock(durations, performance.now())
+      imageAnimationStates[this.gameId] = { frames, clock, atlas, grayscale }
+      this.showAnimationFrame(imageAnimationStates[this.gameId])
 
       log.log(`Image animation initialized with ${frames.length} frames`)
     } catch (e) {
@@ -146,27 +148,27 @@ export class Renderer {
 
   private updateImageAnimation(): void {
     const anim = imageAnimationStates[this.gameId]
-    if (!anim) return
-
-    if (anim.clock.update(performance.now())) {
-      const frame = anim.clock.frame
-
-      // Lazily compute piece bitmaps for this frame
-      if (!anim.pieceBitmapsCache[frame]) {
-        const puzzle = GameCommon.getPuzzle(this.gameId)
-        anim.pieceBitmapsCache[frame] = PuzzleGraphics.loadPuzzleBitmaps(
-          anim.frames[frame], puzzle, this.graphics,
-        )
-      }
-      pieceBitmapsCache[this.gameId] = [anim.pieceBitmapsCache[frame]]
-
-      // Lazily compute grayscale preview for this frame
-      if (!anim.grayscaleFramesCache[frame]) {
-        anim.grayscaleFramesCache[frame] = this.graphics.op.toGrayscale(
-          anim.frames[frame], 'black', 0.3,
-        )
-      }
+    if (anim && anim.clock.update(performance.now())) {
+      this.showAnimationFrame(anim)
     }
+  }
+
+  private showAnimationFrame(anim: ImageAnimationState): void {
+    const frame = anim.frames[anim.clock.frame]
+    anim.atlas.update(frame)
+
+    // grayscale of the Frame on a black background, like toGrayscale(): the
+    // luminosity blend of a colour onto black is its gray
+    const ctx = anim.grayscale.getContext('2d')!
+    ctx.globalCompositeOperation = 'source-over'
+    ctx.globalAlpha = 1
+    ctx.fillStyle = GRAYSCALE_BACKGROUND
+    ctx.fillRect(0, 0, anim.grayscale.width, anim.grayscale.height)
+    ctx.globalCompositeOperation = 'luminosity'
+    ctx.globalAlpha = GRAYSCALE_OPACITY
+    ctx.drawImage(frame, 0, 0, anim.grayscale.width, anim.grayscale.height)
+    ctx.globalCompositeOperation = 'source-over'
+    ctx.globalAlpha = 1
   }
 
   async loadTableTexture(settings: PlayerSettingsData): Promise<void> {
@@ -191,9 +193,14 @@ export class Renderer {
     let pos: Point
     let dim: Dim
     let bmp: HTMLCanvasElement
-    let tmpCanvas: HTMLCanvasElement
+    let srcCanvas: HTMLCanvasElement
+    let srcX: number
+    let srcY: number
+    let srcSize: number
 
     if (this.debug) Debug.checkpoint_start(0)
+
+    this.updateImageAnimation()
 
     const anim = imageAnimationStates[this.gameId]
     const animatedPreview = !!anim && renderPreview && settings.showPuzzleBackground
@@ -231,7 +238,7 @@ export class Renderer {
       if (renderPreview && settings.showPuzzleBackground) {
         pos = viewport.worldToViewportRaw(this.boardPos)
         dim = viewport.worldDimToViewportRaw(this.boardDim)
-        const grayscale = anim?.grayscaleFramesCache[anim.clock.frame] ?? puzzleBitmapGrayscaled[this.gameId]
+        const grayscale = anim?.grayscale ?? puzzleBitmapGrayscaled[this.gameId]
         ctx.drawImage(grayscale, pos.x, pos.y, dim.w, dim.h)
       } else if (!settings.showTable || !this.puzzleTable) {
         pos = viewport.worldToViewportRaw(this.boardPos)
@@ -263,12 +270,14 @@ export class Renderer {
 
     // DRAW PIECES
     // ---------------------------------------------------------------
-    this.updateImageAnimation()
-
     const pieces = GameCommon.getEncodedPiecesSortedByZIndex(this.gameId)
     if (this.debug) Debug.checkpoint('get pieces done')
 
     dim = viewport.worldDimToViewportRaw(this.pieceDim)
+    const info = GameCommon.getPuzzle(this.gameId).info
+    const shapeSheets = anim && dim.w * info.tileSize / info.tileDrawSize >= SHADING_MIN_PIECE_SIZE_PX
+      ? this.pieceShapeSheets(info)
+      : null
     for (const piece of pieces) {
       if (!shouldDrawEncodedPiece(piece)) {
         continue
@@ -282,18 +291,44 @@ export class Renderer {
         continue
       }
 
-      tmpCanvas = pieceBitmapsCache[this.gameId][0][piece[EncodedPieceIdx.IDX]]
+      const pieceIdx = piece[EncodedPieceIdx.IDX]
+      const rotation = piece[EncodedPieceIdx.ROTATION] || PieceRotation.R0
+      if (anim) {
+        const src = anim.atlas.source(pieceIdx)
+        srcCanvas = src.sheet
+        srcX = src.x
+        srcY = src.y
+        srcSize = src.size
+      } else {
+        srcCanvas = pieceBitmapsCache[this.gameId][pieceIdx]
+        srcX = 0
+        srcY = 0
+        srcSize = srcCanvas.width
+      }
 
-      const rot = Renderer.RotationMap[piece[EncodedPieceIdx.ROTATION] || PieceRotation.R0]
+      const rot = Renderer.RotationMap[rotation]
       if (rot) {
         ctx.save()
         ctx.translate(pos.x + dim.w / 2, pos.y + dim.h / 2)
         ctx.rotate(rot)
-        ctx.drawImage(tmpCanvas, -dim.w / 2, -dim.h / 2, dim.w, dim.h)
+        ctx.drawImage(srcCanvas,
+          srcX, srcY, srcSize, srcSize,
+          -dim.w / 2, -dim.h / 2, dim.w, dim.h,
+        )
         ctx.restore()
       } else {
-        ctx.drawImage(tmpCanvas,
-          0, 0, tmpCanvas.width, tmpCanvas.height,
+        ctx.drawImage(srcCanvas,
+          srcX, srcY, srcSize, srcSize,
+          pos.x, pos.y, dim.w, dim.h,
+        )
+      }
+
+      if (shapeSheets) {
+        // the shading of the rotated shape, drawn unrotated: the light
+        // always comes from the top left, whatever the rotation
+        const shadePos = shapeSheets.positions[Util.rotateEncodedShape(info.shapes[pieceIdx], rotation)]
+        ctx.drawImage(shapeSheets.shade,
+          shadePos.x, shadePos.y, shapeSheets.pieceDrawSize, shapeSheets.pieceDrawSize,
           pos.x, pos.y, dim.w, dim.h,
         )
       }

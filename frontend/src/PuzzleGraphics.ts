@@ -110,6 +110,93 @@ export function drawPuzzlePreview(
   ctx.restore()
 }
 
+/**
+ * The canvas look of one piece with baked-in bevel shading: `image` is drawn
+ * with its (sx, sy) at the top left of the piece's draw area, cut along `path`.
+ */
+function cutPiece(
+  image: CanvasImageSource,
+  sx: number,
+  sy: number,
+  path: Path2D,
+  pieceDrawSize: number,
+  graphics: Graphics,
+): HTMLCanvasElement {
+  const c = graphics.createCanvas(pieceDrawSize)
+  const ctx = c.getContext('2d')!
+  const c2 = graphics.createCanvas(pieceDrawSize)
+  const ctx2 = c2.getContext('2d')!
+
+  ctx.clearRect(0, 0, pieceDrawSize, pieceDrawSize)
+
+  // stroke (slightly darker version of image)
+  // -----------------------------------------------------------
+  // -----------------------------------------------------------
+  ctx.save()
+  ctx.lineWidth = 2
+  ctx.stroke(path)
+  ctx.globalCompositeOperation = 'source-in'
+  ctx.drawImage(image, sx, sy, pieceDrawSize, pieceDrawSize, 0, 0, pieceDrawSize, pieceDrawSize)
+  ctx.restore()
+  ctx.save()
+  ctx.globalCompositeOperation = 'source-in'
+  ctx.globalAlpha = .2
+  ctx.fillStyle = 'black'
+  ctx.fillRect(0, 0, c.width, c.height)
+  ctx.restore()
+
+  // main image
+  // -----------------------------------------------------------
+  // -----------------------------------------------------------
+  ctx.save()
+  ctx.clip(path)
+  ctx.drawImage(image, sx, sy, pieceDrawSize, pieceDrawSize, 0, 0, pieceDrawSize, pieceDrawSize)
+  ctx.restore()
+
+  // INSET SHADOW (bottom, right)
+  // -----------------------------------------------------------
+  // -----------------------------------------------------------
+  ctx.save()
+  ctx.clip(path)
+  ctx.strokeStyle = 'rgba(0,0,0,.4)'
+  ctx.lineWidth = 0
+  ctx.shadowColor = 'black'
+  ctx.shadowBlur = 2
+  ctx.shadowOffsetX = -1
+  ctx.shadowOffsetY = -1
+  ctx.stroke(path)
+  ctx.restore()
+
+  // INSET SHADOW (top, left)
+  // -----------------------------------------------------------
+  // -----------------------------------------------------------
+  ctx.save()
+  ctx.clip(path)
+  ctx.strokeStyle = 'rgba(255,255,255,.4)'
+  ctx.lineWidth = 0
+  ctx.shadowColor = 'white'
+  ctx.shadowBlur = 2
+  ctx.shadowOffsetX = 1
+  ctx.shadowOffsetY = 1
+  ctx.stroke(path)
+  ctx.restore()
+
+  // Redraw the path (border) in the color of the
+  // tile, this makes the tile look more realistic
+  // -----------------------------------------------------------
+  // -----------------------------------------------------------
+  ctx2.clearRect(0, 0, pieceDrawSize, pieceDrawSize)
+  ctx2.save()
+  ctx2.lineWidth = 1
+  ctx2.stroke(path)
+  ctx2.globalCompositeOperation = 'source-in'
+  ctx2.drawImage(image, sx, sy, pieceDrawSize, pieceDrawSize, 0, 0, pieceDrawSize, pieceDrawSize)
+  ctx2.restore()
+  ctx.drawImage(c2, 0, 0)
+
+  return c
+}
+
 function loadPuzzleBitmaps(
   image: HTMLCanvasElement,
   puzzle: Puzzle,
@@ -134,116 +221,116 @@ function loadPuzzleBitmaps(
   }
 
   for (const piece of pieces) {
-    const c = graphics.createCanvas(pieceDrawSize)
-    const ctx = c.getContext('2d')!
-    const c2 = graphics.createCanvas(pieceDrawSize)
-    const ctx2 = c2.getContext('2d')!
     const pieceIdx = piece[EncodedPieceIdx.IDX]
     const srcRect = srcRectByIdx(info, pieceIdx)
     const path = pathForShape(Util.decodeShape(info.shapes[pieceIdx]))
-
-    ctx.clearRect(0, 0, pieceDrawSize, pieceDrawSize)
-
-    // stroke (slightly darker version of image)
-    // -----------------------------------------------------------
-    // -----------------------------------------------------------
-    ctx.save()
-    ctx.lineWidth = 2
-    ctx.stroke(path)
-    ctx.globalCompositeOperation = 'source-in'
-    ctx.drawImage(
+    images[pieceIdx] = cutPiece(
       image,
       srcRect.x - pieceMarginWidth,
       srcRect.y - pieceMarginWidth,
+      path,
       pieceDrawSize,
-      pieceDrawSize,
-      0,
-      0,
-      pieceDrawSize,
-      pieceDrawSize,
+      graphics,
     )
-    ctx.restore()
-    ctx.save()
-    ctx.globalCompositeOperation = 'source-in'
-    ctx.globalAlpha = .2
-    ctx.fillStyle = 'black'
-    ctx.fillRect(0, 0, c.width, c.height)
-    ctx.restore()
-
-    // main image
-    // -----------------------------------------------------------
-    // -----------------------------------------------------------
-    ctx.save()
-    ctx.clip(path)
-    ctx.drawImage(
-      image,
-      srcRect.x - pieceMarginWidth,
-      srcRect.y - pieceMarginWidth,
-      pieceDrawSize,
-      pieceDrawSize,
-      0,
-      0,
-      pieceDrawSize,
-      pieceDrawSize,
-    )
-    ctx.restore()
-
-    // INSET SHADOW (bottom, right)
-    // -----------------------------------------------------------
-    // -----------------------------------------------------------
-    ctx.save()
-    ctx.clip(path)
-    ctx.strokeStyle = 'rgba(0,0,0,.4)'
-    ctx.lineWidth = 0
-    ctx.shadowColor = 'black'
-    ctx.shadowBlur = 2
-    ctx.shadowOffsetX = -1
-    ctx.shadowOffsetY = -1
-    ctx.stroke(path)
-    ctx.restore()
-
-    // INSET SHADOW (top, left)
-    // -----------------------------------------------------------
-    // -----------------------------------------------------------
-    ctx.save()
-    ctx.clip(path)
-    ctx.strokeStyle = 'rgba(255,255,255,.4)'
-    ctx.lineWidth = 0
-    ctx.shadowColor = 'white'
-    ctx.shadowBlur = 2
-    ctx.shadowOffsetX = 1
-    ctx.shadowOffsetY = 1
-    ctx.stroke(path)
-    ctx.restore()
-
-    // Redraw the path (border) in the color of the
-    // tile, this makes the tile look more realistic
-    // -----------------------------------------------------------
-    // -----------------------------------------------------------
-    ctx2.clearRect(0, 0, pieceDrawSize, pieceDrawSize)
-    ctx2.save()
-    ctx2.lineWidth = 1
-    ctx2.stroke(path)
-    ctx2.globalCompositeOperation = 'source-in'
-    ctx2.drawImage(
-      image,
-      srcRect.x - pieceMarginWidth,
-      srcRect.y - pieceMarginWidth,
-      pieceDrawSize,
-      pieceDrawSize,
-      0,
-      0,
-      pieceDrawSize,
-      pieceDrawSize,
-    )
-    ctx2.restore()
-    ctx.drawImage(c2, 0, 0)
-
-    images[pieceIdx] = c
   }
 
   log.log('end loadPuzzleBitmaps')
   return images
+}
+
+export type PieceShapeSheetsPuzzleInfo = Pick<PuzzleInfo, 'tileSize' | 'tileMarginWidth' | 'tileDrawSize'>
+
+/**
+ * The look of `cutPiece`, split into two image-independent layers, for all 81
+ * piece shapes. Each sheet holds one draw area per shape at `positions[shape]`.
+ *
+ * `cutPiece` is linear in the image colour I: out = A * ((1 - b) * I + b * O).
+ * Cutting a solid black and a solid white image gives, per pixel, the alpha A,
+ * the shading strength b = 1 - (white - black) and the shading colour
+ * O = black / b.
+ * - `mask`: white with alpha A, cuts the piece out of the image
+ * - `shade`: gray O with alpha b * A, drawn on top of the cut piece
+ * Drawing the shade over the masked image reproduces `cutPiece` exactly where
+ * A = 1, and approximately on the faint outer ring of the piece.
+ */
+export interface PieceShapeSheets {
+  pieceDrawSize: number
+  mask: HTMLCanvasElement
+  shade: HTMLCanvasElement
+  positions: Record<EncodedPieceShape, Point>
+}
+
+const SHAPE_SHEET_COLUMNS = 9
+
+function createPieceShapeSheets(
+  info: PieceShapeSheetsPuzzleInfo,
+  graphics: Graphics,
+): PieceShapeSheets {
+  const drawSize = info.tileDrawSize
+  const sheetSize = SHAPE_SHEET_COLUMNS * drawSize
+  const solid = (color: string) => {
+    const c = graphics.createCanvas(drawSize)
+    const ctx = c.getContext('2d')!
+    ctx.fillStyle = color
+    ctx.fillRect(0, 0, drawSize, drawSize)
+    return c
+  }
+  const black = solid('#000')
+  const white = solid('#fff')
+  const blackCuts = graphics.createCanvas(sheetSize)
+  const whiteCuts = graphics.createCanvas(sheetSize)
+  const blackCutsCtx = blackCuts.getContext('2d', { willReadFrequently: true })!
+  const whiteCutsCtx = whiteCuts.getContext('2d', { willReadFrequently: true })!
+
+  const positions: Record<EncodedPieceShape, Point> = {}
+  let i = 0
+  for (const top of [-1, 0, 1]) {
+    for (const right of [-1, 0, 1]) {
+      for (const bottom of [-1, 0, 1]) {
+        for (const left of [-1, 0, 1]) {
+          const shape: PieceShape = { top, right, bottom, left }
+          const path = createPathForShape(shape, info.tileMarginWidth, info.tileMarginWidth, info.tileSize)
+          const pos = { x: (i % SHAPE_SHEET_COLUMNS) * drawSize, y: Math.floor(i / SHAPE_SHEET_COLUMNS) * drawSize }
+          blackCutsCtx.drawImage(cutPiece(black, 0, 0, path, drawSize, graphics), pos.x, pos.y)
+          whiteCutsCtx.drawImage(cutPiece(white, 0, 0, path, drawSize, graphics), pos.x, pos.y)
+          positions[Util.encodeShape(shape)] = pos
+          i++
+        }
+      }
+    }
+  }
+
+  const blackCut = blackCutsCtx.getImageData(0, 0, sheetSize, sheetSize).data
+  const whiteCut = whiteCutsCtx.getImageData(0, 0, sheetSize, sheetSize).data
+  const mask = graphics.createCanvas(sheetSize)
+  const shade = graphics.createCanvas(sheetSize)
+  const maskCtx = mask.getContext('2d')!
+  const shadeCtx = shade.getContext('2d')!
+  const maskData = maskCtx.createImageData(sheetSize, sheetSize)
+  const shadeData = shadeCtx.createImageData(sheetSize, sheetSize)
+  const maskPixels = maskData.data
+  const shadePixels = shadeData.data
+  for (let p = 0; p < blackCut.length; p += 4) {
+    const alpha = Math.max(blackCut[p + 3], whiteCut[p + 3]) / 255
+    if (alpha === 0) {
+      continue
+    }
+    const onBlack = (blackCut[p] + blackCut[p + 1] + blackCut[p + 2]) / (3 * 255)
+    const onWhite = (whiteCut[p] + whiteCut[p + 1] + whiteCut[p + 2]) / (3 * 255)
+    const strength = Math.min(1, Math.max(0, 1 - (onWhite - onBlack)))
+    // below 1/255 the shading is invisible and its colour is only noise
+    const gray = strength > 1 / 255 ? Math.min(1, Math.max(0, onBlack / strength)) : 0
+    maskPixels[p] = maskPixels[p + 1] = maskPixels[p + 2] = 255
+    maskPixels[p + 3] = Math.round(alpha * 255)
+    shadePixels[p] = shadePixels[p + 1] = shadePixels[p + 2] = Math.round(gray * 255)
+    shadePixels[p + 3] = Math.round(strength * alpha * 255)
+  }
+  maskCtx.putImageData(maskData, 0, 0)
+  shadeCtx.putImageData(shadeData, 0, 0)
+
+  // release the cut sheets right away instead of waiting for GC
+  blackCuts.width = whiteCuts.width = 0
+  return { pieceDrawSize: drawSize, mask, shade, positions }
 }
 
 function srcRectByIdx(puzzleInfo: PuzzleInfo, idx: number): Rect {
@@ -302,5 +389,6 @@ async function createWebglStencilsFromPng(
 export default {
   loadPuzzleBitmap,
   loadPuzzleBitmaps,
+  createPieceShapeSheets,
   createWebglStencilsFromPng,
 }
