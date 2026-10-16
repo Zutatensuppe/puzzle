@@ -26,6 +26,7 @@ const createMockRow = (overrides: Partial<ImageRowWithCount> = {}): ImageRowWith
   state: ImageState.Approved,
   reject_reason: '',
   games_count: 5,
+  animated_frames: null,
   ...overrides,
 })
 
@@ -74,6 +75,7 @@ describe('Images.imagesByIdsFromDb', () => {
       aiGenerated: true,
       state: ImageState.PendingApproval,
       rejectReason: 'blurry',
+      animationFrames: null,
     })
   })
 
