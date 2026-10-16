@@ -5,7 +5,7 @@ import { PieceRotation, EncodedPieceIdx, EncodedPlayerIdx } from '@common/Types'
 import type { EncodedPiece, EncodedPlayer, FireworksInterface, GameId, ImageFrameMeta, PlayerSettingsData, PuzzleInfo, PuzzleStatusInterface, Timestamp } from '@common/Types'
 import { Camera } from '@common/Camera'
 import PuzzleGraphics from './PuzzleGraphics'
-import type { PieceShapeSheets } from './PuzzleGraphics'
+import type { PieceShapeSheets, StaticPieceBitmaps } from './PuzzleGraphics'
 import { AnimatedImageLoader } from './AnimatedImageLoader'
 import { FrameClock } from './FrameClock'
 import { ParityAtlas } from './ParityAtlas'
@@ -17,7 +17,7 @@ import { getPlayerNameCanvas } from './PlayerNames'
 
 const log = logger('Renderer.ts')
 
-const pieceBitmapsCache: Record<string, HTMLCanvasElement[]> = {}
+const pieceBitmapsCache: Record<string, StaticPieceBitmaps> = {}
 const puzzleBitmapCache: Record<string, HTMLCanvasElement> = {}
 const puzzleBitmapGrayscaled: Record<string, HTMLCanvasElement> = {}
 
@@ -293,20 +293,23 @@ export class Renderer {
 
       const pieceIdx = piece[EncodedPieceIdx.IDX]
       const rotation = piece[EncodedPieceIdx.ROTATION] || PieceRotation.R0
+      let rot: number
       if (anim) {
         const src = anim.atlas.source(pieceIdx)
         srcCanvas = src.sheet
         srcX = src.x
         srcY = src.y
         srcSize = src.size
+        rot = Renderer.RotationMap[rotation]
       } else {
-        srcCanvas = pieceBitmapsCache[this.gameId][pieceIdx]
+        // upright shading baked in, so drawn unrotated
+        srcCanvas = pieceBitmapsCache[this.gameId].bakedFor(pieceIdx, rotation)
         srcX = 0
         srcY = 0
         srcSize = srcCanvas.width
+        rot = 0
       }
 
-      const rot = Renderer.RotationMap[rotation]
       if (rot) {
         ctx.save()
         ctx.translate(pos.x + dim.w / 2, pos.y + dim.h / 2)
