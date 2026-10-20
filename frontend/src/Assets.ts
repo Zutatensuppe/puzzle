@@ -83,7 +83,10 @@ export class Assets {
       [GraphicsEnum.BADGE_ANON_ACTIVE]: await graphics.loader.dataUrlFromSrc(badgeAnon),
       [GraphicsEnum.BADGE_ANON_IDLE]: await graphics.loader.dataUrlFromSrc(badgeAnonIdle),
 
-      [GraphicsEnum.PIECE_STENCILS_SPRITESHEET]: await graphics.loader.imageBitmapFromSrc(stencilsDefault),
+      [GraphicsEnum.PIECE_STENCILS_SPRITESHEET]: await graphics.loader.imageBitmapFromSrc(stencilsDefault, {
+        // the shader detects exact magenta, so no color management
+        colorSpaceConversion: 'none',
+      }),
     }
   }
 }
