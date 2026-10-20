@@ -7,12 +7,12 @@ export interface GraphicsLoaderInterface {
   blobFromFile(file: File): Promise<Blob>
   blobFromDataUrl(dataUrl: ImageDataURL): Blob
   blobFromSrc(src: string): Promise<Blob>
-  imageBitmapFromSrc(src: string): Promise<ImageBitmap>
+  imageBitmapFromSrc(src: string, options?: ImageBitmapOptions): Promise<ImageBitmap>
   canvasFromSrc(src: string): Promise<HTMLCanvasElement>
   dataUrlFromSrc(src: string): Promise<ImageDataURL>
   dataUrlFromBlob(blob: Blob): Promise<ImageDataURL>
   imageBitmapFromCanvas(canvas: HTMLCanvasElement): Promise<ImageBitmap>
-  imageBitmapFromBlob(blob: Blob): Promise<ImageBitmap>
+  imageBitmapFromBlob(blob: Blob, options?: ImageBitmapOptions): Promise<ImageBitmap>
 }
 
 export class GraphicsLoader implements GraphicsLoaderInterface {
@@ -65,9 +65,9 @@ export class GraphicsLoader implements GraphicsLoaderInterface {
     return await response.blob()
   }
 
-  public async imageBitmapFromSrc(src: string): Promise<ImageBitmap> {
+  public async imageBitmapFromSrc(src: string, options?: ImageBitmapOptions): Promise<ImageBitmap> {
     const blob = await this.blobFromSrc(src)
-    return this.imageBitmapFromBlob(blob)
+    return this.imageBitmapFromBlob(blob, options)
   }
 
   public async canvasFromSrc(src: string): Promise<HTMLCanvasElement> {
@@ -101,7 +101,7 @@ export class GraphicsLoader implements GraphicsLoaderInterface {
     return createImageBitmap(canvas)
   }
 
-  public imageBitmapFromBlob(blob: Blob): Promise<ImageBitmap> {
-    return createImageBitmap(blob)
+  public imageBitmapFromBlob(blob: Blob, options?: ImageBitmapOptions): Promise<ImageBitmap> {
+    return options ? createImageBitmap(blob, options) : createImageBitmap(blob)
   }
 }
