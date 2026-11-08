@@ -51,13 +51,23 @@
       />
     </div>
 
+    <div
+      v-if="showInterface && chatEnabled"
+      class="menu-left-bottom"
+    >
+      <IngameChat
+        :messages="chatMessages"
+        @send="onChatSend"
+      />
+    </div>
+
     <StatusMessages ref="statusMessages" />
 
     <canvas ref="canvasEl" />
   </div>
 </template>
 <script setup lang="ts">
-import type { Hud, GameStatus, GamePlayers, RegisteredMap, GameId, ClientId, ConnectionState } from '@common/Types'
+import type { Hud, GameStatus, GamePlayers, RegisteredMap, GameId, ClientId, ConnectionState, ChatMessage } from '@common/Types'
 import { GamePlay } from '../GamePlay'
 import { onMounted, onUnmounted, ref, watch } from 'vue'
 import type { Ref } from 'vue'
@@ -70,6 +80,7 @@ import PuzzleStatus from '../components/PuzzleStatus.vue'
 import Scores from './../components/Scores.vue'
 import StatusMessages from '../components/StatusMessages.vue'
 import IngameMenu from '../components/IngameMenu.vue'
+import IngameChat from '../components/IngameChat.vue'
 import { onLoginStateChange } from '../user'
 import isEqual from 'lodash/isEqual'
 
@@ -99,7 +110,13 @@ const canvasEl = ref<HTMLCanvasElement>() as Ref<HTMLCanvasElement>
 const registeredMap = ref<RegisteredMap>({})
 
 const g = ref<GamePlay | null>(null)
+const chatMessages = ref<ChatMessage[]>([])
+const chatEnabled = ref<boolean>(false)
 const route = useRoute()
+
+const onChatSend = (text: string): void => {
+  g.value?.sendChatMessage(text)
+}
 
 const onResize = (): void => {
   canvasEl.value.width = window.innerWidth
@@ -239,6 +256,12 @@ const hud: Hud = {
     showInterface.value = !!v
   },
   addStatusMessage: (what: string, value: number | string | boolean | undefined) => statusMessages.value.addMessage(what, value),
+  onChatMessage: (msg: ChatMessage) => {
+    chatMessages.value.push(msg)
+    if (chatMessages.value.length > 50) {
+      chatMessages.value.shift()
+    }
+  },
 }
 
 const onInit = async () => {
@@ -270,6 +293,7 @@ onMounted(async () => {
 
   await game.init()
   g.value = game
+  chatEnabled.value = game.getChatEnabled()
 })
 
 onUnmounted(() => {

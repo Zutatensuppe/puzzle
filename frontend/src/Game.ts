@@ -89,6 +89,8 @@ export interface GameInterface {
   getSnapMode(): SnapMode
   getShapeMode(): ShapeMode
   getRotationMode(): RotationMode
+  getChatEnabled(): boolean
+  sendChatMessage(text: string): void
   getImage(): ImageInfo
   onServerUpdateEvent(msg: ServerUpdateEvent): void
   onUpdate(): void
@@ -436,6 +438,14 @@ export abstract class Game<HudType extends Hud> implements GameInterface {
     return GameCommon.getRotationMode(this.gameId)
   }
 
+  getChatEnabled(): boolean {
+    return GameCommon.getChatEnabled(this.gameId)
+  }
+
+  sendChatMessage(text: string): void {
+    this.evts.addEvent([GAME_EVENT_TYPE.INPUT_EV_CHAT_MESSAGE, text])
+  }
+
   getImage(): ImageInfo {
     return GameCommon.getImage(this.gameId)
   }
@@ -470,6 +480,9 @@ export abstract class Game<HudType extends Hud> implements GameInterface {
           if (changeData !== this.clientId) {
             otherPlayerPiecesConnected = true
           }
+        } break
+        case CHANGE_TYPE.CHAT_MESSAGE: {
+          this.hud.onChatMessage?.(changeData)
         } break
       }
     }

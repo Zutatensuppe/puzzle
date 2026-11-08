@@ -213,6 +213,7 @@ describe('Util.ts', () => {
           joinPassword: null,
           banned: {},
           showImagePreviewInBackground: false,
+          chatEnabled: false,
         } as Game,
         encoded: [
           'id' as GameId,
@@ -249,6 +250,7 @@ describe('Util.ts', () => {
           joinPassword: null,
           banned: {},
           showImagePreviewInBackground: false,
+          chatEnabled: false,
         } as Game,
         encoded: [
           'id' as GameId,
@@ -269,6 +271,7 @@ describe('Util.ts', () => {
           null,
           false,
           {},
+          false,
           false,
         ] as EncodedGame,
       },
