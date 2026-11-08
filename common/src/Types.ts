@@ -62,8 +62,8 @@ export type ChangePiece = [CHANGE_TYPE.PIECE, EncodedPiece]
 export type ChangePlayer = [CHANGE_TYPE.PLAYER, EncodedPlayer]
 export type ChangeData = [CHANGE_TYPE.DATA, PuzzleData]
 export type ChangePlayerSnap = [CHANGE_TYPE.PLAYER_SNAP, string]
-export type Change = ChangePiece | ChangePlayer | ChangeData | ChangePlayerSnap
-
+export type ChangeChatMessage = [CHANGE_TYPE.CHAT_MESSAGE, ChatMessage]
+export type Change = ChangePiece | ChangePlayer | ChangeData | ChangePlayerSnap | ChangeChatMessage
 export type GameEventInputMouseDown = [GAME_EVENT_TYPE.INPUT_EV_MOUSE_DOWN, number, number]
 export type GameEventInputMouseUp = [GAME_EVENT_TYPE.INPUT_EV_MOUSE_UP, number, number]
 export type GameEventInputMouseMove = [GAME_EVENT_TYPE.INPUT_EV_MOUSE_MOVE, number, number, number, number, 0 | 1]
@@ -91,6 +91,7 @@ export type GameEventInputTogglePuzzleBackground = [GAME_EVENT_TYPE.INPUT_EV_TOG
 export type GameEventInputToggleInterface = [GAME_EVENT_TYPE.INPUT_EV_TOGGLE_INTERFACE]
 export type GameEventBanPlayerEvent = [GAME_EVENT_TYPE.INPUT_EV_BAN_PLAYER, ClientId]
 export type GameEventUnbanPlayerEvent = [GAME_EVENT_TYPE.INPUT_EV_UNBAN_PLAYER, ClientId]
+export type GameEventInputChatMessage = [GAME_EVENT_TYPE.INPUT_EV_CHAT_MESSAGE, string]
 export type GameEvent = GameEventInputMouseDown
   | GameEventInputMouseUp
   | GameEventInputMouseMove
@@ -118,6 +119,7 @@ export type GameEvent = GameEventInputMouseDown
   | GameEventInputToggleInterface
   | GameEventBanPlayerEvent
   | GameEventUnbanPlayerEvent
+  | GameEventInputChatMessage
 
 export type ServerInitEvent = [SERVER_EVENT_TYPE.INIT, EncodedGame | EncodedGameLegacy]
 export type ServerUpdateEvent = [SERVER_EVENT_TYPE.UPDATE, string, number, Change[]]
@@ -238,6 +240,7 @@ export type EncodedGame = FixedLengthArray<[
   boolean | undefined, // requireAccount
   Record<ClientId, boolean> | undefined, // banned
   boolean, // showImagePreviewInBackground
+  boolean | undefined, // chatEnabled
 ]>
 
 export type HeaderLogEntry = [
@@ -312,6 +315,7 @@ export interface Game {
   requireAccount: boolean
   joinPassword: string | null
   showImagePreviewInBackground: boolean
+  chatEnabled: boolean
 }
 
 export interface Image {
@@ -336,6 +340,7 @@ export interface GameSettings {
   rotationMode: RotationMode
   crop: Rect
   showImagePreviewInBackground: boolean
+  chatEnabled: boolean
 }
 
 export interface Puzzle {
@@ -580,6 +585,12 @@ export interface PlayerChange {
   [EncodedPlayerIdx.TIMESTAMP]?: Timestamp
 }
 
+export interface ChatMessage {
+  clientId: ClientId
+  playerName: string | null
+  text: string
+}
+
 export interface FireworksInterface {
   init(): void
   update(): void
@@ -786,6 +797,7 @@ export interface Hud {
   togglePreview: (v: boolean) => void
   toggleInterface: (v: boolean) => void
   addStatusMessage: (what: string, value: number | string | boolean | undefined) => void
+  onChatMessage?: (msg: ChatMessage) => void
 }
 
 export interface ReplayHud extends Hud {

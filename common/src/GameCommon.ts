@@ -38,6 +38,24 @@ import Util from './Util'
 export const NEWGAME_MIN_PIECES = 10
 export const NEWGAME_MAX_PIECES = 5000
 
+export const CHAT_MESSAGES: string[] = [
+  'Hello 👋',
+  'Wow',
+  'Nice',
+  'Hmm...',
+  'I am new and still learning',
+  'Oh no... 🫣',
+  'This looks easy 😏',
+  'That looks difficult 😵‍💫',
+  'We did it! 🥳',
+  'GG',
+  'That was easy 😎',
+  'That was hard 🥵',
+  'Bye!',
+  '🧩',
+  '💀',
+]
+
 const IDLE_TIMEOUT_SEC = 30
 
 // Map<gameId, Game>
@@ -258,6 +276,10 @@ function getShapeMode(gameId: GameId): ShapeMode {
 
 function getRotationMode(gameId: GameId): RotationMode {
   return Game_getRotationMode(GAMES[gameId])
+}
+
+function getChatEnabled(gameId: GameId): boolean {
+  return Game_getChatEnabled(GAMES[gameId])
 }
 
 function getVersion(gameId: GameId): number {
@@ -1149,6 +1171,17 @@ function handleGameEvent(
     const y = gameEvent[2]
     changePlayer(gameId, clientId, { [EncodedPlayerIdx.X]: x, [EncodedPlayerIdx.Y]: y, [EncodedPlayerIdx.TIMESTAMP]: ts })
     _playerChange()
+  } else if (type === GAME_EVENT_TYPE.INPUT_EV_CHAT_MESSAGE) {
+    const player = getPlayer(gameId, clientId)
+    if (Game_getChatEnabled(GAMES[gameId]) && CHAT_MESSAGES.includes(gameEvent[1])) {
+      changePlayer(gameId, clientId, { [EncodedPlayerIdx.TIMESTAMP]: ts })
+      _playerChange()
+      changes.push([CHANGE_TYPE.CHAT_MESSAGE, {
+        clientId,
+        playerName: player ? player[EncodedPlayerIdx.NAME] : null,
+        text: gameEvent[1],
+      }])
+    }
   } else {
     changePlayer(gameId, clientId, { [EncodedPlayerIdx.TIMESTAMP]: ts })
     _playerChange()
@@ -1323,6 +1356,10 @@ function Game_getRotationMode(game: Game): RotationMode {
   return game.rotationMode
 }
 
+function Game_getChatEnabled(game: Game): boolean {
+  return game.chatEnabled
+}
+
 function Game_getAllPlayers(game: Game): EncodedPlayer[] {
   return game.players
 }
@@ -1407,6 +1444,7 @@ export default {
   getPuzzle,
   getRegisteredMap,
   getRng,
+  getChatEnabled,
   getRotationMode,
   getScoreMode,
   getShapeMode,
@@ -1456,6 +1494,7 @@ export default {
   Game_getPlayersWithScore,
   Game_getPuzzle,
   Game_getRequireAccount,
+  Game_getChatEnabled,
   Game_getRotationMode,
   Game_getScoreMode,
   Game_getShapeMode,

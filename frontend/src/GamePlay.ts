@@ -1,6 +1,7 @@
 'use strict'
 
 import GameCommon from '@common/GameCommon'
+import { CHANGE_TYPE } from '@common/Protocol'
 import { Game } from './Game'
 import Communication from './Communication'
 import Util from '@common/Util'
@@ -48,6 +49,13 @@ export class GamePlay extends Game<Hud> {
     const ret = GameCommon.handleGameEvent(this.gameId, this.clientId, evt, ts)
     if (ret.changes.length > 0) {
       this.requireRerender()
+    }
+    // own chat messages are deduplicated in Communication and never reach
+    // onServerUpdateEvent, so they are applied locally here
+    for (const [changeType, changeData] of ret.changes) {
+      if (changeType === CHANGE_TYPE.CHAT_MESSAGE) {
+        this.hud.onChatMessage?.(changeData)
+      }
     }
     if (this.playerSettings.soundsEnabled()) {
       if (ret.anySnapped) {

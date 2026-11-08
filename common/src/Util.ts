@@ -156,6 +156,7 @@ function encodeGame(data: Game): EncodedGame | EncodedGameLegacy {
     data.requireAccount,
     data.banned,
     data.showImagePreviewInBackground,
+    data.chatEnabled,
   ] : [
     data.id,
     data.rng.type || '',
@@ -208,6 +209,7 @@ function decodeGame(data: EncodedGame | EncodedGameLegacy): Game {
       requireAccount: false,
       banned: {},
       showImagePreviewInBackground: false,
+      chatEnabled: false,
     }
   }
 
@@ -233,6 +235,7 @@ function decodeGame(data: EncodedGame | EncodedGameLegacy): Game {
     requireAccount: data[16] || false,
     banned: data[17] || {},
     showImagePreviewInBackground: data[18] || false,
+    chatEnabled: data[19] || false,
   }
 }
 

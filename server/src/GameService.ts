@@ -31,6 +31,7 @@ interface GameStoreData {
   hasReplay: boolean
   crop?: Rect | undefined
   banned?: Record<ClientId, boolean>
+  chatEnabled?: boolean
 }
 
 export class GameService {
@@ -104,6 +105,7 @@ export class GameService {
       banned: game.banned || {},
       crop: game.crop,
       showImagePreviewInBackground: !!gameRow.show_image_preview_in_background,
+      chatEnabled: !!game.chatEnabled,
     }
   }
 
@@ -201,6 +203,7 @@ export class GameService {
       gameObject.joinPassword,
       gameObject.crop,
       gameObject.showImagePreviewInBackground,
+      gameObject.chatEnabled,
     )
     gameObj.puzzle.info.image.gameCount = await this.server.repos.images.getGameCount(gameObj.puzzle.info.image.id)
     gameObj.registeredMap = await this.generateRegisteredMap(gameObject.players)
@@ -354,6 +357,7 @@ export class GameService {
       // cannot use value from the game object, because it might be outdated
       hasReplay: await GameLog.hasReplay(game.id, game.gameVersion),
       crop: game.crop,
+      chatEnabled: game.chatEnabled,
     }
   }
 
@@ -374,6 +378,7 @@ export class GameService {
     joinPassword: string | null,
     crop: Rect | undefined,
     showImagePreviewInBackground: boolean,
+    chatEnabled: boolean,
   ): Game {
     const seed = Util.hash(gameId + ' ' + ts)
     const rng = new Rng(seed)
@@ -396,6 +401,7 @@ export class GameService {
       registeredMap: {},
       banned: {},
       showImagePreviewInBackground,
+      chatEnabled,
     }
   }
 
@@ -434,6 +440,7 @@ export class GameService {
       gameSettings.joinPassword ? Crypto.encrypt(gameSettings.joinPassword) : null,
       gameSettings.crop,
       gameSettings.showImagePreviewInBackground,
+      gameSettings.chatEnabled,
     )
 
     GameLog.create(gameId, ts)

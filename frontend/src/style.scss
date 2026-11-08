@@ -677,6 +677,72 @@ h5 {
   }
 }
 
+.menu-left-bottom {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  background: $bg-color-transparent;
+  padding: 0 0 5px 0;
+  border: solid 1px black;
+  box-shadow: 0 0 10px 0 rgba(0 0 0 / 70%);
+  width: max-content;
+  max-width: calc(100vw - 12px);
+}
+
+.ingame-chat {
+  margin: 0 0 5px 0;
+  width: 313px;
+  max-width: calc(100vw - 31px);
+
+  &.is-minimized {
+    width: auto;
+    margin: 0;
+
+    .chat-header {
+      padding: 2px;
+    }
+  }
+
+  .chat-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1px 5px 2px 10px;
+    background: rgba(0 0 0 / 70%);
+    border-bottom: solid 1px grey;
+  }
+
+  .chat-toggle {
+    min-width: 28px;
+    min-height: 28px;
+    padding: 2px 8px;
+    border: 0;
+    border-radius: 3px;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    font-size: 14px;
+    cursor: pointer;
+
+    &:hover { background: rgb(255 255 255 / 12%); }
+    &:focus-visible { outline: 2px solid currentcolor; }
+  }
+
+  #ingame-chat-content{
+    margin: 12px 10px 12px 10px;
+  }
+
+  .chat-messages {
+    max-height: 160px;
+    overflow-y: auto;
+    margin-bottom: 8px;
+
+    .chat-message-name {
+      font-weight: bold;
+    }
+  }
+}
+
 .menu {
   position: absolute;
   top: 0;

@@ -175,6 +175,22 @@
                     :disabled="!isPrivate || !requirePassword"
                   />
                 </div>
+                <div>
+                  <v-label><v-icon icon="mdi-chat-outline mr-1" /> Chat</v-label>
+                  <v-radio-group
+                    v-model="chatEnabled"
+                    density="comfortable"
+                  >
+                    <v-radio
+                      label="Enabled"
+                      :value="true"
+                    />
+                    <v-radio
+                      label="Disabled"
+                      :value="false"
+                    />
+                  </v-radio-group>
+                </div>
               </v-form>
             </v-window-item>
             <v-window-item value="image-info">
@@ -239,6 +255,7 @@ const forcePrivate = ref<boolean>(newGameImageInfo.value?.private || false)
 const pieces = ref<string | number>(1000)
 const isPrivate = ref<boolean>(forcePrivate.value)
 const showImagePreviewInBackground = ref<boolean>(false)
+const chatEnabled = ref<boolean>(false)
 const requireAccount = ref<boolean>(false)
 const requirePassword = ref<boolean>(false)
 const joinPassword = ref<string>('')
@@ -334,6 +351,7 @@ const onNewGameClick = async () => {
     rotationMode: rotationModeInt.value,
     crop: crop.value,
     showImagePreviewInBackground: showImagePreviewInBackground.value,
+    chatEnabled: chatEnabled.value,
   }
   await newGameOnNewGameClick.value(gameSettings)
 }

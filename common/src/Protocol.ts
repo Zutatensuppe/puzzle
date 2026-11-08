@@ -66,6 +66,7 @@ export enum CHANGE_TYPE {
   PIECE = 2,
   PLAYER = 3,
   PLAYER_SNAP = 4,
+  CHAT_MESSAGE = 5,
 }
 
 export enum GAME_EVENT_TYPE {
@@ -103,4 +104,6 @@ export enum GAME_EVENT_TYPE {
 
   INPUT_EV_BAN_PLAYER = 25,
   INPUT_EV_UNBAN_PLAYER = 26,
+
+  INPUT_EV_CHAT_MESSAGE = 28,
 }
