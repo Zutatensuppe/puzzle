@@ -35,6 +35,18 @@
           <tr><td><icon icon="pause" /> Pause (replay):</td><td><div><kbd>P</kbd></div></td></tr>
         </tbody>
       </v-table>
+
+      <h4>Mobile</h4>
+      <v-table density="compact">
+        <tbody>
+          <tr><td><icon icon="puzzle-piece-free" /> Move piece:</td><td><div>Drag a piece with one finger</div></td></tr>
+          <tr><td><icon icon="table" /> Pan board:</td><td><div>Drag empty board with one finger</div></td></tr>
+          <tr><td><icon icon="zoom-in" /> Zoom in:</td><td><div>Tap <icon icon="zoom-in" /></div></td></tr>
+          <tr><td><icon icon="zoom-out" /> Zoom out:</td><td><div>Tap <icon icon="zoom-out" /></div></td></tr>
+          <tr><td><icon icon="puzzle-piece-rotate-left" /> Rotate piece left:</td><td><div>Hold a piece with one finger; tap <icon icon="puzzle-piece-rotate-left" /> with another</div></td></tr>
+          <tr><td><icon icon="puzzle-piece-rotate-right" /> Rotate piece right:</td><td><div>Hold a piece with one finger; tap <icon icon="puzzle-piece-rotate-right" /> with another</div></td></tr>
+        </tbody>
+      </v-table>
     </v-container>
   </v-card>
 </template>
