@@ -633,6 +633,44 @@ h5 {
 
 /* ingame */
 
+#game > canvas,
+#replay > canvas {
+  touch-action: pinch-zoom;
+}
+
+#game > .touch-controls {
+  display: none;
+}
+
+@media (any-pointer: coarse) {
+  #game > .touch-controls {
+    display: flex;
+    gap: 8px;
+    position: absolute;
+    left: 50%;
+    bottom: calc(10px + env(safe-area-inset-bottom, 0px));
+    transform: translateX(-50%);
+    background: rgba(0 0 0 / 70%);
+    padding: 5px;
+    border: solid 1px black;
+    box-shadow: 0 0 10px 0 rgba(0 0 0 / 70%);
+    user-select: none;
+    z-index: 1;
+
+    button {
+      min-width: 44px;
+      min-height: 44px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      background: rgba(0 0 0 / 50%);
+      border: solid 1px black;
+      touch-action: manipulation;
+    }
+  }
+}
+
 .status-messages {
   position: absolute;
   bottom: 0;

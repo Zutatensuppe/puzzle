@@ -22,31 +22,34 @@ export class EventAdapter {
   private SHIFT = false
 
   private mouseDown: boolean = false
+  private activePointerId: number | null = null
   private lastMouseRaw: [number, number]|null = null
   private lastMouseWorld: [number, number]|null = null
 
   private onResize
-  private onMouseDown
-  private onMouseUp
-  private onMouseMove
-  private onMouseEnter
+  private onPointerDown
+  private onPointerUp
+  private onPointerMove
+  private onPointerEnd
   private onWheel
   private onKeyUp
   private onKeyDown
   private onKeyPress
   private onWndMouseDown
+  private onWndBlur
 
   constructor (private game: GameInterface, private playerSettings: PlayerSettings) {
     this.onResize = this.game.initViewport.bind(this.game)
-    this.onMouseDown = this._onMouseDown.bind(this)
-    this.onMouseUp = this._onMouseUp.bind(this)
-    this.onMouseMove = this._onMouseMove.bind(this)
+    this.onPointerDown = this._onPointerDown.bind(this)
+    this.onPointerUp = this._onPointerUp.bind(this)
+    this.onPointerMove = this._onPointerMove.bind(this)
+    this.onPointerEnd = this._onPointerEnd.bind(this)
     this.onWheel = this._onWheel.bind(this)
     this.onKeyUp = this._onKeyUp.bind(this)
     this.onKeyDown = this._onKeyDown.bind(this)
     this.onKeyPress = this._onKeyPress.bind(this)
     this.onWndMouseDown = this._onWndMouseDown.bind(this)
-    this.onMouseEnter = this._onMouseEnter.bind(this)
+    this.onWndBlur = this._onWndBlur.bind(this)
   }
 
   _toWorldPoint (x: number, y: number): [number, number] {
@@ -61,6 +64,15 @@ export class EventAdapter {
 
   _mousePos (ev: MouseEvent) {
     return this._toWorldPoint(ev.offsetX, ev.offsetY)
+  }
+
+  _pointerPos (ev: PointerEvent): [number, number] {
+    const canvas = this.game.getCanvas()
+    const rect = canvas.getBoundingClientRect()
+    return [
+      (ev.clientX - rect.left) * canvas.width / rect.width,
+      (ev.clientY - rect.top) * canvas.height / rect.height,
+    ]
   }
 
   _canvasCenter () {
@@ -94,35 +106,66 @@ export class EventAdapter {
     }
   }
 
-  _onMouseDown (ev: MouseEvent) {
-    this.lastMouseWorld = this._mousePos(ev)
-    this.lastMouseRaw = [ev.offsetX, ev.offsetY]
-    if (ev.button === 0) {
-      this.mouseDown = true
-      this.addEvent([GAME_EVENT_TYPE.INPUT_EV_MOUSE_DOWN, ...this.lastMouseWorld])
-    }
-  }
-
-  _onMouseUp (ev: MouseEvent) {
-    this.lastMouseWorld = this._mousePos(ev)
-    this.lastMouseRaw = [ev.offsetX, ev.offsetY]
-    if (ev.button === 0) {
-      this.mouseDown = false
-      this.addEvent([GAME_EVENT_TYPE.INPUT_EV_MOUSE_UP, ...this.lastMouseWorld])
-    }
-  }
-
-  _onMouseMove (ev: MouseEvent) {
-    if (!this.lastMouseRaw) {
+  _onPointerDown (ev: PointerEvent) {
+    if (!ev.isPrimary || ev.button !== 0 || this.activePointerId !== null) {
       return
     }
-    this.lastMouseWorld = this._mousePos(ev)
-    const diffWorld = this._toWorldDim(
-      -(this.lastMouseRaw[0] - ev.offsetX),
-      -(this.lastMouseRaw[1] - ev.offsetY),
-    )
+    const [x, y] = this._pointerPos(ev)
+    this.lastMouseRaw = [x, y]
+    this.lastMouseWorld = this._toWorldPoint(x, y)
+    this.mouseDown = true
+    this.activePointerId = ev.pointerId
+    this.game.getCanvas().setPointerCapture(ev.pointerId)
+    this.addEvent([GAME_EVENT_TYPE.INPUT_EV_MOUSE_DOWN, ...this.lastMouseWorld])
+  }
+
+  _onPointerUp (ev: PointerEvent) {
+    if (this.activePointerId === null || ev.pointerId !== this.activePointerId) {
+      return
+    }
+    const [x, y] = this._pointerPos(ev)
+    this.lastMouseRaw = [x, y]
+    this.lastMouseWorld = this._toWorldPoint(x, y)
+    this._endActivePointer(ev.pointerId)
+  }
+
+  _onPointerMove (ev: PointerEvent) {
+    if (this.activePointerId !== null) {
+      if (ev.pointerId !== this.activePointerId) {
+        return
+      }
+    } else if (ev.pointerType !== 'mouse' && ev.pointerType !== 'pen') {
+      return
+    }
+    const [x, y] = this._pointerPos(ev)
+    if (!this.lastMouseRaw) {
+      this.lastMouseRaw = [x, y]
+      this.lastMouseWorld = this._toWorldPoint(x, y)
+      return
+    }
+    this.lastMouseWorld = this._toWorldPoint(x, y)
+    const diffWorld = this._toWorldDim(x - this.lastMouseRaw[0], y - this.lastMouseRaw[1])
     this.addEvent([GAME_EVENT_TYPE.INPUT_EV_MOUSE_MOVE, ...this.lastMouseWorld, ...diffWorld, this.mouseDown ? 1 : 0])
-    this.lastMouseRaw = [ev.offsetX, ev.offsetY]
+    this.lastMouseRaw = [x, y]
+  }
+
+  _onPointerEnd (ev: PointerEvent) {
+    this._endActivePointer(ev.pointerId)
+  }
+
+  _endActivePointer (pointerId: number): void {
+    if (this.activePointerId !== pointerId) {
+      return
+    }
+    this.activePointerId = null
+    this.mouseDown = false
+    if (this.lastMouseWorld) {
+      this.addEvent([GAME_EVENT_TYPE.INPUT_EV_MOUSE_UP, ...this.lastMouseWorld])
+    }
+    const canvas = this.game.getCanvas()
+    if (canvas.hasPointerCapture(pointerId)) {
+      canvas.releasePointerCapture(pointerId)
+    }
   }
 
   _onWheel (ev: WheelEvent) {
@@ -205,20 +248,10 @@ export class EventAdapter {
     }
   }
 
-  _onMouseEnter (ev: MouseEvent): void {
-    if (!this.mouseDown) {
-      return
+  _onWndBlur (): void {
+    if (this.activePointerId !== null) {
+      this._endActivePointer(this.activePointerId)
     }
-
-    if (ev.buttons === 1) {
-      // still holding mouse down (or released outside of game)
-      return
-    }
-
-    this.lastMouseWorld = this._mousePos(ev)
-    this.lastMouseRaw = [ev.offsetX, ev.offsetY]
-    this.mouseDown = false
-    this.addEvent([GAME_EVENT_TYPE.INPUT_EV_MOUSE_UP, ...this.lastMouseWorld])
   }
 
   registerEvents () {
@@ -228,27 +261,36 @@ export class EventAdapter {
     w.addEventListener('keyup', this.onKeyUp, { passive: true })
     w.addEventListener('keypress', this.onKeyPress, { passive: true })
     w.addEventListener('mousedown', this.onWndMouseDown)
+    w.addEventListener('blur', this.onWndBlur, { passive: true })
 
     const c = this.game.getCanvas()
-    c.addEventListener('mousedown', this.onMouseDown, { passive: true })
-    c.addEventListener('mouseup', this.onMouseUp, { passive: true })
-    c.addEventListener('mousemove', this.onMouseMove, { passive: true })
-    c.addEventListener('mouseenter', this.onMouseEnter)
+    c.addEventListener('pointerdown', this.onPointerDown, { passive: true })
+    c.addEventListener('pointerup', this.onPointerUp, { passive: true })
+    c.addEventListener('pointermove', this.onPointerMove, { passive: true })
+    c.addEventListener('pointercancel', this.onPointerEnd, { passive: true })
+    c.addEventListener('lostpointercapture', this.onPointerEnd, { passive: true })
     c.addEventListener('wheel', this.onWheel, { passive: true })
   }
 
   unregisterEvents () {
+    const c = this.game.getCanvas()
+    if (this.activePointerId !== null) {
+      this._endActivePointer(this.activePointerId)
+    }
+
     const w = this.game.getWindow()
     w.removeEventListener('resize', this.onResize)
-    w.removeEventListener('keydown', this.onKeyUp)
-    w.removeEventListener('keyup', this.onKeyDown)
+    w.removeEventListener('keydown', this.onKeyDown)
+    w.removeEventListener('keyup', this.onKeyUp)
     w.removeEventListener('keypress', this.onKeyPress)
     w.removeEventListener('mousedown', this.onWndMouseDown)
+    w.removeEventListener('blur', this.onWndBlur)
 
-    const c = this.game.getCanvas()
-    c.removeEventListener('mousedown', this.onMouseDown)
-    c.removeEventListener('mouseup', this.onMouseUp)
-    c.removeEventListener('mousemove', this.onMouseMove)
+    c.removeEventListener('pointerdown', this.onPointerDown)
+    c.removeEventListener('pointerup', this.onPointerUp)
+    c.removeEventListener('pointermove', this.onPointerMove)
+    c.removeEventListener('pointercancel', this.onPointerEnd)
+    c.removeEventListener('lostpointercapture', this.onPointerEnd)
     c.removeEventListener('wheel', this.onWheel)
   }
 

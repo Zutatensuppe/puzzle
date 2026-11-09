@@ -53,11 +53,50 @@
 
     <StatusMessages ref="statusMessages" />
 
+    <div
+      v-if="showInterface && g"
+      class="touch-controls"
+      aria-label="Touch game controls"
+    >
+      <button
+        type="button"
+        aria-label="Zoom out"
+        @click="zoomTouch('out')"
+      >
+        <icon icon="zoom-out" />
+      </button>
+      <button
+        type="button"
+        aria-label="Zoom in"
+        @click="zoomTouch('in')"
+      >
+        <icon icon="zoom-in" />
+      </button>
+      <template v-if="g.getRotationMode() === RotationMode.ORTHOGONAL">
+        <button
+          type="button"
+          aria-label="Rotate piece left"
+          @click="rotateTouch(0)"
+        >
+          <icon icon="puzzle-piece-rotate-left" />
+        </button>
+        <button
+          type="button"
+          aria-label="Rotate piece right"
+          @click="rotateTouch(1)"
+        >
+          <icon icon="puzzle-piece-rotate-right" />
+        </button>
+      </template>
+    </div>
+
     <canvas ref="canvasEl" />
   </div>
 </template>
 <script setup lang="ts">
 import type { Hud, GameStatus, GamePlayers, RegisteredMap, GameId, ClientId, ConnectionState } from '@common/Types'
+import { RotationMode } from '@common/Types'
+import { GAME_EVENT_TYPE } from '@common/Protocol'
 import { GamePlay } from '../GamePlay'
 import { onMounted, onUnmounted, ref, watch } from 'vue'
 import type { Ref } from 'vue'
@@ -100,6 +139,19 @@ const registeredMap = ref<RegisteredMap>({})
 
 const g = ref<GamePlay | null>(null)
 const route = useRoute()
+
+const zoomTouch = (dir: 'in' | 'out'): void => {
+  const game = g.value
+  if (!game || !game.getViewport().canZoom(dir)) {
+    return
+  }
+  const point = game.getViewport().viewportToWorld({ x: canvasEl.value.width / 2, y: canvasEl.value.height / 2 })
+  game.queueInputEvent([dir === 'in' ? GAME_EVENT_TYPE.INPUT_EV_ZOOM_IN : GAME_EVENT_TYPE.INPUT_EV_ZOOM_OUT, point.x, point.y])
+}
+
+const rotateTouch = (dir: 0 | 1): void => {
+  g.value?.queueInputEvent([GAME_EVENT_TYPE.INPUT_EV_ROTATE, dir])
+}
 
 const onResize = (): void => {
   canvasEl.value.width = window.innerWidth

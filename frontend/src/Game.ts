@@ -89,6 +89,7 @@ export interface GameInterface {
   getSnapMode(): SnapMode
   getShapeMode(): ShapeMode
   getRotationMode(): RotationMode
+  queueInputEvent(evt: GameEvent): void
   getImage(): ImageInfo
   onServerUpdateEvent(msg: ServerUpdateEvent): void
   onUpdate(): void
@@ -434,6 +435,10 @@ export abstract class Game<HudType extends Hud> implements GameInterface {
 
   getRotationMode(): RotationMode {
     return GameCommon.getRotationMode(this.gameId)
+  }
+
+  queueInputEvent(evt: GameEvent): void {
+    this.evts.addEvent(evt)
   }
 
   getImage(): ImageInfo {
